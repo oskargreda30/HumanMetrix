@@ -1048,13 +1048,13 @@ export default function SampleComparisonReport() {
                     Compare your team's performance against industry benchmarks and peer organizations
                   </p>
                 </div>
-                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-role-fit">
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-multi-role">
                   <div className="flex items-center gap-2 mb-2">
                     <Users className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold" data-testid="heading-service-role-fit">Role Fit Analysis</h4>
+                    <h4 className="font-semibold" data-testid="heading-service-multi-role">Multi-Candidate Role Fit</h4>
                   </div>
-                  <p className="text-sm text-muted-foreground" data-testid="text-service-role-fit">
-                    AI-powered matching of candidates to specific roles with detailed fit recommendations
+                  <p className="text-sm text-muted-foreground" data-testid="text-service-multi-role">
+                    Compare multiple candidates against a specific role with ranked recommendations
                   </p>
                 </div>
                 <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-consulting">

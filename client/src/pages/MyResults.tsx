@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Download, CheckCircle2, FileText, TrendingUp, Brain, Shield, Zap, Info, Star, Target, Users, MessageSquare, Rocket, Mail } from "lucide-react";
+import { Loader2, ArrowLeft, Download, CheckCircle2, FileText, TrendingUp, Brain, Shield, Zap, Star, Target, Users, MessageSquare, Rocket, Mail } from "lucide-react";
 import { exportEnhancedCandidatePDF, captureRadarChart } from "@/lib/enhancedPdfExport";
 import { useToast } from "@/hooks/use-toast";
 import { formatAssessmentName } from "@/lib/assessmentHelpers";
@@ -764,41 +764,54 @@ export default function MyResults() {
             );
           })()}
 
-          {/* How to Read This Report Section */}
-          <Card className="mb-6" data-testid="section-how-to-read">
+          {/* How to Read This Report */}
+          <Card className="mb-8" data-testid="section-how-to-read">
             <div className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Info className="h-5 w-5 text-blue-500" />
-                <h3 className="text-xl font-bold" data-testid="heading-how-to-read">How to Read Your Results</h3>
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-bold" data-testid="heading-how-to-read">How to Read This Report</h3>
               </div>
+              <p className="text-sm text-muted-foreground mb-4" data-testid="text-guide-intro">
+                A step-by-step guide to understanding your assessment results and how to use them for career growth
+              </p>
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="p-4 bg-muted/30 rounded-lg" data-testid="guide-scores">
-                  <h4 className="font-semibold mb-2" data-testid="heading-guide-scores">Understanding Your Scores</h4>
-                  <p className="text-sm text-muted-foreground" data-testid="text-guide-scores">
-                    Each assessment measures different capabilities. Scores above 70% indicate strong proficiency,
-                    50-70% shows developing skills, and below 50% highlights areas for growth.
-                  </p>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
+                  <div>
+                    <span className="font-medium text-sm">Score Interpretation</span>
+                    <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1 mt-1">
+                      <Badge className="bg-green-500 text-white text-[10px] px-1 py-0">75%+</Badge> <span>Strong capability,</span>
+                      <Badge className="bg-amber-500 text-white text-[10px] px-1 py-0">50-74%</Badge> <span>Developing,</span>
+                      <Badge className="bg-red-500 text-white text-[10px] px-1 py-0">&lt;50%</Badge> <span>Growth opportunity</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="p-4 bg-muted/30 rounded-lg" data-testid="guide-dimensions">
-                  <h4 className="font-semibold mb-2" data-testid="heading-guide-dimensions">Skill Dimensions</h4>
-                  <p className="text-sm text-muted-foreground" data-testid="text-guide-dimensions">
-                    Your results break down into multiple dimensions. Use these to identify your unique 
-                    strengths and target specific areas for professional development.
-                  </p>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
+                  <div>
+                    <p className="font-medium text-sm">Four Assessment Areas</p>
+                    <p className="text-xs text-muted-foreground">
+                      Your report covers FIT (behavioral traits), AI Readiness, Prompt Architecture, and AI Ethics (AIQ) - together providing a complete picture of your capabilities.
+                    </p>
+                  </div>
                 </div>
-                <div className="p-4 bg-muted/30 rounded-lg" data-testid="guide-radar">
-                  <h4 className="font-semibold mb-2" data-testid="heading-guide-radar">Radar Charts</h4>
-                  <p className="text-sm text-muted-foreground" data-testid="text-guide-radar">
-                    The radar visualization shows your balanced profile across dimensions. 
-                    A more symmetrical shape indicates well-rounded capabilities.
-                  </p>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
+                  <div>
+                    <p className="font-medium text-sm">Strengths & Development Areas</p>
+                    <p className="text-xs text-muted-foreground">
+                      Each section highlights your strengths to leverage in interviews and development areas to focus on for career growth.
+                    </p>
+                  </div>
                 </div>
-                <div className="p-4 bg-muted/30 rounded-lg" data-testid="guide-apply">
-                  <h4 className="font-semibold mb-2" data-testid="heading-guide-apply">Applying Your Results</h4>
-                  <p className="text-sm text-muted-foreground" data-testid="text-guide-apply">
-                    Use these insights to guide your career decisions, identify training opportunities, 
-                    and communicate your strengths to potential employers.
-                  </p>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
+                  <div>
+                    <p className="font-medium text-sm">Using Your Results</p>
+                    <p className="text-xs text-muted-foreground">
+                      Share your report with potential employers to demonstrate your capabilities, or use insights to guide your professional development plan.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

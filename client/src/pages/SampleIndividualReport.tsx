@@ -221,7 +221,7 @@ export default function SampleIndividualReport() {
           </div>
 
           {/* How to Read This Report */}
-          <Card className="mb-8 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent" data-testid="section-how-to-read">
+          <Card className="mb-8" data-testid="section-how-to-read">
             <div className="p-6">
               <div className="flex items-center gap-2 mb-2">
                 <FileText className="h-5 w-5 text-primary" />

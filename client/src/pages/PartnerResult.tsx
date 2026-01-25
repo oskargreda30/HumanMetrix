@@ -3,7 +3,7 @@ import { useRoute, Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ArrowLeft, User, Calendar, Building2, TrendingUp, Target, Info, Star, Users, MessageSquare, BarChart3, Mail } from "lucide-react";
+import { Loader2, ArrowLeft, User, Calendar, Building2, TrendingUp, Target, FileText, Star, Users, MessageSquare, BarChart3, Mail } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import SkillsLegend from "@/components/SkillsLegend";
@@ -283,50 +283,64 @@ export default function PartnerResult() {
           </CardContent>
         </Card>
 
-        {/* How to Read This Report Section */}
-        <Card className="mt-6" data-testid="section-how-to-read">
+        {/* How to Read This Report */}
+        <Card className="mb-8" data-testid="section-how-to-read">
           <div className="p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Info className="h-5 w-5 text-blue-500" />
-              <h3 className="text-xl font-bold" data-testid="heading-how-to-read">How to Read This Report</h3>
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-bold" data-testid="heading-how-to-read">How to Read This Report</h3>
             </div>
+            <p className="text-sm text-muted-foreground mb-4" data-testid="text-guide-intro">
+              A guide to interpreting candidate assessment data for informed hiring decisions
+            </p>
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="p-4 bg-muted/30 rounded-lg" data-testid="guide-overall-score">
-                <h4 className="font-semibold mb-2" data-testid="heading-guide-overall-score">Overall Score</h4>
-                <p className="text-sm text-muted-foreground" data-testid="text-guide-overall-score">
-                  The overall score represents the candidate's aggregated performance across all skill dimensions. 
-                  Scores above 70 indicate strong capability, while scores below 50 may warrant development focus.
-                </p>
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
+                <div>
+                  <span className="font-medium text-sm">Score Interpretation</span>
+                  <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1 mt-1">
+                    <Badge className="bg-green-500 text-white text-[10px] px-1 py-0">75%+</Badge> <span>Strong performer,</span>
+                    <Badge className="bg-amber-500 text-white text-[10px] px-1 py-0">50-74%</Badge> <span>Developing,</span>
+                    <Badge className="bg-red-500 text-white text-[10px] px-1 py-0">&lt;50%</Badge> <span>Needs attention</span>
+                  </div>
+                </div>
               </div>
-              <div className="p-4 bg-muted/30 rounded-lg" data-testid="guide-skill-breakdown">
-                <h4 className="font-semibold mb-2" data-testid="heading-guide-skill-breakdown">Skill Breakdown</h4>
-                <p className="text-sm text-muted-foreground" data-testid="text-guide-skill-breakdown">
-                  Individual dimension scores help identify specific strengths and areas for development. 
-                  Consider these in context of your role requirements.
-                </p>
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
+                <div>
+                  <p className="font-medium text-sm">Radar Charts</p>
+                  <p className="text-xs text-muted-foreground">
+                    Visual overlays show how candidates compare across each capability dimension at a glance.
+                  </p>
+                </div>
               </div>
-              <div className="p-4 bg-muted/30 rounded-lg" data-testid="guide-radar-chart">
-                <h4 className="font-semibold mb-2" data-testid="heading-guide-radar-chart">Radar Visualization</h4>
-                <p className="text-sm text-muted-foreground" data-testid="text-guide-radar-chart">
-                  The radar chart provides a visual overview of the candidate's profile. 
-                  A balanced shape indicates well-rounded capabilities across dimensions.
-                </p>
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
+                <div>
+                  <p className="font-medium text-sm">Rankings & Percentiles</p>
+                  <p className="text-xs text-muted-foreground">
+                    See how each candidate ranks relative to others in the cohort and against broader benchmarks.
+                  </p>
+                </div>
               </div>
-              <div className="p-4 bg-muted/30 rounded-lg" data-testid="guide-percentile">
-                <h4 className="font-semibold mb-2" data-testid="heading-guide-percentile">Percentile Ranking</h4>
-                <p className="text-sm text-muted-foreground" data-testid="text-guide-percentile">
-                  When available, percentile shows how this candidate compares to others who have taken the same assessment.
-                </p>
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
+                <div>
+                  <p className="font-medium text-sm">Strengths & Development Areas</p>
+                  <p className="text-xs text-muted-foreground">
+                    Each candidate's key strengths and growth areas help you understand their unique value proposition.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </Card>
 
         {/* Skills Legend */}
-        <SkillsLegend className="mt-8" compact data-testid="section-skills-legend" />
+        <SkillsLegend className="mb-8" compact data-testid="section-skills-legend" />
 
         {/* Additional Services Section */}
-        <Card className="mt-6" data-testid="section-additional-services">
+        <Card className="mb-8" data-testid="section-additional-services">
           <div className="p-6">
             <div className="flex items-center gap-2 mb-4">
               <Star className="h-5 w-5 text-primary" />
