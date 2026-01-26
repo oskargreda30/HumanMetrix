@@ -1,10 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Loader2, CheckCircle2, Clock, PlayCircle, XCircle, AlertCircle, User, Lock, ArrowRight, Mail } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, AlertCircle, User, ArrowRight, Mail, PartyPopper, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface AssessmentStatus {
@@ -41,21 +39,17 @@ export default function GuestInvite() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [invitation, setInvitation] = useState<InvitationData | null>(null);
-  const [startingAssessment, setStartingAssessment] = useState<string | null>(null);
-  
-  const [showAccountForm, setShowAccountForm] = useState(false);
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [creatingSession, setCreatingSession] = useState(false);
   const [creatingAccount, setCreatingAccount] = useState(false);
-  const [accountCreated, setAccountCreated] = useState(false);
+  const [showingResults, setShowingResults] = useState(false);
+  const [checkingProgress, setCheckingProgress] = useState(false);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
-  useEffect(() => {
-    if (token) {
-      fetchInvitation();
-    }
-  }, [token]);
-
-  const fetchInvitation = async () => {
+  const fetchInvitation = useCallback(async () => {
+    if (!token) return;
+    
     try {
       setLoading(true);
       setError(null);
@@ -68,23 +62,38 @@ export default function GuestInvite() {
       
       const data = await res.json();
       setInvitation(data);
+      return data;
     } catch (err: any) {
       setError(err.message || "Failed to load invitation");
+      return null;
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
-  const startAssessment = async (assessmentType: string) => {
-    if (!token || !invitation) return;
+  useEffect(() => {
+    fetchInvitation();
+  }, [fetchInvitation]);
+
+  const startNextAssessment = useCallback(async (invitationData: InvitationData) => {
+    if (!token) return;
+    
+    const nextAssessment = invitationData.assessmentStatuses.find(
+      (s) => s.status !== "completed"
+    );
+    
+    if (!nextAssessment) {
+      setShowingResults(true);
+      return;
+    }
     
     try {
-      setStartingAssessment(assessmentType);
+      setCreatingSession(true);
       
       const res = await fetch(`/api/guest/invite/${token}/session`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ assessmentType }),
+        body: JSON.stringify({ assessmentType: nextAssessment.type }),
       });
       
       if (!res.ok) {
@@ -93,8 +102,7 @@ export default function GuestInvite() {
       }
       
       const { sessionId } = await res.json();
-      
-      setLocation(`/embed?session=${sessionId}&inviteToken=${token}`);
+      setCurrentSessionId(sessionId);
     } catch (err: any) {
       toast({
         title: "Error",
@@ -102,30 +110,104 @@ export default function GuestInvite() {
         variant: "destructive",
       });
     } finally {
-      setStartingAssessment(null);
+      setCreatingSession(false);
     }
+  }, [token, toast]);
+
+  useEffect(() => {
+    if (invitation && !invitation.allComplete && !currentSessionId && !creatingSession) {
+      startNextAssessment(invitation);
+    } else if (invitation?.allComplete) {
+      setShowingResults(true);
+    }
+  }, [invitation, currentSessionId, creatingSession, startNextAssessment]);
+
+  useEffect(() => {
+    const handleMessage = async (event: MessageEvent) => {
+      // Validate origin - only accept messages from same origin
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+      
+      // Validate source is from our iframe
+      if (iframeRef.current && event.source !== iframeRef.current.contentWindow) {
+        return;
+      }
+      
+      const messageType = event.data?.type;
+      const messageSessionId = event.data?.sessionId;
+      
+      // Only process if it's a valid completion message with matching session
+      if ((messageType === 'humanmetrix:completed' || 
+           messageType === 'humanmetrix:assessment_completed') &&
+          messageSessionId === currentSessionId) {
+        setCurrentSessionId(null);
+        const updatedInvitation = await fetchInvitation();
+        if (updatedInvitation && !updatedInvitation.allComplete) {
+          await startNextAssessment(updatedInvitation);
+        } else {
+          setShowingResults(true);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [fetchInvitation, startNextAssessment, currentSessionId]);
+
+  // Polling fallback - check status every 30 seconds while in assessment
+  useEffect(() => {
+    if (currentSessionId && !pollIntervalRef.current) {
+      pollIntervalRef.current = setInterval(async () => {
+        const updatedInvitation = await fetchInvitation();
+        if (updatedInvitation) {
+          const currentAssessment = updatedInvitation.assessmentStatuses.find(
+            (s: AssessmentStatus) => s.sessionId === currentSessionId
+          );
+          // If current session is now completed, advance
+          if (currentAssessment?.status === 'completed') {
+            setCurrentSessionId(null);
+            if (!updatedInvitation.allComplete) {
+              await startNextAssessment(updatedInvitation);
+            } else {
+              setShowingResults(true);
+            }
+          }
+        }
+      }, 30000); // Poll every 30 seconds
+    }
+    
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [currentSessionId, fetchInvitation, startNextAssessment]);
+
+  // Manual progress check function
+  const checkProgress = async () => {
+    setCheckingProgress(true);
+    const updatedInvitation = await fetchInvitation();
+    if (updatedInvitation) {
+      if (updatedInvitation.allComplete) {
+        setCurrentSessionId(null);
+        setShowingResults(true);
+      } else {
+        const currentAssessment = updatedInvitation.assessmentStatuses.find(
+          (s: AssessmentStatus) => s.sessionId === currentSessionId
+        );
+        if (currentAssessment?.status === 'completed') {
+          setCurrentSessionId(null);
+          await startNextAssessment(updatedInvitation);
+        }
+      }
+    }
+    setCheckingProgress(false);
   };
 
   const createAccount = async () => {
-    if (!token || !password) return;
-    
-    if (password !== confirmPassword) {
-      toast({
-        title: "Passwords don't match",
-        description: "Please make sure your passwords match",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (password.length < 6) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 6 characters",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!token) return;
     
     try {
       setCreatingAccount(true);
@@ -133,7 +215,7 @@ export default function GuestInvite() {
       const res = await fetch(`/api/guest/invite/${token}/create-account`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({}),
       });
       
       if (!res.ok) {
@@ -142,14 +224,17 @@ export default function GuestInvite() {
       }
       
       const data = await res.json();
-      setAccountCreated(true);
       
       toast({
-        title: data.existingAccount ? "Account exists" : "Account created",
+        title: data.existingAccount ? "Logged in" : "Account created",
         description: data.existingAccount 
-          ? "You already have an account. Log in to access your results."
-          : "You can now log in to access your results anytime",
+          ? "You have been logged in to your existing account."
+          : "Check your email for your login password. You have been logged in automatically.",
       });
+      
+      if (data.redirectTo) {
+        setLocation(data.redirectTo);
+      }
     } catch (err: any) {
       toast({
         title: "Error",
@@ -161,37 +246,22 @@ export default function GuestInvite() {
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "completed":
-        return <CheckCircle2 className="h-5 w-5 text-green-500" />;
-      case "in_progress":
-      case "started":
-        return <Clock className="h-5 w-5 text-yellow-500" />;
-      case "not_started":
-      default:
-        return <PlayCircle className="h-5 w-5 text-muted-foreground" />;
-    }
+  const getCompletedCount = () => {
+    if (!invitation) return 0;
+    return invitation.assessmentStatuses.filter(s => s.status === 'completed').length;
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "Completed";
-      case "in_progress":
-      case "started":
-        return "In Progress";
-      case "not_started":
-      default:
-        return "Not Started";
-    }
+  const getCurrentAssessmentName = () => {
+    if (!invitation) return '';
+    const current = invitation.assessmentStatuses.find(s => s.status !== 'completed');
+    return current ? ASSESSMENT_NAMES[current.type] || current.type : '';
   };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" data-testid="loading-spinner" />
           <p className="text-muted-foreground">Loading your invitation...</p>
         </div>
       </div>
@@ -224,181 +294,191 @@ export default function GuestInvite() {
     return null;
   }
 
-  const nextAssessment = invitation.assessmentStatuses.find(
-    (s) => s.status !== "completed"
-  );
-
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent py-12 px-4">
-        <div className="max-w-2xl mx-auto text-center">
-          <h1 className="text-3xl font-bold mb-2">
-            Welcome{invitation.name ? `, ${invitation.name.split(" ")[0]}` : ""}!
-          </h1>
-          <p className="text-muted-foreground">
-            {invitation.partnerName} has invited you to complete the following assessments
-          </p>
-        </div>
-      </div>
-
-      <div className="max-w-2xl mx-auto p-4 -mt-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Your Assessments
+  if (showingResults || invitation.allComplete) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10" />
+        
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
+        
+        <Card className="relative w-full max-w-lg bg-white/95 backdrop-blur-sm shadow-2xl border-0">
+          <CardHeader className="text-center pb-4">
+            <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center">
+              <PartyPopper className="w-8 h-8 text-white" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-slate-900">
+              All Assessments Complete!
             </CardTitle>
-            <CardDescription>
-              Complete the assessments below to measure your AI readiness and capabilities
+            <CardDescription className="text-slate-600 text-base mt-2">
+              Great job{invitation.name ? `, ${invitation.name.split(" ")[0]}` : ""}! You've completed all {invitation.assessmentTypes.length} assessments assigned by {invitation.partnerName}.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {invitation.assessmentStatuses.map((assessment, index) => (
-              <div
-                key={assessment.type}
-                className="flex items-center justify-between p-4 border rounded-lg"
-                data-testid={`assessment-item-${assessment.type}`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-sm font-medium">
-                    {index + 1}
-                  </div>
-                  <div>
-                    <p className="font-medium">{ASSESSMENT_NAMES[assessment.type] || assessment.type}</p>
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      {getStatusIcon(assessment.status)}
-                      <span>{getStatusText(assessment.status)}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                {assessment.status === "completed" ? (
-                  <CheckCircle2 className="h-6 w-6 text-green-500" />
-                ) : (
-                  <Button
-                    onClick={() => startAssessment(assessment.type)}
-                    disabled={startingAssessment !== null}
-                    data-testid={`button-start-${assessment.type}`}
-                  >
-                    {startingAssessment === assessment.type ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : null}
-                    {assessment.status === "in_progress" ? "Continue" : "Start"}
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                )}
-              </div>
-            ))}
-          </CardContent>
           
-          {invitation.expiresAt && (
-            <CardFooter className="text-sm text-muted-foreground border-t pt-4">
-              <AlertCircle className="h-4 w-4 mr-2" />
-              This invitation expires on {new Date(invitation.expiresAt).toLocaleDateString("en-GB", {
+          <CardContent className="space-y-6">
+            <div className="bg-slate-50 rounded-lg p-4">
+              <h4 className="font-medium text-slate-900 mb-3">Completed Assessments:</h4>
+              <div className="space-y-2">
+                {invitation.assessmentStatuses.map((assessment) => (
+                  <div key={assessment.type} className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <span>{ASSESSMENT_NAMES[assessment.type] || assessment.type}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="border rounded-lg p-4 bg-cyan-50 border-cyan-200">
+              <div className="flex items-start gap-3">
+                <User className="h-5 w-5 text-cyan-600 mt-0.5" />
+                <div>
+                  <h4 className="font-medium text-slate-900">Create Your Account</h4>
+                  <p className="text-sm text-slate-600 mt-1">
+                    Create an account to access your results anytime. We'll email you your login details.
+                  </p>
+                  {invitation.email && (
+                    <div className="flex items-center gap-2 mt-2 text-sm text-slate-500">
+                      <Mail className="h-4 w-4" />
+                      <span>{invitation.email}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex flex-col gap-3">
+              <Button
+                onClick={createAccount}
+                disabled={creatingAccount}
+                className="w-full"
+                data-testid="button-create-account"
+              >
+                {creatingAccount ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Creating Account...
+                  </>
+                ) : (
+                  <>
+                    Create Account & View Results
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </>
+                )}
+              </Button>
+              
+              <Button
+                variant="ghost"
+                onClick={() => setLocation("/")}
+                className="text-slate-500"
+                data-testid="button-skip"
+              >
+                Skip for now
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (creatingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Preparing your next assessment...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (currentSessionId) {
+    const embedUrl = `/embed?session=${currentSessionId}&inviteToken=${token}`;
+    
+    return (
+      <div className="min-h-screen flex flex-col">
+        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent py-3 px-4 border-b">
+          <div className="max-w-4xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">
+                {invitation.partnerName}
+              </span>
+              <span className="text-muted-foreground">|</span>
+              <span className="text-sm font-medium">
+                {getCurrentAssessmentName()}
+              </span>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Progress:</span>
+                <span className="font-medium">
+                  {getCompletedCount()} / {invitation.assessmentTypes.length}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={checkProgress}
+                disabled={checkingProgress}
+                data-testid="button-check-progress"
+              >
+                {checkingProgress ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                <span className="ml-1 hidden sm:inline">Check Progress</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex-1">
+          <iframe
+            ref={iframeRef}
+            src={embedUrl}
+            className="w-full h-full min-h-[calc(100vh-52px)] border-0"
+            title={getCurrentAssessmentName()}
+            data-testid="assessment-iframe"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (invitation.expiresAt && new Date(invitation.expiresAt) < new Date()) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+            <CardTitle>Invitation Expired</CardTitle>
+            <CardDescription>
+              This invitation expired on {new Date(invitation.expiresAt).toLocaleDateString("en-GB", {
                 day: "numeric",
                 month: "long",
                 year: "numeric",
               })}
-            </CardFooter>
-          )}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <p className="text-sm text-muted-foreground mb-4">
+              Please contact {invitation.partnerName} for a new invitation.
+            </p>
+            <Button variant="outline" onClick={() => setLocation("/")} data-testid="button-go-home">
+              Return Home
+            </Button>
+          </CardContent>
         </Card>
+      </div>
+    );
+  }
 
-        {invitation.allComplete && !accountCreated && (
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-                All Assessments Complete!
-              </CardTitle>
-              <CardDescription>
-                Great job! You've completed all your assigned assessments.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!showAccountForm ? (
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    Would you like to create an account to access your results anytime?
-                  </p>
-                  <div className="flex gap-2">
-                    <Button onClick={() => setShowAccountForm(true)} data-testid="button-create-account">
-                      <User className="h-4 w-4 mr-2" />
-                      Create Account
-                    </Button>
-                    <Button variant="outline" onClick={() => setLocation("/")} data-testid="button-done">
-                      No Thanks
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {invitation.email && (
-                    <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{invitation.email}</span>
-                    </div>
-                  )}
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Create Password</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter a password"
-                      data-testid="input-password"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm Password</Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Confirm your password"
-                      data-testid="input-confirm-password"
-                    />
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button 
-                      onClick={createAccount} 
-                      disabled={creatingAccount || !password || !confirmPassword}
-                      data-testid="button-submit-account"
-                    >
-                      {creatingAccount && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                      <Lock className="h-4 w-4 mr-2" />
-                      Create Account
-                    </Button>
-                    <Button variant="outline" onClick={() => setShowAccountForm(false)}>
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {accountCreated && (
-          <Card className="mt-6 border-green-500/50">
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Account Created!</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  You can now log in to access your results anytime.
-                </p>
-                <Button onClick={() => setLocation("/login")} data-testid="button-go-to-login">
-                  Go to Login
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="text-center">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+        <p className="text-muted-foreground">Loading assessment...</p>
       </div>
     </div>
   );

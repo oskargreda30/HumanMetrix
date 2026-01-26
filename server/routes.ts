@@ -2182,6 +2182,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // B2C onboarding preferences (terms, marketing, data retention)
+  app.post('/api/user/onboarding-preferences', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { termsAccepted, marketingOptIn, dataRetentionConsent } = req.body;
+      
+      if (typeof termsAccepted !== 'boolean') {
+        return res.status(400).json({ message: "termsAccepted must be a boolean value" });
+      }
+      
+      if (!termsAccepted) {
+        return res.status(400).json({ message: "Terms must be accepted to continue" });
+      }
+      
+      // Save terms acceptance and data share consent
+      await storage.acceptTerms(userId, termsAccepted, dataRetentionConsent === true);
+      
+      // Handle marketing opt-in separately if needed
+      if (marketingOptIn) {
+        const user = await storage.getUser(userId);
+        if (user?.email) {
+          try {
+            await storage.createMarketingOptin({
+              email: user.email,
+              source: 'b2c_onboarding',
+            });
+          } catch (optinError) {
+            // Ignore duplicates
+            console.log(`[Marketing] User ${user.email} already opted in`);
+          }
+        }
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error saving onboarding preferences:", error);
+      res.status(500).json({ message: "Failed to save preferences" });
+    }
+  });
+
   // Stripe checkout session for guest (before signup)
   app.post("/api/create-checkout-session-guest", async (req, res) => {
     try {

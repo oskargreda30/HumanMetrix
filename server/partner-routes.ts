@@ -3225,15 +3225,10 @@ export function registerGuestAssessmentRoutes(app: Express) {
   });
   
   // Create account after completing assessments (optional)
-  // Note: Assessment results are stored in sessions, linked by email
-  app.post("/api/guest/invite/:token/create-account", async (req: Request, res: Response) => {
+  // Auto-generates password, emails it, and auto-logs in the user
+  app.post("/api/guest/invite/:token/create-account", async (req: any, res: Response) => {
     try {
       const { token } = req.params;
-      const { password } = req.body;
-      
-      if (!password || password.length < 6) {
-        return res.status(400).json({ error: "Password must be at least 6 characters" });
-      }
       
       const invitation = await storage.getPartnerCandidateInvitationByToken(token);
       if (!invitation) {
@@ -3247,27 +3242,56 @@ export function registerGuestAssessmentRoutes(app: Express) {
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(invitation.email);
       if (existingUser) {
+        // Auto-login existing user
+        req.session.userId = existingUser.id;
+        await new Promise<void>((resolve, reject) => {
+          req.session.save((err: any) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+        
         return res.json({ 
           success: true, 
-          message: "Account already exists. You can log in with your existing credentials.",
-          existingAccount: true
+          message: "Account already exists. You have been logged in.",
+          existingAccount: true,
+          redirectTo: '/onboarding'
         });
       }
       
-      // Create new user
-      const hashedPassword = await bcrypt.hash(password, 10);
+      // Generate temporary password
+      const temporaryPassword = generateTemporaryPassword();
+      const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
       
       const nameParts = invitation.name?.split(' ') || [];
       const firstName = nameParts[0] || invitation.email.split('@')[0];
       const lastName = nameParts.slice(1).join(' ') || null;
       
+      // Create new user
       const newUser = await storage.createUser({
         email: invitation.email,
         passwordHash: hashedPassword,
         firstName,
         lastName,
         role: 'user',
-        emailVerified: true, // They've already verified via invitation
+      });
+      
+      // Send welcome email with password
+      const { sendWelcomeEmailWithPassword } = await import('./email');
+      await sendWelcomeEmailWithPassword(
+        invitation.email,
+        firstName,
+        temporaryPassword,
+        "You've completed your assessments and can now access your results anytime."
+      );
+      
+      // Auto-login the new user
+      req.session.userId = newUser.id;
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err: any) => {
+          if (err) reject(err);
+          else resolve();
+        });
       });
       
       // Sessions are already linked by email (externalEmail field)
@@ -3275,8 +3299,9 @@ export function registerGuestAssessmentRoutes(app: Express) {
       
       res.json({ 
         success: true, 
-        message: "Account created successfully",
-        userId: newUser.id
+        message: "Account created successfully. Check your email for login credentials.",
+        userId: newUser.id,
+        redirectTo: '/onboarding'
       });
     } catch (error) {
       console.error("Error creating account:", error);
