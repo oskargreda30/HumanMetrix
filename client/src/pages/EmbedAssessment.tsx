@@ -258,6 +258,7 @@ export default function EmbedAssessment() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [codeError, setCodeError] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [isFromInvitation, setIsFromInvitation] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const hasSubmittedRef = useRef<boolean>(false);
   
@@ -341,9 +342,12 @@ export default function EmbedAssessment() {
       // Skip email verification if session is from a partner invitation (magic link pattern)
       // The user clicked a link sent to their email, which serves as email verification
       console.log('[EmbedAssessment] isFromInvitation:', data.isFromInvitation, 'externalEmail:', data.externalEmail);
-      if (data.isFromInvitation && data.externalEmail) {
-        console.log('[EmbedAssessment] Skipping email verification for invitation');
-        setVerificationStep("verified");
+      if (data.isFromInvitation) {
+        setIsFromInvitation(true);
+        if (data.externalEmail) {
+          console.log('[EmbedAssessment] Skipping email verification for invitation');
+          setVerificationStep("verified");
+        }
       }
       
       // Load questions
@@ -1241,6 +1245,64 @@ export default function EmbedAssessment() {
                   data-testid="button-return-to-invite"
                 >
                   Return to Continue
+                </Button>
+              )}
+
+              <div className="mt-6 pt-4 border-t border-slate-700/30 flex items-center justify-center gap-2">
+                <span className={`text-xs ${textMuted}`}>Powered by</span>
+                <div className="flex items-center gap-1.5">
+                  <img 
+                    src="/assets/humanmetrix-logo.png" 
+                    alt="HumanMetrix" 
+                    className="h-5 w-5 object-contain"
+                  />
+                  <span className={`text-xs font-medium ${textSecondary}`}>HumanMetrix</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+    
+    // Simplified completion screen for partner invitation sessions (no payment required)
+    if (isFromInvitation) {
+      const primaryColor = branding?.primaryColor || '#0891b2';
+      return (
+        <div className={`min-h-screen flex items-center justify-center ${bgMain} p-4`} data-testid="embed-completed-invitation">
+          <Card className={`max-w-lg ${bgCard} border-green-500/30`}>
+            <CardContent className="pt-6 text-center">
+              {branding?.logoUrl && (
+                <img 
+                  src={branding.logoUrl} 
+                  alt={displayName}
+                  className="h-10 max-w-[150px] object-contain mx-auto mb-4"
+                />
+              )}
+              <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+              <h2 className={`text-xl font-semibold ${textPrimary} mb-2`}>All Assessments Complete!</h2>
+              <p className={`${textSecondary} mb-4`}>
+                Thank you for completing all {assessmentQueue.length} assessment{assessmentQueue.length > 1 ? 's' : ''}.
+              </p>
+              
+              <div className={`${bgCardAlt} p-4 rounded-lg border border-green-500/30 mb-4`}>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <p className="text-sm text-green-400 font-medium">Results Submitted</p>
+                </div>
+                <p className={`text-sm ${textMuted}`}>
+                  Your results have been submitted to {displayName}. They will review your assessment and may contact you with next steps.
+                </p>
+              </div>
+
+              {inviteToken && (
+                <Button
+                  className="mt-4 w-full"
+                  onClick={() => window.location.href = `/invite/${inviteToken}`}
+                  style={{ backgroundColor: primaryColor }}
+                  data-testid="button-return-to-invite"
+                >
+                  Return to Dashboard
                 </Button>
               )}
 

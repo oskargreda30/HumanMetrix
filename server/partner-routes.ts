@@ -2292,10 +2292,14 @@ export function registerPartnerRoutes(app: Express) {
       
       const baseUrl = getBaseUrl(req);
       
+      // Include all assessment types in the URL for multi-assessment series mode
+      const allTypes = invitation.assessmentTypes.join(',');
+      
       res.json({
         sessionId: session.id,
-        widgetUrl: `${baseUrl}/embed/assessment?session=${session.id}`,
+        widgetUrl: `${baseUrl}/embed/assessment?session=${session.id}&types=${allTypes}`,
         assessmentType: normalizedType,
+        assessmentTypes: invitation.assessmentTypes,
       });
     } catch (error) {
       console.error("Error starting assessment from invite:", error);
