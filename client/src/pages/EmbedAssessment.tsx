@@ -257,6 +257,7 @@ export default function EmbedAssessment() {
   const [currentAssessmentIndex, setCurrentAssessmentIndex] = useState(0);
   const [completedAssessments, setCompletedAssessments] = useState<Array<{ type: string; scores: any }>>([]);
   const [showTransitionScreen, setShowTransitionScreen] = useState(false);
+  const [awaitingNextStart, setAwaitingNextStart] = useState(false); // Require user to click Start for next assessment
   const transitionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const pendingScoresRef = useRef<any>(null); // Store scores for transition
   
@@ -449,6 +450,9 @@ export default function EmbedAssessment() {
   };
 
   const startAssessment = async () => {
+    // Clear awaiting flag when user explicitly starts
+    setAwaitingNextStart(false);
+    
     // Demo mode - just start without API call
     if (isDemo) {
       setStatus("started");
@@ -709,6 +713,7 @@ export default function EmbedAssessment() {
     setCurrentIndex(0);
     setAnswers({});
     setStatus("ready");
+    setAwaitingNextStart(true); // Require user to click Start for next assessment
     hasSubmittedRef.current = false;
     
     // Reset timer for next assessment (20 min for regular, 7 min for prompt architecture)
@@ -1284,7 +1289,8 @@ export default function EmbedAssessment() {
     );
   }
 
-  if (status === "ready") {
+  // Show ready screen if status is "ready" OR if user needs to confirm starting next assessment
+  if (status === "ready" || awaitingNextStart) {
     const branding = session?.branding;
     const primaryColor = branding?.primaryColor || '#0891b2';
     const accentColor = branding?.accentColor || '#06b6d4';
