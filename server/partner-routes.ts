@@ -1535,21 +1535,18 @@ export function registerPartnerRoutes(app: Express) {
             // Determine if we should send a bundle email
             let shouldSendBundleEmail = false;
             let bundleAssessmentTypes: string[] = [];
-            let bundleDiscountPercent = 40; // 40% off for full bundle
+            const bundleDiscountPercent = 25; // Always 25% off for bundle pricing
             
             if (isMultiAssessmentSeries && isLastInMultiAssessmentSeries && multiAssessmentTypes.length > 1) {
               // Multi-assessment series completed - send bundle for series assessments
               shouldSendBundleEmail = true;
               bundleAssessmentTypes = multiAssessmentTypes;
-              // Scale discount based on number of assessments (20% for 2, 30% for 3, 40% for 4)
-              bundleDiscountPercent = Math.min(40, 10 + (multiAssessmentTypes.length * 10));
-              console.log(`[B2B Email] Multi-assessment series complete (${multiAssessmentTypes.length} tests) for ${candidateEmail} - sending bundle offer`);
+              console.log(`[B2B Email] Multi-assessment series complete (${multiAssessmentTypes.length} tests) for ${candidateEmail} - sending bundle offer with 25% off`);
             } else if (allComplete && !isMultiAssessmentSeries) {
               // All 4 assessments complete (non-multi-assessment flow)
               shouldSendBundleEmail = true;
               bundleAssessmentTypes = allAssessmentTypes;
-              bundleDiscountPercent = 40;
-              console.log(`[B2B Email] All 4 assessments complete for ${candidateEmail} - sending bundle offer`);
+              console.log(`[B2B Email] All 4 assessments complete for ${candidateEmail} - sending bundle offer with 25% off`);
             }
             
             if (shouldSendBundleEmail) {
