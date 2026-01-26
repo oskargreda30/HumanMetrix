@@ -332,7 +332,9 @@ export default function EmbedAssessment() {
       
       // Skip email verification if coming from an invitation link
       // The user clicked a link sent to their email, which serves as email verification
+      console.log('[EmbedAssessment] inviteToken:', inviteToken, 'externalEmail:', data.externalEmail);
       if (inviteToken && data.externalEmail) {
+        console.log('[EmbedAssessment] Skipping email verification for invitation');
         setVerificationStep("verified");
       }
       
