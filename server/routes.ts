@@ -10669,61 +10669,117 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "No partner account found" });
       }
       
-      // Get all completed sessions for this partner (exclude test API key sessions)
-      const sessions = await storage.getSessionsByPartner(partner.id, 10000);
-      const completedSessions = sessions.filter(s => s.status === 'completed' && !s.isTestSession);
-      
-      // Group sessions by external email to get unique candidates
+      // Use a unified candidate map to merge both sources
       const candidateMap = new Map<string, {
-        id: string; // Use session ID as pseudo-user ID
+        id: string;
         email: string;
         firstName: string | null;
         lastName: string | null;
         externalUserId: string | null;
-        sessions: typeof completedSessions;
+        results: Array<{
+          id: string;
+          assessmentType: string;
+          totalScore: number;
+          scores: any;
+          completedAt: string;
+          status: string;
+        }>;
       }>();
+      
+      // SOURCE 1: B2B Widget/API sessions (assessment_sessions table)
+      const sessions = await storage.getSessionsByPartner(partner.id, 10000);
+      const completedSessions = sessions.filter(s => s.status === 'completed' && !s.isTestSession);
       
       for (const session of completedSessions) {
         const email = session.externalEmail || session.externalUserId || session.id;
         
         if (!candidateMap.has(email)) {
-          // Extract name from email if not available
           const emailName = session.externalEmail?.split('@')[0] || '';
           candidateMap.set(email, {
-            id: email, // Use email as unique identifier
+            id: email,
             email: session.externalEmail || 'Unknown',
             firstName: emailName || null,
             lastName: null,
             externalUserId: session.externalUserId,
-            sessions: [],
+            results: [],
           });
         }
         
-        candidateMap.get(email)!.sessions.push(session);
-      }
-      
-      // Build candidate list with results (B2B scores are stored directly on session)
-      const candidates = Array.from(candidateMap.values()).map((candidate) => {
-        const results = candidate.sessions.map((session) => ({
+        candidateMap.get(email)!.results.push({
           id: session.id,
           assessmentType: session.assessmentType,
           totalScore: session.totalScore || 0,
           scores: session.scores || {},
           completedAt: session.completedAt?.toISOString() || '',
           status: session.status,
-        }));
+        });
+      }
+      
+      // SOURCE 2: Partner-invited candidates (partner_candidate_invitations + assessment_results)
+      const partnerInvitations = await db.select()
+        .from(partnerCandidateInvitations)
+        .where(eq(partnerCandidateInvitations.partnerId, partner.id));
+      
+      for (const invitation of partnerInvitations) {
+        // Get assessment results linked to this invitation
+        const invitationResults = await db.select()
+          .from(assessmentResults)
+          .where(eq(assessmentResults.partnerInvitationId, invitation.id));
         
-        return {
-          user: {
-            id: candidate.id,
-            email: candidate.email,
-            firstName: candidate.firstName,
-            lastName: candidate.lastName,
-            externalUserId: candidate.externalUserId,
-          },
-          results,
-        };
-      });
+        const completedResults = invitationResults.filter(r => r.status === 'completed');
+        
+        if (completedResults.length > 0) {
+          const email = invitation.email;
+          
+          if (!candidateMap.has(email)) {
+            // Parse name from invitation
+            const nameParts = invitation.name?.split(' ') || [];
+            const firstName = nameParts[0] || email.split('@')[0] || null;
+            const lastName = nameParts.slice(1).join(' ') || null;
+            
+            candidateMap.set(email, {
+              id: email,
+              email: email,
+              firstName: firstName,
+              lastName: lastName,
+              externalUserId: invitation.externalUserId || null,
+              results: [],
+            });
+          }
+          
+          // Add results from this invitation
+          for (const result of completedResults) {
+            // Check if this result is already added (avoid duplicates)
+            const existingResults = candidateMap.get(email)!.results;
+            const alreadyExists = existingResults.some(r => 
+              r.assessmentType === result.assessmentType && r.id === result.id
+            );
+            
+            if (!alreadyExists) {
+              existingResults.push({
+                id: result.id,
+                assessmentType: result.assessmentType,
+                totalScore: result.totalScore || 0,
+                scores: result.scores || {},
+                completedAt: result.completedAt?.toISOString() || '',
+                status: result.status,
+              });
+            }
+          }
+        }
+      }
+      
+      // Build final candidates array
+      const candidates = Array.from(candidateMap.values()).map((candidate) => ({
+        user: {
+          id: candidate.id,
+          email: candidate.email,
+          firstName: candidate.firstName,
+          lastName: candidate.lastName,
+          externalUserId: candidate.externalUserId,
+        },
+        results: candidate.results,
+      }));
       
       res.json(candidates);
     } catch (error) {
