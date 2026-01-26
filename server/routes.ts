@@ -5296,7 +5296,7 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
       
       res.json({ 
         count: roles.length,
-        predefinedCount: 50
+        predefinedCount: 48
       });
     } catch (error) {
       console.error("Error checking roles status:", error);

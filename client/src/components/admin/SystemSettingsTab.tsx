@@ -444,12 +444,12 @@ export default function SystemSettingsTab() {
                       : "bg-amber-500/20 text-amber-300 border-amber-500/30"
                     }
                   >
-                    {rolesStatus?.count ?? 0} / {rolesStatus?.predefinedCount ?? 50} roles
+                    {rolesStatus?.count ?? 0} / {rolesStatus?.predefinedCount ?? 48} roles
                   </Badge>
                 )}
               </div>
               <p className="text-white/60 text-sm">
-                Seed the 50 predefined job roles used for Role Fit analysis. 
+                Seed the 48 predefined job roles used for Role Fit analysis. 
                 Safe to run multiple times - existing roles will be skipped.
               </p>
             </div>
