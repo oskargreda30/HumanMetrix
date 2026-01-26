@@ -330,6 +330,12 @@ export default function EmbedAssessment() {
         setCandidateEmail(data.externalEmail);
       }
       
+      // Skip email verification if coming from an invitation link
+      // The user clicked a link sent to their email, which serves as email verification
+      if (inviteToken && data.externalEmail) {
+        setVerificationStep("verified");
+      }
+      
       // Load questions
       const loadedQuestions = getQuestions(data.assessmentType, data.questionLocale || 'default');
       setQuestions(loadedQuestions);
