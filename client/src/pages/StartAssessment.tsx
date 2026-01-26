@@ -189,31 +189,37 @@ export default function StartAssessment() {
             )}
 
             <div className="space-y-4">
-              <h3 className="text-sm font-medium text-slate-300">Assessments to Complete:</h3>
-              {invitation?.assessmentTypes.map((type) => (
+              <h3 className="text-sm font-medium text-slate-300 mb-1">Assessment Series ({invitation?.assessmentTypes.length} assessments):</h3>
+              <p className="text-xs text-slate-500 mb-3">These assessments will run sequentially. Complete each one to proceed to the next.</p>
+              {invitation?.assessmentTypes.map((type, index) => (
                 <div 
                   key={type}
-                  className="flex items-center justify-between p-4 rounded-lg bg-slate-900/50 border border-slate-700"
+                  className="flex items-center gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-700"
                 >
-                  <div>
-                    <h4 className="font-medium text-white">{formatAssessmentName(type)}</h4>
-                    <p className="text-sm text-slate-400">
+                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-700 text-slate-300 text-xs font-medium">
+                    {index + 1}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-white text-sm">{formatAssessmentName(type)}</h4>
+                    <p className="text-xs text-slate-400">
                       {type === 'fit' && "Behavioral assessment measuring workplace adaptability"}
                       {type === 'ai_readiness' && "Evaluate your readiness for AI-driven roles"}
                       {type === 'prompt_architecture' && "Test your ability to craft effective AI prompts"}
                       {type === 'aiq' && "Assess your understanding of AI ethics"}
                     </p>
                   </div>
-                  <Button
-                    onClick={() => startAssessment(type)}
-                    style={{ backgroundColor: primaryColor }}
-                    className="hover:opacity-90"
-                    data-testid={`button-start-${type}`}
-                  >
-                    Start
-                  </Button>
                 </div>
               ))}
+              
+              <Button
+                onClick={() => invitation?.assessmentTypes[0] && startAssessment(invitation.assessmentTypes[0])}
+                style={{ backgroundColor: primaryColor }}
+                className="w-full mt-4 hover:opacity-90"
+                size="lg"
+                data-testid="button-start-series"
+              >
+                Start Assessment Series
+              </Button>
             </div>
           </CardContent>
         </Card>
