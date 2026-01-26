@@ -2202,11 +2202,39 @@ export function registerPartnerRoutes(app: Express) {
       // Get partner branding
       const partnerAccount = await storage.getPartnerAccount(invitation.partnerId);
       
+      // Find completed assessments for this invitation by checking completed sessions
+      const completedSessions = await db
+        .select({ assessmentType: assessmentSessions.assessmentType })
+        .from(assessmentSessions)
+        .where(
+          and(
+            sql`${assessmentSessions.metadata}->>'invitationToken' = ${token}`,
+            eq(assessmentSessions.status, 'completed')
+          )
+        );
+      
+      const completedAssessmentTypes = completedSessions.map(s => s.assessmentType);
+      console.log(`[Invite Validation] Completed assessments for token ${token}:`, completedAssessmentTypes);
+      
+      // Also check for an in-progress session to resume
+      const inProgressSession = await db
+        .select({ id: assessmentSessions.id, assessmentType: assessmentSessions.assessmentType })
+        .from(assessmentSessions)
+        .where(
+          and(
+            sql`${assessmentSessions.metadata}->>'invitationToken' = ${token}`,
+            eq(assessmentSessions.status, 'started')
+          )
+        )
+        .limit(1);
+      
       res.json({
         id: invitation.id,
         externalUserId: invitation.externalUserId,
         name: invitation.name,
         assessmentTypes: invitation.assessmentTypes,
+        completedAssessmentTypes,
+        inProgressSession: inProgressSession[0] || null,
         status: invitation.status,
         expiresAt: invitation.expiresAt,
         partnerName: partnerAccount?.companyName || 'HumanMetrix Partner',
@@ -2258,7 +2286,51 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(400).json({ error: "Assessment type not included in this invitation" });
       }
       
-      // Create assessment session
+      // Check for existing in-progress session to resume
+      const existingSession = await db
+        .select()
+        .from(assessmentSessions)
+        .where(
+          and(
+            sql`${assessmentSessions.metadata}->>'invitationToken' = ${token}`,
+            eq(assessmentSessions.status, 'started')
+          )
+        )
+        .limit(1);
+      
+      // Check for completed sessions to skip those assessment types
+      const completedSessions = await db
+        .select({ assessmentType: assessmentSessions.assessmentType })
+        .from(assessmentSessions)
+        .where(
+          and(
+            sql`${assessmentSessions.metadata}->>'invitationToken' = ${token}`,
+            eq(assessmentSessions.status, 'completed')
+          )
+        );
+      
+      const completedTypes = completedSessions.map(s => s.assessmentType);
+      const remainingTypes = invitation.assessmentTypes.filter(t => !completedTypes.includes(t));
+      
+      const baseUrl = getBaseUrl(req);
+      
+      // If there's an existing in-progress session, resume it
+      if (existingSession.length > 0) {
+        const session = existingSession[0];
+        console.log(`[Invite Start] Resuming existing session ${session.id} for token ${token}`);
+        
+        res.json({
+          sessionId: session.id,
+          widgetUrl: `${baseUrl}/embed/assessment?session=${session.id}&types=${remainingTypes.join(',')}`,
+          assessmentType: session.assessmentType,
+          assessmentTypes: remainingTypes,
+          resumed: true,
+        });
+        return;
+      }
+      
+      // Create new assessment session starting with the first remaining type
+      const startingType = remainingTypes[0] || normalizedType;
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 24); // 24 hour session expiry
       
@@ -2266,7 +2338,7 @@ export function registerPartnerRoutes(app: Express) {
         partnerId: invitation.partnerId,
         partnerOrganisationId: null,
         apiKeyId: null,
-        assessmentType: normalizedType,
+        assessmentType: startingType,
         externalUserId: invitation.externalUserId,
         externalEmail: invitation.email,
         metadata: {
@@ -2290,16 +2362,14 @@ export function registerPartnerRoutes(app: Express) {
         });
       }
       
-      const baseUrl = getBaseUrl(req);
-      
-      // Include all assessment types in the URL for multi-assessment series mode
-      const allTypes = invitation.assessmentTypes.join(',');
+      console.log(`[Invite Start] Created new session ${session.id} for token ${token}, remaining types: ${remainingTypes.join(',')}`);
       
       res.json({
         sessionId: session.id,
-        widgetUrl: `${baseUrl}/embed/assessment?session=${session.id}&types=${allTypes}`,
-        assessmentType: normalizedType,
-        assessmentTypes: invitation.assessmentTypes,
+        widgetUrl: `${baseUrl}/embed/assessment?session=${session.id}&types=${remainingTypes.join(',')}`,
+        assessmentType: startingType,
+        assessmentTypes: remainingTypes,
+        resumed: false,
       });
     } catch (error) {
       console.error("Error starting assessment from invite:", error);

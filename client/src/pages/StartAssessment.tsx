@@ -3,7 +3,7 @@ import { useSearch, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle, AlertCircle, Clock, ClipboardList } from "lucide-react";
+import { Loader2, CheckCircle, AlertCircle, Clock, ClipboardList, PlayCircle, RotateCcw } from "lucide-react";
 import { apiRequest, getHumanReadableError } from "@/lib/queryClient";
 import logoSymbol from "@assets/Gemini_Generated_Image_misel3misel3mise-removebg-preview_1762775600899.png";
 
@@ -12,6 +12,8 @@ interface InvitationData {
   externalUserId: string;
   name: string | null;
   assessmentTypes: string[];
+  completedAssessmentTypes: string[];
+  inProgressSession: { id: string; assessmentType: string } | null;
   status: string;
   expiresAt: string | null;
   partnerName: string;
@@ -189,37 +191,107 @@ export default function StartAssessment() {
             )}
 
             <div className="space-y-4">
-              <h3 className="text-sm font-medium text-slate-300 mb-1">Assessment Series ({invitation?.assessmentTypes.length} assessments):</h3>
-              <p className="text-xs text-slate-500 mb-3">These assessments will run sequentially. Complete each one to proceed to the next.</p>
-              {invitation?.assessmentTypes.map((type, index) => (
-                <div 
-                  key={type}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-700"
-                >
-                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-700 text-slate-300 text-xs font-medium">
-                    {index + 1}
+              {(() => {
+                const completed = invitation?.completedAssessmentTypes || [];
+                const total = invitation?.assessmentTypes.length || 0;
+                const hasProgress = completed.length > 0;
+                const hasInProgress = !!invitation?.inProgressSession;
+                
+                return (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-medium text-slate-300">Assessment Series ({total} assessments):</h3>
+                      {hasProgress && (
+                        <Badge variant="outline" className="text-xs border-cyan-500/50 text-cyan-400">
+                          {completed.length}/{total} Complete
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 -mt-2">These assessments will run sequentially. Complete each one to proceed to the next.</p>
+                  </>
+                );
+              })()}
+              {invitation?.assessmentTypes.map((type, index) => {
+                const isCompleted = invitation.completedAssessmentTypes?.includes(type);
+                const isInProgress = invitation.inProgressSession?.assessmentType === type;
+                
+                return (
+                  <div 
+                    key={type}
+                    className={`flex items-center gap-3 p-3 rounded-lg border ${
+                      isCompleted 
+                        ? 'bg-green-900/20 border-green-700/50' 
+                        : isInProgress 
+                          ? 'bg-cyan-900/20 border-cyan-700/50' 
+                          : 'bg-slate-900/50 border-slate-700'
+                    }`}
+                  >
+                    <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
+                      isCompleted 
+                        ? 'bg-green-700 text-white' 
+                        : isInProgress 
+                          ? 'bg-cyan-700 text-white' 
+                          : 'bg-slate-700 text-slate-300'
+                    }`}>
+                      {isCompleted ? <CheckCircle className="w-4 h-4" /> : index + 1}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium text-white text-sm">{formatAssessmentName(type)}</h4>
+                        {isCompleted && <Badge variant="outline" className="text-xs py-0 border-green-500/50 text-green-400">Complete</Badge>}
+                        {isInProgress && <Badge variant="outline" className="text-xs py-0 border-cyan-500/50 text-cyan-400">In Progress</Badge>}
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        {type === 'fit' && "Behavioral assessment measuring workplace adaptability"}
+                        {type === 'ai_readiness' && "Evaluate your readiness for AI-driven roles"}
+                        {type === 'prompt_architecture' && "Test your ability to craft effective AI prompts"}
+                        {type === 'aiq' && "Assess your understanding of AI ethics"}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h4 className="font-medium text-white text-sm">{formatAssessmentName(type)}</h4>
-                    <p className="text-xs text-slate-400">
-                      {type === 'fit' && "Behavioral assessment measuring workplace adaptability"}
-                      {type === 'ai_readiness' && "Evaluate your readiness for AI-driven roles"}
-                      {type === 'prompt_architecture' && "Test your ability to craft effective AI prompts"}
-                      {type === 'aiq' && "Assess your understanding of AI ethics"}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               
-              <Button
-                onClick={() => invitation?.assessmentTypes[0] && startAssessment(invitation.assessmentTypes[0])}
-                style={{ backgroundColor: primaryColor }}
-                className="w-full mt-4 hover:opacity-90"
-                size="lg"
-                data-testid="button-start-series"
-              >
-                Start Assessment Series
-              </Button>
+              {(() => {
+                const completed = invitation?.completedAssessmentTypes || [];
+                const allTypes = invitation?.assessmentTypes || [];
+                const hasInProgress = !!invitation?.inProgressSession;
+                
+                // Find the next assessment to start (first non-completed one)
+                const nextType = allTypes.find(t => !completed.includes(t));
+                
+                if (!nextType) {
+                  // All completed
+                  return (
+                    <div className="text-center p-4 bg-green-900/20 border border-green-700/50 rounded-lg">
+                      <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                      <p className="text-green-400 font-medium">All Assessments Complete!</p>
+                      <p className="text-xs text-slate-400 mt-1">Your results have been submitted.</p>
+                    </div>
+                  );
+                }
+                
+                const buttonText = hasInProgress 
+                  ? 'Resume Assessment' 
+                  : completed.length > 0 
+                    ? 'Continue Assessment Series' 
+                    : 'Start Assessment Series';
+                
+                const ButtonIcon = hasInProgress ? RotateCcw : PlayCircle;
+                
+                return (
+                  <Button
+                    onClick={() => startAssessment(nextType)}
+                    style={{ backgroundColor: primaryColor }}
+                    className="w-full mt-4 hover:opacity-90"
+                    size="lg"
+                    data-testid="button-start-series"
+                  >
+                    <ButtonIcon className="w-5 h-5 mr-2" />
+                    {buttonText}
+                  </Button>
+                );
+              })()}
             </div>
           </CardContent>
         </Card>
