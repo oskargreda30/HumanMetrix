@@ -227,6 +227,14 @@ export default function Dashboard() {
     queryKey: ["/api/purchases-with-results"],
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
+    staleTime: 0,
+  });
+
+  // Fetch partner testing series (from partner invitations)
+  const { data: partnerTestingSeries, isLoading: partnerSeriesLoading } = useQuery<any[]>({
+    queryKey: ["/api/partner-testing-series"],
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
     staleTime: 0, // Always consider data stale
   });
   
@@ -289,7 +297,7 @@ export default function Dashboard() {
     }
   }, [toast]);
 
-  if (assessmentsLoading || purchasesLoading) {
+  if (assessmentsLoading || purchasesLoading || partnerSeriesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -818,6 +826,129 @@ export default function Dashboard() {
                                 </Badge>
                               </div>
                             </>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* Partner Testing Series (from partner invitations) */}
+          {(partnerTestingSeries || []).length > 0 && (
+            <section className="mb-12">
+              <h2 className="text-2xl font-semibold mb-4 text-white">Partner Testing Series</h2>
+              <p className="text-white/70 text-sm mb-4">
+                Assessments completed via partner invitations
+              </p>
+              <div className="space-y-6">
+                {(partnerTestingSeries || []).map((series: any, index: number) => {
+                  const progressPercentage = Math.round((series.completedCount / series.totalCount) * 100);
+                  const isAllComplete = series.allComplete;
+                  
+                  return (
+                    <Card key={series.id} className="p-6 hover-elevate transition-all">
+                      <div className="flex flex-col md:flex-row items-start gap-6">
+                        {/* Progress Circle */}
+                        <div className="flex-shrink-0">
+                          <div 
+                            className="relative w-20 h-20" 
+                            role="img" 
+                            aria-label={`${series.completedCount} of ${series.totalCount} assessments completed, ${progressPercentage}% complete`}
+                          >
+                            <svg className="w-20 h-20 transform -rotate-90" aria-hidden="true">
+                              <circle
+                                cx="40"
+                                cy="40"
+                                r="36"
+                                stroke="currentColor"
+                                strokeWidth="6"
+                                fill="none"
+                                className="text-muted/20"
+                              />
+                              <circle
+                                cx="40"
+                                cy="40"
+                                r="36"
+                                stroke="currentColor"
+                                strokeWidth="6"
+                                fill="none"
+                                strokeDasharray={`${2 * Math.PI * 36}`}
+                                strokeDashoffset={`${2 * Math.PI * 36 * (1 - progressPercentage / 100)}`}
+                                className={isAllComplete ? "text-cyan-500" : "text-blue-500"}
+                                strokeLinecap="round"
+                              />
+                            </svg>
+                            <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                              <span className="text-lg font-bold">{progressPercentage}%</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start gap-2 mb-2">
+                            {isAllComplete ? (
+                              <CheckCircle2 className="h-5 w-5 text-cyan-500 flex-shrink-0 mt-0.5" />
+                            ) : (
+                              <Clock className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                            )}
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="text-lg font-semibold">
+                                  Partner Series #{(partnerTestingSeries || []).length - index}
+                                </h3>
+                                <Badge className="bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-500/20">
+                                  {series.partnerName}
+                                </Badge>
+                                {isAllComplete && (
+                                  <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">
+                                    All Complete
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <p className="text-sm text-muted-foreground mb-3">
+                            <span className="font-medium">{series.completedCount} of {series.totalCount}</span> assessments completed
+                            {series.completedAt && (
+                              <span className="ml-2">• {format(new Date(series.completedAt), 'MMM d, yyyy')}</span>
+                            )}
+                          </p>
+
+                          {/* Completed Assessments */}
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            {(series.results || [])
+                              .filter((r: any) => r.status === 'completed')
+                              .map((result: any) => {
+                                const metadata = getAssessmentMetadata(result.assessmentType);
+                                const ResultIcon = metadata.icon;
+                                return (
+                                  <Badge key={result.id} variant="outline" className="gap-1.5 py-1">
+                                    <ResultIcon className="h-3 w-3" />
+                                    {formatAssessmentName(result.assessmentType)}
+                                    {result.totalScore && (
+                                      <span className="text-cyan-600 dark:text-cyan-400 ml-1">
+                                        {result.totalScore}%
+                                      </span>
+                                    )}
+                                  </Badge>
+                                );
+                              })}
+                          </div>
+                        </div>
+
+                        {/* Action */}
+                        <div className="flex flex-col gap-2 md:w-48">
+                          {isAllComplete && (
+                            <div className="text-center py-2">
+                              <p className="text-sm text-muted-foreground font-medium">
+                                Results shared with {series.partnerName}
+                              </p>
+                            </div>
                           )}
                         </div>
                       </div>

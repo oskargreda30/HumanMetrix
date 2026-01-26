@@ -22,6 +22,7 @@ interface InvitationData {
   expiresAt: string | null;
   status: string;
   allComplete: boolean;
+  hasExistingAccount: boolean;
 }
 
 const ASSESSMENT_NAMES: Record<string, string> = {
@@ -44,6 +45,8 @@ export default function GuestInvite() {
   const [creatingAccount, setCreatingAccount] = useState(false);
   const [showingResults, setShowingResults] = useState(false);
   const [checkingProgress, setCheckingProgress] = useState(false);
+  const [autoLoggingIn, setAutoLoggingIn] = useState(false);
+  const autoLoginTriggeredRef = useRef(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
@@ -121,6 +124,54 @@ export default function GuestInvite() {
       setShowingResults(true);
     }
   }, [invitation, currentSessionId, creatingSession, startNextAssessment]);
+
+  // Auto-login for existing users when all assessments complete
+  useEffect(() => {
+    const performAutoLogin = async () => {
+      if (!token || !invitation?.allComplete || !invitation?.hasExistingAccount) return;
+      if (autoLoginTriggeredRef.current) return;
+      
+      autoLoginTriggeredRef.current = true;
+      setAutoLoggingIn(true);
+      
+      try {
+        const res = await fetch(`/api/guest/invite/${token}/create-account`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+        
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || "Failed to log in");
+        }
+        
+        const data = await res.json();
+        
+        toast({
+          title: "Welcome back!",
+          description: "You've been logged into your existing account. Redirecting to your dashboard...",
+        });
+        
+        // Redirect to dashboard after a brief moment
+        setTimeout(() => {
+          setLocation(data.redirectTo || '/dashboard');
+        }, 1500);
+      } catch (err: any) {
+        toast({
+          title: "Error",
+          description: err.message || "Failed to auto-login",
+          variant: "destructive",
+        });
+        setAutoLoggingIn(false);
+        autoLoginTriggeredRef.current = false;
+      }
+    };
+    
+    if (showingResults && invitation?.hasExistingAccount) {
+      performAutoLogin();
+    }
+  }, [showingResults, invitation, token, toast, setLocation]);
 
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
@@ -295,6 +346,52 @@ export default function GuestInvite() {
   }
 
   if (showingResults || invitation.allComplete) {
+    // Auto-logging in existing user
+    if (autoLoggingIn || invitation.hasExistingAccount) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10" />
+          
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
+          
+          <Card className="relative w-full max-w-lg bg-white/95 backdrop-blur-sm shadow-2xl border-0">
+            <CardHeader className="text-center pb-4">
+              <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center">
+                <PartyPopper className="w-8 h-8 text-white" />
+              </div>
+              <CardTitle className="text-2xl font-bold text-slate-900">
+                All Assessments Complete!
+              </CardTitle>
+              <CardDescription className="text-slate-600 text-base mt-2">
+                Great job{invitation.name ? `, ${invitation.name.split(" ")[0]}` : ""}! You've completed all {invitation.assessmentTypes.length} assessments.
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="space-y-6">
+              <div className="bg-slate-50 rounded-lg p-4">
+                <h4 className="font-medium text-slate-900 mb-3">Completed Assessments:</h4>
+                <div className="space-y-2">
+                  {invitation.assessmentStatuses.map((assessment) => (
+                    <div key={assessment.type} className="flex items-center gap-2 text-sm">
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <span>{ASSESSMENT_NAMES[assessment.type] || assessment.type}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-center gap-3 py-4">
+                <Loader2 className="h-5 w-5 animate-spin text-cyan-600" />
+                <span className="text-slate-600">Logging you into your account...</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+    
+    // New user - show Create Account option
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
         <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10" />

@@ -2827,6 +2827,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user's partner testing series (assessments completed via partner invitations)
+  app.get("/api/partner-testing-series", isAuthenticated, async (req: any, res) => {
+    try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
+      const userId = req.user.id;
+      
+      // Get all assessment results for this user that have partnerInvitationId set
+      const allResults = await storage.getResultsByUser(userId);
+      const partnerResults = allResults.filter((r: any) => r.partnerInvitationId);
+      
+      if (partnerResults.length === 0) {
+        return res.json([]);
+      }
+      
+      // Group results by partnerInvitationId (each invitation = one "series")
+      const resultsByInvitation: Record<string, any[]> = {};
+      for (const result of partnerResults) {
+        const invitationId = result.partnerInvitationId;
+        if (!resultsByInvitation[invitationId]) {
+          resultsByInvitation[invitationId] = [];
+        }
+        resultsByInvitation[invitationId].push(result);
+      }
+      
+      // Fetch invitation details for each series
+      const seriesList = await Promise.all(
+        Object.entries(resultsByInvitation).map(async ([invitationId, results]) => {
+          const invitation = await storage.getPartnerCandidateInvitation(invitationId);
+          if (!invitation) return null;
+          
+          const partner = await storage.getPartnerAccount(invitation.partnerId);
+          
+          // Find the most recent completion date
+          const completedAt = results
+            .filter((r: any) => r.completedAt)
+            .map((r: any) => new Date(r.completedAt))
+            .sort((a, b) => b.getTime() - a.getTime())[0];
+          
+          return {
+            id: invitationId,
+            partnerName: partner?.companyName || partner?.name || 'Partner',
+            partnerId: invitation.partnerId,
+            assessmentTypes: invitation.assessmentTypes,
+            results: results.map((r: any) => ({
+              id: r.id,
+              assessmentType: r.assessmentType,
+              status: r.status,
+              totalScore: r.totalScore,
+              percentile: r.percentile,
+              completedAt: r.completedAt,
+              scores: r.scores,
+            })),
+            completedCount: results.filter((r: any) => r.status === 'completed').length,
+            totalCount: invitation.assessmentTypes.length,
+            allComplete: results.filter((r: any) => r.status === 'completed').length >= invitation.assessmentTypes.length,
+            completedAt: completedAt?.toISOString() || null,
+            createdAt: invitation.createdAt,
+          };
+        })
+      );
+      
+      // Filter out null entries and sort by creation date (newest first)
+      const validSeries = seriesList
+        .filter(s => s !== null)
+        .sort((a, b) => new Date(b!.createdAt).getTime() - new Date(a!.createdAt).getTime());
+      
+      res.json(validSeries);
+    } catch (error) {
+      console.error("Error fetching partner testing series:", error);
+      res.status(500).json({ message: "Failed to fetch partner testing series" });
+    }
+  });
+
   // Get available assessments for user (from purchases OR invitations)
   app.get("/api/available-assessments", isAuthenticated, async (req: any, res) => {
     try {

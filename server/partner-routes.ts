@@ -3127,6 +3127,68 @@ async function sendWebhook(url: string, payload: any): Promise<void> {
 // Uses existing embed infrastructure with invitation token authentication
 // ============================================================================
 
+// Helper function to link partner assessment results to a user account
+// Creates assessment_results entries for each completed session in the invitation
+async function linkPartnerResultsToUser(userId: string, invitation: any) {
+  try {
+    // Get all assessment sessions for this partner
+    const allSessions = await storage.getAssessmentSessionsByPartner(invitation.partnerId);
+    
+    // Filter to completed sessions for this invitation
+    const completedSessions = allSessions.filter(
+      (s: any) => (s.metadata as any)?.invitationId === invitation.id && s.status === 'completed'
+    );
+    
+    if (completedSessions.length === 0) {
+      console.log(`No completed sessions to link for invitation ${invitation.id}`);
+      return;
+    }
+    
+    // Load existing results once to avoid N+1 queries and reduce race conditions
+    const existingResults = await storage.getResultsByUser(userId);
+    const existingResultsSet = new Set(
+      existingResults
+        .filter((r: any) => r.partnerInvitationId === invitation.id)
+        .map((r: any) => `${r.partnerInvitationId}:${r.assessmentType}`)
+    );
+    
+    let linkedCount = 0;
+    
+    // For each completed session, create an assessment result linked to the user
+    for (const session of completedSessions) {
+      const resultKey = `${invitation.id}:${session.assessmentType}`;
+      
+      if (existingResultsSet.has(resultKey)) {
+        continue; // Skip if already linked
+      }
+      
+      // Mark as linked to prevent duplicates in this batch
+      existingResultsSet.add(resultKey);
+      
+      // Create assessment result entry linked to user
+      await storage.createAssessmentResult({
+        userId,
+        partnerInvitationId: invitation.id,
+        assessmentType: session.assessmentType,
+        questionLocale: session.questionLocale || 'default',
+        answers: session.answers || {},
+        scores: session.scores || {},
+        totalScore: session.totalScore,
+        percentile: session.percentile,
+        evaluations: session.evaluations,
+        status: 'completed',
+        completedAt: session.completedAt,
+      });
+      linkedCount++;
+    }
+    
+    console.log(`Linked ${linkedCount} new partner assessment results to user ${userId}`);
+  } catch (error) {
+    console.error("Error linking partner results to user:", error);
+    // Don't throw - this is a non-critical operation
+  }
+}
+
 export function registerGuestAssessmentRoutes(app: Express) {
   // Get invitation details by token - landing page
   app.get("/api/guest/invite/:token", async (req: Request, res: Response) => {
@@ -3171,6 +3233,13 @@ export function registerGuestAssessmentRoutes(app: Express) {
       // Check if all assessments are complete
       const allComplete = assessmentStatuses.every((s: any) => s.status === 'completed');
       
+      // Check if user already has an account (for auto-login at completion)
+      let hasExistingAccount = false;
+      if (invitation.email) {
+        const existingUser = await storage.getUserByEmail(invitation.email);
+        hasExistingAccount = !!existingUser;
+      }
+      
       res.json({
         id: invitation.id,
         email: invitation.email,
@@ -3182,6 +3251,7 @@ export function registerGuestAssessmentRoutes(app: Express) {
         expiresAt: invitation.expiresAt,
         status: allComplete ? 'completed' : invitation.status,
         allComplete,
+        hasExistingAccount,
       });
     } catch (error) {
       console.error("Error fetching invitation:", error);
@@ -3216,11 +3286,14 @@ export function registerGuestAssessmentRoutes(app: Express) {
           });
         });
         
+        // Link partner assessment results to existing user
+        await linkPartnerResultsToUser(existingUser.id, invitation);
+        
         return res.json({ 
           success: true, 
           message: "Account already exists. You have been logged in.",
           existingAccount: true,
-          redirectTo: '/onboarding'
+          redirectTo: '/dashboard'
         });
       }
       
@@ -3259,14 +3332,14 @@ export function registerGuestAssessmentRoutes(app: Express) {
         });
       });
       
-      // Sessions are already linked by email (externalEmail field)
-      // No need to manually link results as B2B results page uses email matching
+      // Link partner assessment results to new user
+      await linkPartnerResultsToUser(newUser.id, invitation);
       
       res.json({ 
         success: true, 
         message: "Account created successfully. Check your email for login credentials.",
         userId: newUser.id,
-        redirectTo: '/onboarding'
+        redirectTo: '/dashboard'
       });
     } catch (error) {
       console.error("Error creating account:", error);
