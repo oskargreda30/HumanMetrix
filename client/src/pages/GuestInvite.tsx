@@ -490,7 +490,7 @@ export default function GuestInvite() {
   }
 
   if (currentSessionId) {
-    const embedUrl = `/embed?session=${currentSessionId}&inviteToken=${token}`;
+    const embedUrl = `/embed/assessment?session=${currentSessionId}&inviteToken=${token}`;
     
     return (
       <div className="min-h-screen flex flex-col">
