@@ -259,8 +259,21 @@ export default function EmbedAssessment() {
   const [codeError, setCodeError] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
   const [isFromInvitation, setIsFromInvitation] = useState(false);
+  const [invitationCompletionData, setInvitationCompletionData] = useState<{
+    userExists: boolean;
+    email: string;
+    bundlePrice: string;
+    originalPrice: string;
+    discountPercentage: number;
+    freeUnlockDate: string;
+    dashboardUrl: string | null;
+    createAccountUrl: string | null;
+    paymentUrl: string;
+  } | null>(null);
+  const [isLoadingCompletion, setIsLoadingCompletion] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const hasSubmittedRef = useRef<boolean>(false);
+  const hasCalledCompletionRef = useRef<boolean>(false);
   
   // Multi-assessment state - use urlTypes for both demo and real sessions
   const [assessmentQueue, setAssessmentQueue] = useState<string[]>(urlTypes);
@@ -851,6 +864,41 @@ export default function EmbedAssessment() {
     };
   }, []);
 
+  // Call completion API when partner invitation is fully complete
+  useEffect(() => {
+    if (status === "completed" && isFromInvitation && inviteToken && !hasCalledCompletionRef.current) {
+      hasCalledCompletionRef.current = true;
+      setIsLoadingCompletion(true);
+      
+      fetch(`/api/invite/${inviteToken}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setInvitationCompletionData({
+              userExists: data.userExists,
+              email: data.email,
+              bundlePrice: data.bundlePrice,
+              originalPrice: data.originalPrice,
+              discountPercentage: data.discountPercentage,
+              freeUnlockDate: data.freeUnlockDate,
+              dashboardUrl: data.dashboardUrl,
+              createAccountUrl: data.createAccountUrl,
+              paymentUrl: data.paymentUrl,
+            });
+          }
+        })
+        .catch(err => {
+          console.error('[Invite Complete] Error:', err);
+        })
+        .finally(() => {
+          setIsLoadingCompletion(false);
+        });
+    }
+  }, [status, isFromInvitation, inviteToken]);
+
   const currentQ = questions[currentIndex];
   const progress = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
   const isLastQuestion = currentIndex === questions.length - 1;
@@ -1265,9 +1313,13 @@ export default function EmbedAssessment() {
       );
     }
     
-    // Simplified completion screen for partner invitation sessions (no payment required)
+    // Enhanced completion screen for partner invitation sessions with pricing and account options
     if (isFromInvitation) {
       const primaryColor = branding?.primaryColor || '#0891b2';
+      const freeDate = invitationCompletionData?.freeUnlockDate 
+        ? new Date(invitationCompletionData.freeUnlockDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+        : '';
+      
       return (
         <div className={`min-h-screen flex items-center justify-center ${bgMain} p-4`} data-testid="embed-completed-invitation">
           <Card className={`max-w-lg ${bgCard} border-green-500/30`}>
@@ -1288,23 +1340,87 @@ export default function EmbedAssessment() {
               <div className={`${bgCardAlt} p-4 rounded-lg border border-green-500/30 mb-4`}>
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  <p className="text-sm text-green-400 font-medium">Results Submitted</p>
+                  <p className="text-sm text-green-400 font-medium">Results Submitted to {displayName}</p>
                 </div>
                 <p className={`text-sm ${textMuted}`}>
-                  Your results have been submitted to {displayName}. They will review your assessment and may contact you with next steps.
+                  We've sent you an email with details on how to unlock your full results.
                 </p>
               </div>
 
-              {inviteToken && (
-                <Button
-                  className="mt-4 w-full"
-                  onClick={() => window.location.href = `/invite/${inviteToken}`}
-                  style={{ backgroundColor: primaryColor }}
-                  data-testid="button-return-to-invite"
-                >
-                  Return to Dashboard
-                </Button>
+              {/* Pricing Bundle Section */}
+              {isLoadingCompletion ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="h-6 w-6 animate-spin text-cyan-500" />
+                </div>
+              ) : invitationCompletionData && (
+                <div className={`${bgCardAlt} p-4 rounded-lg border border-amber-500/30 mb-4`}>
+                  <div className="text-center mb-3">
+                    <p className="text-sm font-medium text-amber-400">Unlock Your Full Results</p>
+                    {invitationCompletionData.discountPercentage > 0 && (
+                      <span className="inline-block bg-amber-500/20 text-amber-400 text-xs px-2 py-0.5 rounded-full mt-1">
+                        {invitationCompletionData.discountPercentage}% Bundle Discount
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-center gap-3">
+                    {invitationCompletionData.discountPercentage > 0 && (
+                      <span className="text-lg line-through text-slate-500">{invitationCompletionData.originalPrice}</span>
+                    )}
+                    <span className="text-2xl font-bold text-green-400">{invitationCompletionData.bundlePrice}</span>
+                  </div>
+                  <p className={`text-xs ${textMuted} mt-2`}>
+                    Or wait until {freeDate} to access your results for free
+                  </p>
+                </div>
               )}
+
+              {/* Account Actions */}
+              <div className="space-y-3 mt-4">
+                {invitationCompletionData?.userExists ? (
+                  <>
+                    <Button
+                      className="w-full"
+                      style={{ backgroundColor: primaryColor }}
+                      onClick={() => window.location.href = '/dashboard'}
+                      data-testid="button-go-to-dashboard"
+                    >
+                      Go to Dashboard
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => window.location.href = invitationCompletionData.paymentUrl}
+                      data-testid="button-unlock-results"
+                    >
+                      Unlock Results Now
+                    </Button>
+                  </>
+                ) : invitationCompletionData ? (
+                  <>
+                    <Button
+                      className="w-full"
+                      style={{ backgroundColor: primaryColor }}
+                      onClick={() => window.location.href = invitationCompletionData.createAccountUrl || '/register'}
+                      data-testid="button-create-account"
+                    >
+                      Create Account to View Results
+                    </Button>
+                    <p className={`text-xs ${textMuted}`}>
+                      Already have an account?{' '}
+                      <a href="/login" className="text-cyan-400 hover:underline">Log in</a>
+                    </p>
+                  </>
+                ) : (
+                  <Button
+                    className="w-full"
+                    style={{ backgroundColor: primaryColor }}
+                    onClick={() => window.location.href = '/register'}
+                    data-testid="button-create-account"
+                  >
+                    Create Account
+                  </Button>
+                )}
+              </div>
 
               <div className="mt-6 pt-4 border-t border-slate-700/30 flex items-center justify-center gap-2">
                 <span className={`text-xs ${textMuted}`}>Powered by</span>

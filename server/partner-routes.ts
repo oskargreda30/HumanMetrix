@@ -2377,6 +2377,116 @@ export function registerPartnerRoutes(app: Express) {
     }
   });
 
+  // Complete partner invitation - check user existence and send completion email (public endpoint)
+  app.post("/api/invite/:token/complete", async (req: Request, res: Response) => {
+    try {
+      const { token } = req.params;
+      
+      if (!token) {
+        return res.status(400).json({ error: "Missing invite token" });
+      }
+      
+      const invitation = await storage.getPartnerCandidateInvitationByToken(token);
+      
+      if (!invitation) {
+        return res.status(404).json({ error: "Invalid invitation" });
+      }
+      
+      if (!invitation.email) {
+        return res.status(400).json({ error: "No email associated with this invitation" });
+      }
+      
+      // Get partner for branding
+      const partnerAccount = await storage.getPartnerAccount(invitation.partnerId);
+      const companyName = partnerAccount?.companyName || 'HumanMetrix Partner';
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(invitation.email);
+      const userExists = !!existingUser;
+      
+      // Get all completed assessment types for this invitation
+      const completedSessions = await db
+        .select({ assessmentType: assessmentSessions.assessmentType })
+        .from(assessmentSessions)
+        .where(
+          and(
+            sql`${assessmentSessions.metadata}->>'invitationToken' = ${token}`,
+            eq(assessmentSessions.status, 'completed')
+          )
+        );
+      
+      const completedTypes = completedSessions.map(s => s.assessmentType);
+      
+      // Check if all assessments are complete
+      const allComplete = invitation.assessmentTypes.every(t => completedTypes.includes(t));
+      
+      if (!allComplete) {
+        return res.status(400).json({ 
+          error: "Not all assessments are complete",
+          completedTypes,
+          remainingTypes: invitation.assessmentTypes.filter(t => !completedTypes.includes(t))
+        });
+      }
+      
+      // Calculate bundle pricing (25% discount for all assessments)
+      const assessmentCount = completedTypes.length;
+      const pricePerAssessment = 20; // £20 per assessment
+      const originalTotal = assessmentCount * pricePerAssessment;
+      const discountPercentage = assessmentCount >= 4 ? 40 : assessmentCount >= 2 ? 25 : 0;
+      const bundlePrice = originalTotal * (1 - discountPercentage / 100);
+      
+      // Free unlock date (30 days from now)
+      const freeUnlockDate = new Date();
+      freeUnlockDate.setDate(freeUnlockDate.getDate() + 30);
+      
+      // Generate payment URL with invitation context
+      const baseUrl = getBaseUrl(req);
+      const paymentUrl = `${baseUrl}/unlock-results?email=${encodeURIComponent(invitation.email)}&invite=${token}`;
+      
+      // Send completion email with bundle pricing
+      try {
+        await sendB2BAllCompleteEmail({
+          email: invitation.email,
+          candidateName: invitation.name || undefined,
+          partnerCompanyName: companyName,
+          completedAssessments: completedTypes,
+          paymentUrl,
+          bundlePrice: `£${bundlePrice.toFixed(2)}`,
+          originalTotalPrice: `£${originalTotal.toFixed(2)}`,
+          discountPercentage,
+          freeUnlockDate,
+        });
+        console.log(`[Invite Complete] Sent completion email to ${invitation.email}`);
+      } catch (emailError) {
+        console.error(`[Invite Complete] Failed to send completion email:`, emailError);
+        // Don't fail the request if email fails
+      }
+      
+      // Update invitation status to completed
+      await storage.updatePartnerCandidateInvitation(invitation.id, { 
+        status: 'completed',
+        completedAt: new Date(),
+      });
+      
+      res.json({
+        success: true,
+        userExists,
+        email: invitation.email,
+        completedAssessments: completedTypes,
+        bundlePrice: `£${bundlePrice.toFixed(2)}`,
+        originalPrice: `£${originalTotal.toFixed(2)}`,
+        discountPercentage,
+        freeUnlockDate: freeUnlockDate.toISOString(),
+        dashboardUrl: userExists ? `${baseUrl}/dashboard` : null,
+        createAccountUrl: !userExists ? `${baseUrl}/register?email=${encodeURIComponent(invitation.email)}&invite=${token}` : null,
+        paymentUrl,
+      });
+    } catch (error) {
+      console.error("Error completing invitation:", error);
+      res.status(500).json({ error: "Failed to complete invitation" });
+    }
+  });
+
   // ========== Card Management Endpoints (for Prepaid Partners) ==========
   
   // Create Stripe Setup Intent for saving card
