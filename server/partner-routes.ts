@@ -133,8 +133,16 @@ const createSessionSchema = z.object({
   country: z.string().length(2).optional(), // ISO 3166-1 alpha-2 country code for locale selection
 });
 
+const multiAssessmentContextSchema = z.object({
+  assessmentTypes: z.array(z.string()),
+  currentIndex: z.number(),
+  isLastInSeries: z.boolean(),
+  completedInSession: z.array(z.string()),
+}).nullable().optional();
+
 const submitAnswersSchema = z.object({
   answers: z.record(z.any()),
+  multiAssessmentContext: multiAssessmentContextSchema,
 });
 
 export function registerPartnerRoutes(app: Express) {
@@ -1278,11 +1286,16 @@ export function registerPartnerRoutes(app: Express) {
           });
         }
         
-        const { answers: submittedAnswers } = parseResult.data;
+        const { answers: submittedAnswers, multiAssessmentContext } = parseResult.data;
         
         // Merge saved answers with submitted answers (submitted takes precedence)
         const savedAnswers = session.answers || {};
         const answers = { ...savedAnswers, ...submittedAnswers };
+        
+        // Multi-assessment tracking
+        const isMultiAssessmentSeries = !!multiAssessmentContext;
+        const isLastInMultiAssessmentSeries = multiAssessmentContext?.isLastInSeries ?? false;
+        const multiAssessmentTypes = multiAssessmentContext?.assessmentTypes ?? [];
         
         const { scores, totalScore, percentile, evaluations } = await calculateScores(
           session.assessmentType,
@@ -1507,7 +1520,9 @@ export function registerPartnerRoutes(app: Express) {
                 console.error('[B2B Email] Failed to send congratulatory email:', emailError);
               }
             
-            // Check if all 4 assessments are now complete for this email (outside email try/catch)
+            // Check for bundle email eligibility
+            // Case 1: Multi-assessment series - send bundle at end of series
+            // Case 2: All 4 assessments complete across any sessions - send full bundle
             const allAssessmentTypes = ['fit', 'ai_readiness', 'prompt_architecture', 'aiq'];
             const completedSessions = await storage.getCompletedB2BSessionsByEmail(
               candidateEmail, 
@@ -1517,9 +1532,27 @@ export function registerPartnerRoutes(app: Express) {
             const completedTypes = new Set(completedSessions.map(s => s.assessmentType));
             const allComplete = allAssessmentTypes.every(type => completedTypes.has(type));
             
-            if (allComplete) {
+            // Determine if we should send a bundle email
+            let shouldSendBundleEmail = false;
+            let bundleAssessmentTypes: string[] = [];
+            let bundleDiscountPercent = 40; // 40% off for full bundle
+            
+            if (isMultiAssessmentSeries && isLastInMultiAssessmentSeries && multiAssessmentTypes.length > 1) {
+              // Multi-assessment series completed - send bundle for series assessments
+              shouldSendBundleEmail = true;
+              bundleAssessmentTypes = multiAssessmentTypes;
+              // Scale discount based on number of assessments (20% for 2, 30% for 3, 40% for 4)
+              bundleDiscountPercent = Math.min(40, 10 + (multiAssessmentTypes.length * 10));
+              console.log(`[B2B Email] Multi-assessment series complete (${multiAssessmentTypes.length} tests) for ${candidateEmail} - sending bundle offer`);
+            } else if (allComplete && !isMultiAssessmentSeries) {
+              // All 4 assessments complete (non-multi-assessment flow)
+              shouldSendBundleEmail = true;
+              bundleAssessmentTypes = allAssessmentTypes;
+              bundleDiscountPercent = 40;
               console.log(`[B2B Email] All 4 assessments complete for ${candidateEmail} - sending bundle offer`);
-              
+            }
+            
+            if (shouldSendBundleEmail) {
               // Notify partner that all assessments are complete (always runs, even if emails failed)
               try {
                 const { notifyAssessmentCompleted } = await import('./partner-notifications');
@@ -1535,28 +1568,32 @@ export function registerPartnerRoutes(app: Express) {
                 console.error('[B2B Notification] Failed to notify assessment completion:', notifyError);
               }
               
-              // Calculate B2C bundle price and send bundle offer email (separate try/catch)
+              // Calculate bundle price based on the assessments in this bundle
               try {
-                const allAssessmentPrices = Object.values(ASSESSMENT_PRICES).reduce((sum, price) => sum + price, 0);
-                const bundleB2CPricePence = BASE_FEE + allAssessmentPrices;
+                let bundleAssessmentPrices = 0;
+                for (const type of bundleAssessmentTypes) {
+                  const normalizedType = normalizeAssessmentId(type);
+                  bundleAssessmentPrices += ASSESSMENT_PRICES[normalizedType] || 400;
+                }
+                const bundleB2CPricePence = BASE_FEE + bundleAssessmentPrices;
                 const bundlePppAdjustedTotalPence = getPPPAdjustedPriceInPence(bundleB2CPricePence, userCountryCode);
-                const bundleDiscountedPricePence = Math.round(bundlePppAdjustedTotalPence * 0.60);
+                const bundleDiscountedPricePence = Math.round(bundlePppAdjustedTotalPence * ((100 - bundleDiscountPercent) / 100));
                 const bundleOriginalDisplay = formatPrice(bundlePppAdjustedTotalPence, userCurrency);
                 const bundleDiscountedDisplay = formatPrice(bundleDiscountedPricePence, userCurrency);
                 
-                console.log(`[B2B Bundle Pricing] Base: ${BASE_FEE}p + Assessments: ${allAssessmentPrices}p = ${bundleB2CPricePence}p, PPP: ${bundlePppAdjustedTotalPence}p (${bundleOriginalDisplay}), Discounted: ${bundleDiscountedPricePence}p (${bundleDiscountedDisplay})`);
+                console.log(`[B2B Bundle Pricing] Assessments: ${bundleAssessmentTypes.join(', ')}, Base: ${BASE_FEE}p + ${bundleAssessmentPrices}p = ${bundleB2CPricePence}p, PPP: ${bundlePppAdjustedTotalPence}p (${bundleOriginalDisplay}), ${bundleDiscountPercent}% off: ${bundleDiscountedPricePence}p (${bundleDiscountedDisplay})`);
                 
-                const bundlePaymentUrl = `${baseUrl}/b2b-results-bundle?email=${encodeURIComponent(candidateEmail)}&partner=${session.partnerId}&country=${userCountryCode}`;
+                const bundlePaymentUrl = `${baseUrl}/b2b-results-bundle?email=${encodeURIComponent(candidateEmail)}&partner=${session.partnerId}&country=${userCountryCode}&types=${bundleAssessmentTypes.join(',')}`;
                 
                 await sendB2BAllCompleteEmail({
                   email: candidateEmail,
                   candidateName: session.externalUserId || undefined,
                   partnerCompanyName: partner.companyName || partner.name,
-                  completedAssessments: allAssessmentTypes,
+                  completedAssessments: bundleAssessmentTypes,
                   paymentUrl: bundlePaymentUrl,
                   bundlePrice: bundleDiscountedDisplay,
                   originalTotalPrice: bundleOriginalDisplay,
-                  discountPercentage: 40,
+                  discountPercentage: bundleDiscountPercent,
                   freeUnlockDate,
                 });
                 console.log(`[B2B Email] Sent bundle offer email to ${candidateEmail}`);

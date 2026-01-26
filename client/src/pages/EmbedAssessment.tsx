@@ -756,10 +756,21 @@ export default function EmbedAssessment() {
     }
     
     try {
+      // Include multi-assessment context for proper email handling
+      const multiAssessmentContext = isMultiAssessment ? {
+        assessmentTypes: assessmentQueue,
+        currentIndex: currentAssessmentIndex,
+        isLastInSeries: isLastAssessment,
+        completedInSession: completedAssessments.map(a => a.type),
+      } : null;
+      
       const res = await fetch(`/api/embed/session/${sessionId}/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers }),
+        body: JSON.stringify({ 
+          answers,
+          multiAssessmentContext,
+        }),
       });
 
       if (!res.ok) {
