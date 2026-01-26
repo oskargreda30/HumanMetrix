@@ -220,12 +220,20 @@ function generateAnalysis(assessmentType: string, scores: Record<string, number>
 }
 
 export default function EmbedAssessment() {
-  const searchString = useSearch();
+  // Use window.location.search directly for iframe compatibility
+  const searchString = typeof window !== 'undefined' ? window.location.search : '';
   const params = new URLSearchParams(searchString);
   const sessionId = params.get("session");
   const theme = params.get("theme") || "dark";
   const inviteToken = params.get("inviteToken");
   const showResultsParam = params.get("showResults") === "true";
+  
+  // Debug: Log URL params on mount
+  useEffect(() => {
+    console.log('[EmbedAssessment] URL searchString:', searchString);
+    console.log('[EmbedAssessment] inviteToken from URL:', inviteToken);
+    console.log('[EmbedAssessment] Full URL:', window.location.href);
+  }, []);
   const isDemo = params.get("demo") === "true";
   const singleType = params.get("type") || "fit";
   // Support both single type and comma-separated types (for both demo and real sessions)
