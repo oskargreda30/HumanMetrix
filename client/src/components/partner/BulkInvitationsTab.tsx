@@ -629,6 +629,7 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
                 >
                   <Checkbox
                     checked={selectedAssessments.includes(assessment.id)}
+                    onClick={(e) => e.stopPropagation()}
                     onCheckedChange={() => toggleAssessment(assessment.id)}
                   />
                   <div className="flex-1">
