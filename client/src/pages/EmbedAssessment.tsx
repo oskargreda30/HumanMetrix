@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { Loader2, CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Clock, Mail, Calendar, TrendingUp, Target, Lightbulb } from "lucide-react";
+import { Loader2, CheckCircle, CheckCircle2, AlertCircle, ArrowLeft, ArrowRight, Clock, Mail, Calendar, TrendingUp, Target, Lightbulb } from "lucide-react";
 import { getFITQuestions, getAIReadinessQuestions, getAIQQuestions, type QuestionLocale } from "@shared/questions";
 import { PROMPT_ARCHITECTURE_LEVELS } from "../data/prompt-architecture-questions";
 import { getHumanReadableError } from "@/lib/queryClient";
@@ -1337,9 +1337,65 @@ export default function EmbedAssessment() {
                 <li>Answer each question honestly and thoughtfully</li>
                 <li>There are no right or wrong answers</li>
                 <li>Your progress will be saved automatically</li>
-                <li>You have 20 minutes to complete the assessment</li>
+                <li>You have {currentAssessmentType === "prompt_architecture" ? "7" : "20"} minutes to complete {isMultiAssessment ? "each assessment" : "the assessment"}</li>
               </ul>
             </div>
+
+            {/* Multi-Assessment Series Indicator */}
+            {isMultiAssessment && (
+              <div className={`${bgCardAlt} p-4 rounded-lg border ${isLight ? 'border-slate-200' : 'border-slate-700'}`}>
+                <p className={`text-sm font-medium ${textPrimary} mb-3`}>
+                  Assessment Series ({currentAssessmentIndex + 1} of {assessmentQueue.length})
+                </p>
+                <div className="space-y-2">
+                  {assessmentQueue.map((type, index) => {
+                    const isCompleted = index < currentAssessmentIndex;
+                    const isCurrent = index === currentAssessmentIndex;
+                    const isPending = index > currentAssessmentIndex;
+                    
+                    return (
+                      <div 
+                        key={type}
+                        className={`flex items-center gap-3 p-2 rounded ${
+                          isCurrent 
+                            ? (isLight ? 'bg-cyan-50 border border-cyan-200' : 'bg-cyan-900/20 border border-cyan-700')
+                            : ''
+                        }`}
+                        data-testid={`assessment-series-item-${type}`}
+                      >
+                        <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                          isCompleted 
+                            ? 'bg-green-500 text-white'
+                            : isCurrent
+                              ? 'bg-cyan-500 text-white'
+                              : (isLight ? 'bg-slate-200 text-slate-500' : 'bg-slate-700 text-slate-400')
+                        }`}>
+                          {isCompleted ? (
+                            <CheckCircle2 className="h-4 w-4" />
+                          ) : (
+                            index + 1
+                          )}
+                        </div>
+                        <span className={`text-sm ${
+                          isCurrent 
+                            ? `font-medium ${textPrimary}`
+                            : isCompleted
+                              ? `${textMuted} line-through`
+                              : textMuted
+                        }`}>
+                          {getAssessmentDisplayName(type)}
+                        </span>
+                        {isCurrent && (
+                          <Badge variant="outline" className="ml-auto text-xs border-cyan-500 text-cyan-500">
+                            Current
+                          </Badge>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Test Mode - Simplified Start Flow */}
             {session?.isTestSession ? (
