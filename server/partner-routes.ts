@@ -1881,7 +1881,6 @@ export function registerPartnerRoutes(app: Express) {
       
       const errors: Array<{ row: number; externalUserId: string; error: string }> = [];
       const invitations: any[] = [];
-      const candidatePasswords: Map<string, { password: string; userId: string; isNewUser: boolean }> = new Map();
       
       for (let i = 0; i < candidates.length; i++) {
         const candidate = candidates[i];
@@ -1891,43 +1890,9 @@ export function registerPartnerRoutes(app: Express) {
           // Each invitation creates a new "testing series" with fresh assessment sessions
           // This matches the behavior of logged-in candidates starting new assessments
           
-          // If candidate has email, ensure they have a user account
-          if (candidate.email) {
-            const existingUser = await storage.getUserByEmail(candidate.email);
-            
-            if (!existingUser) {
-              // Create new user account with generated password
-              const temporaryPassword = generateTemporaryPassword();
-              const passwordHash = await bcrypt.hash(temporaryPassword, 10);
-              
-              // Parse name into first and last name
-              const nameParts = (candidate.name || '').trim().split(' ');
-              const firstName = nameParts[0] || undefined;
-              const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined;
-              
-              const newUser = await storage.createUser({
-                email: candidate.email,
-                passwordHash,
-                firstName,
-                lastName,
-                role: 'partner_candidate',
-              });
-              
-              candidatePasswords.set(candidate.email, {
-                password: temporaryPassword,
-                userId: newUser.id,
-                isNewUser: true,
-              });
-              console.log(`[Bulk Invitations] Created new user for ${candidate.email}`);
-            } else {
-              // User already exists - no new password needed
-              candidatePasswords.set(candidate.email, {
-                password: '', // Empty - they use existing password
-                userId: existingUser.id,
-                isNewUser: false,
-              });
-            }
-          }
+          // Note: We do NOT create user accounts at invitation time.
+          // Account creation happens after the candidate completes all assessments
+          // via the GuestInvite page's "Create Account" flow.
           
           // Generate unique invite token
           const inviteToken = crypto.randomUUID().replace(/-/g, '');
@@ -2027,8 +1992,8 @@ export function registerPartnerRoutes(app: Express) {
             // Process batch with concurrency limit
             await Promise.all(batch.map(inv => emailLimit(async () => {
               try {
-                const passwordInfo = candidatePasswords.get(inv.email);
-                
+                // Note: No credentials are sent in the invitation email.
+                // Account creation happens after the candidate completes all assessments.
                 const emailResult = await sendPartnerBulkInvitationEmail({
                   candidateEmail: inv.email,
                   candidateName: inv.name || undefined,
@@ -2038,7 +2003,7 @@ export function registerPartnerRoutes(app: Express) {
                   partnerLogoUrl: partnerAccount?.logoUrl,
                   partnerPrimaryColor: partnerAccount?.brandingPrimaryColor,
                   expiresAt: inv.expiresAt,
-                  temporaryPassword: passwordInfo?.isNewUser ? passwordInfo.password : undefined,
+                  // No temporaryPassword - account is created after assessment completion
                 });
                 
                 if (emailResult.success) {
