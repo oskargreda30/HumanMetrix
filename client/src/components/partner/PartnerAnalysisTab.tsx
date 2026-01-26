@@ -1340,11 +1340,13 @@ export default function PartnerAnalysisTab() {
                     Comprehensive team capability diagnostic that maps skills distribution and identifies gaps
                   </p>
                 </div>
-                <div className="p-4 bg-muted/30 rounded-lg relative" data-testid="card-service-cohort">
-                  <Badge className="absolute top-2 right-2 bg-amber-500 text-white border-amber-600 text-xs">Coming Soon</Badge>
-                  <div className="flex items-center gap-2 mb-2">
-                    <BarChart3 className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold text-foreground" data-testid="heading-service-cohort">Cohort Benchmarking</h4>
+                <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-cohort">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4 text-primary" />
+                      <h4 className="font-semibold text-foreground" data-testid="heading-service-cohort">Cohort Benchmarking</h4>
+                    </div>
+                    <Badge className="bg-amber-500 text-white border-amber-600 text-xs shrink-0">Coming Soon</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground" data-testid="text-service-cohort">
                     Compare your team's performance against industry benchmarks and peer organizations
