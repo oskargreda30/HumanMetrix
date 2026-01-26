@@ -1278,27 +1278,6 @@ export default function PartnerAnalysisTab() {
               <section className="mb-6">
                 <SkillsLegend compact data-testid="section-skills-legend" />
               </section>
-
-              {/* Export Options */}
-              <div className="flex justify-end gap-2 mb-6">
-                <Button 
-                  onClick={handleExportPDF}
-                  disabled={isExporting}
-                  data-testid="button-export-individual-report"
-                >
-                  {isExporting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Exporting...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="h-4 w-4 mr-2" />
-                      Export as PDF
-                    </>
-                  )}
-                </Button>
-              </div>
             </>
           )}
 
@@ -1380,6 +1359,29 @@ export default function PartnerAnalysisTab() {
               </div>
             </div>
           </Card>
+
+          {/* Export Options - Only show when candidate is selected */}
+          {selectedCandidateData && (
+            <div className="flex justify-end gap-2 mb-6">
+              <Button 
+                onClick={handleExportPDF}
+                disabled={isExporting}
+                data-testid="button-export-individual-report"
+              >
+                {isExporting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export as PDF
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </TabsContent>
 
         {/* Compare Candidates Tab */}
