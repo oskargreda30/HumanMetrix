@@ -1110,9 +1110,15 @@ export function registerPartnerRoutes(app: Express) {
         const apiKey = session.apiKeyId ? await storage.getPartnerApiKey(session.apiKeyId) : null;
         const isTestSession = session.isTestSession === true || apiKey?.environment === "test";
         
-        // For test sessions, skip email verification requirement
+        // Check if this session is from a partner invitation (email already verified by clicking link)
+        const sessionMetadata = session.metadata as Record<string, any> | null;
+        const isFromInvitation = sessionMetadata?.source === 'partner_invitation';
+        
+        // For test sessions or partner invitations, skip email verification requirement
         if (isTestSession) {
           console.log(`[Test Session] Skipping email verification for test session ${sessionId}`);
+        } else if (isFromInvitation) {
+          console.log(`[Partner Invitation] Skipping email verification for invitation session ${sessionId}`);
         } else {
           // Require verified email before starting (for B2B widget security)
           if (!candidateEmail || typeof candidateEmail !== 'string') {
