@@ -741,10 +741,7 @@ export default function EmbedAssessment() {
         pendingScoresRef.current = demoScores;
         setShowTransitionScreen(true);
         setIsSubmitting(false);
-        // Auto-advance after 3 seconds
-        transitionTimerRef.current = setTimeout(() => {
-          advanceToNextAssessment();
-        }, 3000);
+        // No auto-advance - user must click button to start next assessment
         return;
       }
       
@@ -795,10 +792,7 @@ export default function EmbedAssessment() {
         pendingScoresRef.current = data;
         setShowTransitionScreen(true);
         setIsSubmitting(false);
-        // Auto-advance after 3 seconds
-        transitionTimerRef.current = setTimeout(() => {
-          advanceToNextAssessment();
-        }, 3000);
+        // No auto-advance - user must click button to start next assessment
         return;
       }
       
@@ -874,6 +868,7 @@ export default function EmbedAssessment() {
     const nextAssessmentType = assessmentQueue[currentAssessmentIndex + 1];
     const nextAssessmentName = getAssessmentDisplayName(nextAssessmentType);
     const completedName = getAssessmentDisplayName(currentAssessmentType);
+    const isTestMode = isDemo || session?.isTestSession;
     
     return (
       <div className={`min-h-screen flex items-center justify-center ${bgMain} p-4`} data-testid="embed-transition">
@@ -908,6 +903,33 @@ export default function EmbedAssessment() {
               ))}
             </div>
             
+            {/* Check email / Developer Test Mode message */}
+            {isTestMode ? (
+              <div className={`p-4 rounded-lg border ${isLight ? 'bg-amber-50 border-amber-200' : 'bg-amber-900/20 border-amber-500/30'}`}>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <AlertCircle className={`w-5 h-5 ${isLight ? 'text-amber-600' : 'text-amber-400'}`} />
+                  <p className={`font-semibold ${isLight ? 'text-amber-700' : 'text-amber-400'}`}>
+                    Developer Test Mode
+                  </p>
+                </div>
+                <p className={`text-sm ${isLight ? 'text-amber-600' : 'text-amber-300'}`}>
+                  This was a test session. No billing occurred and no emails were sent. In production, candidates will receive confirmation emails between assessments.
+                </p>
+              </div>
+            ) : (
+              <div className={`p-4 rounded-lg ${isLight ? 'bg-blue-50 border border-blue-200' : 'bg-blue-900/20 border border-blue-500/30'}`}>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Mail className={`w-5 h-5 ${isLight ? 'text-blue-600' : 'text-blue-400'}`} />
+                  <p className={`font-semibold ${isLight ? 'text-blue-700' : 'text-blue-400'}`}>
+                    Check Your Email
+                  </p>
+                </div>
+                <p className={`text-sm ${isLight ? 'text-blue-600' : 'text-blue-300'}`}>
+                  We've sent a confirmation of your results. When you're ready, continue to the next assessment.
+                </p>
+              </div>
+            )}
+            
             <div className={`p-4 rounded-lg ${isLight ? 'bg-cyan-50 border border-cyan-200' : 'bg-cyan-900/20 border border-cyan-500/30'}`}>
               <p className={`text-sm ${isLight ? 'text-cyan-800' : 'text-cyan-300'} mb-2`}>
                 Next up:
@@ -915,20 +937,15 @@ export default function EmbedAssessment() {
               <p className={`font-semibold ${textPrimary}`}>{nextAssessmentName}</p>
             </div>
             
-            <div className="space-y-3">
-              <p className={`text-sm ${textMuted}`}>
-                Starting automatically in a few seconds...
-              </p>
-              <Loader2 className="h-6 w-6 animate-spin mx-auto" style={{ color: primaryColor }} />
-              <Button
-                onClick={advanceToNextAssessment}
-                style={{ backgroundColor: primaryColor }}
-                className="text-white"
-                data-testid="button-start-next-assessment"
-              >
-                Start {nextAssessmentName} Now
-              </Button>
-            </div>
+            <Button
+              onClick={advanceToNextAssessment}
+              style={{ backgroundColor: primaryColor }}
+              className="text-white w-full"
+              size="lg"
+              data-testid="button-start-next-assessment"
+            >
+              Continue to {nextAssessmentName}
+            </Button>
           </CardContent>
         </Card>
       </div>
