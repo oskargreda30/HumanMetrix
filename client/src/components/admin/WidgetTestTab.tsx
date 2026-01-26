@@ -281,6 +281,7 @@ export default function WidgetTestTab() {
                         <Checkbox
                           checked={selectedAssessmentTypes.includes(type.id)}
                           onCheckedChange={() => toggleAssessmentType(type.id)}
+                          onClick={(e) => e.stopPropagation()}
                           className="mt-0.5"
                         />
                         <div>
