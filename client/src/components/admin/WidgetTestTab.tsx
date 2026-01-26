@@ -532,7 +532,7 @@ export default function WidgetTestTab() {
                   )}
                   <iframe
                     src={getEmbedUrl()}
-                    className="w-full min-h-[500px] bg-white rounded-lg border border-slate-700"
+                    className="w-full min-h-[700px] bg-white rounded-lg border border-slate-700"
                     data-testid="widget-preview-iframe"
                     title="Assessment Widget Preview"
                     onLoad={() => setIframeLoading(false)}
