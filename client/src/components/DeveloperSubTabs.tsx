@@ -96,7 +96,7 @@ export function DeveloperSubTabs({
   const [activeSubTab, setActiveSubTab] = useState("api-keys");
   const [sandboxSubTab, setSandboxSubTab] = useState("widget");
   const [widgetTheme, setWidgetTheme] = useState<'dark' | 'light'>('dark');
-  const [widgetAssessment, setWidgetAssessment] = useState('fit');
+  const [selectedAssessments, setSelectedAssessments] = useState<string[]>(['fit']);
   const [copiedSnippet, setCopiedSnippet] = useState(false);
   const [showWidgetPreview, setShowWidgetPreview] = useState(false);
   const [iframeLoading, setIframeLoading] = useState(false);
@@ -111,9 +111,24 @@ export function DeveloperSubTabs({
     return testKey?.displayKey || null;
   }, [apiKeys]);
 
+  // Toggle assessment selection
+  const toggleAssessment = (type: string) => {
+    setSelectedAssessments(prev => {
+      if (prev.includes(type)) {
+        // Don't allow deselecting the last one
+        if (prev.length === 1) return prev;
+        return prev.filter(t => t !== type);
+      }
+      return [...prev, type];
+    });
+  };
+
   // Generate widget code snippet
   const widgetCodeSnippet = useMemo(() => {
     const apiKeyPlaceholder = testApiKey || 'hm_test_YOUR_API_KEY';
+    const assessmentTypesArray = selectedAssessments.map(t => `'${t}'`).join(', ');
+    const isSingleAssessment = selectedAssessments.length === 1;
+    
     return `<!-- Add this script to your page -->
 <script src="${window.location.origin}/embed/widget.js"></script>
 
@@ -121,19 +136,22 @@ export function DeveloperSubTabs({
 <script>
   HumanMetrixWidget.init({
     apiKey: '${apiKeyPlaceholder}',
-    assessmentType: '${widgetAssessment}',
+    ${isSingleAssessment 
+      ? `assessmentType: '${selectedAssessments[0]}'`
+      : `assessmentTypes: [${assessmentTypesArray}]`},
     theme: '${widgetTheme}',
     candidateEmail: 'candidate@example.com', // optional
     onComplete: function(results) {
       console.log('Assessment completed:', results);
-      // Handle completion - results include scores
+      // Handle completion - results include scores${!isSingleAssessment ? `
+      // For multi-assessment widgets, this fires after ALL assessments complete` : ''}
     },
     onError: function(error) {
       console.error('Error:', error);
     }
   });
 </script>`;
-  }, [testApiKey, widgetAssessment, widgetTheme]);
+  }, [testApiKey, selectedAssessments, widgetTheme]);
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -471,20 +489,59 @@ export function DeveloperSubTabs({
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Configuration Section */}
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Assessment Type</label>
-                      <Select value={widgetAssessment} onValueChange={setWidgetAssessment}>
-                        <SelectTrigger data-testid="select-widget-assessment">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="fit">FIT - Behavioural Assessment</SelectItem>
-                          <SelectItem value="ai_readiness">AI Readiness</SelectItem>
-                          <SelectItem value="prompt">Prompt Architecture</SelectItem>
-                          <SelectItem value="aiq">AIQ - Ethics & Integrity</SelectItem>
-                        </SelectContent>
-                      </Select>
+                  <div className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm font-medium">Assessment Types</label>
+                        <Badge variant="outline" className="text-xs">
+                          {selectedAssessments.length} selected
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Select multiple assessments to run them in sequence. Each assessment uses 1 credit.
+                      </p>
+                      <div className="grid gap-2 md:grid-cols-2">
+                        {[
+                          { id: 'fit', label: 'FIT - Behavioural Assessment', desc: '6 core skills' },
+                          { id: 'ai_readiness', label: 'AI Readiness', desc: '9 AI skills' },
+                          { id: 'prompt_architecture', label: 'Prompt Architecture', desc: '7 levels' },
+                          { id: 'aiq', label: 'AIQ - Ethics & Integrity', desc: '4 dimensions' },
+                        ].map(assessment => (
+                          <button
+                            key={assessment.id}
+                            type="button"
+                            onClick={() => toggleAssessment(assessment.id)}
+                            className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
+                              selectedAssessments.includes(assessment.id)
+                                ? 'border-cyan-500 bg-cyan-500/10'
+                                : 'border-border hover:border-muted-foreground/50'
+                            }`}
+                            data-testid={`checkbox-assessment-${assessment.id}`}
+                          >
+                            <div className={`mt-0.5 h-4 w-4 rounded border flex items-center justify-center ${
+                              selectedAssessments.includes(assessment.id)
+                                ? 'bg-cyan-500 border-cyan-500'
+                                : 'border-muted-foreground/50'
+                            }`}>
+                              {selectedAssessments.includes(assessment.id) && (
+                                <Check className="h-3 w-3 text-white" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium">{assessment.label}</p>
+                              <p className="text-xs text-muted-foreground">{assessment.desc}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                      {selectedAssessments.length > 1 && (
+                        <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                          <p className="text-sm text-blue-400">
+                            <strong>Multi-assessment mode:</strong> Candidates will complete assessments in order. 
+                            After each assessment, they'll see a brief completion screen before the next one loads automatically.
+                          </p>
+                        </div>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Theme</label>
@@ -585,7 +642,7 @@ export function DeveloperSubTabs({
                     </Button>
                     <Button
                       variant="outline"
-                      onClick={() => window.open(`/embed/assessment?demo=true&type=${widgetAssessment}&theme=${widgetTheme}`, '_blank')}
+                      onClick={() => window.open(`/embed/assessment?demo=true&types=${selectedAssessments.join(',')}&theme=${widgetTheme}`, '_blank')}
                       data-testid="button-open-fullscreen-preview"
                     >
                       <ExternalLink className="h-4 w-4 mr-2" />
@@ -614,7 +671,7 @@ export function DeveloperSubTabs({
                           </div>
                         )}
                         <iframe
-                          src={`/embed/assessment?demo=true&type=${widgetAssessment}&theme=${widgetTheme}`}
+                          src={`/embed/assessment?demo=true&types=${selectedAssessments.join(',')}&theme=${widgetTheme}`}
                           className="w-full h-full border-0"
                           title="Widget Preview"
                           data-testid="widget-preview-iframe"

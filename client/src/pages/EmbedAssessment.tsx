@@ -227,6 +227,8 @@ export default function EmbedAssessment() {
   const showResultsParam = params.get("showResults") === "true";
   const isDemo = params.get("demo") === "true";
   const demoType = params.get("type") || "fit";
+  // Support both single type and comma-separated types
+  const demoTypes = params.get("types")?.split(",").filter(Boolean) || (demoType ? [demoType] : ["fit"]);
   const isLight = theme === "light";
 
   const [session, setSession] = useState<SessionData | null>(null);
@@ -249,6 +251,17 @@ export default function EmbedAssessment() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const hasSubmittedRef = useRef<boolean>(false);
+  
+  // Multi-assessment state
+  const [assessmentQueue, setAssessmentQueue] = useState<string[]>(demoTypes);
+  const [currentAssessmentIndex, setCurrentAssessmentIndex] = useState(0);
+  const [completedAssessments, setCompletedAssessments] = useState<Array<{ type: string; scores: any }>>([]);
+  const [showTransitionScreen, setShowTransitionScreen] = useState(false);
+  const transitionTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const isMultiAssessment = assessmentQueue.length > 1;
+  const currentAssessmentType = assessmentQueue[currentAssessmentIndex] || assessmentQueue[0];
+  const isLastAssessment = currentAssessmentIndex >= assessmentQueue.length - 1;
 
   // Theme-aware class names
   const bgMain = isLight ? "bg-gray-50" : "bg-slate-900";
@@ -265,16 +278,19 @@ export default function EmbedAssessment() {
     if (isDemo) {
       const demoSession: SessionData = {
         sessionId: "demo-preview",
-        assessmentType: demoType,
+        assessmentType: currentAssessmentType,
         status: "ready",
         partnerName: "Demo Partner",
         isTestSession: true,
       };
       setSession(demoSession);
-      const loadedQuestions = getQuestions(demoType, 'default');
+      const loadedQuestions = getQuestions(currentAssessmentType, 'default');
       setQuestions(loadedQuestions);
       setVerificationStep("verified"); // Skip verification for demo
       setStatus("ready");
+      // Reset question index when assessment changes
+      setCurrentIndex(0);
+      setAnswers({});
       return;
     }
 
@@ -285,7 +301,7 @@ export default function EmbedAssessment() {
     }
 
     fetchSession();
-  }, [sessionId, isDemo, demoType]);
+  }, [sessionId, isDemo, currentAssessmentType]);
 
   const fetchSession = async () => {
     try {
@@ -656,6 +672,24 @@ export default function EmbedAssessment() {
     }
   };
 
+  // Function to advance to next assessment in multi-assessment mode
+  const advanceToNextAssessment = () => {
+    setCompletedAssessments(prev => [
+      ...prev,
+      { type: currentAssessmentType, scores: completedScores }
+    ]);
+    setShowTransitionScreen(false);
+    setCurrentAssessmentIndex(prev => prev + 1);
+    setCompletedScores(null);
+    setCurrentIndex(0);
+    setAnswers({});
+    setStatus("ready");
+    // Reset timer for next assessment
+    const nextType = assessmentQueue[currentAssessmentIndex + 1];
+    setTimeRemaining(nextType === "prompt_architecture" ? 420 : 1200);
+    setShowTimeWarning(false);
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     
@@ -667,6 +701,22 @@ export default function EmbedAssessment() {
         percentile: 65,
       };
       setCompletedScores(demoScores);
+      
+      // If multi-assessment and not the last one, show transition screen
+      if (isMultiAssessment && !isLastAssessment) {
+        setCompletedAssessments(prev => [
+          ...prev, 
+          { type: currentAssessmentType, scores: demoScores }
+        ]);
+        setShowTransitionScreen(true);
+        setIsSubmitting(false);
+        // Auto-advance after 3 seconds
+        transitionTimerRef.current = setTimeout(() => {
+          advanceToNextAssessment();
+        }, 3000);
+        return;
+      }
+      
       setStatus("completed");
       setIsSubmitting(false);
       return;
@@ -689,25 +739,41 @@ export default function EmbedAssessment() {
 
       const data = await res.json();
       setCompletedScores(data);
-      setStatus("completed");
 
+      // For multi-assessment mode, notify parent for each assessment completion
       if (window.parent !== window) {
-        // Post message to parent - widget validates the origin
-        // Using '*' is acceptable here because:
-        // 1. The receiving widget validates event.origin
-        // 2. The data being sent (scores) is meant for the partner who created the session
-        // 3. Session IDs are only known to the partner who created them
         window.parent.postMessage(
           {
-            type: "humanmetrix:completed",
+            type: isMultiAssessment && !isLastAssessment ? "humanmetrix:assessment_completed" : "humanmetrix:completed",
             sessionId,
+            assessmentType: currentAssessmentType,
             scores: data.scores,
             totalScore: data.totalScore,
             percentile: data.percentile,
+            isLastAssessment,
+            completedCount: currentAssessmentIndex + 1,
+            totalCount: assessmentQueue.length,
           },
           "*"
         );
       }
+      
+      // If multi-assessment and not the last one, show transition screen
+      if (isMultiAssessment && !isLastAssessment) {
+        setCompletedAssessments(prev => [
+          ...prev, 
+          { type: currentAssessmentType, scores: data }
+        ]);
+        setShowTransitionScreen(true);
+        setIsSubmitting(false);
+        // Auto-advance after 3 seconds
+        transitionTimerRef.current = setTimeout(() => {
+          advanceToNextAssessment();
+        }, 3000);
+        return;
+      }
+      
+      setStatus("completed");
     } catch (err) {
       setStatus("error");
       setErrorMessage("Failed to submit assessment");
@@ -715,6 +781,15 @@ export default function EmbedAssessment() {
       setIsSubmitting(false);
     }
   };
+  
+  // Cleanup transition timer
+  useEffect(() => {
+    return () => {
+      if (transitionTimerRef.current) {
+        clearTimeout(transitionTimerRef.current);
+      }
+    };
+  }, []);
 
   const currentQ = questions[currentIndex];
   const progress = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
@@ -755,6 +830,75 @@ export default function EmbedAssessment() {
             <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
             <h2 className={`text-xl font-semibold ${textPrimary} mb-2`}>Session Expired</h2>
             <p className={textSecondary}>This assessment session has expired. Please request a new link.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Multi-assessment transition screen
+  if (showTransitionScreen && isMultiAssessment) {
+    const branding = session?.branding;
+    const primaryColor = branding?.primaryColor || '#0891b2';
+    const accentColor = branding?.accentColor || '#06b6d4';
+    const nextAssessmentType = assessmentQueue[currentAssessmentIndex + 1];
+    const nextAssessmentName = getAssessmentDisplayName(nextAssessmentType);
+    const completedName = getAssessmentDisplayName(currentAssessmentType);
+    
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${bgMain} p-4`} data-testid="embed-transition">
+        <Card className={`max-w-lg w-full ${bgCard}`}>
+          <CardContent className="pt-8 pb-8 text-center space-y-6">
+            <div className="relative">
+              <CheckCircle className="h-16 w-16 mx-auto mb-4" style={{ color: accentColor }} />
+              <div className="absolute inset-0 animate-ping opacity-20">
+                <CheckCircle className="h-16 w-16 mx-auto" style={{ color: accentColor }} />
+              </div>
+            </div>
+            
+            <div>
+              <h2 className={`text-2xl font-bold ${textPrimary} mb-2`}>
+                {completedName} Complete!
+              </h2>
+              <p className={textSecondary}>
+                Great job! You've completed {currentAssessmentIndex + 1} of {assessmentQueue.length} assessments.
+              </p>
+            </div>
+            
+            <div className="flex justify-center gap-2">
+              {assessmentQueue.map((type, index) => (
+                <div
+                  key={type}
+                  className={`h-2 w-8 rounded-full transition-colors ${
+                    index <= currentAssessmentIndex
+                      ? 'bg-green-500'
+                      : 'bg-slate-600'
+                  }`}
+                />
+              ))}
+            </div>
+            
+            <div className={`p-4 rounded-lg ${isLight ? 'bg-cyan-50 border border-cyan-200' : 'bg-cyan-900/20 border border-cyan-500/30'}`}>
+              <p className={`text-sm ${isLight ? 'text-cyan-800' : 'text-cyan-300'} mb-2`}>
+                Next up:
+              </p>
+              <p className={`font-semibold ${textPrimary}`}>{nextAssessmentName}</p>
+            </div>
+            
+            <div className="space-y-3">
+              <p className={`text-sm ${textMuted}`}>
+                Starting automatically in a few seconds...
+              </p>
+              <Loader2 className="h-6 w-6 animate-spin mx-auto" style={{ color: primaryColor }} />
+              <Button
+                onClick={advanceToNextAssessment}
+                style={{ backgroundColor: primaryColor }}
+                className="text-white"
+                data-testid="button-start-next-assessment"
+              >
+                Start {nextAssessmentName} Now
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -1411,6 +1555,34 @@ export default function EmbedAssessment() {
   return (
     <div className={`min-h-screen ${bgMain} p-4`} data-testid="embed-assessment">
       <div className="max-w-2xl mx-auto">
+        {/* Multi-assessment progress indicator */}
+        {isMultiAssessment && (
+          <div className={`mb-4 p-3 rounded-lg ${isLight ? 'bg-blue-50 border border-blue-200' : 'bg-blue-900/20 border border-blue-500/30'}`}>
+            <div className="flex items-center justify-between mb-2">
+              <span className={`text-sm font-medium ${isLight ? 'text-blue-800' : 'text-blue-300'}`}>
+                Assessment {currentAssessmentIndex + 1} of {assessmentQueue.length}
+              </span>
+              <span className={`text-xs ${isLight ? 'text-blue-600' : 'text-blue-400'}`}>
+                {completedAssessments.length} completed
+              </span>
+            </div>
+            <div className="flex gap-1.5">
+              {assessmentQueue.map((type, index) => (
+                <div
+                  key={type}
+                  className={`flex-1 h-1.5 rounded-full transition-colors ${
+                    index < currentAssessmentIndex
+                      ? 'bg-green-500'
+                      : index === currentAssessmentIndex
+                        ? isLight ? 'bg-blue-500' : 'bg-cyan-500'
+                        : isLight ? 'bg-blue-200' : 'bg-slate-600'
+                  }`}
+                  title={getAssessmentDisplayName(type)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <Badge 
