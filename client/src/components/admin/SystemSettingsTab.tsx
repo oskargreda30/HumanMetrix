@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Settings, FlaskConical, RefreshCw, Shield, AlertTriangle, CheckCircle2, Mail } from "lucide-react";
+import { Loader2, Settings, FlaskConical, RefreshCw, Shield, AlertTriangle, CheckCircle2, Mail, Database, Briefcase } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -46,6 +46,31 @@ export default function SystemSettingsTab() {
 
   const { data: emailProviderData, isLoading: emailProviderLoading } = useQuery<EmailProviderData>({
     queryKey: ["/api/admin/email-provider"],
+  });
+
+  const { data: rolesStatus, isLoading: rolesStatusLoading, refetch: refetchRolesStatus } = useQuery<{ count: number; predefinedCount: number }>({
+    queryKey: ["/api/admin/roles/status"],
+  });
+
+  const seedRolesMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/admin/roles/seed");
+    },
+    onSuccess: async (response) => {
+      const data = await response.json();
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/roles/status"] });
+      toast({
+        title: "Roles Seeded Successfully",
+        description: `Created ${data.created} new roles, skipped ${data.skipped} existing roles.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Seeding Failed",
+        description: error.message || "Failed to seed job roles.",
+        variant: "destructive",
+      });
+    },
   });
 
   const updateSettingMutation = useMutation({
@@ -388,6 +413,80 @@ export default function SystemSettingsTab() {
               </div>
             </>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Database Setup */}
+      <Card className="bg-white/10 border-white/20">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <Database className="h-5 w-5 text-cyan-400" />
+            Database Setup
+          </CardTitle>
+          <CardDescription className="text-white/70">
+            Seed predefined job roles and manage database initialization
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Job Roles Status */}
+          <div className="flex items-center justify-between gap-4 p-4 rounded-lg bg-white/5 border border-white/10">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <Briefcase className="h-5 w-5 text-cyan-400" />
+                <span className="text-white font-medium text-base">Job Roles</span>
+                {rolesStatusLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-white/50" />
+                ) : (
+                  <Badge 
+                    variant="outline" 
+                    className={rolesStatus?.count && rolesStatus.count >= rolesStatus.predefinedCount
+                      ? "bg-green-500/20 text-green-300 border-green-500/30" 
+                      : "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                    }
+                  >
+                    {rolesStatus?.count ?? 0} / {rolesStatus?.predefinedCount ?? 50} roles
+                  </Badge>
+                )}
+              </div>
+              <p className="text-white/60 text-sm">
+                Seed the 50 predefined job roles used for Role Fit analysis. 
+                Safe to run multiple times - existing roles will be skipped.
+              </p>
+            </div>
+            <Button
+              onClick={() => seedRolesMutation.mutate()}
+              disabled={seedRolesMutation.isPending}
+              className="gap-2"
+              data-testid="button-seed-roles"
+            >
+              {seedRolesMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Seeding...
+                </>
+              ) : (
+                <>
+                  <Database className="h-4 w-4" />
+                  Seed Roles
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Info Card */}
+          <div className="p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
+            <div className="flex items-start gap-3">
+              <Shield className="h-5 w-5 text-cyan-400 mt-0.5 shrink-0" />
+              <div>
+                <h4 className="text-cyan-300 font-medium mb-1">When to use</h4>
+                <ul className="text-white/70 text-sm space-y-1 list-disc list-inside">
+                  <li>After initial production deployment to populate job roles</li>
+                  <li>When new predefined roles are added in updates</li>
+                  <li>If production database was reset or migrated</li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
