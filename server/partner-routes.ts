@@ -3,7 +3,7 @@ import { storage } from "./storage";
 import { partnerAuth, PartnerRequest, trackUsage, generateApiKey, consumeTestCredit } from "./partner-auth";
 import { isAuthenticated } from "./auth";
 import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation, sendPartnerBulkInvitationEmail, sendB2BCongratulatoryEmail, sendB2BAllCompleteEmail } from "./email";
-import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount, B2C_RETAIL_PRICE_PER_ASSESSMENT, BASE_FEE, ASSESSMENT_PRICES, assessmentResults } from "@shared/schema";
+import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount, B2C_RETAIL_PRICE_PER_ASSESSMENT, BASE_FEE, ASSESSMENT_PRICES, assessmentResults, assessmentSessions } from "@shared/schema";
 import { getQuestionLocale, getPPPAdjustedPriceInPence, getCurrencyForCountry, formatPrice, COUNTRY_CURRENCY_MAP } from "@shared/currencies";
 import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { generateTemporaryPassword } from "./passwordUtils";
