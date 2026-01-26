@@ -17,7 +17,7 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import Stripe from "stripe";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import pLimit from "p-limit";
 
 const __filename = fileURLToPath(import.meta.url);
