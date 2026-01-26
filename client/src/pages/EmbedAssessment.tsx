@@ -952,7 +952,9 @@ export default function EmbedAssessment() {
     );
   }
 
-  if (status === "completed") {
+  // Only show completed screen if we're NOT in a multi-assessment flow with more assessments remaining
+  // This prevents showing completion screen between assessments
+  if (status === "completed" && (!isMultiAssessment || isLastAssessment)) {
     const branding = session?.branding;
     const accentColor = branding?.accentColor || '#06b6d4';
     const displayName = branding?.companyDisplayName || session?.partnerName || 'HumanMetrix';
