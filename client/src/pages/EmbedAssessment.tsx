@@ -952,9 +952,12 @@ export default function EmbedAssessment() {
     );
   }
 
-  // Only show completed screen if we're NOT in a multi-assessment flow with more assessments remaining
+  // Only show completed screen if:
+  // 1. Status is "completed" AND
+  // 2. We have actual completed scores (not null after advancing) AND
+  // 3. Either it's not multi-assessment OR we're on the last assessment
   // This prevents showing completion screen between assessments
-  if (status === "completed" && (!isMultiAssessment || isLastAssessment)) {
+  if (status === "completed" && completedScores !== null && (!isMultiAssessment || isLastAssessment)) {
     const branding = session?.branding;
     const accentColor = branding?.accentColor || '#06b6d4';
     const displayName = branding?.companyDisplayName || session?.partnerName || 'HumanMetrix';
