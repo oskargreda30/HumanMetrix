@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Play, Code2, Puzzle, Copy, Check, ExternalLink } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Play, Code2, Puzzle, Copy, Check, ExternalLink, Layers } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -31,16 +32,24 @@ interface ApiKey {
 interface TestSession {
   sessionId: string;
   assessmentType: string;
+  assessmentTypes?: string[];
   status: string;
   widgetUrl: string;
   expiresAt: string;
 }
 
+const ASSESSMENT_TYPES = [
+  { id: "fit", label: "FIT (Behavioural)", description: "6 core behavioral skills" },
+  { id: "ai_readiness", label: "AI Readiness", description: "9 AI collaboration skills" },
+  { id: "prompt_architecture", label: "Prompt Architecture", description: "7-level prompt mastery" },
+  { id: "aiq", label: "AIQ (Ethics)", description: "4 ethical AI dimensions" },
+];
+
 export default function WidgetTestTab() {
   const { toast } = useToast();
   const [selectedPartnerId, setSelectedPartnerId] = useState<string>("");
   const [selectedKeyId, setSelectedKeyId] = useState<string>("");
-  const [assessmentType, setAssessmentType] = useState<string>("fit");
+  const [selectedAssessmentTypes, setSelectedAssessmentTypes] = useState<string[]>(["fit"]);
   const [testEmail, setTestEmail] = useState<string>("");
   const [externalUserId, setExternalUserId] = useState<string>("");
   const [metadataJson, setMetadataJson] = useState<string>('{\n  "jobRole": "Software Engineer",\n  "department": "Engineering"\n}');
@@ -49,6 +58,19 @@ export default function WidgetTestTab() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [widgetTheme, setWidgetTheme] = useState<string>("light");
   const [iframeLoading, setIframeLoading] = useState(false);
+  
+  const isMultiAssessment = selectedAssessmentTypes.length > 1;
+  
+  const toggleAssessmentType = (typeId: string) => {
+    setSelectedAssessmentTypes(prev => {
+      if (prev.includes(typeId)) {
+        // Don't allow removing the last one
+        if (prev.length === 1) return prev;
+        return prev.filter(t => t !== typeId);
+      }
+      return [...prev, typeId];
+    });
+  };
 
   const { data: partners, isLoading: partnersLoading } = useQuery<Partner[]>({
     queryKey: ["/api/admin/partners"],
@@ -76,16 +98,22 @@ export default function WidgetTestTab() {
   };
 
   const createTestSessionMutation = useMutation({
-    mutationFn: async (data: { partnerId: string; apiKeyId: string; assessmentType: string; email?: string; externalUserId?: string; metadata?: Record<string, any> }) => {
+    mutationFn: async (data: { partnerId: string; apiKeyId: string; assessmentType: string; assessmentTypes?: string[]; email?: string; externalUserId?: string; metadata?: Record<string, any> }) => {
       const response = await apiRequest("POST", "/api/admin/widget-test/session", data);
       return response.json();
     },
     onSuccess: (data) => {
       setIframeLoading(true); // Start showing loading indicator for iframe
-      setCurrentSession(data);
+      setCurrentSession({
+        ...data,
+        assessmentTypes: selectedAssessmentTypes,
+      });
+      const typeCount = selectedAssessmentTypes.length;
       toast({
         title: "Test Session Created",
-        description: `Session ID: ${data.sessionId}`,
+        description: typeCount > 1 
+          ? `Multi-assessment session with ${typeCount} assessments` 
+          : `Session ID: ${data.sessionId}`,
       });
     },
     onError: (error: any) => {
@@ -99,7 +127,11 @@ export default function WidgetTestTab() {
 
   const getEmbedUrl = () => {
     if (!currentSession) return "";
-    return `/embed/assessment?session=${currentSession.sessionId}&theme=${widgetTheme}`;
+    // For multi-assessment, use the types parameter
+    const typesParam = currentSession.assessmentTypes && currentSession.assessmentTypes.length > 1
+      ? `&types=${currentSession.assessmentTypes.join(",")}`
+      : "";
+    return `/embed/assessment?session=${currentSession.sessionId}&theme=${widgetTheme}${typesParam}`;
   };
 
   const copyToClipboard = (text: string, id: string) => {
@@ -220,19 +252,57 @@ export default function WidgetTestTab() {
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label className="text-slate-300">Assessment Type</Label>
-                <Select value={assessmentType} onValueChange={setAssessmentType}>
-                  <SelectTrigger className="bg-slate-900/50 border-slate-600 text-white" data-testid="select-widget-assessment-type">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="fit">FIT (Behavioural)</SelectItem>
-                    <SelectItem value="ai_readiness">AI Readiness</SelectItem>
-                    <SelectItem value="prompt_architecture">Prompt Architecture</SelectItem>
-                    <SelectItem value="aiq">AIQ (Ethics)</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-slate-300">Assessment Types</Label>
+                  {isMultiAssessment && (
+                    <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 text-xs">
+                      <Layers className="w-3 h-3 mr-1" />
+                      Multi-Assessment: {selectedAssessmentTypes.length} selected
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500">
+                  Select one or more assessments. Multiple assessments will run in sequence.
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {ASSESSMENT_TYPES.map((type) => (
+                    <div
+                      key={type.id}
+                      className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                        selectedAssessmentTypes.includes(type.id)
+                          ? 'bg-cyan-500/10 border-cyan-500/50'
+                          : 'bg-slate-900/50 border-slate-600 hover:border-slate-500'
+                      }`}
+                      onClick={() => toggleAssessmentType(type.id)}
+                      data-testid={`checkbox-assessment-${type.id}`}
+                    >
+                      <div className="flex items-start gap-2">
+                        <Checkbox
+                          checked={selectedAssessmentTypes.includes(type.id)}
+                          onCheckedChange={() => toggleAssessmentType(type.id)}
+                          className="mt-0.5"
+                        />
+                        <div>
+                          <p className={`text-sm font-medium ${
+                            selectedAssessmentTypes.includes(type.id) ? 'text-cyan-300' : 'text-slate-300'
+                          }`}>
+                            {type.label}
+                          </p>
+                          <p className="text-xs text-slate-500">{type.description}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {selectedAssessmentTypes.length > 1 && (
+                  <div className="flex items-center gap-2 p-2 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                    <Layers className="w-4 h-4 text-blue-400" />
+                    <span className="text-xs text-blue-300">
+                      Order: {selectedAssessmentTypes.map(t => ASSESSMENT_TYPES.find(at => at.id === t)?.label.split(" ")[0]).join(" → ")}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -301,13 +371,14 @@ export default function WidgetTestTab() {
                   createTestSessionMutation.mutate({
                     partnerId: selectedPartnerId,
                     apiKeyId: selectedKeyId,
-                    assessmentType,
+                    assessmentType: selectedAssessmentTypes[0], // Primary type for session
+                    assessmentTypes: selectedAssessmentTypes,
                     email: testEmail || undefined,
                     externalUserId: externalUserId || undefined,
                     metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
                   });
                 }}
-                disabled={!selectedPartnerId || !selectedKeyId || createTestSessionMutation.isPending || !!metadataError}
+                disabled={!selectedPartnerId || !selectedKeyId || selectedAssessmentTypes.length === 0 || createTestSessionMutation.isPending || !!metadataError}
                 className="w-full bg-cyan-600 hover:bg-cyan-700"
                 data-testid="button-create-widget-session"
               >
@@ -318,8 +389,8 @@ export default function WidgetTestTab() {
                   </>
                 ) : (
                   <>
-                    <Play className="w-4 h-4 mr-2" />
-                    Create Test Session
+                    {isMultiAssessment ? <Layers className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
+                    {isMultiAssessment ? `Create Multi-Assessment (${selectedAssessmentTypes.length})` : 'Create Test Session'}
                   </>
                 )}
               </Button>
@@ -346,9 +417,23 @@ export default function WidgetTestTab() {
                       {currentSession.status}
                     </Badge>
                   </div>
-                  <div>
-                    <span className="text-slate-400">Type:</span>
-                    <p className="text-white">{currentSession.assessmentType}</p>
+                  <div className="col-span-2">
+                    <span className="text-slate-400">Assessment Types:</span>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {(currentSession.assessmentTypes || [currentSession.assessmentType]).map((type, idx) => (
+                        <Badge 
+                          key={type} 
+                          className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
+                        >
+                          {idx + 1}. {ASSESSMENT_TYPES.find(t => t.id === type)?.label || type}
+                        </Badge>
+                      ))}
+                    </div>
+                    {currentSession.assessmentTypes && currentSession.assessmentTypes.length > 1 && (
+                      <p className="text-xs text-slate-500 mt-1">
+                        Assessments will run in sequence (uses {currentSession.assessmentTypes.length} credits total)
+                      </p>
+                    )}
                   </div>
                   <div>
                     <span className="text-slate-400">Expires:</span>
@@ -356,7 +441,7 @@ export default function WidgetTestTab() {
                   </div>
                 </div>
 
-                <a href={currentSession.widgetUrl} target="_blank" rel="noopener noreferrer">
+                <a href={getEmbedUrl()} target="_blank" rel="noopener noreferrer">
                   <Button
                     variant="outline"
                     size="sm"
