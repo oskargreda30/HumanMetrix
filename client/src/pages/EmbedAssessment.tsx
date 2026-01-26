@@ -226,9 +226,9 @@ export default function EmbedAssessment() {
   const theme = params.get("theme") || "dark";
   const showResultsParam = params.get("showResults") === "true";
   const isDemo = params.get("demo") === "true";
-  const demoType = params.get("type") || "fit";
-  // Support both single type and comma-separated types
-  const demoTypes = params.get("types")?.split(",").filter(Boolean) || (demoType ? [demoType] : ["fit"]);
+  const singleType = params.get("type") || "fit";
+  // Support both single type and comma-separated types (for both demo and real sessions)
+  const urlTypes = params.get("types")?.split(",").filter(Boolean) || [singleType];
   const isLight = theme === "light";
 
   const [session, setSession] = useState<SessionData | null>(null);
@@ -252,16 +252,18 @@ export default function EmbedAssessment() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const hasSubmittedRef = useRef<boolean>(false);
   
-  // Multi-assessment state
-  const [assessmentQueue, setAssessmentQueue] = useState<string[]>(demoTypes);
+  // Multi-assessment state - use urlTypes for both demo and real sessions
+  const [assessmentQueue, setAssessmentQueue] = useState<string[]>(urlTypes);
   const [currentAssessmentIndex, setCurrentAssessmentIndex] = useState(0);
   const [completedAssessments, setCompletedAssessments] = useState<Array<{ type: string; scores: any }>>([]);
   const [showTransitionScreen, setShowTransitionScreen] = useState(false);
   const transitionTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingScoresRef = useRef<any>(null); // Store scores for transition
   
   const isMultiAssessment = assessmentQueue.length > 1;
   const currentAssessmentType = assessmentQueue[currentAssessmentIndex] || assessmentQueue[0];
   const isLastAssessment = currentAssessmentIndex >= assessmentQueue.length - 1;
+  const isCurrentPromptArchitecture = currentAssessmentType === "prompt_architecture";
 
   // Theme-aware class names
   const bgMain = isLight ? "bg-gray-50" : "bg-slate-900";
@@ -674,20 +676,51 @@ export default function EmbedAssessment() {
 
   // Function to advance to next assessment in multi-assessment mode
   const advanceToNextAssessment = () => {
-    setCompletedAssessments(prev => [
-      ...prev,
-      { type: currentAssessmentType, scores: completedScores }
-    ]);
+    // Clear any pending auto-advance timer to prevent double-advance
+    if (transitionTimerRef.current) {
+      clearTimeout(transitionTimerRef.current);
+      transitionTimerRef.current = null;
+    }
+    
+    // Use stored scores from ref to avoid stale state
+    const scoresForCompletion = pendingScoresRef.current;
+    if (scoresForCompletion) {
+      setCompletedAssessments(prev => [
+        ...prev,
+        { type: currentAssessmentType, scores: scoresForCompletion }
+      ]);
+      pendingScoresRef.current = null;
+    }
+    
+    const nextIndex = currentAssessmentIndex + 1;
+    const nextType = assessmentQueue[nextIndex];
+    
+    // Update session with new assessment type so questions reload correctly
+    if (session) {
+      setSession({
+        ...session,
+        assessmentType: nextType
+      });
+    }
+    
     setShowTransitionScreen(false);
-    setCurrentAssessmentIndex(prev => prev + 1);
+    setCurrentAssessmentIndex(nextIndex);
     setCompletedScores(null);
     setCurrentIndex(0);
     setAnswers({});
     setStatus("ready");
-    // Reset timer for next assessment
-    const nextType = assessmentQueue[currentAssessmentIndex + 1];
+    hasSubmittedRef.current = false;
+    
+    // Reset timer for next assessment (20 min for regular, 7 min for prompt architecture)
     setTimeRemaining(nextType === "prompt_architecture" ? 420 : 1200);
     setShowTimeWarning(false);
+    
+    // Load new questions for the next assessment type
+    if (isDemo) {
+      const loadedQuestions = getQuestions(nextType, 'default');
+      setQuestions(loadedQuestions);
+    }
+    // For real sessions, questions will reload via fetchSession/startAssessment
   };
 
   const handleSubmit = async () => {
@@ -704,10 +737,8 @@ export default function EmbedAssessment() {
       
       // If multi-assessment and not the last one, show transition screen
       if (isMultiAssessment && !isLastAssessment) {
-        setCompletedAssessments(prev => [
-          ...prev, 
-          { type: currentAssessmentType, scores: demoScores }
-        ]);
+        // Store scores in ref for use in advanceToNextAssessment
+        pendingScoresRef.current = demoScores;
         setShowTransitionScreen(true);
         setIsSubmitting(false);
         // Auto-advance after 3 seconds
@@ -760,10 +791,8 @@ export default function EmbedAssessment() {
       
       // If multi-assessment and not the last one, show transition screen
       if (isMultiAssessment && !isLastAssessment) {
-        setCompletedAssessments(prev => [
-          ...prev, 
-          { type: currentAssessmentType, scores: data }
-        ]);
+        // Store scores in ref for use in advanceToNextAssessment
+        pendingScoresRef.current = data;
         setShowTransitionScreen(true);
         setIsSubmitting(false);
         // Auto-advance after 3 seconds
@@ -795,7 +824,8 @@ export default function EmbedAssessment() {
   const progress = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
   const isLastQuestion = currentIndex === questions.length - 1;
   const hasAnswered = currentQ ? !!answers[currentQ.id] : false;
-  const isPromptArchitecture = session?.assessmentType === "prompt_architecture";
+  // Use currentAssessmentType for prompt architecture checks (works in multi-assessment mode)
+  const isPromptArchitecture = isCurrentPromptArchitecture;
 
   if (status === "loading") {
     return (
