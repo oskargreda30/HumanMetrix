@@ -178,6 +178,7 @@ export interface IStorage {
   getResultByPurchaseItem(purchaseItemId: string): Promise<AssessmentResult | undefined>;
   getResultByInvitationAndType(invitationId: string, assessmentType: string): Promise<AssessmentResult | undefined>;
   getResultByPartnerInvitationAndType(partnerInvitationId: string, assessmentType: string): Promise<AssessmentResult | undefined>;
+  getResultsByPartnerInvitation(partnerInvitationId: string): Promise<AssessmentResult[]>;
   updateAssessmentResultStatus(id: string, status: string, completedAt?: Date): Promise<void>;
   updateAssessmentScores(id: string, scores: Record<string, number>, totalScore?: number, percentile?: number): Promise<void>;
   updateAssessmentResult(id: string, updates: Partial<AssessmentResult>): Promise<void>;
@@ -848,6 +849,14 @@ export class DatabaseStorage implements IStorage {
         )
       );
     return result;
+  }
+
+  async getResultsByPartnerInvitation(partnerInvitationId: string): Promise<AssessmentResult[]> {
+    const results = await db
+      .select()
+      .from(assessmentResults)
+      .where(eq(assessmentResults.partnerInvitationId, partnerInvitationId));
+    return results;
   }
 
   async updateAssessmentResultStatus(id: string, status: string, completedAt?: Date): Promise<void> {

@@ -3,7 +3,7 @@ import { storage } from "./storage";
 import { partnerAuth, PartnerRequest, trackUsage, generateApiKey, consumeTestCredit } from "./partner-auth";
 import { isAuthenticated } from "./auth";
 import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation, sendPartnerBulkInvitationEmail, sendB2BCongratulatoryEmail, sendB2BAllCompleteEmail } from "./email";
-import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount, B2C_RETAIL_PRICE_PER_ASSESSMENT, BASE_FEE, ASSESSMENT_PRICES } from "@shared/schema";
+import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount, B2C_RETAIL_PRICE_PER_ASSESSMENT, BASE_FEE, ASSESSMENT_PRICES, assessmentResults } from "@shared/schema";
 import { getQuestionLocale, getPPPAdjustedPriceInPence, getCurrencyForCountry, formatPrice, COUNTRY_CURRENCY_MAP } from "@shared/currencies";
 import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { generateTemporaryPassword } from "./passwordUtils";
@@ -16,6 +16,8 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import Stripe from "stripe";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 import pLimit from "p-limit";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -1603,6 +1605,37 @@ export function registerPartnerRoutes(app: Express) {
           }
         }
         
+        // Update partner invitation status if this session was created from an invitation
+        const sessionMetadata = session.metadata as any;
+        if (sessionMetadata?.invitationId && sessionMetadata?.source === 'partner_invitation') {
+          try {
+            const invitationId = sessionMetadata.invitationId;
+            const invitation = await storage.getPartnerCandidateInvitation(invitationId);
+            if (invitation) {
+              // Get all completed sessions for this partner invitation
+              const allSessions = await storage.getPartnerSessions(session.partnerId, { limit: 100 });
+              const invitationSessions = allSessions.filter(
+                (s: any) => (s.metadata as any)?.invitationId === invitationId && s.status === 'completed'
+              );
+              
+              const completedTypes = invitationSessions.map((s: any) => normalizeAssessmentId(s.assessmentType));
+              const normalizedInvitationTypes = invitation.assessmentTypes.map((t: string) => normalizeAssessmentId(t));
+              
+              const allComplete = normalizedInvitationTypes.every((type: string) => completedTypes.includes(type));
+              
+              if (allComplete && invitation.status !== 'completed') {
+                await storage.updatePartnerCandidateInvitation(invitationId, {
+                  status: 'completed',
+                  completedAt: new Date(),
+                });
+                console.log(`[Partner Invitation] All assessments completed for invitation ${invitationId}`);
+              }
+            }
+          } catch (invError) {
+            console.error('[Partner Invitation] Failed to update invitation status:', invError);
+          }
+        }
+        
         res.json({
           sessionId: session.id,
           status: "completed",
@@ -3122,4 +3155,221 @@ async function sendWebhook(url: string, payload: any): Promise<void> {
     console.error("Webhook delivery failed:", error);
     throw error;
   }
+}
+
+// ============================================================================
+// GUEST ASSESSMENT FLOW - For partner-invited candidates (no login required)
+// Uses existing embed infrastructure with invitation token authentication
+// ============================================================================
+
+export function registerGuestAssessmentRoutes(app: Express) {
+  // Get invitation details by token - landing page
+  app.get("/api/guest/invite/:token", async (req: Request, res: Response) => {
+    try {
+      const { token } = req.params;
+      
+      const invitation = await storage.getPartnerCandidateInvitationByToken(token);
+      if (!invitation) {
+        return res.status(404).json({ error: "Invitation not found or invalid" });
+      }
+      
+      // Check if invitation has expired
+      if (invitation.expiresAt && new Date(invitation.expiresAt) < new Date()) {
+        return res.status(410).json({ error: "Invitation has expired" });
+      }
+      
+      // Get partner info
+      const partner = await storage.getPartnerAccount(invitation.partnerId);
+      
+      // Get sessions created from this invitation
+      const allSessions = await storage.getPartnerSessions(invitation.partnerId, { limit: 100 });
+      const invitationSessions = allSessions.filter(
+        (s: any) => (s.metadata as any)?.invitationId === invitation.id
+      );
+      
+      // Map assessment types to their completion status based on sessions
+      // Use the most recent session for each type (sort by createdAt descending)
+      const assessmentStatuses = invitation.assessmentTypes.map((type: string) => {
+        const normalizedType = normalizeAssessmentId(type);
+        // Find all sessions for this type and sort by createdAt (most recent first)
+        const sessionsForType = invitationSessions
+          .filter((s: any) => normalizeAssessmentId(s.assessmentType) === normalizedType)
+          .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        const mostRecentSession = sessionsForType[0];
+        return {
+          type: normalizedType,
+          status: mostRecentSession?.status || 'not_started',
+          sessionId: mostRecentSession?.id || null,
+        };
+      });
+      
+      // Check if all assessments are complete
+      const allComplete = assessmentStatuses.every((s: any) => s.status === 'completed');
+      
+      res.json({
+        id: invitation.id,
+        email: invitation.email,
+        name: invitation.name,
+        assessmentTypes: invitation.assessmentTypes.map((t: string) => normalizeAssessmentId(t)),
+        assessmentStatuses,
+        partnerName: partner?.companyName || partner?.name || 'Partner',
+        partnerId: invitation.partnerId,
+        expiresAt: invitation.expiresAt,
+        status: allComplete ? 'completed' : invitation.status,
+        allComplete,
+      });
+    } catch (error) {
+      console.error("Error fetching invitation:", error);
+      res.status(500).json({ error: "Failed to fetch invitation details" });
+    }
+  });
+  
+  // Create account after completing assessments (optional)
+  // Note: Assessment results are stored in sessions, linked by email
+  app.post("/api/guest/invite/:token/create-account", async (req: Request, res: Response) => {
+    try {
+      const { token } = req.params;
+      const { password } = req.body;
+      
+      if (!password || password.length < 6) {
+        return res.status(400).json({ error: "Password must be at least 6 characters" });
+      }
+      
+      const invitation = await storage.getPartnerCandidateInvitationByToken(token);
+      if (!invitation) {
+        return res.status(404).json({ error: "Invitation not found" });
+      }
+      
+      if (!invitation.email) {
+        return res.status(400).json({ error: "Email required to create account" });
+      }
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(invitation.email);
+      if (existingUser) {
+        return res.json({ 
+          success: true, 
+          message: "Account already exists. You can log in with your existing credentials.",
+          existingAccount: true
+        });
+      }
+      
+      // Create new user
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      const nameParts = invitation.name?.split(' ') || [];
+      const firstName = nameParts[0] || invitation.email.split('@')[0];
+      const lastName = nameParts.slice(1).join(' ') || null;
+      
+      const newUser = await storage.createUser({
+        email: invitation.email,
+        passwordHash: hashedPassword,
+        firstName,
+        lastName,
+        role: 'user',
+        emailVerified: true, // They've already verified via invitation
+      });
+      
+      // Sessions are already linked by email (externalEmail field)
+      // No need to manually link results as B2B results page uses email matching
+      
+      res.json({ 
+        success: true, 
+        message: "Account created successfully",
+        userId: newUser.id
+      });
+    } catch (error) {
+      console.error("Error creating account:", error);
+      res.status(500).json({ error: "Failed to create account" });
+    }
+  });
+  
+  // Generate embed session from invitation token
+  // This bridges the invitation system with the existing embed infrastructure
+  app.post("/api/guest/invite/:token/session", async (req: Request, res: Response) => {
+    try {
+      const { token } = req.params;
+      const { assessmentType } = req.body;
+      
+      const invitation = await storage.getPartnerCandidateInvitationByToken(token);
+      if (!invitation) {
+        return res.status(404).json({ error: "Invitation not found" });
+      }
+      
+      if (invitation.expiresAt && new Date(invitation.expiresAt) < new Date()) {
+        return res.status(410).json({ error: "Invitation has expired" });
+      }
+      
+      const normalizedType = normalizeAssessmentId(assessmentType);
+      
+      // Verify this assessment type is in the invitation
+      const normalizedInvitationTypes = invitation.assessmentTypes.map((t: string) => normalizeAssessmentId(t));
+      if (!normalizedInvitationTypes.includes(normalizedType)) {
+        return res.status(403).json({ error: "Assessment type not included in invitation" });
+      }
+      
+      // Get partner's API key to create a session
+      const partner = await storage.getPartnerAccount(invitation.partnerId);
+      if (!partner) {
+        return res.status(404).json({ error: "Partner not found" });
+      }
+      
+      // Check for existing session for this invitation/type combination
+      const existingSessions = await storage.getPartnerSessions(invitation.partnerId, { limit: 100 });
+      const existingSession = existingSessions.find((s: any) => 
+        (s.metadata as any)?.invitationId === invitation.id && 
+        normalizeAssessmentId(s.assessmentType) === normalizedType
+      );
+      
+      if (existingSession) {
+        if (existingSession.status === 'completed') {
+          return res.status(400).json({ 
+            error: "Assessment already completed",
+            sessionId: existingSession.id,
+            status: 'completed'
+          });
+        }
+        return res.json({ 
+          sessionId: existingSession.id,
+          assessmentType: normalizedType,
+          resumed: true 
+        });
+      }
+      
+      // Create new embed session using partner's credentials
+      const sessionData = {
+        partnerId: invitation.partnerId,
+        assessmentType: normalizedType,
+        externalUserId: invitation.externalUserId || invitation.email || 'guest',
+        externalEmail: invitation.email,
+        metadata: {
+          invitationId: invitation.id,
+          invitationToken: token,
+          source: 'partner_invitation',
+          candidateName: invitation.name,
+        },
+        webhookUrl: null,
+        expiresAt: invitation.expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000),
+      };
+      
+      const session = await storage.createPartnerSession(sessionData);
+      
+      // Update invitation status if first assessment
+      if (invitation.status === 'pending' || invitation.status === 'sent') {
+        await storage.updatePartnerCandidateInvitation(invitation.id, {
+          status: 'started',
+          startedAt: new Date(),
+        });
+      }
+      
+      res.json({ 
+        sessionId: session.id,
+        assessmentType: normalizedType,
+        resumed: false 
+      });
+    } catch (error) {
+      console.error("Error creating session from invitation:", error);
+      res.status(500).json({ error: "Failed to create assessment session" });
+    }
+  });
 }

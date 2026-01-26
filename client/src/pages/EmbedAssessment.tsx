@@ -224,6 +224,7 @@ export default function EmbedAssessment() {
   const params = new URLSearchParams(searchString);
   const sessionId = params.get("session");
   const theme = params.get("theme") || "dark";
+  const inviteToken = params.get("inviteToken");
   const showResultsParam = params.get("showResults") === "true";
   const isDemo = params.get("demo") === "true";
   const singleType = params.get("type") || "fit";
@@ -1216,6 +1217,17 @@ export default function EmbedAssessment() {
                 </p>
               </div>
 
+              {inviteToken && (
+                <Button
+                  className="mt-6 w-full"
+                  onClick={() => window.location.href = `/invite/${inviteToken}`}
+                  style={{ backgroundColor: primaryColor }}
+                  data-testid="button-return-to-invite"
+                >
+                  Return to Continue
+                </Button>
+              )}
+
               <div className="mt-6 pt-4 border-t border-slate-700/30 flex items-center justify-center gap-2">
                 <span className={`text-xs ${textMuted}`}>Powered by</span>
                 <div className="flex items-center gap-1.5">
@@ -1282,6 +1294,17 @@ export default function EmbedAssessment() {
             <p className={`text-xs ${textMuted} mt-4`}>
               Didn't receive the email? Check your spam folder or contact support.
             </p>
+
+            {inviteToken && (
+              <Button
+                className="mt-6 w-full"
+                onClick={() => window.location.href = `/invite/${inviteToken}`}
+                style={{ backgroundColor: primaryColor }}
+                data-testid="button-return-to-invite"
+              >
+                Return to Continue
+              </Button>
+            )}
 
             <div className="mt-6 pt-4 border-t border-slate-700/30 flex items-center justify-center gap-2">
               <span className={`text-xs ${textMuted}`}>Powered by</span>

@@ -261,8 +261,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
   // Register partner API routes (for B2B integrations)
-  const { registerPartnerRoutes } = await import("./partner-routes");
+  const { registerPartnerRoutes, registerGuestAssessmentRoutes } = await import("./partner-routes");
   registerPartnerRoutes(app);
+  registerGuestAssessmentRoutes(app);
 
   // Register Ecosystem Index routes (team diagnostic tool)
   const { registerEcosystemRoutes } = await import("./ecosystem-routes");

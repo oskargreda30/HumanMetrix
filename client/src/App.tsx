@@ -60,6 +60,7 @@ import SampleComparisonReport from "@/pages/SampleComparisonReport";
 import SampleRoleFitReport from "@/pages/SampleRoleFitReport";
 import EcosystemSampleReport from "@/pages/EcosystemSampleReport";
 import EcosystemStart from "@/pages/EcosystemStart";
+import GuestInvite from "@/pages/GuestInvite";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -176,6 +177,7 @@ function Router() {
         )}
       </Route>
       <Route path="/partner/accept-invite/:token" component={AcceptPartnerInvite} />
+      <Route path="/invite/:token" component={GuestInvite} />
       
       {/* Redirects for old URLs (fixes Google Search Console 404s) */}
       <Route path="/candidate-portal">
