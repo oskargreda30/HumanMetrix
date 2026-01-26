@@ -862,6 +862,8 @@ export function registerPartnerRoutes(app: Express) {
         // First check the persisted flag, then fallback to checking the API key environment
         const isTestSession = session.isTestSession === true || apiKey?.environment === "test";
         
+        console.log(`[Embed Session] Returning session ${session.id}, externalEmail: ${session.externalEmail}, isTestSession: ${isTestSession}`);
+        
         const response: any = {
           sessionId: session.id,
           assessmentType: session.assessmentType,
