@@ -862,7 +862,11 @@ export function registerPartnerRoutes(app: Express) {
         // First check the persisted flag, then fallback to checking the API key environment
         const isTestSession = session.isTestSession === true || apiKey?.environment === "test";
         
-        console.log(`[Embed Session] Returning session ${session.id}, externalEmail: ${session.externalEmail}, isTestSession: ${isTestSession}`);
+        // Check if this session is from a partner invitation (magic link - skip email verification)
+        const sessionMetadata = session.metadata as any;
+        const isFromInvitation = !!(sessionMetadata?.source === 'partner_invitation' && sessionMetadata?.invitationId);
+        
+        console.log(`[Embed Session] Returning session ${session.id}, externalEmail: ${session.externalEmail}, isTestSession: ${isTestSession}, isFromInvitation: ${isFromInvitation}`);
         
         const response: any = {
           sessionId: session.id,
@@ -879,6 +883,8 @@ export function registerPartnerRoutes(app: Express) {
           lastActivityAt: session.lastActivityAt || null,
           // Test mode flag - skip email verification for developer testing
           isTestSession,
+          // Skip email verification for partner invitations (magic link pattern - clicking email link = verified)
+          isFromInvitation,
           // Results status for determining if results can be shown
           resultsPaymentStatus: session.resultsPaymentStatus,
           resultsReleaseStatus: session.resultsReleaseStatus,
@@ -1615,7 +1621,7 @@ export function registerPartnerRoutes(app: Express) {
             const invitation = await storage.getPartnerCandidateInvitation(invitationId);
             if (invitation) {
               // Get all completed sessions for this partner invitation
-              const allSessions = await storage.getPartnerSessions(session.partnerId, { limit: 100 });
+              const allSessions = await storage.getSessionsByPartner(session.partnerId, { limit: 100 });
               const invitationSessions = allSessions.filter(
                 (s: any) => (s.metadata as any)?.invitationId === invitationId && s.status === 'completed'
               );
@@ -3134,7 +3140,7 @@ async function sendWebhook(url: string, payload: any): Promise<void> {
 async function linkPartnerResultsToUser(userId: string, invitation: any) {
   try {
     // Get all assessment sessions for this partner
-    const allSessions = await storage.getAssessmentSessionsByPartner(invitation.partnerId);
+    const allSessions = await storage.getSessionsByPartner(invitation.partnerId);
     
     // Filter to completed sessions for this invitation
     const completedSessions = allSessions.filter(
@@ -3211,7 +3217,7 @@ export function registerGuestAssessmentRoutes(app: Express) {
       const partner = await storage.getPartnerAccount(invitation.partnerId);
       
       // Get sessions created from this invitation
-      const allSessions = await storage.getPartnerSessions(invitation.partnerId, { limit: 100 });
+      const allSessions = await storage.getSessionsByPartner(invitation.partnerId, { limit: 100 });
       const invitationSessions = allSessions.filter(
         (s: any) => (s.metadata as any)?.invitationId === invitation.id
       );
@@ -3380,7 +3386,7 @@ export function registerGuestAssessmentRoutes(app: Express) {
       }
       
       // Check for existing session for this invitation/type combination
-      const existingSessions = await storage.getPartnerSessions(invitation.partnerId, { limit: 100 });
+      const existingSessions = await storage.getSessionsByPartner(invitation.partnerId, { limit: 100 });
       const existingSession = existingSessions.find((s: any) => 
         (s.metadata as any)?.invitationId === invitation.id && 
         normalizeAssessmentId(s.assessmentType) === normalizedType
@@ -3405,6 +3411,7 @@ export function registerGuestAssessmentRoutes(app: Express) {
       const sessionData = {
         partnerId: invitation.partnerId,
         assessmentType: normalizedType,
+        status: 'created',
         externalUserId: invitation.externalUserId || invitation.email || 'guest',
         externalEmail: invitation.email,
         metadata: {
@@ -3417,7 +3424,7 @@ export function registerGuestAssessmentRoutes(app: Express) {
         expiresAt: invitation.expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000),
       };
       
-      const session = await storage.createPartnerSession(sessionData);
+      const session = await storage.createAssessmentSession(sessionData);
       
       // Update invitation status if first assessment
       if (invitation.status === 'pending' || invitation.status === 'sent') {
