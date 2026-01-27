@@ -35,6 +35,7 @@ import { useToast } from "@/hooks/use-toast";
 import { BulkInvitationsTab } from "@/components/partner/BulkInvitationsTab";
 import PartnerAnalysisTab from "@/components/partner/PartnerAnalysisTab";
 import PartnerRoleFitTab from "@/components/partner/PartnerRoleFitTab";
+import { PdfImportModal } from "@/components/PdfImportModal";
 import { HiringPipelineTab } from "@/components/HiringPipelineTab";
 import PartnerTermsAcceptanceDialog from "@/components/PartnerTermsAcceptanceDialog";
 import { EcosystemProjectSelector } from "@/components/ecosystem/EcosystemProjectSelector";
@@ -1109,6 +1110,9 @@ export default function PartnerDashboard() {
   const [isCancellingBillingChange, setIsCancellingBillingChange] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
   const [cardComplete, setCardComplete] = useState(false);
+  
+  // PDF Import modal state
+  const [showPdfImportModal, setShowPdfImportModal] = useState(false);
   
   // Enterprise billing setup state
   const [showBillingSetupDialog, setShowBillingSetupDialog] = useState(false);
@@ -2696,11 +2700,24 @@ export default function PartnerDashboard() {
             <TabsContent value="results" className="space-y-4" data-testid="panel-results">
               <Card>
                 <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg">Candidate Results</CardTitle>
-                    <InfoTooltip content="Assessment scores are percentages (0-100%). Higher scores indicate stronger performance. Scores above 70% are considered strong, 50-70% average, and below 50% may need development." />
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-lg">Candidate Results</CardTitle>
+                        <InfoTooltip content="Assessment scores are percentages (0-100%). Higher scores indicate stronger performance. Scores above 70% are considered strong, 50-70% average, and below 50% may need development." />
+                      </div>
+                      <CardDescription>View completed assessment results for your candidates</CardDescription>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowPdfImportModal(true)}
+                      data-testid="button-import-pdf-results"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Import PDF Report
+                    </Button>
                   </div>
-                  <CardDescription>View completed assessment results for your candidates</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {resultsLoading ? (
@@ -5691,6 +5708,13 @@ export default function PartnerDashboard() {
             setTimeout(() => setShowTutorial(true), 500);
           }
         }}
+      />
+
+      {/* PDF Import Modal */}
+      <PdfImportModal
+        open={showPdfImportModal}
+        onOpenChange={setShowPdfImportModal}
+        endpoint="/api/partner/import-pdf"
       />
 
       {/* Interactive Spotlight Tour */}
