@@ -33,8 +33,10 @@ const { PDFParse } = require("pdf-parse");
 async function parsePdfBuffer(buffer: Buffer): Promise<{ text: string; numpages?: number; info?: any }> {
   const parser = new PDFParse({ data: buffer });
   await parser.load();
-  const text = await parser.getText();
+  const textResult = await parser.getText();
   const info = await parser.getInfo();
+  // getText() returns { text: string } in v2
+  const text = typeof textResult === 'string' ? textResult : (textResult?.text || '');
   return { text, numpages: info?.numPages, info };
 }
 
