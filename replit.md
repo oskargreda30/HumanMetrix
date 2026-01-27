@@ -60,6 +60,7 @@ The frontend utilizes React + TypeScript, Shadcn UI, and Tailwind CSS for a resp
 - **Content-Aware PDF Rendering**: Dynamic layout for readability.
 - **Cache Refresh Pattern**: For data changes.
 - **Scalability Optimizations**: Database indexes, connection pool tuning, API rate limiting, request deduplication, lazy module loading, static asset caching, HTTP Keep-Alive, security headers, and trust proxy.
+- **Route-based Code Splitting**: All page components (except Home and Login) use React.lazy() for on-demand loading. This dramatically reduces the initial JavaScript bundle size, improving first paint time. Critical pages load immediately while others are loaded when navigated to.
 - **Logging Security**: API response logging sanitises sensitive fields and is disabled in production.
 - **Input Validation System**: Centralized validation utilities with RFC 5322-compliant email regex, international name support, and phone number validation. Emails are normalized (trim + lowercase) and names trimmed on user creation.
 - **Custom Accessible Dropdowns**: Implemented for partner creation modal with full keyboard navigation and ARIA combobox semantics.
