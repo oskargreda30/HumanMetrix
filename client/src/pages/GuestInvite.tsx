@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, XCircle, AlertCircle, User, ArrowRight, Mail, PartyPopper, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 
 interface AssessmentStatus {
   type: string;
@@ -153,6 +154,9 @@ export default function GuestInvite() {
           description: "You've been logged into your existing account. Redirecting to your dashboard...",
         });
         
+        // Invalidate auth cache to ensure the session is recognized
+        await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        
         // Redirect to dashboard after a brief moment
         setTimeout(() => {
           setLocation(data.redirectTo || '/dashboard');
@@ -282,6 +286,9 @@ export default function GuestInvite() {
           ? "You have been logged in to your existing account."
           : "Check your email for your login password. You have been logged in automatically.",
       });
+      
+      // Invalidate auth cache to ensure the session is recognized
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       
       if (data.redirectTo) {
         setLocation(data.redirectTo);
