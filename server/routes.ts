@@ -9126,33 +9126,34 @@ Format your response as JSON with this structure:
       const basePricePerTest = matchingPartner.pricePerAssessment || 500;
       
       // Volume discount tiers - larger packages get better rates
-      // Bulk discount percentages applied on top of the base 25% partner discount
+      // All bulk purchases get an additional 25% off on top of the base 25% partner discount = 50% off total
       const BASE_PARTNER_DISCOUNT = 25; // Partners already get 25% off retail
+      const BULK_DISCOUNT = 25; // Additional 25% off for all bulk purchases
+      const TOTAL_DISCOUNT = BASE_PARTNER_DISCOUNT + BULK_DISCOUNT; // 50% off total
+      
       const packageTiers = [
-        { size: 10, name: 'Starter', bulkDiscountPercent: 0 },       // No additional bulk discount
-        { size: 25, name: 'Growth', bulkDiscountPercent: 5 },        // 5% additional
-        { size: 50, name: 'Professional', bulkDiscountPercent: 10 }, // 10% additional
-        { size: 100, name: 'Business', bulkDiscountPercent: 15 },    // 15% additional
-        { size: 250, name: 'Enterprise', bulkDiscountPercent: 20 },  // 20% additional
-        { size: 500, name: 'Enterprise+', bulkDiscountPercent: 25 }, // 25% additional (50% total)
+        { size: 10, name: 'Starter' },
+        { size: 25, name: 'Growth' },
+        { size: 50, name: 'Professional' },
+        { size: 100, name: 'Business' },
+        { size: 250, name: 'Enterprise' },
+        { size: 500, name: 'Enterprise+' },
       ];
       
-      // Calculate prices for each package tier
+      // Calculate prices for each package tier (all get flat 25% bulk discount)
       const packages = packageTiers.map(tier => {
-        const discountMultiplier = 1 - (tier.bulkDiscountPercent / 100);
+        const discountMultiplier = 1 - (BULK_DISCOUNT / 100);
         const discountedPricePerTest = Math.round(basePricePerTest * discountMultiplier);
         const totalPrice = discountedPricePerTest * tier.size;
-        // Total discount shown = 25% base partner discount + bulk discount
-        const totalDiscountPercent = BASE_PARTNER_DISCOUNT + tier.bulkDiscountPercent;
         
         return {
           size: tier.size,
           name: tier.name,
           price: totalPrice,
           pricePerTest: discountedPricePerTest,
-          discountPercent: totalDiscountPercent, // Show stacked discount (25% partner + bulk)
-          bulkDiscountPercent: tier.bulkDiscountPercent, // The bulk portion only
-          savings: tier.bulkDiscountPercent > 0 ? (basePricePerTest * tier.size) - totalPrice : 0,
+          discountPercent: TOTAL_DISCOUNT, // Show stacked discount (25% partner + 25% bulk = 50%)
+          bulkDiscountPercent: BULK_DISCOUNT, // The bulk portion (25%)
+          savings: (basePricePerTest * tier.size) - totalPrice,
         };
       });
       
@@ -9904,22 +9905,23 @@ Format your response as JSON with this structure:
       const basePricePerTest = matchingPartner.pricePerAssessment || 500;
       
       // Volume discount tiers - must match the pricing API
-      // Bulk discount percentages applied on top of the base 25% partner discount
+      // All bulk purchases get an additional 25% off on top of the base 25% partner discount = 50% off total
       const BASE_PARTNER_DISCOUNT = 25; // Partners already get 25% off retail
+      const BULK_DISCOUNT = 25; // Additional 25% off for all bulk purchases
+      const TOTAL_DISCOUNT = BASE_PARTNER_DISCOUNT + BULK_DISCOUNT; // 50% off total
+      
       const packageTiers = [
-        { size: 10, name: 'Starter', bulkDiscountPercent: 0 },
-        { size: 25, name: 'Growth', bulkDiscountPercent: 5 },
-        { size: 50, name: 'Professional', bulkDiscountPercent: 10 },
-        { size: 100, name: 'Business', bulkDiscountPercent: 15 },
-        { size: 250, name: 'Enterprise', bulkDiscountPercent: 20 },
-        { size: 500, name: 'Enterprise+', bulkDiscountPercent: 25 },
+        { size: 10, name: 'Starter' },
+        { size: 25, name: 'Growth' },
+        { size: 50, name: 'Professional' },
+        { size: 100, name: 'Business' },
+        { size: 250, name: 'Enterprise' },
+        { size: 500, name: 'Enterprise+' },
       ];
       
-      // Find matching tier or use no discount for custom sizes
+      // Find matching tier or use default name for custom sizes
       const tier = packageTiers.find(t => t.size === packageSize);
-      const bulkDiscountPercent = tier?.bulkDiscountPercent || 0;
-      const totalDiscountPercent = BASE_PARTNER_DISCOUNT + bulkDiscountPercent; // Stacked discount for display
-      const discountMultiplier = 1 - (bulkDiscountPercent / 100);
+      const discountMultiplier = 1 - (BULK_DISCOUNT / 100);
       const pricePerTest = Math.round(basePricePerTest * discountMultiplier);
       const totalPrice = pricePerTest * packageSize;
       
@@ -9978,7 +9980,7 @@ Format your response as JSON with this structure:
             currency: partnerCurrency,
             product_data: {
               name: `HumanMetrix Test Package - ${packageSize} Tests`,
-              description: `${tier?.name || 'Custom'} package: ${packageSize} assessment credits at ${currSymbol}${displayPrice.toFixed(isZeroDecimal ? 0 : 2)} per test (${totalDiscountPercent}% off retail)`,
+              description: `${tier?.name || 'Custom'} package: ${packageSize} assessment credits at ${currSymbol}${displayPrice.toFixed(isZeroDecimal ? 0 : 2)} per test (${TOTAL_DISCOUNT}% off retail)`,
             },
             unit_amount: totalPrice,
           },
@@ -9990,8 +9992,8 @@ Format your response as JSON with this structure:
           packageId: pkg.id,
           packageSize: packageSize.toString(),
           selfService: 'true',
-          discountPercent: totalDiscountPercent.toString(),
-          bulkDiscountPercent: bulkDiscountPercent.toString(),
+          discountPercent: TOTAL_DISCOUNT.toString(),
+          bulkDiscountPercent: BULK_DISCOUNT.toString(),
         },
         success_url: `${baseUrl}/partner-package-success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/partner?tab=billing&purchase_cancelled=true`,
