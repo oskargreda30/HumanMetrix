@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, XCircle, AlertCircle, User, ArrowRight, Mail, PartyPopper, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 
 interface AssessmentStatus {
   type: string;
@@ -136,11 +136,7 @@ export default function GuestInvite() {
       setAutoLoggingIn(true);
       
       try {
-        const res = await fetch(`/api/guest/invite/${token}/create-account`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
-        });
+        const res = await apiRequest("POST", `/api/guest/invite/${token}/create-account`, {});
         
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
@@ -267,11 +263,7 @@ export default function GuestInvite() {
     try {
       setCreatingAccount(true);
       
-      const res = await fetch(`/api/guest/invite/${token}/create-account`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
+      const res = await apiRequest("POST", `/api/guest/invite/${token}/create-account`, {});
       
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
