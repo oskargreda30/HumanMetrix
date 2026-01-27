@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Search, FileText, StickyNote, TrendingUp, TrendingDown, AlertTriangle, Download, UserCheck, UserX, HelpCircle } from "lucide-react";
+import { Loader2, Search, FileText, StickyNote, TrendingUp, TrendingDown, AlertTriangle, Download, UserCheck, UserX, HelpCircle, Upload } from "lucide-react";
+import { PdfImportModal } from "@/components/PdfImportModal";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
@@ -36,6 +37,7 @@ export default function CandidatesTab() {
   const [selectedRole, setSelectedRole] = useState<string | undefined>(undefined);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newNote, setNewNote] = useState("");
+  const [showPdfImportModal, setShowPdfImportModal] = useState(false);
   const { toast} = useToast();
 
   const { data: candidates, isLoading } = useQuery<any[]>({
@@ -226,7 +228,22 @@ export default function CandidatesTab() {
             data-testid="input-search-candidates"
           />
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowPdfImportModal(true)}
+          data-testid="button-import-pdf-results"
+        >
+          <Upload className="h-4 w-4 mr-2" />
+          Import PDF Report
+        </Button>
       </div>
+      
+      <PdfImportModal
+        open={showPdfImportModal}
+        onOpenChange={setShowPdfImportModal}
+        endpoint="/api/admin/import-pdf"
+      />
 
       {isLoading ? (
         <div className="flex justify-center py-12">
