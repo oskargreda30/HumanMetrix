@@ -21,12 +21,12 @@ const sarahChenData = {
       assessmentType: "fit",
       status: "completed",
       scores: {
-        "High Agency": 88,
-        "Intellectual Curiosity": 92,
-        "Resilience": 85,
-        "Empathy & Ethics": 90,
-        "Growth Mindset": 87,
-        "Interpersonal Agility": 91
+        [FIT_SKILL_NAMES.HIGH_AGENCY]: 88,
+        [FIT_SKILL_NAMES.INTELLECTUAL_CURIOSITY]: 92,
+        [FIT_SKILL_NAMES.RESILIENCE]: 85,
+        [FIT_SKILL_NAMES.EMPATHY_ETHICS]: 90,
+        [FIT_SKILL_NAMES.GROWTH_MINDSET]: 87,
+        [FIT_SKILL_NAMES.INTERPERSONAL_AGILITY]: 91
       },
       completedAt: new Date("2024-11-02"),
       createdAt: new Date("2024-11-02"),
