@@ -2374,6 +2374,10 @@ export default function PartnerDashboard() {
                 if (!partner?.freeTestsAllocated || partner.freeTestsAllocated === 0) return null;
                 if (!partner?.freeTestsExpiresAt) return null;
                 
+                // Hide when all free tests have been used up
+                const freeTestsRemaining = partner.freeTestsAllocated - (partner.testsConsumed || 0);
+                if (freeTestsRemaining <= 0) return null;
+                
                 const expiryDate = new Date(partner.freeTestsExpiresAt);
                 const now = new Date();
                 const diffMs = expiryDate.getTime() - now.getTime();
@@ -2397,7 +2401,7 @@ export default function PartnerDashboard() {
                               {isUrgent ? 'Free Tests Expiring Soon!' : 'Free Tests Available'}
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              You have <strong>{partner.freeTestsAllocated}</strong> complimentary tests that expire in <strong>{daysRemaining} day{daysRemaining !== 1 ? 's' : ''}</strong>
+                              You have <strong>{freeTestsRemaining}</strong> complimentary test{freeTestsRemaining !== 1 ? 's' : ''} that expire{freeTestsRemaining === 1 ? 's' : ''} in <strong>{daysRemaining} day{daysRemaining !== 1 ? 's' : ''}</strong>
                               {' '}({expiryDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })})
                             </div>
                           </div>
@@ -3036,6 +3040,10 @@ export default function PartnerDashboard() {
                 if (!partner?.freeTestsAllocated || partner.freeTestsAllocated === 0) return null;
                 if (!partner?.freeTestsExpiresAt) return null;
                 
+                // Hide when all free tests have been used up
+                const freeTestsRemaining = partner.freeTestsAllocated - (partner.testsConsumed || 0);
+                if (freeTestsRemaining <= 0) return null;
+                
                 const expiryDate = new Date(partner.freeTestsExpiresAt);
                 const now = new Date();
                 const diffMs = expiryDate.getTime() - now.getTime();
@@ -3057,7 +3065,7 @@ export default function PartnerDashboard() {
                             Free Tests: <strong>{daysRemaining} day{daysRemaining !== 1 ? 's' : ''}</strong> remaining
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {partner.freeTestsAllocated} complimentary tests expire on {expiryDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            {freeTestsRemaining} complimentary test{freeTestsRemaining !== 1 ? 's' : ''} expire{freeTestsRemaining === 1 ? 's' : ''} on {expiryDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </div>
                         </div>
                       </div>
