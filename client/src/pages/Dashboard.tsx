@@ -1,6 +1,8 @@
 import { Link, useLocation, Redirect } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { CURRENCIES, ZERO_DECIMAL_CURRENCIES } from "@shared/currencies";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -92,10 +94,35 @@ const getAssessmentMetadata = (type: string) => {
   return metadata[type] || metadata['fit'];
 };
 
+// Helper to format price with currency from pricing API response
+const formatPriceWithCurrency = (amountInSmallestUnit: number, currencyCode: string): string => {
+  const currency = CURRENCIES[currencyCode.toUpperCase()];
+  if (!currency) {
+    // Fallback for unknown currencies
+    return `${currencyCode} ${(amountInSmallestUnit / 100).toFixed(2)}`;
+  }
+  
+  // Check if zero-decimal currency (JPY, KRW, VND, THB uses 0 decimal places)
+  const isZeroDecimal = currency.decimalPlaces === 0;
+  
+  // For zero-decimal currencies, the amount is already in whole units
+  // For regular currencies, divide by 100 to get the display amount
+  const displayAmount = isZeroDecimal ? amountInSmallestUnit : amountInSmallestUnit / 100;
+  
+  // Format with correct decimal places
+  const formattedAmount = displayAmount.toLocaleString(undefined, {
+    minimumFractionDigits: currency.decimalPlaces,
+    maximumFractionDigits: currency.decimalPlaces,
+  });
+  
+  return `${currency.symbol}${formattedAmount}`;
+};
+
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { countryCode, currency, formatLocalCurrency, getLocalPriceNumber } = useCurrency();
   
   // Redirect based on role
   if (!authLoading && user) {
@@ -185,7 +212,7 @@ export default function Dashboard() {
   // Track selected assessments for individual purchase
   const [selectedAssessments, setSelectedAssessments] = useState<Set<string>>(new Set());
   
-  // Pricing query for the unlock dialog
+  // Pricing query for the unlock dialog - uses user's country for currency
   const { data: pricingData, isLoading: pricingLoading } = useQuery<{
     baseFee: number;
     baseFeeInLocal: number;
@@ -195,7 +222,13 @@ export default function Dashboard() {
     currency: string;
     hasBulkDiscount: boolean;
   }>({
-    queryKey: ['/api/partner-results-pricing', lockedResultsDialog?.seriesId],
+    queryKey: ['/api/partner-results-pricing', lockedResultsDialog?.seriesId, countryCode],
+    queryFn: async () => {
+      const url = `/api/partner-results-pricing/${lockedResultsDialog?.seriesId}${countryCode ? `?countryCode=${countryCode}` : ''}`;
+      const res = await fetch(url, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch pricing');
+      return res.json();
+    },
     enabled: !!lockedResultsDialog?.seriesId,
   });
   
@@ -1190,9 +1223,9 @@ export default function Dashboard() {
                           Best value - unlock all your results at once
                         </p>
                         <p className="text-lg font-semibold mt-2">
-                          {pricingData.currency === 'GBP' ? '£' : pricingData.currency === 'USD' ? '$' : pricingData.currency}{(pricingData.bulkTotal.priceInLocal / 100).toFixed(2)}
+                          {formatPriceWithCurrency(pricingData.bulkTotal.priceInLocal, pricingData.currency)}
                           <span className="text-sm text-muted-foreground line-through ml-2">
-                            {pricingData.currency === 'GBP' ? '£' : pricingData.currency === 'USD' ? '$' : pricingData.currency}{(pricingData.individualTotal.priceInLocal / 100).toFixed(2)}
+                            {formatPriceWithCurrency(pricingData.individualTotal.priceInLocal, pricingData.currency)}
                           </span>
                         </p>
                       </div>
@@ -1245,7 +1278,7 @@ export default function Dashboard() {
                             </Label>
                           </div>
                           <span className="text-sm font-medium">
-                            {pricingData.currency === 'GBP' ? '£' : pricingData.currency === 'USD' ? '$' : pricingData.currency}{(assessment.priceInLocal / 100).toFixed(2)}
+                            {formatPriceWithCurrency(assessment.priceInLocal, pricingData.currency)}
                           </span>
                         </div>
                       ))}
@@ -1255,11 +1288,13 @@ export default function Dashboard() {
                         <div className="pt-2 flex justify-between font-medium">
                           <span>Total ({selectedAssessments.size} selected)</span>
                           <span>
-                            {pricingData.currency === 'GBP' ? '£' : pricingData.currency === 'USD' ? '$' : pricingData.currency}
-                            {((pricingData.baseFeeInLocal + 
+                            {formatPriceWithCurrency(
+                              pricingData.baseFeeInLocal + 
                               pricingData.assessments
                                 .filter(a => selectedAssessments.has(a.type))
-                                .reduce((sum, a) => sum + a.priceInLocal, 0)) / 100).toFixed(2)}
+                                .reduce((sum, a) => sum + a.priceInLocal, 0),
+                              pricingData.currency
+                            )}
                           </span>
                         </div>
                       )}
@@ -1309,9 +1344,13 @@ export default function Dashboard() {
                 <>
                   <CreditCard className="mr-2 h-4 w-4" />
                   {purchaseMode === 'bulk' 
-                    ? `Unlock All - ${pricingData?.currency === 'GBP' ? '£' : pricingData?.currency === 'USD' ? '$' : pricingData?.currency || ''}${((pricingData?.bulkTotal.priceInLocal || 0) / 100).toFixed(2)}`
+                    ? `Unlock All - ${pricingData ? formatPriceWithCurrency(pricingData.bulkTotal.priceInLocal, pricingData.currency) : ''}`
                     : selectedAssessments.size > 0 
-                      ? `Unlock Selected - ${pricingData?.currency === 'GBP' ? '£' : pricingData?.currency === 'USD' ? '$' : pricingData?.currency || ''}${(((pricingData?.baseFeeInLocal || 0) + (pricingData?.assessments.filter(a => selectedAssessments.has(a.type)).reduce((sum, a) => sum + a.priceInLocal, 0) || 0)) / 100).toFixed(2)}`
+                      ? `Unlock Selected - ${pricingData ? formatPriceWithCurrency(
+                          pricingData.baseFeeInLocal + 
+                          pricingData.assessments.filter(a => selectedAssessments.has(a.type)).reduce((sum, a) => sum + a.priceInLocal, 0),
+                          pricingData.currency
+                        ) : ''}`
                       : 'Select Assessments'
                   }
                 </>
