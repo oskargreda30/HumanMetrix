@@ -827,6 +827,7 @@ export async function sendPaymentReceiptEmail(
                 </div>
                 
                 <p style="color: #6b7280; font-size: 14px; margin-top: 15px;">
+                  Reference: ${sessionId.slice(-12).toUpperCase()}<br>
                   Date: ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </p>
               </div>
@@ -861,6 +862,7 @@ Thank you for your purchase! Your payment has been successfully processed.
 PURCHASE DETAILS:
 Results Unlocked: ${assessmentListText}
 Total Paid: ${amountFormatted}
+Reference: ${sessionId.slice(-12).toUpperCase()}
 Date: ${new Date().toLocaleDateString('en-GB')}
 
 NEXT STEPS:
