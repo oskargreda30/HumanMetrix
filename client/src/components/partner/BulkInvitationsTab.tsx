@@ -27,6 +27,7 @@ import {
   Building2,
   Copy,
   HelpCircle,
+  Check,
 } from "lucide-react";
 import {
   Tooltip,
@@ -82,6 +83,7 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
   const [isDragOver, setIsDragOver] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [lastImportErrors, setLastImportErrors] = useState<Array<{ row: number; externalUserId: string; error: string }>>([]);
+  const [copiedInvitationId, setCopiedInvitationId] = useState<string | null>(null);
 
   const { data: quota, isLoading: quotaLoading } = useQuery<QuotaData>({
     queryKey: ['/api/partner/me/quota'],
@@ -838,6 +840,8 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
                           onClick={() => {
                             const inviteUrl = invitation.inviteUrl || `${window.location.origin}/invite/${invitation.inviteToken}`;
                             navigator.clipboard.writeText(inviteUrl);
+                            setCopiedInvitationId(invitation.id);
+                            setTimeout(() => setCopiedInvitationId(null), 2000);
                             toast({
                               title: "Link copied",
                               description: "Invitation link copied to clipboard",
@@ -845,11 +849,15 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
                           }}
                           data-testid={`copy-invite-link-${invitation.id}`}
                         >
-                          <Copy className="h-4 w-4" />
+                          {copiedInvitationId === invitation.id ? (
+                            <Check className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Copy invitation link</p>
+                        <p>{copiedInvitationId === invitation.id ? 'Copied!' : 'Copy invitation link'}</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
