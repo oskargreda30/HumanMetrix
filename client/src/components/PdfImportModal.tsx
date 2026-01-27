@@ -8,6 +8,21 @@ import { Upload, FileText, Loader2, CheckCircle, AlertCircle, X } from "lucide-r
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 
+function getCsrfToken(): string | null {
+  const cookies = document.cookie.split(";");
+  for (const cookie of cookies) {
+    const trimmed = cookie.trim();
+    const eqIndex = trimmed.indexOf("=");
+    if (eqIndex === -1) continue;
+    const name = trimmed.substring(0, eqIndex);
+    const value = trimmed.substring(eqIndex + 1);
+    if (name === "csrf_token") {
+      return value;
+    }
+  }
+  return null;
+}
+
 interface ImportResult {
   success: boolean;
   message: string;
@@ -43,15 +58,34 @@ export function PdfImportModal({ open, onOpenChange, endpoint = "/api/admin/impo
       const formData = new FormData();
       formData.append('pdf', file);
       
+      const headers: Record<string, string> = {};
+      const csrfToken = getCsrfToken();
+      if (csrfToken) {
+        headers['x-csrf-token'] = csrfToken;
+      }
+      
       const response = await fetch(endpoint, {
         method: 'POST',
         body: formData,
         credentials: 'include',
+        headers,
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to import PDF');
+        let errorMessage = 'Failed to import PDF';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          // If response isn't JSON, try to get text
+          try {
+            const errorText = await response.text();
+            if (errorText) errorMessage = errorText;
+          } catch {
+            // Ignore - use default message
+          }
+        }
+        throw new Error(errorMessage);
       }
       
       return response.json() as Promise<ImportResult>;
