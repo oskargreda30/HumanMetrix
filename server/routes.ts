@@ -24,8 +24,10 @@ import { EMAIL_REGEX, isValidEmail, isValidName } from "@shared/validation";
 import { createPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured, getPaymentIntent, verifyAirwallexWebhookSignature, AirwallexWebhookEvent } from "./airwallex";
 import { consumeTestCredit } from "./partner-auth";
 import multer from "multer";
-import * as pdfParseModule from "pdf-parse";
-const pdfParse = (pdfParseModule as any).default || pdfParseModule;
+// Use createRequire for pdf-parse as it's a CommonJS module
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const pdfParse = require("pdf-parse");
 
 // Configure multer for PDF uploads (memory storage, max 10MB)
 const pdfUpload = multer({
