@@ -5726,31 +5726,44 @@ ${truncatedText}`;
           continue;
         }
 
-        const scores = assessment.scores || {};
+        // Round all score values to integers (database expects integer type)
+        const rawScores = assessment.scores || {};
+        const scores: Record<string, number> = {};
+        for (const [key, value] of Object.entries(rawScores)) {
+          scores[key] = Math.round(Number(value) || 0);
+        }
         
-        const session = await db.insert(assessmentSessions).values({
-          partnerId: user.partnerId,
-          externalEmail: parsedData.candidateEmail || candidateUser.email,
-          externalUserId: candidateUser.id,
-          assessmentType,
-          status: 'completed',
-          scores: scores,
-          totalScore: assessment.totalScore || 0,
-          completedAt: now,
-          startedAt: now,
-          expiresAt,
-          metadata: {
-            source: 'pdf_import',
-            importedBy: userId,
-            importedAt: now.toISOString(),
-            originalPdfName: fileName || 'unknown.pdf',
-            confidence: parsedData.confidence,
-            notes: parsedData.notes,
-          },
-        }).returning();
+        // Round totalScore to integer
+        const totalScore = Math.round(Number(assessment.totalScore) || 0);
+        
+        try {
+          const session = await db.insert(assessmentSessions).values({
+            partnerId: partnerId,  // Use resolved partnerId variable
+            externalEmail: parsedData.candidateEmail || candidateUser.email,
+            externalUserId: candidateUser.id,
+            assessmentType,
+            status: 'completed',
+            scores: scores,
+            totalScore: totalScore,
+            completedAt: now,
+            startedAt: now,
+            expiresAt,
+            metadata: {
+              source: 'pdf_import',
+              importedBy: userId,
+              importedAt: now.toISOString(),
+              originalPdfName: fileName || 'unknown.pdf',
+              confidence: parsedData.confidence,
+              notes: parsedData.notes,
+            },
+          }).returning();
 
-        if (session[0]) {
-          createdSessions.push(session[0]);
+          if (session[0]) {
+            createdSessions.push(session[0]);
+          }
+        } catch (sessionError: any) {
+          console.error(`[Partner PDF Import] Failed to create ${assessmentType} session:`, sessionError.message);
+          // Continue with other assessments even if one fails
         }
       }
 
