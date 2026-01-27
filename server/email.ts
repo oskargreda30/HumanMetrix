@@ -827,7 +827,7 @@ export async function sendPaymentReceiptEmail(
                 </div>
                 
                 <p style="color: #6b7280; font-size: 14px; margin-top: 15px;">
-                  Transaction ID: ${sessionId}
+                  Date: ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </p>
               </div>
               
@@ -861,7 +861,7 @@ Thank you for your purchase! Your payment has been successfully processed.
 PURCHASE DETAILS:
 Results Unlocked: ${assessmentListText}
 Total Paid: ${amountFormatted}
-Transaction ID: ${sessionId}
+Date: ${new Date().toLocaleDateString('en-GB')}
 
 NEXT STEPS:
 1. Log in to your HumanMetrix account
@@ -961,7 +961,7 @@ export async function sendPaymentReceiptWithPdf(details: PdfReceiptEmailDetails)
   const msg = {
     from: { email: fromEmail, name: 'HumanMetrix' },
     to: details.email,
-    subject: `Payment Receipt ${receiptNumber} - HumanMetrix`,
+    subject: `Payment Receipt - HumanMetrix`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -1003,7 +1003,7 @@ export async function sendPaymentReceiptWithPdf(details: PdfReceiptEmailDetails)
                 </div>
                 
                 <p style="color: #6b7280; font-size: 14px; margin-top: 15px;">
-                  Transaction ID: ${details.transactionId}<br>
+                  Reference: ${receiptNumber}<br>
                   Date: ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </p>
               </div>
@@ -1032,7 +1032,7 @@ Hello ${details.name},
 Thank you for your payment! Your transaction has been successfully processed.
 
 Total Paid: ${amountFormatted}
-Transaction ID: ${details.transactionId}
+Reference: ${receiptNumber}
 Date: ${new Date().toLocaleDateString('en-GB')}
 
 A PDF receipt is attached to this email for your records.
