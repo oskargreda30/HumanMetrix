@@ -187,6 +187,17 @@ export default function Dashboard() {
   // Track selected assessments for individual purchase
   const [selectedAssessments, setSelectedAssessments] = useState<Set<string>>(new Set());
   
+  // Helper to format assessment type for display
+  const formatAssessmentTypeDisplay = (type: string): string => {
+    const typeMap: Record<string, string> = {
+      'fit': 'FIT Assessment',
+      'ai_readiness': 'AI Readiness',
+      'prompt_architecture': 'Prompt Architecture',
+      'aiq': 'AIQ',
+    };
+    return typeMap[type.toLowerCase()] || type;
+  };
+  
   // Pricing query for the unlock dialog - uses user's country for currency
   const { data: pricingData, isLoading: pricingLoading } = useQuery<{
     baseFee: number;
@@ -209,6 +220,14 @@ export default function Dashboard() {
     },
     enabled: !!lockedResultsDialog?.seriesId,
   });
+  
+  // Auto-select when there's only 1 assessment remaining
+  useEffect(() => {
+    if (pricingData && pricingData.assessments.length === 1) {
+      setPurchaseMode('individual');
+      setSelectedAssessments(new Set([pricingData.assessments[0].type]));
+    }
+  }, [pricingData]);
   
   const removeAssessmentMutation = useMutation({
     mutationFn: async (itemId: string) => {
@@ -1377,7 +1396,9 @@ export default function Dashboard() {
                     : selectedAssessments.size > 1
                       ? `Unlock Selected (${selectedAssessments.size}) - ${pricingData?.bulkTotal.priceDisplay || ''}`
                       : selectedAssessments.size === 1 
-                        ? `Unlock Selected (1)`
+                        ? pricingData?.assessments.length === 1
+                          ? `Unlock ${formatAssessmentTypeDisplay(Array.from(selectedAssessments)[0])} - ${pricingData?.assessments[0]?.priceDisplay || ''}`
+                          : `Unlock ${formatAssessmentTypeDisplay(Array.from(selectedAssessments)[0])}`
                         : 'Select Assessments'
                   }
                 </>
