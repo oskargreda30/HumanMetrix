@@ -1124,7 +1124,7 @@ export default function Dashboard() {
                                   </p>
                                   {/* View Results button - shown when any results are unlocked */}
                                   {hasUnlockedResults && (
-                                    <Link href={`/my-partner-results/${series.id}`}>
+                                    <Link href={`/my-results?partnerInvitationId=${series.id}`}>
                                       <Button
                                         className="mt-2 w-full"
                                         data-testid={`button-view-partner-results-${series.id}`}

@@ -33,15 +33,30 @@ export default function MyResults() {
   const [showConsentDialog, setShowConsentDialog] = useState(false);
   const [consentHandled, setConsentHandled] = useState(false);
 
-  // Check if viewing a specific purchase batch
+  // Check if viewing a specific purchase batch or partner invitation
   const urlParams = new URLSearchParams(window.location.search);
   const purchaseId = urlParams.get('purchaseId');
+  const partnerInvitationId = urlParams.get('partnerInvitationId');
+  
+  // Is this a partner result view?
+  const isPartnerView = !!partnerInvitationId;
 
-  // Fetch purchase batches with results
+  // Fetch purchase batches with results (only for B2C view)
   const { data: purchaseBatches, isLoading: batchesLoading } = useQuery<any[]>({
     queryKey: ["/api/purchases-with-results"],
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !isPartnerView,
   });
+  
+  // Fetch partner testing series (only for partner view)
+  const { data: partnerTestingSeries, isLoading: partnerSeriesLoading } = useQuery<any[]>({
+    queryKey: ["/api/partner-testing-series"],
+    enabled: isAuthenticated && isPartnerView,
+  });
+  
+  // Find the specific partner series
+  const partnerSeries = partnerInvitationId 
+    ? partnerTestingSeries?.find((s: any) => s.id === partnerInvitationId)
+    : null;
 
   // Find the specific purchase batch if purchaseId is provided
   // Convert p.id to string for comparison since URL params are always strings
@@ -96,7 +111,12 @@ export default function MyResults() {
     }
   }, [needsConsentResponseForEffect, consentHandled, needsPaymentForEffect, allAssessmentsCompletedForEffect]);
 
-  if (resultsLoading || assessmentsLoading || batchesLoading || purchasesLoading || !allResults) {
+  // Loading state - includes partner series loading for partner view
+  const isLoading = isPartnerView 
+    ? (partnerSeriesLoading || !partnerTestingSeries)
+    : (resultsLoading || assessmentsLoading || batchesLoading || purchasesLoading || !allResults);
+    
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -125,25 +145,62 @@ export default function MyResults() {
       </div>
     );
   }
-
-  // Filter results by purchase batch if specified
-  let completedResults = allResults.filter((r: any) => r.status === 'completed');
   
-  if (selectedBatch) {
-    // Get result IDs from this batch (defensive: handle missing results array)
-    const batchResultIds = (selectedBatch.results || []).map((r: any) => r.id);
-    completedResults = completedResults.filter((r: any) => batchResultIds.includes(r.id));
+  // Handle invalid partnerInvitationId - redirect to dashboard
+  if (partnerInvitationId && !partnerSeries) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navigation />
+        <main className="flex-grow flex items-center justify-center p-4">
+          <Card className="p-12 text-center max-w-md">
+            <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h2 className="text-2xl font-bold mb-2">Partner Results Not Found</h2>
+            <p className="text-muted-foreground mb-6">
+              The requested partner assessment results could not be found or you don't have access to them.
+            </p>
+            <Link href="/dashboard">
+              <Button>Go to Dashboard</Button>
+            </Link>
+          </Card>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // For partner view, extract unlocked results from the partner series
+  // Partner results have a different structure - they're in partnerSeries.results
+  let completedResults: any[] = [];
+  
+  if (isPartnerView && partnerSeries) {
+    // Get unlocked partner results (already completed and unlocked)
+    completedResults = (partnerSeries.results || []).filter((r: any) => 
+      r.status === 'completed' && (r.isUnlocked || partnerSeries.resultsUnlocked)
+    );
+  } else if (allResults) {
+    // Standard B2C flow
+    completedResults = allResults.filter((r: any) => r.status === 'completed');
+    
+    if (selectedBatch) {
+      // Get result IDs from this batch (defensive: handle missing results array)
+      const batchResultIds = (selectedBatch.results || []).map((r: any) => r.id);
+      completedResults = completedResults.filter((r: any) => batchResultIds.includes(r.id));
+    }
   }
   
   // Check if all REQUIRED assessment types are completed
-  // When viewing a specific batch, only check if THAT batch is complete
+  // For partner view: just check if there are unlocked results
+  // For B2C: check if all required assessments are complete
   const uniqueAssessmentTypes = new Set(completedResults.map((r: any) => r.assessmentType));
-  const allAssessmentsCompleted = selectedBatch 
-    ? selectedBatch.allItemsCompleted  // For batch view, use batch completion status
-    : (requiredAssessmentTypes.length > 0 && requiredAssessmentTypes.every(type => uniqueAssessmentTypes.has(type)));
+  const allAssessmentsCompleted = isPartnerView 
+    ? completedResults.length > 0  // Partner view: just need at least one unlocked result
+    : (selectedBatch 
+      ? selectedBatch.allItemsCompleted  // For batch view, use batch completion status
+      : (requiredAssessmentTypes.length > 0 && requiredAssessmentTypes.every(type => uniqueAssessmentTypes.has(type))));
 
   // FIRST: Check if all assessments are completed (before showing payment gate)
-  if (!allAssessmentsCompleted) {
+  // For partner view, skip this check if we have no results (they'll see empty state later)
+  if (!allAssessmentsCompleted && !isPartnerView) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navigation />
@@ -170,11 +227,14 @@ export default function MyResults() {
   }
 
   // SECOND: Show payment gate if user hasn't paid for results access
+  // Skip payment gate for partner view (partner results are already unlocked when purchased)
   // For batch view, check if THAT batch is paid
   // For global view, require payment if ANY purchase is unpaid (all-or-nothing approach)
-  const needsPayment = selectedBatch 
-    ? !selectedBatch.resultsAccessPaid 
-    : !hasPaidForResults; // Show payment gate if not all purchases are paid
+  const needsPayment = isPartnerView 
+    ? false  // Partner results are already unlocked/paid for
+    : (selectedBatch 
+        ? !selectedBatch.resultsAccessPaid 
+        : !hasPaidForResults); // Show payment gate if not all purchases are paid
     
   if (needsPayment) {
     return <ResultsPaymentGate />;
@@ -358,10 +418,16 @@ export default function MyResults() {
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
                 <h1 className="text-3xl font-bold mb-2 text-white">
-                  {selectedBatch ? 'Purchase Batch Results' : 'My Assessment Results'}
+                  {isPartnerView ? 'Partner Assessment Results' : (selectedBatch ? 'Purchase Batch Results' : 'My Assessment Results')}
                 </h1>
                 <p className="text-white/80">
-                  {selectedBatch ? (
+                  {isPartnerView && partnerSeries ? (
+                    <>
+                      Results from your assessments with <span className="font-semibold">{partnerSeries.partnerName}</span>
+                      {' • '}
+                      {completedResults.length} assessment{completedResults.length !== 1 ? 's' : ''} unlocked
+                    </>
+                  ) : selectedBatch ? (
                     <>
                       Viewing results from purchase on {format(new Date(selectedBatch.createdAt), 'MMM d, yyyy')}
                       {' • '}
