@@ -3,10 +3,11 @@ import { useMutation } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Upload, FileText, Loader2, CheckCircle, AlertCircle, X } from "lucide-react";
+import { Upload, FileText, Loader2, CheckCircle, AlertCircle, X, Eye, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 function getCsrfToken(): string | null {
   const cookies = document.cookie.split(";");
@@ -21,6 +22,20 @@ function getCsrfToken(): string | null {
     }
   }
   return null;
+}
+
+interface ParsedAssessment {
+  type: string;
+  scores: Record<string, number>;
+  totalScore: number;
+}
+
+interface ParsedData {
+  candidateName: string;
+  candidateEmail: string | null;
+  assessments: ParsedAssessment[];
+  confidence: string;
+  notes: string | null;
 }
 
 interface ImportResult {
@@ -46,14 +61,20 @@ interface PdfImportModalProps {
   endpoint?: string;
 }
 
+type ModalStep = 'upload' | 'preview' | 'success';
+
 export function PdfImportModal({ open, onOpenChange, endpoint = "/api/admin/import-pdf" }: PdfImportModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [step, setStep] = useState<ModalStep>('upload');
+  const [parsedData, setParsedData] = useState<ParsedData | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const importMutation = useMutation({
+  const parseEndpoint = endpoint.replace('/import-pdf', '/parse-pdf');
+  
+  const parseMutation = useMutation({
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append('pdf', file);
@@ -64,7 +85,7 @@ export function PdfImportModal({ open, onOpenChange, endpoint = "/api/admin/impo
         headers['x-csrf-token'] = csrfToken;
       }
       
-      const response = await fetch(endpoint, {
+      const response = await fetch(parseEndpoint, {
         method: 'POST',
         body: formData,
         credentials: 'include',
@@ -72,17 +93,66 @@ export function PdfImportModal({ open, onOpenChange, endpoint = "/api/admin/impo
       });
       
       if (!response.ok) {
-        let errorMessage = 'Failed to import PDF';
+        let errorMessage = 'Failed to parse PDF';
         try {
           const errorData = await response.json();
           errorMessage = errorData.message || errorMessage;
         } catch {
-          // If response isn't JSON, try to get text
           try {
             const errorText = await response.text();
             if (errorText) errorMessage = errorText;
           } catch {
-            // Ignore - use default message
+            // Ignore
+          }
+        }
+        throw new Error(errorMessage);
+      }
+      
+      return response.json() as Promise<ParsedData>;
+    },
+    onSuccess: (data) => {
+      setParsedData(data);
+      setStep('preview');
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Parse Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const confirmMutation = useMutation({
+    mutationFn: async (data: ParsedData) => {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      const csrfToken = getCsrfToken();
+      if (csrfToken) {
+        headers['x-csrf-token'] = csrfToken;
+      }
+      
+      const confirmEndpoint = endpoint.replace('/import-pdf', '/confirm-import');
+      
+      const response = await fetch(confirmEndpoint, {
+        method: 'POST',
+        body: JSON.stringify({ parsedData: data, fileName: selectedFile?.name }),
+        credentials: 'include',
+        headers,
+      });
+      
+      if (!response.ok) {
+        let errorMessage = 'Failed to import candidate';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          try {
+            const errorText = await response.text();
+            if (errorText) errorMessage = errorText;
+          } catch {
+            // Ignore
           }
         }
         throw new Error(errorMessage);
@@ -92,6 +162,7 @@ export function PdfImportModal({ open, onOpenChange, endpoint = "/api/admin/impo
     },
     onSuccess: (data) => {
       setResult(data);
+      setStep('success');
       queryClient.invalidateQueries({ queryKey: ['/api/admin/candidates'] });
       queryClient.invalidateQueries({ queryKey: ['/api/partner/results'] });
       queryClient.invalidateQueries({ queryKey: ['/api/partner/sessions'] });
@@ -128,7 +199,8 @@ export function PdfImportModal({ open, onOpenChange, endpoint = "/api/admin/impo
     if (files?.[0]) {
       if (files[0].type === "application/pdf") {
         setSelectedFile(files[0]);
-        setResult(null);
+        setParsedData(null);
+        setStep('upload');
       } else {
         toast({
           title: "Invalid File",
@@ -143,20 +215,30 @@ export function PdfImportModal({ open, onOpenChange, endpoint = "/api/admin/impo
     const files = e.target.files;
     if (files?.[0]) {
       setSelectedFile(files[0]);
-      setResult(null);
+      setParsedData(null);
+      setStep('upload');
     }
   };
 
-  const handleImport = () => {
+  const handleParse = () => {
     if (selectedFile) {
-      importMutation.mutate(selectedFile);
+      parseMutation.mutate(selectedFile);
+    }
+  };
+
+  const handleConfirm = () => {
+    if (parsedData) {
+      confirmMutation.mutate(parsedData);
     }
   };
 
   const resetModal = () => {
     setSelectedFile(null);
+    setParsedData(null);
     setResult(null);
-    importMutation.reset();
+    setStep('upload');
+    parseMutation.reset();
+    confirmMutation.reset();
   };
 
   const handleClose = (open: boolean) => {
@@ -168,7 +250,7 @@ export function PdfImportModal({ open, onOpenChange, endpoint = "/api/admin/impo
 
   const formatAssessmentType = (type: string) => {
     const typeMap: Record<string, string> = {
-      fit: 'FIT',
+      fit: 'FIT Assessment',
       ai_readiness: 'AI Readiness',
       prompt_architecture: 'Prompt Architecture',
       aiq: 'AIQ',
@@ -176,21 +258,36 @@ export function PdfImportModal({ open, onOpenChange, endpoint = "/api/admin/impo
     return typeMap[type] || type;
   };
 
+  const getConfidenceBadgeVariant = (confidence: string) => {
+    switch (confidence?.toLowerCase()) {
+      case 'high': return 'default';
+      case 'medium': return 'secondary';
+      case 'low': return 'destructive';
+      default: return 'outline';
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5 text-primary" />
-            Import Candidate from PDF
+            {step === 'upload' && <Upload className="h-5 w-5 text-primary" />}
+            {step === 'preview' && <Eye className="h-5 w-5 text-primary" />}
+            {step === 'success' && <CheckCircle className="h-5 w-5 text-green-500" />}
+            {step === 'upload' && 'Import Candidate from PDF'}
+            {step === 'preview' && 'Review Parsed Data'}
+            {step === 'success' && 'Import Complete'}
           </DialogTitle>
           <DialogDescription>
-            Upload a HumanMetrix assessment report PDF to import candidate scores into the system.
+            {step === 'upload' && 'Upload a HumanMetrix assessment report PDF to import candidate scores.'}
+            {step === 'preview' && 'Review the extracted information before creating the candidate profile.'}
+            {step === 'success' && 'The candidate has been successfully added to your dashboard.'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {!result ? (
+          {step === 'upload' && (
             <>
               <div
                 className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
@@ -238,120 +335,181 @@ export function PdfImportModal({ open, onOpenChange, endpoint = "/api/admin/impo
                     </Button>
                   </div>
                 ) : (
-                  <div
-                    className="cursor-pointer"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-sm font-medium">
-                      Drop PDF here or click to browse
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Maximum file size: 10MB
-                    </p>
+                  <div className="space-y-2">
+                    <Upload className="h-10 w-10 mx-auto text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">Drag and drop your PDF here</p>
+                      <p className="text-xs text-muted-foreground">or click to browse</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      data-testid="button-browse-files"
+                    >
+                      Browse Files
+                    </Button>
                   </div>
                 )}
               </div>
 
-              {importMutation.isPending && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Parsing PDF with AI...</span>
-                  </div>
-                  <Progress value={undefined} className="h-2" />
+              {parseMutation.isPending && (
+                <div className="flex items-center justify-center gap-2 py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <span className="text-sm text-muted-foreground">Parsing PDF with AI...</span>
                 </div>
               )}
             </>
-          ) : (
+          )}
+
+          {step === 'preview' && parsedData && (
             <div className="space-y-4">
-              {result.success ? (
-                <>
-                  <div className="flex items-center gap-2 text-green-500">
-                    <CheckCircle className="h-5 w-5" />
-                    <span className="font-medium">Import Successful</span>
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base">Candidate Information</CardTitle>
+                    <Badge variant={getConfidenceBadgeVariant(parsedData.confidence)}>
+                      {parsedData.confidence} confidence
+                    </Badge>
                   </div>
-                  
-                  <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Candidate</p>
-                      <p className="font-medium">{result.candidate?.name}</p>
-                      <p className="text-sm text-muted-foreground">{result.candidate?.email}</p>
-                    </div>
-                    
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-2">Imported Assessments</p>
-                      <div className="flex flex-wrap gap-2">
-                        {result.sessions?.map((session) => (
-                          <Badge key={session.id} variant="secondary">
-                            {formatAssessmentType(session.type)}: {session.totalScore}%
-                          </Badge>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <span className="text-muted-foreground">Name:</span>
+                    <span className="font-medium">{parsedData.candidateName}</span>
+                    <span className="text-muted-foreground">Email:</span>
+                    <span className="font-medium">{parsedData.candidateEmail || 'Not found'}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Assessment Results</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {parsedData.assessments.map((assessment, idx) => (
+                    <div key={idx} className="space-y-2">
+                      {idx > 0 && <Separator />}
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">{formatAssessmentType(assessment.type)}</span>
+                        <Badge variant="outline">{Math.round(assessment.totalScore)}%</Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                        {Object.entries(assessment.scores).map(([skill, score]) => (
+                          <div key={skill} className="flex justify-between">
+                            <span className="text-muted-foreground truncate pr-2">{skill}:</span>
+                            <span className="font-medium">{Math.round(score as number)}%</span>
+                          </div>
                         ))}
                       </div>
                     </div>
-                    
-                    {result.confidence && (
-                      <div className="flex items-center gap-2">
-                        <p className="text-xs text-muted-foreground">Confidence:</p>
-                        <Badge 
-                          variant={result.confidence === 'high' ? 'default' : result.confidence === 'medium' ? 'secondary' : 'outline'}
-                        >
-                          {result.confidence}
-                        </Badge>
-                      </div>
-                    )}
-                    
-                    {result.notes && (
-                      <div>
-                        <p className="text-xs text-muted-foreground">Notes</p>
-                        <p className="text-sm">{result.notes}</p>
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div className="flex items-center gap-2 text-destructive">
-                  <AlertCircle className="h-5 w-5" />
-                  <span className="font-medium">{result.message}</span>
+                  ))}
+                </CardContent>
+              </Card>
+
+              {parsedData.notes && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Notes</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">{parsedData.notes}</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {confirmMutation.isPending && (
+                <div className="flex items-center justify-center gap-2 py-2">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <span className="text-sm text-muted-foreground">Creating candidate profile...</span>
                 </div>
               )}
             </div>
           )}
+
+          {step === 'success' && result && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-center py-4">
+                <div className="h-16 w-16 rounded-full bg-green-500/10 flex items-center justify-center">
+                  <CheckCircle className="h-8 w-8 text-green-500" />
+                </div>
+              </div>
+              
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-center space-y-2">
+                    <p className="font-medium">{result.candidate?.name}</p>
+                    <p className="text-sm text-muted-foreground">{result.candidate?.email}</p>
+                    <div className="flex justify-center gap-2 mt-3">
+                      {result.sessions?.map((session) => (
+                        <Badge key={session.id} variant="secondary">
+                          {formatAssessmentType(session.type)} - {Math.round(session.totalScore)}%
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
 
-        <DialogFooter className="flex gap-2">
-          {result ? (
+        <DialogFooter className="gap-2 sm:gap-0">
+          {step === 'upload' && (
             <>
-              <Button variant="outline" onClick={resetModal} data-testid="button-import-another">
-                Import Another
-              </Button>
-              <Button onClick={() => handleClose(false)} data-testid="button-done">
-                Done
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button variant="outline" onClick={() => handleClose(false)} data-testid="button-cancel-import">
+              <Button variant="outline" onClick={() => handleClose(false)} data-testid="button-cancel">
                 Cancel
               </Button>
               <Button 
-                onClick={handleImport} 
-                disabled={!selectedFile || importMutation.isPending}
-                data-testid="button-import-pdf"
+                onClick={handleParse} 
+                disabled={!selectedFile || parseMutation.isPending}
+                data-testid="button-parse-pdf"
               >
-                {importMutation.isPending ? (
+                {parseMutation.isPending ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Importing...
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Parsing...
                   </>
                 ) : (
                   <>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Import PDF
+                    <Eye className="h-4 w-4 mr-2" />
+                    Parse & Preview
                   </>
                 )}
               </Button>
             </>
+          )}
+          
+          {step === 'preview' && (
+            <>
+              <Button variant="outline" onClick={() => setStep('upload')} data-testid="button-back">
+                Back
+              </Button>
+              <Button 
+                onClick={handleConfirm} 
+                disabled={confirmMutation.isPending}
+                data-testid="button-confirm-import"
+              >
+                {confirmMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Confirm Import
+                  </>
+                )}
+              </Button>
+            </>
+          )}
+          
+          {step === 'success' && (
+            <Button onClick={() => handleClose(false)} data-testid="button-close">
+              Done
+            </Button>
           )}
         </DialogFooter>
       </DialogContent>
