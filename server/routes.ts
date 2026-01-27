@@ -23,6 +23,21 @@ import { z } from "zod";
 import { EMAIL_REGEX, isValidEmail, isValidName } from "@shared/validation";
 import { createPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured, getPaymentIntent, verifyAirwallexWebhookSignature, AirwallexWebhookEvent } from "./airwallex";
 import { consumeTestCredit } from "./partner-auth";
+import multer from "multer";
+import pdfParse from "pdf-parse";
+
+// Configure multer for PDF uploads (memory storage, max 10MB)
+const pdfUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === "application/pdf") {
+      cb(null, true);
+    } else {
+      cb(new Error("Only PDF files are allowed"));
+    }
+  },
+});
 
 // Use Airwallex as primary payment processor if configured
 const useAirwallex = () => isAirwallexConfigured();
@@ -4739,6 +4754,407 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error adding note:", error);
       res.status(500).json({ message: "Failed to add note" });
+    }
+  });
+
+  // Admin/Partner: Import candidate from PDF report using OpenAI
+  // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+  app.post("/api/admin/import-pdf", isAuthenticated, pdfUpload.single('pdf'), async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      // Allow super_admin, organization_admin, or partner_admin
+      const hasAccess = user?.role === 'super_admin' || user?.role === 'organization_admin' || user?.role === 'partner_admin';
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin or partner access required" });
+      }
+      
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ message: "No PDF file provided" });
+      }
+      
+      // Parse PDF to extract text
+      const pdfData = await pdfParse(file.buffer);
+      const pdfText = pdfData.text;
+      
+      if (!pdfText || pdfText.trim().length < 50) {
+        return res.status(400).json({ message: "Could not extract text from PDF. Please ensure the PDF contains readable text." });
+      }
+      
+      console.log(`[PDF Import] Extracted ${pdfText.length} chars from PDF`);
+      
+      // Use OpenAI to parse the extracted text
+      const parsePrompt = `You are an expert at parsing assessment report PDFs. Extract the following information from this assessment report text:
+
+1. Candidate Information:
+   - Full name
+   - Email address (if available)
+
+2. Assessment Results (for each assessment completed):
+   - Assessment type: Must be one of: "fit", "ai_readiness", "prompt_architecture", "aiq"
+   - For FIT assessment: Extract scores for Flexibility, Integrity, Tenacity (0-100 scale)
+   - For AI Readiness: Extract overall score and any dimension scores (0-100 scale)
+   - For Prompt Architecture: Extract overall score (0-100 scale)
+   - For AIQ (Algorithmic Integrity Quotient): Extract overall score (0-100 scale)
+   - Overall/total score for the assessment (0-100 scale)
+
+Important:
+- Scores should be normalized to 0-100 scale
+- If a score is shown as a percentage, convert it to a number (e.g., 75% becomes 75)
+- If multiple assessments are present, include all of them
+- Only include assessments that have clear scores/results
+
+Return your response as a valid JSON object with this exact structure:
+{
+  "candidateName": "string",
+  "candidateEmail": "string or null if not found",
+  "assessments": [
+    {
+      "type": "fit | ai_readiness | prompt_architecture | aiq",
+      "scores": {
+        "dimension1": number,
+        "dimension2": number,
+        ...
+      },
+      "totalScore": number
+    }
+  ],
+  "confidence": "high | medium | low",
+  "notes": "any relevant notes about data quality or missing information"
+}
+
+Here is the PDF text to parse:
+
+${pdfText.substring(0, 15000)}`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-5",
+        messages: [
+          { role: "system", content: "You are an expert data extraction assistant. Always respond with valid JSON only." },
+          { role: "user", content: parsePrompt }
+        ],
+        response_format: { type: "json_object" },
+        max_completion_tokens: 2048,
+      });
+
+      const responseContent = completion.choices[0]?.message?.content;
+      if (!responseContent) {
+        return res.status(500).json({ message: "Failed to parse PDF content" });
+      }
+
+      let parsedData;
+      try {
+        parsedData = JSON.parse(responseContent);
+      } catch (e) {
+        console.error("[PDF Import] Failed to parse OpenAI response:", responseContent);
+        return res.status(500).json({ message: "Failed to parse AI response" });
+      }
+
+      console.log("[PDF Import] Parsed data:", JSON.stringify(parsedData, null, 2));
+
+      // Validate parsed data
+      if (!parsedData.candidateName || !parsedData.assessments || parsedData.assessments.length === 0) {
+        return res.status(400).json({ 
+          message: "Could not extract required candidate information from PDF",
+          parsed: parsedData
+        });
+      }
+
+      // Get partner ID if user is a partner admin
+      let partnerId: string | null = null;
+      if (user?.role === 'partner_admin' && user.partnerId) {
+        partnerId = user.partnerId;
+      } else if (req.body.partnerId) {
+        // Super admin can specify partner ID
+        partnerId = req.body.partnerId;
+      }
+
+      // Find or create user for the candidate
+      let candidateUser = null;
+      if (parsedData.candidateEmail) {
+        candidateUser = await storage.getUserByEmail(parsedData.candidateEmail.toLowerCase().trim());
+      }
+
+      if (!candidateUser) {
+        // Create a new user for this candidate
+        const tempPassword = generateTemporaryPassword(16);
+        const hashedPassword = await bcrypt.hash(tempPassword, 10);
+        
+        candidateUser = await storage.createUser({
+          email: parsedData.candidateEmail?.toLowerCase().trim() || `imported_${Date.now()}@temp.humanmetrix.com`,
+          password: hashedPassword,
+          name: parsedData.candidateName,
+          role: 'user',
+          emailVerified: false, // Not verified since imported
+        });
+        console.log(`[PDF Import] Created new user: ${candidateUser.id}`);
+      }
+
+      // Create assessment sessions for each parsed assessment
+      const createdSessions = [];
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year from now
+
+      for (const assessment of parsedData.assessments) {
+        // Normalize assessment type
+        const assessmentType = assessment.type?.toLowerCase().replace(/[^a-z_]/g, '');
+        if (!['fit', 'ai_readiness', 'prompt_architecture', 'aiq'].includes(assessmentType)) {
+          console.log(`[PDF Import] Skipping unknown assessment type: ${assessment.type}`);
+          continue;
+        }
+
+        // Prepare scores object
+        const scores = assessment.scores || {};
+        
+        // Create the assessment session
+        const session = await db.insert(assessmentSessions).values({
+          partnerId: partnerId || 'system_import', // Use system_import for super admin imports without partner
+          externalEmail: parsedData.candidateEmail || candidateUser.email,
+          externalUserId: candidateUser.id,
+          assessmentType,
+          status: 'completed',
+          scores: scores,
+          totalScore: assessment.totalScore || 0,
+          completedAt: now,
+          startedAt: now,
+          expiresAt,
+          metadata: {
+            source: 'pdf_import',
+            importedBy: userId,
+            importedAt: now.toISOString(),
+            originalPdfName: file.originalname,
+            confidence: parsedData.confidence,
+            notes: parsedData.notes,
+          },
+        }).returning();
+
+        if (session[0]) {
+          createdSessions.push(session[0]);
+          console.log(`[PDF Import] Created ${assessmentType} session: ${session[0].id}`);
+        }
+      }
+
+      if (createdSessions.length === 0) {
+        return res.status(400).json({ 
+          message: "No valid assessments could be imported from the PDF",
+          parsed: parsedData
+        });
+      }
+
+      res.json({
+        success: true,
+        message: `Successfully imported ${createdSessions.length} assessment(s) for ${parsedData.candidateName}`,
+        candidate: {
+          id: candidateUser.id,
+          name: parsedData.candidateName,
+          email: candidateUser.email,
+        },
+        sessions: createdSessions.map(s => ({
+          id: s.id,
+          type: s.assessmentType,
+          totalScore: s.totalScore,
+        })),
+        confidence: parsedData.confidence,
+        notes: parsedData.notes,
+      });
+
+    } catch (error: any) {
+      console.error("[PDF Import] Error:", error);
+      res.status(500).json({ message: error.message || "Failed to import PDF" });
+    }
+  });
+
+  // Partner: Import candidate from PDF report
+  app.post("/api/partner/import-pdf", isAuthenticated, pdfUpload.single('pdf'), async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'partner_admin') {
+        return res.status(403).json({ message: "Forbidden: Partner access required" });
+      }
+      
+      if (!user.partnerId) {
+        return res.status(400).json({ message: "Partner account not found" });
+      }
+
+      // Forward to the admin endpoint with partner context
+      req.body.partnerId = user.partnerId;
+      
+      // We'll handle it the same way, just ensure partnerId is set
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ message: "No PDF file provided" });
+      }
+      
+      // Parse PDF to extract text
+      const pdfData = await pdfParse(file.buffer);
+      const pdfText = pdfData.text;
+      
+      if (!pdfText || pdfText.trim().length < 50) {
+        return res.status(400).json({ message: "Could not extract text from PDF. Please ensure the PDF contains readable text." });
+      }
+      
+      // Use OpenAI to parse the extracted text
+      // the newest OpenAI model is "gpt-5" which was released August 7, 2025
+      const parsePrompt = `You are an expert at parsing assessment report PDFs. Extract the following information from this assessment report text:
+
+1. Candidate Information:
+   - Full name
+   - Email address (if available)
+
+2. Assessment Results (for each assessment completed):
+   - Assessment type: Must be one of: "fit", "ai_readiness", "prompt_architecture", "aiq"
+   - For FIT assessment: Extract scores for Flexibility, Integrity, Tenacity (0-100 scale)
+   - For AI Readiness: Extract overall score and any dimension scores (0-100 scale)
+   - For Prompt Architecture: Extract overall score (0-100 scale)
+   - For AIQ (Algorithmic Integrity Quotient): Extract overall score (0-100 scale)
+   - Overall/total score for the assessment (0-100 scale)
+
+Important:
+- Scores should be normalized to 0-100 scale
+- If a score is shown as a percentage, convert it to a number
+- If multiple assessments are present, include all of them
+
+Return your response as a valid JSON object with this exact structure:
+{
+  "candidateName": "string",
+  "candidateEmail": "string or null if not found",
+  "assessments": [
+    {
+      "type": "fit | ai_readiness | prompt_architecture | aiq",
+      "scores": {
+        "dimension1": number,
+        "dimension2": number,
+        ...
+      },
+      "totalScore": number
+    }
+  ],
+  "confidence": "high | medium | low",
+  "notes": "any relevant notes about data quality or missing information"
+}
+
+Here is the PDF text to parse:
+
+${pdfText.substring(0, 15000)}`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-5",
+        messages: [
+          { role: "system", content: "You are an expert data extraction assistant. Always respond with valid JSON only." },
+          { role: "user", content: parsePrompt }
+        ],
+        response_format: { type: "json_object" },
+        max_completion_tokens: 2048,
+      });
+
+      const responseContent = completion.choices[0]?.message?.content;
+      if (!responseContent) {
+        return res.status(500).json({ message: "Failed to parse PDF content" });
+      }
+
+      let parsedData;
+      try {
+        parsedData = JSON.parse(responseContent);
+      } catch (e) {
+        return res.status(500).json({ message: "Failed to parse AI response" });
+      }
+
+      if (!parsedData.candidateName || !parsedData.assessments || parsedData.assessments.length === 0) {
+        return res.status(400).json({ 
+          message: "Could not extract required candidate information from PDF",
+          parsed: parsedData
+        });
+      }
+
+      // Find or create user for the candidate
+      let candidateUser = null;
+      if (parsedData.candidateEmail) {
+        candidateUser = await storage.getUserByEmail(parsedData.candidateEmail.toLowerCase().trim());
+      }
+
+      if (!candidateUser) {
+        const tempPassword = generateTemporaryPassword(16);
+        const hashedPassword = await bcrypt.hash(tempPassword, 10);
+        
+        candidateUser = await storage.createUser({
+          email: parsedData.candidateEmail?.toLowerCase().trim() || `imported_${Date.now()}@temp.humanmetrix.com`,
+          password: hashedPassword,
+          name: parsedData.candidateName,
+          role: 'user',
+          emailVerified: false,
+        });
+      }
+
+      // Create assessment sessions
+      const createdSessions = [];
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
+
+      for (const assessment of parsedData.assessments) {
+        const assessmentType = assessment.type?.toLowerCase().replace(/[^a-z_]/g, '');
+        if (!['fit', 'ai_readiness', 'prompt_architecture', 'aiq'].includes(assessmentType)) {
+          continue;
+        }
+
+        const scores = assessment.scores || {};
+        
+        const session = await db.insert(assessmentSessions).values({
+          partnerId: user.partnerId,
+          externalEmail: parsedData.candidateEmail || candidateUser.email,
+          externalUserId: candidateUser.id,
+          assessmentType,
+          status: 'completed',
+          scores: scores,
+          totalScore: assessment.totalScore || 0,
+          completedAt: now,
+          startedAt: now,
+          expiresAt,
+          metadata: {
+            source: 'pdf_import',
+            importedBy: userId,
+            importedAt: now.toISOString(),
+            originalPdfName: file.originalname,
+            confidence: parsedData.confidence,
+            notes: parsedData.notes,
+          },
+        }).returning();
+
+        if (session[0]) {
+          createdSessions.push(session[0]);
+        }
+      }
+
+      if (createdSessions.length === 0) {
+        return res.status(400).json({ 
+          message: "No valid assessments could be imported from the PDF",
+          parsed: parsedData
+        });
+      }
+
+      res.json({
+        success: true,
+        message: `Successfully imported ${createdSessions.length} assessment(s) for ${parsedData.candidateName}`,
+        candidate: {
+          id: candidateUser.id,
+          name: parsedData.candidateName,
+          email: candidateUser.email,
+        },
+        sessions: createdSessions.map(s => ({
+          id: s.id,
+          type: s.assessmentType,
+          totalScore: s.totalScore,
+        })),
+        confidence: parsedData.confidence,
+        notes: parsedData.notes,
+      });
+
+    } catch (error: any) {
+      console.error("[Partner PDF Import] Error:", error);
+      res.status(500).json({ message: error.message || "Failed to import PDF" });
     }
   });
 
