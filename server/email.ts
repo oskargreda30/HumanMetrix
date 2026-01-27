@@ -418,7 +418,7 @@ export async function sendInvitationEmail(invitation: Invitation, inviterName: s
               <p>These assessments are designed to evaluate your AI readiness and capabilities. Click the button below to get started:</p>
               
               <div style="text-align: center;">
-                <a href="${inviteUrl}" class="button">Start Assessments</a>
+                <a href="${inviteUrl}" class="button" style="color: white !important;">Start Assessments</a>
               </div>
               
               <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
@@ -496,7 +496,7 @@ export async function sendPasswordResetEmail(email: string, name: string, resetT
               <p>We received a request to reset your password. Click the button below to choose a new password:</p>
               
               <div style="text-align: center;">
-                <a href="${resetUrl}" class="button">Reset Password</a>
+                <a href="${resetUrl}" class="button" style="color: white !important;">Reset Password</a>
               </div>
               
               <div class="warning">
@@ -581,7 +581,7 @@ export async function sendWelcomeEmailWithPassword(email: string, name: string, 
               </div>
               
               <div style="text-align: center;">
-                <a href="${loginUrl}" class="button">Log In Now</a>
+                <a href="${loginUrl}" class="button" style="color: white !important;">Log In Now</a>
               </div>
               
               <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
@@ -1116,7 +1116,7 @@ export async function sendPartnerQuotaWarning70(
               <p>To ensure uninterrupted service for your platform, we recommend purchasing additional test credits before your quota runs out.</p>
               
               <div style="text-align: center;">
-                <a href="${topUpUrl}" class="button">Top Up Your Tests</a>
+                <a href="${topUpUrl}" class="button" style="color: white !important;">Top Up Your Tests</a>
               </div>
               
               <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
@@ -1222,7 +1222,7 @@ export async function sendPartnerQuotaWarning90(
               <p>When your quota reaches 100%, your API access will be <strong>automatically suspended</strong> and your embedded assessments will stop working until you purchase more tests.</p>
               
               <div style="text-align: center;">
-                <a href="${topUpUrl}" class="button">Top Up Now</a>
+                <a href="${topUpUrl}" class="button" style="color: white !important;">Top Up Now</a>
               </div>
               
               <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
@@ -1311,7 +1311,7 @@ export async function sendPartnerAccessSuspendedEmail(
               <p>Your test quota has been fully consumed. To restore access and reactivate your embedded assessments, please purchase a new test package.</p>
               
               <div style="text-align: center;">
-                <a href="${topUpUrl}" class="button">Restore Access - Purchase Tests</a>
+                <a href="${topUpUrl}" class="button" style="color: white !important;">Restore Access - Purchase Tests</a>
               </div>
               
               <p>Once you purchase additional tests, your API access will be <strong>automatically restored</strong> and your embedded assessments will resume working immediately.</p>
@@ -1403,7 +1403,7 @@ export async function sendPartnerSecurityAlert(
               </ol>
               
               <div style="text-align: center;">
-                <a href="${dashboardUrl}" class="button">Review Security Settings</a>
+                <a href="${dashboardUrl}" class="button" style="color: white !important;">Review Security Settings</a>
               </div>
               
               <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
@@ -1505,7 +1505,7 @@ export async function sendPartnerMonthlySummary(
               <p>View detailed analytics and insights in your dashboard:</p>
               
               <div style="text-align: center;">
-                <a href="${dashboardUrl}" class="button">View Full Report</a>
+                <a href="${dashboardUrl}" class="button" style="color: white !important;">View Full Report</a>
               </div>
               
               <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
@@ -1603,7 +1603,7 @@ export async function sendPartnerAutoTopUpConfirmation(
               <p>Your embedded assessments will continue to work seamlessly. No action is required on your part.</p>
               
               <div style="text-align: center;">
-                <a href="${dashboardUrl}" class="button">View Your Dashboard</a>
+                <a href="${dashboardUrl}" class="button" style="color: white !important;">View Your Dashboard</a>
               </div>
               
               <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
@@ -2000,7 +2000,7 @@ export async function sendPartnerWelcomeEmail(details: PartnerWelcomeDetails): P
               </div>
               
               <div style="text-align: center;">
-                <a href="${loginUrl}" class="button">Log In to Your Account</a>
+                <a href="${loginUrl}" class="button" style="color: white !important;">Log In to Your Account</a>
               </div>
               
               <div class="info-section">
@@ -2250,7 +2250,7 @@ export async function sendPartnerBulkInvitationEmail(details: PartnerBulkInvitat
               <p>These assessments are designed to evaluate your skills and capabilities. Click the button below to get started:</p>
               
               <div style="text-align: center;">
-                <a href="${assessmentUrl}" class="button">Start Assessments</a>
+                <a href="${assessmentUrl}" class="button" style="color: white !important;">Start Assessments</a>
               </div>
               
               ${expiryDate ? `<p class="expiry-notice">This invitation expires on ${expiryDate}. Please complete the assessments before this date.</p>` : ''}
@@ -2385,7 +2385,7 @@ export async function sendB2BCongratulatoryEmail(details: B2BCongratulatoryEmail
                 </div>
                 
                 <div style="text-align: center;">
-                  <a href="${details.paymentUrl}" class="button">Unlock Results Now</a>
+                  <a href="${details.paymentUrl}" class="button" style="color: white !important;">Unlock Results Now</a>
                 </div>
                 
                 <div class="option option-free" style="margin-top: 20px;">
@@ -2529,7 +2529,7 @@ export async function sendB2BAllCompleteEmail(details: B2BAllCompleteEmailDetail
               </div>
               
               <div style="text-align: center;">
-                <a href="${details.paymentUrl}" class="button">Unlock All Results Now</a>
+                <a href="${details.paymentUrl}" class="button" style="color: white !important;">Unlock All Results Now</a>
               </div>
               
               <div class="option-free">
@@ -2755,7 +2755,7 @@ export async function sendPartnerTeamInvitationEmail(details: PartnerTeamInvitat
               <p>Your role: <span class="role-badge">${roleDisplay}</span></p>
               
               <div style="text-align: center;">
-                <a href="${acceptUrl}" class="button">Accept Invitation</a>
+                <a href="${acceptUrl}" class="button" style="color: white !important;">Accept Invitation</a>
               </div>
               
               <div class="info-section">
@@ -2891,7 +2891,7 @@ export async function sendPartnerTeamCredentialsEmail(details: PartnerTeamCreden
               </div>
               
               <div style="text-align: center;">
-                <a href="${loginUrl}" class="button">Log In Now</a>
+                <a href="${loginUrl}" class="button" style="color: white !important;">Log In Now</a>
               </div>
               
               <div class="security-note">
@@ -2995,7 +2995,7 @@ export async function sendB2BResultsUnlockedEmail(
               <p style="text-align: center;">Thank you for your payment! Your <strong>${assessmentName}</strong> results are now unlocked and ready for viewing.</p>
               
               <div style="text-align: center;">
-                <a href="${resultsUrl}" class="button">View Your Results</a>
+                <a href="${resultsUrl}" class="button" style="color: white !important;">View Your Results</a>
               </div>
               
               <h3>What You'll Find in Your Results:</h3>
@@ -3208,7 +3208,7 @@ export async function sendBillingFailureNotification(details: BillingFailureDeta
               ` : ''}
               
               <div style="text-align: center;">
-                <a href="${details.updatePaymentUrl}" class="cta-button">Update Payment Method</a>
+                <a href="${details.updatePaymentUrl}" class="cta-button" style="color: white !important;">Update Payment Method</a>
               </div>
               
               <p style="color: #6b7280; font-size: 14px;">
@@ -3299,7 +3299,7 @@ export async function sendCardExpiryWarning(details: CardExpiryWarningDetails): 
               <p>To avoid any interruption to your API access, please update your payment method before the expiry date.</p>
               
               <div style="text-align: center;">
-                <a href="${details.updatePaymentUrl}" class="cta-button">Update Payment Method</a>
+                <a href="${details.updatePaymentUrl}" class="cta-button" style="color: white !important;">Update Payment Method</a>
               </div>
               
               <p style="color: #6b7280; font-size: 14px;">
@@ -3828,10 +3828,10 @@ Days Overdue: ${details.daysOverdue}
   
   const ctaButtonHtml = isManualSuspension ? `
               <div style="text-align: center;">
-                <a href="${details.paymentUrl}" class="cta-button">Go to Billing Dashboard</a>
+                <a href="${details.paymentUrl}" class="cta-button" style="color: white !important;">Go to Billing Dashboard</a>
               </div>` : `
               <div style="text-align: center;">
-                <a href="${details.paymentUrl}" class="cta-button">Pay Invoice Now</a>
+                <a href="${details.paymentUrl}" class="cta-button" style="color: white !important;">Pay Invoice Now</a>
               </div>`;
   
   const msg = {
@@ -3989,7 +3989,7 @@ export async function notifyInvoiceRestoration(details: InvoiceRestorationDetail
               </ul>
               
               <div style="text-align: center;">
-                <a href="${details.dashboardUrl}" class="cta-button">Go to Dashboard</a>
+                <a href="${details.dashboardUrl}" class="cta-button" style="color: white !important;">Go to Dashboard</a>
               </div>
               
               <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">If you have any questions, please contact us at <a href="mailto:hello@humanmetrix.co.uk" style="color: #0891b2;">hello@humanmetrix.co.uk</a></p>
