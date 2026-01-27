@@ -5701,10 +5701,16 @@ ${truncatedText}`;
         const tempPassword = generateTemporaryPassword(16);
         const hashedPassword = await bcrypt.hash(tempPassword, 10);
         
+        // Split name into first and last name for user creation
+        const nameParts = parsedData.candidateName.trim().split(/\s+/);
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        
         candidateUser = await storage.createUser({
           email: parsedData.candidateEmail?.toLowerCase().trim() || `imported_${Date.now()}@temp.humanmetrix.com`,
-          password: hashedPassword,
-          name: parsedData.candidateName,
+          passwordHash: hashedPassword,
+          firstName,
+          lastName,
           role: 'user',
           emailVerified: false,
         });
