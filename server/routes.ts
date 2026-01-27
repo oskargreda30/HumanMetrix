@@ -27,8 +27,16 @@ import multer from "multer";
 // Use createRequire for pdf-parse as it's a CommonJS module
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
-const pdfParseModule = require("pdf-parse");
-const pdfParse = pdfParseModule.PDFParse || pdfParseModule;
+const { PDFParse } = require("pdf-parse");
+
+// Helper function to parse PDF buffer and return text
+async function parsePdfBuffer(buffer: Buffer): Promise<{ text: string; numpages?: number; info?: any }> {
+  const parser = new PDFParse({ data: buffer });
+  await parser.load();
+  const text = await parser.getText();
+  const info = await parser.getInfo();
+  return { text, numpages: info?.numPages, info };
+}
 
 // Configure multer for PDF uploads (memory storage, max 10MB)
 const pdfUpload = multer({
@@ -4780,7 +4788,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Parse PDF to extract text
-      const pdfData = await pdfParse(file.buffer);
+      const pdfData = await parsePdfBuffer(file.buffer);
       const pdfText = pdfData.text;
       
       if (!pdfText || pdfText.trim().length < 50) {
@@ -5011,7 +5019,7 @@ ${pdfText.substring(0, 15000)}`;
         return res.status(400).json({ message: "No PDF file provided" });
       }
       
-      const pdfData = await pdfParse(file.buffer);
+      const pdfData = await parsePdfBuffer(file.buffer);
       const pdfText = pdfData.text;
       
       if (!pdfText || pdfText.trim().length < 50) {
@@ -5263,7 +5271,7 @@ ${pdfText.substring(0, 15000)}`;
       }
       
       // Parse PDF to extract text
-      const pdfData = await pdfParse(file.buffer);
+      const pdfData = await parsePdfBuffer(file.buffer);
       const pdfText = pdfData.text;
       
       if (!pdfText || pdfText.trim().length < 50) {
@@ -5493,7 +5501,7 @@ ${pdfText.substring(0, 15000)}`;
         return res.status(400).json({ message: "No PDF file provided" });
       }
       
-      const pdfData = await pdfParse(file.buffer);
+      const pdfData = await parsePdfBuffer(file.buffer);
       const pdfText = pdfData.text;
       
       if (!pdfText || pdfText.trim().length < 50) {
