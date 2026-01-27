@@ -2505,6 +2505,20 @@ export function registerPartnerRoutes(app: Express) {
         });
       }
       
+      // Check if user has already paid for any results (sessions unlocked mid-series)
+      const unlockedSessions = await db
+        .select({ id: assessmentSessions.id })
+        .from(assessmentSessions)
+        .where(
+          and(
+            sql`${assessmentSessions.metadata}->>'invitationToken' = ${token}`,
+            eq(assessmentSessions.status, 'completed'),
+            eq(assessmentSessions.paymentStatus, 'paid')
+          )
+        );
+      
+      const hasAlreadyPaid = unlockedSessions.length > 0;
+      
       // Calculate bundle pricing (25% discount for all assessments)
       const assessmentCount = completedTypes.length;
       const pricePerAssessment = 20; // £20 per assessment
@@ -2520,23 +2534,27 @@ export function registerPartnerRoutes(app: Express) {
       const baseUrl = getBaseUrl(req);
       const paymentUrl = `${baseUrl}/unlock-results?email=${encodeURIComponent(invitation.email)}&invite=${token}`;
       
-      // Send completion email with bundle pricing
-      try {
-        await sendB2BAllCompleteEmail({
-          email: invitation.email,
-          candidateName: invitation.name || undefined,
-          partnerCompanyName: companyName,
-          completedAssessments: completedTypes,
-          paymentUrl,
-          bundlePrice: `£${bundlePrice.toFixed(2)}`,
-          originalTotalPrice: `£${originalTotal.toFixed(2)}`,
-          discountPercentage,
-          freeUnlockDate,
-        });
-        console.log(`[Invite Complete] Sent completion email to ${invitation.email}`);
-      } catch (emailError) {
-        console.error(`[Invite Complete] Failed to send completion email:`, emailError);
-        // Don't fail the request if email fails
+      // Only send completion email with bundle pricing if user hasn't already paid mid-series
+      if (!hasAlreadyPaid) {
+        try {
+          await sendB2BAllCompleteEmail({
+            email: invitation.email,
+            candidateName: invitation.name || undefined,
+            partnerCompanyName: companyName,
+            completedAssessments: completedTypes,
+            paymentUrl,
+            bundlePrice: `£${bundlePrice.toFixed(2)}`,
+            originalTotalPrice: `£${originalTotal.toFixed(2)}`,
+            discountPercentage,
+            freeUnlockDate,
+          });
+          console.log(`[Invite Complete] Sent completion email to ${invitation.email}`);
+        } catch (emailError) {
+          console.error(`[Invite Complete] Failed to send completion email:`, emailError);
+          // Don't fail the request if email fails
+        }
+      } else {
+        console.log(`[Invite Complete] Skipping bundle pricing email - user has already paid for results`);
       }
       
       // Update invitation status to completed
