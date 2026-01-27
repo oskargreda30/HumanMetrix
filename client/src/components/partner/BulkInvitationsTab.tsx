@@ -25,7 +25,14 @@ import {
   ClipboardPaste,
   Link2,
   Building2,
+  Copy,
+  HelpCircle,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface BulkInvitationsTabProps {
   partnerId: string;
@@ -647,8 +654,16 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
               checked={sendEmails}
               onCheckedChange={(checked) => setSendEmails(!!checked)}
             />
-            <Label htmlFor="sendEmails" className="text-sm">
+            <Label htmlFor="sendEmails" className="text-sm flex items-center gap-1">
               Send invitation emails to candidates with email addresses
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p>When unchecked, invitations are created but no emails are sent. You can copy the unique invitation links from Recent Invitations below to share them manually via your own email system or ATS.</p>
+                </TooltipContent>
+              </Tooltip>
             </Label>
           </div>
 
@@ -765,11 +780,34 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
                       </div>
                     </div>
                   </div>
-                  <div className="text-right flex items-center gap-4">
+                  <div className="text-right flex items-center gap-3">
                     {getStatusBadge(invitation.status)}
                     <div className="text-xs text-muted-foreground">
                       {invitation.createdAt ? new Date(invitation.createdAt).toLocaleDateString() : ''}
                     </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => {
+                            const inviteUrl = invitation.inviteUrl || `${window.location.origin}/invite/${invitation.inviteToken}`;
+                            navigator.clipboard.writeText(inviteUrl);
+                            toast({
+                              title: "Link copied",
+                              description: "Invitation link copied to clipboard",
+                            });
+                          }}
+                          data-testid={`copy-invite-link-${invitation.id}`}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Copy invitation link</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
               ))}
