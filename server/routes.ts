@@ -5503,12 +5503,27 @@ ${pdfText.substring(0, 15000)}`;
         return res.status(400).json({ message: "No PDF file provided" });
       }
       
-      const pdfData = await parsePdfBuffer(file.buffer);
+      // Step 1: Parse PDF to extract text
+      console.log("[Partner PDF Parse] Step 1: Parsing PDF buffer, size:", file.buffer.length);
+      let pdfData;
+      try {
+        pdfData = await parsePdfBuffer(file.buffer);
+        console.log("[Partner PDF Parse] PDF parsed successfully, text length:", pdfData.text?.length || 0);
+      } catch (pdfError: any) {
+        console.error("[Partner PDF Parse] PDF parsing failed:", pdfError.message);
+        return res.status(400).json({ message: "Failed to extract text from PDF: " + pdfError.message });
+      }
+      
       const pdfText = pdfData.text;
       
       if (!pdfText || pdfText.trim().length < 50) {
+        console.error("[Partner PDF Parse] PDF text too short or empty, length:", pdfText?.length || 0);
         return res.status(400).json({ message: "Could not extract text from PDF. Please ensure the PDF contains readable text." });
       }
+      
+      // Step 2: Truncate text to avoid token limits (first 10k chars should contain assessment data)
+      const truncatedText = pdfText.substring(0, 10000);
+      console.log("[Partner PDF Parse] Step 2: Text truncated to", truncatedText.length, "chars for OpenAI");
       
       const parsePrompt = `You are an expert at parsing HumanMetrix assessment report PDFs. Extract the following information from this assessment report text:
 
@@ -5576,40 +5591,66 @@ Return your response as a valid JSON object with this exact structure:
 
 Here is the PDF text to parse:
 
-${pdfText.substring(0, 15000)}`;
+${truncatedText}`;
 
-      const completion = await openai.chat.completions.create({
-        model: "gpt-5",
-        messages: [
-          { role: "system", content: "You are an expert data extraction assistant. Always respond with valid JSON only." },
-          { role: "user", content: parsePrompt }
-        ],
-        response_format: { type: "json_object" },
-        max_completion_tokens: 2048,
-      });
-
-      const responseContent = completion.choices[0]?.message?.content;
-      if (!responseContent) {
-        return res.status(500).json({ message: "Failed to parse PDF content" });
+      // Step 3: Call OpenAI to parse the content
+      console.log("[Partner PDF Parse] Step 3: Calling OpenAI (gpt-4o) to parse assessment data...");
+      let completion;
+      try {
+        completion = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            { role: "system", content: "You are an expert data extraction assistant. Always respond with valid JSON only." },
+            { role: "user", content: parsePrompt }
+          ],
+          response_format: { type: "json_object" },
+          max_tokens: 2048,
+        });
+        console.log("[Partner PDF Parse] OpenAI response received, finish_reason:", completion.choices[0]?.finish_reason);
+      } catch (openaiError: any) {
+        console.error("[Partner PDF Parse] OpenAI API error:", openaiError.message);
+        console.error("[Partner PDF Parse] OpenAI error details:", JSON.stringify({
+          code: openaiError.code,
+          status: openaiError.status,
+          type: openaiError.type
+        }));
+        return res.status(500).json({ 
+          message: "AI service error: " + (openaiError.message || "Failed to process PDF"),
+          error: openaiError.code || "unknown"
+        });
       }
 
+      const responseContent = completion.choices[0]?.message?.content;
+      console.log("[Partner PDF Parse] Response content length:", responseContent?.length || 0);
+      
+      if (!responseContent) {
+        console.error("[Partner PDF Parse] Empty response from OpenAI, full response:", JSON.stringify(completion));
+        return res.status(500).json({ message: "AI returned empty response. Please try again." });
+      }
+
+      // Step 4: Parse the JSON response
       let parsedData;
       try {
         parsedData = JSON.parse(responseContent);
+        console.log("[Partner PDF Parse] Step 4: JSON parsed successfully, candidate:", parsedData.candidateName);
       } catch (e) {
-        return res.status(500).json({ message: "Failed to parse AI response" });
+        console.error("[Partner PDF Parse] Failed to parse JSON response:", responseContent.substring(0, 500));
+        return res.status(500).json({ message: "Failed to parse AI response as JSON" });
       }
 
       if (!parsedData.candidateName || !parsedData.assessments || parsedData.assessments.length === 0) {
+        console.error("[Partner PDF Parse] Missing required data:", JSON.stringify(parsedData));
         return res.status(400).json({ 
           message: "Could not extract required candidate information from PDF",
           parsed: parsedData
         });
       }
 
+      console.log("[Partner PDF Parse] Success! Found", parsedData.assessments.length, "assessments for", parsedData.candidateName);
       res.json(parsedData);
     } catch (error: any) {
-      console.error("[Partner PDF Parse] Error:", error);
+      console.error("[Partner PDF Parse] Unexpected error:", error.message);
+      console.error("[Partner PDF Parse] Stack:", error.stack);
       res.status(500).json({ message: error.message || "Failed to parse PDF" });
     }
   });
