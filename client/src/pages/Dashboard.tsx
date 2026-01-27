@@ -169,6 +169,13 @@ export default function Dashboard() {
   // Remove assessment state and mutation
   const [assessmentToRemove, setAssessmentToRemove] = useState<{ id: string; name: string } | null>(null);
   
+  // Partner results unlock dialog state
+  const [lockedResultsDialog, setLockedResultsDialog] = useState<{
+    seriesId: string;
+    partnerName: string;
+    autoUnlockDate: string | null;
+  } | null>(null);
+  
   const removeAssessmentMutation = useMutation({
     mutationFn: async (itemId: string) => {
       const res = await apiRequest("DELETE", `/api/purchase-items/${itemId}`);
@@ -1026,25 +1033,22 @@ export default function Dashboard() {
                               <p className="text-sm text-muted-foreground font-medium text-center">
                                 Results shared with {series.partnerName}
                               </p>
-                              {/* Purchase button for locked results */}
+                              {/* Results button - only shown when locked; when unlocked, scores are visible in badges */}
                               {!series.resultsUnlocked && (
                                 <Button
-                                  onClick={() => partnerResultsPurchaseMutation.mutate(series.id)}
-                                  disabled={partnerResultsPurchaseMutation.isPending}
+                                  onClick={() => {
+                                    setLockedResultsDialog({
+                                      seriesId: series.id,
+                                      partnerName: series.partnerName,
+                                      autoUnlockDate: series.autoUnlockDate,
+                                    });
+                                  }}
                                   className="mt-2"
-                                  data-testid={`button-buy-results-${series.id}`}
+                                  variant="outline"
+                                  data-testid={`button-results-${series.id}`}
                                 >
-                                  {partnerResultsPurchaseMutation.isPending ? (
-                                    <>
-                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                      Processing...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <CreditCard className="mr-2 h-4 w-4" />
-                                      Buy Access Now
-                                    </>
-                                  )}
+                                  <FileText className="mr-2 h-4 w-4" />
+                                  Results
                                 </Button>
                               )}
                             </>
@@ -1091,6 +1095,63 @@ export default function Dashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Locked Results Payment Dialog */}
+      <Dialog open={!!lockedResultsDialog} onOpenChange={(open) => !open && setLockedResultsDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5 text-amber-500" />
+              Results Locked
+            </DialogTitle>
+            <DialogDescription className="pt-2 space-y-3">
+              <p>
+                Your detailed assessment results from <span className="font-medium">{lockedResultsDialog?.partnerName}</span> are currently locked.
+              </p>
+              <p>
+                You can unlock your results immediately by purchasing access, or wait for the automatic unlock.
+              </p>
+              {lockedResultsDialog?.autoUnlockDate && (
+                <p className="text-sm bg-muted p-3 rounded-md">
+                  <Clock className="h-4 w-4 inline mr-2 text-muted-foreground" />
+                  <span className="text-muted-foreground">Auto-unlocks on </span>
+                  <span className="font-medium">{format(new Date(lockedResultsDialog.autoUnlockDate), 'MMMM d, yyyy')}</span>
+                </p>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 mt-4">
+            <Button
+              onClick={() => {
+                if (lockedResultsDialog) {
+                  partnerResultsPurchaseMutation.mutate(lockedResultsDialog.seriesId);
+                }
+              }}
+              disabled={partnerResultsPurchaseMutation.isPending}
+              data-testid="button-unlock-now"
+            >
+              {partnerResultsPurchaseMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Unlock Now
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setLockedResultsDialog(null)}
+              data-testid="button-wait-autounlock"
+            >
+              Wait for Auto-Unlock
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
