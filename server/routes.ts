@@ -2729,18 +2729,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 50% bulk discount or 25% individual discount
       const discountRate = (isBulk && resultsToPurchase.length > 1) ? 0.50 : 0.25;
       
-      // Calculate full B2C price - sum of (BASE_FEE + assessmentPrice) for each assessment
-      // This matches what the user would pay if buying each assessment individually as B2C
-      let fullB2CPrice = 0;
+      // Calculate full B2C price by summing individually-rounded local currency prices
+      // This ensures the Stripe amount matches what we display (e.g., 220+230=450, not 440)
+      const userCurrency = getCurrencyForCountry(userCountry);
+      let sumOfRoundedOriginalPrices = 0;
+      
       for (const result of resultsToPurchase) {
         const normalizedType = normalizeAssessmentId(result.assessmentType);
         const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
-        fullB2CPrice += BASE_FEE + assessmentPrice; // Each assessment has full B2C price
+        const assessmentB2CPrice = BASE_FEE + assessmentPrice;
+        
+        // Calculate PPP-adjusted price and format (which rounds up)
+        const pppB2CPrice = getPPPAdjustedPriceInPence(assessmentB2CPrice, userCountry);
+        const formattedPrice = formatPrice(pppB2CPrice, userCurrency, { skipPPPAdjustment: true });
+        const roundedPrice = parseFloat(formattedPrice.replace(/[^\d.]/g, ''));
+        sumOfRoundedOriginalPrices += roundedPrice;
       }
       
-      // Calculate discounted total
-      const discountedTotal = Math.round(fullB2CPrice * (1 - discountRate));
-      totalPriceInPence = discountedTotal;
+      // Apply discount to the sum of rounded prices
+      const roundedSumOriginal = roundPriceUp(sumOfRoundedOriginalPrices, userCurrency);
+      const discountedLocalPrice = roundPriceUp(roundedSumOriginal * (1 - discountRate), userCurrency);
+      
+      // Convert to Stripe amount (handle zero-decimal currencies)
+      const isZeroDecimal = ['JPY', 'KRW', 'VND', 'IDR', 'THB', 'TWD', 'HUF'].includes(localCurrencyCode.toUpperCase());
+      const stripeAmount = isZeroDecimal ? discountedLocalPrice : Math.round(discountedLocalPrice * 100);
+      
+      totalPriceInPence = Math.round(discountedLocalPrice); // Store local currency amount
       
       // Create a single line item for the discounted total
       const discountDescription = isBulk && resultsToPurchase.length > 1 ? "50% bulk discount" : "25% partner discount";
@@ -2754,9 +2768,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }[normalizedType] || normalizedType;
       }).join(", ");
       
-      // Clear previous line items (base fee) and create single discounted line item
+      // Clear previous line items and create single discounted line item
       lineItems.length = 0;
-      const adjustedTotalPrice = convertToStripeCurrencyAmount(discountedTotal, localCurrencyCode, userCountry);
       lineItems.push({
         price_data: {
           currency: stripeCurrency,
@@ -2764,7 +2777,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             name: `Results Access: ${assessmentTypesList}`,
             description: `${discountDescription} applied - Access to your assessment results`,
           },
-          unit_amount: adjustedTotalPrice,
+          unit_amount: stripeAmount,
         },
         quantity: 1,
       });
@@ -2941,6 +2954,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const bulkDiscountRate = 0.50;
       
       let totalB2CPriceInPence = 0;
+      let sumOfRoundedOriginalPrices = 0; // Sum of individually-rounded prices for consistency
       const assessmentPrices: { type: string; priceInPence: number; priceDisplay: string; originalPriceDisplay: string }[] = [];
 
       for (const result of purchasableResults) {
@@ -2951,6 +2965,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Calculate original B2C price with PPP adjustment
         const pppB2CPrice = getPPPAdjustedPriceInPence(assessmentB2CPrice, userCountry);
         const originalPriceDisplay = formatPrice(pppB2CPrice, userCurrency, { skipPPPAdjustment: true });
+        
+        // Extract the numeric value from the formatted price for summing
+        // This ensures bulk price = sum of individual rounded prices (e.g., 220 + 230 = 450, not 440)
+        const originalPriceNumeric = parseFloat(originalPriceDisplay.replace(/[^\d.]/g, ''));
+        sumOfRoundedOriginalPrices += originalPriceNumeric;
         
         // Apply 25% discount for individual assessment price
         const discountedPrice = Math.round(pppB2CPrice * (1 - individualDiscountRate));
@@ -2968,18 +2987,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Calculate total B2C price with PPP adjustment - this is the FULL price before any discount
       const totalPppB2C = getPPPAdjustedPriceInPence(totalB2CPriceInPence, userCountry);
-      const originalTotalDisplay = formatPrice(totalPppB2C, userCurrency, { skipPPPAdjustment: true });
+      
+      // Use sum of individually-rounded prices for original display (ensures 220+230=450, not 440)
+      const roundedSumOriginal = roundPriceUp(sumOfRoundedOriginalPrices, userCurrency);
+      const originalTotalDisplay = `${userCurrency.symbol}${roundedSumOriginal.toLocaleString()}`;
       
       // Individual total: 25% off the FULL B2C price
       const individualTotalPpp = Math.round(totalPppB2C * (1 - individualDiscountRate));
       const individualTotalDisplay = formatPrice(individualTotalPpp, userCurrency, { skipPPPAdjustment: true });
       
-      // Bulk pricing: 50% off the FULL B2C price (if more than 1 purchasable assessment)
+      // Bulk pricing: 50% off the sum of rounded original prices
+      // This ensures discount is applied to the displayed original price (e.g., 50% of 450 = 225)
       const hasBulkDiscount = purchasableResults.length > 1;
-      const bulkTotalPpp = hasBulkDiscount 
-        ? Math.round(totalPppB2C * (1 - bulkDiscountRate)) 
-        : individualTotalPpp;
-      const bulkTotalDisplay = formatPrice(bulkTotalPpp, userCurrency, { skipPPPAdjustment: true });
+      const bulkDiscountedLocalPrice = hasBulkDiscount 
+        ? roundPriceUp(roundedSumOriginal * (1 - bulkDiscountRate), userCurrency)
+        : parseFloat(individualTotalDisplay.replace(/[^\d.]/g, ''));
+      const bulkTotalDisplay = `${userCurrency.symbol}${bulkDiscountedLocalPrice.toLocaleString()}`;
       
       // Calculate base fee display
       const baseFeeAdjusted = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
