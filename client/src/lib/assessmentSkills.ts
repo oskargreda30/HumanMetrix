@@ -1,4 +1,21 @@
 // Shared assessment skill metadata and utilities
+// IMPORTS FROM SINGLE SOURCE OF TRUTH
+import {
+  FIT_SKILL_NAMES,
+  AI_READINESS_SKILL_NAMES,
+  AIQ_SKILL_NAMES,
+  PROMPT_ARCHITECTURE_SKILL_NAMES,
+  LEGACY_TO_CANONICAL_AI_READINESS,
+  getSkillCode,
+  normalizeAIReadinessScores as normalizeScores,
+  isValidFitSkill,
+  isValidAIReadinessSkill,
+  isValidAIQSkill,
+  isValidPromptArchitectureSkill,
+} from '@shared/skillNames';
+
+// Re-export validation functions
+export { isValidFitSkill, isValidAIReadinessSkill, isValidAIQSkill, isValidPromptArchitectureSkill };
 
 export type AssessmentType = 'fit' | 'ai_readiness' | 'aiq' | 'prompt_architecture';
 
@@ -9,94 +26,71 @@ export interface SkillDefinition {
   color: string;
 }
 
-// Acronym mappings for PDF radar charts - MUST match ALL assessments v1.md exactly
+// Acronym mappings for PDF radar charts - uses shared skill codes
 export const SKILL_ACRONYMS: Record<string, string> = {
-  // FIT Skills (from ALL assessments v1.md)
-  'High Agency': 'HA',
-  'Intellectual Curiosity': 'IC',
-  'Resilience': 'RA',
-  'Empathy & Ethics': 'EE',
-  'Growth Mindset': 'GM',
-  'Interpersonal Agility': 'IA',
+  // FIT Skills (canonical)
+  [FIT_SKILL_NAMES.HIGH_AGENCY]: 'HA',
+  [FIT_SKILL_NAMES.INTELLECTUAL_CURIOSITY]: 'IC',
+  [FIT_SKILL_NAMES.RESILIENCE]: 'RA',
+  [FIT_SKILL_NAMES.EMPATHY_ETHICS]: 'EE',
+  [FIT_SKILL_NAMES.GROWTH_MINDSET]: 'GM',
+  [FIT_SKILL_NAMES.INTERPERSONAL_AGILITY]: 'IA',
   
-  // AI Readiness Skills (from ALL assessments v1.md)
-  'AI Literacy & Prompt Engineering': 'AL/PE',
-  'Technical Fundamentals': 'TF',
-  'Data Fluency': 'DF',
-  'Critical Thinking & Problem-Solving': 'CT/PS',
-  'Adaptability & Continuous Learning': 'ACL',
-  'Collaboration & Communication': 'CC',
-  'Responsible AI & Ethical Awareness': 'RAI',
-  'Creativity & Innovation': 'CI',
-  'Domain Expertise': 'DE',
+  // AI Readiness Skills (canonical)
+  [AI_READINESS_SKILL_NAMES.AI_LITERACY]: 'AL/PE',
+  [AI_READINESS_SKILL_NAMES.TECHNICAL_FUNDAMENTALS]: 'TF',
+  [AI_READINESS_SKILL_NAMES.DATA_FLUENCY]: 'DF',
+  [AI_READINESS_SKILL_NAMES.CRITICAL_THINKING]: 'CT/PS',
+  [AI_READINESS_SKILL_NAMES.ADAPTABILITY]: 'ACL',
+  [AI_READINESS_SKILL_NAMES.COLLABORATION]: 'CC',
+  [AI_READINESS_SKILL_NAMES.RESPONSIBLE_AI]: 'RAI',
+  [AI_READINESS_SKILL_NAMES.CREATIVITY]: 'CI',
+  [AI_READINESS_SKILL_NAMES.DOMAIN_EXPERTISE]: 'DE',
   
-  // AIQ Skills
-  'Transparency': 'T',
-  'Accountability': 'A',
-  'Bias Awareness': 'BA',
-  'Privacy Sensitivity': 'PS',
+  // AIQ Skills (canonical)
+  [AIQ_SKILL_NAMES.TRANSPARENCY]: 'T',
+  [AIQ_SKILL_NAMES.ACCOUNTABILITY]: 'A',
+  [AIQ_SKILL_NAMES.BIAS_AWARENESS]: 'BA',
+  [AIQ_SKILL_NAMES.PRIVACY_SENSITIVITY]: 'PS',
   
-  // Prompt Architecture Skills
-  'Clarity': 'CL',
-  'Context Setting': 'CS',
-  'Output Formatting': 'OF',
-  'Constraint Definition': 'CD',
+  // Prompt Architecture Skills (canonical)
+  [PROMPT_ARCHITECTURE_SKILL_NAMES.CLARITY]: 'CL',
+  [PROMPT_ARCHITECTURE_SKILL_NAMES.CONTEXT_SETTING]: 'CS',
+  [PROMPT_ARCHITECTURE_SKILL_NAMES.OUTPUT_FORMATTING]: 'OF',
+  [PROMPT_ARCHITECTURE_SKILL_NAMES.CONSTRAINT_DEFINITION]: 'CD',
   
   // Legacy AI Readiness keys (for backward compatibility with old data)
   'AI Literacy': 'AL/PE',
-  'AI Literacy/Prompting': 'AL/PE', // Very old legacy key
+  'AI Literacy/Prompting': 'AL/PE',
   'Technical Fluency': 'TF',
   'Domain Fluency': 'DF',
   'Critical Thinking': 'CT/PS',
   'Adaptive Learning': 'ACL',
   'Collaboration': 'CC',
-  'Cross-functional Collaboration': 'CC', // Very old legacy key
+  'Cross-functional Collaboration': 'CC',
   'Responsible AI': 'RAI',
   'Creative Innovation': 'CI',
-  // Note: 'Domain Expertise' is already correct in both old and new formats
 };
 
 /**
  * Get acronym for a skill name (for PDF radar charts)
  */
 export function getSkillAcronym(skillName: string): string {
-  return SKILL_ACRONYMS[skillName] || skillName;
+  return SKILL_ACRONYMS[skillName] || getSkillCode(skillName) || skillName;
 }
 
 /**
  * Legacy to canonical key mapping for AI Readiness skills
+ * Re-exported from shared module for backward compatibility
  */
-const AI_READINESS_KEY_MAPPING: Record<string, string> = {
-  // Legacy keys -> Canonical keys
-  'AI Literacy': 'AI Literacy & Prompt Engineering',
-  'AI Literacy/Prompting': 'AI Literacy & Prompt Engineering',
-  'Technical Fluency': 'Technical Fundamentals',
-  'Domain Fluency': 'Data Fluency',
-  'Critical Thinking': 'Critical Thinking & Problem-Solving',
-  'Adaptive Learning': 'Adaptability & Continuous Learning',
-  'Collaboration': 'Collaboration & Communication',
-  'Cross-functional Collaboration': 'Collaboration & Communication',
-  'Responsible AI': 'Responsible AI & Ethical Awareness',
-  'Creative Innovation': 'Creativity & Innovation',
-};
+const AI_READINESS_KEY_MAPPING = LEGACY_TO_CANONICAL_AI_READINESS;
 
 /**
  * Normalize AI Readiness scores to use canonical skill names
  * This handles legacy data that may have different key names
  */
 export function normalizeAIReadinessScores(scores: Record<string, number>): Record<string, number> {
-  const normalized: Record<string, number> = {};
-  
-  for (const [key, value] of Object.entries(scores)) {
-    // Check if this is a legacy key that needs mapping
-    const canonicalKey = AI_READINESS_KEY_MAPPING[key] || key;
-    // Only add if we don't already have a value for this canonical key
-    if (normalized[canonicalKey] === undefined) {
-      normalized[canonicalKey] = value;
-    }
-  }
-  
-  return normalized;
+  return normalizeScores(scores);
 }
 
 /**
@@ -118,155 +112,155 @@ export function getAIReadinessScore(scores: Record<string, number>, canonicalSki
   return 0;
 }
 
-// FIT Assessment: 6 behavioral skills
+// FIT Assessment: 6 behavioral skills (using shared constants)
 export const FIT_SKILLS: SkillDefinition[] = [
   {
-    key: 'High Agency',
-    displayName: 'High Agency',
+    key: FIT_SKILL_NAMES.HIGH_AGENCY,
+    displayName: FIT_SKILL_NAMES.HIGH_AGENCY,
     description: 'Takes initiative and ownership of outcomes',
     color: 'hsl(var(--chart-1))',
   },
   {
-    key: 'Intellectual Curiosity',
-    displayName: 'Intellectual Curiosity',
+    key: FIT_SKILL_NAMES.INTELLECTUAL_CURIOSITY,
+    displayName: FIT_SKILL_NAMES.INTELLECTUAL_CURIOSITY,
     description: 'Seeks knowledge and understanding',
     color: 'hsl(var(--chart-2))',
   },
   {
-    key: 'Resilience',
-    displayName: 'Resilience',
+    key: FIT_SKILL_NAMES.RESILIENCE,
+    displayName: FIT_SKILL_NAMES.RESILIENCE,
     description: 'Adapts and perseveres through challenges',
     color: 'hsl(var(--chart-3))',
   },
   {
-    key: 'Empathy & Ethics',
-    displayName: 'Empathy & Ethics',
+    key: FIT_SKILL_NAMES.EMPATHY_ETHICS,
+    displayName: FIT_SKILL_NAMES.EMPATHY_ETHICS,
     description: 'Considers impact on others and ethical implications',
     color: 'hsl(var(--chart-4))',
   },
   {
-    key: 'Growth Mindset',
-    displayName: 'Growth Mindset',
+    key: FIT_SKILL_NAMES.GROWTH_MINDSET,
+    displayName: FIT_SKILL_NAMES.GROWTH_MINDSET,
     description: 'Views challenges as learning opportunities',
     color: 'hsl(var(--chart-5))',
   },
   {
-    key: 'Interpersonal Agility',
-    displayName: 'Interpersonal Agility',
+    key: FIT_SKILL_NAMES.INTERPERSONAL_AGILITY,
+    displayName: FIT_SKILL_NAMES.INTERPERSONAL_AGILITY,
     description: 'Navigates social dynamics effectively',
     color: 'hsl(var(--chart-1))',
   },
 ];
 
-// AI Readiness: 9 technical skills
+// AI Readiness: 9 technical skills (using shared constants)
 export const AI_READINESS_SKILLS: SkillDefinition[] = [
   {
-    key: 'AI Literacy & Prompt Engineering',
-    displayName: 'AI Literacy & Prompt Engineering',
+    key: AI_READINESS_SKILL_NAMES.AI_LITERACY,
+    displayName: AI_READINESS_SKILL_NAMES.AI_LITERACY,
     description: 'Understanding AI capabilities and effective prompt engineering',
     color: 'hsl(var(--chart-1))',
   },
   {
-    key: 'Technical Fundamentals',
-    displayName: 'Technical Fundamentals',
+    key: AI_READINESS_SKILL_NAMES.TECHNICAL_FUNDAMENTALS,
+    displayName: AI_READINESS_SKILL_NAMES.TECHNICAL_FUNDAMENTALS,
     description: 'Core technical knowledge and system understanding',
     color: 'hsl(var(--chart-2))',
   },
   {
-    key: 'Data Fluency',
-    displayName: 'Data Fluency',
+    key: AI_READINESS_SKILL_NAMES.DATA_FLUENCY,
+    displayName: AI_READINESS_SKILL_NAMES.DATA_FLUENCY,
     description: 'Ability to work with and interpret data effectively',
     color: 'hsl(var(--chart-3))',
   },
   {
-    key: 'Critical Thinking & Problem-Solving',
-    displayName: 'Critical Thinking & Problem-Solving',
+    key: AI_READINESS_SKILL_NAMES.CRITICAL_THINKING,
+    displayName: AI_READINESS_SKILL_NAMES.CRITICAL_THINKING,
     description: 'Analytical reasoning and solution development',
     color: 'hsl(var(--chart-4))',
   },
   {
-    key: 'Adaptability & Continuous Learning',
-    displayName: 'Adaptability & Continuous Learning',
+    key: AI_READINESS_SKILL_NAMES.ADAPTABILITY,
+    displayName: AI_READINESS_SKILL_NAMES.ADAPTABILITY,
     description: 'Embracing change and ongoing skill development',
     color: 'hsl(var(--chart-5))',
   },
   {
-    key: 'Collaboration & Communication',
-    displayName: 'Collaboration & Communication',
+    key: AI_READINESS_SKILL_NAMES.COLLABORATION,
+    displayName: AI_READINESS_SKILL_NAMES.COLLABORATION,
     description: 'Effective teamwork and information sharing',
     color: 'hsl(var(--chart-1))',
   },
   {
-    key: 'Responsible AI & Ethical Awareness',
-    displayName: 'Responsible AI & Ethical Awareness',
+    key: AI_READINESS_SKILL_NAMES.RESPONSIBLE_AI,
+    displayName: AI_READINESS_SKILL_NAMES.RESPONSIBLE_AI,
     description: 'Ethical AI practices and responsible deployment',
     color: 'hsl(var(--chart-2))',
   },
   {
-    key: 'Creativity & Innovation',
-    displayName: 'Creativity & Innovation',
+    key: AI_READINESS_SKILL_NAMES.CREATIVITY,
+    displayName: AI_READINESS_SKILL_NAMES.CREATIVITY,
     description: 'Generating novel ideas and innovative solutions',
     color: 'hsl(var(--chart-3))',
   },
   {
-    key: 'Domain Expertise',
-    displayName: 'Domain Expertise',
+    key: AI_READINESS_SKILL_NAMES.DOMAIN_EXPERTISE,
+    displayName: AI_READINESS_SKILL_NAMES.DOMAIN_EXPERTISE,
     description: 'Deep specialized knowledge in specific field',
     color: 'hsl(var(--chart-4))',
   },
 ];
 
-// AIQ: Algorithmic Integrity Quotient - 4 ethical dimensions
+// AIQ: Algorithmic Integrity Quotient - 4 ethical dimensions (using shared constants)
 export const AIQ_SKILLS: SkillDefinition[] = [
   {
-    key: 'Transparency',
-    displayName: 'Transparency',
+    key: AIQ_SKILL_NAMES.TRANSPARENCY,
+    displayName: AIQ_SKILL_NAMES.TRANSPARENCY,
     description: 'Commitment to explainable AI and clear communication of AI decisions',
     color: 'hsl(var(--chart-1))',
   },
   {
-    key: 'Accountability',
-    displayName: 'Accountability',
+    key: AIQ_SKILL_NAMES.ACCOUNTABILITY,
+    displayName: AIQ_SKILL_NAMES.ACCOUNTABILITY,
     description: 'Taking responsibility for AI outcomes and maintaining oversight',
     color: 'hsl(var(--chart-2))',
   },
   {
-    key: 'Bias Awareness',
-    displayName: 'Bias Awareness',
+    key: AIQ_SKILL_NAMES.BIAS_AWARENESS,
+    displayName: AIQ_SKILL_NAMES.BIAS_AWARENESS,
     description: 'Recognizing and mitigating algorithmic bias in AI systems',
     color: 'hsl(var(--chart-3))',
   },
   {
-    key: 'Privacy Sensitivity',
-    displayName: 'Privacy Sensitivity',
+    key: AIQ_SKILL_NAMES.PRIVACY_SENSITIVITY,
+    displayName: AIQ_SKILL_NAMES.PRIVACY_SENSITIVITY,
     description: 'Protecting user data and respecting privacy in AI applications',
     color: 'hsl(var(--chart-4))',
   },
 ];
 
-// Prompt Architecture: 4 prompt design skills
+// Prompt Architecture: 4 prompt design skills (using shared constants)
 export const PROMPT_ARCHITECTURE_SKILLS: SkillDefinition[] = [
   {
-    key: 'Clarity',
-    displayName: 'Clarity',
+    key: PROMPT_ARCHITECTURE_SKILL_NAMES.CLARITY,
+    displayName: PROMPT_ARCHITECTURE_SKILL_NAMES.CLARITY,
     description: 'Writing clear and unambiguous prompts',
     color: 'hsl(var(--chart-1))',
   },
   {
-    key: 'Context Setting',
-    displayName: 'Context Setting',
+    key: PROMPT_ARCHITECTURE_SKILL_NAMES.CONTEXT_SETTING,
+    displayName: PROMPT_ARCHITECTURE_SKILL_NAMES.CONTEXT_SETTING,
     description: 'Providing appropriate background and context in prompts',
     color: 'hsl(var(--chart-2))',
   },
   {
-    key: 'Output Formatting',
-    displayName: 'Output Formatting',
+    key: PROMPT_ARCHITECTURE_SKILL_NAMES.OUTPUT_FORMATTING,
+    displayName: PROMPT_ARCHITECTURE_SKILL_NAMES.OUTPUT_FORMATTING,
     description: 'Specifying desired output format and structure',
     color: 'hsl(var(--chart-3))',
   },
   {
-    key: 'Constraint Definition',
-    displayName: 'Constraint Definition',
+    key: PROMPT_ARCHITECTURE_SKILL_NAMES.CONSTRAINT_DEFINITION,
+    displayName: PROMPT_ARCHITECTURE_SKILL_NAMES.CONSTRAINT_DEFINITION,
     description: 'Defining boundaries and limitations for AI responses',
     color: 'hsl(var(--chart-4))',
   },
