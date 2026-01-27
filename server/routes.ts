@@ -2899,6 +2899,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
           stripePaymentIntentId: session.payment_intent as string,
           purchasedAt: new Date(),
         });
+        
+        // Send confirmation email with results access
+        try {
+          const user = await storage.getUser(userId);
+          const purchase = await storage.getPartnerResultPurchase(purchaseId);
+          
+          if (user && purchase) {
+            const invitation = await storage.getPartnerCandidateInvitation(purchase.partnerInvitationId);
+            const partner = invitation ? await storage.getPartnerAccount(invitation.partnerId) : null;
+            const partnerName = partner?.companyName || partner?.name || 'Partner';
+            
+            // Get the list of assessment types that were purchased
+            const purchasedTypes = purchase.purchasedAssessmentTypes || [];
+            const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0] 
+              ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
+              : 'http://localhost:5000';
+            const resultsUrl = `${baseUrl}/dashboard`;
+            
+            // Send email for each purchased assessment type
+            const { sendB2BResultsUnlockedEmail } = await import('./email');
+            
+            if (purchasedTypes.length > 0) {
+              // Send individual emails for each assessment type
+              for (const assessmentType of purchasedTypes) {
+                await sendB2BResultsUnlockedEmail(
+                  user.email,
+                  assessmentType,
+                  partnerName,
+                  resultsUrl
+                );
+              }
+            } else {
+              // Bulk purchase - send one email for all assessments
+              await sendB2BResultsUnlockedEmail(
+                user.email,
+                'All Assessments',
+                partnerName,
+                resultsUrl
+              );
+            }
+            
+            console.log(`[Partner Results] Sent unlock confirmation email to ${user.email}`);
+          }
+        } catch (emailError) {
+          console.error("Error sending partner results confirmation email:", emailError);
+          // Don't fail the request if email fails
+        }
       }
 
       res.json({ success: true, message: "Purchase confirmed successfully" });
