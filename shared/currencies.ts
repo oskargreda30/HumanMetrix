@@ -786,31 +786,48 @@ export function convertAndRoundToLocalCurrency(
   return roundPriceUp(convertedPrice);
 }
 
-// Round price based on magnitude for cleaner display (standard rounding: 5+ rounds up)
-// - Under 100: round to nearest whole number
-// - 100 - 999: round to nearest 10
-// - 1,000 - 9,999: round to nearest 100
-// - 10,000 - 99,999: round to nearest 1,000
-// - 100,000 - 999,999: round to nearest 10,000
-// - 1,000,000+: round to nearest 100,000
+// Round price UP (ceiling) based on magnitude for cleaner display
+// Used for original/base prices to ensure we never undercharge
+// - Under 100: round up to nearest whole number
+// - 100 - 999: round up to nearest 10
+// - 1,000 - 9,999: round up to nearest 100
+// - 10,000 - 99,999: round up to nearest 1,000
+// - 100,000 - 999,999: round up to nearest 10,000
+// - 1,000,000+: round up to nearest 100,000
 export function roundPriceUp(price: number, _currency?: CurrencyConfig): number {
   if (price < 100) {
-    // Under 100: round to nearest whole number
+    return Math.ceil(price);
+  } else if (price < 1000) {
+    return Math.ceil(price / 10) * 10;
+  } else if (price < 10000) {
+    return Math.ceil(price / 100) * 100;
+  } else if (price < 100000) {
+    return Math.ceil(price / 1000) * 1000;
+  } else if (price < 1000000) {
+    return Math.ceil(price / 10000) * 10000;
+  } else {
+    return Math.ceil(price / 100000) * 100000;
+  }
+}
+
+// Round price using standard rounding (5+ rounds up) based on magnitude
+// Used for discounted prices for fair rounding
+// - Under 100: round to nearest whole number
+// - 100 - 999: round to nearest 10 (e.g. 165 → 170, 164 → 160)
+// - 1,000 - 9,999: round to nearest 100
+// - 10,000+: round to nearest 1,000
+export function roundPriceStandard(price: number, _currency?: CurrencyConfig): number {
+  if (price < 100) {
     return Math.round(price);
   } else if (price < 1000) {
-    // Hundreds: round to nearest 10 (e.g. 165 → 170, 164 → 160)
     return Math.round(price / 10) * 10;
   } else if (price < 10000) {
-    // Thousands: round to nearest 100
     return Math.round(price / 100) * 100;
   } else if (price < 100000) {
-    // Ten thousands: round to nearest 1,000
     return Math.round(price / 1000) * 1000;
   } else if (price < 1000000) {
-    // Hundred thousands: round to nearest 10,000
     return Math.round(price / 10000) * 10000;
   } else {
-    // Millions+: round to nearest 100,000
     return Math.round(price / 100000) * 100000;
   }
 }
