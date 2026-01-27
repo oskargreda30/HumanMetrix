@@ -354,12 +354,19 @@ export default function EmbedAssessment() {
       
       // Skip email verification if session is from a partner invitation (magic link pattern)
       // The user clicked a link sent to their email, which serves as email verification
-      console.log('[EmbedAssessment] isFromInvitation:', data.isFromInvitation, 'externalEmail:', data.externalEmail);
+      console.log('[EmbedAssessment] isFromInvitation:', data.isFromInvitation, 'externalEmail:', data.externalEmail, 'invitationContext:', data.invitationContext);
       if (data.isFromInvitation) {
         setIsFromInvitation(true);
         if (data.externalEmail) {
           console.log('[EmbedAssessment] Skipping email verification for invitation');
           setVerificationStep("verified");
+        }
+        
+        // Set up multi-assessment context from invitation
+        if (data.invitationContext && data.invitationContext.assessmentTypes?.length > 1) {
+          console.log('[EmbedAssessment] Setting up multi-assessment queue from invitation:', data.invitationContext);
+          setAssessmentQueue(data.invitationContext.assessmentTypes);
+          setCurrentAssessmentIndex(data.invitationContext.currentIndex);
         }
       }
       

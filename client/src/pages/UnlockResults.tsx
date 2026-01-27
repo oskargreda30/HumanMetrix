@@ -200,14 +200,67 @@ export default function UnlockResults() {
               ))}
             </div>
 
+            {/* Single assessment option - always shown */}
+            <Card className="border mb-4">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold">Unlock Single Assessment</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Unlock one assessment result
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    {data.pricing.single.discountPercent > 0 && (
+                      <div className="text-sm text-muted-foreground line-through">
+                        {data.pricing.single.originalDisplay}
+                      </div>
+                    )}
+                    <div className="text-2xl font-bold">
+                      {data.pricing.single.discountedDisplay}
+                    </div>
+                    {data.pricing.single.discountPercent > 0 && (
+                      <Badge variant="secondary">
+                        {data.pricing.single.discountPercent}% OFF
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <Button 
+                  className="w-full" 
+                  size="lg"
+                  variant="outline"
+                  onClick={() => handleCheckout(false)}
+                  disabled={isCheckingOut}
+                  data-testid="button-checkout-single"
+                >
+                  {isCheckingOut && checkoutType === 'single' ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      Unlock Single Result
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Bundle option - shown when there are multiple unpaid assessments */}
             {showBundle && (
               <Card className="bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950/30 dark:to-blue-950/30 border-cyan-200 dark:border-cyan-800 mb-4">
                 <CardContent className="pt-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Badge className="bg-green-500 text-white">Best Value</Badge>
+                  </div>
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <h3 className="text-lg font-semibold">Bundle Discount</h3>
+                      <h3 className="text-lg font-semibold">Bundle All {unpaidCount} Assessments</h3>
                       <p className="text-sm text-muted-foreground">
-                        Unlock all {unpaidCount} assessments together
+                        Save more by unlocking all results together
                       </p>
                     </div>
                     <div className="text-right">
@@ -238,55 +291,6 @@ export default function UnlockResults() {
                       <>
                         <CreditCard className="mr-2 h-4 w-4" />
                         Unlock All Results
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {!showBundle && (
-              <Card className="bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950/30 dark:to-blue-950/30 border-cyan-200 dark:border-cyan-800 mb-4">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold">Unlock Results</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Get immediate access to your detailed results
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      {data.pricing.single.discountPercent > 0 && (
-                        <div className="text-sm text-muted-foreground line-through">
-                          {data.pricing.single.originalDisplay}
-                        </div>
-                      )}
-                      <div className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">
-                        {data.pricing.single.discountedDisplay}
-                      </div>
-                      {data.pricing.single.discountPercent > 0 && (
-                        <Badge className="bg-cyan-500 text-white">
-                          {data.pricing.single.discountPercent}% OFF
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  <Button 
-                    className="w-full" 
-                    size="lg"
-                    onClick={() => handleCheckout(false)}
-                    disabled={isCheckingOut}
-                    data-testid="button-checkout-single"
-                  >
-                    {isCheckingOut && checkoutType === 'single' ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="mr-2 h-4 w-4" />
-                        Unlock Results
                       </>
                     )}
                   </Button>

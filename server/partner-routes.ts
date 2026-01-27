@@ -866,7 +866,27 @@ export function registerPartnerRoutes(app: Express) {
         const sessionMetadata = session.metadata as any;
         const isFromInvitation = !!(sessionMetadata?.source === 'partner_invitation' && sessionMetadata?.invitationId);
         
-        console.log(`[Embed Session] Returning session ${session.id}, externalEmail: ${session.externalEmail}, isTestSession: ${isTestSession}, isFromInvitation: ${isFromInvitation}`);
+        // Get invitation context for multi-assessment series tracking
+        let invitationContext: { assessmentTypes: string[]; currentIndex: number; totalCount: number } | null = null;
+        if (isFromInvitation && sessionMetadata?.invitationId) {
+          try {
+            const invitation = await storage.getPartnerCandidateInvitation(sessionMetadata.invitationId);
+            if (invitation) {
+              const normalizedTypes = invitation.assessmentTypes.map((t: string) => normalizeAssessmentId(t));
+              const currentType = normalizeAssessmentId(session.assessmentType);
+              const currentIndex = normalizedTypes.indexOf(currentType);
+              invitationContext = {
+                assessmentTypes: normalizedTypes,
+                currentIndex: currentIndex >= 0 ? currentIndex : 0,
+                totalCount: normalizedTypes.length,
+              };
+            }
+          } catch (invErr) {
+            console.error('[Embed Session] Failed to load invitation context:', invErr);
+          }
+        }
+        
+        console.log(`[Embed Session] Returning session ${session.id}, externalEmail: ${session.externalEmail}, isTestSession: ${isTestSession}, isFromInvitation: ${isFromInvitation}, invitationContext: ${JSON.stringify(invitationContext)}`);
         
         const response: any = {
           sessionId: session.id,
@@ -885,6 +905,8 @@ export function registerPartnerRoutes(app: Express) {
           isTestSession,
           // Skip email verification for partner invitations (magic link pattern - clicking email link = verified)
           isFromInvitation,
+          // Multi-assessment context from invitation
+          invitationContext,
           // Results status for determining if results can be shown
           resultsPaymentStatus: session.resultsPaymentStatus,
           resultsReleaseStatus: session.resultsReleaseStatus,
@@ -1627,7 +1649,7 @@ export function registerPartnerRoutes(app: Express) {
             const invitation = await storage.getPartnerCandidateInvitation(invitationId);
             if (invitation) {
               // Get all completed sessions for this partner invitation
-              const allSessions = await storage.getSessionsByPartner(session.partnerId, { limit: 100 });
+              const allSessions = await storage.getSessionsByPartner(session.partnerId, 100);
               const invitationSessions = allSessions.filter(
                 (s: any) => (s.metadata as any)?.invitationId === invitationId && s.status === 'completed'
               );
@@ -3704,7 +3726,7 @@ export function registerGuestAssessmentRoutes(app: Express) {
       const partner = await storage.getPartnerAccount(invitation.partnerId);
       
       // Get sessions created from this invitation
-      const allSessions = await storage.getSessionsByPartner(invitation.partnerId, { limit: 100 });
+      const allSessions = await storage.getSessionsByPartner(invitation.partnerId, 100);
       const invitationSessions = allSessions.filter(
         (s: any) => (s.metadata as any)?.invitationId === invitation.id
       );
@@ -3873,7 +3895,7 @@ export function registerGuestAssessmentRoutes(app: Express) {
       }
       
       // Check for existing session for this invitation/type combination
-      const existingSessions = await storage.getSessionsByPartner(invitation.partnerId, { limit: 100 });
+      const existingSessions = await storage.getSessionsByPartner(invitation.partnerId, 100);
       const existingSession = existingSessions.find((s: any) => 
         (s.metadata as any)?.invitationId === invitation.id && 
         normalizeAssessmentId(s.assessmentType) === normalizedType
