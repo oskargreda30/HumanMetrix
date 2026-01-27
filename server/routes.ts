@@ -2991,9 +2991,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const originalPriceNumeric = parseFloat(originalPriceDisplay.replace(/[^\d.]/g, ''));
         sumOfRoundedOriginalPrices += originalPriceNumeric;
         
-        // Apply 25% discount for individual assessment price
-        const discountedPrice = Math.round(pppB2CPrice * (1 - individualDiscountRate));
-        const priceDisplay = formatPrice(discountedPrice, userCurrency, { skipPPPAdjustment: true });
+        // Apply 25% discount to the LOCAL CURRENCY price (not pence), then round UP
+        // This ensures: 220 * 0.75 = 165 → rounds to 170
+        const discountedLocalPrice = originalPriceNumeric * (1 - individualDiscountRate);
+        const roundedDiscountedPrice = roundPriceUp(discountedLocalPrice, userCurrency);
+        const priceDisplay = `${userCurrency.symbol}${roundedDiscountedPrice.toLocaleString()}`;
         
         // Add the FULL B2C price for each assessment (BASE_FEE + assessment price)
         totalB2CPriceInPence += assessmentB2CPrice;
