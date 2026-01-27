@@ -666,7 +666,7 @@ export function DeveloperSubTabs({
                           <div className="absolute inset-0 flex items-center justify-center bg-slate-800/90 z-10">
                             <div className="text-center">
                               <Loader2 className="h-8 w-8 animate-spin text-cyan-500 mx-auto mb-2" />
-                              <p className="text-slate-400 text-sm">Loading assessment...</p>
+                              <p className="text-slate-400 text-sm">Loading widget...</p>
                             </div>
                           </div>
                         )}

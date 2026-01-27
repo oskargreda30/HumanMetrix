@@ -443,7 +443,7 @@ export default function WidgetTest() {
                         <div className="absolute inset-0 flex items-center justify-center bg-white rounded-lg border border-slate-700 z-10">
                           <div className="text-center">
                             <Loader2 className="w-8 h-8 animate-spin text-cyan-500 mx-auto mb-2" />
-                            <p className="text-slate-500 text-sm">Loading assessment...</p>
+                            <p className="text-slate-500 text-sm">Loading widget...</p>
                           </div>
                         </div>
                       )}
