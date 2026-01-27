@@ -1112,11 +1112,28 @@ export default function Dashboard() {
                                 .filter((r: any) => r.status === 'completed' && !r.isUnlocked && !series.resultsUnlocked);
                               const hasLockedResults = lockedResults.length > 0;
                               
+                              // Check if there are any unlocked results
+                              const unlockedResults = (series.results || [])
+                                .filter((r: any) => r.status === 'completed' && (r.isUnlocked || series.resultsUnlocked));
+                              const hasUnlockedResults = unlockedResults.length > 0;
+                              
                               return (
                                 <>
                                   <p className="text-sm text-muted-foreground font-medium text-center">
                                     Results shared with {series.partnerName}
                                   </p>
+                                  {/* View Results button - shown when any results are unlocked */}
+                                  {hasUnlockedResults && (
+                                    <Link href={`/my-partner-results/${series.id}`}>
+                                      <Button
+                                        className="mt-2 w-full"
+                                        data-testid={`button-view-partner-results-${series.id}`}
+                                      >
+                                        <FileText className="mr-2 h-4 w-4" />
+                                        View Results
+                                      </Button>
+                                    </Link>
+                                  )}
                                   {/* Unlock Results button - shown when any results are locked */}
                                   {hasLockedResults && (
                                     <Button

@@ -67,6 +67,7 @@ const EcosystemStart = lazy(() => import("@/pages/EcosystemStart"));
 const GuestInvite = lazy(() => import("@/pages/GuestInvite"));
 const B2COnboarding = lazy(() => import("@/pages/B2COnboarding"));
 const UnlockResults = lazy(() => import("@/pages/UnlockResults"));
+const MyPartnerResults = lazy(() => import("@/pages/MyPartnerResults"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 // Minimal loading fallback - shows nothing to avoid layout shift
@@ -191,6 +192,13 @@ function Router() {
         <Route path="/partner/accept-invite/:token" component={AcceptPartnerInvite} />
         <Route path="/invite/:token" component={GuestInvite} />
         <Route path="/unlock-results" component={UnlockResults} />
+        <Route path="/my-partner-results/:invitationId">
+          {() => (
+            <ProtectedRoute>
+              <MyPartnerResults />
+            </ProtectedRoute>
+          )}
+        </Route>
         <Route path="/onboarding" component={B2COnboarding} />
         
         {/* Redirects for old URLs (fixes Google Search Console 404s) */}
