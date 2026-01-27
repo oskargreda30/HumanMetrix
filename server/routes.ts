@@ -2940,42 +2940,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userCurrency = getCurrencyForCountry(userCountry);
       const pricingTier = getPricingTier(userCountry);
       
-      // Calculate B2C price: BASE_FEE + all assessment prices (matches email logic)
+      // Calculate pricing: Individual = 25% off B2C, Bulk = 50% off B2C
+      // Individual discount rate: 25% off
+      const individualDiscountRate = 0.25;
+      // Bulk discount rate: 50% off (additional 25% on top of individual discount)
+      const bulkDiscountRate = 0.50;
+      
       let totalB2CPriceInPence = BASE_FEE;
-      const assessmentPrices: { type: string; priceInPence: number; priceDisplay: string }[] = [];
+      const assessmentPrices: { type: string; priceInPence: number; priceDisplay: string; originalPriceDisplay: string }[] = [];
 
       for (const result of purchasableResults) {
         const normalizedType = normalizeAssessmentId(result.assessmentType);
         const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
         const assessmentB2CPrice = BASE_FEE + assessmentPrice;
         
-        // Apply PPP adjustment
-        const pppAdjustedPricePence = getPPPAdjustedPriceInPence(assessmentB2CPrice, userCountry);
+        // Calculate original B2C price with PPP adjustment
+        const pppB2CPrice = getPPPAdjustedPriceInPence(assessmentB2CPrice, userCountry);
+        const originalPriceDisplay = formatPrice(pppB2CPrice, userCurrency, { skipPPPAdjustment: true });
         
-        // Format price for display (same as email)
-        const priceDisplay = formatPrice(pppAdjustedPricePence, userCurrency, { skipPPPAdjustment: true });
+        // Apply 25% discount for individual assessment price
+        const discountedPrice = Math.round(pppB2CPrice * (1 - individualDiscountRate));
+        const priceDisplay = formatPrice(discountedPrice, userCurrency, { skipPPPAdjustment: true });
         
         totalB2CPriceInPence += assessmentPrice;
         assessmentPrices.push({ 
           type: normalizedType, 
           priceInPence: assessmentPrice,
-          priceDisplay
+          priceDisplay,
+          originalPriceDisplay
         });
       }
 
-      // Calculate total price with PPP adjustment
-      const totalPppAdjusted = getPPPAdjustedPriceInPence(totalB2CPriceInPence, userCountry);
+      // Calculate total B2C price with PPP adjustment
+      const totalPppB2C = getPPPAdjustedPriceInPence(totalB2CPriceInPence, userCountry);
       
-      // Bulk pricing with 25% discount (if more than 1 purchasable assessment)
+      // Individual total: 25% off B2C
+      const individualTotalPpp = Math.round(totalPppB2C * (1 - individualDiscountRate));
+      const individualTotalDisplay = formatPrice(individualTotalPpp, userCurrency, { skipPPPAdjustment: true });
+      const originalTotalDisplay = formatPrice(totalPppB2C, userCurrency, { skipPPPAdjustment: true });
+      
+      // Bulk pricing: 50% off B2C (if more than 1 purchasable assessment)
       const hasBulkDiscount = purchasableResults.length > 1;
-      const bulkDiscountRate = hasBulkDiscount ? 0.25 : 0;
-      const bulkTotalPppAdjusted = hasBulkDiscount 
-        ? Math.round(totalPppAdjusted * 0.75) 
-        : totalPppAdjusted;
-      
-      // Format totals for display (same format as email)
-      const individualTotalDisplay = formatPrice(totalPppAdjusted, userCurrency, { skipPPPAdjustment: true });
-      const bulkTotalDisplay = formatPrice(bulkTotalPppAdjusted, userCurrency, { skipPPPAdjustment: true });
+      const bulkTotalPpp = hasBulkDiscount 
+        ? Math.round(totalPppB2C * (1 - bulkDiscountRate)) 
+        : individualTotalPpp;
+      const bulkTotalDisplay = formatPrice(bulkTotalPpp, userCurrency, { skipPPPAdjustment: true });
       
       // Calculate base fee display
       const baseFeeAdjusted = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
@@ -2986,19 +2995,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         baseFeeDisplay,
         assessments: assessmentPrices,
         individualTotal: {
-          priceInPence: totalB2CPriceInPence,
+          priceInPence: Math.round(totalB2CPriceInPence * (1 - individualDiscountRate)),
           priceDisplay: individualTotalDisplay,
+          originalPriceDisplay: originalTotalDisplay,
+          discountRate: individualDiscountRate,
         },
         bulkTotal: {
-          priceInPence: Math.round(totalB2CPriceInPence * 0.75),
+          priceInPence: Math.round(totalB2CPriceInPence * (1 - bulkDiscountRate)),
           priceDisplay: bulkTotalDisplay,
-          discountRate: bulkDiscountRate,
+          originalPriceDisplay: originalTotalDisplay,
+          discountRate: hasBulkDiscount ? bulkDiscountRate : individualDiscountRate,
         },
         currency: localCurrencyCode,
         currencySymbol: userCurrency.symbol,
         pricingTier,
         assessmentCount: purchasableResults.length,
         hasBulkDiscount,
+        individualDiscountRate,
+        bulkDiscountRate: hasBulkDiscount ? bulkDiscountRate : individualDiscountRate,
       });
     } catch (error: any) {
       console.error("Error getting partner results pricing:", error);

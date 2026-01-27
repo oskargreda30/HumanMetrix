@@ -191,12 +191,14 @@ export default function Dashboard() {
   const { data: pricingData, isLoading: pricingLoading } = useQuery<{
     baseFee: number;
     baseFeeDisplay: string;
-    assessments: { type: string; priceInPence: number; priceDisplay: string }[];
-    individualTotal: { priceInPence: number; priceDisplay: string };
-    bulkTotal: { priceInPence: number; priceDisplay: string; discountRate: number };
+    assessments: { type: string; priceInPence: number; priceDisplay: string; originalPriceDisplay: string }[];
+    individualTotal: { priceInPence: number; priceDisplay: string; originalPriceDisplay: string; discountRate: number };
+    bulkTotal: { priceInPence: number; priceDisplay: string; originalPriceDisplay: string; discountRate: number };
     currency: string;
     currencySymbol: string;
     hasBulkDiscount: boolean;
+    individualDiscountRate: number;
+    bulkDiscountRate: number;
   }>({
     queryKey: ['/api/partner-results-pricing', lockedResultsDialog?.seriesId, countryCode],
     queryFn: async () => {
@@ -1192,7 +1194,7 @@ export default function Dashboard() {
                         <Label htmlFor="bulk" className="cursor-pointer font-medium flex items-center gap-2">
                           Unlock All ({pricingData.assessments.length} assessments)
                           <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                            Save 25%
+                            50% off
                           </Badge>
                         </Label>
                         <p className="text-sm text-muted-foreground mt-1">
@@ -1201,7 +1203,7 @@ export default function Dashboard() {
                         <p className="text-lg font-semibold mt-2">
                           {pricingData.bulkTotal.priceDisplay}
                           <span className="text-sm text-muted-foreground line-through ml-2">
-                            {pricingData.individualTotal.priceDisplay}
+                            {pricingData.bulkTotal.originalPriceDisplay}
                           </span>
                         </p>
                       </div>
@@ -1217,8 +1219,11 @@ export default function Dashboard() {
                   <div className="flex items-start gap-3">
                     <RadioGroupItem value="individual" id="individual" className="mt-1" />
                     <div className="flex-1">
-                      <Label htmlFor="individual" className="cursor-pointer font-medium">
+                      <Label htmlFor="individual" className="cursor-pointer font-medium flex items-center gap-2">
                         {pricingData.hasBulkDiscount ? 'Choose Individual Assessments' : 'Unlock Assessment'}
+                        <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                          25% off
+                        </Badge>
                       </Label>
                       <p className="text-sm text-muted-foreground mt-1">
                         {pricingData.hasBulkDiscount ? 'Select specific assessments to unlock' : 'Unlock your assessment result'}
@@ -1253,9 +1258,14 @@ export default function Dashboard() {
                               {formatAssessmentName(assessment.type)}
                             </Label>
                           </div>
-                          <span className="text-sm font-medium">
-                            {assessment.priceDisplay}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">
+                              {assessment.priceDisplay}
+                            </span>
+                            <span className="text-xs text-muted-foreground line-through">
+                              {assessment.originalPriceDisplay}
+                            </span>
+                          </div>
                         </div>
                       ))}
                       
@@ -1264,7 +1274,7 @@ export default function Dashboard() {
                         <div className="pt-2 flex justify-between font-medium">
                           <span>Total ({selectedAssessments.size} selected)</span>
                           <span>
-                            {pricingData.baseFeeDisplay} + {pricingData.assessments
+                            {pricingData.assessments
                               .filter(a => selectedAssessments.has(a.type))
                               .map(a => a.priceDisplay)
                               .join(' + ')}
