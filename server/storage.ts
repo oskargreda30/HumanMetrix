@@ -97,6 +97,7 @@ import {
   billingChangeRequests,
   partnerCandidateImports,
   partnerCandidateInvitations,
+  partnerResultPurchases,
   adminNotifications,
   type AdminNotification,
   type InsertAdminNotification,
@@ -120,6 +121,8 @@ import {
   type InsertPartnerCandidateImport,
   type PartnerCandidateInvitation,
   type InsertPartnerCandidateInvitation,
+  type PartnerResultPurchase,
+  type InsertPartnerResultPurchase,
   systemSettings,
   type SystemSetting,
   type InsertSystemSetting,
@@ -540,6 +543,14 @@ export interface IStorage {
   updatePartnerCandidateInvitation(id: string, updates: Partial<InsertPartnerCandidateInvitation & { emailSentAt?: Date; openedAt?: Date; startedAt?: Date; completedAt?: Date }>): Promise<void>;
   countPartnerCandidateInvitations(partnerId: string, status?: string): Promise<number>;
   countTodayPartnerInvitationEmails(): Promise<number>;
+
+  // Partner result purchase operations
+  createPartnerResultPurchase(purchase: InsertPartnerResultPurchase): Promise<PartnerResultPurchase>;
+  getPartnerResultPurchase(id: string): Promise<PartnerResultPurchase | undefined>;
+  getPartnerResultPurchaseByInvitation(userId: string, partnerInvitationId: string): Promise<PartnerResultPurchase | undefined>;
+  getPartnerResultPurchaseBySession(stripeSessionId: string): Promise<PartnerResultPurchase | undefined>;
+  getPartnerResultPurchasesByUser(userId: string): Promise<PartnerResultPurchase[]>;
+  updatePartnerResultPurchase(id: string, updates: Partial<InsertPartnerResultPurchase & { purchasedAt?: Date }>): Promise<void>;
 
   // System settings operations
   getSystemSetting(key: string): Promise<SystemSetting | undefined>;
@@ -3760,6 +3771,42 @@ export class DatabaseStorage implements IStorage {
         gte(partnerCandidateInvitations.emailSentAt, todayStart)
       ));
     return result?.count || 0;
+  }
+
+  // Partner result purchase operations
+  async createPartnerResultPurchase(purchase: InsertPartnerResultPurchase): Promise<PartnerResultPurchase> {
+    const [result] = await db.insert(partnerResultPurchases).values(purchase).returning();
+    return result;
+  }
+
+  async getPartnerResultPurchase(id: string): Promise<PartnerResultPurchase | undefined> {
+    const [result] = await db.select().from(partnerResultPurchases).where(eq(partnerResultPurchases.id, id));
+    return result;
+  }
+
+  async getPartnerResultPurchaseByInvitation(userId: string, partnerInvitationId: string): Promise<PartnerResultPurchase | undefined> {
+    const [result] = await db.select().from(partnerResultPurchases)
+      .where(and(
+        eq(partnerResultPurchases.userId, userId),
+        eq(partnerResultPurchases.partnerInvitationId, partnerInvitationId)
+      ));
+    return result;
+  }
+
+  async getPartnerResultPurchaseBySession(stripeSessionId: string): Promise<PartnerResultPurchase | undefined> {
+    const [result] = await db.select().from(partnerResultPurchases)
+      .where(eq(partnerResultPurchases.stripeSessionId, stripeSessionId));
+    return result;
+  }
+
+  async getPartnerResultPurchasesByUser(userId: string): Promise<PartnerResultPurchase[]> {
+    return await db.select().from(partnerResultPurchases)
+      .where(eq(partnerResultPurchases.userId, userId))
+      .orderBy(desc(partnerResultPurchases.createdAt));
+  }
+
+  async updatePartnerResultPurchase(id: string, updates: Partial<InsertPartnerResultPurchase & { purchasedAt?: Date }>): Promise<void> {
+    await db.update(partnerResultPurchases).set(updates).where(eq(partnerResultPurchases.id, id));
   }
 
   // System settings operations

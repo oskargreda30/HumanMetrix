@@ -2618,6 +2618,267 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create checkout session for partner result purchases (B2C candidates purchasing access to their partner assessment results)
+  app.post("/api/create-partner-results-checkout", isAuthenticated, async (req: any, res) => {
+    try {
+      const { partnerInvitationId, countryCode } = req.body;
+      
+      if (!partnerInvitationId) {
+        return res.status(400).json({ message: "Partner invitation ID is required" });
+      }
+
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Verify invitation exists and belongs to this user
+      const invitation = await storage.getPartnerCandidateInvitation(partnerInvitationId);
+      if (!invitation) {
+        return res.status(404).json({ message: "Invitation not found" });
+      }
+
+      // Get results for this invitation to verify user has completed assessments
+      const allResults = await storage.getResultsByUser(userId);
+      const invitationResults = allResults.filter((r: any) => r.partnerInvitationId === partnerInvitationId);
+      
+      if (invitationResults.length === 0) {
+        return res.status(400).json({ message: "No assessment results found for this invitation" });
+      }
+
+      const completedResults = invitationResults.filter((r: any) => r.status === 'completed');
+      if (completedResults.length === 0) {
+        return res.status(400).json({ message: "No completed assessments found" });
+      }
+
+      // Check if already purchased
+      const existingPurchase = await storage.getPartnerResultPurchaseByInvitation(userId, partnerInvitationId);
+      if (existingPurchase?.status === 'completed') {
+        return res.status(400).json({ message: "Results already purchased" });
+      }
+
+      // Check if auto-unlocked (30 days after completion)
+      const mostRecentCompletion = completedResults
+        .filter((r: any) => r.completedAt)
+        .map((r: any) => new Date(r.completedAt))
+        .sort((a: Date, b: Date) => b.getTime() - a.getTime())[0];
+      
+      if (mostRecentCompletion) {
+        const unlockDate = new Date(mostRecentCompletion);
+        unlockDate.setDate(unlockDate.getDate() + 30);
+        if (new Date() >= unlockDate) {
+          return res.status(400).json({ message: "Results are already unlocked (30-day auto-unlock)" });
+        }
+      }
+
+      // Calculate price based on number of completed assessments
+      const userCountry = countryCode || 'GB';
+      const stripeCurrency = getStripeCurrencyCode(userCountry);
+      const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
+      
+      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+      let totalPriceInPence = 0;
+      
+      // Add base fee
+      const baseFeeInLocalCurrency = convertToStripeCurrencyAmount(BASE_FEE, localCurrencyCode, userCountry);
+      lineItems.push({
+        price_data: {
+          currency: stripeCurrency,
+          product_data: {
+            name: "Base Computation Fee",
+            description: "One-time platform access fee for result viewing",
+          },
+          unit_amount: baseFeeInLocalCurrency,
+        },
+        quantity: 1,
+      });
+      totalPriceInPence += BASE_FEE;
+
+      // Add individual assessment line items
+      const assessmentNames: Record<string, string> = {
+        "fit": "FIT Results Access",
+        "ai_readiness": "AI Readiness Results Access",
+        "prompt_architecture": "Prompt Architecture Results Access",
+        "aiq": "AIQ Results Access",
+      };
+
+      for (const result of completedResults) {
+        const normalizedType = normalizeAssessmentId(result.assessmentType);
+        const basePrice = ASSESSMENT_PRICES[normalizedType] || 0;
+        totalPriceInPence += basePrice;
+        
+        const adjustedPrice = convertToStripeCurrencyAmount(basePrice, localCurrencyCode, userCountry);
+        
+        lineItems.push({
+          price_data: {
+            currency: stripeCurrency,
+            product_data: {
+              name: assessmentNames[normalizedType] || `${normalizedType} Results Access`,
+            },
+            unit_amount: adjustedPrice,
+          },
+          quantity: 1,
+        });
+      }
+
+      // Create or update pending purchase record
+      let purchaseRecord;
+      if (existingPurchase) {
+        // Update existing pending purchase with current amount/count in case assessments changed
+        await storage.updatePartnerResultPurchase(existingPurchase.id, {
+          amount: totalPriceInPence,
+          currency: localCurrencyCode,
+          assessmentCount: completedResults.length,
+        });
+        purchaseRecord = existingPurchase;
+      } else {
+        purchaseRecord = await storage.createPartnerResultPurchase({
+          userId,
+          partnerInvitationId,
+          amount: totalPriceInPence,
+          currency: localCurrencyCode,
+          assessmentCount: completedResults.length,
+          status: 'pending',
+        });
+      }
+
+      // Create Stripe checkout session
+      const session = await stripe.checkout.sessions.create({
+        customer_email: user.email,
+        line_items: lineItems,
+        mode: "payment",
+        success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/dashboard?partner_purchase=success&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/dashboard?partner_purchase=cancelled`,
+        metadata: {
+          type: 'partner_result_purchase',
+          userId: userId,
+          partnerInvitationId,
+          purchaseId: purchaseRecord.id,
+          countryCode: userCountry,
+          localCurrency: localCurrencyCode,
+        },
+      });
+
+      // Update purchase with session ID
+      await storage.updatePartnerResultPurchase(purchaseRecord.id, {
+        stripeSessionId: session.id,
+      });
+
+      res.json({ url: session.url });
+    } catch (error: any) {
+      console.error("Error creating partner results checkout session:", error);
+      res.status(500).json({ message: "Failed to create checkout session: " + error.message });
+    }
+  });
+
+  // Confirm partner result purchase (called after successful Stripe checkout)
+  app.post("/api/confirm-partner-results-purchase", isAuthenticated, async (req: any, res) => {
+    try {
+      const { sessionId } = req.body;
+      
+      if (!sessionId) {
+        return res.status(400).json({ message: "Session ID is required" });
+      }
+
+      const userId = req.user.id;
+
+      // Retrieve the Stripe session
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      
+      if (!session) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+
+      // Verify this is a partner result purchase
+      if (session.metadata?.type !== 'partner_result_purchase') {
+        return res.status(400).json({ message: "Invalid session type" });
+      }
+
+      // Verify session belongs to this user
+      if (session.metadata?.userId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      // Check if payment was successful
+      if (session.payment_status !== 'paid') {
+        return res.status(400).json({ message: "Payment not completed" });
+      }
+
+      // Update purchase record
+      const purchaseId = session.metadata?.purchaseId;
+      if (purchaseId) {
+        await storage.updatePartnerResultPurchase(purchaseId, {
+          status: 'completed',
+          stripePaymentIntentId: session.payment_intent as string,
+          purchasedAt: new Date(),
+        });
+      }
+
+      res.json({ success: true, message: "Purchase confirmed successfully" });
+    } catch (error: any) {
+      console.error("Error confirming partner results purchase:", error);
+      res.status(500).json({ message: "Failed to confirm purchase: " + error.message });
+    }
+  });
+
+  // Get pricing for partner results (preview before purchase)
+  app.get("/api/partner-results-pricing/:invitationId", isAuthenticated, async (req: any, res) => {
+    try {
+      const { invitationId } = req.params;
+      const { countryCode } = req.query;
+      const userId = req.user.id;
+
+      // Verify invitation exists
+      const invitation = await storage.getPartnerCandidateInvitation(invitationId);
+      if (!invitation) {
+        return res.status(404).json({ message: "Invitation not found" });
+      }
+
+      // Get completed results for this invitation
+      const allResults = await storage.getResultsByUser(userId);
+      const completedResults = allResults.filter((r: any) => 
+        r.partnerInvitationId === invitationId && r.status === 'completed'
+      );
+
+      if (completedResults.length === 0) {
+        return res.status(400).json({ message: "No completed assessments found" });
+      }
+
+      // Calculate pricing
+      const userCountry = (countryCode as string) || 'GB';
+      const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
+      const pricingTier = getPricingTier(userCountry);
+      
+      let totalPriceInPence = BASE_FEE;
+      const assessmentPrices: { type: string; price: number }[] = [];
+
+      for (const result of completedResults) {
+        const normalizedType = normalizeAssessmentId(result.assessmentType);
+        const basePrice = ASSESSMENT_PRICES[normalizedType] || 0;
+        totalPriceInPence += basePrice;
+        assessmentPrices.push({ type: normalizedType, price: basePrice });
+      }
+
+      // Convert to local currency
+      const totalInLocalCurrency = convertToStripeCurrencyAmount(totalPriceInPence, localCurrencyCode, userCountry);
+
+      res.json({
+        baseFee: BASE_FEE,
+        assessments: assessmentPrices,
+        totalPriceInPence,
+        totalInLocalCurrency,
+        currency: localCurrencyCode,
+        pricingTier,
+        assessmentCount: completedResults.length,
+      });
+    } catch (error: any) {
+      console.error("Error getting partner results pricing:", error);
+      res.status(500).json({ message: "Failed to get pricing: " + error.message });
+    }
+  });
+
   // Get user's purchases (kept for potential future use)
   app.get("/api/purchases", isAuthenticated, async (req: any, res) => {
     try {
@@ -2873,6 +3134,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json([]);
       }
       
+      // Get all partner result purchases for this user
+      const userPurchases = await storage.getPartnerResultPurchasesByUser(userId);
+      const purchasesByInvitation: Record<string, any> = {};
+      for (const purchase of userPurchases) {
+        purchasesByInvitation[purchase.partnerInvitationId] = purchase;
+      }
+      
       // Group results by partnerInvitationId (each invitation = one "series")
       const resultsByInvitation: Record<string, any[]> = {};
       for (const result of partnerResults) {
@@ -2891,11 +3159,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           const partner = await storage.getPartnerAccount(invitation.partnerId);
           
-          // Find the most recent completion date
-          const completedAt = results
+          // Find the most recent completion date (when all assessments were completed)
+          const completedResults = results.filter((r: any) => r.status === 'completed');
+          const completedAt = completedResults
             .filter((r: any) => r.completedAt)
             .map((r: any) => new Date(r.completedAt))
             .sort((a, b) => b.getTime() - a.getTime())[0];
+          
+          // Check payment status
+          const purchase = purchasesByInvitation[invitationId];
+          const isPurchased = purchase?.status === 'completed';
+          
+          // Calculate auto-unlock date (30 days after completion)
+          const allComplete = completedResults.length >= invitation.assessmentTypes.length;
+          let autoUnlockDate: string | null = null;
+          let isAutoUnlocked = false;
+          
+          if (allComplete && completedAt) {
+            const unlockDate = new Date(completedAt);
+            unlockDate.setDate(unlockDate.getDate() + 30);
+            autoUnlockDate = unlockDate.toISOString();
+            isAutoUnlocked = new Date() >= unlockDate;
+          }
+          
+          // Results are unlocked if purchased OR auto-unlocked after 30 days
+          const resultsUnlocked = isPurchased || isAutoUnlocked;
           
           return {
             id: invitationId,
@@ -2906,16 +3194,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
               id: r.id,
               assessmentType: r.assessmentType,
               status: r.status,
-              totalScore: r.totalScore,
-              percentile: r.percentile,
+              // Only show scores if results are unlocked
+              totalScore: resultsUnlocked ? r.totalScore : null,
+              percentile: resultsUnlocked ? r.percentile : null,
               completedAt: r.completedAt,
-              scores: r.scores,
+              scores: resultsUnlocked ? r.scores : null,
             })),
-            completedCount: results.filter((r: any) => r.status === 'completed').length,
+            completedCount: completedResults.length,
             totalCount: invitation.assessmentTypes.length,
-            allComplete: results.filter((r: any) => r.status === 'completed').length >= invitation.assessmentTypes.length,
+            allComplete,
             completedAt: completedAt?.toISOString() || null,
             createdAt: invitation.createdAt,
+            // Payment and unlock status
+            resultsUnlocked,
+            isPurchased,
+            isAutoUnlocked,
+            autoUnlockDate,
+            purchaseId: purchase?.id || null,
           };
         })
       );

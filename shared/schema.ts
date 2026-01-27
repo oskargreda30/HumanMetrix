@@ -1555,6 +1555,34 @@ export const insertPartnerCandidateInvitationSchema = createInsertSchema(partner
 export type InsertPartnerCandidateInvitation = z.infer<typeof insertPartnerCandidateInvitationSchema>;
 export type PartnerCandidateInvitation = typeof partnerCandidateInvitations.$inferSelect;
 
+// Partner Result Purchases - tracks when B2C candidates purchase access to their partner assessment results
+export const partnerResultPurchases = pgTable("partner_result_purchases", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  partnerInvitationId: varchar("partner_invitation_id").notNull().references(() => partnerCandidateInvitations.id, { onDelete: "cascade" }),
+  stripeSessionId: varchar("stripe_session_id"),
+  stripePaymentIntentId: varchar("stripe_payment_intent_id"),
+  amount: integer("amount").notNull(), // Amount in cents
+  currency: varchar("currency").notNull().default("USD"),
+  assessmentCount: integer("assessment_count").notNull(), // Number of assessments in the series
+  status: varchar("status").notNull().default("pending"), // 'pending', 'completed', 'failed', 'refunded'
+  purchasedAt: timestamp("purchased_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_partner_result_purchases_user").on(table.userId),
+  index("idx_partner_result_purchases_invitation").on(table.partnerInvitationId),
+  index("idx_partner_result_purchases_status").on(table.status),
+]);
+
+export const insertPartnerResultPurchaseSchema = createInsertSchema(partnerResultPurchases).omit({
+  id: true,
+  createdAt: true,
+  purchasedAt: true,
+});
+
+export type InsertPartnerResultPurchase = z.infer<typeof insertPartnerResultPurchaseSchema>;
+export type PartnerResultPurchase = typeof partnerResultPurchases.$inferSelect;
+
 // System Settings - global configuration for the platform
 export const systemSettings = pgTable("system_settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

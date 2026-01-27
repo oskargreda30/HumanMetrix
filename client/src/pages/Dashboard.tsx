@@ -26,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, CheckCircle2, Clock, FileText, Brain, Sparkles, Code, Scale, Timer, Key, X, Eye, EyeOff, Plus } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, FileText, Brain, Sparkles, Code, Scale, Timer, Key, X, Eye, EyeOff, Plus, Lock, Unlock, CreditCard } from "lucide-react";
 import { format } from "date-fns";
 import { formatAssessmentName } from "@/lib/assessmentHelpers";
 import { useEffect, useState } from "react";
@@ -231,11 +231,34 @@ export default function Dashboard() {
   });
 
   // Fetch partner testing series (from partner invitations)
-  const { data: partnerTestingSeries, isLoading: partnerSeriesLoading } = useQuery<any[]>({
+  const { data: partnerTestingSeries, isLoading: partnerSeriesLoading, refetch: refetchPartnerSeries } = useQuery<any[]>({
     queryKey: ["/api/partner-testing-series"],
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
     staleTime: 0, // Always consider data stale
+  });
+
+  // Partner results purchase mutation
+  const partnerResultsPurchaseMutation = useMutation({
+    mutationFn: async (partnerInvitationId: string) => {
+      const res = await apiRequest("POST", "/api/create-partner-results-checkout", { 
+        partnerInvitationId,
+        countryCode: 'GB', // Default, could be detected from user location
+      });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create checkout session",
+        variant: "destructive",
+      });
+    },
   });
   
   // Force refetch when returning from Purchase page with refresh flag
@@ -296,6 +319,39 @@ export default function Dashboard() {
       window.history.replaceState({}, '', '/dashboard');
     }
   }, [toast]);
+
+  // Handle partner results purchase success
+  useEffect(() => {
+    const confirmPartnerPurchase = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const partnerPurchase = params.get("partner_purchase");
+      const sessionId = params.get("session_id");
+
+      if (partnerPurchase === "success" && sessionId) {
+        try {
+          const res = await apiRequest("POST", "/api/confirm-partner-results-purchase", { sessionId });
+          if (res.ok) {
+            toast({
+              title: "Results Unlocked!",
+              description: "You now have full access to your assessment results.",
+            });
+            refetchPartnerSeries();
+          }
+        } catch (error) {
+          console.error("Error confirming partner purchase:", error);
+        }
+        window.history.replaceState({}, '', '/dashboard');
+      } else if (partnerPurchase === "cancelled") {
+        toast({
+          title: "Purchase Cancelled",
+          description: "You can unlock your results anytime from your dashboard or wait for 30-day auto-unlock.",
+        });
+        window.history.replaceState({}, '', '/dashboard');
+      }
+    };
+
+    confirmPartnerPurchase();
+  }, [toast, refetchPartnerSeries]);
 
   if (assessmentsLoading || purchasesLoading || partnerSeriesLoading) {
     return (
@@ -908,6 +964,20 @@ export default function Dashboard() {
                                     All Complete
                                   </Badge>
                                 )}
+                                {/* Unlock status badge */}
+                                {isAllComplete && (
+                                  series.resultsUnlocked ? (
+                                    <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 gap-1">
+                                      <Unlock className="h-3 w-3" />
+                                      {series.isPurchased ? 'Purchased' : 'Auto-Unlocked'}
+                                    </Badge>
+                                  ) : (
+                                    <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 gap-1">
+                                      <Lock className="h-3 w-3" />
+                                      Scores Locked
+                                    </Badge>
+                                  )
+                                )}
                               </div>
                             </div>
                           </div>
@@ -916,6 +986,12 @@ export default function Dashboard() {
                             <span className="font-medium">{series.completedCount} of {series.totalCount}</span> assessments completed
                             {series.completedAt && (
                               <span className="ml-2">• {format(new Date(series.completedAt), 'MMM d, yyyy')}</span>
+                            )}
+                            {/* Auto-unlock countdown */}
+                            {isAllComplete && !series.resultsUnlocked && series.autoUnlockDate && (
+                              <span className="ml-2 text-amber-600 dark:text-amber-400">
+                                • Auto-unlocks {format(new Date(series.autoUnlockDate), 'MMM d, yyyy')}
+                              </span>
                             )}
                           </p>
 
@@ -930,11 +1006,13 @@ export default function Dashboard() {
                                   <Badge key={result.id} variant="outline" className="gap-1.5 py-1">
                                     <ResultIcon className="h-3 w-3" />
                                     {formatAssessmentName(result.assessmentType)}
-                                    {result.totalScore && (
+                                    {series.resultsUnlocked && result.totalScore ? (
                                       <span className="text-cyan-600 dark:text-cyan-400 ml-1">
                                         {result.totalScore}%
                                       </span>
-                                    )}
+                                    ) : result.status === 'completed' && !series.resultsUnlocked ? (
+                                      <Lock className="h-3 w-3 text-amber-500 ml-1" />
+                                    ) : null}
                                   </Badge>
                                 );
                               })}
@@ -944,11 +1022,32 @@ export default function Dashboard() {
                         {/* Action */}
                         <div className="flex flex-col gap-2 md:w-48">
                           {isAllComplete && (
-                            <div className="text-center py-2">
-                              <p className="text-sm text-muted-foreground font-medium">
+                            <>
+                              <p className="text-sm text-muted-foreground font-medium text-center">
                                 Results shared with {series.partnerName}
                               </p>
-                            </div>
+                              {/* Purchase button for locked results */}
+                              {!series.resultsUnlocked && (
+                                <Button
+                                  onClick={() => partnerResultsPurchaseMutation.mutate(series.id)}
+                                  disabled={partnerResultsPurchaseMutation.isPending}
+                                  className="mt-2"
+                                  data-testid={`button-buy-results-${series.id}`}
+                                >
+                                  {partnerResultsPurchaseMutation.isPending ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Processing...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <CreditCard className="mr-2 h-4 w-4" />
+                                      Buy Access Now
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>
