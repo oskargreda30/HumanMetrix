@@ -2262,6 +2262,62 @@ export function registerPartnerRoutes(app: Express) {
     }
   });
 
+  // Revoke an invitation (only if not started or completed)
+  app.delete("/api/partner/me/invitations/:invitationId", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user?.organizationId) {
+        return res.status(403).json({ error: "No partner organization linked" });
+      }
+      
+      const partner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      if (!partner) {
+        return res.status(403).json({ error: "Partner account not found" });
+      }
+      
+      const { invitationId } = req.params;
+      
+      // Get the invitation
+      const invitation = await storage.getPartnerCandidateInvitation(invitationId);
+      if (!invitation) {
+        return res.status(404).json({ error: "Invitation not found" });
+      }
+      
+      // Verify invitation belongs to this partner
+      if (invitation.partnerId !== partner.id) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      // Only allow revoking pending or sent invitations
+      if (invitation.status === 'started' || invitation.status === 'completed') {
+        return res.status(400).json({ 
+          error: "Cannot revoke invitation", 
+          message: `Invitation is already ${invitation.status}. You can only revoke invitations that haven't been started.` 
+        });
+      }
+      
+      // Update the invitation status to revoked
+      await storage.updatePartnerCandidateInvitation(invitationId, { 
+        status: 'revoked' 
+      });
+      
+      console.log(`[Partner Invitations] Invitation ${invitationId} revoked by partner ${partner.id}`);
+      
+      res.json({ 
+        success: true, 
+        message: "Invitation revoked successfully" 
+      });
+    } catch (error) {
+      console.error("Error revoking invitation:", error);
+      res.status(500).json({ error: "Failed to revoke invitation" });
+    }
+  });
+
   // ========================================
   // PUBLIC INVITE TOKEN VALIDATION
   // ========================================
@@ -2290,6 +2346,10 @@ export function registerPartnerRoutes(app: Express) {
       
       if (invitation.status === 'completed') {
         return res.status(410).json({ error: "This invitation has already been completed" });
+      }
+      
+      if (invitation.status === 'revoked') {
+        return res.status(410).json({ error: "This invitation has been revoked" });
       }
       
       // Check if expired based on date

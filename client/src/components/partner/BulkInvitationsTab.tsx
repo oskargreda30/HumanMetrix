@@ -28,6 +28,7 @@ import {
   Copy,
   HelpCircle,
   Check,
+  X,
 } from "lucide-react";
 import {
   Tooltip,
@@ -121,6 +122,27 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
       toast({
         title: "Failed to send email",
         description: error.message || "Could not send the invitation email.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const revokeInvitationMutation = useMutation({
+    mutationFn: async (invitationId: string) => {
+      const response = await apiRequest('DELETE', `/api/partner/me/invitations/${invitationId}`);
+      return response.json();
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: "Invitation revoked",
+        description: data.message || "The invitation has been revoked successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/partner/me/invitations'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to revoke invitation",
+        description: error.message || "Could not revoke the invitation.",
         variant: "destructive",
       });
     },
@@ -453,10 +475,14 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
         return <Badge variant="outline" className="text-amber-500 border-amber-500"><Clock className="h-3 w-3 mr-1" />Pending</Badge>;
       case 'sent':
         return <Badge variant="outline" className="text-blue-500 border-blue-500"><Mail className="h-3 w-3 mr-1" />Sent</Badge>;
+      case 'started':
+        return <Badge variant="outline" className="text-purple-500 border-purple-500"><Clock className="h-3 w-3 mr-1" />Started</Badge>;
       case 'completed':
         return <Badge variant="outline" className="text-green-500 border-green-500"><CheckCircle className="h-3 w-3 mr-1" />Completed</Badge>;
       case 'expired':
         return <Badge variant="outline" className="text-red-500 border-red-500"><AlertCircle className="h-3 w-3 mr-1" />Expired</Badge>;
+      case 'revoked':
+        return <Badge variant="outline" className="text-gray-500 border-gray-500"><Trash2 className="h-3 w-3 mr-1" />Revoked</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -860,6 +886,33 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
                         <p>{copiedInvitationId === invitation.id ? 'Copied!' : 'Copy invitation link'}</p>
                       </TooltipContent>
                     </Tooltip>
+                    {(invitation.status === 'pending' || invitation.status === 'sent') && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                            onClick={() => {
+                              if (window.confirm('Are you sure you want to revoke this invitation? The candidate will no longer be able to access the assessment.')) {
+                                revokeInvitationMutation.mutate(invitation.id);
+                              }
+                            }}
+                            disabled={revokeInvitationMutation.isPending}
+                            data-testid={`revoke-invitation-${invitation.id}`}
+                          >
+                            {revokeInvitationMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <X className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Revoke invitation</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                   </div>
                 </div>
               ))}
