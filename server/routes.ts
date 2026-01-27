@@ -27,7 +27,8 @@ import multer from "multer";
 // Use createRequire for pdf-parse as it's a CommonJS module
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
-const pdfParse = require("pdf-parse");
+const pdfParseModule = require("pdf-parse");
+const pdfParse = pdfParseModule.PDFParse || pdfParseModule;
 
 // Configure multer for PDF uploads (memory storage, max 10MB)
 const pdfUpload = multer({
