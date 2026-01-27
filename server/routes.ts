@@ -4787,7 +4787,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[PDF Import] Extracted ${pdfText.length} chars from PDF`);
       
       // Use OpenAI to parse the extracted text
-      const parsePrompt = `You are an expert at parsing assessment report PDFs. Extract the following information from this assessment report text:
+      const parsePrompt = `You are an expert at parsing HumanMetrix assessment report PDFs. Extract the following information from this assessment report text:
 
 1. Candidate Information:
    - Full name
@@ -4795,17 +4795,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 2. Assessment Results (for each assessment completed):
    - Assessment type: Must be one of: "fit", "ai_readiness", "prompt_architecture", "aiq"
-   - For FIT assessment: Extract scores for Flexibility, Integrity, Tenacity (0-100 scale)
-   - For AI Readiness: Extract overall score and any dimension scores (0-100 scale)
-   - For Prompt Architecture: Extract overall score (0-100 scale)
-   - For AIQ (Algorithmic Integrity Quotient): Extract overall score (0-100 scale)
-   - Overall/total score for the assessment (0-100 scale)
+   
+   For FIT assessment, extract scores for these 6 skills (use EXACT key names):
+   - "High Agency" (0-100)
+   - "Intellectual Curiosity" (0-100)
+   - "Resilience" (0-100)
+   - "Empathy & Ethics" (0-100)
+   - "Growth Mindset" (0-100)
+   - "Interpersonal Agility" (0-100)
+   
+   For AI Readiness assessment, extract scores for these 9 skills (use EXACT key names):
+   - "AI Literacy & Prompt Engineering" (0-100)
+   - "Technical Fundamentals" (0-100)
+   - "Data Fluency" (0-100)
+   - "Critical Thinking & Problem-Solving" (0-100)
+   - "Adaptability & Continuous Learning" (0-100)
+   - "Collaboration & Communication" (0-100)
+   - "Responsible AI & Ethical Awareness" (0-100)
+   - "Creativity & Innovation" (0-100)
+   - "Domain Expertise" (0-100)
+   
+   For AIQ (Algorithmic Integrity Quotient) assessment, extract:
+   - "Algorithmic Integrity" as the main score (0-100)
+   - Optionally: "Transparency", "Accountability", "Bias Awareness", "Privacy Sensitivity" (0-100 each)
+   
+   For Prompt Architecture assessment, extract scores for these 4 skills (use EXACT key names):
+   - "Clarity" (0-100)
+   - "Context Setting" (0-100)
+   - "Output Formatting" (0-100)
+   - "Constraint Definition" (0-100)
 
 Important:
 - Scores should be normalized to 0-100 scale
 - If a score is shown as a percentage, convert it to a number (e.g., 75% becomes 75)
 - If multiple assessments are present, include all of them
+- Use the EXACT skill/dimension names as specified above
 - Only include assessments that have clear scores/results
+- Calculate totalScore as the average of all dimension scores for that assessment
 
 Return your response as a valid JSON object with this exact structure:
 {
@@ -4815,8 +4841,7 @@ Return your response as a valid JSON object with this exact structure:
     {
       "type": "fit | ai_readiness | prompt_architecture | aiq",
       "scores": {
-        "dimension1": number,
-        "dimension2": number,
+        "Skill Name": number,
         ...
       },
       "totalScore": number
@@ -5000,7 +5025,7 @@ ${pdfText.substring(0, 15000)}`;
       
       // Use OpenAI to parse the extracted text
       // the newest OpenAI model is "gpt-5" which was released August 7, 2025
-      const parsePrompt = `You are an expert at parsing assessment report PDFs. Extract the following information from this assessment report text:
+      const parsePrompt = `You are an expert at parsing HumanMetrix assessment report PDFs. Extract the following information from this assessment report text:
 
 1. Candidate Information:
    - Full name
@@ -5008,16 +5033,43 @@ ${pdfText.substring(0, 15000)}`;
 
 2. Assessment Results (for each assessment completed):
    - Assessment type: Must be one of: "fit", "ai_readiness", "prompt_architecture", "aiq"
-   - For FIT assessment: Extract scores for Flexibility, Integrity, Tenacity (0-100 scale)
-   - For AI Readiness: Extract overall score and any dimension scores (0-100 scale)
-   - For Prompt Architecture: Extract overall score (0-100 scale)
-   - For AIQ (Algorithmic Integrity Quotient): Extract overall score (0-100 scale)
-   - Overall/total score for the assessment (0-100 scale)
+   
+   For FIT assessment, extract scores for these 6 skills (use EXACT key names):
+   - "High Agency" (0-100)
+   - "Intellectual Curiosity" (0-100)
+   - "Resilience" (0-100)
+   - "Empathy & Ethics" (0-100)
+   - "Growth Mindset" (0-100)
+   - "Interpersonal Agility" (0-100)
+   
+   For AI Readiness assessment, extract scores for these 9 skills (use EXACT key names):
+   - "AI Literacy & Prompt Engineering" (0-100)
+   - "Technical Fundamentals" (0-100)
+   - "Data Fluency" (0-100)
+   - "Critical Thinking & Problem-Solving" (0-100)
+   - "Adaptability & Continuous Learning" (0-100)
+   - "Collaboration & Communication" (0-100)
+   - "Responsible AI & Ethical Awareness" (0-100)
+   - "Creativity & Innovation" (0-100)
+   - "Domain Expertise" (0-100)
+   
+   For AIQ (Algorithmic Integrity Quotient) assessment, extract:
+   - "Algorithmic Integrity" as the main score (0-100)
+   - Optionally: "Transparency", "Accountability", "Bias Awareness", "Privacy Sensitivity" (0-100 each)
+   
+   For Prompt Architecture assessment, extract scores for these 4 skills (use EXACT key names):
+   - "Clarity" (0-100)
+   - "Context Setting" (0-100)
+   - "Output Formatting" (0-100)
+   - "Constraint Definition" (0-100)
 
 Important:
 - Scores should be normalized to 0-100 scale
-- If a score is shown as a percentage, convert it to a number
+- If a score is shown as a percentage, convert it to a number (e.g., 75% becomes 75)
 - If multiple assessments are present, include all of them
+- Use the EXACT skill/dimension names as specified above
+- Only include assessments that have clear scores/results
+- Calculate totalScore as the average of all dimension scores for that assessment
 
 Return your response as a valid JSON object with this exact structure:
 {
@@ -5027,8 +5079,7 @@ Return your response as a valid JSON object with this exact structure:
     {
       "type": "fit | ai_readiness | prompt_architecture | aiq",
       "scores": {
-        "dimension1": number,
-        "dimension2": number,
+        "Skill Name": number,
         ...
       },
       "totalScore": number
