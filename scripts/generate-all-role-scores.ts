@@ -28,22 +28,22 @@ FIT ASSESSMENT SKILLS (Behavioral):
 6. Intellectual Curiosity - Seeking knowledge and exploring new ideas
 
 AI READINESS SKILLS (Technical):
-1. AI Literacy - Understanding AI capabilities, limitations, and terminology
-2. Collaboration - Working effectively with AI systems and human teams
+1. AI Literacy & Prompt Engineering - Understanding AI capabilities, limitations, terminology, and effective prompt engineering
+2. Technical Fundamentals - Comfort with technical tools and systems
 3. Data Fluency - Understanding and working with data
-4. Responsible AI & Ethical Awareness - Understanding ethical implications and biases in AI applications
-5. Domain Expertise - Deep knowledge in a specific field combined with AI understanding
-6. Adaptability & Continuous Learning - Quickly learning new AI tools and adapting to evolving technologies
-7. Critical Thinking & Problem-Solving - Evaluating AI outputs and making informed decisions
-8. Technical Fundamentals - Comfort with technical tools and systems
-9. Creativity & Innovation - Using AI to generate novel solutions and approaches
+4. Critical Thinking & Problem-Solving - Evaluating AI outputs and making informed decisions
+5. Adaptability & Continuous Learning - Quickly learning new AI tools and adapting to evolving technologies
+6. Collaboration & Communication - Working effectively with AI systems and human teams
+7. Responsible AI & Ethical Awareness - Understanding ethical implications and biases in AI applications
+8. Creativity & Innovation - Using AI to generate novel solutions and approaches
+9. Domain Expertise - Deep knowledge in a specific field combined with AI understanding
 
 For each skill, provide a realistic required score (0-100). Typically, 3-5 skills should be marked as "critical" per role.
 
 Format your response as JSON:
 {
   "fitSkills": { "Resilience": number, "High Agency": number, "Growth Mindset": number, "Empathy & Ethics": number, "Interpersonal Agility": number, "Intellectual Curiosity": number },
-  "aiReadinessSkills": { "AI Literacy": number, "Collaboration": number, "Data Fluency": number, "Responsible AI & Ethical Awareness": number, "Domain Expertise": number, "Adaptability & Continuous Learning": number, "Critical Thinking & Problem-Solving": number, "Technical Fundamentals": number, "Creativity & Innovation": number },
+  "aiReadinessSkills": { "AI Literacy & Prompt Engineering": number, "Technical Fundamentals": number, "Data Fluency": number, "Critical Thinking & Problem-Solving": number, "Adaptability & Continuous Learning": number, "Collaboration & Communication": number, "Responsible AI & Ethical Awareness": number, "Creativity & Innovation": number, "Domain Expertise": number },
   "skillCriticality": { 
     "Resilience": "critical" or "standard",
     "High Agency": "critical" or "standard",
@@ -51,15 +51,15 @@ Format your response as JSON:
     "Empathy & Ethics": "critical" or "standard",
     "Interpersonal Agility": "critical" or "standard",
     "Intellectual Curiosity": "critical" or "standard",
-    "AI Literacy": "critical" or "standard",
-    "Collaboration": "critical" or "standard",
-    "Data Fluency": "critical" or "standard",
-    "Responsible AI & Ethical Awareness": "critical" or "standard",
-    "Domain Expertise": "critical" or "standard",
-    "Adaptability & Continuous Learning": "critical" or "standard",
-    "Critical Thinking & Problem-Solving": "critical" or "standard",
+    "AI Literacy & Prompt Engineering": "critical" or "standard",
     "Technical Fundamentals": "critical" or "standard",
-    "Creativity & Innovation": "critical" or "standard"
+    "Data Fluency": "critical" or "standard",
+    "Critical Thinking & Problem-Solving": "critical" or "standard",
+    "Adaptability & Continuous Learning": "critical" or "standard",
+    "Collaboration & Communication": "critical" or "standard",
+    "Responsible AI & Ethical Awareness": "critical" or "standard",
+    "Creativity & Innovation": "critical" or "standard",
+    "Domain Expertise": "critical" or "standard"
   }
 }`;
 

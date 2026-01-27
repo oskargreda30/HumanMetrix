@@ -56,7 +56,7 @@ const INTERVIEW_QUESTIONS = [
   {
     question: "How do you approach ethical considerations when designing AI-powered features?",
     purpose: "Assess responsible AI mindset and ethical decision-making framework",
-    targetSkill: "Responsible AI",
+    targetSkill: "Responsible AI & Ethical Awareness",
   },
   {
     question: "Share an example of a product initiative that failed. What did you learn and how did you apply those lessons?",

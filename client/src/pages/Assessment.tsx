@@ -589,7 +589,7 @@ export default function Assessment() {
       case "ai_readiness":
         return {
           title: "AI Readiness Assessment - 21 Questions",
-          description: "This assessment evaluates 9 skills critical for working effectively with AI: AI Literacy, Technical Fluency, Domain Fluency, Critical Thinking, Adaptive & Collaborative Learning, Responsible AI Integration, Domain Expertise, Creative Innovation, and Cross-functional Collaboration.",
+          description: "This assessment evaluates 9 skills critical for working effectively with AI: AI Literacy & Prompt Engineering, Technical Fundamentals, Data Fluency, Critical Thinking & Problem-Solving, Adaptability & Continuous Learning, Collaboration & Communication, Responsible AI & Ethical Awareness, Creativity & Innovation, and Domain Expertise.",
           tips: [
             "Select the response that most closely reflects your current capabilities",
             "There are no right or wrong answers - be truthful about your experience",

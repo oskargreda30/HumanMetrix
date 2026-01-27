@@ -156,15 +156,15 @@ function generateAnalysis(assessmentType: string, scores: Record<string, number>
         strengths.forEach(([skill, score]) => {
           const skillLower = skill.toLowerCase();
           if (skillLower.includes("literacy") || skillLower.includes("prompting")) {
-            analysis.strengths.push(`Strong **AI Literacy & Prompting** (${score}%): Demonstrates understanding of AI capabilities and can craft effective prompts.`);
+            analysis.strengths.push(`Strong **AI Literacy & Prompt Engineering** (${score}%): Demonstrates understanding of AI capabilities and can craft effective prompts.`);
           } else if (skillLower.includes("technical")) {
-            analysis.strengths.push(`Excellent **Technical Fluency** (${score}%): Comfortable with technical concepts and AI tools.`);
+            analysis.strengths.push(`Excellent **Technical Fundamentals** (${score}%): Comfortable with technical concepts and AI tools.`);
           } else if (skillLower.includes("critical")) {
-            analysis.strengths.push(`Outstanding **Critical Thinking** (${score}%): Evaluates AI outputs critically and identifies limitations.`);
+            analysis.strengths.push(`Outstanding **Critical Thinking & Problem-Solving** (${score}%): Evaluates AI outputs critically and identifies limitations.`);
           } else if (skillLower.includes("adaptive") || skillLower.includes("collaborative")) {
-            analysis.strengths.push(`Proficient **Adaptive Learning** (${score}%): Quickly adapts to new AI tools and learns collaboratively.`);
+            analysis.strengths.push(`Proficient **Adaptability & Continuous Learning** (${score}%): Quickly adapts to new AI tools and learns collaboratively.`);
           } else if (skillLower.includes("responsible")) {
-            analysis.strengths.push(`Strong **Responsible AI** (${score}%): Uses AI ethically and understands implications.`);
+            analysis.strengths.push(`Strong **Responsible AI & Ethical Awareness** (${score}%): Uses AI ethically and understands implications.`);
           } else {
             analysis.strengths.push(`Strong **${skill}** (${score}%): Shows proficiency in this AI readiness dimension.`);
           }
@@ -175,11 +175,11 @@ function generateAnalysis(assessmentType: string, scores: Record<string, number>
         improvements.forEach(([skill, score]) => {
           const skillLower = skill.toLowerCase();
           if (skillLower.includes("literacy") || skillLower.includes("prompting")) {
-            analysis.improvements.push(`**AI Literacy** (${score}%): Recommend focused training on prompt engineering and AI fundamentals.`);
+            analysis.improvements.push(`**AI Literacy & Prompt Engineering** (${score}%): Recommend focused training on prompt engineering and AI fundamentals.`);
           } else if (skillLower.includes("technical")) {
-            analysis.improvements.push(`**Technical Fluency** (${score}%): Suggest building technical foundation through hands-on practice with AI tools.`);
+            analysis.improvements.push(`**Technical Fundamentals** (${score}%): Suggest building technical foundation through hands-on practice with AI tools.`);
           } else if (skillLower.includes("critical")) {
-            analysis.improvements.push(`**Critical Thinking** (${score}%): Develop skills in evaluating AI outputs and recognizing biases.`);
+            analysis.improvements.push(`**Critical Thinking & Problem-Solving** (${score}%): Develop skills in evaluating AI outputs and recognizing biases.`);
           } else {
             analysis.improvements.push(`**${skill}** (${score}%): Consider additional learning in this area.`);
           }

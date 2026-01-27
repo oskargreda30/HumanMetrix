@@ -103,7 +103,7 @@ const DEMO_CANDIDATES = [
       "Responsible AI & Ethical Awareness": 85,
       "Creativity & Innovation": 70,
     },
-    strengths: ["Collaboration", "Ethical judgment", "Stakeholder management"],
+    strengths: ["Collaboration & Communication", "Ethical judgment", "Stakeholder management"],
     areas: ["Technical skills", "Initiative"],
   },
 ];
@@ -936,10 +936,10 @@ export default function SampleComparisonReport() {
                         Intellectual Curiosity (+10 vs avg)
                       </Badge>
                       <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                        Responsible AI (+8 vs avg)
+                        Responsible AI & Ethical Awareness (+8 vs avg)
                       </Badge>
                       <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                        Adaptive Learning (+6 vs avg)
+                        Adaptability & Continuous Learning (+6 vs avg)
                       </Badge>
                     </div>
                   </div>

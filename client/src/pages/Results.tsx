@@ -93,19 +93,19 @@ function generateAnalysis(assessmentType: string, scores: Record<string, number>
         strengths.forEach(([skill, score]) => {
           const skillLower = skill.toLowerCase();
           if (skillLower.includes("literacy") || skillLower.includes("prompting")) {
-            analysis.strengths.push(`Strong **AI Literacy & Prompting** (${score}/100): Demonstrates understanding of AI capabilities and can craft effective prompts to achieve desired outcomes.`);
-          } else if (skillLower.includes("technical fluency")) {
-            analysis.strengths.push(`Excellent **Technical Fluency** (${score}/100): Comfortable with technical concepts and can navigate AI tools and platforms effectively.`);
-          } else if (skillLower.includes("critical thinking")) {
-            analysis.strengths.push(`Outstanding **Critical Thinking** (${score}/100): Evaluates AI outputs critically, identifies limitations, and makes sound judgments about AI reliability.`);
-          } else if (skillLower.includes("adaptive") || skillLower.includes("collaborative")) {
-            analysis.strengths.push(`Proficient in **Adaptive & Collaborative Learning** (${score}/100): Quickly adapts to new AI tools and learns collaboratively in AI-enhanced environments.`);
+            analysis.strengths.push(`Strong **AI Literacy & Prompt Engineering** (${score}/100): Demonstrates understanding of AI capabilities and can craft effective prompts to achieve desired outcomes.`);
+          } else if (skillLower.includes("technical")) {
+            analysis.strengths.push(`Excellent **Technical Fundamentals** (${score}/100): Comfortable with technical concepts and can navigate AI tools and platforms effectively.`);
+          } else if (skillLower.includes("critical")) {
+            analysis.strengths.push(`Outstanding **Critical Thinking & Problem-Solving** (${score}/100): Evaluates AI outputs critically, identifies limitations, and makes sound judgments about AI reliability.`);
+          } else if (skillLower.includes("adaptive") || skillLower.includes("continuous")) {
+            analysis.strengths.push(`Proficient in **Adaptability & Continuous Learning** (${score}/100): Quickly adapts to new AI tools and learns continuously in AI-enhanced environments.`);
           } else if (skillLower.includes("responsible")) {
-            analysis.strengths.push(`Strong **Responsible AI Integration** (${score}/100): Uses AI ethically, understands implications, and implements safeguards appropriately.`);
-          } else if (skillLower.includes("creative")) {
-            analysis.strengths.push(`Impressive **Creative Innovation** (${score}/100): Leverages AI for creative problem-solving and generates innovative solutions.`);
-          } else if (skillLower.includes("cross-functional")) {
-            analysis.strengths.push(`Excellent **Cross-functional Collaboration** (${score}/100): Effectively collaborates across disciplines in AI-driven projects.`);
+            analysis.strengths.push(`Strong **Responsible AI & Ethical Awareness** (${score}/100): Uses AI ethically, understands implications, and implements safeguards appropriately.`);
+          } else if (skillLower.includes("creative") || skillLower.includes("innovation")) {
+            analysis.strengths.push(`Impressive **Creativity & Innovation** (${score}/100): Leverages AI for creative problem-solving and generates innovative solutions.`);
+          } else if (skillLower.includes("collaboration") || skillLower.includes("communication")) {
+            analysis.strengths.push(`Excellent **Collaboration & Communication** (${score}/100): Effectively collaborates across disciplines in AI-driven projects.`);
           } else {
             analysis.strengths.push(`Strong **${skill}** (${score}/100): Shows proficiency in this important AI readiness dimension.`);
           }
@@ -116,13 +116,13 @@ function generateAnalysis(assessmentType: string, scores: Record<string, number>
         improvements.forEach(([skill, score]) => {
           const skillLower = skill.toLowerCase();
           if (skillLower.includes("literacy") || skillLower.includes("prompting")) {
-            analysis.improvements.push(`**AI Literacy & Prompting** (${score}/100): Recommend focused training on prompt engineering, AI fundamentals, and practical experience with various AI models.`);
-          } else if (skillLower.includes("technical fluency")) {
-            analysis.improvements.push(`**Technical Fluency** (${score}/100): Suggest building technical foundation through hands-on practice with AI APIs, understanding model architectures, and technical documentation.`);
-          } else if (skillLower.includes("critical thinking")) {
-            analysis.improvements.push(`**Critical Thinking** (${score}/100): Develop skills in evaluating AI outputs, recognizing biases and limitations, and validating AI-generated information.`);
+            analysis.improvements.push(`**AI Literacy & Prompt Engineering** (${score}/100): Recommend focused training on prompt engineering, AI fundamentals, and practical experience with various AI models.`);
+          } else if (skillLower.includes("technical")) {
+            analysis.improvements.push(`**Technical Fundamentals** (${score}/100): Suggest building technical foundation through hands-on practice with AI APIs, understanding model architectures, and technical documentation.`);
+          } else if (skillLower.includes("critical")) {
+            analysis.improvements.push(`**Critical Thinking & Problem-Solving** (${score}/100): Develop skills in evaluating AI outputs, recognizing biases and limitations, and validating AI-generated information.`);
           } else if (skillLower.includes("responsible")) {
-            analysis.improvements.push(`**Responsible AI Integration** (${score}/100): Focus on AI ethics training, understanding regulatory requirements, and implementing responsible AI practices.`);
+            analysis.improvements.push(`**Responsible AI & Ethical Awareness** (${score}/100): Focus on AI ethics training, understanding regulatory requirements, and implementing responsible AI practices.`);
           } else {
             analysis.improvements.push(`**${skill}** (${score}/100): This area would benefit from targeted development and practical experience.`);
           }

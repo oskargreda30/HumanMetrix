@@ -562,7 +562,7 @@ export default function MyResults() {
                 <div className="grid md:grid-cols-2 gap-4 mb-6 p-4 bg-purple-500/5 rounded-lg border border-purple-500/20">
                   <div>
                     <div className="text-sm font-semibold text-purple-600 dark:text-purple-400 mb-2">What It Measures</div>
-                    <p className="text-sm text-muted-foreground">Nine AI-specific competencies: AI Literacy, Prompting Effectiveness, Technical Fluency, Critical Thinking, Adaptive Learning, Responsible AI Integration, Domain Expertise, Creative Innovation, and Cross-functional Collaboration.</p>
+                    <p className="text-sm text-muted-foreground">Nine AI-specific competencies: AI Literacy & Prompt Engineering, Technical Fundamentals, Data Fluency, Critical Thinking & Problem-Solving, Adaptability & Continuous Learning, Collaboration & Communication, Responsible AI & Ethical Awareness, Creativity & Innovation, and Domain Expertise.</p>
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-purple-600 dark:text-purple-400 mb-2">Workplace Impact</div>

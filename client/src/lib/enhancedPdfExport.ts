@@ -977,11 +977,11 @@ export async function exportEnhancedCandidatePDF(
     pdf.text('What It Measures:', 20, yPos);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
-    pdf.text('Nine AI-specific competencies: AI Literacy, Prompting Effectiveness, Technical Fluency,', 52, yPos);
+    pdf.text('Nine AI-specific competencies: AI Literacy & Prompt Engineering, Technical Fundamentals,', 52, yPos);
     yPos += 4;
-    pdf.text('Critical Thinking, Adaptive Learning, Responsible AI Integration, Domain Expertise, Creative Innovation,', 20, yPos);
+    pdf.text('Data Fluency, Critical Thinking & Problem-Solving, Adaptability & Continuous Learning,', 20, yPos);
     yPos += 4;
-    pdf.text('and Cross-functional Collaboration.', 20, yPos);
+    pdf.text('Collaboration & Communication, Responsible AI & Ethical Awareness, Creativity & Innovation, Domain Expertise.', 20, yPos);
     yPos += 8;
     
     try {
