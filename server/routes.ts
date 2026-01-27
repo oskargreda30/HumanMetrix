@@ -9126,23 +9126,19 @@ Format your response as JSON with this structure:
       const basePricePerTest = matchingPartner.pricePerAssessment || 500;
       
       // Volume discount tiers - larger packages get better rates
-      // All bulk purchases get an additional 25% off on top of the base 25% partner discount = 50% off total
-      const BASE_PARTNER_DISCOUNT = 25; // Partners already get 25% off retail
-      const BULK_DISCOUNT = 25; // Additional 25% off for all bulk purchases
-      const TOTAL_DISCOUNT = BASE_PARTNER_DISCOUNT + BULK_DISCOUNT; // 50% off total
-      
+      // Discount percentages applied to the partner's base price
       const packageTiers = [
-        { size: 10, name: 'Starter' },
-        { size: 25, name: 'Growth' },
-        { size: 50, name: 'Professional' },
-        { size: 100, name: 'Business' },
-        { size: 250, name: 'Enterprise' },
-        { size: 500, name: 'Enterprise+' },
+        { size: 10, name: 'Starter', discountPercent: 0 },       // No discount
+        { size: 25, name: 'Growth', discountPercent: 5 },        // 5% off
+        { size: 50, name: 'Professional', discountPercent: 10 }, // 10% off
+        { size: 100, name: 'Business', discountPercent: 15 },    // 15% off
+        { size: 250, name: 'Enterprise', discountPercent: 20 },  // 20% off
+        { size: 500, name: 'Enterprise+', discountPercent: 25 }, // 25% off
       ];
       
-      // Calculate prices for each package tier (all get flat 25% bulk discount)
+      // Calculate prices for each package tier
       const packages = packageTiers.map(tier => {
-        const discountMultiplier = 1 - (BULK_DISCOUNT / 100);
+        const discountMultiplier = 1 - (tier.discountPercent / 100);
         const discountedPricePerTest = Math.round(basePricePerTest * discountMultiplier);
         const totalPrice = discountedPricePerTest * tier.size;
         
@@ -9151,9 +9147,8 @@ Format your response as JSON with this structure:
           name: tier.name,
           price: totalPrice,
           pricePerTest: discountedPricePerTest,
-          discountPercent: TOTAL_DISCOUNT, // Show stacked discount (25% partner + 25% bulk = 50%)
-          bulkDiscountPercent: BULK_DISCOUNT, // The bulk portion (25%)
-          savings: (basePricePerTest * tier.size) - totalPrice,
+          discountPercent: tier.discountPercent,
+          savings: tier.discountPercent > 0 ? (basePricePerTest * tier.size) - totalPrice : 0,
         };
       });
       
@@ -9905,23 +9900,19 @@ Format your response as JSON with this structure:
       const basePricePerTest = matchingPartner.pricePerAssessment || 500;
       
       // Volume discount tiers - must match the pricing API
-      // All bulk purchases get an additional 25% off on top of the base 25% partner discount = 50% off total
-      const BASE_PARTNER_DISCOUNT = 25; // Partners already get 25% off retail
-      const BULK_DISCOUNT = 25; // Additional 25% off for all bulk purchases
-      const TOTAL_DISCOUNT = BASE_PARTNER_DISCOUNT + BULK_DISCOUNT; // 50% off total
-      
       const packageTiers = [
-        { size: 10, name: 'Starter' },
-        { size: 25, name: 'Growth' },
-        { size: 50, name: 'Professional' },
-        { size: 100, name: 'Business' },
-        { size: 250, name: 'Enterprise' },
-        { size: 500, name: 'Enterprise+' },
+        { size: 10, name: 'Starter', discountPercent: 0 },
+        { size: 25, name: 'Growth', discountPercent: 5 },
+        { size: 50, name: 'Professional', discountPercent: 10 },
+        { size: 100, name: 'Business', discountPercent: 15 },
+        { size: 250, name: 'Enterprise', discountPercent: 20 },
+        { size: 500, name: 'Enterprise+', discountPercent: 25 },
       ];
       
-      // Find matching tier or use default name for custom sizes
+      // Find matching tier or use no discount for custom sizes
       const tier = packageTiers.find(t => t.size === packageSize);
-      const discountMultiplier = 1 - (BULK_DISCOUNT / 100);
+      const discountPercent = tier?.discountPercent || 0;
+      const discountMultiplier = 1 - (discountPercent / 100);
       const pricePerTest = Math.round(basePricePerTest * discountMultiplier);
       const totalPrice = pricePerTest * packageSize;
       
@@ -9980,7 +9971,7 @@ Format your response as JSON with this structure:
             currency: partnerCurrency,
             product_data: {
               name: `HumanMetrix Test Package - ${packageSize} Tests`,
-              description: `${tier?.name || 'Custom'} package: ${packageSize} assessment credits at ${currSymbol}${displayPrice.toFixed(isZeroDecimal ? 0 : 2)} per test (${TOTAL_DISCOUNT}% off retail)`,
+              description: `${tier?.name || 'Custom'} package: ${packageSize} assessment credits at ${currSymbol}${displayPrice.toFixed(isZeroDecimal ? 0 : 2)} per test${discountPercent > 0 ? ` (${discountPercent}% volume discount)` : ''}`,
             },
             unit_amount: totalPrice,
           },
@@ -9992,8 +9983,7 @@ Format your response as JSON with this structure:
           packageId: pkg.id,
           packageSize: packageSize.toString(),
           selfService: 'true',
-          discountPercent: TOTAL_DISCOUNT.toString(),
-          bulkDiscountPercent: BULK_DISCOUNT.toString(),
+          discountPercent: discountPercent.toString(),
         },
         success_url: `${baseUrl}/partner-package-success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/partner?tab=billing&purchase_cancelled=true`,
