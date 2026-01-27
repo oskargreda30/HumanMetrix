@@ -12339,13 +12339,25 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
       }
 
       // Verify the candidate belongs to this partner
+      // SOURCE 1: Check B2B Widget/API sessions
       const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
-      const candidateSessions = allSessions.filter(
+      let candidateSessions = allSessions.filter(
         s => s.externalEmail === candidateId || s.externalUserId === candidateId || s.id === candidateId
       );
       
+      // SOURCE 2: Check partner invitation candidates if not found in sessions
+      let isInvitedCandidate = false;
       if (candidateSessions.length === 0) {
-        return res.status(403).json({ message: "Candidate not found in your organization" });
+        const partnerInvitations = await db.select()
+          .from(partnerCandidateInvitations)
+          .where(eq(partnerCandidateInvitations.partnerId, partner.id));
+        isInvitedCandidate = partnerInvitations.some(
+          inv => inv.email === candidateId || inv.externalUserId === candidateId || inv.userId === candidateId
+        );
+        
+        if (!isInvitedCandidate) {
+          return res.status(403).json({ message: "Candidate not found in your organization" });
+        }
       }
 
       // Get role
@@ -12488,13 +12500,24 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
       }
 
       // Verify the candidate belongs to this partner
+      // SOURCE 1: Check B2B Widget/API sessions
       const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
       const candidateSessions = allSessions.filter(
         s => s.externalEmail === candidateId || s.externalUserId === candidateId || s.id === candidateId
       );
       
+      // SOURCE 2: Check partner invitation candidates if not found in sessions
       if (candidateSessions.length === 0) {
-        return res.status(403).json({ message: "Candidate not found in your organization" });
+        const partnerInvitations = await db.select()
+          .from(partnerCandidateInvitations)
+          .where(eq(partnerCandidateInvitations.partnerId, partner.id));
+        const isInvitedCandidate = partnerInvitations.some(
+          inv => inv.email === candidateId || inv.externalUserId === candidateId || inv.userId === candidateId
+        );
+        
+        if (!isInvitedCandidate) {
+          return res.status(403).json({ message: "Candidate not found in your organization" });
+        }
       }
 
       // For now, redirect to the GET endpoint logic (no AI generation for partners)
@@ -12530,6 +12553,7 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
       }
 
       // Verify all candidates belong to this partner
+      // SOURCE 1: B2B Widget/API sessions
       const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
       const partnerCandidateIds = new Set<string>();
       allSessions.forEach(s => {
@@ -12537,6 +12561,16 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         if (s.externalUserId) partnerCandidateIds.add(s.externalUserId);
         if (s.id) partnerCandidateIds.add(s.id);
         if (s.userId) partnerCandidateIds.add(s.userId);
+      });
+      
+      // SOURCE 2: Partner invitation candidates
+      const partnerInvitations = await db.select()
+        .from(partnerCandidateInvitations)
+        .where(eq(partnerCandidateInvitations.partnerId, partner.id));
+      partnerInvitations.forEach(inv => {
+        if (inv.email) partnerCandidateIds.add(inv.email);
+        if (inv.externalUserId) partnerCandidateIds.add(inv.externalUserId);
+        if (inv.userId) partnerCandidateIds.add(inv.userId);
       });
       
       const unauthorizedCandidates = candidateIds.filter(id => !partnerCandidateIds.has(id));
