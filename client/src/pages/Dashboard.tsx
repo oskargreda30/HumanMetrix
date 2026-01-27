@@ -1269,18 +1269,45 @@ export default function Dashboard() {
                         </div>
                       ))}
                       
-                      {/* Individual Total */}
-                      {selectedAssessments.size > 0 && (
-                        <div className="pt-2 flex justify-between font-medium">
-                          <span>Total ({selectedAssessments.size} selected)</span>
-                          <span>
-                            {pricingData.assessments
-                              .filter(a => selectedAssessments.has(a.type))
-                              .map(a => a.priceDisplay)
-                              .join(' + ')}
-                          </span>
-                        </div>
-                      )}
+                      {/* Individual Total - apply bulk discount if 2+ selected */}
+                      {selectedAssessments.size > 0 && (() => {
+                        const selected = pricingData.assessments.filter(a => selectedAssessments.has(a.type));
+                        const isBulkEligible = selected.length > 1;
+                        
+                        return (
+                          <div className="pt-3 mt-2 border-t">
+                            <div className="flex justify-between items-center font-medium">
+                              <span className="flex items-center gap-2">
+                                Total ({selectedAssessments.size} selected)
+                                {isBulkEligible && (
+                                  <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                                    50% off applied
+                                  </Badge>
+                                )}
+                              </span>
+                              <div className="text-right">
+                                {isBulkEligible ? (
+                                  <>
+                                    <span className="text-lg">{pricingData.bulkTotal.priceDisplay}</span>
+                                    <span className="text-sm text-muted-foreground line-through ml-2">
+                                      {pricingData.bulkTotal.originalPriceDisplay}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span>{selected.map(a => a.priceDisplay).join(' + ')}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            {isBulkEligible && (
+                              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                                Bulk discount automatically applied for multiple assessments
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
@@ -1301,6 +1328,9 @@ export default function Dashboard() {
             <Button
               onClick={() => {
                 if (lockedResultsDialog) {
+                  // Use bulk pricing if explicitly bulk OR if multiple assessments selected
+                  const useBulkPricing = purchaseMode === 'bulk' || selectedAssessments.size > 1;
+                  
                   if (purchaseMode === 'bulk') {
                     partnerResultsPurchaseMutation.mutate({
                       partnerInvitationId: lockedResultsDialog.seriesId,
@@ -1309,7 +1339,7 @@ export default function Dashboard() {
                   } else {
                     partnerResultsPurchaseMutation.mutate({
                       partnerInvitationId: lockedResultsDialog.seriesId,
-                      isBulkPurchase: false,
+                      isBulkPurchase: useBulkPricing,
                       assessmentTypes: Array.from(selectedAssessments),
                     });
                   }
@@ -1328,9 +1358,11 @@ export default function Dashboard() {
                   <CreditCard className="mr-2 h-4 w-4" />
                   {purchaseMode === 'bulk' 
                     ? `Unlock All - ${pricingData?.bulkTotal.priceDisplay || ''}`
-                    : selectedAssessments.size > 0 
-                      ? `Unlock Selected (${selectedAssessments.size})`
-                      : 'Select Assessments'
+                    : selectedAssessments.size > 1
+                      ? `Unlock Selected (${selectedAssessments.size}) - ${pricingData?.bulkTotal.priceDisplay || ''}`
+                      : selectedAssessments.size === 1 
+                        ? `Unlock Selected (1)`
+                        : 'Select Assessments'
                   }
                 </>
               )}
