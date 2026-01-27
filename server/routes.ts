@@ -5460,13 +5460,30 @@ ${pdfText.substring(0, 15000)}`;
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      if (user?.role !== 'partner_admin') {
-        return res.status(403).json({ message: "Forbidden: Partner access required" });
+      if (!user) {
+        return res.status(401).json({ message: "Not authenticated" });
       }
       
-      if (!user.partnerId) {
+      // Find partner account using same pattern as other partner endpoints
+      let matchingPartner = null;
+      if (user?.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      if (!matchingPartner && user?.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      if (!matchingPartner) {
+        const teamMembership = await storage.getPartnerTeamMemberByUserId(userId);
+        if (teamMembership) {
+          matchingPartner = await storage.getPartnerAccount(teamMembership.partnerId);
+        }
+      }
+      
+      if (!matchingPartner) {
         return res.status(400).json({ message: "Partner account not found" });
       }
+      
+      const partnerId = matchingPartner.id;
       
       const file = req.file;
       if (!file) {
@@ -5590,13 +5607,30 @@ ${pdfText.substring(0, 15000)}`;
       const userId = req.user.id;
       const user = await storage.getUser(userId);
       
-      if (user?.role !== 'partner_admin') {
-        return res.status(403).json({ message: "Forbidden: Partner access required" });
+      if (!user) {
+        return res.status(401).json({ message: "Not authenticated" });
       }
       
-      if (!user.partnerId) {
+      // Find partner account using same pattern as other partner endpoints
+      let matchingPartner = null;
+      if (user?.organizationId) {
+        matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      if (!matchingPartner && user?.email) {
+        matchingPartner = await storage.getPartnerAccountByEmail(user.email);
+      }
+      if (!matchingPartner) {
+        const teamMembership = await storage.getPartnerTeamMemberByUserId(userId);
+        if (teamMembership) {
+          matchingPartner = await storage.getPartnerAccount(teamMembership.partnerId);
+        }
+      }
+      
+      if (!matchingPartner) {
         return res.status(400).json({ message: "Partner account not found" });
       }
+      
+      const partnerId = matchingPartner.id;
       
       const { parsedData, fileName } = req.body;
       
