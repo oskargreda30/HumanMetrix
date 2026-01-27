@@ -12651,7 +12651,7 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
       
       for (const candidateId of candidateIds) {
         // For B2B partners, candidateId is typically the email address
-        // Try to find by user ID first, then fall back to email-based lookup from sessions
+        // Try multiple lookup paths: 1) user ID, 2) partner invitation, 3) B2B sessions
         let user = await storage.getUser(candidateId);
         let completedResults: any[] = [];
         let candidateName = '';
@@ -12665,31 +12665,64 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
           candidateName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || candidateId;
           candidateEmail = user.email || candidateId;
         } else {
-          // B2B candidate - look up by email in assessment_sessions
-          const candidateSessions = allSessions.filter(s => 
-            s.externalEmail === candidateId || 
-            s.externalUserId === candidateId ||
-            s.id === candidateId
+          // Check for partner invitation candidate first
+          const matchingInvitation = partnerInvitations.find(
+            inv => inv.email === candidateId || inv.externalUserId === candidateId || inv.userId === candidateId
           );
           
-          if (candidateSessions.length === 0) continue;
-          
-          // Convert sessions to result-like objects for processing
-          completedResults = candidateSessions
-            .filter(s => s.status === 'completed')
-            .map(s => ({
-              id: s.id,
-              assessmentType: s.assessmentType,
-              status: s.status,
-              scores: s.scores,
-              totalScore: s.totalScore,
-              completedAt: s.completedAt,
-            }));
-          
-          // Extract name from email
-          const emailPart = candidateSessions[0].externalEmail?.split('@')[0] || candidateId;
-          candidateName = emailPart.replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-          candidateEmail = candidateSessions[0].externalEmail || candidateId;
+          if (matchingInvitation) {
+            // Partner invitation candidate - get results via partnerInvitationId
+            const invitationResults = await db.select()
+              .from(assessmentResults)
+              .where(eq(assessmentResults.partnerInvitationId, matchingInvitation.id));
+            
+            completedResults = invitationResults
+              .filter(r => r.status === 'completed')
+              .map(r => ({
+                id: r.id,
+                assessmentType: r.assessmentType,
+                status: r.status,
+                scores: r.scores,
+                totalScore: r.totalScore,
+                completedAt: r.completedAt,
+              }));
+            
+            // Use invitation name or extract from email
+            const invitationName = matchingInvitation.name;
+            if (invitationName) {
+              candidateName = invitationName;
+            } else {
+              const emailPart = matchingInvitation.email.split('@')[0];
+              candidateName = emailPart.replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            }
+            candidateEmail = matchingInvitation.email;
+          } else {
+            // B2B widget candidate - look up by email in assessment_sessions
+            const candidateSessions = allSessions.filter(s => 
+              s.externalEmail === candidateId || 
+              s.externalUserId === candidateId ||
+              s.id === candidateId
+            );
+            
+            if (candidateSessions.length === 0) continue;
+            
+            // Convert sessions to result-like objects for processing
+            completedResults = candidateSessions
+              .filter(s => s.status === 'completed')
+              .map(s => ({
+                id: s.id,
+                assessmentType: s.assessmentType,
+                status: s.status,
+                scores: s.scores,
+                totalScore: s.totalScore,
+                completedAt: s.completedAt,
+              }));
+            
+            // Extract name from email
+            const emailPart = candidateSessions[0].externalEmail?.split('@')[0] || candidateId;
+            candidateName = emailPart.replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            candidateEmail = candidateSessions[0].externalEmail || candidateId;
+          }
         }
         
         if (completedResults.length === 0) continue;
