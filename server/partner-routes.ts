@@ -2859,6 +2859,7 @@ export function registerPartnerRoutes(app: Express) {
           quantity: 1,
         }],
         mode: 'payment',
+        allow_promotion_codes: true,
         success_url: `${baseUrl}/b2b-payment-callback?success=true&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/unlock-results?email=${encodeURIComponent(email)}&invite=${inviteToken}`,
         customer_email: email,

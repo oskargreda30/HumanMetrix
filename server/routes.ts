@@ -2378,6 +2378,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           customer_email: customerEmail,
           line_items: lineItems,
           mode: "payment",
+          allow_promotion_codes: true,
           success_url: `${baseUrl}/purchase/success?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${baseUrl}/dashboard?payment=cancelled`,
           metadata: {
@@ -2830,6 +2831,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customer_email: user.email,
         line_items: lineItems,
         mode: "payment",
+        allow_promotion_codes: true,
         success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/dashboard?partner_purchase=success&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/dashboard?partner_purchase=cancelled`,
         metadata: {
@@ -15297,6 +15299,7 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
           mode: 'payment',
           customer: partner.stripeCustomerId || undefined,
           customer_email: partner.stripeCustomerId ? undefined : partner.billingEmail || partner.email,
+          allow_promotion_codes: true,
           line_items: [{
             price_data: {
               currency: 'usd',
@@ -16251,6 +16254,7 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
           mode: 'payment',
           customer: partner.stripeCustomerId || undefined,
           customer_email: partner.stripeCustomerId ? undefined : partner.billingEmail || partner.email,
+          allow_promotion_codes: true,
           line_items: [{
             price_data: {
               currency: invoice.currency || 'gbp',
