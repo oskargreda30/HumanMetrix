@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, populateUser } from "./auth";
 import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema, B2B_VOLUME_TIERS, CREDIT_EXPIRATION_MONTHS, getTrialQuotaForTier } from "@shared/schema";
-import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, calculateStripeAmountFromTotalPence, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES, roundPriceUp, roundPriceStandard, formatPrice, getCurrencyForCountry } from "@shared/currencies";
+import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, calculateStripeAmountFromTotalPence, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES, roundPriceUp, formatPrice, getCurrencyForCountry } from "@shared/currencies";
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, broadcastMessages, SYSTEM_SETTING_KEYS, auditLogs, errorLogs, partnerInvoices, invitations, partnerCandidateInvitations, type PartnerAccount, type AssessmentSession } from "@shared/schema";
 import { eq, desc, sql, and, or, gte, isNotNull } from "drizzle-orm";
@@ -2742,26 +2742,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Calculate PPP-adjusted price in pence
         const pppB2CPrice = getPPPAdjustedPriceInPence(assessmentB2CPrice, userCountry);
         
-        // Get the rounded original price (for display consistency) - uses Math.ceil
+        // Get the rounded original price (for display consistency)
         const formattedPrice = formatPrice(pppB2CPrice, userCurrency, { skipPPPAdjustment: true });
         const roundedPrice = parseFloat(formattedPrice.replace(/[^\d.]/g, ''));
         sumOfRoundedOriginalPrices += roundedPrice;
         
-        // For individual pricing: apply 25% discount to LOCAL CURRENCY, then use standard rounding
-        // This matches the pricing endpoint: 220 * 0.75 = 165 → rounds to 170
-        const discountedLocalCurrency = roundedPrice * 0.75; // 25% off local currency
-        const discountedRounded = roundPriceStandard(discountedLocalCurrency, userCurrency);
+        // For individual pricing: apply 25% discount at pence level, then convert (matches pricing endpoint)
+        const discountedPence = Math.round(pppB2CPrice * 0.75); // 25% off
+        const discountedFormatted = formatPrice(discountedPence, userCurrency, { skipPPPAdjustment: true });
+        const discountedRounded = parseFloat(discountedFormatted.replace(/[^\d.]/g, ''));
         sumOfDiscountedPrices += discountedRounded;
       }
       
       const roundedSumOriginal = roundPriceUp(sumOfRoundedOriginalPrices, userCurrency);
       
-      // For bulk (50% off): apply to sum of original rounded prices, use standard rounding
+      // For bulk (50% off): apply to sum of original rounded prices
       // For individual (25% off): use sum of individually-discounted prices (matches display)
       let discountedLocalPrice: number;
       if (isBulk && resultsToPurchase.length > 1) {
         // 50% off the sum of rounded original prices (e.g., 50% of 450 = 225 → 230)
-        discountedLocalPrice = roundPriceStandard(roundedSumOriginal * 0.5, userCurrency);
+        discountedLocalPrice = roundPriceUp(roundedSumOriginal * 0.5, userCurrency);
       } else {
         // Use sum of individually-calculated discounted prices (matches pricing endpoint display)
         discountedLocalPrice = sumOfDiscountedPrices;
@@ -2991,10 +2991,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const originalPriceNumeric = parseFloat(originalPriceDisplay.replace(/[^\d.]/g, ''));
         sumOfRoundedOriginalPrices += originalPriceNumeric;
         
-        // Apply 25% discount to the LOCAL CURRENCY price, then use standard rounding (5+ rounds up)
+        // Apply 25% discount to the LOCAL CURRENCY price (not pence), then round UP
         // This ensures: 220 * 0.75 = 165 → rounds to 170
         const discountedLocalPrice = originalPriceNumeric * (1 - individualDiscountRate);
-        const roundedDiscountedPrice = roundPriceStandard(discountedLocalPrice, userCurrency);
+        const roundedDiscountedPrice = roundPriceUp(discountedLocalPrice, userCurrency);
         const priceDisplay = `${userCurrency.symbol}${roundedDiscountedPrice.toLocaleString()}`;
         
         // Add the FULL B2C price for each assessment (BASE_FEE + assessment price)
@@ -3014,21 +3014,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const roundedSumOriginal = roundPriceUp(sumOfRoundedOriginalPrices, userCurrency);
       const originalTotalDisplay = `${userCurrency.symbol}${roundedSumOriginal.toLocaleString()}`;
       
-      // Individual total: sum of individually-calculated discounted prices
-      // Calculate by summing each assessment's discounted price (for consistency with display)
-      let sumOfDiscountedPrices = 0;
-      for (const ap of assessmentPrices) {
-        const discountedPrice = parseFloat(ap.priceDisplay.replace(/[^\d.]/g, ''));
-        sumOfDiscountedPrices += discountedPrice;
-      }
-      const individualTotalDisplay = `${userCurrency.symbol}${sumOfDiscountedPrices.toLocaleString()}`;
+      // Individual total: 25% off the FULL B2C price
+      const individualTotalPpp = Math.round(totalPppB2C * (1 - individualDiscountRate));
+      const individualTotalDisplay = formatPrice(individualTotalPpp, userCurrency, { skipPPPAdjustment: true });
       
-      // Bulk pricing: 50% off the sum of rounded original prices, use standard rounding
-      // This ensures discount is applied to the displayed original price (e.g., 50% of 450 = 225 → 230)
+      // Bulk pricing: 50% off the sum of rounded original prices
+      // This ensures discount is applied to the displayed original price (e.g., 50% of 450 = 225)
       const hasBulkDiscount = purchasableResults.length > 1;
       const bulkDiscountedLocalPrice = hasBulkDiscount 
-        ? roundPriceStandard(roundedSumOriginal * (1 - bulkDiscountRate), userCurrency)
-        : sumOfDiscountedPrices;
+        ? roundPriceUp(roundedSumOriginal * (1 - bulkDiscountRate), userCurrency)
+        : parseFloat(individualTotalDisplay.replace(/[^\d.]/g, ''));
       const bulkTotalDisplay = `${userCurrency.symbol}${bulkDiscountedLocalPrice.toLocaleString()}`;
       
       // Calculate base fee display
