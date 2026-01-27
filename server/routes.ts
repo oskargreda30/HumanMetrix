@@ -2750,11 +2750,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const roundedSumOriginal = roundPriceUp(sumOfRoundedOriginalPrices, userCurrency);
       const discountedLocalPrice = roundPriceUp(roundedSumOriginal * (1 - discountRate), userCurrency);
       
-      // Convert to Stripe amount (handle zero-decimal currencies)
-      const isZeroDecimal = ['JPY', 'KRW', 'VND', 'IDR', 'THB', 'TWD', 'HUF'].includes(localCurrencyCode.toUpperCase());
-      const stripeAmount = isZeroDecimal ? discountedLocalPrice : Math.round(discountedLocalPrice * 100);
+      // Convert to Stripe amount using the correct zero-decimal currency list
+      // Stripe zero-decimal currencies: JPY, KRW, VND, CLP, PYG, GNF, KMF, MGA, RWF, UGX, VUV, XAF, XOF, XPF, BIF, DJF
+      // Note: THB, IDR, TWD, HUF are NOT zero-decimal in Stripe - they use 2 decimal places
+      const STRIPE_ZERO_DECIMAL = ['JPY', 'KRW', 'VND', 'CLP', 'PYG', 'GNF', 'KMF', 'MGA', 'RWF', 'UGX', 'VUV', 'XAF', 'XOF', 'XPF', 'BIF', 'DJF'];
+      const isZeroDecimal = STRIPE_ZERO_DECIMAL.includes(localCurrencyCode.toUpperCase());
+      const stripeAmount = isZeroDecimal ? Math.round(discountedLocalPrice) : Math.round(discountedLocalPrice * 100);
       
-      totalPriceInPence = Math.round(discountedLocalPrice); // Store local currency amount
+      totalPriceInPence = Math.round(discountedLocalPrice); // Store local currency amount for records
       
       // Create a single line item for the discounted total
       const discountDescription = isBulk && resultsToPurchase.length > 1 ? "50% bulk discount" : "25% partner discount";

@@ -288,7 +288,7 @@ export default function Dashboard() {
     }) => {
       const res = await apiRequest("POST", "/api/create-partner-results-checkout", { 
         partnerInvitationId: params.partnerInvitationId,
-        countryCode: 'GB', // Default, could be detected from user location
+        countryCode: countryCode || 'GB', // Use detected country from geolocation
         isBulkPurchase: params.isBulkPurchase,
         assessmentTypes: params.assessmentTypes,
       });
