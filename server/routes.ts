@@ -2974,17 +2974,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate total B2C price with PPP adjustment
       const totalPppB2C = getPPPAdjustedPriceInPence(totalB2CPriceInPence, userCountry);
       
+      // Format original total first to get the displayed value
+      const originalTotalDisplay = formatPrice(totalPppB2C, userCurrency, { skipPPPAdjustment: true });
+      
+      // Parse the original price to calculate exact discounts from displayed value
+      // This ensures the math is visually consistent (50% of displayed original = displayed discounted)
+      const originalNumeric = parseFloat(originalTotalDisplay.replace(/[^0-9.]/g, ''));
+      
       // Individual total: 25% off B2C
       const individualTotalPpp = Math.round(totalPppB2C * (1 - individualDiscountRate));
       const individualTotalDisplay = formatPrice(individualTotalPpp, userCurrency, { skipPPPAdjustment: true });
-      const originalTotalDisplay = formatPrice(totalPppB2C, userCurrency, { skipPPPAdjustment: true });
       
       // Bulk pricing: 50% off B2C (if more than 1 purchasable assessment)
+      // Calculate from the displayed original to ensure visual consistency
       const hasBulkDiscount = purchasableResults.length > 1;
-      const bulkTotalPpp = hasBulkDiscount 
-        ? Math.round(totalPppB2C * (1 - bulkDiscountRate)) 
-        : individualTotalPpp;
-      const bulkTotalDisplay = formatPrice(bulkTotalPpp, userCurrency, { skipPPPAdjustment: true });
+      const bulkNumeric = Math.round(originalNumeric * (1 - bulkDiscountRate));
+      // Format with currency symbol
+      const bulkTotalDisplay = `${userCurrency.symbol}${bulkNumeric.toLocaleString()}`;
       
       // Calculate base fee display
       const baseFeeAdjusted = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
