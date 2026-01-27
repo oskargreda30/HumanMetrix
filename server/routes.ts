@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, populateUser } from "./auth";
 import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema, B2B_VOLUME_TIERS, CREDIT_EXPIRATION_MONTHS, getTrialQuotaForTier } from "@shared/schema";
-import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, calculateStripeAmountFromTotalPence, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES, roundPriceUp } from "@shared/currencies";
+import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, calculateStripeAmountFromTotalPence, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES, roundPriceUp, formatPrice, getCurrencyForCountry } from "@shared/currencies";
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, broadcastMessages, SYSTEM_SETTING_KEYS, auditLogs, errorLogs, partnerInvoices, invitations, partnerCandidateInvitations, type PartnerAccount, type AssessmentSession } from "@shared/schema";
 import { eq, desc, sql, and, or, gte, isNotNull } from "drizzle-orm";
@@ -2934,60 +2934,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Calculate pricing using only purchasable results
+      // Calculate pricing using the same logic as emails (PPP-adjusted, then formatted)
       const userCountry = (countryCode as string) || 'GB';
       const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
+      const userCurrency = getCurrencyForCountry(userCountry);
       const pricingTier = getPricingTier(userCountry);
       
-      const baseFeeInLocal = convertToStripeCurrencyAmount(BASE_FEE, localCurrencyCode, userCountry);
-      
-      // Individual assessment prices (only for purchasable/locked results)
-      const assessmentPrices: { type: string; priceInPence: number; priceInLocal: number }[] = [];
-      let individualTotalInPence = BASE_FEE;
+      // Calculate B2C price: BASE_FEE + all assessment prices (matches email logic)
+      let totalB2CPriceInPence = BASE_FEE;
+      const assessmentPrices: { type: string; priceInPence: number; priceDisplay: string }[] = [];
 
       for (const result of purchasableResults) {
         const normalizedType = normalizeAssessmentId(result.assessmentType);
-        const basePrice = ASSESSMENT_PRICES[normalizedType] || 0;
-        const priceInLocal = convertToStripeCurrencyAmount(basePrice, localCurrencyCode, userCountry);
-        individualTotalInPence += basePrice;
+        const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
+        const assessmentB2CPrice = BASE_FEE + assessmentPrice;
+        
+        // Apply PPP adjustment
+        const pppAdjustedPricePence = getPPPAdjustedPriceInPence(assessmentB2CPrice, userCountry);
+        
+        // Format price for display (same as email)
+        const priceDisplay = formatPrice(pppAdjustedPricePence, userCurrency, { skipPPPAdjustment: true });
+        
+        totalB2CPriceInPence += assessmentPrice;
         assessmentPrices.push({ 
           type: normalizedType, 
-          priceInPence: basePrice,
-          priceInLocal 
+          priceInPence: assessmentPrice,
+          priceDisplay
         });
       }
 
+      // Calculate total price with PPP adjustment
+      const totalPppAdjusted = getPPPAdjustedPriceInPence(totalB2CPriceInPence, userCountry);
+      
       // Bulk pricing with 25% discount (if more than 1 purchasable assessment)
       const hasBulkDiscount = purchasableResults.length > 1;
       const bulkDiscountRate = hasBulkDiscount ? 0.25 : 0;
+      const bulkTotalPppAdjusted = hasBulkDiscount 
+        ? Math.round(totalPppAdjusted * 0.75) 
+        : totalPppAdjusted;
       
-      let bulkTotalInPence = BASE_FEE;
-      for (const result of purchasableResults) {
-        const normalizedType = normalizeAssessmentId(result.assessmentType);
-        const basePrice = ASSESSMENT_PRICES[normalizedType] || 0;
-        const discountedPrice = hasBulkDiscount ? Math.round(basePrice * (1 - bulkDiscountRate)) : basePrice;
-        bulkTotalInPence += discountedPrice;
-      }
+      // Format totals for display (same format as email)
+      const individualTotalDisplay = formatPrice(totalPppAdjusted, userCurrency, { skipPPPAdjustment: true });
+      const bulkTotalDisplay = formatPrice(bulkTotalPppAdjusted, userCurrency, { skipPPPAdjustment: true });
       
-      const individualTotalInLocal = convertToStripeCurrencyAmount(individualTotalInPence, localCurrencyCode, userCountry);
-      const bulkTotalInLocal = convertToStripeCurrencyAmount(bulkTotalInPence, localCurrencyCode, userCountry);
-      const savings = individualTotalInLocal - bulkTotalInLocal;
+      // Calculate base fee display
+      const baseFeeAdjusted = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
+      const baseFeeDisplay = formatPrice(baseFeeAdjusted, userCurrency, { skipPPPAdjustment: true });
 
       res.json({
         baseFee: BASE_FEE,
-        baseFeeInLocal,
+        baseFeeDisplay,
         assessments: assessmentPrices,
         individualTotal: {
-          priceInPence: individualTotalInPence,
-          priceInLocal: individualTotalInLocal,
+          priceInPence: totalB2CPriceInPence,
+          priceDisplay: individualTotalDisplay,
         },
         bulkTotal: {
-          priceInPence: bulkTotalInPence,
-          priceInLocal: bulkTotalInLocal,
+          priceInPence: Math.round(totalB2CPriceInPence * 0.75),
+          priceDisplay: bulkTotalDisplay,
           discountRate: bulkDiscountRate,
-          savings,
         },
         currency: localCurrencyCode,
+        currencySymbol: userCurrency.symbol,
         pricingTier,
         assessmentCount: purchasableResults.length,
         hasBulkDiscount,
