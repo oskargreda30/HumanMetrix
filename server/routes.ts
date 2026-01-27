@@ -2974,23 +2974,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate total B2C price with PPP adjustment
       const totalPppB2C = getPPPAdjustedPriceInPence(totalB2CPriceInPence, userCountry);
       
-      // Format original total first to get the displayed value
-      const originalTotalDisplay = formatPrice(totalPppB2C, userCurrency, { skipPPPAdjustment: true });
-      
-      // Parse the original price to calculate exact discounts from displayed value
-      // This ensures the math is visually consistent (50% of displayed original = displayed discounted)
-      const originalNumeric = parseFloat(originalTotalDisplay.replace(/[^0-9.]/g, ''));
-      
-      // Individual total: 25% off B2C
+      // Individual total: 25% off B2C (correct PPP-adjusted rounded value)
       const individualTotalPpp = Math.round(totalPppB2C * (1 - individualDiscountRate));
       const individualTotalDisplay = formatPrice(individualTotalPpp, userCurrency, { skipPPPAdjustment: true });
       
+      // Back-calculate the "original" price from the discounted price for visual consistency
+      // originalPrice = discountedPrice / (1 - discountRate)
+      const individualOriginalNumeric = Math.round(individualTotalPpp / (1 - individualDiscountRate));
+      const individualOriginalDisplay = formatPrice(individualOriginalNumeric, userCurrency, { skipPPPAdjustment: true });
+      
       // Bulk pricing: 50% off B2C (if more than 1 purchasable assessment)
-      // Calculate from the displayed original to ensure visual consistency
       const hasBulkDiscount = purchasableResults.length > 1;
-      const bulkNumeric = Math.round(originalNumeric * (1 - bulkDiscountRate));
-      // Format with currency symbol
-      const bulkTotalDisplay = `${userCurrency.symbol}${bulkNumeric.toLocaleString()}`;
+      const bulkTotalPpp = hasBulkDiscount 
+        ? Math.round(totalPppB2C * (1 - bulkDiscountRate)) 
+        : individualTotalPpp;
+      const bulkTotalDisplay = formatPrice(bulkTotalPpp, userCurrency, { skipPPPAdjustment: true });
+      
+      // Back-calculate the "original" price for bulk from the discounted price
+      const bulkOriginalNumeric = Math.round(bulkTotalPpp / (1 - bulkDiscountRate));
+      const bulkOriginalDisplay = formatPrice(bulkOriginalNumeric, userCurrency, { skipPPPAdjustment: true });
       
       // Calculate base fee display
       const baseFeeAdjusted = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
@@ -3003,13 +3005,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         individualTotal: {
           priceInPence: Math.round(totalB2CPriceInPence * (1 - individualDiscountRate)),
           priceDisplay: individualTotalDisplay,
-          originalPriceDisplay: originalTotalDisplay,
+          originalPriceDisplay: individualOriginalDisplay,
           discountRate: individualDiscountRate,
         },
         bulkTotal: {
           priceInPence: Math.round(totalB2CPriceInPence * (1 - bulkDiscountRate)),
           priceDisplay: bulkTotalDisplay,
-          originalPriceDisplay: originalTotalDisplay,
+          originalPriceDisplay: bulkOriginalDisplay,
           discountRate: hasBulkDiscount ? bulkDiscountRate : individualDiscountRate,
         },
         currency: localCurrencyCode,
