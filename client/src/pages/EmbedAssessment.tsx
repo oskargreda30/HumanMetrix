@@ -1266,6 +1266,7 @@ export default function EmbedAssessment() {
     
     // Simplified completion screen for test sessions
     if (session?.isTestSession) {
+      const primaryColor = branding?.primaryColor || '#0891b2';
       return (
         <div className={`min-h-screen flex items-center justify-center ${bgMain} p-4`} data-testid="embed-completed-test">
           <Card className={`max-w-lg ${bgCard} border-green-500/30`}>
@@ -1447,6 +1448,7 @@ export default function EmbedAssessment() {
     }
     
     // Calculate 30-day free unlock date
+    const primaryColor = branding?.primaryColor || '#0891b2';
     const freeUnlockDate = new Date();
     freeUnlockDate.setDate(freeUnlockDate.getDate() + 30);
     const formattedDate = freeUnlockDate.toLocaleDateString('en-GB', { 
