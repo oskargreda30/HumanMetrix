@@ -2621,7 +2621,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create checkout session for partner result purchases (B2C candidates purchasing access to their partner assessment results)
   app.post("/api/create-partner-results-checkout", isAuthenticated, async (req: any, res) => {
     try {
-      const { partnerInvitationId, countryCode } = req.body;
+      const { partnerInvitationId, countryCode, assessmentTypes, isBulkPurchase } = req.body;
       
       if (!partnerInvitationId) {
         return res.status(400).json({ message: "Partner invitation ID is required" });
@@ -2653,10 +2653,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No completed assessments found" });
       }
 
-      // Check if already purchased
+      // Check if already purchased all
       const existingPurchase = await storage.getPartnerResultPurchaseByInvitation(userId, partnerInvitationId);
-      if (existingPurchase?.status === 'completed') {
-        return res.status(400).json({ message: "Results already purchased" });
+      if (existingPurchase?.status === 'completed' && !existingPurchase.purchasedAssessmentTypes) {
+        // Full purchase already completed
+        return res.status(400).json({ message: "All results already purchased" });
+      }
+      
+      // Filter results to purchase (if specific types requested)
+      let resultsToPurchase = completedResults;
+      let purchasedTypes: string[] | null = null;
+      
+      if (assessmentTypes && Array.isArray(assessmentTypes) && assessmentTypes.length > 0 && !isBulkPurchase) {
+        // Individual purchase - filter to specific types
+        const normalizedRequestedTypes = assessmentTypes.map((t: string) => normalizeAssessmentId(t));
+        resultsToPurchase = completedResults.filter((r: any) => 
+          normalizedRequestedTypes.includes(normalizeAssessmentId(r.assessmentType))
+        );
+        
+        if (resultsToPurchase.length === 0) {
+          return res.status(400).json({ message: "No matching assessments found for the selected types" });
+        }
+        
+        // Check if any of these specific types were already purchased
+        if (existingPurchase?.status === 'completed' && existingPurchase.purchasedAssessmentTypes) {
+          const alreadyPurchased = resultsToPurchase.filter((r: any) => 
+            existingPurchase.purchasedAssessmentTypes!.includes(normalizeAssessmentId(r.assessmentType))
+          );
+          if (alreadyPurchased.length > 0) {
+            return res.status(400).json({ 
+              message: `Some assessments already purchased: ${alreadyPurchased.map((r: any) => r.assessmentType).join(', ')}` 
+            });
+          }
+        }
+        
+        purchasedTypes = resultsToPurchase.map((r: any) => normalizeAssessmentId(r.assessmentType));
       }
 
       // Check if auto-unlocked (30 days after completion)
@@ -2673,7 +2704,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Calculate price based on number of completed assessments
+      // Calculate price based on assessments to purchase
       const userCountry = countryCode || 'GB';
       const stripeCurrency = getStripeCurrencyCode(userCountry);
       const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
@@ -2704,9 +2735,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "aiq": "AIQ Results Access",
       };
 
-      for (const result of completedResults) {
+      // Calculate assessment prices with bulk discount (25% off only if buying ALL assessments)
+      // Enforce: bulk discount only applies when purchasing all completed assessments
+      const isBuyingAll = resultsToPurchase.length === completedResults.length;
+      
+      // Server-side validation: if client claims bulk but not buying all, reject
+      if (isBulkPurchase && !isBuyingAll) {
+        return res.status(400).json({ 
+          message: "Bulk purchase requires selecting all assessments. Please select all assessments or purchase individually." 
+        });
+      }
+      
+      const isBulk = (isBulkPurchase || !purchasedTypes) && isBuyingAll;
+      const bulkDiscountRate = (isBulk && resultsToPurchase.length > 1) ? 0.25 : 0;
+      
+      for (const result of resultsToPurchase) {
         const normalizedType = normalizeAssessmentId(result.assessmentType);
-        const basePrice = ASSESSMENT_PRICES[normalizedType] || 0;
+        let basePrice = ASSESSMENT_PRICES[normalizedType] || 0;
+        
+        // Apply bulk discount if applicable
+        if (bulkDiscountRate > 0) {
+          basePrice = Math.round(basePrice * (1 - bulkDiscountRate));
+        }
+        
         totalPriceInPence += basePrice;
         
         const adjustedPrice = convertToStripeCurrencyAmount(basePrice, localCurrencyCode, userCountry);
@@ -2716,6 +2767,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             currency: stripeCurrency,
             product_data: {
               name: assessmentNames[normalizedType] || `${normalizedType} Results Access`,
+              description: bulkDiscountRate > 0 ? "25% bulk discount applied" : undefined,
             },
             unit_amount: adjustedPrice,
           },
@@ -2725,12 +2777,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create or update pending purchase record
       let purchaseRecord;
-      if (existingPurchase) {
+      if (existingPurchase && existingPurchase.status === 'pending') {
         // Update existing pending purchase with current amount/count in case assessments changed
         await storage.updatePartnerResultPurchase(existingPurchase.id, {
           amount: totalPriceInPence,
           currency: localCurrencyCode,
-          assessmentCount: completedResults.length,
+          assessmentCount: resultsToPurchase.length,
+          purchasedAssessmentTypes: purchasedTypes,
         });
         purchaseRecord = existingPurchase;
       } else {
@@ -2739,7 +2792,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           partnerInvitationId,
           amount: totalPriceInPence,
           currency: localCurrencyCode,
-          assessmentCount: completedResults.length,
+          assessmentCount: resultsToPurchase.length,
+          purchasedAssessmentTypes: purchasedTypes,
           status: 'pending',
         });
       }
@@ -2758,6 +2812,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           purchaseId: purchaseRecord.id,
           countryCode: userCountry,
           localCurrency: localCurrencyCode,
+          purchasedAssessmentTypes: purchasedTypes ? purchasedTypes.join(',') : 'all',
+          isBulkPurchase: isBulk ? 'true' : 'false',
         },
       });
 
@@ -2846,32 +2902,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No completed assessments found" });
       }
 
-      // Calculate pricing
+      // Check for existing purchase to filter out already-unlocked assessments
+      const existingPurchase = await storage.getPartnerResultPurchaseByInvitation(userId, invitationId);
+      let purchasableResults = completedResults;
+      
+      if (existingPurchase?.status === 'completed') {
+        if (!existingPurchase.purchasedAssessmentTypes) {
+          // Full purchase already completed - nothing left to buy
+          return res.status(400).json({ message: "All results already purchased" });
+        }
+        // Filter out already-purchased assessment types
+        purchasableResults = completedResults.filter((r: any) => 
+          !existingPurchase.purchasedAssessmentTypes!.includes(normalizeAssessmentId(r.assessmentType))
+        );
+        if (purchasableResults.length === 0) {
+          return res.status(400).json({ message: "All results already purchased" });
+        }
+      }
+
+      // Check for auto-unlock (30 days after most recent completion)
+      const mostRecentCompletion = completedResults
+        .filter((r: any) => r.completedAt)
+        .map((r: any) => new Date(r.completedAt))
+        .sort((a: Date, b: Date) => b.getTime() - a.getTime())[0];
+      
+      if (mostRecentCompletion) {
+        const unlockDate = new Date(mostRecentCompletion);
+        unlockDate.setDate(unlockDate.getDate() + 30);
+        if (new Date() >= unlockDate) {
+          return res.status(400).json({ message: "Results are already unlocked (30-day auto-unlock)" });
+        }
+      }
+
+      // Calculate pricing using only purchasable results
       const userCountry = (countryCode as string) || 'GB';
       const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
       const pricingTier = getPricingTier(userCountry);
       
-      let totalPriceInPence = BASE_FEE;
-      const assessmentPrices: { type: string; price: number }[] = [];
+      const baseFeeInLocal = convertToStripeCurrencyAmount(BASE_FEE, localCurrencyCode, userCountry);
+      
+      // Individual assessment prices (only for purchasable/locked results)
+      const assessmentPrices: { type: string; priceInPence: number; priceInLocal: number }[] = [];
+      let individualTotalInPence = BASE_FEE;
 
-      for (const result of completedResults) {
+      for (const result of purchasableResults) {
         const normalizedType = normalizeAssessmentId(result.assessmentType);
         const basePrice = ASSESSMENT_PRICES[normalizedType] || 0;
-        totalPriceInPence += basePrice;
-        assessmentPrices.push({ type: normalizedType, price: basePrice });
+        const priceInLocal = convertToStripeCurrencyAmount(basePrice, localCurrencyCode, userCountry);
+        individualTotalInPence += basePrice;
+        assessmentPrices.push({ 
+          type: normalizedType, 
+          priceInPence: basePrice,
+          priceInLocal 
+        });
       }
 
-      // Convert to local currency
-      const totalInLocalCurrency = convertToStripeCurrencyAmount(totalPriceInPence, localCurrencyCode, userCountry);
+      // Bulk pricing with 25% discount (if more than 1 purchasable assessment)
+      const hasBulkDiscount = purchasableResults.length > 1;
+      const bulkDiscountRate = hasBulkDiscount ? 0.25 : 0;
+      
+      let bulkTotalInPence = BASE_FEE;
+      for (const result of purchasableResults) {
+        const normalizedType = normalizeAssessmentId(result.assessmentType);
+        const basePrice = ASSESSMENT_PRICES[normalizedType] || 0;
+        const discountedPrice = hasBulkDiscount ? Math.round(basePrice * (1 - bulkDiscountRate)) : basePrice;
+        bulkTotalInPence += discountedPrice;
+      }
+      
+      const individualTotalInLocal = convertToStripeCurrencyAmount(individualTotalInPence, localCurrencyCode, userCountry);
+      const bulkTotalInLocal = convertToStripeCurrencyAmount(bulkTotalInPence, localCurrencyCode, userCountry);
+      const savings = individualTotalInLocal - bulkTotalInLocal;
 
       res.json({
         baseFee: BASE_FEE,
+        baseFeeInLocal,
         assessments: assessmentPrices,
-        totalPriceInPence,
-        totalInLocalCurrency,
+        individualTotal: {
+          priceInPence: individualTotalInPence,
+          priceInLocal: individualTotalInLocal,
+        },
+        bulkTotal: {
+          priceInPence: bulkTotalInPence,
+          priceInLocal: bulkTotalInLocal,
+          discountRate: bulkDiscountRate,
+          savings,
+        },
         currency: localCurrencyCode,
         pricingTier,
-        assessmentCount: completedResults.length,
+        assessmentCount: purchasableResults.length,
+        hasBulkDiscount,
       });
     } catch (error: any) {
       console.error("Error getting partner results pricing:", error);
@@ -3169,6 +3288,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Check payment status
           const purchase = purchasesByInvitation[invitationId];
           const isPurchased = purchase?.status === 'completed';
+          // Get which specific assessment types were purchased (null = all purchased via bulk)
+          const purchasedTypes = purchase?.purchasedAssessmentTypes || null;
+          const isFullPurchase = isPurchased && !purchasedTypes; // null means all purchased
           
           // Calculate auto-unlock date (30 days after completion)
           const allComplete = completedResults.length >= invitation.assessmentTypes.length;
@@ -3182,35 +3304,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isAutoUnlocked = new Date() >= unlockDate;
           }
           
-          // Results are unlocked if purchased OR auto-unlocked after 30 days
-          const resultsUnlocked = isPurchased || isAutoUnlocked;
+          // All results are unlocked if full purchase OR auto-unlocked after 30 days
+          const resultsUnlocked = isFullPurchase || isAutoUnlocked;
+          
+          // Helper to check if a specific assessment type is unlocked
+          const isAssessmentUnlocked = (assessmentType: string) => {
+            if (isAutoUnlocked) return true; // Auto-unlock unlocks all
+            if (isFullPurchase) return true; // Full purchase unlocks all
+            if (isPurchased && purchasedTypes) {
+              // Partial purchase - check if this specific type was purchased
+              const normalizedType = normalizeAssessmentId(assessmentType);
+              return purchasedTypes.includes(normalizedType);
+            }
+            return false;
+          };
           
           return {
             id: invitationId,
             partnerName: partner?.companyName || partner?.name || 'Partner',
             partnerId: invitation.partnerId,
             assessmentTypes: invitation.assessmentTypes,
-            results: results.map((r: any) => ({
-              id: r.id,
-              assessmentType: r.assessmentType,
-              status: r.status,
-              // Only show scores if results are unlocked
-              totalScore: resultsUnlocked ? r.totalScore : null,
-              percentile: resultsUnlocked ? r.percentile : null,
-              completedAt: r.completedAt,
-              scores: resultsUnlocked ? r.scores : null,
-            })),
+            results: results.map((r: any) => {
+              const unlocked = isAssessmentUnlocked(r.assessmentType);
+              return {
+                id: r.id,
+                assessmentType: r.assessmentType,
+                status: r.status,
+                // Only show scores if this specific result is unlocked
+                totalScore: unlocked ? r.totalScore : null,
+                percentile: unlocked ? r.percentile : null,
+                completedAt: r.completedAt,
+                scores: unlocked ? r.scores : null,
+                isUnlocked: unlocked, // Add per-result unlock status
+              };
+            }),
             completedCount: completedResults.length,
             totalCount: invitation.assessmentTypes.length,
             allComplete,
             completedAt: completedAt?.toISOString() || null,
             createdAt: invitation.createdAt,
             // Payment and unlock status
-            resultsUnlocked,
+            resultsUnlocked, // True only if ALL results are unlocked
             isPurchased,
             isAutoUnlocked,
             autoUnlockDate,
             purchaseId: purchase?.id || null,
+            // Track partial purchases
+            purchasedTypes,
+            hasPartialPurchase: isPurchased && !!purchasedTypes,
           };
         })
       );

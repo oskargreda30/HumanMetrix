@@ -1565,6 +1565,7 @@ export const partnerResultPurchases = pgTable("partner_result_purchases", {
   amount: integer("amount").notNull(), // Amount in cents
   currency: varchar("currency").notNull().default("USD"),
   assessmentCount: integer("assessment_count").notNull(), // Number of assessments in the series
+  purchasedAssessmentTypes: text("purchased_assessment_types").array(), // List of purchased assessment types (null = all via bulk purchase)
   status: varchar("status").notNull().default("pending"), // 'pending', 'completed', 'failed', 'refunded'
   purchasedAt: timestamp("purchased_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

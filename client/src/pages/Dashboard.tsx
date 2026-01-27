@@ -8,6 +8,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Dialog,
   DialogContent,
@@ -174,7 +176,28 @@ export default function Dashboard() {
     seriesId: string;
     partnerName: string;
     autoUnlockDate: string | null;
+    completedResults: { id: string; assessmentType: string }[];
   } | null>(null);
+  
+  // Track purchase mode: 'bulk' or 'individual'
+  const [purchaseMode, setPurchaseMode] = useState<'bulk' | 'individual'>('bulk');
+  
+  // Track selected assessments for individual purchase
+  const [selectedAssessments, setSelectedAssessments] = useState<Set<string>>(new Set());
+  
+  // Pricing query for the unlock dialog
+  const { data: pricingData, isLoading: pricingLoading } = useQuery<{
+    baseFee: number;
+    baseFeeInLocal: number;
+    assessments: { type: string; priceInPence: number; priceInLocal: number }[];
+    individualTotal: { priceInPence: number; priceInLocal: number };
+    bulkTotal: { priceInPence: number; priceInLocal: number; discountRate: number; savings: number };
+    currency: string;
+    hasBulkDiscount: boolean;
+  }>({
+    queryKey: ['/api/partner-results-pricing', lockedResultsDialog?.seriesId],
+    enabled: !!lockedResultsDialog?.seriesId,
+  });
   
   const removeAssessmentMutation = useMutation({
     mutationFn: async (itemId: string) => {
@@ -247,10 +270,16 @@ export default function Dashboard() {
 
   // Partner results purchase mutation
   const partnerResultsPurchaseMutation = useMutation({
-    mutationFn: async (partnerInvitationId: string) => {
+    mutationFn: async (params: { 
+      partnerInvitationId: string; 
+      isBulkPurchase?: boolean;
+      assessmentTypes?: string[];
+    }) => {
       const res = await apiRequest("POST", "/api/create-partner-results-checkout", { 
-        partnerInvitationId,
+        partnerInvitationId: params.partnerInvitationId,
         countryCode: 'GB', // Default, could be detected from user location
+        isBulkPurchase: params.isBulkPurchase,
+        assessmentTypes: params.assessmentTypes,
       });
       return res.json();
     },
@@ -1009,15 +1038,17 @@ export default function Dashboard() {
                               .map((result: any) => {
                                 const metadata = getAssessmentMetadata(result.assessmentType);
                                 const ResultIcon = metadata.icon;
+                                // Use per-result unlock status (supports partial purchases)
+                                const isUnlocked = result.isUnlocked || series.resultsUnlocked;
                                 return (
                                   <Badge key={result.id} variant="outline" className="gap-1.5 py-1">
                                     <ResultIcon className="h-3 w-3" />
                                     {formatAssessmentName(result.assessmentType)}
-                                    {series.resultsUnlocked && result.totalScore ? (
+                                    {isUnlocked && result.totalScore ? (
                                       <span className="text-cyan-600 dark:text-cyan-400 ml-1">
                                         {result.totalScore}%
                                       </span>
-                                    ) : result.status === 'completed' && !series.resultsUnlocked ? (
+                                    ) : result.status === 'completed' && !isUnlocked ? (
                                       <Lock className="h-3 w-3 text-amber-500 ml-1" />
                                     ) : null}
                                   </Badge>
@@ -1029,29 +1060,39 @@ export default function Dashboard() {
                         {/* Action */}
                         <div className="flex flex-col gap-2 md:w-48">
                           {isAllComplete && (
-                            <>
-                              <p className="text-sm text-muted-foreground font-medium text-center">
-                                Results shared with {series.partnerName}
-                              </p>
-                              {/* Results button - only shown when locked; when unlocked, scores are visible in badges */}
-                              {!series.resultsUnlocked && (
-                                <Button
-                                  onClick={() => {
-                                    setLockedResultsDialog({
-                                      seriesId: series.id,
-                                      partnerName: series.partnerName,
-                                      autoUnlockDate: series.autoUnlockDate,
-                                    });
-                                  }}
-                                  className="mt-2"
-                                  variant="outline"
-                                  data-testid={`button-results-${series.id}`}
-                                >
-                                  <FileText className="mr-2 h-4 w-4" />
-                                  Results
-                                </Button>
-                              )}
-                            </>
+                            (() => {
+                              // Check if there are any locked results (for partial purchase support)
+                              const lockedResults = (series.results || [])
+                                .filter((r: any) => r.status === 'completed' && !r.isUnlocked && !series.resultsUnlocked);
+                              const hasLockedResults = lockedResults.length > 0;
+                              
+                              return (
+                                <>
+                                  <p className="text-sm text-muted-foreground font-medium text-center">
+                                    Results shared with {series.partnerName}
+                                  </p>
+                                  {/* Unlock Results button - shown when any results are locked */}
+                                  {hasLockedResults && (
+                                    <Button
+                                      onClick={() => {
+                                        setLockedResultsDialog({
+                                          seriesId: series.id,
+                                          partnerName: series.partnerName,
+                                          autoUnlockDate: series.autoUnlockDate,
+                                          completedResults: lockedResults,
+                                        });
+                                      }}
+                                      className="mt-2"
+                                      variant="outline"
+                                      data-testid={`button-results-${series.id}`}
+                                    >
+                                      <Lock className="mr-2 h-4 w-4" />
+                                      Unlock Results
+                                    </Button>
+                                  )}
+                                </>
+                              );
+                            })()
                           )}
                         </div>
                       </div>
@@ -1097,37 +1138,166 @@ export default function Dashboard() {
       </AlertDialog>
 
       {/* Locked Results Payment Dialog */}
-      <Dialog open={!!lockedResultsDialog} onOpenChange={(open) => !open && setLockedResultsDialog(null)}>
-        <DialogContent>
+      <Dialog open={!!lockedResultsDialog} onOpenChange={(open) => {
+        if (!open) {
+          setLockedResultsDialog(null);
+          setPurchaseMode('bulk');
+          setSelectedAssessments(new Set());
+        }
+      }}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Lock className="h-5 w-5 text-amber-500" />
-              Results Locked
+              Unlock Results
             </DialogTitle>
-            <DialogDescription className="pt-2 space-y-3">
-              <p>
-                Your detailed assessment results from <span className="font-medium">{lockedResultsDialog?.partnerName}</span> are currently locked.
-              </p>
-              <p>
-                You can unlock your results immediately by purchasing access, or wait for the automatic unlock.
-              </p>
-              {lockedResultsDialog?.autoUnlockDate && (
-                <p className="text-sm bg-muted p-3 rounded-md">
-                  <Clock className="h-4 w-4 inline mr-2 text-muted-foreground" />
-                  <span className="text-muted-foreground">Auto-unlocks on </span>
-                  <span className="font-medium">{format(new Date(lockedResultsDialog.autoUnlockDate), 'MMMM d, yyyy')}</span>
-                </p>
-              )}
+            <DialogDescription className="pt-2">
+              Your assessment results from <span className="font-medium">{lockedResultsDialog?.partnerName}</span> are currently locked.
             </DialogDescription>
           </DialogHeader>
+          
+          {pricingLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : pricingData ? (
+            <div className="space-y-4">
+              {/* Purchase Mode Selection */}
+              <RadioGroup 
+                value={purchaseMode} 
+                onValueChange={(v) => {
+                  setPurchaseMode(v as 'bulk' | 'individual');
+                  setSelectedAssessments(new Set());
+                }}
+                className="space-y-3"
+              >
+                {/* Bulk Purchase Option */}
+                {pricingData.hasBulkDiscount && (
+                  <div 
+                    className={`border rounded-lg p-4 cursor-pointer transition-colors ${purchaseMode === 'bulk' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
+                    onClick={() => setPurchaseMode('bulk')}
+                  >
+                    <div className="flex items-start gap-3">
+                      <RadioGroupItem value="bulk" id="bulk" className="mt-1" />
+                      <div className="flex-1">
+                        <Label htmlFor="bulk" className="cursor-pointer font-medium flex items-center gap-2">
+                          Unlock All ({pricingData.assessments.length} assessments)
+                          <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                            Save 25%
+                          </Badge>
+                        </Label>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Best value - unlock all your results at once
+                        </p>
+                        <p className="text-lg font-semibold mt-2">
+                          {pricingData.currency === 'GBP' ? '£' : pricingData.currency === 'USD' ? '$' : pricingData.currency}{(pricingData.bulkTotal.priceInLocal / 100).toFixed(2)}
+                          <span className="text-sm text-muted-foreground line-through ml-2">
+                            {pricingData.currency === 'GBP' ? '£' : pricingData.currency === 'USD' ? '$' : pricingData.currency}{(pricingData.individualTotal.priceInLocal / 100).toFixed(2)}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Individual Purchase Option */}
+                <div 
+                  className={`border rounded-lg p-4 cursor-pointer transition-colors ${purchaseMode === 'individual' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
+                  onClick={() => setPurchaseMode('individual')}
+                >
+                  <div className="flex items-start gap-3">
+                    <RadioGroupItem value="individual" id="individual" className="mt-1" />
+                    <div className="flex-1">
+                      <Label htmlFor="individual" className="cursor-pointer font-medium">
+                        {pricingData.hasBulkDiscount ? 'Choose Individual Assessments' : 'Unlock Assessment'}
+                      </Label>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {pricingData.hasBulkDiscount ? 'Select specific assessments to unlock' : 'Unlock your assessment result'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Individual Assessment Checkboxes */}
+                  {purchaseMode === 'individual' && (
+                    <div className="mt-4 space-y-2 pl-6">
+                      {pricingData.assessments.map((assessment) => (
+                        <div 
+                          key={assessment.type}
+                          className="flex items-center justify-between py-2 border-b last:border-0"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id={assessment.type}
+                              checked={selectedAssessments.has(assessment.type)}
+                              onCheckedChange={(checked) => {
+                                const newSelected = new Set(selectedAssessments);
+                                if (checked) {
+                                  newSelected.add(assessment.type);
+                                } else {
+                                  newSelected.delete(assessment.type);
+                                }
+                                setSelectedAssessments(newSelected);
+                              }}
+                              data-testid={`checkbox-assessment-${assessment.type}`}
+                            />
+                            <Label htmlFor={assessment.type} className="cursor-pointer">
+                              {formatAssessmentName(assessment.type)}
+                            </Label>
+                          </div>
+                          <span className="text-sm font-medium">
+                            {pricingData.currency === 'GBP' ? '£' : pricingData.currency === 'USD' ? '$' : pricingData.currency}{(assessment.priceInLocal / 100).toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
+                      
+                      {/* Individual Total */}
+                      {selectedAssessments.size > 0 && (
+                        <div className="pt-2 flex justify-between font-medium">
+                          <span>Total ({selectedAssessments.size} selected)</span>
+                          <span>
+                            {pricingData.currency === 'GBP' ? '£' : pricingData.currency === 'USD' ? '$' : pricingData.currency}
+                            {((pricingData.baseFeeInLocal + 
+                              pricingData.assessments
+                                .filter(a => selectedAssessments.has(a.type))
+                                .reduce((sum, a) => sum + a.priceInLocal, 0)) / 100).toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </RadioGroup>
+              
+              {/* Auto-unlock info */}
+              {lockedResultsDialog?.autoUnlockDate && (
+                <div className="text-sm bg-muted p-3 rounded-md">
+                  <Clock className="h-4 w-4 inline mr-2 text-muted-foreground" />
+                  <span className="text-muted-foreground">Or wait - auto-unlocks </span>
+                  <span className="font-medium">{format(new Date(lockedResultsDialog.autoUnlockDate), 'MMMM d, yyyy')}</span>
+                </div>
+              )}
+            </div>
+          ) : null}
+          
           <div className="flex flex-col gap-3 mt-4">
             <Button
               onClick={() => {
                 if (lockedResultsDialog) {
-                  partnerResultsPurchaseMutation.mutate(lockedResultsDialog.seriesId);
+                  if (purchaseMode === 'bulk') {
+                    partnerResultsPurchaseMutation.mutate({
+                      partnerInvitationId: lockedResultsDialog.seriesId,
+                      isBulkPurchase: true,
+                    });
+                  } else {
+                    partnerResultsPurchaseMutation.mutate({
+                      partnerInvitationId: lockedResultsDialog.seriesId,
+                      isBulkPurchase: false,
+                      assessmentTypes: Array.from(selectedAssessments),
+                    });
+                  }
                 }
               }}
-              disabled={partnerResultsPurchaseMutation.isPending}
+              disabled={partnerResultsPurchaseMutation.isPending || pricingLoading || (purchaseMode === 'individual' && selectedAssessments.size === 0)}
               data-testid="button-unlock-now"
             >
               {partnerResultsPurchaseMutation.isPending ? (
@@ -1138,13 +1308,22 @@ export default function Dashboard() {
               ) : (
                 <>
                   <CreditCard className="mr-2 h-4 w-4" />
-                  Unlock Now
+                  {purchaseMode === 'bulk' 
+                    ? `Unlock All - ${pricingData?.currency === 'GBP' ? '£' : pricingData?.currency === 'USD' ? '$' : pricingData?.currency || ''}${((pricingData?.bulkTotal.priceInLocal || 0) / 100).toFixed(2)}`
+                    : selectedAssessments.size > 0 
+                      ? `Unlock Selected - ${pricingData?.currency === 'GBP' ? '£' : pricingData?.currency === 'USD' ? '$' : pricingData?.currency || ''}${(((pricingData?.baseFeeInLocal || 0) + (pricingData?.assessments.filter(a => selectedAssessments.has(a.type)).reduce((sum, a) => sum + a.priceInLocal, 0) || 0)) / 100).toFixed(2)}`
+                      : 'Select Assessments'
+                  }
                 </>
               )}
             </Button>
             <Button
               variant="outline"
-              onClick={() => setLockedResultsDialog(null)}
+              onClick={() => {
+                setLockedResultsDialog(null);
+                setPurchaseMode('bulk');
+                setSelectedAssessments(new Set());
+              }}
               data-testid="button-wait-autounlock"
             >
               Wait for Auto-Unlock
