@@ -2900,7 +2900,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           purchasedAt: new Date(),
         });
         
-        // Send confirmation email with results access
+        // Send confirmation email with results access and receipt
         try {
           const user = await storage.getUser(userId);
           const purchase = await storage.getPartnerResultPurchase(purchaseId);
@@ -2917,30 +2917,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
               : 'http://localhost:5000';
             const resultsUrl = `${baseUrl}/dashboard`;
             
-            // Send email for each purchased assessment type
+            // Prepare receipt details from the Stripe session
+            const receiptDetails = {
+              amount: purchase.amount || 0,
+              currency: purchase.currency || 'GBP',
+              assessmentTypes: purchasedTypes.length > 0 ? purchasedTypes : ['All Assessments'],
+              transactionId: session.payment_intent as string,
+              purchaseDate: new Date(),
+            };
+            
+            // Send email with receipt
             const { sendB2BResultsUnlockedEmail } = await import('./email');
             
-            if (purchasedTypes.length > 0) {
-              // Send individual emails for each assessment type
-              for (const assessmentType of purchasedTypes) {
-                await sendB2BResultsUnlockedEmail(
-                  user.email,
-                  assessmentType,
-                  partnerName,
-                  resultsUrl
-                );
-              }
-            } else {
-              // Bulk purchase - send one email for all assessments
-              await sendB2BResultsUnlockedEmail(
-                user.email,
-                'All Assessments',
-                partnerName,
-                resultsUrl
-              );
-            }
+            // Determine assessment name for subject
+            const assessmentLabel = purchasedTypes.length === 1 
+              ? purchasedTypes[0] 
+              : purchasedTypes.length > 1 
+                ? `${purchasedTypes.length} Assessments`
+                : 'All Assessments';
             
-            console.log(`[Partner Results] Sent unlock confirmation email to ${user.email}`);
+            await sendB2BResultsUnlockedEmail(
+              user.email,
+              assessmentLabel,
+              partnerName,
+              resultsUrl,
+              receiptDetails
+            );
+            
+            console.log(`[Partner Results] Sent unlock confirmation email with receipt to ${user.email}`);
           }
         } catch (emailError) {
           console.error("Error sending partner results confirmation email:", emailError);

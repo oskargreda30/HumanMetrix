@@ -2954,14 +2954,68 @@ export async function sendB2BResultsUnlockedEmail(
   email: string,
   assessmentType: string,
   partnerName: string,
-  resultsUrl: string
+  resultsUrl: string,
+  receiptDetails?: {
+    amount: number;
+    currency: string;
+    assessmentTypes: string[];
+    transactionId?: string;
+    purchaseDate: Date;
+  }
 ) {
   const assessmentName = formatAssessmentName(assessmentType);
   const baseUrl = getBaseUrl();
   
+  // Format receipt details if provided
+  const receiptNumber = receiptDetails?.transactionId || `REC-${Date.now()}`;
+  const formattedDate = receiptDetails?.purchaseDate 
+    ? receiptDetails.purchaseDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+    : new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const formattedAmount = receiptDetails 
+    ? `${receiptDetails.currency} ${receiptDetails.amount.toLocaleString()}`
+    : '';
+  const assessmentsList = receiptDetails?.assessmentTypes
+    ? receiptDetails.assessmentTypes.map(t => formatAssessmentName(t)).join(', ')
+    : assessmentName;
+  
+  // Receipt section HTML
+  const receiptSection = receiptDetails ? `
+    <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+      <h3 style="margin: 0 0 15px 0; color: #374151; font-size: 16px;">Payment Receipt</h3>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Receipt Number:</td>
+          <td style="padding: 8px 0; text-align: right; font-weight: 600; font-size: 14px;">${receiptNumber}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Date:</td>
+          <td style="padding: 8px 0; text-align: right; font-size: 14px;">${formattedDate}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Assessment(s):</td>
+          <td style="padding: 8px 0; text-align: right; font-size: 14px;">${assessmentsList}</td>
+        </tr>
+        <tr style="border-top: 1px solid #e5e7eb;">
+          <td style="padding: 12px 0 0 0; color: #374151; font-weight: 600;">Total Paid:</td>
+          <td style="padding: 12px 0 0 0; text-align: right; font-weight: 700; font-size: 18px; color: #059669;">${formattedAmount}</td>
+        </tr>
+      </table>
+    </div>
+  ` : '';
+  
+  // Receipt text section
+  const receiptText = receiptDetails ? `
+PAYMENT RECEIPT
+---------------
+Receipt Number: ${receiptNumber}
+Date: ${formattedDate}
+Assessment(s): ${assessmentsList}
+Total Paid: ${formattedAmount}
+` : '';
+  
   const msg = {
     to: email,
-    subject: `Your ${assessmentName} Results Are Now Unlocked!`,
+    subject: `Your ${assessmentName} Results Are Now Unlocked! - Payment Receipt`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -2994,6 +3048,8 @@ export async function sendB2BResultsUnlockedEmail(
               
               <p style="text-align: center;">Thank you for your payment! Your <strong>${assessmentName}</strong> results are now unlocked and ready for viewing.</p>
               
+              ${receiptSection}
+              
               <div style="text-align: center;">
                 <a href="${resultsUrl}" class="button" style="color: white !important;">View Your Results</a>
               </div>
@@ -3022,7 +3078,7 @@ export async function sendB2BResultsUnlockedEmail(
 Your ${assessmentName} Results Are Now Unlocked!
 
 Thank you for your payment! Your results are now unlocked and ready for viewing.
-
+${receiptText}
 View your results here: ${resultsUrl}
 
 WHAT YOU'LL FIND IN YOUR RESULTS:

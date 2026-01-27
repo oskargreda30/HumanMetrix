@@ -1012,19 +1012,35 @@ export default function Dashboard() {
                                   </Badge>
                                 )}
                                 {/* Unlock status badge */}
-                                {isAllComplete && (
-                                  series.resultsUnlocked ? (
-                                    <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 gap-1">
-                                      <Unlock className="h-3 w-3" />
-                                      {series.isPurchased ? 'Purchased' : 'Auto-Unlocked'}
-                                    </Badge>
-                                  ) : (
-                                    <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 gap-1">
-                                      <Lock className="h-3 w-3" />
-                                      Scores Locked
-                                    </Badge>
-                                  )
-                                )}
+                                {isAllComplete && (() => {
+                                  // Check for partial unlock (some results unlocked, some not)
+                                  const unlockedCount = (series.results || []).filter((r: any) => r.isUnlocked).length;
+                                  const totalCompleted = (series.results || []).filter((r: any) => r.status === 'completed').length;
+                                  const hasPartialUnlock = unlockedCount > 0 && unlockedCount < totalCompleted;
+                                  
+                                  if (series.resultsUnlocked) {
+                                    return (
+                                      <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 gap-1">
+                                        <Unlock className="h-3 w-3" />
+                                        {series.isPurchased ? 'Purchased' : 'Auto-Unlocked'}
+                                      </Badge>
+                                    );
+                                  } else if (hasPartialUnlock) {
+                                    return (
+                                      <Badge className="bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20 gap-1">
+                                        <Unlock className="h-3 w-3" />
+                                        {unlockedCount} of {totalCompleted} Unlocked
+                                      </Badge>
+                                    );
+                                  } else {
+                                    return (
+                                      <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 gap-1">
+                                        <Lock className="h-3 w-3" />
+                                        Scores Locked
+                                      </Badge>
+                                    );
+                                  }
+                                })()}
                               </div>
                             </div>
                           </div>
