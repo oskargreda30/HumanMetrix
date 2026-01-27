@@ -2729,26 +2729,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 50% bulk discount or 25% individual discount
       const discountRate = (isBulk && resultsToPurchase.length > 1) ? 0.50 : 0.25;
       
-      // Calculate full B2C price by summing individually-rounded local currency prices
-      // This ensures the Stripe amount matches what we display (e.g., 220+230=450, not 440)
+      // Calculate prices consistently with the pricing endpoint display
       const userCurrency = getCurrencyForCountry(userCountry);
       let sumOfRoundedOriginalPrices = 0;
+      let sumOfDiscountedPrices = 0; // For individual purchases: sum of individually-discounted prices
       
       for (const result of resultsToPurchase) {
         const normalizedType = normalizeAssessmentId(result.assessmentType);
         const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
         const assessmentB2CPrice = BASE_FEE + assessmentPrice;
         
-        // Calculate PPP-adjusted price and format (which rounds up)
+        // Calculate PPP-adjusted price in pence
         const pppB2CPrice = getPPPAdjustedPriceInPence(assessmentB2CPrice, userCountry);
+        
+        // Get the rounded original price (for display consistency)
         const formattedPrice = formatPrice(pppB2CPrice, userCurrency, { skipPPPAdjustment: true });
         const roundedPrice = parseFloat(formattedPrice.replace(/[^\d.]/g, ''));
         sumOfRoundedOriginalPrices += roundedPrice;
+        
+        // For individual pricing: apply 25% discount at pence level, then convert (matches pricing endpoint)
+        const discountedPence = Math.round(pppB2CPrice * 0.75); // 25% off
+        const discountedFormatted = formatPrice(discountedPence, userCurrency, { skipPPPAdjustment: true });
+        const discountedRounded = parseFloat(discountedFormatted.replace(/[^\d.]/g, ''));
+        sumOfDiscountedPrices += discountedRounded;
       }
       
-      // Apply discount to the sum of rounded prices
       const roundedSumOriginal = roundPriceUp(sumOfRoundedOriginalPrices, userCurrency);
-      const discountedLocalPrice = roundPriceUp(roundedSumOriginal * (1 - discountRate), userCurrency);
+      
+      // For bulk (50% off): apply to sum of original rounded prices
+      // For individual (25% off): use sum of individually-discounted prices (matches display)
+      let discountedLocalPrice: number;
+      if (isBulk && resultsToPurchase.length > 1) {
+        // 50% off the sum of rounded original prices (e.g., 50% of 450 = 225 → 230)
+        discountedLocalPrice = roundPriceUp(roundedSumOriginal * 0.5, userCurrency);
+      } else {
+        // Use sum of individually-calculated discounted prices (matches pricing endpoint display)
+        discountedLocalPrice = sumOfDiscountedPrices;
+      }
       
       // Convert to Stripe amount using the correct zero-decimal currency list
       // Stripe zero-decimal currencies: JPY, KRW, VND, CLP, PYG, GNF, KMF, MGA, RWF, UGX, VUV, XAF, XOF, XPF, BIF, DJF
