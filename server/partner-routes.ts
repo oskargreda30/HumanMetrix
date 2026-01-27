@@ -2163,6 +2163,83 @@ export function registerPartnerRoutes(app: Express) {
     }
   });
 
+  // Send or resend invitation email
+  app.post("/api/partner/me/invitations/:invitationId/send-email", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user?.organizationId) {
+        return res.status(403).json({ error: "No partner organization linked" });
+      }
+      
+      const partner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      if (!partner) {
+        return res.status(403).json({ error: "Partner account not found" });
+      }
+      
+      const { invitationId } = req.params;
+      
+      // Get the invitation
+      const invitation = await storage.getPartnerCandidateInvitation(invitationId);
+      if (!invitation) {
+        return res.status(404).json({ error: "Invitation not found" });
+      }
+      
+      // Verify invitation belongs to this partner
+      if (invitation.partnerId !== partner.id) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      // Check if candidate has an email
+      if (!invitation.email) {
+        return res.status(400).json({ error: "Invitation has no email address" });
+      }
+      
+      // Check if invitation is still valid (not completed or expired)
+      if (invitation.status === 'completed') {
+        return res.status(400).json({ error: "Cannot send email for completed invitation" });
+      }
+      
+      if (invitation.expiresAt && new Date(invitation.expiresAt) < new Date()) {
+        return res.status(400).json({ error: "Invitation has expired" });
+      }
+      
+      // Send the email
+      const emailResult = await sendPartnerBulkInvitationEmail({
+        candidateEmail: invitation.email,
+        candidateName: invitation.name || undefined,
+        assessmentTypes: invitation.assessmentTypes,
+        inviteToken: invitation.inviteToken,
+        partnerCompanyName: partner.companyName || 'HumanMetrix Partner',
+        partnerLogoUrl: partner.logoUrl,
+        partnerPrimaryColor: partner.brandingPrimaryColor,
+        expiresAt: invitation.expiresAt,
+      });
+      
+      if (!emailResult.success) {
+        return res.status(500).json({ error: "Failed to send email" });
+      }
+      
+      // Update invitation status
+      await storage.updatePartnerCandidateInvitation(invitation.id, {
+        status: invitation.status === 'pending' ? 'sent' : invitation.status,
+        emailSentAt: new Date(),
+      });
+      
+      res.json({ 
+        success: true, 
+        message: invitation.emailSentAt ? "Email resent successfully" : "Email sent successfully" 
+      });
+    } catch (error) {
+      console.error("Error sending invitation email:", error);
+      res.status(500).json({ error: "Failed to send email" });
+    }
+  });
+
   // ========================================
   // PUBLIC INVITE TOKEN VALIDATION
   // ========================================

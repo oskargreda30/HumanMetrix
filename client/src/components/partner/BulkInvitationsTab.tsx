@@ -103,6 +103,27 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
     enabled: !!partnerId,
   });
 
+  const sendEmailMutation = useMutation({
+    mutationFn: async (invitationId: string) => {
+      const response = await apiRequest('POST', `/api/partner/me/invitations/${invitationId}/send-email`);
+      return response.json();
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: data.message || "Email sent",
+        description: "The invitation email has been sent successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/partner/me/invitations'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to send email",
+        description: error.message || "Could not send the invitation email.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const bulkInviteMutation = useMutation({
     mutationFn: async (payload: {
       candidates: Array<{ externalUserId: string; email?: string; name?: string }>;
@@ -785,6 +806,29 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
                     <div className="text-xs text-muted-foreground">
                       {invitation.createdAt ? new Date(invitation.createdAt).toLocaleDateString() : ''}
                     </div>
+                    {invitation.email && invitation.status !== 'completed' && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => sendEmailMutation.mutate(invitation.id)}
+                            disabled={sendEmailMutation.isPending}
+                            data-testid={`send-email-${invitation.id}`}
+                          >
+                            {sendEmailMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Send className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{invitation.emailSentAt ? 'Resend email' : 'Send email'}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
