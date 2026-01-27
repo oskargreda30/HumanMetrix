@@ -24,7 +24,8 @@ import { EMAIL_REGEX, isValidEmail, isValidName } from "@shared/validation";
 import { createPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured, getPaymentIntent, verifyAirwallexWebhookSignature, AirwallexWebhookEvent } from "./airwallex";
 import { consumeTestCredit } from "./partner-auth";
 import multer from "multer";
-import pdfParse from "pdf-parse";
+import * as pdfParseModule from "pdf-parse";
+const pdfParse = (pdfParseModule as any).default || pdfParseModule;
 
 // Configure multer for PDF uploads (memory storage, max 10MB)
 const pdfUpload = multer({
