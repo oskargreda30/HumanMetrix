@@ -17,7 +17,7 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import Stripe from "stripe";
 import { db } from "./db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, or, isNull } from "drizzle-orm";
 import pLimit from "p-limit";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -2579,6 +2579,202 @@ export function registerPartnerRoutes(app: Express) {
     } catch (error) {
       console.error("Error completing invitation:", error);
       res.status(500).json({ error: "Failed to complete invitation" });
+    }
+  });
+
+  // ========== Unlock Results Endpoints (for email payment links) ==========
+
+  // Get unlock results data for a partner invitation
+  app.get("/api/unlock-results", async (req: Request, res: Response) => {
+    try {
+      const { email, invite: inviteToken, country: countryCode = 'GB' } = req.query;
+      
+      if (!email || !inviteToken) {
+        return res.status(400).json({ error: "Missing required parameters" });
+      }
+      
+      // Find the invitation
+      const invitation = await storage.getPartnerCandidateInvitationByToken(inviteToken as string);
+      if (!invitation) {
+        return res.status(404).json({ error: "Invitation not found" });
+      }
+      
+      if (invitation.email.toLowerCase() !== (email as string).toLowerCase()) {
+        return res.status(400).json({ error: "Email does not match invitation" });
+      }
+      
+      // Get partner company name
+      const partner = await storage.getPartnerAccountById(invitation.partnerId);
+      const partnerName = partner?.companyName || "Partner";
+      
+      // Get all completed sessions for this invitation
+      const completedSessions = await db
+        .select({
+          id: assessmentSessions.id,
+          assessmentType: assessmentSessions.assessmentType,
+          completedAt: assessmentSessions.completedAt,
+          paymentStatus: assessmentSessions.paymentStatus,
+        })
+        .from(assessmentSessions)
+        .where(
+          and(
+            sql`${assessmentSessions.metadata}->>'invitationToken' = ${inviteToken}`,
+            eq(assessmentSessions.status, 'completed')
+          )
+        );
+      
+      if (completedSessions.length === 0) {
+        return res.status(404).json({ error: "No completed assessments found" });
+      }
+      
+      // Check if all are paid
+      const allPaid = completedSessions.every(s => s.paymentStatus === 'paid');
+      const unpaidCount = completedSessions.filter(s => s.paymentStatus !== 'paid').length;
+      
+      // Calculate pricing
+      const pricePerAssessment = 2000; // 20.00 GBP in pence
+      const singleOriginal = pricePerAssessment;
+      const singleDiscounted = singleOriginal;
+      
+      const bundleOriginal = unpaidCount * pricePerAssessment;
+      const bundleDiscountPercent = unpaidCount >= 4 ? 40 : unpaidCount >= 2 ? 25 : 0;
+      const bundleDiscounted = Math.round(bundleOriginal * (1 - bundleDiscountPercent / 100));
+      
+      // Free unlock date (30 days from first completion)
+      const firstCompletedAt = completedSessions
+        .map(s => s.completedAt)
+        .filter(Boolean)
+        .sort((a, b) => new Date(a!).getTime() - new Date(b!).getTime())[0];
+      
+      let freeAccessDate: Date | null = null;
+      if (firstCompletedAt) {
+        freeAccessDate = new Date(firstCompletedAt);
+        freeAccessDate.setDate(freeAccessDate.getDate() + 30);
+      }
+      
+      res.json({
+        email: invitation.email,
+        inviteToken,
+        partnerName,
+        completedAssessments: completedSessions.map(s => ({
+          sessionId: s.id,
+          assessmentType: s.assessmentType,
+          completedAt: s.completedAt?.toISOString() || null,
+          paymentStatus: s.paymentStatus,
+        })),
+        pricing: {
+          single: {
+            originalPricePence: singleOriginal,
+            discountedPricePence: singleDiscounted,
+            originalDisplay: `£${(singleOriginal / 100).toFixed(2)}`,
+            discountedDisplay: `£${(singleDiscounted / 100).toFixed(2)}`,
+            discountPercent: 0,
+          },
+          bundle: {
+            originalPricePence: bundleOriginal,
+            discountedPricePence: bundleDiscounted,
+            originalDisplay: `£${(bundleOriginal / 100).toFixed(2)}`,
+            discountedDisplay: `£${(bundleDiscounted / 100).toFixed(2)}`,
+            discountPercent: bundleDiscountPercent,
+          },
+        },
+        freeAccessDate: freeAccessDate?.toISOString() || null,
+        allPaid,
+      });
+    } catch (error) {
+      console.error("Error fetching unlock results:", error);
+      res.status(500).json({ error: "Failed to fetch results" });
+    }
+  });
+
+  // Create checkout for unlock results
+  app.post("/api/unlock-results/checkout", async (req: Request, res: Response) => {
+    try {
+      const { email, inviteToken, countryCode = 'GB', isBundle = false } = req.body;
+      
+      if (!email || !inviteToken) {
+        return res.status(400).json({ error: "Missing required parameters" });
+      }
+      
+      // Find the invitation
+      const invitation = await storage.getPartnerCandidateInvitationByToken(inviteToken);
+      if (!invitation) {
+        return res.status(404).json({ error: "Invitation not found" });
+      }
+      
+      if (invitation.email.toLowerCase() !== email.toLowerCase()) {
+        return res.status(400).json({ error: "Email does not match invitation" });
+      }
+      
+      // Get partner company name
+      const partner = await storage.getPartnerAccountById(invitation.partnerId);
+      const partnerName = partner?.companyName || "Partner";
+      
+      // Get unpaid sessions for this invitation
+      const unpaidSessions = await db
+        .select({ id: assessmentSessions.id, assessmentType: assessmentSessions.assessmentType })
+        .from(assessmentSessions)
+        .where(
+          and(
+            sql`${assessmentSessions.metadata}->>'invitationToken' = ${inviteToken}`,
+            eq(assessmentSessions.status, 'completed'),
+            or(
+              eq(assessmentSessions.paymentStatus, 'pending'),
+              isNull(assessmentSessions.paymentStatus)
+            )
+          )
+        );
+      
+      if (unpaidSessions.length === 0) {
+        return res.status(400).json({ error: "No unpaid assessments found" });
+      }
+      
+      // Calculate price
+      const pricePerAssessment = 2000; // 20.00 GBP in pence
+      let totalPrice: number;
+      let description: string;
+      
+      if (isBundle && unpaidSessions.length > 1) {
+        const discountPercent = unpaidSessions.length >= 4 ? 40 : 25;
+        totalPrice = Math.round(unpaidSessions.length * pricePerAssessment * (1 - discountPercent / 100));
+        description = `HumanMetrix - Unlock ${unpaidSessions.length} Assessment Results (${discountPercent}% Bundle Discount)`;
+      } else {
+        totalPrice = pricePerAssessment;
+        description = `HumanMetrix - Unlock Assessment Results`;
+      }
+      
+      // Create Stripe checkout session
+      const baseUrl = getBaseUrl(req);
+      const sessionIds = isBundle ? unpaidSessions.map(s => s.id) : [unpaidSessions[0].id];
+      
+      const stripeSession = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [{
+          price_data: {
+            currency: 'gbp',
+            product_data: {
+              name: description,
+            },
+            unit_amount: totalPrice,
+          },
+          quantity: 1,
+        }],
+        mode: 'payment',
+        success_url: `${baseUrl}/b2b-payment-callback?success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/unlock-results?email=${encodeURIComponent(email)}&invite=${inviteToken}`,
+        customer_email: email,
+        metadata: {
+          type: 'b2b_unlock',
+          inviteToken,
+          sessionIds: JSON.stringify(sessionIds),
+          isBundle: String(isBundle),
+        },
+      });
+      
+      res.json({ checkoutUrl: stripeSession.url });
+    } catch (error) {
+      console.error("Error creating unlock checkout:", error);
+      res.status(500).json({ error: "Failed to create checkout" });
     }
   });
 

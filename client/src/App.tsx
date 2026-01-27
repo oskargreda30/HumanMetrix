@@ -62,6 +62,7 @@ import EcosystemSampleReport from "@/pages/EcosystemSampleReport";
 import EcosystemStart from "@/pages/EcosystemStart";
 import GuestInvite from "@/pages/GuestInvite";
 import B2COnboarding from "@/pages/B2COnboarding";
+import UnlockResults from "@/pages/UnlockResults";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -179,6 +180,7 @@ function Router() {
       </Route>
       <Route path="/partner/accept-invite/:token" component={AcceptPartnerInvite} />
       <Route path="/invite/:token" component={GuestInvite} />
+      <Route path="/unlock-results" component={UnlockResults} />
       <Route path="/onboarding" component={B2COnboarding} />
       
       {/* Redirects for old URLs (fixes Google Search Console 404s) */}
