@@ -1591,14 +1591,19 @@ export function registerPartnerRoutes(app: Express) {
               // Notify partner that all assessments are complete (always runs, even if emails failed)
               try {
                 const { notifyAssessmentCompleted } = await import('./partner-notifications');
+                const sessionMetadata = updatedSession?.metadata as any;
                 await notifyAssessmentCompleted(
                   session.partnerId,
                   candidateEmail,
                   session.externalUserId,
                   session.assessmentType,
-                  true
+                  true,
+                  {
+                    assessmentCount: bundleAssessmentTypes.length,
+                    invitationId: sessionMetadata?.invitationId,
+                  }
                 );
-                console.log(`[B2B Notification] Sent assessment_all_completed notification for ${candidateEmail}`);
+                console.log(`[B2B Notification] Sent assessment_all_completed notification for ${candidateEmail} (${bundleAssessmentTypes.length} assessments)`);
               } catch (notifyError) {
                 console.error('[B2B Notification] Failed to notify assessment completion:', notifyError);
               }

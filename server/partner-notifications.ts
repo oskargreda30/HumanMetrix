@@ -294,25 +294,35 @@ export async function notifyAssessmentCompleted(
   candidateEmail: string,
   candidateName: string | null,
   assessmentType: string,
-  allCompleted: boolean
+  allCompleted: boolean,
+  options?: {
+    assessmentCount?: number;
+    invitationId?: string;
+  }
 ): Promise<void> {
   try {
     const displayName = candidateName || candidateEmail;
 
     if (allCompleted) {
+      const count = options?.assessmentCount || 4;
+      const assessmentWord = count === 1 ? 'assessment' : 'assessments';
+      const countText = count === 4 ? 'all four assessments' : `all ${count} assigned ${assessmentWord}`;
+      
       await storage.dispatchPartnerNotification({
         partnerId,
         type: 'assessment_all_completed',
         title: 'Candidate Completed All Assessments',
-        message: `${displayName} has completed all four assessments and their results are now available for review.`,
+        message: `${displayName} has completed ${countText} and their results are now available for review.`,
         metadata: {
           candidateEmail,
           candidateName,
           completedAt: new Date().toISOString(),
+          invitationId: options?.invitationId,
+          assessmentCount: count,
         },
       });
 
-      console.log(`[Partner Notification] All assessments completed: ${displayName}`);
+      console.log(`[Partner Notification] All ${count} assessments completed: ${displayName}`);
     }
   } catch (error: any) {
     console.error('[Partner Notification] Failed to notify assessment completion:', error.message);

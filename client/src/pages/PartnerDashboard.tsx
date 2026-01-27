@@ -4812,6 +4812,23 @@ export default function PartnerDashboard() {
                                     View Results
                                   </Button>
                                 )}
+                                {notif.type === 'assessment_all_completed' && (
+                                  <Button 
+                                    size="sm" 
+                                    className="mt-2"
+                                    onClick={() => {
+                                      // Navigate to Results tab and filter by candidate email
+                                      setActiveTab('results');
+                                      if (notif.metadata?.candidateEmail) {
+                                        sessionStorage.setItem('filterCandidateEmail', notif.metadata.candidateEmail);
+                                      }
+                                    }}
+                                    data-testid={`button-view-all-results-${notif.id}`}
+                                  >
+                                    <Eye className="h-4 w-4 mr-1.5" />
+                                    View Results
+                                  </Button>
+                                )}
                                 {notif.type === 'credits_purchased' && account?.partner?.billingType === 'payg' && (
                                   <Button 
                                     size="sm" 

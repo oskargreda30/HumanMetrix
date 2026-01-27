@@ -2462,6 +2462,10 @@ export async function sendB2BAllCompleteEmail(details: B2BAllCompleteEmailDetail
   const assessmentsHtml = assessmentsList.map(a => `<li style="margin: 5px 0;">${a}</li>`).join('');
   const assessmentsText = assessmentsList.join(', ');
   
+  // Dynamic count text based on actual number of assessments
+  const assessmentCount = details.completedAssessments.length;
+  const countText = assessmentCount === 4 ? 'all four assessments' : `all ${assessmentCount} assigned assessments`;
+  
   const msg = {
     to: details.email,
     subject: `🎉 All Assessments Complete - Unlock All Results with ${details.discountPercentage}% Bundle Discount!`,
@@ -2502,7 +2506,7 @@ export async function sendB2BAllCompleteEmail(details: B2BAllCompleteEmailDetail
               
               <h2 style="text-align: center; margin-top: 20px;">Outstanding Achievement, ${displayName}!</h2>
               
-              <p style="text-align: center; font-size: 16px;">You've completed all four assessments as part of your evaluation with <strong>${details.partnerCompanyName}</strong>. This is a significant accomplishment!</p>
+              <p style="text-align: center; font-size: 16px;">You've completed ${countText} as part of your evaluation with <strong>${details.partnerCompanyName}</strong>. This is a significant accomplishment!</p>
               
               <div class="assessments-list">
                 <h4 style="margin: 0 0 10px 0; color: #059669;">✓ Completed Assessments:</h4>
@@ -2524,7 +2528,7 @@ export async function sendB2BAllCompleteEmail(details: B2BAllCompleteEmailDetail
                 </div>
                 
                 <p style="text-align: center; font-size: 14px; color: #78350f; margin: 15px 0 0 0;">
-                  Get comprehensive PDF reports for all 4 assessments with insights and recommendations.
+                  Get comprehensive PDF reports for all ${assessmentCount} assessments with insights and recommendations.
                 </p>
               </div>
               
@@ -2547,7 +2551,7 @@ export async function sendB2BAllCompleteEmail(details: B2BAllCompleteEmailDetail
     text: `
 🎉 OUTSTANDING ACHIEVEMENT, ${displayName}!
 
-You've completed all four assessments as part of your evaluation with ${details.partnerCompanyName}. This is a significant accomplishment!
+You've completed ${countText} as part of your evaluation with ${details.partnerCompanyName}. This is a significant accomplishment!
 
 COMPLETED ASSESSMENTS:
 ${assessmentsText}
@@ -2562,7 +2566,7 @@ Original Price: ${details.originalTotalPrice}
 Bundle Price: ${details.bundlePrice}
 SAVINGS: ${details.discountPercentage}% OFF!
 
-Get comprehensive PDF reports for all 4 assessments with insights and recommendations.
+Get comprehensive PDF reports for all ${assessmentCount} assessments with insights and recommendations.
 
 Click here to unlock all results: ${details.paymentUrl}
 
