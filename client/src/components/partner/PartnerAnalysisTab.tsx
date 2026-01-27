@@ -20,6 +20,7 @@ import {
 } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 import { FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym, getAIReadinessScore, normalizeAIReadinessScores } from "@/lib/assessmentSkills";
+import { AI_READINESS_SKILL_NAMES, FIT_SKILL_NAMES } from "@shared/skillNames";
 import SkillsLegend from "@/components/SkillsLegend";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import { apiRequest } from "@/lib/queryClient";
@@ -205,43 +206,43 @@ function generateInterviewQuestions(gaps: string[], fitScores: Record<string, nu
   const questions: Array<{question: string; targetSkill: string; purpose: string}> = [];
   
   const gapQuestionMap: Record<string, {question: string; purpose: string}> = {
-    "High Agency": {
+    [FIT_SKILL_NAMES.HIGH_AGENCY]: {
       question: "Describe a time when you identified a problem and took action without being asked. What was the outcome?",
       purpose: "Validates initiative-taking and independent problem-solving"
     },
-    "Resilience": {
+    [FIT_SKILL_NAMES.RESILIENCE]: {
       question: "Tell me about a significant setback you faced at work. How did you handle it and what did you learn?",
       purpose: "Assesses ability to recover from challenges and maintain performance"
     },
-    "Interpersonal Agility": {
+    [FIT_SKILL_NAMES.INTERPERSONAL_AGILITY]: {
       question: "Describe a situation where you had to adapt your communication style to work effectively with a difficult stakeholder.",
       purpose: "Tests stakeholder management and communication adaptability"
     },
-    "Intellectual Curiosity": {
+    [FIT_SKILL_NAMES.INTELLECTUAL_CURIOSITY]: {
       question: "Tell me about a time when you dove deep into a topic outside your expertise. What drove you and what did you learn?",
       purpose: "Validates self-directed learning and curiosity"
     },
-    "Empathy & Ethics": {
+    [FIT_SKILL_NAMES.EMPATHY_ETHICS]: {
       question: "Describe a situation where you had to make a decision that affected others. How did you balance different perspectives?",
       purpose: "Assesses ethical reasoning and stakeholder consideration"
     },
-    "Growth Mindset": {
+    [FIT_SKILL_NAMES.GROWTH_MINDSET]: {
       question: "Tell me about a skill you struggled with initially. How did you approach improving it?",
       purpose: "Tests response to challenges and learning approach"
     },
-    "Technical Fluency": {
+    [AI_READINESS_SKILL_NAMES.TECHNICAL_FUNDAMENTALS]: {
       question: "Walk me through how you would evaluate whether to implement an AI solution for a business process.",
       purpose: "Assesses practical AI implementation knowledge"
     },
-    "Critical Thinking": {
+    [AI_READINESS_SKILL_NAMES.CRITICAL_THINKING]: {
       question: "How would you validate whether an AI system's output is reliable for a high-stakes decision?",
       purpose: "Tests analytical approach to AI outputs"
     },
-    "AI Literacy & Prompting": {
+    [AI_READINESS_SKILL_NAMES.AI_LITERACY]: {
       question: "Describe your experience working with AI tools. How do you craft effective prompts?",
       purpose: "Assesses hands-on AI experience and prompt engineering"
     },
-    "Adaptive Learning": {
+    [AI_READINESS_SKILL_NAMES.ADAPTABILITY]: {
       question: "How do you stay current with emerging technologies in your field?",
       purpose: "Assesses continuous learning mindset"
     }
@@ -300,12 +301,12 @@ function generateInterviewQuestions(gaps: string[], fitScores: Record<string, nu
   if (questions.length === 0) {
     questions.push({
       question: "Tell me about a time when you used AI tools to solve a complex problem. What was your approach?",
-      targetSkill: "AI Application",
+      targetSkill: AI_READINESS_SKILL_NAMES.AI_LITERACY,
       purpose: "General assessment of AI literacy and practical application"
     });
     questions.push({
       question: "How do you stay current with emerging technologies in your field?",
-      targetSkill: "Adaptive Learning",
+      targetSkill: AI_READINESS_SKILL_NAMES.ADAPTABILITY,
       purpose: "Assesses continuous learning mindset"
     });
   }

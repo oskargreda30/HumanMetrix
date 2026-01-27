@@ -4,6 +4,7 @@ import { exportEnhancedCandidatePDF } from "@/lib/enhancedPdfExport";
 import { transformToRadarData } from "@/lib/assessmentSkills";
 import { useState } from "react";
 import { Download, Loader2 } from "lucide-react";
+import { AI_READINESS_SKILL_NAMES, FIT_SKILL_NAMES } from "@shared/skillNames";
 
 // Sarah Chen mock data - matching exact structure from CandidatesTab
 const sarahChenData = {
@@ -38,15 +39,15 @@ const sarahChenData = {
       assessmentType: "ai_readiness",
       status: "completed",
       scores: {
-        "AI Literacy/Prompting": 85,
-        "Technical Fluency": 78,
-        "Domain Fluency": 82,
-        "Critical Thinking": 90,
-        "Adaptive Learning": 88,
-        "Responsible AI": 92,
-        "Domain Expertise": 80,
-        "Creative Innovation": 86,
-        "Cross-functional Collab": 84
+        [AI_READINESS_SKILL_NAMES.AI_LITERACY]: 85,
+        [AI_READINESS_SKILL_NAMES.TECHNICAL_FUNDAMENTALS]: 78,
+        [AI_READINESS_SKILL_NAMES.DATA_FLUENCY]: 82,
+        [AI_READINESS_SKILL_NAMES.CRITICAL_THINKING]: 90,
+        [AI_READINESS_SKILL_NAMES.ADAPTABILITY]: 88,
+        [AI_READINESS_SKILL_NAMES.RESPONSIBLE_AI]: 92,
+        [AI_READINESS_SKILL_NAMES.DOMAIN_EXPERTISE]: 80,
+        [AI_READINESS_SKILL_NAMES.CREATIVITY]: 86,
+        [AI_READINESS_SKILL_NAMES.COLLABORATION]: 84
       },
       completedAt: new Date("2024-11-02"),
       createdAt: new Date("2024-11-02"),
@@ -92,7 +93,7 @@ function getSkills(candidate: typeof sarahChenData) {
     }
     
     // Use transformToRadarData to get properly formatted skills
-    const radarData = transformToRadarData(result.scores as Record<string, number>, assessmentType);
+    const radarData = transformToRadarData(result.scores as unknown as Record<string, number>, assessmentType);
     
     radarData.forEach((skillData) => {
       allSkills.push({
@@ -106,29 +107,37 @@ function getSkills(candidate: typeof sarahChenData) {
   return allSkills;
 }
 
-// Mock platform averages
+// Mock platform averages - includes all required fields for PlatformAverages type
 const platformAverages = {
   fit: {
-    "High Agency": 72,
-    "Intellectual Curiosity": 75,
-    "Resilience": 70,
-    "Empathy & Ethics": 73,
-    "Growth Mindset": 71,
-    "Interpersonal Agility": 74
+    [FIT_SKILL_NAMES.HIGH_AGENCY]: 72,
+    [FIT_SKILL_NAMES.INTELLECTUAL_CURIOSITY]: 75,
+    [FIT_SKILL_NAMES.RESILIENCE]: 70,
+    [FIT_SKILL_NAMES.EMPATHY_ETHICS]: 73,
+    [FIT_SKILL_NAMES.GROWTH_MINDSET]: 71,
+    [FIT_SKILL_NAMES.INTERPERSONAL_AGILITY]: 74
   },
   aiReadiness: {
-    "AI Literacy/Prompting": 68,
-    "Technical Fluency": 65,
-    "Domain Fluency": 67,
-    "Critical Thinking": 70,
-    "Adaptive Learning": 69,
-    "Responsible AI": 71,
-    "Domain Expertise": 66,
-    "Creative Innovation": 68,
-    "Cross-functional Collab": 69
+    [AI_READINESS_SKILL_NAMES.AI_LITERACY]: 68,
+    [AI_READINESS_SKILL_NAMES.TECHNICAL_FUNDAMENTALS]: 65,
+    [AI_READINESS_SKILL_NAMES.DATA_FLUENCY]: 67,
+    [AI_READINESS_SKILL_NAMES.CRITICAL_THINKING]: 70,
+    [AI_READINESS_SKILL_NAMES.ADAPTABILITY]: 69,
+    [AI_READINESS_SKILL_NAMES.RESPONSIBLE_AI]: 71,
+    [AI_READINESS_SKILL_NAMES.DOMAIN_EXPERTISE]: 66,
+    [AI_READINESS_SKILL_NAMES.CREATIVITY]: 68,
+    [AI_READINESS_SKILL_NAMES.COLLABORATION]: 69
   },
   promptArchitecture: 65,
-  aiq: 70
+  aiq: 70,
+  totalCandidates: 150,
+  avgScoreAcrossCandidates: 72,
+  skillAverages: {
+    fit: 72,
+    aiReadiness: 68,
+    promptArchitecture: 65,
+    aiq: 70
+  }
 };
 
 // Mock prompt architecture evaluations
@@ -150,9 +159,9 @@ const roleComparison = {
   },
   overallFit: 85,
   skillAlignments: [
-    { skill: "Technical Fluency", score: 78, targetScore: 85, alignment: 92 },
-    { skill: "Critical Thinking", score: 90, targetScore: 80, alignment: 100 },
-    { skill: "Adaptive Learning", score: 88, targetScore: 75, alignment: 100 }
+    { skill: AI_READINESS_SKILL_NAMES.TECHNICAL_FUNDAMENTALS, score: 78, targetScore: 85, alignment: 92 },
+    { skill: AI_READINESS_SKILL_NAMES.CRITICAL_THINKING, score: 90, targetScore: 80, alignment: 100 },
+    { skill: AI_READINESS_SKILL_NAMES.ADAPTABILITY, score: 88, targetScore: 75, alignment: 100 }
   ],
   strengths: ["Exceptional problem-solving", "Strong AI integration skills"],
   developmentAreas: ["Could improve technical depth"],
