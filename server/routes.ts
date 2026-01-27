@@ -2711,31 +2711,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
       let totalPriceInPence = 0;
-      
-      // Add base fee
-      const baseFeeInLocalCurrency = convertToStripeCurrencyAmount(BASE_FEE, localCurrencyCode, userCountry);
-      lineItems.push({
-        price_data: {
-          currency: stripeCurrency,
-          product_data: {
-            name: "Base Computation Fee",
-            description: "One-time platform access fee for result viewing",
-          },
-          unit_amount: baseFeeInLocalCurrency,
-        },
-        quantity: 1,
-      });
-      totalPriceInPence += BASE_FEE;
 
-      // Add individual assessment line items
-      const assessmentNames: Record<string, string> = {
-        "fit": "FIT Results Access",
-        "ai_readiness": "AI Readiness Results Access",
-        "prompt_architecture": "Prompt Architecture Results Access",
-        "aiq": "AIQ Results Access",
-      };
-
-      // Calculate assessment prices with bulk discount (25% off only if buying ALL assessments)
+      // Calculate assessment prices with proper discounts
+      // Individual: 25% off the B2C price
+      // Bulk (all assessments): 50% off the combined B2C price
       // Enforce: bulk discount only applies when purchasing all completed assessments
       const isBuyingAll = resultsToPurchase.length === completedResults.length;
       
@@ -2747,33 +2726,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const isBulk = (isBulkPurchase || !purchasedTypes) && isBuyingAll;
-      const bulkDiscountRate = (isBulk && resultsToPurchase.length > 1) ? 0.25 : 0;
+      // 50% bulk discount or 25% individual discount
+      const discountRate = (isBulk && resultsToPurchase.length > 1) ? 0.50 : 0.25;
       
+      // Calculate full B2C price - sum of (BASE_FEE + assessmentPrice) for each assessment
+      // This matches what the user would pay if buying each assessment individually as B2C
+      let fullB2CPrice = 0;
       for (const result of resultsToPurchase) {
         const normalizedType = normalizeAssessmentId(result.assessmentType);
-        let basePrice = ASSESSMENT_PRICES[normalizedType] || 0;
-        
-        // Apply bulk discount if applicable
-        if (bulkDiscountRate > 0) {
-          basePrice = Math.round(basePrice * (1 - bulkDiscountRate));
-        }
-        
-        totalPriceInPence += basePrice;
-        
-        const adjustedPrice = convertToStripeCurrencyAmount(basePrice, localCurrencyCode, userCountry);
-        
-        lineItems.push({
-          price_data: {
-            currency: stripeCurrency,
-            product_data: {
-              name: assessmentNames[normalizedType] || `${normalizedType} Results Access`,
-              description: bulkDiscountRate > 0 ? "25% bulk discount applied" : undefined,
-            },
-            unit_amount: adjustedPrice,
-          },
-          quantity: 1,
-        });
+        const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
+        fullB2CPrice += BASE_FEE + assessmentPrice; // Each assessment has full B2C price
       }
+      
+      // Calculate discounted total
+      const discountedTotal = Math.round(fullB2CPrice * (1 - discountRate));
+      totalPriceInPence = discountedTotal;
+      
+      // Create a single line item for the discounted total
+      const discountDescription = isBulk && resultsToPurchase.length > 1 ? "50% bulk discount" : "25% partner discount";
+      const assessmentTypesList = resultsToPurchase.map((r: any) => {
+        const normalizedType = normalizeAssessmentId(r.assessmentType);
+        return {
+          "fit": "FIT",
+          "ai_readiness": "AI Readiness", 
+          "prompt_architecture": "Prompt Architecture",
+          "aiq": "AIQ"
+        }[normalizedType] || normalizedType;
+      }).join(", ");
+      
+      // Clear previous line items (base fee) and create single discounted line item
+      lineItems.length = 0;
+      const adjustedTotalPrice = convertToStripeCurrencyAmount(discountedTotal, localCurrencyCode, userCountry);
+      lineItems.push({
+        price_data: {
+          currency: stripeCurrency,
+          product_data: {
+            name: `Results Access: ${assessmentTypesList}`,
+            description: `${discountDescription} applied - Access to your assessment results`,
+          },
+          unit_amount: adjustedTotalPrice,
+        },
+        quantity: 1,
+      });
 
       // Create or update pending purchase record
       let purchaseRecord;
@@ -2946,7 +2940,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Bulk discount rate: 50% off (additional 25% on top of individual discount)
       const bulkDiscountRate = 0.50;
       
-      let totalB2CPriceInPence = BASE_FEE;
+      let totalB2CPriceInPence = 0;
       const assessmentPrices: { type: string; priceInPence: number; priceDisplay: string; originalPriceDisplay: string }[] = [];
 
       for (const result of purchasableResults) {
@@ -2962,7 +2956,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const discountedPrice = Math.round(pppB2CPrice * (1 - individualDiscountRate));
         const priceDisplay = formatPrice(discountedPrice, userCurrency, { skipPPPAdjustment: true });
         
-        totalB2CPriceInPence += assessmentPrice;
+        // Add the FULL B2C price for each assessment (BASE_FEE + assessment price)
+        totalB2CPriceInPence += assessmentB2CPrice;
         assessmentPrices.push({ 
           type: normalizedType, 
           priceInPence: assessmentPrice,
