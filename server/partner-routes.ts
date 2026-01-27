@@ -2345,7 +2345,24 @@ export function registerPartnerRoutes(app: Express) {
       }
       
       if (invitation.status === 'completed') {
-        return res.status(410).json({ error: "This invitation has already been completed" });
+        // Instead of blocking, return redirect info for completed invitations
+        // Check if user has an account to redirect to dashboard
+        let hasAccount = false;
+        if (invitation.email) {
+          const existingUser = await storage.getUserByEmail(invitation.email);
+          hasAccount = !!existingUser;
+        }
+        
+        return res.status(200).json({ 
+          isCompleted: true,
+          hasAccount,
+          email: invitation.email,
+          invitationToken: token,
+          message: hasAccount 
+            ? "Assessments completed. Please log in to view your results."
+            : "Assessments completed. Create an account to access your results.",
+          redirectTo: hasAccount ? '/login' : `/invite/${token}`
+        });
       }
       
       if (invitation.status === 'revoked') {

@@ -73,6 +73,12 @@ export default function StartAssessment() {
         return res.json();
       })
       .then((data) => {
+        // Handle completed invitation - redirect to appropriate page
+        if (data.isCompleted) {
+          // Redirect to the guest invite page which handles account creation/login
+          setLocation(`/invite/${data.invitationToken || token}`);
+          return;
+        }
         setInvitation(data);
         setStatus("ready");
       })
@@ -80,7 +86,7 @@ export default function StartAssessment() {
         setStatus("error");
         setErrorMessage(getHumanReadableError(err, "Invalid or expired invitation"));
       });
-  }, [token]);
+  }, [token, setLocation]);
 
   const startAssessment = async (assessmentType: string) => {
     if (!token) return;
