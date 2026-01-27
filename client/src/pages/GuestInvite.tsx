@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, XCircle, AlertCircle, User, ArrowRight, Mail, PartyPopper, RefreshCw } from "lucide-react";
@@ -38,6 +39,13 @@ export default function GuestInvite() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
+  // Check if user is already logged in
+  const { data: currentUser, isLoading: authLoading } = useQuery<{ id: number; email: string } | null>({
+    queryKey: ["/api/auth/user"],
+    retry: false,
+    staleTime: 0,
+  });
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [invitation, setInvitation] = useState<InvitationData | null>(null);
@@ -48,6 +56,7 @@ export default function GuestInvite() {
   const [checkingProgress, setCheckingProgress] = useState(false);
   const [autoLoggingIn, setAutoLoggingIn] = useState(false);
   const autoLoginTriggeredRef = useRef(false);
+  const earlyRedirectRef = useRef(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
@@ -78,6 +87,24 @@ export default function GuestInvite() {
   useEffect(() => {
     fetchInvitation();
   }, [fetchInvitation]);
+
+  // Early redirect for already-logged-in users with completed assessments
+  useEffect(() => {
+    if (earlyRedirectRef.current) return;
+    if (authLoading || loading) return;
+    if (!currentUser || !invitation) return;
+    
+    // If user is already logged in and all assessments are complete, redirect directly to dashboard
+    if (invitation.allComplete && invitation.hasExistingAccount) {
+      earlyRedirectRef.current = true;
+      toast({
+        title: "Welcome back!",
+        description: "Redirecting to your dashboard...",
+      });
+      setLocation('/dashboard');
+      return;
+    }
+  }, [authLoading, loading, currentUser, invitation, toast, setLocation]);
 
   const startNextAssessment = useCallback(async (invitationData: InvitationData) => {
     if (!token) return;
@@ -126,11 +153,13 @@ export default function GuestInvite() {
     }
   }, [invitation, currentSessionId, creatingSession, startNextAssessment]);
 
-  // Auto-login for existing users when all assessments complete
+  // Auto-login for existing users when all assessments complete (only if not already logged in)
   useEffect(() => {
     const performAutoLogin = async () => {
       if (!token || !invitation?.allComplete || !invitation?.hasExistingAccount) return;
-      if (autoLoginTriggeredRef.current) return;
+      if (autoLoginTriggeredRef.current || earlyRedirectRef.current) return;
+      // Skip if user is already logged in - early redirect will handle it
+      if (currentUser) return;
       
       autoLoginTriggeredRef.current = true;
       setAutoLoggingIn(true);
@@ -147,16 +176,14 @@ export default function GuestInvite() {
         
         toast({
           title: "Welcome back!",
-          description: "You've been logged into your existing account. Redirecting to your dashboard...",
+          description: "Redirecting to your dashboard...",
         });
         
         // Invalidate auth cache to ensure the session is recognized
         await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
         
-        // Redirect to dashboard after a brief moment
-        setTimeout(() => {
-          setLocation(data.redirectTo || '/dashboard');
-        }, 1500);
+        // Redirect to dashboard immediately
+        setLocation(data.redirectTo || '/dashboard');
       } catch (err: any) {
         toast({
           title: "Error",
@@ -168,10 +195,10 @@ export default function GuestInvite() {
       }
     };
     
-    if (showingResults && invitation?.hasExistingAccount) {
+    if (showingResults && invitation?.hasExistingAccount && !currentUser) {
       performAutoLogin();
     }
-  }, [showingResults, invitation, token, toast, setLocation]);
+  }, [showingResults, invitation, token, toast, setLocation, currentUser]);
 
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
