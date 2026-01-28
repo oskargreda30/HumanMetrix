@@ -18,6 +18,19 @@ const API_AUTH_FAILURE_THRESHOLD = 5;
 const API_AUTH_WINDOW_MS = 15 * 60 * 1000;
 const NEW_IP_COOLDOWN_MS = 60 * 60 * 1000;
 
+// Helper to check if a notification type is enabled for a partner
+async function isNotificationEnabled(partnerId: string, notificationType: string): Promise<boolean> {
+  try {
+    const partner = await storage.getPartnerAccount(partnerId);
+    if (!partner) return true; // Default to enabled if partner not found
+    const prefs = (partner.notificationPreferences as Record<string, boolean>) || {};
+    // If preference is explicitly set to false, it's disabled. Otherwise enabled.
+    return prefs[notificationType] !== false;
+  } catch {
+    return true; // Default to enabled on error
+  }
+}
+
 export async function notifyTeamMemberRoleChanged(
   partnerId: string,
   memberId: string,
@@ -29,6 +42,12 @@ export async function notifyTeamMemberRoleChanged(
   changedByUserId?: string
 ): Promise<void> {
   try {
+    // Check if this notification type is enabled
+    if (!await isNotificationEnabled(partnerId, 'team_member_role_changed')) {
+      console.log(`[Partner Notification] Skipping team_member_role_changed (disabled by partner)`);
+      return;
+    }
+    
     const displayName = memberName || memberEmail;
     const roleLabels: Record<string, string> = {
       admin: 'Admin',
@@ -212,6 +231,12 @@ async function notifyNewIpAccess(
   totalKnownIps: number
 ): Promise<void> {
   try {
+    // Check if this notification type is enabled
+    if (!await isNotificationEnabled(partnerId, 'new_ip_access')) {
+      console.log(`[Partner Notification] Skipping new_ip_access (disabled by partner)`);
+      return;
+    }
+    
     const partner = await storage.getPartnerAccount(partnerId);
     if (!partner) return;
 
@@ -348,6 +373,12 @@ export async function notifyAssessmentLinkExpired(
   expirationDate: Date
 ): Promise<void> {
   try {
+    // Check if this notification type is enabled
+    if (!await isNotificationEnabled(partnerId, 'assessment_link_expired')) {
+      console.log(`[Partner Notification] Skipping assessment_link_expired (disabled by partner)`);
+      return;
+    }
+    
     const displayName = candidateName || candidateEmail;
 
     await storage.dispatchPartnerNotification({
@@ -375,6 +406,12 @@ export async function notifyHighIncompleteRate(
   incompleteRate: number
 ): Promise<void> {
   try {
+    // Check if this notification type is enabled
+    if (!await isNotificationEnabled(partnerId, 'high_incomplete_rate')) {
+      console.log(`[Partner Notification] Skipping high_incomplete_rate (disabled by partner)`);
+      return;
+    }
+    
     const partner = await storage.getPartnerAccount(partnerId);
     if (!partner) return;
 
@@ -400,6 +437,12 @@ export async function notifyHighIncompleteRate(
 
 export async function sendMonthlyUsageSummary(partnerId: string): Promise<void> {
   try {
+    // Check if this notification type is enabled
+    if (!await isNotificationEnabled(partnerId, 'monthly_summary')) {
+      console.log(`[Partner Notification] Skipping monthly_summary (disabled by partner)`);
+      return;
+    }
+    
     const partner = await storage.getPartnerAccount(partnerId);
     if (!partner) return;
 

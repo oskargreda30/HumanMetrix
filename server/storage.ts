@@ -3284,6 +3284,47 @@ export class DatabaseStorage implements IStorage {
     actorUserId?: string;
     subjectTeamMemberId?: string;
   }): Promise<PartnerNotification> {
+    // Define which notification types are optional (can be disabled by partner)
+    const optionalNotificationTypes = [
+      'assessment_completed',
+      'assessment_all_completed', 
+      'assessment_link_expired',
+      'high_incomplete_rate',
+      'team_member_role_changed',
+      'team_member_joined',
+      'team_member_removed',
+      'monthly_summary',
+      'new_ip_access',
+      'billing_success',
+      'credits_purchased',
+      'invoice_generated',
+    ];
+
+    // Check if this is an optional notification type that might be disabled
+    if (optionalNotificationTypes.includes(params.type)) {
+      const partner = await this.getPartnerAccount(params.partnerId);
+      if (partner) {
+        const prefs = (partner.notificationPreferences as Record<string, boolean>) || {};
+        if (prefs[params.type] === false) {
+          console.log(`[Partner Notification] Skipping ${params.type} (disabled by partner preferences)`);
+          // Return a dummy notification object to satisfy the return type
+          return {
+            id: '',
+            partnerId: params.partnerId,
+            type: params.type,
+            title: params.title,
+            message: params.message,
+            metadata: params.metadata || null,
+            isRead: true,
+            createdAt: new Date(),
+            actorTeamMemberId: params.actorTeamMemberId || null,
+            actorUserId: params.actorUserId || null,
+            subjectTeamMemberId: params.subjectTeamMemberId || null,
+          };
+        }
+      }
+    }
+
     // 1. Create the notification record
     const [notification] = await db.insert(partnerNotifications).values({
       partnerId: params.partnerId,

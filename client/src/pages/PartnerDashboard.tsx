@@ -1003,6 +1003,8 @@ interface PartnerNotification {
     externalEmail?: string;
     totalScore?: number;
     percentile?: number;
+    candidateEmail?: string;
+    candidateName?: string;
   };
 }
 
@@ -4774,6 +4776,332 @@ export default function PartnerDashboard() {
 
             {/* Notifications Tab */}
             <TabsContent value="notifications" className="space-y-6" data-testid="panel-notifications">
+              <Tabs defaultValue="all" className="w-full">
+                <TabsList className="mb-4">
+                  <TabsTrigger value="all" data-testid="tab-notifications-all">
+                    <Bell className="h-4 w-4 mr-1.5" />
+                    All Notifications
+                    {notifications?.unreadCount ? (
+                      <Badge variant="secondary" className="ml-2">{notifications.unreadCount}</Badge>
+                    ) : null}
+                  </TabsTrigger>
+                  <TabsTrigger value="settings" data-testid="tab-notifications-settings">
+                    <Settings className="h-4 w-4 mr-1.5" />
+                    Settings
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="settings">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Notification Settings</CardTitle>
+                      <CardDescription>Choose which notifications you want to receive. Mandatory notifications cannot be disabled as they contain critical information.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      {/* Assessment Notifications */}
+                      <div>
+                        <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                          <ClipboardList className="h-5 w-5 text-primary" />
+                          Assessment Notifications
+                        </h3>
+                        <div className="space-y-3 ml-7">
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                              <p className="font-medium">Individual Assessment Completed</p>
+                              <p className="text-sm text-muted-foreground">Get notified when a candidate completes an individual assessment</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={notificationPrefs?.preferences?.assessment_completed !== false}
+                                onChange={(e) => updateNotificationPrefsMutation.mutate({ assessment_completed: e.target.checked })}
+                                disabled={updateNotificationPrefsMutation.isPending}
+                                data-testid="toggle-assessment-completed"
+                              />
+                              <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            </label>
+                          </div>
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                              <p className="font-medium">All Assessments Completed</p>
+                              <p className="text-sm text-muted-foreground">Get notified when a candidate finishes all assigned assessments</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={notificationPrefs?.preferences?.assessment_all_completed !== false}
+                                onChange={(e) => updateNotificationPrefsMutation.mutate({ assessment_all_completed: e.target.checked })}
+                                disabled={updateNotificationPrefsMutation.isPending}
+                                data-testid="toggle-assessment-all-completed"
+                              />
+                              <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            </label>
+                          </div>
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                              <p className="font-medium">Assessment Link Expired</p>
+                              <p className="text-sm text-muted-foreground">Get notified when a candidate's invitation link expires</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={notificationPrefs?.preferences?.assessment_link_expired !== false}
+                                onChange={(e) => updateNotificationPrefsMutation.mutate({ assessment_link_expired: e.target.checked })}
+                                disabled={updateNotificationPrefsMutation.isPending}
+                                data-testid="toggle-assessment-link-expired"
+                              />
+                              <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            </label>
+                          </div>
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                              <p className="font-medium">High Incomplete Rate Alert</p>
+                              <p className="text-sm text-muted-foreground">Get notified when many candidates don't complete their assessments</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={notificationPrefs?.preferences?.high_incomplete_rate !== false}
+                                onChange={(e) => updateNotificationPrefsMutation.mutate({ high_incomplete_rate: e.target.checked })}
+                                disabled={updateNotificationPrefsMutation.isPending}
+                                data-testid="toggle-high-incomplete-rate"
+                              />
+                              <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Team Notifications */}
+                      <div>
+                        <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                          <Users className="h-5 w-5 text-primary" />
+                          Team Notifications
+                        </h3>
+                        <div className="space-y-3 ml-7">
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                              <p className="font-medium">Team Member Role Changed</p>
+                              <p className="text-sm text-muted-foreground">Get notified when a team member's role is updated</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={notificationPrefs?.preferences?.team_member_role_changed !== false}
+                                onChange={(e) => updateNotificationPrefsMutation.mutate({ team_member_role_changed: e.target.checked })}
+                                disabled={updateNotificationPrefsMutation.isPending}
+                                data-testid="toggle-team-member-role-changed"
+                              />
+                              <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            </label>
+                          </div>
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                              <p className="font-medium">Team Member Joined</p>
+                              <p className="text-sm text-muted-foreground">Get notified when someone joins your team</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={notificationPrefs?.preferences?.team_member_joined !== false}
+                                onChange={(e) => updateNotificationPrefsMutation.mutate({ team_member_joined: e.target.checked })}
+                                disabled={updateNotificationPrefsMutation.isPending}
+                                data-testid="toggle-team-member-joined"
+                              />
+                              <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            </label>
+                          </div>
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                              <p className="font-medium">Team Member Removed</p>
+                              <p className="text-sm text-muted-foreground">Get notified when someone is removed from your team</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={notificationPrefs?.preferences?.team_member_removed !== false}
+                                onChange={(e) => updateNotificationPrefsMutation.mutate({ team_member_removed: e.target.checked })}
+                                disabled={updateNotificationPrefsMutation.isPending}
+                                data-testid="toggle-team-member-removed"
+                              />
+                              <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Usage & Reports */}
+                      <div>
+                        <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                          <BarChart2 className="h-5 w-5 text-primary" />
+                          Usage & Reports
+                        </h3>
+                        <div className="space-y-3 ml-7">
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                              <p className="font-medium">Monthly Usage Summary</p>
+                              <p className="text-sm text-muted-foreground">Receive a monthly summary of your assessment usage</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={notificationPrefs?.preferences?.monthly_summary !== false}
+                                onChange={(e) => updateNotificationPrefsMutation.mutate({ monthly_summary: e.target.checked })}
+                                disabled={updateNotificationPrefsMutation.isPending}
+                                data-testid="toggle-monthly-summary"
+                              />
+                              <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            </label>
+                          </div>
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                              <p className="font-medium">New IP Address Detected</p>
+                              <p className="text-sm text-muted-foreground">Get notified when your API is accessed from a new location</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={notificationPrefs?.preferences?.new_ip_access !== false}
+                                onChange={(e) => updateNotificationPrefsMutation.mutate({ new_ip_access: e.target.checked })}
+                                disabled={updateNotificationPrefsMutation.isPending}
+                                data-testid="toggle-new-ip-access"
+                              />
+                              <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Billing Notifications */}
+                      <div>
+                        <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                          <CreditCard className="h-5 w-5 text-primary" />
+                          Billing & Payment Confirmations
+                        </h3>
+                        <div className="space-y-3 ml-7">
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                              <p className="font-medium">Payment Receipt</p>
+                              <p className="text-sm text-muted-foreground">Get a confirmation when payments are processed successfully</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={notificationPrefs?.preferences?.billing_success !== false}
+                                onChange={(e) => updateNotificationPrefsMutation.mutate({ billing_success: e.target.checked })}
+                                disabled={updateNotificationPrefsMutation.isPending}
+                                data-testid="toggle-billing-success"
+                              />
+                              <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            </label>
+                          </div>
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                              <p className="font-medium">Credits Purchased</p>
+                              <p className="text-sm text-muted-foreground">Get a confirmation when you purchase additional credits</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={notificationPrefs?.preferences?.credits_purchased !== false}
+                                onChange={(e) => updateNotificationPrefsMutation.mutate({ credits_purchased: e.target.checked })}
+                                disabled={updateNotificationPrefsMutation.isPending}
+                                data-testid="toggle-credits-purchased"
+                              />
+                              <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            </label>
+                          </div>
+                          <div className="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                              <p className="font-medium">Invoice Generated</p>
+                              <p className="text-sm text-muted-foreground">Get notified when new invoices are created</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={notificationPrefs?.preferences?.invoice_generated !== false}
+                                onChange={(e) => updateNotificationPrefsMutation.mutate({ invoice_generated: e.target.checked })}
+                                disabled={updateNotificationPrefsMutation.isPending}
+                                data-testid="toggle-invoice-generated"
+                              />
+                              <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Mandatory Notifications */}
+                      <div>
+                        <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                          <Shield className="h-5 w-5 text-amber-500" />
+                          Mandatory Notifications
+                          <Badge variant="outline" className="text-amber-600 border-amber-300">Cannot be disabled</Badge>
+                        </h3>
+                        <p className="text-sm text-muted-foreground ml-7 mb-3">
+                          These notifications are critical for security and account management and cannot be turned off.
+                        </p>
+                        <div className="space-y-3 ml-7">
+                          <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+                            <div>
+                              <p className="font-medium">API Key Regenerated</p>
+                              <p className="text-sm text-muted-foreground">When your API key is regenerated for security</p>
+                            </div>
+                            <Badge variant="secondary">Always On</Badge>
+                          </div>
+                          <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+                            <div>
+                              <p className="font-medium">Failed Authentication Attempts</p>
+                              <p className="text-sm text-muted-foreground">When multiple failed login attempts are detected</p>
+                            </div>
+                            <Badge variant="secondary">Always On</Badge>
+                          </div>
+                          <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+                            <div>
+                              <p className="font-medium">API Access Suspended</p>
+                              <p className="text-sm text-muted-foreground">When your API access is suspended or restored</p>
+                            </div>
+                            <Badge variant="secondary">Always On</Badge>
+                          </div>
+                          <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+                            <div>
+                              <p className="font-medium">Payment Failed</p>
+                              <p className="text-sm text-muted-foreground">When a payment attempt fails</p>
+                            </div>
+                            <Badge variant="secondary">Always On</Badge>
+                          </div>
+                          <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+                            <div>
+                              <p className="font-medium">Critical Quota Warning</p>
+                              <p className="text-sm text-muted-foreground">When your credits are almost exhausted (95%+)</p>
+                            </div>
+                            <Badge variant="secondary">Always On</Badge>
+                          </div>
+                          <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+                            <div>
+                              <p className="font-medium">Card Expiring Soon</p>
+                              <p className="text-sm text-muted-foreground">When your payment card is about to expire</p>
+                            </div>
+                            <Badge variant="secondary">Always On</Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="all">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
                   <div>
@@ -4946,6 +5274,8 @@ export default function PartnerDashboard() {
                   )}
                 </CardContent>
               </Card>
+                </TabsContent>
+              </Tabs>
             </TabsContent>
 
             {/* Team Tab */}
