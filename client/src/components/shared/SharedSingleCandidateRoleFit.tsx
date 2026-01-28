@@ -96,6 +96,8 @@ interface SharedSingleCandidateRoleFitProps {
 export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRoleFitProps) {
   const [selectedCandidate, setSelectedCandidate] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
+  const [promptRoleFitAnalysis, setPromptRoleFitAnalysis] = useState<string | null>(null);
+  const [aiqRoleFitAnalysis, setAiqRoleFitAnalysis] = useState<string | null>(null);
   const { toast } = useToast();
 
   const { data: candidates, isLoading: isLoadingCandidates } = useQuery<any[]>({
@@ -184,6 +186,50 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
     },
   });
 
+  // Mutation for Prompt Engineering Role Fit Analysis
+  const analyzePromptRoleFitMutation = useMutation({
+    mutationFn: async () => {
+      const payload = config.candidateIdParam === 'userId' 
+        ? { userId: selectedCandidate, jobRoleId: selectedRole }
+        : { candidateId: selectedCandidate, jobRoleId: selectedRole };
+      const res = await apiRequest('POST', '/api/admin/analyze-prompt-role-fit', payload, { timeoutMs: 90000 });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setPromptRoleFitAnalysis(data.analysis);
+      toast({ title: "Prompt Engineering analysis completed" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Analysis failed",
+        description: error.message || "Failed to analyze prompt engineering fit.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation for AIQ Role Fit Analysis
+  const analyzeAiqRoleFitMutation = useMutation({
+    mutationFn: async () => {
+      const payload = config.candidateIdParam === 'userId' 
+        ? { userId: selectedCandidate, jobRoleId: selectedRole }
+        : { candidateId: selectedCandidate, jobRoleId: selectedRole };
+      const res = await apiRequest('POST', '/api/admin/analyze-aiq-role-fit', payload, { timeoutMs: 90000 });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setAiqRoleFitAnalysis(data.analysis);
+      toast({ title: "AIQ analysis completed" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Analysis failed",
+        description: error.message || "Failed to analyze AIQ role fit.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const selectedCandidateData = candidates?.find((c) => c.user.id === selectedCandidate);
   const selectedRoleData = roles?.find((r) => r.id === selectedRole);
 
@@ -230,14 +276,14 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
     } else if (alignment === 'close') {
       return <AlertTriangle className="h-4 w-4 text-amber-500" />;
     } else {
-      return <AlertCircle className="h-4 w-4 text-red-500" />;
+      return <AlertCircle className="h-4 w-4 text-blue-500" />;
     }
   };
 
   const getAlignmentColor = (alignment: string) => {
     if (alignment === 'exceeds' || alignment === 'meets') return 'text-green-600';
     if (alignment === 'close') return 'text-amber-600';
-    return 'text-red-600';
+    return 'text-blue-500'; // Changed from red to light blue - neutral appearance
   };
 
   // Calculate overall fit tier
@@ -553,7 +599,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                               ? 'bg-green-500' 
                               : skill.alignment === 'close' 
                                 ? 'bg-amber-500' 
-                                : 'bg-red-500'
+                                : 'bg-blue-400'
                           }`}
                           style={{ width: `${skill.dataAvailable !== false ? (skill.candidateScore || 0) : 0}%` }}
                         />
@@ -606,7 +652,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                               ? 'bg-green-500' 
                               : skill.alignment === 'close' 
                                 ? 'bg-amber-500' 
-                                : 'bg-red-500'
+                                : 'bg-blue-400'
                           }`}
                           style={{ width: `${skill.dataAvailable !== false ? (skill.candidateScore || 0) : 0}%` }}
                         />
@@ -637,108 +683,99 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
             const criticalMet = assessedCritical.filter((s: any) => s.candidateScore >= s.requiredScore);
             const criticalGaps = assessedCritical.filter((s: any) => s.candidateScore < s.requiredScore);
             
+            // "Why it matters" explanations for critical skills
+            const whyItMatters: Record<string, string> = {
+              'Responsible AI': 'This skill directly impacts performance quality and team effectiveness in AI-integrated workflows.',
+              'Domain Expertise': 'Enables effective application of AI solutions to specific business contexts and industry requirements.',
+              'High Agency': 'Enables proactive problem-solving and ownership of outcomes, reducing dependency on constant supervision in fast-moving AI environments.',
+              'Empathy & Ethics': 'Ensures AI solutions consider human impact and ethical implications, vital for responsible AI deployment.',
+              'Resilience': 'Critical for navigating the rapid iteration cycles and frequent setbacks inherent in AI implementation projects.',
+              'Adaptability': 'Essential for thriving in rapidly evolving AI landscapes where tools and best practices change frequently.',
+              'Problem-Solving': 'Core competency for debugging AI systems and developing creative solutions to complex technical challenges.',
+              'Communication': 'Crucial for translating technical AI concepts to stakeholders and ensuring cross-functional collaboration.',
+              'Critical Thinking': 'Necessary for evaluating AI outputs, identifying biases, and making informed decisions about model applications.',
+              'Technical Proficiency': 'Foundational skill for implementing, maintaining, and optimizing AI systems effectively.',
+              'Collaboration': 'AI projects require cross-functional teamwork; strong collaboration ensures seamless integration across teams.',
+              'Innovation': 'Drives creative application of AI technologies to solve novel problems and improve existing processes.',
+              'Leadership': 'Important for guiding teams through AI transformation and making strategic decisions about AI adoption.',
+              'Learning Agility': 'The AI field evolves rapidly; quick learning ensures staying current with emerging technologies and methods.',
+              'Attention to Detail': 'Critical for data quality, model accuracy, and preventing costly errors in AI implementations.',
+            };
+            
+            const getWhyItMatters = (skillName: string) => {
+              return whyItMatters[skillName] || `This skill is essential for success in the ${selectedRoleData?.name || 'selected'} role.`;
+            };
+
+            const getGapText = (candidateScore: number | null, requiredScore: number) => {
+              if (candidateScore === null) return 'Assessment not completed';
+              const gap = candidateScore - requiredScore;
+              if (gap >= 0) return <span className="text-green-600">+{gap} above requirement</span>;
+              return <span className="text-amber-600">{Math.abs(gap)} below requirement</span>;
+            };
+            
             if (criticalSkills.length === 0) return null;
             
             return (
               <Card data-testid="card-critical-skills-analysis">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-amber-600" />
-                    Critical Skills Analysis
+                <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-700 text-white rounded-t-lg">
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    CRITICAL SKILLS ANALYSIS
                   </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Summary of skills marked as critical for the {selectedRoleData?.name || 'selected'} role
+                  <p className="text-sm text-white/80">
+                    Deep analysis of the most critical skills required for this role
                   </p>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="p-4 bg-muted/50 rounded-lg border">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-lg font-semibold">
-                          {criticalMet.length} of {criticalSkills.length} Critical Skills Met
-                        </p>
-                        <Badge 
-                          variant={criticalGaps.length === 0 && noDataCritical.length === 0 ? 'default' : criticalGaps.length > 1 ? 'destructive' : 'secondary'}
-                          className="text-sm"
-                        >
-                          {criticalGaps.length === 0 && noDataCritical.length === 0 ? 'All Met' : 
-                           noDataCritical.length > 0 && criticalGaps.length === 0 ? `${noDataCritical.length} Pending` :
-                           `${criticalGaps.length} Gap${criticalGaps.length > 1 ? 's' : ''}`}
-                        </Badge>
-                      </div>
-                      <Progress 
-                        value={(criticalMet.length / criticalSkills.length) * 100} 
-                        className="h-3"
-                      />
-                      {noDataCritical.length > 0 && (
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {noDataCritical.length} critical skill{noDataCritical.length > 1 ? 's' : ''} awaiting assessment data
-                        </p>
-                      )}
+                <CardContent className="pt-6">
+                  <div className="space-y-6">
+                    {/* Individual critical skill cards */}
+                    {criticalSkills.map((skill: any, index: number) => {
+                      const hasSkillData = hasData(skill);
+                      const meetsRequirement = hasSkillData && skill.candidateScore >= skill.requiredScore;
+                      
+                      return (
+                        <div key={index} className="border-b pb-4 last:border-b-0 last:pb-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge className="bg-orange-500 text-white text-xs font-semibold">
+                              CRITICAL
+                            </Badge>
+                            <span className="font-semibold text-lg">{skill.skillName}</span>
+                          </div>
+                          
+                          <p className="text-sm text-muted-foreground italic mb-3">
+                            Why it matters: {getWhyItMatters(skill.skillName)}
+                          </p>
+                          
+                          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">Candidate Score:</span>
+                              <span className={`font-semibold ${
+                                !hasSkillData ? 'text-amber-500' :
+                                meetsRequirement ? 'text-green-600' : 'text-amber-500'
+                              }`}>
+                                {hasSkillData ? `${skill.candidateScore}/100` : 'No data'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">(Recommended: {skill.requiredScore})</span>
+                            </div>
+                            <div className="font-medium">
+                              {getGapText(hasSkillData ? skill.candidateScore : null, skill.requiredScore)}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    
+                    {/* Critical Skills Summary */}
+                    <div className="mt-6 p-4 bg-slate-100 dark:bg-slate-800 rounded-lg border">
+                      <h4 className="font-bold text-lg mb-2">Critical Skills Summary</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedCandidateData?.user?.firstName || selectedCandidateData?.user?.email || 'This candidate'} requires development in {criticalGaps.length} of {criticalSkills.length} critical skills.
+                        {criticalGaps.length > 0 && ' These gaps should be addressed through structured training before full role responsibilities are assumed.'}
+                        {criticalGaps.length === 0 && noDataCritical.length === 0 && ' All critical skill requirements have been met.'}
+                        {noDataCritical.length > 0 && ` ${noDataCritical.length} critical skill${noDataCritical.length > 1 ? 's are' : ' is'} awaiting assessment data.`}
+                      </p>
                     </div>
-                    
-                    {noDataCritical.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-amber-600 flex items-center gap-1">
-                          <AlertCircle className="h-4 w-4" />
-                          No Data Received
-                        </p>
-                        <div className="grid gap-2">
-                          {noDataCritical.map((skill: any, index: number) => (
-                            <div key={index} className="flex items-center justify-between p-2 bg-amber-50 rounded border border-amber-200">
-                              <span className="text-sm font-medium">{skill.skillName}</span>
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="text-amber-600">No data</span>
-                                <span className="text-muted-foreground">/</span>
-                                <span className="text-muted-foreground">{skill.requiredScore}% required</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {criticalGaps.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-destructive flex items-center gap-1">
-                          <TrendingDown className="h-4 w-4" />
-                          Critical Gaps Requiring Development
-                        </p>
-                        <div className="grid gap-2">
-                          {criticalGaps.map((skill: any, index: number) => (
-                            <div key={index} className="flex items-center justify-between p-2 bg-red-50 rounded border border-red-200">
-                              <span className="text-sm font-medium">{skill.skillName}</span>
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="text-muted-foreground">{skill.candidateScore}%</span>
-                                <span className="text-muted-foreground">/</span>
-                                <span className="text-destructive font-medium">{skill.requiredScore}% required</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {criticalMet.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-green-600 flex items-center gap-1">
-                          <TrendingUp className="h-4 w-4" />
-                          Critical Skills Met
-                        </p>
-                        <div className="grid gap-2">
-                          {criticalMet.map((skill: any, index: number) => (
-                            <div key={index} className="flex items-center justify-between p-2 bg-green-50 rounded border border-green-200">
-                              <span className="text-sm font-medium">{skill.skillName}</span>
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="text-green-600 font-medium">{skill.candidateScore}%</span>
-                                <span className="text-muted-foreground">/</span>
-                                <span className="text-muted-foreground">{skill.requiredScore}% required</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -848,6 +885,92 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
               </CardContent>
             </Card>
           )}
+
+          {/* Prompt Engineering Role Fit Analysis */}
+          <Card data-testid="card-prompt-role-fit">
+            <CardHeader className="bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Sparkles className="h-5 w-5" />
+                Prompt Engineering Role Fit Analysis
+              </CardTitle>
+              <p className="text-sm text-white/80">
+                AI-powered analysis of how the candidate's prompt engineering skills align with role requirements
+              </p>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {analyzePromptRoleFitMutation.isPending ? (
+                <div className="text-center py-8">
+                  <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">Analyzing prompt engineering fit...</p>
+                </div>
+              ) : promptRoleFitAnalysis ? (
+                <div className="space-y-4" data-testid="text-prompt-role-fit-analysis">
+                  {promptRoleFitAnalysis.split('\n\n').map((paragraph, idx) => (
+                    <p key={idx} className="text-sm text-muted-foreground leading-relaxed">
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Generate an AI analysis of how this candidate's prompt engineering skills align with the {selectedRoleData?.name || 'selected'} role requirements.
+                  </p>
+                  <Button
+                    onClick={() => analyzePromptRoleFitMutation.mutate()}
+                    disabled={analyzePromptRoleFitMutation.isPending}
+                    data-testid="button-analyze-prompt-role-fit"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Analyze Prompt Engineering Fit
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* AIQ Role Fit Analysis */}
+          <Card data-testid="card-aiq-role-fit">
+            <CardHeader className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-white">
+                <ShieldAlert className="h-5 w-5" />
+                AIQ (Ethical AI) Role Fit Analysis
+              </CardTitle>
+              <p className="text-sm text-white/80">
+                AI-powered analysis of how the candidate's ethical AI stance aligns with role governance requirements
+              </p>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {analyzeAiqRoleFitMutation.isPending ? (
+                <div className="text-center py-8">
+                  <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">Analyzing AIQ role fit...</p>
+                </div>
+              ) : aiqRoleFitAnalysis ? (
+                <div className="space-y-4" data-testid="text-aiq-role-fit-analysis">
+                  {aiqRoleFitAnalysis.split('\n\n').map((paragraph, idx) => (
+                    <p key={idx} className="text-sm text-muted-foreground leading-relaxed">
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Generate an AI analysis of how this candidate's ethical AI quotient (AIQ) aligns with the {selectedRoleData?.name || 'selected'} role's AI governance and ethics requirements.
+                  </p>
+                  <Button
+                    onClick={() => analyzeAiqRoleFitMutation.mutate()}
+                    disabled={analyzeAiqRoleFitMutation.isPending}
+                    data-testid="button-analyze-aiq-role-fit"
+                  >
+                    <ShieldAlert className="h-4 w-4 mr-2" />
+                    Analyze AIQ Role Fit
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Role Flexibility Analysis */}
           {alignment.roleFlexibility && alignment.roleFlexibility.length > 0 && (
@@ -1066,6 +1189,20 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
           </Card>
 
           <SkillsLegend />
+
+          {/* Bottom PDF Export Button */}
+          <div className="flex justify-center pt-4">
+            <Button
+              variant="default"
+              size="lg"
+              onClick={handleExportPDF}
+              className="gap-2"
+              data-testid="button-export-pdf-bottom"
+            >
+              <Download className="h-5 w-5" />
+              Export Full Report as PDF
+            </Button>
+          </div>
         </div>
       )}
     </div>

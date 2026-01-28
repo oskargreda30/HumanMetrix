@@ -99,22 +99,24 @@ interface RoleFitData {
     description?: string;
   };
   alignment: {
-    overallFit: number;
+    overallFit: number | null;
     fitSkillAlignments?: Array<{
       skillName: string;
-      candidateScore: number;
+      candidateScore: number | null;
       requiredScore: number;
-      gap: number;
+      gap: number | null;
       alignment: string;
       criticality?: 'critical' | 'important' | 'nice-to-have';
+      dataAvailable?: boolean;
     }> | null;
     aiReadinessSkillAlignments?: Array<{
       skillName: string;
-      candidateScore: number;
+      candidateScore: number | null;
       requiredScore: number;
-      gap: number;
+      gap: number | null;
       alignment: string;
       criticality?: 'critical' | 'important' | 'nice-to-have';
+      dataAvailable?: boolean;
     }> | null;
     strengths: string[];
     gaps: string[];
@@ -2244,10 +2246,11 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   }
   
   // Card 3: Overall Fit Score (right) - uses finalCardHeight
-  const fitColor = data.alignment.overallFit >= 80 ? [34, 197, 94] : 
-                   data.alignment.overallFit >= 60 ? [234, 179, 8] : [239, 68, 68];
-  const fitLabel = data.alignment.overallFit >= 80 ? 'Excellent Fit' : 
-                   data.alignment.overallFit >= 60 ? 'Good Fit' : 'Needs Development';
+  const overallFitScore = data.alignment.overallFit ?? 0;
+  const fitColor = overallFitScore >= 80 ? [34, 197, 94] : 
+                   overallFitScore >= 60 ? [234, 179, 8] : [239, 68, 68];
+  const fitLabel = overallFitScore >= 80 ? 'Excellent Fit' : 
+                   overallFitScore >= 60 ? 'Good Fit' : 'Needs Development';
   
   const fitX = roleX + cardWidth + cardGap;
   pdf.setFillColor(249, 250, 251);
@@ -2263,7 +2266,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.setFontSize(20);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(fitColor[0], fitColor[1], fitColor[2]);
-  pdf.text(`${data.alignment.overallFit}%`, fitX + 5, yPos + 22);
+  pdf.text(`${overallFitScore}%`, fitX + 5, yPos + 22);
   
   // Fit label
   pdf.setFontSize(8);

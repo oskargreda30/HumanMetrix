@@ -8044,6 +8044,179 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Admin: Analyze Prompt Engineering Role Fit
+  app.post("/api/admin/analyze-prompt-role-fit", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = req.user.id;
+      const admin = await storage.getUser(adminId);
+      
+      const hasAdminAccess = admin?.role === 'super_admin' || admin?.role === 'organization_admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const { userId, jobRoleId } = req.body;
+      
+      if (!userId || !jobRoleId) {
+        return res.status(400).json({ message: "User ID and job role ID are required" });
+      }
+
+      // Get candidate data
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "Candidate not found" });
+      }
+
+      // Get role data
+      const role = await storage.getJobRole(jobRoleId);
+      if (!role) {
+        return res.status(404).json({ message: "Job role not found" });
+      }
+
+      // Get Prompt Architecture assessment results
+      const results = await storage.getAssessmentResults(userId);
+      const promptResult = results.find(r => r.assessmentType === 'prompt_architecture' && r.status === 'completed');
+      
+      const candidateName = user.firstName && user.lastName 
+        ? `${user.firstName} ${user.lastName}` 
+        : user.email;
+
+      let promptScore = 'No data available';
+      let promptLevels = '';
+      
+      if (promptResult) {
+        promptScore = `${promptResult.totalScore || 0}%`;
+        const levels = (promptResult as any).levels || [];
+        if (levels.length > 0) {
+          promptLevels = levels.map((l: any) => 
+            `Level ${l.level}: ${l.passed ? 'Passed' : 'Failed'}${l.scores ? ` (Clarity: ${l.scores.clarity}%, Structure: ${l.scores.structure}%, Context: ${l.scores.contextRelevance}%, Creativity: ${l.scores.creativity}%, Iterative: ${l.scores.iterativeImprovement}%)` : ''}`
+          ).join('\n');
+        }
+      }
+
+      // Generate AI analysis
+      const prompt = `You are an expert HR analyst evaluating how a candidate's prompt engineering skills align with a specific job role.
+
+CANDIDATE: ${candidateName}
+JOB ROLE: ${role.name}
+${role.description ? `ROLE DESCRIPTION: ${role.description}` : ''}
+
+PROMPT ARCHITECTURE ASSESSMENT RESULTS:
+- Overall Score: ${promptScore}
+${promptLevels ? `- Level Details:\n${promptLevels}` : '- No detailed level data available'}
+
+Analyze how the candidate's prompt engineering capabilities align with this role. Consider:
+1. Whether the role requires frequent AI interaction and prompt crafting
+2. How the candidate's prompt skills (clarity, structure, context awareness, creativity, iterative improvement) match role demands
+3. Potential risks or benefits of their current skill level for this role
+4. Recommendations for development if gaps exist
+
+Provide a concise 2-3 paragraph analysis focusing on practical implications for the hiring decision.`;
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 800,
+        temperature: 0.7,
+      });
+
+      const analysis = response.choices[0]?.message?.content || 'Unable to generate analysis.';
+      
+      res.json({ analysis });
+    } catch (error: any) {
+      console.error("Error analyzing prompt role fit:", error);
+      res.status(500).json({ message: "Failed to analyze prompt role fit: " + error.message });
+    }
+  });
+
+  // Admin: Analyze AIQ Role Fit
+  app.post("/api/admin/analyze-aiq-role-fit", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = req.user.id;
+      const admin = await storage.getUser(adminId);
+      
+      const hasAdminAccess = admin?.role === 'super_admin' || admin?.role === 'organization_admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const { userId, jobRoleId } = req.body;
+      
+      if (!userId || !jobRoleId) {
+        return res.status(400).json({ message: "User ID and job role ID are required" });
+      }
+
+      // Get candidate data
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "Candidate not found" });
+      }
+
+      // Get role data
+      const role = await storage.getJobRole(jobRoleId);
+      if (!role) {
+        return res.status(404).json({ message: "Job role not found" });
+      }
+
+      // Get AIQ assessment results
+      const results = await storage.getAssessmentResults(userId);
+      const aiqResult = results.find(r => r.assessmentType === 'aiq' && r.status === 'completed');
+      
+      const candidateName = user.firstName && user.lastName 
+        ? `${user.firstName} ${user.lastName}` 
+        : user.email;
+
+      let aiqScore = 'No data available';
+      let aiqBand = '';
+      
+      if (aiqResult) {
+        aiqScore = `${aiqResult.totalScore || 0}%`;
+        // Determine band based on score
+        const score = aiqResult.totalScore || 0;
+        if (score >= 80) aiqBand = 'Exemplary (80-100%): Strong ethical foundation with nuanced understanding of AI implications';
+        else if (score >= 60) aiqBand = 'Strong (60-79%): Solid grasp of AI ethics with some areas for deeper exploration';
+        else if (score >= 40) aiqBand = 'Developing (40-59%): Foundational understanding with room for growth';
+        else if (score >= 20) aiqBand = 'Gaps Identified (20-39%): Requires focused development on AI ethical principles';
+        else aiqBand = 'Critical Concerns (0-19%): Fundamental misalignment with ethical AI principles';
+      }
+
+      // Generate AI analysis
+      const prompt = `You are an expert HR analyst evaluating how a candidate's ethical AI stance (AIQ - Algorithmic Integrity Quotient) aligns with a specific job role.
+
+CANDIDATE: ${candidateName}
+JOB ROLE: ${role.name}
+${role.description ? `ROLE DESCRIPTION: ${role.description}` : ''}
+
+AIQ ASSESSMENT RESULTS:
+- Overall Score: ${aiqScore}
+${aiqBand ? `- Assessment Band: ${aiqBand}` : ''}
+
+The AIQ assessment measures a candidate's understanding of AI ethics, responsible AI use, bias awareness, and commitment to ethical AI deployment.
+
+Analyze how the candidate's AIQ aligns with this role. Consider:
+1. Whether the role involves AI decision-making, governance, or oversight responsibilities
+2. Risks associated with their ethical AI stance for this role (e.g., bias in AI outputs, ethical blind spots)
+3. How their score compares to what would be ideal for this role's AI-related responsibilities
+4. Whether additional training in AI ethics would be beneficial before or after hiring
+
+Provide a concise 2-3 paragraph analysis focusing on practical implications for the hiring decision and role success.`;
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 800,
+        temperature: 0.7,
+      });
+
+      const analysis = response.choices[0]?.message?.content || 'Unable to generate analysis.';
+      
+      res.json({ analysis });
+    } catch (error: any) {
+      console.error("Error analyzing AIQ role fit:", error);
+      res.status(500).json({ message: "Failed to analyze AIQ role fit: " + error.message });
+    }
+  });
+
   // Admin: Get cached role alignment
   app.get("/api/admin/role-alignment", isAuthenticated, async (req: any, res) => {
     try {
