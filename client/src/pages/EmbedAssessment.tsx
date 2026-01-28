@@ -500,6 +500,39 @@ export default function EmbedAssessment() {
       return;
     }
     
+    // For multi-assessment invitation flows after completing the first assessment,
+    // we need to create a NEW session by calling the invite start API again
+    if (isFromInvitation && inviteToken && currentAssessmentIndex > 0) {
+      try {
+        // Call invite start to get a new session for the next assessment
+        const startRes = await fetch(`/api/invite/${inviteToken}/start`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!startRes.ok) {
+          const data = await startRes.json().catch(() => ({}));
+          setStatus("error");
+          setErrorMessage(getHumanReadableError(data, "Failed to start next assessment"));
+          return;
+        }
+
+        const startData = await startRes.json();
+        const newSessionId = startData.sessionId;
+        const remainingTypes = startData.assessmentTypes || [];
+        
+        // Redirect to the new session with the remaining assessment types
+        // This ensures the URL has the correct session ID and the component reinitializes properly
+        const newUrl = `/embed/assessment?session=${newSessionId}&types=${remainingTypes.join(',')}&inviteToken=${inviteToken}&theme=${isLight ? 'light' : 'dark'}`;
+        window.location.href = newUrl;
+        return;
+      } catch (err) {
+        setStatus("error");
+        setErrorMessage("Failed to start next assessment");
+        return;
+      }
+    }
+    
     // For test sessions, skip email verification requirement
     // For production sessions, ensure email is verified before starting
     if (!session?.isTestSession && verificationStep !== "verified") {
