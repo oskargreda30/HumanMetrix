@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info, Upload, Lock, ChevronDown, Pencil, Download, ShoppingCart } from "lucide-react";
+import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, BellOff, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info, Upload, Lock, ChevronDown, Pencil, Download, ShoppingCart } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DeveloperSubTabs } from "@/components/DeveloperSubTabs";
 import { PartnerTour } from "@/components/PartnerTour";
@@ -1244,6 +1244,24 @@ export default function PartnerDashboard() {
   const { data: notifications, isLoading: notificationsLoading, refetch: refetchNotifications } = useQuery<NotificationsData>({
     queryKey: ["/api/partner/me/notifications"],
     enabled: !!account?.hasPartnerAccount,
+  });
+
+  const { data: notificationPrefs, refetch: refetchNotificationPrefs } = useQuery<{ preferences: Record<string, boolean> }>({
+    queryKey: ["/api/partner/me/notification-preferences"],
+    enabled: !!account?.hasPartnerAccount,
+  });
+
+  const updateNotificationPrefsMutation = useMutation({
+    mutationFn: async (preferences: Record<string, boolean>) => {
+      return await apiRequest("PATCH", "/api/partner/me/notification-preferences", { preferences });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/me/notification-preferences"] });
+      toast({ title: "Notification preferences updated" });
+    },
+    onError: () => {
+      toast({ title: "Failed to update preferences", variant: "destructive" });
+    },
   });
 
   const { data: team, isLoading: teamLoading } = useQuery<TeamData>({
@@ -4796,37 +4814,63 @@ export default function PartnerDashboard() {
                                   {formatDate(notif.createdAt)}
                                 </p>
                                 {notif.type === 'assessment_completed' && notif.metadata?.sessionId && (
-                                  <Button 
-                                    size="sm" 
-                                    className="mt-2"
-                                    onClick={() => {
-                                      // Navigate to Results tab and filter by this session
-                                      setActiveTab('results');
-                                      // Store sessionId for filtering - will be picked up by results tab
-                                      sessionStorage.setItem('filterSessionId', notif.metadata!.sessionId!);
-                                    }}
-                                    data-testid={`button-view-results-${notif.id}`}
-                                  >
-                                    <Eye className="h-4 w-4 mr-1.5" />
-                                    View Results
-                                  </Button>
+                                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                                    <Button 
+                                      size="sm" 
+                                      onClick={() => {
+                                        // Navigate to Results tab and filter by this session
+                                        setActiveTab('results');
+                                        // Store sessionId for filtering - will be picked up by results tab
+                                        sessionStorage.setItem('filterSessionId', notif.metadata!.sessionId!);
+                                      }}
+                                      data-testid={`button-view-results-${notif.id}`}
+                                    >
+                                      <Eye className="h-4 w-4 mr-1.5" />
+                                      View Results
+                                    </Button>
+                                    {notificationPrefs?.preferences?.assessment_completed !== false && (
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline"
+                                        onClick={() => updateNotificationPrefsMutation.mutate({ assessment_completed: false })}
+                                        disabled={updateNotificationPrefsMutation.isPending}
+                                        data-testid={`button-turn-off-individual-assessment-notifications-${notif.id}`}
+                                      >
+                                        <BellOff className="h-4 w-4 mr-1.5" />
+                                        Turn Off These Notifications
+                                      </Button>
+                                    )}
+                                  </div>
                                 )}
                                 {notif.type === 'assessment_all_completed' && (
-                                  <Button 
-                                    size="sm" 
-                                    className="mt-2"
-                                    onClick={() => {
-                                      // Navigate to Results tab and filter by candidate email
-                                      setActiveTab('results');
-                                      if (notif.metadata?.candidateEmail) {
-                                        sessionStorage.setItem('filterCandidateEmail', notif.metadata.candidateEmail);
-                                      }
-                                    }}
-                                    data-testid={`button-view-all-results-${notif.id}`}
-                                  >
-                                    <Eye className="h-4 w-4 mr-1.5" />
-                                    View Results
-                                  </Button>
+                                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                                    <Button 
+                                      size="sm" 
+                                      onClick={() => {
+                                        // Navigate to Results tab and filter by candidate email
+                                        setActiveTab('results');
+                                        if (notif.metadata?.candidateEmail) {
+                                          sessionStorage.setItem('filterCandidateEmail', notif.metadata.candidateEmail);
+                                        }
+                                      }}
+                                      data-testid={`button-view-all-results-${notif.id}`}
+                                    >
+                                      <Eye className="h-4 w-4 mr-1.5" />
+                                      View Results
+                                    </Button>
+                                    {notificationPrefs?.preferences?.assessment_all_completed !== false && (
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline"
+                                        onClick={() => updateNotificationPrefsMutation.mutate({ assessment_all_completed: false })}
+                                        disabled={updateNotificationPrefsMutation.isPending}
+                                        data-testid={`button-turn-off-assessment-notifications-${notif.id}`}
+                                      >
+                                        <BellOff className="h-4 w-4 mr-1.5" />
+                                        Turn Off These Notifications
+                                      </Button>
+                                    )}
+                                  </div>
                                 )}
                                 {notif.type === 'credits_purchased' && account?.partner?.billingType === 'payg' && (
                                   <Button 

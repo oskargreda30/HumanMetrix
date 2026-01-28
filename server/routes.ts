@@ -12085,6 +12085,49 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
     }
   });
 
+  // Update notification preferences
+  app.patch("/api/partner/me/notification-preferences", isAuthenticated, async (req: any, res) => {
+    try {
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { preferences } = req.body;
+      if (!preferences || typeof preferences !== 'object') {
+        return res.status(400).json({ message: "Invalid preferences object" });
+      }
+      
+      // Merge with existing preferences
+      const currentPrefs = (partner.notificationPreferences as Record<string, boolean>) || {};
+      const updatedPrefs = { ...currentPrefs, ...preferences };
+      
+      await storage.updatePartnerNotificationPreferences(partner.id, updatedPrefs);
+      
+      res.json({ success: true, preferences: updatedPrefs });
+    } catch (error) {
+      console.error("Error updating notification preferences:", error);
+      res.status(500).json({ message: "Failed to update notification preferences" });
+    }
+  });
+  
+  // Get notification preferences
+  app.get("/api/partner/me/notification-preferences", isAuthenticated, async (req: any, res) => {
+    try {
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      res.json({ preferences: partner.notificationPreferences || {} });
+    } catch (error) {
+      console.error("Error fetching notification preferences:", error);
+      res.status(500).json({ message: "Failed to fetch notification preferences" });
+    }
+  });
+
   // ===== PARTNER TEAM MEMBERS =====
   
   // Get team members

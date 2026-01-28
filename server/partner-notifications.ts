@@ -301,9 +301,21 @@ export async function notifyAssessmentCompleted(
   }
 ): Promise<void> {
   try {
+    // Check if partner has disabled these notifications
+    const partner = await storage.getPartnerAccount(partnerId);
+    if (!partner) return;
+    
+    const prefs = (partner.notificationPreferences as Record<string, boolean>) || {};
+    
     const displayName = candidateName || candidateEmail;
 
     if (allCompleted) {
+      // Check if assessment_all_completed notifications are disabled
+      if (prefs.assessment_all_completed === false) {
+        console.log(`[Partner Notification] Skipping all-assessments-completed notification (disabled by partner)`);
+        return;
+      }
+      
       const count = options?.assessmentCount || 4;
       const assessmentWord = count === 1 ? 'assessment' : 'assessments';
       const countText = count === 4 ? 'all four assessments' : `all ${count} assigned ${assessmentWord}`;

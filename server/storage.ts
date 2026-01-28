@@ -1716,6 +1716,15 @@ export class DatabaseStorage implements IStorage {
     await db.delete(partnerAccounts).where(eq(partnerAccounts.id, id));
   }
 
+  async updatePartnerNotificationPreferences(id: string, preferences: Record<string, boolean>): Promise<void> {
+    await db.update(partnerAccounts)
+      .set({ 
+        notificationPreferences: preferences,
+        updatedAt: new Date() 
+      })
+      .where(eq(partnerAccounts.id, id));
+  }
+
   // Partner organisation operations (sub-accounts for B2B partners)
   async createPartnerOrganisation(org: InsertPartnerOrganisation): Promise<PartnerOrganisation> {
     const [result] = await db.insert(partnerOrganisations).values(org).returning();

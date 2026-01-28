@@ -753,6 +753,16 @@ export const partnerAccounts = pgTable("partner_accounts", {
   tourCompleted: boolean("tour_completed").notNull().default(false), // Dashboard tour has been completed
   // Payment provider configuration
   paymentProvider: varchar("payment_provider").notNull().default("stripe"), // 'stripe' or 'airwallex'
+  // Notification preferences (JSON object with notification type keys and boolean values)
+  notificationPreferences: jsonb("notification_preferences").$type<{
+    assessment_completed?: boolean;        // Individual assessment completion notifications
+    assessment_all_completed?: boolean;    // All assessments completed notifications
+    assessment_link_expired?: boolean;     // Link expiration notifications
+    quota_alerts?: boolean;                // Quota/usage alerts
+    billing_alerts?: boolean;              // Billing and payment notifications
+    team_changes?: boolean;                // Team member role changes
+    security_alerts?: boolean;             // API key regeneration, suspicious activity
+  }>().default({}),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
