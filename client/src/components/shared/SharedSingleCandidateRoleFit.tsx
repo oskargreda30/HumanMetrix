@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { exportRoleFitPDF } from "@/lib/pdfExport";
 import SkillsLegend from "@/components/SkillsLegend";
+import { CriticalSkillsAnalysis } from "@/components/shared/CriticalSkillsAnalysis";
 
 // Configuration interface for shared component
 export interface SharedRoleFitConfig {
@@ -232,6 +233,40 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
 
   const selectedCandidateData = candidates?.find((c) => c.user.id === selectedCandidate);
   const selectedRoleData = roles?.find((r) => r.id === selectedRole);
+
+  // Track last triggered selection to avoid re-triggering
+  const lastTriggeredRef = useRef<string | null>(null);
+
+  // Auto-trigger Prompt and AIQ analyses when alignment data is loaded
+  useEffect(() => {
+    const selectionKey = `${selectedCandidate}-${selectedRole}`;
+    
+    // Only trigger if we have alignment data and haven't triggered for this selection
+    if (alignment && selectedCandidate && selectedRole && lastTriggeredRef.current !== selectionKey) {
+      lastTriggeredRef.current = selectionKey;
+      
+      // Clear previous analyses
+      setPromptRoleFitAnalysis(null);
+      setAiqRoleFitAnalysis(null);
+      
+      // Auto-trigger both analyses
+      if (!analyzePromptRoleFitMutation.isPending) {
+        analyzePromptRoleFitMutation.mutate();
+      }
+      if (!analyzeAiqRoleFitMutation.isPending) {
+        analyzeAiqRoleFitMutation.mutate();
+      }
+    }
+  }, [alignment, selectedCandidate, selectedRole]);
+
+  // Reset trigger ref when selection changes
+  useEffect(() => {
+    if (!selectedCandidate || !selectedRole) {
+      lastTriggeredRef.current = null;
+      setPromptRoleFitAnalysis(null);
+      setAiqRoleFitAnalysis(null);
+    }
+  }, [selectedCandidate, selectedRole]);
 
   const handleExportPDF = async () => {
     if (!alignment || !selectedCandidateData || !selectedRoleData) return;
@@ -575,42 +610,39 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {alignment.fitSkillAlignments.map((skill, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          {getAlignmentIcon(skill.alignment)}
-                          <span className="font-medium">{skill.skillName}</span>
-                          {getCriticalityBadge(skill.criticality)}
+                  {alignment.fitSkillAlignments.map((skill, index) => {
+                    const meetsThreshold = skill.dataAvailable !== false && skill.candidateScore !== null && skill.candidateScore >= skill.requiredScore;
+                    return (
+                      <div key={index} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {getAlignmentIcon(skill.alignment)}
+                            <span className="font-medium">{skill.skillName}</span>
+                            {getCriticalityBadge(skill.criticality)}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`font-medium ${meetsThreshold ? 'text-green-600' : 'text-amber-500'}`}>
+                              {skill.dataAvailable !== false && skill.candidateScore !== null 
+                                ? `${skill.candidateScore}%` 
+                                : 'No data'}
+                            </span>
+                            <span className="text-muted-foreground">/ {skill.requiredScore}% required</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`font-medium ${getAlignmentColor(skill.alignment)}`}>
-                            {skill.dataAvailable !== false && skill.candidateScore !== null 
-                              ? `${skill.candidateScore}%` 
-                              : 'No data'}
-                          </span>
-                          <span className="text-muted-foreground">/ {skill.requiredScore}% required</span>
+                        <div className="relative h-2 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className={`absolute left-0 top-0 h-full rounded-full transition-all ${meetsThreshold ? 'bg-green-500' : 'bg-amber-400'}`}
+                            style={{ width: `${skill.dataAvailable !== false ? (skill.candidateScore || 0) : 0}%` }}
+                          />
+                          <div 
+                            className={`absolute top-0 h-full w-0.5 ${meetsThreshold ? 'bg-green-700' : 'bg-amber-600'}`}
+                            style={{ left: `${skill.requiredScore}%` }}
+                            title={`Required: ${skill.requiredScore}%`}
+                          />
                         </div>
                       </div>
-                      <div className="relative h-2 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className={`absolute left-0 top-0 h-full rounded-full transition-all ${
-                            skill.alignment === 'exceeds' || skill.alignment === 'meets' 
-                              ? 'bg-green-500' 
-                              : skill.alignment === 'close' 
-                                ? 'bg-amber-500' 
-                                : 'bg-blue-400'
-                          }`}
-                          style={{ width: `${skill.dataAvailable !== false ? (skill.candidateScore || 0) : 0}%` }}
-                        />
-                        <div 
-                          className="absolute top-0 h-full w-0.5 bg-blue-600"
-                          style={{ left: `${skill.requiredScore}%` }}
-                          title={`Required: ${skill.requiredScore}%`}
-                        />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <CriticalityLegend />
               </CardContent>
@@ -628,42 +660,39 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {alignment.aiReadinessSkillAlignments.map((skill, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          {getAlignmentIcon(skill.alignment)}
-                          <span className="font-medium">{skill.skillName}</span>
-                          {getCriticalityBadge(skill.criticality)}
+                  {alignment.aiReadinessSkillAlignments.map((skill, index) => {
+                    const meetsThreshold = skill.dataAvailable !== false && skill.candidateScore !== null && skill.candidateScore >= skill.requiredScore;
+                    return (
+                      <div key={index} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {getAlignmentIcon(skill.alignment)}
+                            <span className="font-medium">{skill.skillName}</span>
+                            {getCriticalityBadge(skill.criticality)}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`font-medium ${meetsThreshold ? 'text-green-600' : 'text-amber-500'}`}>
+                              {skill.dataAvailable !== false && skill.candidateScore !== null 
+                                ? `${skill.candidateScore}%` 
+                                : 'No data'}
+                            </span>
+                            <span className="text-muted-foreground">/ {skill.requiredScore}% required</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`font-medium ${getAlignmentColor(skill.alignment)}`}>
-                            {skill.dataAvailable !== false && skill.candidateScore !== null 
-                              ? `${skill.candidateScore}%` 
-                              : 'No data'}
-                          </span>
-                          <span className="text-muted-foreground">/ {skill.requiredScore}% required</span>
+                        <div className="relative h-2 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className={`absolute left-0 top-0 h-full rounded-full transition-all ${meetsThreshold ? 'bg-green-500' : 'bg-amber-400'}`}
+                            style={{ width: `${skill.dataAvailable !== false ? (skill.candidateScore || 0) : 0}%` }}
+                          />
+                          <div 
+                            className={`absolute top-0 h-full w-0.5 ${meetsThreshold ? 'bg-green-700' : 'bg-amber-600'}`}
+                            style={{ left: `${skill.requiredScore}%` }}
+                            title={`Required: ${skill.requiredScore}%`}
+                          />
                         </div>
                       </div>
-                      <div className="relative h-2 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className={`absolute left-0 top-0 h-full rounded-full transition-all ${
-                            skill.alignment === 'exceeds' || skill.alignment === 'meets' 
-                              ? 'bg-green-500' 
-                              : skill.alignment === 'close' 
-                                ? 'bg-amber-500' 
-                                : 'bg-blue-400'
-                          }`}
-                          style={{ width: `${skill.dataAvailable !== false ? (skill.candidateScore || 0) : 0}%` }}
-                        />
-                        <div 
-                          className="absolute top-0 h-full w-0.5 bg-blue-600"
-                          style={{ left: `${skill.requiredScore}%` }}
-                          title={`Required: ${skill.requiredScore}%`}
-                        />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <CriticalityLegend />
               </CardContent>
@@ -912,18 +941,9 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-6">
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Generate an AI analysis of how this candidate's prompt engineering skills align with the {selectedRoleData?.name || 'selected'} role requirements.
-                  </p>
-                  <Button
-                    onClick={() => analyzePromptRoleFitMutation.mutate()}
-                    disabled={analyzePromptRoleFitMutation.isPending}
-                    data-testid="button-analyze-prompt-role-fit"
-                  >
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Analyze Prompt Engineering Fit
-                  </Button>
+                <div className="text-center py-8">
+                  <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin text-cyan-500" />
+                  <p className="text-sm text-muted-foreground">Preparing prompt engineering analysis...</p>
                 </div>
               )}
             </CardContent>
@@ -955,18 +975,9 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-6">
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Generate an AI analysis of how this candidate's ethical AI quotient (AIQ) aligns with the {selectedRoleData?.name || 'selected'} role's AI governance and ethics requirements.
-                  </p>
-                  <Button
-                    onClick={() => analyzeAiqRoleFitMutation.mutate()}
-                    disabled={analyzeAiqRoleFitMutation.isPending}
-                    data-testid="button-analyze-aiq-role-fit"
-                  >
-                    <ShieldAlert className="h-4 w-4 mr-2" />
-                    Analyze AIQ Role Fit
-                  </Button>
+                <div className="text-center py-8">
+                  <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin text-purple-500" />
+                  <p className="text-sm text-muted-foreground">Preparing AIQ role fit analysis...</p>
                 </div>
               )}
             </CardContent>
