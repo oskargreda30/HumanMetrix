@@ -3619,7 +3619,7 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(400).json({ error: "Missing required parameters" });
       }
       
-      const partnerId = parseInt(partner as string);
+      const partnerId = partner as string; // Partner ID is a UUID string
       const countryCode = (country as string) || 'GB';
       const assessmentTypes = (types as string)?.split(',').filter(Boolean) || [];
       
@@ -3715,16 +3715,17 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(400).json({ error: "Missing required parameters" });
       }
       
+      const partnerIdStr = partnerId.toString(); // Ensure partner ID is string (UUID)
       const assessmentTypes = types || [];
       
       // Get partner info
-      const partnerAccount = await storage.getPartnerAccount(partnerId);
+      const partnerAccount = await storage.getPartnerAccount(partnerIdStr);
       if (!partnerAccount) {
         return res.status(404).json({ error: "Partner not found" });
       }
       
       // Get completed sessions for this email and partner
-      const completedSessions = await storage.getCompletedB2BSessionsByEmail(email, partnerId);
+      const completedSessions = await storage.getCompletedB2BSessionsByEmail(email, partnerIdStr);
       
       // Filter to requested types if specified
       const filteredSessions = assessmentTypes.length > 0
