@@ -4590,49 +4590,54 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
   const displayEmail = data.candidate.user.email.length > 40 ? data.candidate.user.email.substring(0, 37) + '...' : data.candidate.user.email;
   pdf.text(displayEmail, 20 + profileWidth / 2, yPos + 23, { align: 'center' });
   
-  // Key Metrics Boxes (right side - 2 boxes)
-  // Skills Assessed Box
+  // Key Metrics Boxes (right side - 2 boxes with adjusted widths)
+  // Skills Assessed box is thinner, Top Skill box is wider
+  const remainingWidth = totalWidth - profileWidth - gap * 2;
+  const skillsBoxWidth = remainingWidth * 0.35; // Skills Assessed is narrower (35%)
+  const topSkillBoxWidth = remainingWidth * 0.65; // Top Skill is wider (65%)
+  
+  // Skills Assessed Box (thinner)
   const skillsXPos = 20 + profileWidth + gap;
   pdf.setFillColor(255, 255, 255);
   pdf.setDrawColor(229, 231, 235);
-  pdf.roundedRect(skillsXPos, yPos, metricsWidth, rowBoxHeight, 2, 2, 'FD');
+  pdf.roundedRect(skillsXPos, yPos, skillsBoxWidth, rowBoxHeight, 2, 2, 'FD');
   
   pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(107, 114, 128);
-  pdf.text('Skills Assessed', skillsXPos + metricsWidth / 2, yPos + 9, { align: 'center' });
+  pdf.text('Skills Assessed', skillsXPos + skillsBoxWidth / 2, yPos + 9, { align: 'center' });
   
   pdf.setFontSize(12);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(17, 24, 39);
-  pdf.text(String(skillsAssessed), skillsXPos + metricsWidth / 2, yPos + 20, { align: 'center' });
+  pdf.text(String(skillsAssessed), skillsXPos + skillsBoxWidth / 2, yPos + 20, { align: 'center' });
   
-  // Top Skill Box - Two lines with larger font
-  const topSkillXPos = skillsXPos + metricsWidth + gap;
+  // Top Skill Box - wider with larger font
+  const topSkillXPos = skillsXPos + skillsBoxWidth + gap;
   pdf.setFillColor(255, 255, 255);
   pdf.setDrawColor(229, 231, 235);
-  pdf.roundedRect(topSkillXPos, yPos, metricsWidth, rowBoxHeight, 2, 2, 'FD');
+  pdf.roundedRect(topSkillXPos, yPos, topSkillBoxWidth, rowBoxHeight, 2, 2, 'FD');
   
   pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(107, 114, 128);
-  pdf.text('Top Skill', topSkillXPos + metricsWidth / 2, yPos + 9, { align: 'center' });
+  pdf.text('Top Skill', topSkillXPos + topSkillBoxWidth / 2, yPos + 9, { align: 'center' });
   
   // Top Skill value - split to two lines if needed with larger font
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(17, 24, 39);
-  const maxTopSkillWidth = metricsWidth - 8;
+  const maxTopSkillWidth = topSkillBoxWidth - 8;
   const topSkillLines = pdf.splitTextToSize(topSkill, maxTopSkillWidth);
   const topSkillStartY = topSkillLines.length > 1 ? yPos + 15 : yPos + 18;
   topSkillLines.slice(0, 2).forEach((line: string, lineIdx: number) => {
-    pdf.text(line, topSkillXPos + metricsWidth / 2, topSkillStartY + (lineIdx * 5), { align: 'center' });
+    pdf.text(line, topSkillXPos + topSkillBoxWidth / 2, topSkillStartY + (lineIdx * 5), { align: 'center' });
   });
   
   // ASSESSMENT SUMMARY Section
   yPos = 144;
   yPos = addSectionHeader(pdf, 'ASSESSMENT SUMMARY', yPos, pageWidth);
-  yPos += 5;
+  yPos += 10; // More space between title and first content
   
   // Assessment summary items
   const summaryItems = [
@@ -4674,7 +4679,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
   
   yPos = 35;
   yPos = addSectionHeader(pdf, 'SKILLS VISUALIZATION', yPos, pageWidth);
-  yPos += 8;
+  yPos += 12; // More space between title and first content
   
   const halfWidth = (pageWidth - 40) / 2;
   const leftColStart = 20;
@@ -4778,7 +4783,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     yPos += 8;
     
     const aiScoresStartY = yPos;
-    const aiChartHeight = 75; // Increased for better visibility
+    const aiChartHeight = chartHeight; // Same height as FIT chart (50) for consistent aspect ratio
     
     // Left column - Individual Skill Scores
     pdf.setFontSize(9);
