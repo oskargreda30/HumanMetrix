@@ -19944,6 +19944,255 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
     getRevenueStats,
   } = await import("./xero");
 
+  // ========== REVENUE TARGETS & SALES TRACKING ==========
+  
+  // Monthly revenue targets (April 2026 - March 2027)
+  const MONTHLY_TARGETS: Record<string, number> = {
+    '2026-04': 1000000, // £10,000 in pence
+    '2026-05': 1500000, // £15,000
+    '2026-06': 2500000, // £25,000
+    '2026-07': 3500000, // £35,000
+    '2026-08': 4000000, // £40,000
+    '2026-09': 4500000, // £45,000
+    '2026-10': 5000000, // £50,000
+    '2026-11': 5500000, // £55,000
+    '2026-12': 6000000, // £60,000
+    '2027-01': 6500000, // £65,000
+    '2027-02': 5000000, // £50,000
+    '2027-03': 5000000, // £50,000
+  };
+  
+  // Profit participation milestones (36 months from effective date)
+  const MILESTONE_CONFIG = {
+    effectiveDate: new Date('2026-04-01'), // April 2026
+    milestonePeriodMonths: 36,
+    baseProfitParticipation: 15, // 15% base after 6-month cliff
+    cliffMonths: 6,
+    milestones: [
+      { target: 50000000, additionalPercent: 5, label: '£500K' }, // £500,000 in pence
+      { target: 200000000, additionalPercent: 5, label: '£2M' },  // £2,000,000
+      { target: 450000000, additionalPercent: 5, label: '£4.5M' }, // £4,500,000
+    ],
+    proRataThreshold: 0.6, // 60% minimum to vest
+  };
+
+  // Super Admin: Get revenue targets and actuals
+  app.get("/api/admin/accounting/revenue-targets", isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (user?.role !== 'super_admin' && user?.role !== 'admin') {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const now = new Date();
+      
+      // Get all paid purchases and invoices
+      const [allPurchases, allInvoices] = await Promise.all([
+        storage.getAllPurchasesWithDetails({ limit: 10000 }),
+        db.select().from(partnerInvoices),
+      ]);
+      
+      // Get exchange rates for currency conversion
+      const { getExchangeRates } = await import("./exchange-rates");
+      const exchangeRatesData = await getExchangeRates();
+      
+      const toGBP = (amount: number, currency: string) => {
+        if (currency === 'GBP') return amount;
+        const rate = exchangeRatesData.rates[currency] || 1;
+        return Math.round(amount / rate);
+      };
+      
+      // Filter paid purchases (B2C from Stripe/Airwallex)
+      const b2cPaidPurchases = allPurchases.filter((p: any) => p.purchase.resultsAccessPaid);
+      
+      // Filter paid invoices (B2B)
+      const b2bPaidInvoices = allInvoices.filter(i => i.status === 'paid');
+      
+      // Build monthly data
+      const monthlyData: Array<{
+        month: string;
+        monthLabel: string;
+        target: number;
+        actual: number;
+        variance: number;
+        hitTarget: boolean;
+      }> = [];
+      
+      // Calculate totals for profit participation
+      let totalRevenueAllTime = 0;
+      
+      // Process each month in the target period
+      Object.keys(MONTHLY_TARGETS).sort().forEach(monthKey => {
+        const [year, month] = monthKey.split('-').map(Number);
+        const monthStart = new Date(year, month - 1, 1);
+        const monthEnd = new Date(year, month, 0, 23, 59, 59);
+        
+        // B2C revenue for this month
+        const b2cMonthRevenue = b2cPaidPurchases
+          .filter((p: any) => {
+            if (!p.purchase.completedAt) return false;
+            const date = new Date(p.purchase.completedAt);
+            return date >= monthStart && date <= monthEnd;
+          })
+          .reduce((sum: number, p: any) => sum + toGBP(p.purchase.totalAmount, p.purchase.currency || 'GBP'), 0);
+        
+        // B2B revenue for this month
+        const b2bMonthRevenue = b2bPaidInvoices
+          .filter(i => {
+            if (!i.paidAt) return false;
+            const date = new Date(i.paidAt);
+            return date >= monthStart && date <= monthEnd;
+          })
+          .reduce((sum, i) => sum + toGBP(i.totalAmount, i.currency), 0);
+        
+        const actual = b2cMonthRevenue + b2bMonthRevenue;
+        const target = MONTHLY_TARGETS[monthKey];
+        
+        // Only count revenue up to current date for total
+        if (monthEnd <= now) {
+          totalRevenueAllTime += actual;
+        }
+        
+        monthlyData.push({
+          month: monthKey,
+          monthLabel: monthStart.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }),
+          target,
+          actual,
+          variance: actual - target,
+          hitTarget: actual >= target,
+        });
+      });
+      
+      // Also calculate total revenue since effective date for milestones
+      const effectiveDate = MILESTONE_CONFIG.effectiveDate;
+      const milestoneCutoff = new Date(effectiveDate);
+      milestoneCutoff.setMonth(milestoneCutoff.getMonth() + MILESTONE_CONFIG.milestonePeriodMonths);
+      
+      // Use the earlier of now or the milestone cutoff (36 months from effective date)
+      const effectiveCutoff = now < milestoneCutoff ? now : milestoneCutoff;
+      
+      const totalRevenueSinceEffective = b2cPaidPurchases
+        .filter((p: any) => {
+          if (!p.purchase.completedAt) return false;
+          const date = new Date(p.purchase.completedAt);
+          // Only count revenue within the 36-month window
+          return date >= effectiveDate && date <= effectiveCutoff;
+        })
+        .reduce((sum: number, p: any) => sum + toGBP(p.purchase.totalAmount, p.purchase.currency || 'GBP'), 0)
+        +
+        b2bPaidInvoices
+        .filter(i => {
+          if (!i.paidAt) return false;
+          const date = new Date(i.paidAt);
+          // Only count revenue within the 36-month window
+          return date >= effectiveDate && date <= effectiveCutoff;
+        })
+        .reduce((sum, i) => sum + toGBP(i.totalAmount, i.currency), 0);
+      
+      // Calculate cumulative shortfall/surplus
+      let cumulativeVariance = 0;
+      const monthsWithData = monthlyData.filter(m => new Date(m.month + '-01') <= now);
+      monthsWithData.forEach(m => {
+        cumulativeVariance += m.variance;
+      });
+      
+      // Calculate month-over-month growth
+      const monthsCompleted = monthsWithData.filter(m => m.actual > 0);
+      let momGrowth = 0;
+      if (monthsCompleted.length >= 2) {
+        const lastMonth = monthsCompleted[monthsCompleted.length - 1];
+        const prevMonth = monthsCompleted[monthsCompleted.length - 2];
+        if (prevMonth.actual > 0) {
+          momGrowth = ((lastMonth.actual - prevMonth.actual) / prevMonth.actual) * 100;
+        }
+      }
+      
+      // Calculate forecast
+      const completedMonthsActuals = monthsWithData.map(m => m.actual);
+      const avgMonthlyRevenue = completedMonthsActuals.length > 0
+        ? completedMonthsActuals.reduce((a, b) => a + b, 0) / completedMonthsActuals.length
+        : 0;
+      const remainingMonths = monthlyData.filter(m => new Date(m.month + '-01') > now).length;
+      const totalTarget = Object.values(MONTHLY_TARGETS).reduce((a, b) => a + b, 0);
+      const currentTotal = monthsWithData.reduce((sum, m) => sum + m.actual, 0);
+      const projectedTotal = currentTotal + (avgMonthlyRevenue * remainingMonths);
+      const forecastVsTarget = projectedTotal - totalTarget;
+      const onTrackForTarget = projectedTotal >= totalTarget * 0.95; // Within 5%
+      
+      // Calculate milestone progress
+      const milestoneProgress = MILESTONE_CONFIG.milestones.map(milestone => {
+        const progress = totalRevenueSinceEffective / milestone.target;
+        const percentComplete = Math.min(progress * 100, 100);
+        const meetsThreshold = progress >= MILESTONE_CONFIG.proRataThreshold;
+        const proRataPercent = meetsThreshold 
+          ? Math.min(progress, 1) * milestone.additionalPercent 
+          : 0;
+        
+        return {
+          label: milestone.label,
+          target: milestone.target,
+          current: totalRevenueSinceEffective,
+          percentComplete,
+          meetsThreshold,
+          vestedPercent: proRataPercent,
+          additionalPercent: milestone.additionalPercent,
+        };
+      });
+      
+      // Calculate months since effective date for cliff
+      const monthsSinceEffective = Math.floor(
+        (now.getTime() - effectiveDate.getTime()) / (1000 * 60 * 60 * 24 * 30)
+      );
+      const cliffPassed = monthsSinceEffective >= MILESTONE_CONFIG.cliffMonths;
+      const monthsUntilCliff = Math.max(0, MILESTONE_CONFIG.cliffMonths - monthsSinceEffective);
+      
+      // Calculate total profit participation
+      const baseParticipation = cliffPassed ? MILESTONE_CONFIG.baseProfitParticipation : 0;
+      const performanceParticipation = milestoneProgress.reduce((sum, m) => sum + m.vestedPercent, 0);
+      const totalParticipation = baseParticipation + performanceParticipation;
+      
+      // Time remaining for milestones
+      const monthsRemainingForMilestones = Math.max(0, 
+        MILESTONE_CONFIG.milestonePeriodMonths - monthsSinceEffective
+      );
+      
+      res.json({
+        monthlyData,
+        summary: {
+          totalTarget,
+          currentTotal,
+          cumulativeVariance,
+          monthsHittingTarget: monthsWithData.filter(m => m.hitTarget).length,
+          monthsTotal: monthsWithData.length,
+          momGrowth: momGrowth.toFixed(1),
+          avgMonthlyRevenue,
+        },
+        forecast: {
+          projectedTotal,
+          forecastVsTarget,
+          onTrackForTarget,
+          remainingMonths,
+        },
+        profitParticipation: {
+          effectiveDate: effectiveDate.toISOString(),
+          cliffPassed,
+          monthsUntilCliff,
+          baseParticipation,
+          performanceParticipation: performanceParticipation.toFixed(2),
+          totalParticipation: totalParticipation.toFixed(2),
+          maxPossible: MILESTONE_CONFIG.baseProfitParticipation + 
+            MILESTONE_CONFIG.milestones.reduce((sum, m) => sum + m.additionalPercent, 0),
+          milestones: milestoneProgress,
+          totalRevenueSinceEffective,
+          monthsRemainingForMilestones,
+        },
+      });
+    } catch (error) {
+      console.error("Error getting revenue targets:", error);
+      res.status(500).json({ message: "Failed to get revenue targets" });
+    }
+  });
+
   // Super Admin: Get Xero connection status
   app.get("/api/admin/accounting/xero/status", isAuthenticated, async (req: any, res) => {
     try {

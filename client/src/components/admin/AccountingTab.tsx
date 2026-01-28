@@ -11,7 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, RefreshCw, Plus, Link2, Unlink, Receipt, TrendingUp, DollarSign, Upload, AlertCircle, CheckCircle, Clock, FileText, Building2, ArrowUpRight, Trash2, Pencil } from "lucide-react";
+import { Loader2, RefreshCw, Plus, Link2, Unlink, Receipt, TrendingUp, DollarSign, Upload, AlertCircle, CheckCircle, Clock, FileText, Building2, ArrowUpRight, Trash2, Pencil, Target } from "lucide-react";
+import RevenueTargetsTab from "./RevenueTargetsTab";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { format } from "date-fns";
@@ -588,6 +589,10 @@ export default function AccountingTab() {
       <Tabs value={subTab} onValueChange={setSubTab}>
         <TabsList>
           <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
+          <TabsTrigger value="targets" data-testid="tab-targets" className="flex items-center gap-1">
+            <Target className="h-3.5 w-3.5" />
+            Revenue
+          </TabsTrigger>
           <TabsTrigger value="expenses" data-testid="tab-expenses">Expenses</TabsTrigger>
           <TabsTrigger value="revenue" data-testid="tab-revenue">Revenue Sync</TabsTrigger>
         </TabsList>
@@ -656,6 +661,10 @@ export default function AccountingTab() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="targets">
+          <RevenueTargetsTab />
         </TabsContent>
 
         <TabsContent value="expenses" className="space-y-4">
