@@ -6964,8 +6964,8 @@ Format your response as JSON:
         `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim() || 
         candidate.email?.split('@')[0] || 'Unknown';
 
-      // Build prompt for OpenAI
-      const prompt = `You are an expert HR analyst. Generate a concise, professional profile summary for a job candidate based on their assessment results.
+      // Build prompt for OpenAI with 5 structured sections
+      const prompt = `You are an expert HR analyst. Generate a comprehensive profile analysis for a job candidate based on their assessment results.
 
 CANDIDATE: ${candidateName}
 
@@ -6984,24 +6984,36 @@ HIGHEST SCORING TRAITS: ${assessmentData.strengths?.map((s: any) => `${s.name} (
 
 LOWEST SCORING TRAITS: ${assessmentData.lowestScoring?.map((s: any) => `${s.name} (${s.score}%)`).join(', ') || 'N/A'}
 
-IMPORTANT: FIT and AI Readiness are TRAIT-BASED assessments. High scores mean the trait is STRONGLY PRESENT, not that it's "good" or "bad". Whether a high score is beneficial depends on role requirements. Do NOT label traits as strengths or weaknesses - just describe what the scores indicate about the candidate's profile.
+IMPORTANT: FIT and AI Readiness are TRAIT-BASED assessments. High scores mean the trait is STRONGLY PRESENT, not that it's "good" or "bad". Whether a high score is beneficial depends on role requirements.
 
-Write 2-3 paragraphs (max 200 words total) covering:
-1. Overall profile characteristics and distinctive traits
-2. Types of roles/environments where this profile typically thrives
-3. Key considerations for role matching (without making value judgments about high/low scores)
+Generate a structured analysis with EXACTLY these 5 sections. Use the headers exactly as shown:
 
-Keep the tone professional and objective. Focus on describing the candidate's profile, not evaluating it.`;
+**ROLE SUITABILITY**
+Describe what types of roles would be most suitable for this candidate based on their assessment profile. Be specific about job titles and responsibilities that match their traits.
+
+**OPTIMAL ENVIRONMENT**
+Describe the ideal work environment, company culture, and team dynamics where this candidate would thrive.
+
+**KEY STRENGTHS**
+Highlight the candidate's standout capabilities and traits that would add immediate value. Reference specific assessment scores.
+
+**DEVELOPMENT FOCUS**
+Identify areas where the candidate could benefit from development and training. Provide specific, actionable recommendations.
+
+**OVERALL ASSESSMENT AND RECOMMENDATION**
+Provide a final summary assessment with a clear hiring recommendation. Be direct about fit for AI-related roles and general professional readiness.
+
+Keep each section to 2-3 sentences. Be specific and reference actual assessment data.`;
 
       const openai = new (await import('openai')).default();
       
       const completion = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
-          { role: "system", content: "You are an expert HR analyst specializing in psychometric assessments and candidate profiling. Provide concise, professional, and actionable insights." },
+          { role: "system", content: "You are an expert HR analyst specializing in psychometric assessments and candidate profiling. Provide structured, professional, and actionable insights using the exact section headers requested." },
           { role: "user", content: prompt }
         ],
-        max_tokens: 500,
+        max_tokens: 800,
         temperature: 0.7,
       });
 
