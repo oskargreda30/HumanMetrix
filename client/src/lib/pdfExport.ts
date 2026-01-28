@@ -242,7 +242,7 @@ function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, r
   pdf.text('A step-by-step guide for hiring managers and stakeholders', pageWidth / 2, yPos + 21, { align: 'center' });
   
   pdf.setTextColor(0, 0, 0);
-  yPos = 75;
+  yPos = 85; // More space between header and first content point
   
   // Helper for numbered items
   const addGuideItem = (num: number, title: string, description: string, y: number): number => {
