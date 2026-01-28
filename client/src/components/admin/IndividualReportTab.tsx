@@ -461,15 +461,27 @@ export default function IndividualReportTab() {
                       )}
                     </Button>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    <div className="text-center p-2 rounded-lg bg-background/50">
-                      <div className="text-xs text-muted-foreground mb-1">Prompt</div>
+                  <div className="grid grid-cols-4 gap-2 mb-3">
+                    <div className="text-center p-3 rounded-lg bg-background/50 min-h-[72px] flex flex-col justify-center border">
+                      <div className="text-xs text-muted-foreground mb-1">FIT</div>
+                      <div className={`text-lg font-bold ${fitData ? getScoreColor(Math.round(Object.values(fitData.scores).reduce((a: number, b: any) => a + b, 0) / Object.keys(fitData.scores).length)) : 'text-muted-foreground'}`}>
+                        {fitData ? `${Math.round(Object.values(fitData.scores).reduce((a: number, b: any) => a + b, 0) / Object.keys(fitData.scores).length)}%` : '-'}
+                      </div>
+                    </div>
+                    <div className="text-center p-3 rounded-lg bg-background/50 min-h-[72px] flex flex-col justify-center border">
+                      <div className="text-xs text-muted-foreground mb-1">AI Readiness</div>
+                      <div className={`text-lg font-bold ${aiData ? getScoreColor(Math.round(Object.values(aiData.scores).reduce((a: number, b: any) => a + b, 0) / Object.keys(aiData.scores).length)) : 'text-muted-foreground'}`}>
+                        {aiData ? `${Math.round(Object.values(aiData.scores).reduce((a: number, b: any) => a + b, 0) / Object.keys(aiData.scores).length)}%` : '-'}
+                      </div>
+                    </div>
+                    <div className="text-center p-3 rounded-lg bg-background/50 min-h-[72px] flex flex-col justify-center border">
+                      <div className="text-xs text-muted-foreground mb-1">Prompt Arch.</div>
                       <div className={`text-lg font-bold ${promptData ? getScoreColor(promptData.totalScore) : 'text-muted-foreground'}`}>
                         {promptData ? `${promptData.totalScore}%` : '-'}
                       </div>
                     </div>
-                    <div className="text-center p-2 rounded-lg bg-background/50">
-                      <div className="text-xs text-muted-foreground mb-1">AIQ</div>
+                    <div className="text-center p-3 rounded-lg bg-background/50 min-h-[72px] flex flex-col justify-center border">
+                      <div className="text-xs text-muted-foreground mb-1">AIQ (Ethics)</div>
                       <div className={`text-lg font-bold ${aiqData ? getScoreColor(aiqData.totalScore) : 'text-muted-foreground'}`}>
                         {aiqData ? `${aiqData.totalScore}%` : '-'}
                       </div>
