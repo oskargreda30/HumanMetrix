@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle, Clock, Lock, CreditCard, Package } from "lucide-react";
 import { format } from "date-fns";
+import { apiRequest } from "@/lib/queryClient";
 
 interface BundleResultsData {
   email: string;
@@ -69,22 +70,15 @@ export default function B2BResultsBundle() {
     setIsCheckingOut(true);
     
     try {
-      const res = await fetch(`/api/b2b/results-bundle/checkout`, {
+      const result = await apiRequest<{ checkoutUrl: string }>('/api/b2b/results-bundle/checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           email,
-          partnerId: parseInt(partnerId),
+          partnerId,
           countryCode, 
           types,
         }),
       });
-      
-      const result = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(result.error || 'Failed to create checkout');
-      }
       
       if (result.checkoutUrl) {
         window.location.href = result.checkoutUrl;

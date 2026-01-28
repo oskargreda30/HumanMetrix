@@ -3781,6 +3781,9 @@ export function registerPartnerRoutes(app: Express) {
       const successUrl = `${baseUrl}/b2b-payment-callback?success=true&bundle=true&email=${encodeURIComponent(email)}&partner=${partnerId}&sessions=${sessionIds.join(',')}`;
       const cancelUrl = `${baseUrl}/b2b-results-bundle?email=${encodeURIComponent(email)}&partner=${partnerId}&country=${countryCode}&types=${assessmentTypes.join(',')}`;
       
+      // Use unique assessment count for description
+      const uniqueAssessmentCount = new Set(filteredSessions.map((s: any) => normalizeAssessmentId(s.assessmentType))).size;
+      
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
@@ -3788,8 +3791,8 @@ export function registerPartnerRoutes(app: Express) {
             price_data: {
               currency: currencyCode.toLowerCase(),
               product_data: {
-                name: `HumanMetrix Assessment Bundle (${filteredSessions.length} Assessments)`,
-                description: `Unlock all ${filteredSessions.length} completed assessment results`,
+                name: `HumanMetrix Assessment Bundle (${uniqueAssessmentCount} Assessments)`,
+                description: `Unlock all ${uniqueAssessmentCount} completed assessment results`,
               },
               unit_amount: bundleDiscountedPrice,
             },
@@ -3797,6 +3800,7 @@ export function registerPartnerRoutes(app: Express) {
           },
         ],
         mode: 'payment',
+        allow_promotion_codes: true,
         success_url: successUrl,
         cancel_url: cancelUrl,
         customer_email: email,
