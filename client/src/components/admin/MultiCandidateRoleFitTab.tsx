@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -279,6 +279,110 @@ export default function MultiCandidateRoleFitTab() {
 
   const canCompare = selectedCandidates.length >= 2 && selectedRole && selectedRoleData?.requiredSkillScores;
 
+  // State for AI analyses
+  const [promptAnalysis, setPromptAnalysis] = useState<string | null>(null);
+  const [aiqAnalysis, setAiqAnalysis] = useState<string | null>(null);
+  const lastAnalyzedRef = useRef<string | null>(null);
+
+  // Mutation for multi-candidate Prompt Architecture analysis
+  const [promptAnalysisError, setPromptAnalysisError] = useState<string | null>(null);
+  const [aiqAnalysisError, setAiqAnalysisError] = useState<string | null>(null);
+  
+  const analyzeMultiPromptMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest('POST', '/api/admin/analyze-multi-prompt', {
+        candidateIds: selectedCandidates,
+        jobRoleId: selectedRole,
+      }, { timeoutMs: 60000 });
+      return res.json();
+    },
+    onSuccess: (data: { analysis: string }) => {
+      setPromptAnalysis(data.analysis);
+      setPromptAnalysisError(null);
+    },
+    onError: (error: Error) => {
+      console.error("Prompt analysis failed:", error);
+      setPromptAnalysisError(error.message || "Failed to generate Prompt Architecture analysis");
+      toast({
+        title: "Analysis Error",
+        description: "Failed to generate Prompt Architecture analysis. Please try again later.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation for multi-candidate AIQ analysis
+  const analyzeMultiAiqMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest('POST', '/api/admin/analyze-multi-aiq', {
+        candidateIds: selectedCandidates,
+        jobRoleId: selectedRole,
+      }, { timeoutMs: 60000 });
+      return res.json();
+    },
+    onSuccess: (data: { analysis: string }) => {
+      setAiqAnalysis(data.analysis);
+      setAiqAnalysisError(null);
+    },
+    onError: (error: Error) => {
+      console.error("AIQ analysis failed:", error);
+      setAiqAnalysisError(error.message || "Failed to generate AIQ analysis");
+      toast({
+        title: "Analysis Error",
+        description: "Failed to generate AIQ analysis. Please try again later.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Auto-trigger AI analyses when comparison is loaded
+  // Include required scores hash in analysis key to re-trigger when they change
+  const requiredScoresHash = comparison?.roleSnapshot?.requiredSkillScores 
+    ? JSON.stringify(comparison.roleSnapshot.requiredSkillScores)
+    : '';
+    
+  useEffect(() => {
+    if (comparison && selectedCandidates.length >= 2 && selectedRole) {
+      const analysisKey = `${selectedCandidates.join(',')}-${selectedRole}-${requiredScoresHash}`;
+      
+      if (lastAnalyzedRef.current !== analysisKey) {
+        lastAnalyzedRef.current = analysisKey;
+        
+        // Clear previous analyses and errors
+        setPromptAnalysis(null);
+        setAiqAnalysis(null);
+        setPromptAnalysisError(null);
+        setAiqAnalysisError(null);
+        
+        // Check if role requires Prompt Architecture
+        const roleSkills = comparison.roleSnapshot.requiredSkillScores;
+        const hasPromptReq = roleSkills?.promptArchitectureScore;
+        const hasAiqReq = roleSkills?.aiqScore;
+        
+        // Auto-trigger both analyses with small delay
+        setTimeout(() => {
+          if (hasPromptReq && !analyzeMultiPromptMutation.isPending) {
+            analyzeMultiPromptMutation.mutate();
+          }
+          if (hasAiqReq && !analyzeMultiAiqMutation.isPending) {
+            analyzeMultiAiqMutation.mutate();
+          }
+        }, 100);
+      }
+    }
+  }, [comparison?.id, selectedCandidates.join(','), selectedRole, requiredScoresHash]);
+
+  // Reset when selection clears
+  useEffect(() => {
+    if (!comparison) {
+      lastAnalyzedRef.current = null;
+      setPromptAnalysis(null);
+      setAiqAnalysis(null);
+      setPromptAnalysisError(null);
+      setAiqAnalysisError(null);
+    }
+  }, [comparison]);
+
   const prepareBarChartData = () => {
     if (!comparison) return [];
     // Only include candidates with valid data in the chart
@@ -335,6 +439,8 @@ export default function MultiCandidateRoleFitTab() {
         candidateEntries: comparison.candidateEntries,
         summaryInsights: comparison.summaryInsights,
         barChartImage,
+        promptArchitectureAnalysis: promptAnalysis,
+        aiqAnalysis: aiqAnalysis,
       });
       
       toast({
@@ -1037,6 +1143,38 @@ export default function MultiCandidateRoleFitTab() {
                   <p className="text-sm text-muted-foreground italic border-l-2 border-cyan-500 pl-3">
                     Why it matters: Prompt Architecture measures ability to construct effective AI prompts across increasing complexity levels - essential for AI-augmented roles.
                   </p>
+                  
+                  {/* AI Analysis Section */}
+                  <div className="mt-4 pt-4 border-t">
+                    <h4 className="font-semibold flex items-center gap-2 mb-3 text-cyan-700">
+                      <Sparkles className="h-4 w-4" />
+                      AI Comparative Analysis
+                    </h4>
+                    {analyzeMultiPromptMutation.isPending ? (
+                      <div className="flex items-center gap-2 py-4">
+                        <Loader2 className="h-5 w-5 animate-spin text-cyan-500" />
+                        <span className="text-sm text-muted-foreground">Analyzing prompt engineering capabilities across candidates...</span>
+                      </div>
+                    ) : promptAnalysisError ? (
+                      <div className="flex items-center gap-2 py-4 text-red-500" data-testid="text-prompt-analysis-error">
+                        <AlertTriangle className="h-5 w-5" />
+                        <span className="text-sm">Analysis unavailable. Please try again later.</span>
+                      </div>
+                    ) : promptAnalysis ? (
+                      <div className="space-y-3" data-testid="text-multi-prompt-analysis">
+                        {promptAnalysis.split('\n\n').map((paragraph, idx) => (
+                          <p key={idx} className="text-sm text-muted-foreground leading-relaxed">
+                            {paragraph}
+                          </p>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 py-4">
+                        <Loader2 className="h-5 w-5 animate-spin text-cyan-500" />
+                        <span className="text-sm text-muted-foreground">Preparing analysis...</span>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             );
@@ -1152,6 +1290,38 @@ export default function MultiCandidateRoleFitTab() {
                   <p className="text-sm text-muted-foreground italic border-l-2 border-purple-500 pl-3">
                     Why it matters: AIQ measures understanding of AI ethics, bias recognition, and responsible AI deployment - critical for roles involving AI decision-making.
                   </p>
+                  
+                  {/* AI Analysis Section */}
+                  <div className="mt-4 pt-4 border-t">
+                    <h4 className="font-semibold flex items-center gap-2 mb-3 text-purple-700">
+                      <ShieldAlert className="h-4 w-4" />
+                      AI Ethical Assessment Comparison
+                    </h4>
+                    {analyzeMultiAiqMutation.isPending ? (
+                      <div className="flex items-center gap-2 py-4">
+                        <Loader2 className="h-5 w-5 animate-spin text-purple-500" />
+                        <span className="text-sm text-muted-foreground">Analyzing ethical AI stance across candidates...</span>
+                      </div>
+                    ) : aiqAnalysisError ? (
+                      <div className="flex items-center gap-2 py-4 text-red-500" data-testid="text-aiq-analysis-error">
+                        <AlertTriangle className="h-5 w-5" />
+                        <span className="text-sm">Analysis unavailable. Please try again later.</span>
+                      </div>
+                    ) : aiqAnalysis ? (
+                      <div className="space-y-3" data-testid="text-multi-aiq-analysis">
+                        {aiqAnalysis.split('\n\n').map((paragraph, idx) => (
+                          <p key={idx} className="text-sm text-muted-foreground leading-relaxed">
+                            {paragraph}
+                          </p>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 py-4">
+                        <Loader2 className="h-5 w-5 animate-spin text-purple-500" />
+                        <span className="text-sm text-muted-foreground">Preparing analysis...</span>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             );

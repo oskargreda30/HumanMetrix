@@ -8217,6 +8217,198 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
     }
   });
 
+  // Admin: Analyze Multi-Candidate Prompt Architecture Comparison
+  app.post("/api/admin/analyze-multi-prompt", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = req.user.id;
+      const admin = await storage.getUser(adminId);
+      
+      const hasAdminAccess = admin?.role === 'super_admin' || admin?.role === 'organization_admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const { candidateIds, jobRoleId } = req.body;
+      
+      if (!candidateIds || !Array.isArray(candidateIds) || candidateIds.length === 0 || !jobRoleId) {
+        return res.status(400).json({ message: "Candidate IDs array and job role ID are required" });
+      }
+
+      // Get role data
+      const role = await storage.getJobRole(jobRoleId);
+      if (!role) {
+        return res.status(404).json({ message: "Job role not found" });
+      }
+
+      // Get all candidates' Prompt Architecture data
+      const candidateData: Array<{ name: string; score: string; levels: string }> = [];
+      
+      for (const userId of candidateIds) {
+        const user = await storage.getUser(userId);
+        if (!user) continue;
+        
+        const candidateName = user.firstName && user.lastName 
+          ? `${user.firstName} ${user.lastName}` 
+          : user.email;
+        
+        const results = await storage.getAssessmentResults(userId);
+        const promptResult = results.find(r => r.assessmentType === 'prompt_architecture' && r.status === 'completed');
+        
+        let score = 'No data';
+        let levels = 'No level data';
+        
+        if (promptResult) {
+          score = `${promptResult.totalScore || 0}%`;
+          const levelData = (promptResult as any).levels || [];
+          if (levelData.length > 0) {
+            levels = levelData.map((l: any) => 
+              `Level ${l.level}: ${l.passed ? 'Passed' : 'Failed'}`
+            ).join(', ');
+          }
+        }
+        
+        candidateData.push({ name: candidateName, score, levels });
+      }
+      
+      if (candidateData.length === 0) {
+        return res.status(400).json({ message: "No valid candidates found" });
+      }
+
+      // Build comparison summary
+      const candidateSummary = candidateData.map((c, i) => 
+        `${i + 1}. ${c.name}: Score ${c.score} (${c.levels})`
+      ).join('\n');
+
+      // Generate AI analysis
+      const prompt = `You are an expert HR analyst comparing multiple candidates' prompt engineering skills for a specific role.
+
+JOB ROLE: ${role.name}
+${role.description ? `ROLE DESCRIPTION: ${role.description}` : ''}
+
+CANDIDATES' PROMPT ARCHITECTURE ASSESSMENT RESULTS:
+${candidateSummary}
+
+Provide a comparative analysis of these candidates' prompt engineering capabilities for this role:
+1. Rank candidates by their prompt engineering strength for this specific role
+2. Highlight who would be most effective at crafting AI prompts for role-related tasks
+3. Note any candidates with concerning gaps in prompt skills
+4. Provide a brief recommendation on which candidate(s) best meet the prompt engineering requirements
+
+Keep your analysis concise (2-3 paragraphs) and focused on practical hiring implications.`;
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 800,
+        temperature: 0.7,
+      });
+
+      const analysis = response.choices[0]?.message?.content || 'Unable to generate analysis.';
+      
+      res.json({ analysis });
+    } catch (error: any) {
+      console.error("Error analyzing multi-candidate prompt:", error);
+      res.status(500).json({ message: "Failed to analyze multi-candidate prompt: " + error.message });
+    }
+  });
+
+  // Admin: Analyze Multi-Candidate AIQ Comparison
+  app.post("/api/admin/analyze-multi-aiq", isAuthenticated, async (req: any, res) => {
+    try {
+      const adminId = req.user.id;
+      const admin = await storage.getUser(adminId);
+      
+      const hasAdminAccess = admin?.role === 'super_admin' || admin?.role === 'organization_admin';
+      if (!hasAdminAccess) {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const { candidateIds, jobRoleId } = req.body;
+      
+      if (!candidateIds || !Array.isArray(candidateIds) || candidateIds.length === 0 || !jobRoleId) {
+        return res.status(400).json({ message: "Candidate IDs array and job role ID are required" });
+      }
+
+      // Get role data
+      const role = await storage.getJobRole(jobRoleId);
+      if (!role) {
+        return res.status(404).json({ message: "Job role not found" });
+      }
+
+      // Get all candidates' AIQ data
+      const candidateData: Array<{ name: string; score: string; band: string }> = [];
+      
+      for (const userId of candidateIds) {
+        const user = await storage.getUser(userId);
+        if (!user) continue;
+        
+        const candidateName = user.firstName && user.lastName 
+          ? `${user.firstName} ${user.lastName}` 
+          : user.email;
+        
+        const results = await storage.getAssessmentResults(userId);
+        const aiqResult = results.find(r => r.assessmentType === 'aiq' && r.status === 'completed');
+        
+        let score = 'No data';
+        let band = 'Not assessed';
+        
+        if (aiqResult) {
+          const scoreVal = aiqResult.totalScore || 0;
+          score = `${scoreVal}%`;
+          if (scoreVal >= 80) band = 'Exemplary';
+          else if (scoreVal >= 60) band = 'Strong';
+          else if (scoreVal >= 40) band = 'Developing';
+          else if (scoreVal >= 20) band = 'Gaps Identified';
+          else band = 'Critical Concerns';
+        }
+        
+        candidateData.push({ name: candidateName, score, band });
+      }
+      
+      if (candidateData.length === 0) {
+        return res.status(400).json({ message: "No valid candidates found" });
+      }
+
+      // Build comparison summary
+      const candidateSummary = candidateData.map((c, i) => 
+        `${i + 1}. ${c.name}: Score ${c.score} (Band: ${c.band})`
+      ).join('\n');
+
+      // Generate AI analysis
+      const prompt = `You are an expert HR analyst comparing multiple candidates' ethical AI stance (AIQ - Algorithmic Integrity Quotient) for a specific role.
+
+JOB ROLE: ${role.name}
+${role.description ? `ROLE DESCRIPTION: ${role.description}` : ''}
+
+CANDIDATES' AIQ ASSESSMENT RESULTS:
+${candidateSummary}
+
+The AIQ assessment measures candidates' understanding of AI ethics, responsible AI use, bias awareness, and commitment to ethical AI deployment.
+
+Provide a comparative analysis of these candidates' AIQ for this role:
+1. Rank candidates by their ethical AI readiness for this specific role
+2. Highlight who would be most trustworthy for AI governance and ethical decision-making
+3. Note any candidates with concerning gaps in AI ethics understanding
+4. Provide a brief recommendation on which candidate(s) best meet the ethical AI requirements
+
+Keep your analysis concise (2-3 paragraphs) and focused on practical hiring implications.`;
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 800,
+        temperature: 0.7,
+      });
+
+      const analysis = response.choices[0]?.message?.content || 'Unable to generate analysis.';
+      
+      res.json({ analysis });
+    } catch (error: any) {
+      console.error("Error analyzing multi-candidate AIQ:", error);
+      res.status(500).json({ message: "Failed to analyze multi-candidate AIQ: " + error.message });
+    }
+  });
+
   // Admin: Get cached role alignment
   app.get("/api/admin/role-alignment", isAuthenticated, async (req: any, res) => {
     try {

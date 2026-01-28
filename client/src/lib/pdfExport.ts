@@ -318,8 +318,8 @@ function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, r
     yPos = addGuideItem(2, 'Cohort Insights', 
       'Common strengths shared by multiple candidates and common development areas where the cohort may need improvement. Key differentiators highlight what sets candidates apart.', yPos);
     
-    yPos = addGuideItem(3, 'Overall Fit Comparison Chart', 
-      'Visual bar chart ranking all candidates by their role fit percentage. Use this to quickly identify top performers and compare relative standings.', yPos);
+    yPos = addGuideItem(3, 'AI Comparative Analyses', 
+      'AI-powered assessment of Prompt Architecture and AIQ skills across candidates, providing insights on relative strengths and areas for development.', yPos);
     
     yPos = addGuideItem(4, 'Candidate Rankings Table', 
       'Sortable table with rank, fit percentage, fit tier, and key notes. Top 3 candidates are highlighted with gold, silver, and bronze indicators.', yPos);
@@ -3298,6 +3298,8 @@ interface MultiCandidateComparisonData {
     largestDifferential?: { skillName: string; topCandidate: string; topScore: number; bottomCandidate: string; bottomScore: number; spread?: number; criticality?: string } | null;
   };
   barChartImage?: string | null;
+  promptArchitectureAnalysis?: string | null;
+  aiqAnalysis?: string | null;
 }
 
 export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComparisonData) {
@@ -3546,162 +3548,108 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     pdf.text(`\u2022 ${truncated}`, 20 + CARD_PADDING, yPos + CARD_PADDING + 10 + (i * 6));
   });
   
-  // ========== OVERALL FIT COMPARISON - NEW PAGE ==========
-  pdf.addPage();
-  addBackgroundPattern(pdf, pageWidth, pageHeight);
-  addHeader(pdf, pageWidth);
-  yPos = 35;
+  yPos += 35;
   
-  // Bar Chart Image (if provided)
-  if (data.barChartImage) {
-    yPos = addSectionHeader(pdf, 'OVERALL FIT COMPARISON', yPos, pageWidth);
-    yPos += 3;
-    
-    pdf.setFontSize(8);
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('Visual comparison of role fit scores across all candidates', 20, yPos);
-    yPos += 8;
-    
-    try {
-      // Smaller chart height for compact bars
-      const chartHeight = Math.min(45, pageHeight - yPos - 40);
-      pdf.addImage(data.barChartImage, 'PNG', 20, yPos, pageWidth - 40, chartHeight);
-      yPos += chartHeight + 15;
-    } catch (e) {
-      console.error('Error adding bar chart image:', e);
+  // ========== PROMPT ARCHITECTURE AI ANALYSIS (if available) ==========
+  if (data.promptArchitectureAnalysis) {
+    // Page break check
+    if (yPos > pageHeight - 80) {
+      pdf.addPage();
+      addBackgroundPattern(pdf, pageWidth, pageHeight);
+      addHeader(pdf, pageWidth);
+      yPos = 35;
     }
-  }
-  
-  // ========== ADVANCED ANALYTICS SECTION ==========
-  yPos = addSectionHeader(pdf, 'ADVANCED ANALYTICS', yPos, pageWidth);
-  yPos += 8;
-  
-  const analyticsBoxWidth = (pageWidth - 50) / 2;
-  const analyticsBoxHeight = 50;
-  
-  // Skill Dominance (left box)
-  if (data.summaryInsights.skillDominance && data.summaryInsights.skillDominance.length > 0) {
-    pdf.setFillColor(255, 251, 235);
-    pdf.setDrawColor(251, 191, 36);
+    
+    yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE ANALYSIS', yPos, pageWidth);
+    yPos += 5;
+    
+    pdf.setFillColor(224, 247, 250);
+    pdf.setDrawColor(6, 182, 212);
     pdf.setLineWidth(0.3);
-    pdf.roundedRect(20, yPos, analyticsBoxWidth, analyticsBoxHeight, 2, 2, 'FD');
     
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(180, 83, 9);
-    pdf.text('Skill Dominance Count', 26, yPos + 10);
-    pdf.setFontSize(7);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(113, 63, 18);
-    pdf.text('How many skills each candidate leads in', 26, yPos + 16);
+    // Split text into lines that fit within the box width
+    const maxWidth = pageWidth - 52;
+    const paragraphs = data.promptArchitectureAnalysis.split('\n\n');
+    let totalHeight = 8;
+    const allLines: string[] = [];
+    
+    paragraphs.forEach(para => {
+      const lines = pdf.splitTextToSize(para, maxWidth);
+      allLines.push(...lines, '');
+    });
+    
+    totalHeight += allLines.length * 4;
+    const boxHeight = Math.min(totalHeight, 60);
+    
+    pdf.roundedRect(20, yPos, pageWidth - 40, boxHeight, 2, 2, 'FD');
     
     pdf.setFontSize(8);
-    data.summaryInsights.skillDominance.slice(0, 4).forEach((sd: any, i: number) => {
-      if (!sd || !sd.candidateName) return;
-      const candidateName = String(sd.candidateName || 'Unknown');
-      const truncName = candidateName.length > 18 ? candidateName.slice(0, 16) + '...' : candidateName;
-      pdf.setTextColor(17, 24, 39);
-      pdf.text(`${truncName}`, 26, yPos + 24 + (i * 6));
-      pdf.setTextColor(180, 83, 9);
-      pdf.text(`${sd.winsCount ?? 0}/${sd.totalSkills ?? 0} skills`, 26 + analyticsBoxWidth - 35, yPos + 24 + (i * 6));
-    });
-  }
-  
-  // Consistency Scores (right box)
-  if (data.summaryInsights.consistencyScores && data.summaryInsights.consistencyScores.length > 0) {
-    pdf.setFillColor(239, 246, 255);
-    pdf.setDrawColor(59, 130, 246);
-    pdf.roundedRect(25 + analyticsBoxWidth, yPos, analyticsBoxWidth, analyticsBoxHeight, 2, 2, 'FD');
-    
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(30, 64, 175);
-    pdf.text('Consistency Score', 31 + analyticsBoxWidth, yPos + 10);
-    pdf.setFontSize(7);
     pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(59, 130, 246);
-    pdf.text('Score uniformity across assessments', 31 + analyticsBoxWidth, yPos + 16);
+    pdf.setTextColor(22, 78, 99);
     
-    pdf.setFontSize(8);
-    data.summaryInsights.consistencyScores.slice(0, 4).forEach((cs: any, i: number) => {
-      if (!cs || !cs.candidateName) return;
-      const candidateName = String(cs.candidateName || 'Unknown');
-      const truncName = candidateName.length > 15 ? candidateName.slice(0, 13) + '...' : candidateName;
-      pdf.setTextColor(17, 24, 39);
-      pdf.text(`${truncName}`, 31 + analyticsBoxWidth, yPos + 24 + (i * 6));
-      const interpretation = String(cs.interpretation || 'N/A');
-      const interpColor = interpretation === 'Excellent' ? [34, 197, 94] : 
-                          interpretation === 'Good' ? [59, 130, 246] : [234, 179, 8];
-      pdf.setTextColor(interpColor[0], interpColor[1], interpColor[2]);
-      pdf.text(`${cs.consistencyScore ?? 0}% ${interpretation}`, 31 + (2 * analyticsBoxWidth) - 35, yPos + 24 + (i * 6));
-    });
-  }
-  
-  yPos += analyticsBoxHeight + 10;
-  
-  // Critical Gap Ratio (full width box)
-  if (data.summaryInsights.criticalGapRatios && data.summaryInsights.criticalGapRatios.length > 0) {
-    const gapBoxHeight = 35;
-    pdf.setFillColor(254, 242, 242);
-    pdf.setDrawColor(239, 68, 68);
-    pdf.roundedRect(20, yPos, pageWidth - 40, gapBoxHeight, 2, 2, 'FD');
-    
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(153, 27, 27);
-    pdf.text('Critical Gap Analysis', 26, yPos + 10);
-    pdf.setFontSize(7);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(185, 28, 28);
-    pdf.text('How many critical skills each candidate is below threshold on', 26, yPos + 16);
-    
-    const gapColWidth = (pageWidth - 50) / Math.min(4, data.summaryInsights.criticalGapRatios.length);
-    data.summaryInsights.criticalGapRatios.slice(0, 4).forEach((cgr: any, i: number) => {
-      if (!cgr || !cgr.candidateName) return;
-      const colX = 26 + (i * gapColWidth);
-      pdf.setFontSize(8);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(17, 24, 39);
-      const candidateName = String(cgr.candidateName || 'Unknown');
-      const truncName = candidateName.length > 12 ? candidateName.slice(0, 10) + '...' : candidateName;
-      pdf.text(truncName, colX, yPos + 24);
-      pdf.setFont('helvetica', 'normal');
-      const riskLevel = String(cgr.riskLevel || 'Unknown');
-      const riskColor = riskLevel === 'No Risk' ? [34, 197, 94] :
-                        riskLevel === 'Low Risk' ? [59, 130, 246] :
-                        riskLevel === 'Moderate Risk' ? [234, 179, 8] : [239, 68, 68];
-      pdf.setTextColor(riskColor[0], riskColor[1], riskColor[2]);
-      pdf.text(`${cgr.criticalGaps ?? 0}/${cgr.totalCritical ?? 0} gaps - ${riskLevel}`, colX, yPos + 30);
+    let textY = yPos + 6;
+    const maxLines = Math.floor((boxHeight - 8) / 4);
+    allLines.slice(0, maxLines).forEach((line, i) => {
+      if (line === '') {
+        textY += 2;
+      } else {
+        pdf.text(line, 26, textY);
+        textY += 4;
+      }
     });
     
-    yPos += gapBoxHeight + 10;
+    yPos += boxHeight + BLOCK_SPACING;
   }
   
-  // Largest Differential (if available)
-  if (data.summaryInsights.largestDifferential) {
-    const diff = data.summaryInsights.largestDifferential;
-    // Guard against missing properties
-    if (diff.skillName && diff.topCandidate && diff.bottomCandidate) {
-      const diffBoxHeight = 22;
-      pdf.setFillColor(240, 253, 244);
-      pdf.setDrawColor(34, 197, 94);
-      pdf.roundedRect(20, yPos, pageWidth - 40, diffBoxHeight, 2, 2, 'FD');
-      
-      pdf.setFontSize(9);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(22, 101, 52);
-      pdf.text('Largest Skill Differential', 26, yPos + 8);
-      
-      pdf.setFontSize(8);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(21, 128, 61);
-      const topScore = diff.topScore ?? 0;
-      const bottomScore = diff.bottomScore ?? 0;
-      const diffText = `${diff.skillName}: ${diff.topCandidate} (${topScore}) leads ${diff.bottomCandidate} (${bottomScore}) by ${topScore - bottomScore} points`;
-      pdf.text(diffText, 26, yPos + 16);
-      
-      yPos += diffBoxHeight + 10;
+  // ========== AIQ AI ANALYSIS (if available) ==========
+  if (data.aiqAnalysis) {
+    // Page break check
+    if (yPos > pageHeight - 80) {
+      pdf.addPage();
+      addBackgroundPattern(pdf, pageWidth, pageHeight);
+      addHeader(pdf, pageWidth);
+      yPos = 35;
     }
+    
+    yPos = addSectionHeader(pdf, 'AIQ ETHICAL ASSESSMENT', yPos, pageWidth);
+    yPos += 5;
+    
+    pdf.setFillColor(245, 243, 255);
+    pdf.setDrawColor(168, 85, 247);
+    pdf.setLineWidth(0.3);
+    
+    // Split text into lines that fit within the box width
+    const maxWidth = pageWidth - 52;
+    const paragraphs = data.aiqAnalysis.split('\n\n');
+    let totalHeight = 8;
+    const allLines: string[] = [];
+    
+    paragraphs.forEach(para => {
+      const lines = pdf.splitTextToSize(para, maxWidth);
+      allLines.push(...lines, '');
+    });
+    
+    totalHeight += allLines.length * 4;
+    const boxHeight = Math.min(totalHeight, 60);
+    
+    pdf.roundedRect(20, yPos, pageWidth - 40, boxHeight, 2, 2, 'FD');
+    
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(88, 28, 135);
+    
+    let textY = yPos + 6;
+    const maxLines = Math.floor((boxHeight - 8) / 4);
+    allLines.slice(0, maxLines).forEach((line, i) => {
+      if (line === '') {
+        textY += 2;
+      } else {
+        pdf.text(line, 26, textY);
+        textY += 4;
+      }
+    });
+    
+    yPos += boxHeight + BLOCK_SPACING;
   }
   
   // ========== CANDIDATE RANKINGS PAGE ==========
