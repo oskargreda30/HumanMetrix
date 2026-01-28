@@ -19946,25 +19946,25 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
 
   // ========== REVENUE TARGETS & SALES TRACKING ==========
   
-  // Monthly revenue targets (April 2026 - March 2027)
+  // Monthly revenue targets (March 2026 - February 2027)
   const MONTHLY_TARGETS: Record<string, number> = {
-    '2026-04': 1000000, // £10,000 in pence
-    '2026-05': 1500000, // £15,000
-    '2026-06': 2500000, // £25,000
-    '2026-07': 3500000, // £35,000
-    '2026-08': 4000000, // £40,000
-    '2026-09': 4500000, // £45,000
-    '2026-10': 5000000, // £50,000
-    '2026-11': 5500000, // £55,000
-    '2026-12': 6000000, // £60,000
-    '2027-01': 6500000, // £65,000
+    '2026-03': 1000000, // £10,000 in pence
+    '2026-04': 1500000, // £15,000
+    '2026-05': 2500000, // £25,000
+    '2026-06': 3500000, // £35,000
+    '2026-07': 4000000, // £40,000
+    '2026-08': 4500000, // £45,000
+    '2026-09': 5000000, // £50,000
+    '2026-10': 5500000, // £55,000
+    '2026-11': 6000000, // £60,000
+    '2026-12': 6500000, // £65,000
+    '2027-01': 5000000, // £50,000
     '2027-02': 5000000, // £50,000
-    '2027-03': 5000000, // £50,000
   };
   
   // Profit participation milestones (36 months from effective date)
   const MILESTONE_CONFIG = {
-    effectiveDate: new Date('2026-04-01'), // April 2026
+    effectiveDate: new Date('2026-03-01'), // March 2026
     milestonePeriodMonths: 36,
     baseProfitParticipation: 15, // 15% base after 6-month cliff
     cliffMonths: 6,
