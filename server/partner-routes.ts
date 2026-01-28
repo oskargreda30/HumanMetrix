@@ -3609,12 +3609,212 @@ export function registerPartnerRoutes(app: Express) {
       res.status(500).json({ error: "Failed to process payment" });
     }
   });
+
+  // Get bundle results info for multiple assessments
+  app.get("/api/b2b/results-bundle", async (req, res) => {
+    try {
+      const { email, partner, country, types } = req.query;
+      
+      if (!email || !partner) {
+        return res.status(400).json({ error: "Missing required parameters" });
+      }
+      
+      const partnerId = parseInt(partner as string);
+      const countryCode = (country as string) || 'GB';
+      const assessmentTypes = (types as string)?.split(',').filter(Boolean) || [];
+      
+      // Get partner info
+      const partnerAccount = await storage.getPartnerAccount(partnerId);
+      if (!partnerAccount) {
+        return res.status(404).json({ error: "Partner not found" });
+      }
+      
+      // Get completed sessions for this email and partner
+      const completedSessions = await storage.getCompletedB2BSessionsByEmail(
+        email as string, 
+        partnerId
+      );
+      
+      if (!completedSessions || completedSessions.length === 0) {
+        return res.status(404).json({ error: "No completed assessments found" });
+      }
+      
+      // Filter to requested types if specified
+      const filteredSessions = assessmentTypes.length > 0
+        ? completedSessions.filter((s: any) => {
+            const normalizedType = normalizeAssessmentId(s.assessmentType);
+            return assessmentTypes.some(t => normalizeAssessmentId(t) === normalizedType);
+          })
+        : completedSessions;
+      
+      if (filteredSessions.length === 0) {
+        return res.status(404).json({ error: "No matching assessments found" });
+      }
+      
+      // Calculate bundle pricing based on sum of individual discounted prices
+      const userCurrency = getCurrencyForCountry(countryCode);
+      let sumOfIndividualDiscountedPrices = 0;
+      
+      const completedAssessments = [];
+      for (const session of filteredSessions) {
+        const normalizedType = normalizeAssessmentId(session.assessmentType);
+        const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
+        const individualB2CPrice = BASE_FEE + assessmentPrice;
+        const individualPppPrice = getPPPAdjustedPriceInPence(individualB2CPrice, countryCode);
+        const individualDiscountedPrice = Math.round(individualPppPrice * 0.75); // 25% off each
+        
+        sumOfIndividualDiscountedPrices += individualDiscountedPrice;
+        
+        completedAssessments.push({
+          type: normalizedType,
+          displayName: formatAssessmentTypeName(session.assessmentType),
+          completedAt: session.completedAt?.toISOString() || new Date().toISOString(),
+        });
+      }
+      
+      // Apply bundle discount (25%) to sum of individual discounted prices
+      const bundleDiscountPercent = filteredSessions.length >= 4 ? 40 : 25;
+      const bundleDiscountedPrice = Math.round(sumOfIndividualDiscountedPrices * ((100 - bundleDiscountPercent) / 100));
+      
+      // Free unlock date (30 days from last completion)
+      const latestCompletion = filteredSessions.reduce((latest: Date, s: any) => {
+        const completedAt = s.completedAt ? new Date(s.completedAt) : new Date();
+        return completedAt > latest ? completedAt : latest;
+      }, new Date(0));
+      const freeAccessDate = new Date(latestCompletion);
+      freeAccessDate.setDate(freeAccessDate.getDate() + 30);
+      
+      res.json({
+        email,
+        partnerId,
+        partnerName: partnerAccount.companyName || partnerAccount.name,
+        countryCode,
+        currencyCode: COUNTRY_CURRENCY_MAP[countryCode.toUpperCase()] || 'GBP',
+        completedAssessments,
+        pricing: {
+          sumOfIndividualDiscounted: sumOfIndividualDiscountedPrices,
+          bundleDiscountedPrice,
+          sumOfIndividualDisplay: formatPrice(sumOfIndividualDiscountedPrices, userCurrency),
+          bundleDiscountedDisplay: formatPrice(bundleDiscountedPrice, userCurrency),
+          bundleDiscountPercent,
+        },
+        freeAccessDate: freeAccessDate.toISOString(),
+      });
+    } catch (error) {
+      console.error("Error fetching bundle results:", error);
+      res.status(500).json({ error: "Failed to load bundle data" });
+    }
+  });
+
+  // Create checkout for bundle purchase
+  app.post("/api/b2b/results-bundle/checkout", async (req, res) => {
+    try {
+      const { email, partnerId, countryCode, types } = req.body;
+      
+      if (!email || !partnerId) {
+        return res.status(400).json({ error: "Missing required parameters" });
+      }
+      
+      const assessmentTypes = types || [];
+      
+      // Get partner info
+      const partnerAccount = await storage.getPartnerAccount(partnerId);
+      if (!partnerAccount) {
+        return res.status(404).json({ error: "Partner not found" });
+      }
+      
+      // Get completed sessions for this email and partner
+      const completedSessions = await storage.getCompletedB2BSessionsByEmail(email, partnerId);
+      
+      // Filter to requested types if specified
+      const filteredSessions = assessmentTypes.length > 0
+        ? completedSessions.filter((s: any) => {
+            const normalizedType = normalizeAssessmentId(s.assessmentType);
+            return assessmentTypes.some((t: string) => normalizeAssessmentId(t) === normalizedType);
+          })
+        : completedSessions;
+      
+      if (filteredSessions.length === 0) {
+        return res.status(404).json({ error: "No matching assessments found" });
+      }
+      
+      // Calculate bundle pricing
+      const userCurrency = getCurrencyForCountry(countryCode || 'GB');
+      let sumOfIndividualDiscountedPrices = 0;
+      const sessionIds: string[] = [];
+      
+      for (const session of filteredSessions) {
+        const normalizedType = normalizeAssessmentId(session.assessmentType);
+        const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
+        const individualB2CPrice = BASE_FEE + assessmentPrice;
+        const individualPppPrice = getPPPAdjustedPriceInPence(individualB2CPrice, countryCode || 'GB');
+        const individualDiscountedPrice = Math.round(individualPppPrice * 0.75);
+        
+        sumOfIndividualDiscountedPrices += individualDiscountedPrice;
+        sessionIds.push(session.id);
+      }
+      
+      const bundleDiscountPercent = filteredSessions.length >= 4 ? 40 : 25;
+      const bundleDiscountedPrice = Math.round(sumOfIndividualDiscountedPrices * ((100 - bundleDiscountPercent) / 100));
+      
+      // Get Stripe currency code
+      const currencyCode = COUNTRY_CURRENCY_MAP[(countryCode || 'GB').toUpperCase()] || 'GBP';
+      
+      // Create Stripe checkout session
+      const baseUrl = getBaseUrl(req);
+      const successUrl = `${baseUrl}/b2b-payment-callback?success=true&bundle=true&email=${encodeURIComponent(email)}&partner=${partnerId}&sessions=${sessionIds.join(',')}`;
+      const cancelUrl = `${baseUrl}/b2b-results-bundle?email=${encodeURIComponent(email)}&partner=${partnerId}&country=${countryCode}&types=${assessmentTypes.join(',')}`;
+      
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: currencyCode.toLowerCase(),
+              product_data: {
+                name: `HumanMetrix Assessment Bundle (${filteredSessions.length} Assessments)`,
+                description: `Unlock all ${filteredSessions.length} completed assessment results`,
+              },
+              unit_amount: bundleDiscountedPrice,
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        customer_email: email,
+        metadata: {
+          type: 'b2b_bundle',
+          email,
+          partnerId: partnerId.toString(),
+          sessionIds: sessionIds.join(','),
+          countryCode: countryCode || 'GB',
+        },
+      });
+      
+      res.json({ checkoutUrl: session.url });
+    } catch (error) {
+      console.error("Error creating bundle checkout:", error);
+      res.status(500).json({ error: "Failed to create checkout" });
+    }
+  });
 }
 
 function getBaseUrl(req: Request): string {
   const protocol = req.headers["x-forwarded-proto"] || req.protocol;
   const host = req.headers["x-forwarded-host"] || req.headers.host;
   return `${protocol}://${host}`;
+}
+
+function formatAssessmentTypeName(type: string): string {
+  const mapping: Record<string, string> = {
+    'fit': 'FIT Assessment',
+    'ai_readiness': 'AI Readiness Assessment',
+    'prompt_architecture': 'Prompt Architecture Assessment',
+    'aiq': 'AIQ Assessment',
+  };
+  return mapping[type.toLowerCase()] || type;
 }
 
 // Graded scoring for AIQ assessment (same as B2C)
