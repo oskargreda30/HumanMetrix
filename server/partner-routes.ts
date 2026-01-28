@@ -3521,22 +3521,52 @@ export function registerPartnerRoutes(app: Express) {
       
       if (session.externalEmail && !sessionIsTest) {
         try {
-          const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-            ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-            : 'https://humanmetrix.co.uk';
-          const resultsUrl = `${baseUrl}/embed/assessment?session=${b2bSessionId}&showResults=true`;
+          const partnerCompanyName = partner?.companyName || partner?.name || 'HumanMetrix Partner';
           
-          const { sendB2BResultsUnlockedEmail } = await import("./email");
-          const emailResult = await sendB2BResultsUnlockedEmail(
-            session.externalEmail,
-            session.assessmentType.toUpperCase(),
-            partner?.companyName || partner?.name || 'HumanMetrix Partner',
-            resultsUrl
-          );
+          // Get the assessment scores from the session
+          const scores = (session as any).scores || {};
+          const totalScore = (session as any).totalScore || 0;
+          const percentile = (session as any).percentile;
+          const evaluations = (session as any).evaluations || [];
+          
+          // Generate PDF with results
+          const { generateB2BResultsPDF } = await import("./generateB2BPDF");
+          const pdfBuffer = generateB2BResultsPDF({
+            candidateName: (session as any).metadata?.candidateName || session.externalEmail.split('@')[0],
+            candidateEmail: session.externalEmail,
+            assessmentType: session.assessmentType,
+            scores,
+            totalScore,
+            percentile,
+            evaluations,
+            completedAt: session.completedAt || now,
+            partnerCompanyName,
+          });
+          
+          // Format assessment name for filename
+          const assessmentName = {
+            'fit': 'FIT',
+            'ai_readiness': 'AI_Readiness',
+            'prompt_architecture': 'Prompt_Architecture',
+            'aiq': 'AIQ',
+          }[session.assessmentType.toLowerCase()] || session.assessmentType;
+          
+          const pdfFilename = `HumanMetrix_${assessmentName}_Results.pdf`;
+          
+          // Send email with PDF attachment
+          const { sendB2BResultsEmail } = await import("./email");
+          const emailResult = await sendB2BResultsEmail({
+            email: session.externalEmail,
+            candidateName: (session as any).metadata?.candidateName,
+            assessmentType: session.assessmentType,
+            partnerCompanyName,
+            pdfBuffer,
+            pdfFilename,
+          });
           
           if (emailResult.success) {
             emailSent = true;
-            console.log(`[B2B Payment] Sent results unlocked email to ${session.externalEmail}`);
+            console.log(`[B2B Payment] Sent results email with PDF to ${session.externalEmail}`);
           } else {
             throw new Error('Email send failed');
           }

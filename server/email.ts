@@ -2698,6 +2698,141 @@ Questions about your results? Contact us at ${baseUrl}/contact
   return { success: result.success, messageId: result.messageId };
 }
 
+// B2B Results Email with Multiple PDF Attachments - for users with multiple assessments
+interface B2BMultiplePDFEmailDetails {
+  email: string;
+  candidateName?: string;
+  assessmentLabel: string; // e.g., "FIT" or "2 Assessments"
+  partnerCompanyName: string;
+  resultsUrl: string;
+  pdfAttachments: Array<{ filename: string; content: Buffer }>;
+  receiptDetails?: {
+    amount: number;
+    currency: string;
+    transactionId: string;
+    purchaseDate: Date;
+  };
+}
+
+export async function sendB2BResultsEmailWithMultiplePDFs(details: B2BMultiplePDFEmailDetails) {
+  const candidateName = details.candidateName || 'there';
+  const baseUrl = getBaseUrl();
+  
+  // Build receipt HTML if available
+  let receiptHtml = '';
+  if (details.receiptDetails) {
+    const formattedAmount = new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: details.receiptDetails.currency,
+    }).format(details.receiptDetails.amount / 100);
+    
+    receiptHtml = `
+      <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+        <h4 style="margin: 0 0 10px 0; color: #374151;">Payment Receipt</h4>
+        <p style="margin: 5px 0; font-size: 14px;"><strong>Amount:</strong> ${formattedAmount}</p>
+        <p style="margin: 5px 0; font-size: 14px;"><strong>Date:</strong> ${details.receiptDetails.purchaseDate.toLocaleDateString('en-GB')}</p>
+        <p style="margin: 5px 0; font-size: 14px; color: #6b7280;"><strong>Transaction ID:</strong> ${details.receiptDetails.transactionId}</p>
+      </div>
+    `;
+  }
+  
+  // Build attachments list HTML
+  const attachmentsListHtml = details.pdfAttachments.map(att => 
+    `<li style="margin: 5px 0;">${att.filename}</li>`
+  ).join('');
+  
+  const msg = {
+    to: details.email,
+    subject: `Your ${details.assessmentLabel} Assessment Results Are Ready`,
+    attachments: details.pdfAttachments.map(att => ({
+      filename: att.filename,
+      content: att.content.toString('base64'),
+      type: 'application/pdf',
+      disposition: 'attachment' as const,
+    })),
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
+            .success-badge { background: #10b981; color: white; padding: 8px 16px; border-radius: 20px; display: inline-block; font-weight: 600; margin: 10px 0; }
+            .attachment-box { background: #f0f9ff; border: 2px dashed #0891b2; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; }
+            .button { display: inline-block; background: #0891b2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 10px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0;">HumanMetrix</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
+            </div>
+            <div class="content">
+              <div style="text-align: center;">
+                <span class="success-badge">Payment Successful</span>
+              </div>
+              
+              <h2 style="text-align: center;">Hello ${candidateName},</h2>
+              
+              <p style="text-align: center;">Thank you for your purchase! Your assessment results are now available.</p>
+              
+              <div class="attachment-box">
+                <div style="font-size: 48px; margin-bottom: 10px;">📄</div>
+                <p style="margin: 0; font-weight: 600; color: #0891b2;">Attached Reports:</p>
+                <ul style="list-style: none; padding: 0; margin: 10px 0;">
+                  ${attachmentsListHtml}
+                </ul>
+                <p style="margin: 5px 0 0 0; font-size: 14px; color: #6b7280;">Your detailed assessment reports are attached to this email.</p>
+              </div>
+              
+              ${receiptHtml}
+              
+              <div style="text-align: center; margin: 25px 0;">
+                <a href="${details.resultsUrl}" class="button">View Results in Dashboard</a>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 30px; text-align: center;">
+                Your results have also been shared with ${details.partnerCompanyName} as part of your application process.
+              </p>
+            </div>
+            <div class="footer">
+              <p>Questions about your results? <a href="${baseUrl}/contact" style="color: #0891b2;">Contact us</a></p>
+              <p>&copy; ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+Hello ${candidateName},
+
+Thank you for your purchase! Your ${details.assessmentLabel} assessment results are now available.
+
+ATTACHED REPORTS:
+${details.pdfAttachments.map(att => `- ${att.filename}`).join('\n')}
+
+Your detailed assessment reports are attached to this email.
+
+View your results in the dashboard: ${details.resultsUrl}
+
+Your results have also been shared with ${details.partnerCompanyName} as part of your application process.
+
+---
+© ${new Date().getFullYear()} HumanMetrix. All rights reserved.
+    `.trim(),
+  };
+
+  const result = await sendEmail(msg);
+  if (result.success) {
+    console.log(`[Email] B2B results email with ${details.pdfAttachments.length} PDF(s) sent to ${details.email} (ID: ${result.messageId})`);
+  }
+  return { success: result.success, messageId: result.messageId };
+}
+
 // Send partner team invitation email
 export interface PartnerTeamInvitationDetails {
   email: string;

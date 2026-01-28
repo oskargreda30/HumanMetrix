@@ -2900,7 +2900,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           purchasedAt: new Date(),
         });
         
-        // Send confirmation email with results access and receipt
+        // Send confirmation email with results access, receipt, and PDF attachment
         try {
           const user = await storage.getUser(userId);
           const purchase = await storage.getPartnerResultPurchase(purchaseId);
@@ -2917,34 +2917,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
               : 'http://localhost:5000';
             const resultsUrl = `${baseUrl}/dashboard`;
             
-            // Prepare receipt details from the Stripe session
-            const receiptDetails = {
-              amount: purchase.amount || 0,
-              currency: purchase.currency || 'GBP',
-              assessmentTypes: purchasedTypes.length > 0 ? purchasedTypes : ['All Assessments'],
-              transactionId: session.payment_intent as string,
-              purchaseDate: new Date(),
-            };
-            
-            // Send email with receipt
-            const { sendB2BResultsUnlockedEmail } = await import('./email');
-            
-            // Determine assessment name for subject
-            const assessmentLabel = purchasedTypes.length === 1 
-              ? purchasedTypes[0] 
-              : purchasedTypes.length > 1 
-                ? `${purchasedTypes.length} Assessments`
-                : 'All Assessments';
-            
-            await sendB2BResultsUnlockedEmail(
-              user.email,
-              assessmentLabel,
-              partnerName,
-              resultsUrl,
-              receiptDetails
+            // Get the user's assessment results for this invitation
+            const allResults = await storage.getResultsByUser(userId);
+            const invitationResults = allResults.filter((r: any) => 
+              r.partnerInvitationId === purchase.partnerInvitationId && 
+              r.status === 'completed'
             );
             
-            console.log(`[Partner Results] Sent unlock confirmation email with receipt to ${user.email}`);
+            // Generate PDF for each purchased assessment type and send email with attachments
+            if (invitationResults.length > 0) {
+              try {
+                const { generateB2BResultsPDF } = await import('./generateB2BPDF');
+                const { sendB2BResultsEmailWithMultiplePDFs } = await import('./email');
+                
+                const pdfAttachments = [];
+                
+                for (const result of invitationResults) {
+                  // Only include if this type was purchased (or all were purchased)
+                  const normalizedType = normalizeAssessmentId(result.assessmentType);
+                  if (purchasedTypes.length === 0 || purchasedTypes.includes(normalizedType)) {
+                    const pdfBuffer = generateB2BResultsPDF({
+                      candidateName: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email.split('@')[0],
+                      candidateEmail: user.email,
+                      assessmentType: result.assessmentType,
+                      scores: result.scores || {},
+                      totalScore: result.totalScore || 0,
+                      percentile: result.percentile,
+                      evaluations: result.evaluations || [],
+                      completedAt: result.completedAt || new Date(),
+                      partnerCompanyName: partnerName,
+                    });
+                    
+                    const assessmentName = {
+                      'fit': 'FIT',
+                      'ai_readiness': 'AI_Readiness',
+                      'prompt_architecture': 'Prompt_Architecture',
+                      'aiq': 'AIQ',
+                    }[normalizedType] || result.assessmentType;
+                    
+                    pdfAttachments.push({
+                      filename: `HumanMetrix_${assessmentName}_Results.pdf`,
+                      content: pdfBuffer,
+                    });
+                  }
+                }
+                
+                // Send email with all PDF attachments
+                const assessmentLabel = purchasedTypes.length === 1 
+                  ? purchasedTypes[0] 
+                  : purchasedTypes.length > 1 
+                    ? `${purchasedTypes.length} Assessments`
+                    : 'All Assessments';
+                
+                await sendB2BResultsEmailWithMultiplePDFs({
+                  email: user.email,
+                  candidateName: user.firstName || undefined,
+                  assessmentLabel,
+                  partnerCompanyName: partnerName,
+                  resultsUrl,
+                  pdfAttachments,
+                  receiptDetails: {
+                    amount: purchase.amount || 0,
+                    currency: purchase.currency || 'GBP',
+                    transactionId: session.payment_intent as string,
+                    purchaseDate: new Date(),
+                  },
+                });
+                
+                console.log(`[Partner Results] Sent unlock email with ${pdfAttachments.length} PDF(s) to ${user.email}`);
+              } catch (pdfError) {
+                console.error("Error generating/sending PDF:", pdfError);
+                // Fall back to simple email without PDF
+                const { sendB2BResultsUnlockedEmail } = await import('./email');
+                const assessmentLabel = purchasedTypes.length === 1 
+                  ? purchasedTypes[0] 
+                  : purchasedTypes.length > 1 
+                    ? `${purchasedTypes.length} Assessments`
+                    : 'All Assessments';
+                await sendB2BResultsUnlockedEmail(user.email, assessmentLabel, partnerName, resultsUrl);
+              }
+            }
           }
         } catch (emailError) {
           console.error("Error sending partner results confirmation email:", emailError);
