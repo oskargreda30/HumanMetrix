@@ -2924,18 +2924,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
               r.status === 'completed'
             );
             
+            // Normalize purchased types for comparison
+            const normalizedPurchasedTypes = purchasedTypes.map((t: string) => normalizeAssessmentId(t));
+            
+            // Determine assessment label for emails
+            const assessmentLabel = purchasedTypes.length === 1 
+              ? purchasedTypes[0] 
+              : purchasedTypes.length > 1 
+                ? `${purchasedTypes.length} Assessments`
+                : 'All Assessments';
+            
             // Generate PDF for each purchased assessment type and send email with attachments
             if (invitationResults.length > 0) {
               try {
                 const { generateB2BResultsPDF } = await import('./generateB2BPDF');
-                const { sendB2BResultsEmailWithMultiplePDFs } = await import('./email');
+                const { sendB2BResultsEmailWithMultiplePDFs, sendB2BResultsUnlockedEmail } = await import('./email');
                 
                 const pdfAttachments = [];
                 
                 for (const result of invitationResults) {
                   // Only include if this type was purchased (or all were purchased)
                   const normalizedType = normalizeAssessmentId(result.assessmentType);
-                  if (purchasedTypes.length === 0 || purchasedTypes.includes(normalizedType)) {
+                  if (normalizedPurchasedTypes.length === 0 || normalizedPurchasedTypes.includes(normalizedType)) {
                     const pdfBuffer = generateB2BResultsPDF({
                       candidateName: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email.split('@')[0],
                       candidateEmail: user.email,
@@ -2962,40 +2972,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   }
                 }
                 
-                // Send email with all PDF attachments
-                const assessmentLabel = purchasedTypes.length === 1 
-                  ? purchasedTypes[0] 
-                  : purchasedTypes.length > 1 
-                    ? `${purchasedTypes.length} Assessments`
-                    : 'All Assessments';
-                
-                await sendB2BResultsEmailWithMultiplePDFs({
-                  email: user.email,
-                  candidateName: user.firstName || undefined,
-                  assessmentLabel,
-                  partnerCompanyName: partnerName,
-                  resultsUrl,
-                  pdfAttachments,
-                  receiptDetails: {
-                    amount: purchase.amount || 0,
-                    currency: purchase.currency || 'GBP',
-                    transactionId: session.payment_intent as string,
-                    purchaseDate: new Date(),
-                  },
-                });
-                
-                console.log(`[Partner Results] Sent unlock email with ${pdfAttachments.length} PDF(s) to ${user.email}`);
+                // Send email with PDF attachments if we have any, otherwise send basic email
+                if (pdfAttachments.length > 0) {
+                  await sendB2BResultsEmailWithMultiplePDFs({
+                    email: user.email,
+                    candidateName: user.firstName || undefined,
+                    assessmentLabel,
+                    partnerCompanyName: partnerName,
+                    resultsUrl,
+                    pdfAttachments,
+                    receiptDetails: {
+                      amount: purchase.amount || 0,
+                      currency: purchase.currency || 'GBP',
+                      transactionId: session.payment_intent as string,
+                      purchaseDate: new Date(),
+                    },
+                  });
+                  console.log(`[Partner Results] Sent unlock email with ${pdfAttachments.length} PDF(s) to ${user.email}`);
+                } else {
+                  // Fallback: no PDFs generated, send basic email
+                  await sendB2BResultsUnlockedEmail(user.email, assessmentLabel, partnerName, resultsUrl);
+                  console.log(`[Partner Results] Sent unlock email (no PDFs) to ${user.email}`);
+                }
               } catch (pdfError) {
                 console.error("Error generating/sending PDF:", pdfError);
                 // Fall back to simple email without PDF
                 const { sendB2BResultsUnlockedEmail } = await import('./email');
-                const assessmentLabel = purchasedTypes.length === 1 
-                  ? purchasedTypes[0] 
-                  : purchasedTypes.length > 1 
-                    ? `${purchasedTypes.length} Assessments`
-                    : 'All Assessments';
                 await sendB2BResultsUnlockedEmail(user.email, assessmentLabel, partnerName, resultsUrl);
               }
+            } else {
+              // No completed results yet, still send confirmation email
+              const { sendB2BResultsUnlockedEmail } = await import('./email');
+              await sendB2BResultsUnlockedEmail(user.email, assessmentLabel, partnerName, resultsUrl);
+              console.log(`[Partner Results] Sent unlock email (no results found) to ${user.email}`);
             }
           }
         } catch (emailError) {

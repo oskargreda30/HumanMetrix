@@ -2643,8 +2643,7 @@ export async function sendB2BResultsEmail(details: B2BResultsEmailDetails) {
               <p style="text-align: center;">Thank you for your payment! Your <strong>${assessmentName}</strong> results are now available.</p>
               
               <div class="attachment-box">
-                <div class="pdf-icon">📄</div>
-                <p style="margin: 0; font-weight: 600; color: #0891b2;">${details.pdfFilename}</p>
+                <p style="margin: 0; font-weight: 600; color: #0891b2; font-size: 18px;">${details.pdfFilename}</p>
                 <p style="margin: 5px 0 0 0; font-size: 14px; color: #6b7280;">Your detailed assessment report is attached to this email.</p>
               </div>
               
@@ -2781,8 +2780,7 @@ export async function sendB2BResultsEmailWithMultiplePDFs(details: B2BMultiplePD
               <p style="text-align: center;">Thank you for your purchase! Your assessment results are now available.</p>
               
               <div class="attachment-box">
-                <div style="font-size: 48px; margin-bottom: 10px;">📄</div>
-                <p style="margin: 0; font-weight: 600; color: #0891b2;">Attached Reports:</p>
+                <p style="margin: 0; font-weight: 600; color: #0891b2; font-size: 18px;">Attached Reports:</p>
                 <ul style="list-style: none; padding: 0; margin: 10px 0;">
                   ${attachmentsListHtml}
                 </ul>
