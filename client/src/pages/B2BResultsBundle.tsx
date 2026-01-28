@@ -16,6 +16,10 @@ interface BundleResultsData {
     type: string;
     displayName: string;
     completedAt: string;
+    originalPrice: number;
+    discountedPrice: number;
+    originalPriceDisplay: string;
+    discountedPriceDisplay: string;
   }>;
   pricing: {
     sumOfIndividualDiscounted: number;
@@ -161,13 +165,28 @@ export default function B2BResultsBundle() {
                 >
                   <div className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500" />
-                    <span className="font-medium">{assessment.displayName}</span>
+                    <div>
+                      <span className="font-medium">{assessment.displayName}</span>
+                      <div className="text-sm text-muted-foreground">
+                        {format(new Date(assessment.completedAt), 'dd MMM yyyy')}
+                      </div>
+                    </div>
                   </div>
-                  <Badge variant="secondary">
-                    {format(new Date(assessment.completedAt), 'dd MMM yyyy')}
-                  </Badge>
+                  <div className="text-right">
+                    <span className="text-sm text-muted-foreground line-through">
+                      {assessment.originalPriceDisplay}
+                    </span>
+                    <div className="font-semibold text-primary">
+                      {assessment.discountedPriceDisplay}
+                    </div>
+                    <Badge variant="secondary" className="text-xs">25% off</Badge>
+                  </div>
                 </div>
               ))}
+            </div>
+            <div className="mt-4 pt-4 border-t flex justify-between items-center">
+              <span className="font-medium">Subtotal (Individual Prices)</span>
+              <span className="font-semibold">{data.pricing.sumOfIndividualDisplay}</span>
             </div>
           </CardContent>
         </Card>

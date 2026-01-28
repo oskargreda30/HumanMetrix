@@ -3656,8 +3656,18 @@ export function registerPartnerRoutes(app: Express) {
       let sumOfIndividualDiscountedPrices = 0;
       
       const completedAssessments = [];
+      // Use a Set to deduplicate by assessment type (only include each type once)
+      const seenTypes = new Set<string>();
+      
       for (const session of filteredSessions) {
         const normalizedType = normalizeAssessmentId(session.assessmentType);
+        
+        // Skip if we've already included this assessment type
+        if (seenTypes.has(normalizedType)) {
+          continue;
+        }
+        seenTypes.add(normalizedType);
+        
         const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
         const individualB2CPrice = BASE_FEE + assessmentPrice;
         const individualPppPrice = getPPPAdjustedPriceInPence(individualB2CPrice, countryCode);
@@ -3669,11 +3679,16 @@ export function registerPartnerRoutes(app: Express) {
           type: normalizedType,
           displayName: formatAssessmentTypeName(session.assessmentType),
           completedAt: session.completedAt?.toISOString() || new Date().toISOString(),
+          originalPrice: individualPppPrice,
+          discountedPrice: individualDiscountedPrice,
+          originalPriceDisplay: formatPrice(individualPppPrice, userCurrency),
+          discountedPriceDisplay: formatPrice(individualDiscountedPrice, userCurrency),
         });
       }
       
       // Apply bundle discount (25%) to sum of individual discounted prices
-      const bundleDiscountPercent = filteredSessions.length >= 4 ? 40 : 25;
+      // Use unique count (seenTypes.size) not filteredSessions.length
+      const bundleDiscountPercent = seenTypes.size >= 4 ? 40 : 25;
       const bundleDiscountedPrice = Math.round(sumOfIndividualDiscountedPrices * ((100 - bundleDiscountPercent) / 100));
       
       // Free unlock date (30 days from last completion)
