@@ -1608,20 +1608,30 @@ export function registerPartnerRoutes(app: Express) {
                 console.error('[B2B Notification] Failed to notify assessment completion:', notifyError);
               }
               
-              // Calculate bundle price based on the assessments in this bundle
+              // Calculate bundle price based on the sum of individual PPP-adjusted discounted prices
+              // The bundle discount (25%) is applied on top of the individual discounted prices
               try {
-                let bundleAssessmentPrices = 0;
+                // Calculate sum of individual PPP-adjusted discounted prices
+                let sumOfIndividualDiscountedPrices = 0;
+                let sumOfIndividualOriginalPrices = 0;
+                
                 for (const type of bundleAssessmentTypes) {
                   const normalizedType = normalizeAssessmentId(type);
-                  bundleAssessmentPrices += ASSESSMENT_PRICES[normalizedType] || 400;
+                  const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
+                  const individualB2CPrice = BASE_FEE + assessmentPrice;
+                  const individualPppPrice = getPPPAdjustedPriceInPence(individualB2CPrice, userCountryCode);
+                  const individualDiscountedPrice = Math.round(individualPppPrice * 0.75); // 25% off each
+                  
+                  sumOfIndividualOriginalPrices += individualPppPrice;
+                  sumOfIndividualDiscountedPrices += individualDiscountedPrice;
                 }
-                const bundleB2CPricePence = BASE_FEE + bundleAssessmentPrices;
-                const bundlePppAdjustedTotalPence = getPPPAdjustedPriceInPence(bundleB2CPricePence, userCountryCode);
-                const bundleDiscountedPricePence = Math.round(bundlePppAdjustedTotalPence * ((100 - bundleDiscountPercent) / 100));
-                const bundleOriginalDisplay = formatPrice(bundlePppAdjustedTotalPence, userCurrency);
+                
+                // Apply bundle discount (25%) to the sum of individual discounted prices
+                const bundleDiscountedPricePence = Math.round(sumOfIndividualDiscountedPrices * ((100 - bundleDiscountPercent) / 100));
+                const bundleOriginalDisplay = formatPrice(sumOfIndividualDiscountedPrices, userCurrency);
                 const bundleDiscountedDisplay = formatPrice(bundleDiscountedPricePence, userCurrency);
                 
-                console.log(`[B2B Bundle Pricing] Assessments: ${bundleAssessmentTypes.join(', ')}, Base: ${BASE_FEE}p + ${bundleAssessmentPrices}p = ${bundleB2CPricePence}p, PPP: ${bundlePppAdjustedTotalPence}p (${bundleOriginalDisplay}), ${bundleDiscountPercent}% off: ${bundleDiscountedPricePence}p (${bundleDiscountedDisplay})`);
+                console.log(`[B2B Bundle Pricing] Assessments: ${bundleAssessmentTypes.join(', ')}, Sum of individual discounted: ${sumOfIndividualDiscountedPrices}p (${bundleOriginalDisplay}), ${bundleDiscountPercent}% bundle discount: ${bundleDiscountedPricePence}p (${bundleDiscountedDisplay})`);
                 
                 const bundlePaymentUrl = `${baseUrl}/b2b-results-bundle?email=${encodeURIComponent(candidateEmail)}&partner=${session.partnerId}&country=${userCountryCode}&types=${bundleAssessmentTypes.join(',')}`;
                 
