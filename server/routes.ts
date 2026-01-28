@@ -8074,7 +8074,7 @@ Format your response as JSON with this structure:
       }
 
       // Get Prompt Architecture assessment results
-      const results = await storage.getAssessmentResults(userId);
+      const results = await storage.getResultsByUser(userId);
       const promptResult = results.find(r => r.assessmentType === 'prompt_architecture' && r.status === 'completed');
       
       const candidateName = user.firstName && user.lastName 
@@ -8159,7 +8159,7 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
       }
 
       // Get AIQ assessment results
-      const results = await storage.getAssessmentResults(userId);
+      const results = await storage.getResultsByUser(userId);
       const aiqResult = results.find(r => r.assessmentType === 'aiq' && r.status === 'completed');
       
       const candidateName = user.firstName && user.lastName 

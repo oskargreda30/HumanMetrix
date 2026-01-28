@@ -193,7 +193,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
       const payload = config.candidateIdParam === 'userId' 
         ? { userId: selectedCandidate, jobRoleId: selectedRole }
         : { candidateId: selectedCandidate, jobRoleId: selectedRole };
-      const res = await apiRequest('POST', '/api/admin/analyze-prompt-role-fit', payload, { timeoutMs: 90000 });
+      const res = await apiRequest('POST', '/api/admin/analyze-prompt-role-fit', payload, { timeoutMs: 120000 });
       return res.json();
     },
     onSuccess: (data) => {
@@ -215,7 +215,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
       const payload = config.candidateIdParam === 'userId' 
         ? { userId: selectedCandidate, jobRoleId: selectedRole }
         : { candidateId: selectedCandidate, jobRoleId: selectedRole };
-      const res = await apiRequest('POST', '/api/admin/analyze-aiq-role-fit', payload, { timeoutMs: 90000 });
+      const res = await apiRequest('POST', '/api/admin/analyze-aiq-role-fit', payload, { timeoutMs: 120000 });
       return res.json();
     },
     onSuccess: (data) => {
