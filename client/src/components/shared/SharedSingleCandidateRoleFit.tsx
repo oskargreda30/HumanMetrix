@@ -241,25 +241,35 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
   useEffect(() => {
     const selectionKey = `${selectedCandidate}-${selectedRole}`;
     
-    // Only trigger if we have alignment data and haven't triggered for this selection
-    if (alignment && selectedCandidate && selectedRole && lastTriggeredRef.current !== selectionKey) {
-      lastTriggeredRef.current = selectionKey;
+    // Only trigger if:
+    // 1. We have alignment data
+    // 2. We have valid selection
+    // 3. Haven't triggered for this selection OR analyses are null (fresh start)
+    // 4. Not already pending
+    if (alignment && selectedCandidate && selectedRole) {
+      const shouldTrigger = lastTriggeredRef.current !== selectionKey;
       
-      // Clear previous analyses
-      setPromptRoleFitAnalysis(null);
-      setAiqRoleFitAnalysis(null);
-      
-      // Auto-trigger both analyses
-      if (!analyzePromptRoleFitMutation.isPending) {
-        analyzePromptRoleFitMutation.mutate();
-      }
-      if (!analyzeAiqRoleFitMutation.isPending) {
-        analyzeAiqRoleFitMutation.mutate();
+      if (shouldTrigger) {
+        lastTriggeredRef.current = selectionKey;
+        
+        // Clear previous analyses for new selection
+        setPromptRoleFitAnalysis(null);
+        setAiqRoleFitAnalysis(null);
+        
+        // Auto-trigger both analyses with small delay to ensure state is updated
+        setTimeout(() => {
+          if (!analyzePromptRoleFitMutation.isPending) {
+            analyzePromptRoleFitMutation.mutate();
+          }
+          if (!analyzeAiqRoleFitMutation.isPending) {
+            analyzeAiqRoleFitMutation.mutate();
+          }
+        }, 100);
       }
     }
-  }, [alignment, selectedCandidate, selectedRole]);
+  }, [alignment?.overallFit, selectedCandidate, selectedRole]); // Only trigger when alignment changes meaningfully
 
-  // Reset trigger ref when selection changes
+  // Reset trigger ref when selection is cleared
   useEffect(() => {
     if (!selectedCandidate || !selectedRole) {
       lastTriggeredRef.current = null;
@@ -611,7 +621,8 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
               <CardContent>
                 <div className="space-y-4">
                   {alignment.fitSkillAlignments.map((skill, index) => {
-                    const meetsThreshold = skill.dataAvailable !== false && skill.candidateScore !== null && skill.candidateScore >= skill.requiredScore;
+                    const hasData = skill.dataAvailable !== false && skill.candidateScore !== null;
+                    const meetsThreshold = hasData && skill.candidateScore >= skill.requiredScore;
                     return (
                       <div key={index} className="space-y-2">
                         <div className="flex items-center justify-between">
@@ -621,21 +632,19 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                             {getCriticalityBadge(skill.criticality)}
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className={`font-medium ${meetsThreshold ? 'text-green-600' : 'text-amber-500'}`}>
-                              {skill.dataAvailable !== false && skill.candidateScore !== null 
-                                ? `${skill.candidateScore}%` 
-                                : 'No data'}
+                            <span className={`font-medium ${!hasData ? 'text-muted-foreground' : meetsThreshold ? 'text-green-600' : 'text-amber-500'}`}>
+                              {hasData ? `${skill.candidateScore}%` : 'No data'}
                             </span>
                             <span className="text-muted-foreground">/ {skill.requiredScore}% required</span>
                           </div>
                         </div>
                         <div className="relative h-2 bg-muted rounded-full overflow-hidden">
                           <div 
-                            className={`absolute left-0 top-0 h-full rounded-full transition-all ${meetsThreshold ? 'bg-green-500' : 'bg-amber-400'}`}
-                            style={{ width: `${skill.dataAvailable !== false ? (skill.candidateScore || 0) : 0}%` }}
+                            className={`absolute left-0 top-0 h-full rounded-full transition-all ${!hasData ? 'bg-gray-300' : meetsThreshold ? 'bg-green-500' : 'bg-amber-400'}`}
+                            style={{ width: `${hasData ? (skill.candidateScore || 0) : 0}%` }}
                           />
                           <div 
-                            className={`absolute top-0 h-full w-0.5 ${meetsThreshold ? 'bg-green-700' : 'bg-amber-600'}`}
+                            className={`absolute top-0 h-full w-0.5 ${!hasData ? 'bg-gray-400' : meetsThreshold ? 'bg-green-700' : 'bg-amber-600'}`}
                             style={{ left: `${skill.requiredScore}%` }}
                             title={`Required: ${skill.requiredScore}%`}
                           />
@@ -661,7 +670,8 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
               <CardContent>
                 <div className="space-y-4">
                   {alignment.aiReadinessSkillAlignments.map((skill, index) => {
-                    const meetsThreshold = skill.dataAvailable !== false && skill.candidateScore !== null && skill.candidateScore >= skill.requiredScore;
+                    const hasData = skill.dataAvailable !== false && skill.candidateScore !== null;
+                    const meetsThreshold = hasData && skill.candidateScore >= skill.requiredScore;
                     return (
                       <div key={index} className="space-y-2">
                         <div className="flex items-center justify-between">
@@ -671,21 +681,19 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                             {getCriticalityBadge(skill.criticality)}
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className={`font-medium ${meetsThreshold ? 'text-green-600' : 'text-amber-500'}`}>
-                              {skill.dataAvailable !== false && skill.candidateScore !== null 
-                                ? `${skill.candidateScore}%` 
-                                : 'No data'}
+                            <span className={`font-medium ${!hasData ? 'text-muted-foreground' : meetsThreshold ? 'text-green-600' : 'text-amber-500'}`}>
+                              {hasData ? `${skill.candidateScore}%` : 'No data'}
                             </span>
                             <span className="text-muted-foreground">/ {skill.requiredScore}% required</span>
                           </div>
                         </div>
                         <div className="relative h-2 bg-muted rounded-full overflow-hidden">
                           <div 
-                            className={`absolute left-0 top-0 h-full rounded-full transition-all ${meetsThreshold ? 'bg-green-500' : 'bg-amber-400'}`}
-                            style={{ width: `${skill.dataAvailable !== false ? (skill.candidateScore || 0) : 0}%` }}
+                            className={`absolute left-0 top-0 h-full rounded-full transition-all ${!hasData ? 'bg-gray-300' : meetsThreshold ? 'bg-green-500' : 'bg-amber-400'}`}
+                            style={{ width: `${hasData ? (skill.candidateScore || 0) : 0}%` }}
                           />
                           <div 
-                            className={`absolute top-0 h-full w-0.5 ${meetsThreshold ? 'bg-green-700' : 'bg-amber-600'}`}
+                            className={`absolute top-0 h-full w-0.5 ${!hasData ? 'bg-gray-400' : meetsThreshold ? 'bg-green-700' : 'bg-amber-600'}`}
                             style={{ left: `${skill.requiredScore}%` }}
                             title={`Required: ${skill.requiredScore}%`}
                           />
