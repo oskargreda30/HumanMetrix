@@ -8251,7 +8251,7 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
           ? `${user.firstName} ${user.lastName}` 
           : user.email;
         
-        const results = await storage.getAssessmentResults(userId);
+        const results = await storage.getResultsByUser(userId);
         const promptResult = results.find(r => r.assessmentType === 'prompt_architecture' && r.status === 'completed');
         
         let score = 'No data';
@@ -8346,7 +8346,7 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
           ? `${user.firstName} ${user.lastName}` 
           : user.email;
         
-        const results = await storage.getAssessmentResults(userId);
+        const results = await storage.getResultsByUser(userId);
         const aiqResult = results.find(r => r.assessmentType === 'aiq' && r.status === 'completed');
         
         let score = 'No data';

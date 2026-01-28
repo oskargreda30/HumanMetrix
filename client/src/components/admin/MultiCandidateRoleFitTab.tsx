@@ -293,7 +293,7 @@ export default function MultiCandidateRoleFitTab() {
       const res = await apiRequest('POST', '/api/admin/analyze-multi-prompt', {
         candidateIds: selectedCandidates,
         jobRoleId: selectedRole,
-      }, { timeoutMs: 60000 });
+      }, { timeoutMs: 120000 });
       return res.json();
     },
     onSuccess: (data: { analysis: string }) => {
@@ -317,7 +317,7 @@ export default function MultiCandidateRoleFitTab() {
       const res = await apiRequest('POST', '/api/admin/analyze-multi-aiq', {
         candidateIds: selectedCandidates,
         jobRoleId: selectedRole,
-      }, { timeoutMs: 60000 });
+      }, { timeoutMs: 120000 });
       return res.json();
     },
     onSuccess: (data: { analysis: string }) => {
