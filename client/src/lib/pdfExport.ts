@@ -4268,7 +4268,7 @@ interface IndividualReportData {
   candidateName: string;
   fitData: { scores: Record<string, number> } | null;
   aiData: { scores: Record<string, number> } | null;
-  promptData: { totalScore: number; percentile?: number; levels?: Array<{ level: number; totalScore: number }> } | null;
+  promptData: { totalScore: number; percentile?: number; levels?: Array<{ level: number; totalScore: number; scores?: { clarity: number; structure: number; contextRelevance: number; creativity: number; iterativeImprovement: number } }> } | null;
   aiqData: { totalScore: number } | null;
   profileInsights: string | null;
   fitChartImage?: string | null;
@@ -4362,7 +4362,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
   
   // All info boxes on same row - Candidate Profile + 2 Key Metrics (all same height, aligned)
   yPos = 108;
-  const rowBoxHeight = 22; // Same height for all boxes
+  const rowBoxHeight = 28; // Increased height for two lines
   const totalWidth = pageWidth - 40; // 20px margin each side
   const gap = 5;
   const profileWidth = totalWidth * 0.4; // Profile takes 40% width
@@ -4370,48 +4370,70 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
   
   const completedCount = [data.fitData, data.aiData, data.promptData, data.aiqData].filter(Boolean).length;
   
-  // Candidate Profile Box (left)
+  // Candidate Profile Box (left) - Two lines for name and email
   pdf.setFillColor(249, 250, 251);
   pdf.setDrawColor(229, 231, 235);
   pdf.roundedRect(20, yPos, profileWidth, rowBoxHeight, 2, 2, 'FD');
   
-  pdf.setFontSize(8);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(55, 65, 81);
-  pdf.text('CANDIDATE PROFILE', 20 + profileWidth / 2, yPos + 7, { align: 'center' });
+  pdf.text('CANDIDATE PROFILE', 20 + profileWidth / 2, yPos + 8, { align: 'center' });
   
-  pdf.setFontSize(7);
+  // Name on first line with larger font
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(17, 24, 39);
+  const displayName = data.candidateName.length > 35 ? data.candidateName.substring(0, 32) + '...' : data.candidateName;
+  pdf.text(displayName, 20 + profileWidth / 2, yPos + 16, { align: 'center' });
+  
+  // Email on second line
+  pdf.setFontSize(8);
   pdf.setTextColor(75, 85, 99);
-  const displayName = data.candidateName.length > 30 ? data.candidateName.substring(0, 27) + '...' : data.candidateName;
-  const displayEmail = data.candidate.user.email.length > 35 ? data.candidate.user.email.substring(0, 32) + '...' : data.candidate.user.email;
-  pdf.text(`${displayName} | ${displayEmail}`, 20 + profileWidth / 2, yPos + 15, { align: 'center' });
+  const displayEmail = data.candidate.user.email.length > 40 ? data.candidate.user.email.substring(0, 37) + '...' : data.candidate.user.email;
+  pdf.text(displayEmail, 20 + profileWidth / 2, yPos + 23, { align: 'center' });
   
   // Key Metrics Boxes (right side - 2 boxes)
-  const metricsData = [
-    { label: 'Skills Assessed', value: String(skillsAssessed), fontSize: 11 },
-    { label: 'Top Skill', value: topSkill.length > 28 ? topSkill.substring(0, 25) + '...' : topSkill, fontSize: 6.5 },
-  ];
+  // Skills Assessed Box
+  const skillsXPos = 20 + profileWidth + gap;
+  pdf.setFillColor(255, 255, 255);
+  pdf.setDrawColor(229, 231, 235);
+  pdf.roundedRect(skillsXPos, yPos, metricsWidth, rowBoxHeight, 2, 2, 'FD');
   
-  metricsData.forEach((metric, index) => {
-    const xPos = 20 + profileWidth + gap + (index * (metricsWidth + gap));
-    pdf.setFillColor(255, 255, 255);
-    pdf.setDrawColor(229, 231, 235);
-    pdf.roundedRect(xPos, yPos, metricsWidth, rowBoxHeight, 2, 2, 'FD');
-    
-    pdf.setFontSize(7);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(107, 114, 128);
-    pdf.text(metric.label, xPos + metricsWidth / 2, yPos + 7, { align: 'center' });
-    
-    pdf.setFontSize(metric.fontSize);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(17, 24, 39);
-    pdf.text(metric.value, xPos + metricsWidth / 2, yPos + 16, { align: 'center' });
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('Skills Assessed', skillsXPos + metricsWidth / 2, yPos + 9, { align: 'center' });
+  
+  pdf.setFontSize(12);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(17, 24, 39);
+  pdf.text(String(skillsAssessed), skillsXPos + metricsWidth / 2, yPos + 20, { align: 'center' });
+  
+  // Top Skill Box - Two lines with larger font
+  const topSkillXPos = skillsXPos + metricsWidth + gap;
+  pdf.setFillColor(255, 255, 255);
+  pdf.setDrawColor(229, 231, 235);
+  pdf.roundedRect(topSkillXPos, yPos, metricsWidth, rowBoxHeight, 2, 2, 'FD');
+  
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('Top Skill', topSkillXPos + metricsWidth / 2, yPos + 9, { align: 'center' });
+  
+  // Top Skill value - split to two lines if needed with larger font
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(17, 24, 39);
+  const maxTopSkillWidth = metricsWidth - 8;
+  const topSkillLines = pdf.splitTextToSize(topSkill, maxTopSkillWidth);
+  const topSkillStartY = topSkillLines.length > 1 ? yPos + 15 : yPos + 18;
+  topSkillLines.slice(0, 2).forEach((line: string, lineIdx: number) => {
+    pdf.text(line, topSkillXPos + metricsWidth / 2, topSkillStartY + (lineIdx * 5), { align: 'center' });
   });
   
   // ASSESSMENT SUMMARY Section
-  yPos = 138;
+  yPos = 144;
   yPos = addSectionHeader(pdf, 'ASSESSMENT SUMMARY', yPos, pageWidth);
   yPos += 5;
   
@@ -4559,7 +4581,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     yPos += 8;
     
     const aiScoresStartY = yPos;
-    const aiChartHeight = 65; // Compact to fit on same page as FIT
+    const aiChartHeight = 75; // Increased for better visibility
     
     // Left column - Individual Skill Scores
     pdf.setFontSize(9);
@@ -4700,7 +4722,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     
     yPos += boxHeight + 8;
     
-    // Level breakdown - compact bars with blue gradient shading
+    // Level breakdown - compact bars with blue gradient shading and component scores
     if (data.promptData.levels && data.promptData.levels.length > 0) {
       data.promptData.levels.forEach((levelData) => {
         // Blue shading based on score - darker blue for higher scores
@@ -4710,27 +4732,30 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
         const blueB = 246;
         
         pdf.setFontSize(8);
-        pdf.setFont('helvetica', 'normal');
+        pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(55, 65, 81);
         pdf.text(`Level ${levelData.level}`, 25, yPos);
         
-        // Progress bar - blue shades
-        const barWidth = 90;
-        const barX = 50;
-        pdf.setFillColor(219, 234, 254); // Light blue background (blue-100)
-        pdf.rect(barX, yPos - 2.5, barWidth, 4, 'F');
-        pdf.setFillColor(blueR, blueG, blueB); // Blue fill with opacity based on score
-        pdf.rect(barX, yPos - 2.5, (barWidth * levelData.totalScore) / 100, 4, 'F');
+        // Total score
+        pdf.setTextColor(59, 130, 246);
+        pdf.text(`${levelData.totalScore}/100`, 55, yPos);
         
-        pdf.setFontSize(8);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(59, 130, 246); // Consistent blue text color
-        pdf.text(`${levelData.totalScore}`, pageWidth - 28, yPos, { align: 'right' });
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(107, 114, 128);
-        pdf.text('/100', pageWidth - 20, yPos, { align: 'right' });
+        // Component scores - show if available
+        if (levelData.scores) {
+          pdf.setFontSize(7);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setTextColor(107, 114, 128);
+          const componentScores = [
+            `Clarity: ${levelData.scores.clarity}%`,
+            `Structure: ${levelData.scores.structure}%`,
+            `Context: ${levelData.scores.contextRelevance}%`,
+            `Creativity: ${levelData.scores.creativity}%`,
+            `Iterative: ${levelData.scores.iterativeImprovement}%`,
+          ].join('  ');
+          pdf.text(componentScores, 85, yPos);
+        }
         
-        yPos += 8;
+        yPos += 9;
       });
     }
     
@@ -5022,71 +5047,84 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
   
   yPos += 10;
   
-  // ADDITIONAL SERVICES ON REQUEST section
-  yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);
+  // ENTERPRISE SERVICES section (matching online report)
+  yPos = addSectionHeader(pdf, 'ENTERPRISE SERVICES', yPos, pageWidth);
   yPos += 3;
   
   pdf.setFontSize(10);
   pdf.setTextColor(107, 114, 128);
-  pdf.text('HumanMetrix offers additional analysis services to support your hiring decision:', 20, yPos);
-  yPos += 10;
+  pdf.text('Enhance your hiring process with our advanced enterprise solutions:', 20, yPos);
+  yPos += 12;
   
-  const additionalServices = [
+  const enterpriseServices = [
     {
-      name: 'Role Fit Analysis',
-      description: 'Detailed analysis of candidate alignment with specific role requirements and skill criticality mapping'
+      name: 'Onboarding Service',
+      description: 'Time to Productivity Estimate and Hiring Risk Analysis to optimize your onboarding process'
     },
     {
       name: 'Suggested Interview Questions',
-      description: 'Customized interview questions based on assessment results and identified skill gaps'
+      description: 'AI-generated questions to dig deeper into assessment results and explore trait gaps'
     },
     {
       name: 'Team Composition Fit',
-      description: 'Analysis of how the candidate would integrate with your existing team dynamics and structure'
+      description: 'Analysis of how this candidate would complement your existing team dynamics'
     },
     {
-      name: 'Time to Productivity Estimate',
-      description: 'Projected timeline for the candidate to reach full productivity in the role'
+      name: 'The Ecosystem Index',
+      description: 'Comprehensive team capability diagnostic that maps skills distribution and identifies gaps'
     },
     {
-      name: 'Hiring Risk Analysis',
-      description: 'Comprehensive risk assessment including potential challenges and mitigation strategies'
+      name: 'Cohort Benchmarking',
+      description: 'Compare candidate performance against industry benchmarks and peer organizations (Coming Soon)'
+    },
+    {
+      name: 'Development Investment Cost',
+      description: 'Estimated training and development investment required to bridge identified skill gaps'
     }
   ];
   
-  additionalServices.forEach((service, index) => {
-    if (yPos > pageHeight - 30) {
+  // Display services in a 2-column grid format
+  const colWidth = (pageWidth - 50) / 2;
+  let serviceIndex = 0;
+  
+  while (serviceIndex < enterpriseServices.length) {
+    if (yPos > pageHeight - 40) {
       pdf.addPage();
       addBackgroundPattern(pdf, pageWidth, pageHeight);
       addHeader(pdf, pageWidth);
       yPos = 35;
     }
     
-    // Service number badge
-    pdf.setFillColor(59, 130, 246);
-    pdf.roundedRect(20, yPos - 2, 6, 6, 1, 1, 'F');
-    pdf.setFontSize(8);
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(`${index + 1}`, 23, yPos + 2, { align: 'center' });
+    // Draw two services per row
+    for (let col = 0; col < 2 && serviceIndex < enterpriseServices.length; col++) {
+      const service = enterpriseServices[serviceIndex];
+      const xPos = 20 + (col * (colWidth + 10));
+      
+      // Service box background
+      pdf.setFillColor(249, 250, 251);
+      pdf.setDrawColor(229, 231, 235);
+      pdf.roundedRect(xPos, yPos, colWidth, 22, 2, 2, 'FD');
+      
+      // Service name
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(59, 130, 246);
+      pdf.text(service.name, xPos + 4, yPos + 6);
+      
+      // Service description - wrap to fit
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(107, 114, 128);
+      const descLines = pdf.splitTextToSize(service.description, colWidth - 8);
+      descLines.slice(0, 2).forEach((line: string, idx: number) => {
+        pdf.text(line, xPos + 4, yPos + 12 + (idx * 4));
+      });
+      
+      serviceIndex++;
+    }
     
-    // Service name
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(17, 24, 39);
-    pdf.text(service.name, 30, yPos + 2);
-    
-    // Service description
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(107, 114, 128);
-    const descLines = pdf.splitTextToSize(service.description, pageWidth - 55);
-    descLines.forEach((line: string, idx: number) => {
-      pdf.text(line, 30, yPos + 8 + (idx * 5));
-    });
-    
-    yPos += 8 + (descLines.length * 5) + 4;
-  });
+    yPos += 28;
+  }
   
   // Contact information
   yPos += 5;
