@@ -4924,41 +4924,65 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     
     yPos += boxHeight + 8;
     
-    // Level breakdown - compact bars with blue gradient shading and component scores
+    // Level breakdown with visual progress bars
     if (data.promptData.levels && data.promptData.levels.length > 0) {
+      const barStartX = 55;
+      const barWidth = 80;
+      const barHeight = 6;
+      
       data.promptData.levels.forEach((levelData) => {
-        // Blue shading based on score - darker blue for higher scores
-        const blueIntensity = Math.max(0.4, levelData.totalScore / 100);
-        const blueR = Math.round(59 + (1 - blueIntensity) * 140); // Range from light blue to darker blue
-        const blueG = Math.round(130 + (1 - blueIntensity) * 80);
-        const blueB = 246;
-        
+        // Level label
         pdf.setFontSize(8);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(55, 65, 81);
-        pdf.text(`Level ${levelData.level}`, 25, yPos);
+        pdf.text(`Level ${levelData.level}`, 25, yPos + 4);
         
-        // Total score
+        // Progress bar background
+        pdf.setFillColor(229, 231, 235);
+        pdf.roundedRect(barStartX, yPos, barWidth, barHeight, 1, 1, 'F');
+        
+        // Progress bar fill - blue gradient based on score
+        const fillWidth = (levelData.totalScore / 100) * barWidth;
+        if (fillWidth > 0) {
+          const blueIntensity = Math.max(0.5, levelData.totalScore / 100);
+          pdf.setFillColor(
+            Math.round(59 + (1 - blueIntensity) * 100),
+            Math.round(130 + (1 - blueIntensity) * 60),
+            246
+          );
+          pdf.roundedRect(barStartX, yPos, fillWidth, barHeight, 1, 1, 'F');
+        }
+        
+        // Score text after bar
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(59, 130, 246);
-        pdf.text(`${levelData.totalScore}/100`, 55, yPos);
+        pdf.text(`${levelData.totalScore}%`, barStartX + barWidth + 5, yPos + 4);
         
-        // Component scores - show if available
+        // Component scores on the right - show if available
         if (levelData.scores) {
-          pdf.setFontSize(7);
+          pdf.setFontSize(6);
           pdf.setFont('helvetica', 'normal');
           pdf.setTextColor(107, 114, 128);
           const componentScores = [
-            `Clarity: ${levelData.scores.clarity}%`,
-            `Structure: ${levelData.scores.structure}%`,
-            `Context: ${levelData.scores.contextRelevance}%`,
-            `Creativity: ${levelData.scores.creativity}%`,
-            `Iterative: ${levelData.scores.iterativeImprovement}%`,
-          ].join('  ');
-          pdf.text(componentScores, 85, yPos);
+            `C:${levelData.scores.clarity}`,
+            `S:${levelData.scores.structure}`,
+            `Cx:${levelData.scores.contextRelevance}`,
+            `Cr:${levelData.scores.creativity}`,
+            `I:${levelData.scores.iterativeImprovement}`,
+          ].join(' ');
+          pdf.text(componentScores, barStartX + barWidth + 25, yPos + 4);
         }
         
-        yPos += 9;
+        yPos += 10;
       });
+      
+      // Legend for component abbreviations
+      yPos += 2;
+      pdf.setFontSize(6);
+      pdf.setFont('helvetica', 'italic');
+      pdf.setTextColor(156, 163, 175);
+      pdf.text('C=Clarity, S=Structure, Cx=Context, Cr=Creativity, I=Iterative Improvement', 25, yPos);
     }
     
     yPos += 10;
@@ -4967,13 +4991,26 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
   // AIQ Section
   if (data.aiqData) {
     yPos = addSectionHeader(pdf, 'ALGORITHMIC INTEGRITY QUOTIENT (AIQ)', yPos, pageWidth);
+    yPos += 10; // More space between title and content
+    
+    // AIQ Explanation paragraph
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    const aiqExplanation = 'The AIQ assessment evaluates a candidate\'s understanding of AI ethics and responsible AI deployment. It measures awareness of algorithmic bias, fairness considerations, transparency requirements, and the ability to identify potential ethical issues in AI systems. A higher score indicates stronger ethical AI awareness and better preparedness for roles involving AI decision-making.';
+    const explanationLines = pdf.splitTextToSize(aiqExplanation, pageWidth - 40);
+    explanationLines.forEach((line: string) => {
+      pdf.text(line, 20, yPos);
+      yPos += 5;
+    });
     yPos += 5;
     
+    // Measures subtitle
     pdf.setFontSize(8);
-    pdf.setFont('helvetica', 'normal');
+    pdf.setFont('helvetica', 'italic');
     pdf.setTextColor(107, 114, 128);
     pdf.text('Measures: AI Ethics, Bias Detection, Fairness, Transparency, and Responsible AI Deployment', 20, yPos);
-    yPos += 15;
+    yPos += 12;
     
     // AIQ score and band
     const aiqBand = getAIQBandInterpretation(data.aiqData.totalScore);
@@ -5003,162 +5040,6 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
       yPos += 5;
     });
   }
-  
-  // ========== PAGE 5: FINAL CANDIDATE RECOMMENDATIONS ==========
-  pdf.addPage();
-  addBackgroundPattern(pdf, pageWidth, pageHeight);
-  addHeader(pdf, pageWidth);
-  
-  yPos = 35;
-  yPos = addSectionHeader(pdf, 'FINAL CANDIDATE RECOMMENDATIONS', yPos, pageWidth);
-  yPos += 8;
-  
-  // Generate recommendation paragraphs based on scores
-  let roleRecommendation = '';
-  let environmentRecommendation = '';
-  let strengthsRecommendation = '';
-  let developmentRecommendation = '';
-  
-  // Build role recommendation paragraph
-  if (fitAvg >= 80 && aiAvg >= 70) {
-    roleRecommendation = `Based on ${data.candidateName}'s exceptional combination of interpersonal skills and technical AI capabilities, they would excel in leadership positions such as AI Project Lead or Innovation Manager. Their strong behavioral foundation paired with advanced AI readiness makes them well-suited for roles that bridge technical implementation with team coordination.`;
-  } else if (fitAvg >= 70) {
-    roleRecommendation = `${data.candidateName} demonstrates solid interpersonal strengths that would translate well into people-focused positions. Roles such as Team Coordinator or Client Success Manager would leverage their natural empathy and relationship-building capabilities effectively.`;
-  } else {
-    roleRecommendation = `${data.candidateName}'s profile suggests potential in roles requiring structured thinking and clear communication. Positions like Technical Writer, Content Strategist, or Knowledge Manager would allow them to apply their organizational abilities while continuing to develop other competencies.`;
-  }
-  
-  if (data.promptData && data.promptData.totalScore >= 80) {
-    roleRecommendation += ` Their exceptional prompt engineering abilities also open opportunities in specialized AI roles such as Prompt Engineer or AI Content Strategist.`;
-  } else if (aiAvg >= 75) {
-    roleRecommendation += ` Their strong AI readiness scores indicate they could also succeed in AI Integration Specialist roles requiring hands-on technical implementation.`;
-  }
-  
-  // Build environment recommendation paragraph
-  const envFactors: string[] = [];
-  if (fitAvg >= 75) {
-    envFactors.push('environments that value clear documentation and knowledge sharing');
-  }
-  if (data.aiqData && data.aiqData.totalScore >= 70) {
-    envFactors.push('organizations with strong ethical frameworks');
-  }
-  if (aiAvg >= 70) {
-    envFactors.push('AI-forward companies embracing emerging technologies');
-  }
-  if (envFactors.length === 0) {
-    envFactors.push('structured environments with clear processes');
-    envFactors.push('collaborative teams focused on continuous improvement');
-  }
-  
-  environmentRecommendation = `This candidate would thrive in ${envFactors.slice(0, -1).join(', ')}${envFactors.length > 1 ? ' and ' : ''}${envFactors[envFactors.length - 1]}. Their assessment profile suggests they perform best when given clear objectives while having the autonomy to determine how to achieve them.`;
-  
-  // Build strengths paragraph
-  const strengthFactors: string[] = [];
-  if (data.fitData) {
-    const sortedFit = Object.entries(data.fitData.scores).sort(([,a], [,b]) => b - a);
-    if (sortedFit[0]) strengthFactors.push(`strong ${sortedFit[0][0].toLowerCase()}`);
-    if (sortedFit[1]) strengthFactors.push(`solid ${sortedFit[1][0].toLowerCase()}`);
-  }
-  if (data.promptData && data.promptData.totalScore >= 75) {
-    strengthFactors.push('excellent ability to articulate requirements with precision');
-  }
-  if (data.aiqData && data.aiqData.totalScore >= 70) {
-    strengthFactors.push('keen awareness of potential risks and ethical considerations');
-  }
-  
-  if (strengthFactors.length > 0) {
-    strengthsRecommendation = `${data.candidateName}'s key strengths include ${strengthFactors.join(', ')}. These capabilities position them to add immediate value in roles that require clear communication and thoughtful problem-solving.`;
-  } else {
-    strengthsRecommendation = `${data.candidateName} demonstrates a willingness to learn and adapt, providing a solid foundation for skill development. With appropriate mentorship and training, they have potential for growth across multiple competency areas.`;
-  }
-  
-  // Build development paragraph
-  const devFactors: string[] = [];
-  if (data.fitData) {
-    const sortedFit = Object.entries(data.fitData.scores).sort(([,a], [,b]) => a - b);
-    if (sortedFit[0] && sortedFit[0][1] < 70) {
-      devFactors.push(`${sortedFit[0][0]} through targeted training and practical exercises`);
-    }
-  }
-  if (data.aiData) {
-    const sortedAI = Object.entries(data.aiData.scores).sort(([,a], [,b]) => a - b);
-    if (sortedAI[0] && sortedAI[0][1] < 65) {
-      devFactors.push(`${sortedAI[0][0]} skills through hands-on projects`);
-    }
-  }
-  if (data.aiqData && data.aiqData.totalScore < 60) {
-    devFactors.push('AI ethics awareness through dedicated training programs');
-  }
-  
-  if (devFactors.length > 0) {
-    developmentRecommendation = `To maximize ${data.candidateName}'s potential, we recommend focusing development efforts on ${devFactors.join(' and ')}. Structured learning combined with real-world application will accelerate their growth in these areas.`;
-  } else {
-    developmentRecommendation = `${data.candidateName} shows a well-rounded profile with no critical gaps. To further their development, consider leadership training and cross-functional project exposure to translate their technical strengths into broader organizational impact.`;
-  }
-  
-  // Render paragraphs
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(59, 130, 246);
-  pdf.text('ROLE SUITABILITY', 20, yPos);
-  yPos += 6;
-  
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(55, 65, 81);
-  const roleLines = pdf.splitTextToSize(roleRecommendation, pageWidth - 40);
-  roleLines.forEach((line: string) => {
-    pdf.text(line, 20, yPos);
-    yPos += 5;
-  });
-  yPos += 8;
-  
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(59, 130, 246);
-  pdf.text('OPTIMAL ENVIRONMENT', 20, yPos);
-  yPos += 6;
-  
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(55, 65, 81);
-  const envLines = pdf.splitTextToSize(environmentRecommendation, pageWidth - 40);
-  envLines.forEach((line: string) => {
-    pdf.text(line, 20, yPos);
-    yPos += 5;
-  });
-  yPos += 8;
-  
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(34, 197, 94);
-  pdf.text('KEY STRENGTHS', 20, yPos);
-  yPos += 6;
-  
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(55, 65, 81);
-  const strengthLines = pdf.splitTextToSize(strengthsRecommendation, pageWidth - 40);
-  strengthLines.forEach((line: string) => {
-    pdf.text(line, 20, yPos);
-    yPos += 5;
-  });
-  yPos += 8;
-  
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(234, 179, 8);
-  pdf.text('DEVELOPMENT FOCUS', 20, yPos);
-  yPos += 6;
-  
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(55, 65, 81);
-  const devLines = pdf.splitTextToSize(developmentRecommendation, pageWidth - 40);
-  devLines.forEach((line: string) => {
-    pdf.text(line, 20, yPos);
-    yPos += 5;
-  });
   
   // ========== AI PROFILE INSIGHTS (if available) ==========
   if (data.profileInsights) {
