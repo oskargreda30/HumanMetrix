@@ -318,16 +318,19 @@ function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, r
     yPos = addGuideItem(2, 'Cohort Insights', 
       'Common strengths shared by multiple candidates and common development areas where the cohort may need improvement. Key differentiators highlight what sets candidates apart.', yPos);
     
-    yPos = addGuideItem(3, 'AI Comparative Analyses', 
-      'AI-powered assessment of Prompt Architecture and AIQ skills across candidates, providing insights on relative strengths and areas for development.', yPos);
+    yPos = addGuideItem(3, 'AI Hiring Suggestions', 
+      'Contextual recommendations based on fit distribution, top performer potential, and common development gaps. Provides actionable hiring guidance.', yPos);
     
-    yPos = addGuideItem(4, 'Candidate Rankings Table', 
+    yPos = addGuideItem(4, 'AI Comparative Analyses', 
+      'AI-powered assessment of Prompt Architecture and AIQ skills across candidates (when applicable), with insights on relative strengths and areas for development.', yPos);
+    
+    yPos = addGuideItem(5, 'Candidate Rankings Table', 
       'Sortable table with rank, fit percentage, fit tier, and key notes. Top 3 candidates are highlighted with gold, silver, and bronze indicators.', yPos);
     
-    yPos = addGuideItem(5, 'Critical Skills Dashboard', 
+    yPos = addGuideItem(6, 'Critical Skills Dashboard', 
       'Table showing performance on must-have skills for this role. Each critical skill displays candidate scores with color coding and pass/fail indicators.', yPos);
     
-    yPos = addGuideItem(6, 'Skill Score Interpretation', 
+    yPos = addGuideItem(7, 'Skill Score Interpretation', 
       'For each skill: Green = meets/exceeds requirement, Yellow = close to requirement (within 80%), Red = significant gap. "C" badge indicates critical skills.', yPos);
   } else {
     // Comparison Report Guide - matches CompareTab.tsx exactly

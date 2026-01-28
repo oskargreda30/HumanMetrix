@@ -1045,6 +1045,7 @@ export default function MultiCandidateRoleFitTab() {
               const candidateEntry = candidate as CandidateEntry & { promptArchitectureScore?: number | null };
               const score = candidateEntry.promptArchitectureScore;
               const hasData = score !== null && score !== undefined;
+              const threshold = promptReq * 0.8; // 80% of required score
               return {
                 userId: candidate.userId,
                 userName: candidate.userName,
@@ -1052,6 +1053,7 @@ export default function MultiCandidateRoleFitTab() {
                 dataAvailable: hasData,
                 gap: hasData && score != null ? score - promptReq : null,
                 meetsRequirement: hasData && (score || 0) >= promptReq,
+                meetsThreshold: hasData && (score || 0) >= threshold,
               };
             });
             
@@ -1112,7 +1114,7 @@ export default function MultiCandidateRoleFitTab() {
                               <div className="flex-1 relative">
                                 <Progress 
                                   value={candidate.score} 
-                                  className={`h-4 ${meetsReq ? '[&>div]:bg-green-500' : '[&>div]:bg-red-400'}`}
+                                  className={`h-4 ${meetsReq ? '[&>div]:bg-green-500' : candidate.meetsThreshold ? '[&>div]:bg-amber-400' : '[&>div]:bg-red-400'}`}
                                 />
                                 <div 
                                   className="absolute top-0 h-4 w-0.5 bg-cyan-600" 
@@ -1123,10 +1125,12 @@ export default function MultiCandidateRoleFitTab() {
                               <div className="w-16 flex items-center gap-1">
                                 {meetsReq ? (
                                   <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                                ) : candidate.meetsThreshold ? (
+                                  <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0" />
                                 ) : (
-                                  <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                                  <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
                                 )}
-                                <span className={`text-sm font-medium ${meetsReq ? 'text-green-600' : 'text-red-600'}`}>
+                                <span className={`text-sm font-medium ${meetsReq ? 'text-green-600' : candidate.meetsThreshold ? 'text-amber-600' : 'text-red-600'}`}>
                                   {candidate.score}%
                                 </span>
                               </div>
@@ -1192,6 +1196,7 @@ export default function MultiCandidateRoleFitTab() {
               const candidateEntry = candidate as CandidateEntry & { aiqScore?: number | null };
               const score = candidateEntry.aiqScore;
               const hasData = score !== null && score !== undefined;
+              const threshold = aiqReq * 0.8; // 80% of required score
               return {
                 userId: candidate.userId,
                 userName: candidate.userName,
@@ -1199,6 +1204,7 @@ export default function MultiCandidateRoleFitTab() {
                 dataAvailable: hasData,
                 gap: hasData && score != null ? score - aiqReq : null,
                 meetsRequirement: hasData && (score || 0) >= aiqReq,
+                meetsThreshold: hasData && (score || 0) >= threshold,
               };
             });
             
@@ -1259,7 +1265,7 @@ export default function MultiCandidateRoleFitTab() {
                               <div className="flex-1 relative">
                                 <Progress 
                                   value={candidate.score} 
-                                  className={`h-4 ${meetsReq ? '[&>div]:bg-green-500' : '[&>div]:bg-red-400'}`}
+                                  className={`h-4 ${meetsReq ? '[&>div]:bg-green-500' : candidate.meetsThreshold ? '[&>div]:bg-amber-400' : '[&>div]:bg-red-400'}`}
                                 />
                                 <div 
                                   className="absolute top-0 h-4 w-0.5 bg-purple-600" 
@@ -1270,10 +1276,12 @@ export default function MultiCandidateRoleFitTab() {
                               <div className="w-16 flex items-center gap-1">
                                 {meetsReq ? (
                                   <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                                ) : candidate.meetsThreshold ? (
+                                  <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0" />
                                 ) : (
-                                  <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                                  <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
                                 )}
-                                <span className={`text-sm font-medium ${meetsReq ? 'text-green-600' : 'text-red-600'}`}>
+                                <span className={`text-sm font-medium ${meetsReq ? 'text-green-600' : candidate.meetsThreshold ? 'text-amber-600' : 'text-red-600'}`}>
                                   {candidate.score}%
                                 </span>
                               </div>
