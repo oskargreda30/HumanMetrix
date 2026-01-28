@@ -4716,7 +4716,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
       pdf.circle(centerX, centerY, 2, 'F');
     }
     
-    yPos = Math.max(yPos, fitScoresStartY + chartHeight) + 8;
+    yPos = Math.max(yPos, fitScoresStartY + chartHeight) + 15;
   }
   
   // AI Readiness Skills - stays on same page as FIT
@@ -4725,7 +4725,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(34, 197, 94);
     pdf.text('AI Readiness Assessment', leftColStart, yPos);
-    yPos += 4;
+    yPos += 6;
     
     pdf.setFontSize(6.5);
     pdf.setFont('helvetica', 'normal');
@@ -4813,8 +4813,13 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    pdf.text('Progressive evaluation of prompt engineering skills across 7 difficulty levels', 20, yPos);
-    yPos += 12;
+    const promptDesc = 'Evaluates the ability to construct effective AI prompts across progressively complex scenarios. Measures clarity, structure, context relevance, creativity, and iterative improvement skills essential for leveraging generative AI tools in professional settings.';
+    const promptDescLines = pdf.splitTextToSize(promptDesc, pageWidth - 40);
+    promptDescLines.forEach((line: string) => {
+      pdf.text(line, 20, yPos);
+      yPos += 5;
+    });
+    yPos += 8;
     
     // Overall score box - properly sized with text inside
     const promptPerf = getPerformanceLevel(data.promptData.totalScore);
@@ -4882,11 +4887,13 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
       const barHeight = 6;
       
       data.promptData.levels.forEach((levelData) => {
-        // Level label
-        pdf.setFontSize(8);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(55, 65, 81);
-        pdf.text(`Level ${levelData.level}`, 25, yPos + 4);
+        // Check for page overflow before drawing
+        if (yPos > pageHeight - 30) {
+          pdf.addPage();
+          addBackgroundPattern(pdf, pageWidth, pageHeight);
+          addHeader(pdf, pageWidth);
+          yPos = 35;
+        }
         
         // Progress bar background
         pdf.setFillColor(229, 231, 235);
@@ -4925,8 +4932,22 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
           pdf.text(componentScores, barStartX + barWidth + 25, yPos + 4);
         }
         
-        yPos += 10;
+        // Level label underneath the bar
+        pdf.setFontSize(7);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(55, 65, 81);
+        pdf.text(`Level ${levelData.level}`, barStartX + barWidth / 2, yPos + barHeight + 5, { align: 'center' });
+        
+        yPos += 14;
       });
+      
+      // Check page overflow before legend
+      if (yPos > pageHeight - 20) {
+        pdf.addPage();
+        addBackgroundPattern(pdf, pageWidth, pageHeight);
+        addHeader(pdf, pageWidth);
+        yPos = 35;
+      }
       
       // Legend for component abbreviations
       yPos += 2;
@@ -4992,36 +5013,55 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     });
   }
   
-  // ========== AI PROFILE INSIGHTS (if available) ==========
+  // ========== PROFILE INSIGHTS (if available) ==========
   if (data.profileInsights) {
     pdf.addPage();
     addBackgroundPattern(pdf, pageWidth, pageHeight);
     addHeader(pdf, pageWidth);
     
     yPos = 35;
-    yPos = addSectionHeader(pdf, 'AI-POWERED PROFILE INSIGHTS', yPos, pageWidth);
+    yPos = addSectionHeader(pdf, 'PROFILE INSIGHTS', yPos, pageWidth);
     yPos += 10;
     
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'italic');
     pdf.setTextColor(107, 114, 128);
     pdf.text('Generated analysis based on assessment performance patterns', 20, yPos);
-    yPos += 10;
+    yPos += 12;
     
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(55, 65, 81);
+    // Split insights into paragraphs for separate boxes
+    const paragraphs = data.profileInsights.split('\n\n').filter((p: string) => p.trim());
     
-    const insightLines = pdf.splitTextToSize(data.profileInsights, pageWidth - 40);
-    insightLines.forEach((line: string) => {
-      if (yPos > pageHeight - 30) {
+    paragraphs.forEach((paragraph: string) => {
+      const insightLines = pdf.splitTextToSize(paragraph.trim(), pageWidth - 50);
+      const boxHeight = insightLines.length * 6 + 12;
+      
+      // Check if we need a new page
+      if (yPos + boxHeight > pageHeight - 30) {
         pdf.addPage();
         addBackgroundPattern(pdf, pageWidth, pageHeight);
         addHeader(pdf, pageWidth);
         yPos = 35;
       }
-      pdf.text(line, 20, yPos);
-      yPos += 6;
+      
+      // Draw blue-bordered box
+      pdf.setDrawColor(59, 130, 246);
+      pdf.setLineWidth(0.5);
+      pdf.setFillColor(248, 250, 252);
+      pdf.roundedRect(18, yPos - 2, pageWidth - 36, boxHeight, 2, 2, 'FD');
+      
+      // Draw text inside box
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(55, 65, 81);
+      
+      let textY = yPos + 6;
+      insightLines.forEach((line: string) => {
+        pdf.text(line, 24, textY);
+        textY += 6;
+      });
+      
+      yPos += boxHeight + 8;
     });
   }
   
