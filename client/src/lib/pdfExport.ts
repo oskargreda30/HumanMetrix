@@ -4128,6 +4128,200 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     yPos += 35;
   }
   
+  // ========== PROMPT ARCHITECTURE COMPARISON ==========
+  const promptReq = data.roleSnapshot.requiredSkillScores?.promptArchitectureScore;
+  if (promptReq) {
+    yPos = ensurePageSpace(pdf, yPos, 80, pageHeight, pageWidth);
+    yPos += 10;
+    
+    // Cyan-blue gradient header for Prompt Architecture
+    pdf.setFillColor(8, 145, 178); // Cyan-600
+    pdf.roundedRect(20, yPos, pageWidth - 40, 18, 2, 2, 'F');
+    
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(255, 255, 255);
+    pdf.text('PROMPT ARCHITECTURE COMPARISON', 26, yPos + 11);
+    
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`Required: ${promptReq}/100`, pageWidth - 60, yPos + 11);
+    
+    yPos += 22;
+    
+    pdf.setFontSize(8);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Multi-candidate comparison of prompt engineering skills across complexity levels', 20, yPos);
+    yPos += 8;
+    
+    // Candidate comparison bars - use dedicated promptArchitectureScore field
+    const sortedForPrompt = [...data.candidateEntries].sort((a, b) => {
+      const aScore = (a as any).promptArchitectureScore || 0;
+      const bScore = (b as any).promptArchitectureScore || 0;
+      return (bScore || 0) - (aScore || 0);
+    });
+    
+    sortedForPrompt.slice(0, 6).forEach((candidate, idx) => {
+      if (yPos > pageHeight - 25) {
+        pdf.addPage();
+        addBackgroundPattern(pdf, pageWidth, pageHeight);
+        addHeader(pdf, pageWidth);
+        yPos = 35;
+      }
+      
+      // Use dedicated promptArchitectureScore field from backend
+      const candidateEntry = candidate as any;
+      const score = candidateEntry.promptArchitectureScore;
+      const hasData = score !== null && score !== undefined;
+      const meetsReq = hasData && score >= promptReq;
+      
+      // Candidate row
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(17, 24, 39);
+      const truncName = candidate.userName.length > 15 ? candidate.userName.slice(0, 13) + '...' : candidate.userName;
+      pdf.text(truncName, 22, yPos + 4);
+      
+      // Progress bar background
+      const barX = 60;
+      const barWidth = pageWidth - 130;
+      pdf.setFillColor(229, 231, 235);
+      pdf.roundedRect(barX, yPos, barWidth, 6, 1, 1, 'F');
+      
+      if (hasData) {
+        // Progress bar fill
+        const fillColor = meetsReq ? [34, 197, 94] : [239, 68, 68];
+        pdf.setFillColor(fillColor[0], fillColor[1], fillColor[2]);
+        pdf.roundedRect(barX, yPos, (score / 100) * barWidth, 6, 1, 1, 'F');
+        
+        // Required threshold line
+        pdf.setDrawColor(8, 145, 178);
+        pdf.setLineWidth(0.5);
+        pdf.line(barX + (promptReq / 100) * barWidth, yPos - 1, barX + (promptReq / 100) * barWidth, yPos + 7);
+        
+        // Score
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(fillColor[0], fillColor[1], fillColor[2]);
+        pdf.text(`${score}%`, pageWidth - 55, yPos + 4);
+        
+        // Status
+        const statusText = meetsReq ? '\u2713' : '\u2717';
+        pdf.text(statusText, pageWidth - 30, yPos + 4);
+      } else {
+        pdf.setTextColor(156, 163, 175);
+        pdf.setFont('helvetica', 'italic');
+        pdf.text('No data', pageWidth - 55, yPos + 4);
+      }
+      
+      yPos += 10;
+    });
+    
+    // Why it matters
+    yPos += 3;
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'italic');
+    pdf.setTextColor(8, 145, 178);
+    pdf.text('Why it matters: Prompt Architecture measures ability to construct effective AI prompts across increasing complexity levels.', 22, yPos);
+    yPos += 10;
+  }
+  
+  // ========== AIQ COMPARISON ==========
+  const aiqReq = data.roleSnapshot.requiredSkillScores?.aiqScore;
+  if (aiqReq) {
+    yPos = ensurePageSpace(pdf, yPos, 80, pageHeight, pageWidth);
+    yPos += 10;
+    
+    // Purple gradient header for AIQ
+    pdf.setFillColor(147, 51, 234); // Purple-600
+    pdf.roundedRect(20, yPos, pageWidth - 40, 18, 2, 2, 'F');
+    
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(255, 255, 255);
+    pdf.text('AIQ (ALGORITHMIC INTEGRITY QUOTIENT) COMPARISON', 26, yPos + 11);
+    
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`Required: ${aiqReq}/100`, pageWidth - 60, yPos + 11);
+    
+    yPos += 22;
+    
+    pdf.setFontSize(8);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Multi-candidate comparison of ethical AI awareness and responsible AI deployment', 20, yPos);
+    yPos += 8;
+    
+    // Candidate comparison bars - use dedicated aiqScore field
+    const sortedForAiq = [...data.candidateEntries].sort((a, b) => {
+      const aScore = (a as any).aiqScore || 0;
+      const bScore = (b as any).aiqScore || 0;
+      return (bScore || 0) - (aScore || 0);
+    });
+    
+    sortedForAiq.slice(0, 6).forEach((candidate, idx) => {
+      if (yPos > pageHeight - 25) {
+        pdf.addPage();
+        addBackgroundPattern(pdf, pageWidth, pageHeight);
+        addHeader(pdf, pageWidth);
+        yPos = 35;
+      }
+      
+      // Use dedicated aiqScore field from backend
+      const candidateEntry = candidate as any;
+      const score = candidateEntry.aiqScore;
+      const hasData = score !== null && score !== undefined;
+      const meetsReq = hasData && score >= aiqReq;
+      
+      // Candidate row
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(17, 24, 39);
+      const truncName = candidate.userName.length > 15 ? candidate.userName.slice(0, 13) + '...' : candidate.userName;
+      pdf.text(truncName, 22, yPos + 4);
+      
+      // Progress bar background
+      const barX = 60;
+      const barWidth = pageWidth - 130;
+      pdf.setFillColor(229, 231, 235);
+      pdf.roundedRect(barX, yPos, barWidth, 6, 1, 1, 'F');
+      
+      if (hasData) {
+        // Progress bar fill
+        const fillColor = meetsReq ? [34, 197, 94] : [239, 68, 68];
+        pdf.setFillColor(fillColor[0], fillColor[1], fillColor[2]);
+        pdf.roundedRect(barX, yPos, (score / 100) * barWidth, 6, 1, 1, 'F');
+        
+        // Required threshold line
+        pdf.setDrawColor(147, 51, 234);
+        pdf.setLineWidth(0.5);
+        pdf.line(barX + (aiqReq / 100) * barWidth, yPos - 1, barX + (aiqReq / 100) * barWidth, yPos + 7);
+        
+        // Score
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(fillColor[0], fillColor[1], fillColor[2]);
+        pdf.text(`${score}%`, pageWidth - 55, yPos + 4);
+        
+        // Status
+        const statusText = meetsReq ? '\u2713' : '\u2717';
+        pdf.text(statusText, pageWidth - 30, yPos + 4);
+      } else {
+        pdf.setTextColor(156, 163, 175);
+        pdf.setFont('helvetica', 'italic');
+        pdf.text('No data', pageWidth - 55, yPos + 4);
+      }
+      
+      yPos += 10;
+    });
+    
+    // Why it matters
+    yPos += 3;
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'italic');
+    pdf.setTextColor(147, 51, 234);
+    pdf.text('Why it matters: AIQ measures understanding of AI ethics, bias recognition, and responsible AI deployment.', 22, yPos);
+    yPos += 10;
+  }
+  
   // ========== HIRING DECISION MATRIX - CANDIDATE CARDS ==========
   yPos = ensurePageSpace(pdf, yPos, 100, pageHeight, pageWidth);
   yPos += 10;

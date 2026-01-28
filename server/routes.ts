@@ -8828,6 +8828,13 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
           riskFlags.push('Insufficient data for reliable comparison');
         }
 
+        // Get Prompt Architecture and AIQ scores for this candidate
+        const promptArchResult = completedResults.find((r: any) => r.assessmentType === 'prompt_architecture');
+        const aiqResult = completedResults.find((r: any) => r.assessmentType === 'aiq');
+        
+        const promptArchitectureScore = promptArchResult ? (promptArchResult.totalScore || 0) : null;
+        const aiqTotalScore = aiqResult ? (aiqResult.scores?.['Algorithmic Integrity'] || aiqResult.totalScore || 0) : null;
+
         candidateEntries.push({
           userId: candidateId,
           userName,
@@ -8848,7 +8855,10 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
             hasSufficientData
           },
           hasSufficientData,
-          missingAssessments
+          missingAssessments,
+          // Prompt Architecture and AIQ scores (separate from skill alignment)
+          promptArchitectureScore,
+          aiqScore: aiqTotalScore
         });
       }
 

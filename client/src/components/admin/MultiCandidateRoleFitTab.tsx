@@ -927,6 +927,236 @@ export default function MultiCandidateRoleFitTab() {
             );
           })()}
 
+          {/* Prompt Architecture Multi-Candidate Comparison */}
+          {(() => {
+            const roleSkills = comparison.roleSnapshot.requiredSkillScores;
+            const promptReq = roleSkills?.promptArchitectureScore;
+            
+            if (!promptReq) return null;
+            
+            const candidatePromptData = comparison.candidateEntries.map(candidate => {
+              // Use dedicated promptArchitectureScore field from backend
+              const candidateEntry = candidate as CandidateEntry & { promptArchitectureScore?: number | null };
+              const score = candidateEntry.promptArchitectureScore;
+              const hasData = score !== null && score !== undefined;
+              return {
+                userId: candidate.userId,
+                userName: candidate.userName,
+                score: hasData ? score : null,
+                dataAvailable: hasData,
+                gap: hasData && score != null ? score - promptReq : null,
+                meetsRequirement: hasData && (score || 0) >= promptReq,
+              };
+            });
+            
+            const candidatesWithData = candidatePromptData.filter(c => c.dataAvailable);
+            const candidatesMeeting = candidatesWithData.filter(c => c.meetsRequirement).length;
+            const bestCandidate = candidatesWithData.length > 0 
+              ? candidatesWithData.reduce((best, curr) => (curr.score || 0) > (best.score || 0) ? curr : best)
+              : null;
+            
+            return (
+              <Card data-testid="section-multi-prompt-architecture">
+                <CardHeader className="bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-t-lg">
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <Sparkles className="h-5 w-5" />
+                    Prompt Architecture Comparison
+                  </CardTitle>
+                  <p className="text-sm text-white/80">
+                    Multi-candidate comparison of prompt engineering skills (Required: {promptReq}/100)
+                  </p>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <span className="font-medium flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Candidate Performance
+                    </span>
+                    <span className="text-muted-foreground">
+                      {candidatesMeeting}/{candidatesWithData.length} candidates meet requirement
+                      {candidatePromptData.length - candidatesWithData.length > 0 && (
+                        <span className="ml-1">({candidatePromptData.length - candidatesWithData.length} not assessed)</span>
+                      )}
+                    </span>
+                  </div>
+                  
+                  <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+                    {candidatePromptData.map((candidate, idx) => {
+                      const meetsReq = candidate.meetsRequirement;
+                      const isBest = bestCandidate?.userId === candidate.userId;
+                      
+                      return (
+                        <div key={idx} className="flex items-center gap-3">
+                          <div className="w-32 flex items-center gap-2">
+                            <span className="text-sm font-medium truncate" title={candidate.userName}>
+                              {candidate.userName.length > 12 ? candidate.userName.slice(0, 12) + '...' : candidate.userName}
+                            </span>
+                            {isBest && candidate.dataAvailable && (
+                              <Badge className="bg-amber-500 text-white text-xs px-1 py-0">Best</Badge>
+                            )}
+                          </div>
+                          
+                          {!candidate.dataAvailable || candidate.score === null ? (
+                            <div className="flex-1 flex items-center gap-2">
+                              <div className="flex-1 h-4 bg-muted rounded-full" />
+                              <span className="w-16 text-sm text-muted-foreground italic">No data</span>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex-1 relative">
+                                <Progress 
+                                  value={candidate.score} 
+                                  className={`h-4 ${meetsReq ? '[&>div]:bg-green-500' : '[&>div]:bg-red-400'}`}
+                                />
+                                <div 
+                                  className="absolute top-0 h-4 w-0.5 bg-cyan-600" 
+                                  style={{ left: `${promptReq}%` }}
+                                  title={`Required: ${promptReq}`}
+                                />
+                              </div>
+                              <div className="w-16 flex items-center gap-1">
+                                {meetsReq ? (
+                                  <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                                ) : (
+                                  <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                                )}
+                                <span className={`text-sm font-medium ${meetsReq ? 'text-green-600' : 'text-red-600'}`}>
+                                  {candidate.score}%
+                                </span>
+                              </div>
+                              <span className={`w-16 text-xs ${(candidate.gap || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {(candidate.gap || 0) >= 0 ? '+' : ''}{candidate.gap}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground italic border-l-2 border-cyan-500 pl-3">
+                    Why it matters: Prompt Architecture measures ability to construct effective AI prompts across increasing complexity levels - essential for AI-augmented roles.
+                  </p>
+                </CardContent>
+              </Card>
+            );
+          })()}
+
+          {/* AIQ (Algorithmic Integrity Quotient) Multi-Candidate Comparison */}
+          {(() => {
+            const roleSkills = comparison.roleSnapshot.requiredSkillScores;
+            const aiqReq = roleSkills?.aiqScore;
+            
+            if (!aiqReq) return null;
+            
+            const candidateAiqData = comparison.candidateEntries.map(candidate => {
+              // Use dedicated aiqScore field from backend
+              const candidateEntry = candidate as CandidateEntry & { aiqScore?: number | null };
+              const score = candidateEntry.aiqScore;
+              const hasData = score !== null && score !== undefined;
+              return {
+                userId: candidate.userId,
+                userName: candidate.userName,
+                score: hasData ? score : null,
+                dataAvailable: hasData,
+                gap: hasData && score != null ? score - aiqReq : null,
+                meetsRequirement: hasData && (score || 0) >= aiqReq,
+              };
+            });
+            
+            const candidatesWithData = candidateAiqData.filter(c => c.dataAvailable);
+            const candidatesMeeting = candidatesWithData.filter(c => c.meetsRequirement).length;
+            const bestCandidate = candidatesWithData.length > 0 
+              ? candidatesWithData.reduce((best, curr) => (curr.score || 0) > (best.score || 0) ? curr : best)
+              : null;
+            
+            return (
+              <Card data-testid="section-multi-aiq">
+                <CardHeader className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-t-lg">
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <ShieldAlert className="h-5 w-5" />
+                    AIQ (Algorithmic Integrity Quotient) Comparison
+                  </CardTitle>
+                  <p className="text-sm text-white/80">
+                    Multi-candidate comparison of ethical AI awareness (Required: {aiqReq}/100)
+                  </p>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <span className="font-medium flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Candidate Performance
+                    </span>
+                    <span className="text-muted-foreground">
+                      {candidatesMeeting}/{candidatesWithData.length} candidates meet requirement
+                      {candidateAiqData.length - candidatesWithData.length > 0 && (
+                        <span className="ml-1">({candidateAiqData.length - candidatesWithData.length} not assessed)</span>
+                      )}
+                    </span>
+                  </div>
+                  
+                  <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+                    {candidateAiqData.map((candidate, idx) => {
+                      const meetsReq = candidate.meetsRequirement;
+                      const isBest = bestCandidate?.userId === candidate.userId;
+                      
+                      return (
+                        <div key={idx} className="flex items-center gap-3">
+                          <div className="w-32 flex items-center gap-2">
+                            <span className="text-sm font-medium truncate" title={candidate.userName}>
+                              {candidate.userName.length > 12 ? candidate.userName.slice(0, 12) + '...' : candidate.userName}
+                            </span>
+                            {isBest && candidate.dataAvailable && (
+                              <Badge className="bg-amber-500 text-white text-xs px-1 py-0">Best</Badge>
+                            )}
+                          </div>
+                          
+                          {!candidate.dataAvailable || candidate.score === null ? (
+                            <div className="flex-1 flex items-center gap-2">
+                              <div className="flex-1 h-4 bg-muted rounded-full" />
+                              <span className="w-16 text-sm text-muted-foreground italic">No data</span>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex-1 relative">
+                                <Progress 
+                                  value={candidate.score} 
+                                  className={`h-4 ${meetsReq ? '[&>div]:bg-green-500' : '[&>div]:bg-red-400'}`}
+                                />
+                                <div 
+                                  className="absolute top-0 h-4 w-0.5 bg-purple-600" 
+                                  style={{ left: `${aiqReq}%` }}
+                                  title={`Required: ${aiqReq}`}
+                                />
+                              </div>
+                              <div className="w-16 flex items-center gap-1">
+                                {meetsReq ? (
+                                  <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                                ) : (
+                                  <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                                )}
+                                <span className={`text-sm font-medium ${meetsReq ? 'text-green-600' : 'text-red-600'}`}>
+                                  {candidate.score}%
+                                </span>
+                              </div>
+                              <span className={`w-16 text-xs ${(candidate.gap || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {(candidate.gap || 0) >= 0 ? '+' : ''}{candidate.gap}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground italic border-l-2 border-purple-500 pl-3">
+                    Why it matters: AIQ measures understanding of AI ethics, bias recognition, and responsible AI deployment - critical for roles involving AI decision-making.
+                  </p>
+                </CardContent>
+              </Card>
+            );
+          })()}
+
           {/* Hiring Decision Matrix */}
           <Card>
             <CardHeader>
