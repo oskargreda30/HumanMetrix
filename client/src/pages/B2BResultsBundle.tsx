@@ -108,11 +108,14 @@ export default function B2BResultsBundle() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <div className="w-12 h-12 border-4 border-cyan-500/30 rounded-full" />
-            <div className="absolute inset-0 w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+        <div className="text-center">
+          <div className="w-20 h-20 mx-auto mb-4 animate-pulse">
+            <img src="/favicon.png" alt="HumanMetrix" className="w-full h-full object-contain" />
           </div>
+          <p className="font-semibold text-lg">
+            <span className="text-white">Human</span>
+            <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Metrix</span>
+          </p>
         </div>
       </div>
     );
