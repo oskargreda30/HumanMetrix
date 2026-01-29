@@ -3640,6 +3640,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         resultsByInvitation[invitationId].push(result);
       }
       
+      // Get user email for matching B2B sessions
+      const user = await storage.getUser(userId);
+      const userEmail = user?.email;
+      
       // Fetch invitation details for each series
       const seriesList = await Promise.all(
         Object.entries(resultsByInvitation).map(async ([invitationId, results]) => {
@@ -3647,6 +3651,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (!invitation) return null;
           
           const partner = await storage.getPartnerAccount(invitation.partnerId);
+          
+          // Fetch B2B sessions for this partner/user combo to check individual payment status
+          // Sessions are linked via partner_id + external_email + assessment_type
+          const b2bSessions: Record<string, any> = {};
+          if (userEmail && invitation.partnerId) {
+            const sessions = await storage.getCompletedB2BSessionsByEmail(
+              userEmail,
+              invitation.partnerId
+            );
+            for (const session of sessions) {
+              const normalizedType = normalizeAssessmentId(session.assessmentType);
+              // Store the most recent session for each assessment type
+              if (!b2bSessions[normalizedType] || 
+                  (session.completedAt && (!b2bSessions[normalizedType].completedAt || 
+                   new Date(session.completedAt) > new Date(b2bSessions[normalizedType].completedAt)))) {
+                b2bSessions[normalizedType] = session;
+              }
+            }
+          }
           
           // Find the most recent completion date (when all assessments were completed)
           const completedResults = results.filter((r: any) => r.status === 'completed');
@@ -3674,8 +3697,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isAutoUnlocked = new Date() >= unlockDate;
           }
           
-          // All results are unlocked if full purchase OR auto-unlocked after 30 days
-          const resultsUnlocked = isFullPurchase || isAutoUnlocked;
+          // Helper to check if a specific assessment type is unlocked via B2B payment
+          const isB2BSessionPaid = (assessmentType: string) => {
+            const normalizedType = normalizeAssessmentId(assessmentType);
+            const session = b2bSessions[normalizedType];
+            return session?.resultsPaymentStatus === 'paid' || session?.resultsReleaseStatus === 'released';
+          };
+          
+          // Check if ALL assessments have B2B payment
+          const allB2BPaid = completedResults.every((r: any) => isB2BSessionPaid(r.assessmentType));
+          
+          // All results are unlocked if full purchase OR auto-unlocked after 30 days OR all B2B paid
+          const resultsUnlocked = isFullPurchase || isAutoUnlocked || allB2BPaid;
           
           // Helper to check if a specific assessment type is unlocked
           const isAssessmentUnlocked = (assessmentType: string) => {
@@ -3686,6 +3719,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const normalizedType = normalizeAssessmentId(assessmentType);
               return purchasedTypes.includes(normalizedType);
             }
+            // Check B2B session payment status
+            if (isB2BSessionPaid(assessmentType)) return true;
             return false;
           };
           
