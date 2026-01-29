@@ -416,7 +416,12 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                       Generating...
                     </>
                   ) : (
-                    'Generate Required Scores'
+                    <>
+                      Generate Required Scores
+                      {config.contextType === 'partner' && (
+                        <Badge variant="secondary" className="ml-2 text-[10px] font-normal">1 credit</Badge>
+                      )}
+                    </>
                   )}
                 </Button>
               </div>
@@ -424,24 +429,34 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
           )}
 
           {selectedCandidate && selectedRole && !alignment && selectedRoleData?.requiredSkillScores && (
-            <Button
-              onClick={() => analyzeRoleFitMutation.mutate()}
-              disabled={analyzeRoleFitMutation.isPending}
-              className="w-full"
-              data-testid="button-analyze-fit"
-            >
-              {analyzeRoleFitMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Analyzing with AI... (this may take up to 2 minutes)
-                </>
-              ) : (
-                <>
-                  <Target className="mr-2 h-4 w-4" />
-                  Analyze Role Fit
-                </>
+            <div className="space-y-2">
+              <Button
+                onClick={() => analyzeRoleFitMutation.mutate()}
+                disabled={analyzeRoleFitMutation.isPending}
+                className="w-full"
+                data-testid="button-analyze-fit"
+              >
+                {analyzeRoleFitMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Analyzing with AI... (this may take up to 2 minutes)
+                  </>
+                ) : (
+                  <>
+                    <Target className="mr-2 h-4 w-4" />
+                    Analyze Role Fit
+                    {config.contextType === 'partner' && (
+                      <Badge variant="secondary" className="ml-2 text-[10px] font-normal">1 credit</Badge>
+                    )}
+                  </>
+                )}
+              </Button>
+              {config.contextType === 'partner' && (
+                <p className="text-[10px] text-center text-muted-foreground">
+                  Uses 1 credit for AI-powered role fit analysis
+                </p>
               )}
-            </Button>
+            </div>
           )}
         </CardContent>
       </Card>

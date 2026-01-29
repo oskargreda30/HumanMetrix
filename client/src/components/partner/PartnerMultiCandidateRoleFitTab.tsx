@@ -428,7 +428,10 @@ export default function PartnerMultiCandidateRoleFitTab() {
                         Generating...
                       </>
                     ) : (
-                      'Generate Required Scores'
+                      <>
+                        Generate Required Scores
+                        <Badge variant="secondary" className="ml-2 text-[10px] font-normal">1 credit</Badge>
+                      </>
                     )}
                   </Button>
                 </div>
@@ -467,24 +470,32 @@ export default function PartnerMultiCandidateRoleFitTab() {
             )}
           </div>
 
-          <Button
-            onClick={() => compareMutation.mutate()}
-            disabled={!canCompare || compareMutation.isPending}
-            className="w-full"
-            data-testid="button-compare-candidates"
-          >
-            {compareMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Analyzing {selectedCandidates.length} Candidates...
-              </>
-            ) : (
-              <>
-                <Target className="mr-2 h-4 w-4" />
-                Compare {selectedCandidates.length} Candidates Against Role
-              </>
-            )}
-          </Button>
+          <div className="space-y-2">
+            <Button
+              onClick={() => compareMutation.mutate()}
+              disabled={!canCompare || compareMutation.isPending}
+              className="w-full"
+              data-testid="button-compare-candidates"
+            >
+              {compareMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Analyzing {selectedCandidates.length} Candidates...
+                </>
+              ) : (
+                <>
+                  <Target className="mr-2 h-4 w-4" />
+                  Compare {selectedCandidates.length} Candidates Against Role
+                  <Badge variant="secondary" className="ml-2 text-[10px] font-normal">
+                    {selectedCandidates.length} credit{selectedCandidates.length !== 1 ? 's' : ''}
+                  </Badge>
+                </>
+              )}
+            </Button>
+            <p className="text-[10px] text-center text-muted-foreground">
+              Uses 1 credit per candidate for AI-powered role fit analysis
+            </p>
+          </div>
         </CardContent>
       </Card>
 
