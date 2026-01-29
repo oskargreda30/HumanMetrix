@@ -2512,7 +2512,7 @@ export function registerPartnerRoutes(app: Express) {
         
         res.json({
           sessionId: session.id,
-          widgetUrl: `${baseUrl}/embed/assessment?session=${session.id}&types=${remainingTypes.join(',')}`,
+          widgetUrl: `${baseUrl}/embed/assessment?session=${session.id}&types=${remainingTypes.join(',')}&inviteToken=${token}`,
           assessmentType: session.assessmentType,
           assessmentTypes: remainingTypes,
           resumed: true,
@@ -2557,7 +2557,7 @@ export function registerPartnerRoutes(app: Express) {
       
       res.json({
         sessionId: session.id,
-        widgetUrl: `${baseUrl}/embed/assessment?session=${session.id}&types=${remainingTypes.join(',')}`,
+        widgetUrl: `${baseUrl}/embed/assessment?session=${session.id}&types=${remainingTypes.join(',')}&inviteToken=${token}`,
         assessmentType: startingType,
         assessmentTypes: remainingTypes,
         resumed: false,
