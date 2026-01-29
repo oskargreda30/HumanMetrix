@@ -13660,19 +13660,30 @@ Format your response as JSON with this structure:
       }
 
       // Verify the candidate belongs to this partner
-      // candidateId is an email address, so match against invitation email
+      // Check BOTH partner invitations AND B2B sessions (mirrors compare endpoint logic)
+      // candidateId is typically an email address
+      
+      // SOURCE 1: Partner-invited candidates
       const invitations = await storage.getPartnerCandidateInvitations(partner.id);
       const candidateInvitation = invitations.find(inv => inv.email === candidateId);
-      if (!candidateInvitation) {
+      
+      // SOURCE 2: B2B Widget/API sessions (includes manually imported candidates)
+      const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
+      const candidateSession = allSessions.find(s => 
+        s.status === 'completed' && !s.isTestSession && 
+        (s.externalEmail === candidateId || s.externalUserId === candidateId)
+      );
+      
+      if (!candidateInvitation && !candidateSession) {
         return res.status(403).json({ message: "Candidate not found in your organization" });
       }
 
       // Fetch candidate from database for verified name (candidateId is email)
       const candidate = await storage.getUserByEmail(candidateId);
-      // Use invitation/email data if no user record exists yet
+      // Use invitation/session data if no user record exists yet
       const candidateName = candidate 
         ? (`${candidate.firstName || ''} ${candidate.lastName || ''}`.trim() || candidate.email?.split('@')[0] || 'Candidate')
-        : (candidateInvitation.name || candidateId.split('@')[0] || 'Candidate');
+        : (candidateInvitation?.name || candidateSession?.externalEmail?.split('@')[0] || candidateId.split('@')[0] || 'Candidate');
 
       // Build prompt for OpenAI
       const prompt = `You are an expert HR analyst. Generate a concise, professional profile summary for a job candidate based on their assessment results.
