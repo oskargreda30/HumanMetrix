@@ -2108,3 +2108,66 @@ export const insertEcosystemTeamMemberSchema = createInsertSchema(ecosystemTeamM
 export type InsertEcosystemTeamMember = z.infer<typeof insertEcosystemTeamMemberSchema>;
 export type EcosystemTeamMember = typeof ecosystemTeamMembers.$inferSelect;
 
+// AI Usage Costs - tracks OpenAI token usage and costs for profit analysis
+export const AI_USAGE_OPERATION_TYPES = {
+  ASSESSMENT_SCORING_FIT: "assessment_scoring_fit",
+  ASSESSMENT_SCORING_AI_READINESS: "assessment_scoring_ai_readiness",
+  ASSESSMENT_SCORING_PROMPT: "assessment_scoring_prompt",
+  ASSESSMENT_SCORING_AIQ: "assessment_scoring_aiq",
+  ROLE_FIT_SINGLE: "role_fit_single",
+  ROLE_FIT_MULTI: "role_fit_multi",
+  INDIVIDUAL_NARRATIVE: "individual_narrative",
+  PDF_PARSING: "pdf_parsing",
+  ECOSYSTEM_ANALYSIS: "ecosystem_analysis",
+  GOLDEN_SET_EVALUATION: "golden_set_evaluation",
+} as const;
+
+export type AiUsageOperationType = typeof AI_USAGE_OPERATION_TYPES[keyof typeof AI_USAGE_OPERATION_TYPES];
+
+export const aiUsageCosts = pgTable("ai_usage_costs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Operation details
+  operationType: varchar("operation_type").notNull(), // From AI_USAGE_OPERATION_TYPES
+  model: varchar("model").notNull(), // e.g., "gpt-5", "gpt-4o"
+  
+  // Token usage
+  inputTokens: integer("input_tokens").notNull(),
+  outputTokens: integer("output_tokens").notNull(),
+  totalTokens: integer("total_tokens").notNull(),
+  
+  // Cost calculation (in USD cents for precision)
+  inputCostCents: integer("input_cost_cents").notNull(),
+  outputCostCents: integer("output_cost_cents").notNull(),
+  totalCostCents: integer("total_cost_cents").notNull(),
+  
+  // Context references
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
+  assessmentResultId: varchar("assessment_result_id"),
+  partnerId: varchar("partner_id").references(() => partnerAccounts.id, { onDelete: "set null" }),
+  
+  // Metadata
+  metadata: jsonb("metadata").$type<{
+    candidateEmail?: string;
+    assessmentType?: string;
+    roleTitle?: string;
+    candidateCount?: number;
+  } | null>(),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_ai_usage_operation").on(table.operationType),
+  index("idx_ai_usage_model").on(table.model),
+  index("idx_ai_usage_created").on(table.createdAt),
+  index("idx_ai_usage_user").on(table.userId),
+  index("idx_ai_usage_partner").on(table.partnerId),
+]);
+
+export const insertAiUsageCostSchema = createInsertSchema(aiUsageCosts).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertAiUsageCost = z.infer<typeof insertAiUsageCostSchema>;
+export type AiUsageCost = typeof aiUsageCosts.$inferSelect;
+
