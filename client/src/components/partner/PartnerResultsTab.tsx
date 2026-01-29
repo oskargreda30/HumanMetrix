@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Search, FileText, StickyNote, TrendingUp, TrendingDown, AlertTriangle, Download, UserCheck, UserX, HelpCircle, Upload, ClipboardList, Building2, BarChart3, Users, Target, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { Loader2, Search, FileText, StickyNote, TrendingUp, TrendingDown, AlertTriangle, Download, UserCheck, UserX, HelpCircle, Upload, ClipboardList, Building2, BarChart3, Users, Target, ChevronDown, ChevronUp, Trash2, Eye } from "lucide-react";
 import { PdfImportModal } from "@/components/PdfImportModal";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -361,6 +361,27 @@ export default function PartnerResultsTab() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary" className="text-xs">{report.creditsUsed} credit{report.creditsUsed !== 1 ? 's' : ''}</Badge>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            // Navigate to appropriate tab based on report type
+                            const tabMap: Record<string, string> = {
+                              'role_fit_single': 'role-fit',
+                              'role_fit_multi': 'multi-role-fit',
+                              'comparison': 'compare',
+                            };
+                            const tab = tabMap[report.reportType] || 'compare';
+                            toast({
+                              title: "Report Available",
+                              description: `This ${report.reportType.replace(/_/g, ' ')} report will load automatically when you re-run the same analysis. Go to the "${tab}" tab to view it.`,
+                            });
+                          }}
+                          data-testid={`button-view-report-${report.id}`}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"

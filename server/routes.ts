@@ -14138,13 +14138,25 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         version: 1,
       };
 
+      // Build a descriptive title using candidate info
+      const candidateDisplayNames = candidateIds.map(id => {
+        // Extract email local part if it looks like an email
+        if (id.includes('@')) {
+          return id.split('@')[0];
+        }
+        return id.length > 20 ? id.substring(0, 17) + '...' : id;
+      });
+      const titleNames = candidateDisplayNames.length <= 3 
+        ? candidateDisplayNames.join(', ')
+        : `${candidateDisplayNames.slice(0, 2).join(', ')} +${candidateDisplayNames.length - 2} more`;
+
       // Save the report for future access
       const savedReport = await storage.createPartnerAnalysisReport({
         partnerId: partner.id,
         reportType: 'comparison',
         version: 1,
         candidateIds: candidateIds,
-        title: `Candidate Comparison: ${candidateIds.length} candidates`,
+        title: `Candidate Comparison: ${titleNames}`,
         resultData: resultData as any,
         creditsUsed: candidateIds.length,
         generatedByUserId: req.user.id,
@@ -14646,6 +14658,11 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         version: 1,
       };
 
+      // Get candidate display name from session data or use candidateId
+      const candidateDisplayName = candidateSessions.length > 0 
+        ? candidateSessions[0].externalEmail || candidateSessions[0].externalUserId || candidateId
+        : candidateId;
+
       // Save the report for future access
       const savedReport = await storage.createPartnerAnalysisReport({
         partnerId: partner.id,
@@ -14653,7 +14670,7 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         version: 1,
         candidateIds: [candidateId as string],
         roleId: jobRoleId as string,
-        title: `Role Fit: ${candidateId} for ${role.title}`,
+        title: `Role Fit: ${candidateDisplayName} for ${role.title}`,
         resultData: resultData as any,
         creditsUsed: 1,
         generatedByUserId: req.user.id,
