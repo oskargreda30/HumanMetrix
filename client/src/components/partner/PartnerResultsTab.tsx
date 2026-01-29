@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Search, FileText, StickyNote, TrendingUp, TrendingDown, AlertTriangle, Download, UserCheck, UserX, HelpCircle, Upload, ClipboardList, Building2, BarChart3, Users, Target, ChevronDown, ChevronUp, Trash2, Eye } from "lucide-react";
+import { Loader2, Search, FileText, StickyNote, TrendingUp, TrendingDown, AlertTriangle, Download, UserCheck, UserX, HelpCircle, Upload, ClipboardList, Building2, BarChart3, Users, Target, ChevronDown, ChevronUp, Trash2, Eye, User } from "lucide-react";
 import { PdfImportModal } from "@/components/PdfImportModal";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -300,6 +300,7 @@ export default function PartnerResultsTab() {
                 {savedReports.map((report) => {
                   const getReportIcon = () => {
                     switch (report.reportType) {
+                      case 'individual': return <User className="h-4 w-4" />;
                       case 'role_fit_single': return <Target className="h-4 w-4" />;
                       case 'role_fit_multi': return <Users className="h-4 w-4" />;
                       case 'comparison': return <BarChart3 className="h-4 w-4" />;
@@ -311,6 +312,8 @@ export default function PartnerResultsTab() {
                   
                   const getReportTypeBadge = () => {
                     switch (report.reportType) {
+                      case 'individual':
+                        return <Badge variant="outline" className="text-xs bg-indigo-500/10 text-indigo-600 border-indigo-500/30">Individual Report</Badge>;
                       case 'role_fit_single': 
                         return <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-600 border-blue-500/30">Role Fit</Badge>;
                       case 'role_fit_multi': 
