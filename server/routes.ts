@@ -1999,6 +1999,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // SendGrid Event Webhook handler for email bounce/block notifications
+  // Use raw body parser for signature verification
+  app.post("/api/webhooks/sendgrid", express.raw({ type: 'application/json' }), async (req: any, res) => {
+    try {
+      const publicKey = process.env.SENDGRID_WEBHOOK_VERIFICATION_KEY;
+      const signature = req.headers['x-twilio-email-event-webhook-signature'];
+      const timestamp = req.headers['x-twilio-email-event-webhook-timestamp'];
+      
+      // SECURITY: Require signature verification in production
+      // Allow bypass only in development with explicit flag
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      const allowUnsignedInDev = process.env.SENDGRID_ALLOW_UNSIGNED_WEBHOOKS === 'true';
+      
+      if (!publicKey) {
+        if (isDevelopment && allowUnsignedInDev) {
+          console.warn('[SendGrid Webhook] DEV MODE: No verification key - allowing unsigned request');
+        } else {
+          console.error('[SendGrid Webhook] REJECTED: No verification key configured');
+          return res.status(403).json({ error: 'Webhook verification not configured' });
+        }
+      } else {
+        if (!signature || !timestamp) {
+          console.warn('[SendGrid Webhook] REJECTED: Missing signature headers');
+          return res.status(403).json({ error: 'Missing signature headers' });
+        }
+        
+        try {
+          const { EventWebhook } = await import('@sendgrid/eventwebhook');
+          const eventWebhook = new EventWebhook();
+          const ecPublicKey = eventWebhook.convertPublicKeyToECDSA(publicKey);
+          // Use rawBody preserved by global JSON parser, or the Buffer from express.raw()
+          const bodyForVerification = req.rawBody instanceof Buffer ? req.rawBody : req.body;
+          const isValid = eventWebhook.verifySignature(ecPublicKey, bodyForVerification, signature, timestamp);
+          
+          if (!isValid) {
+            console.warn('[SendGrid Webhook] REJECTED: Invalid signature');
+            return res.status(403).json({ error: 'Invalid signature' });
+          }
+          console.log('[SendGrid Webhook] Signature verified successfully');
+        } catch (verifyError: any) {
+          console.error('[SendGrid Webhook] REJECTED: Signature verification error:', verifyError.message);
+          return res.status(403).json({ error: 'Signature verification failed' });
+        }
+      }
+      
+      // Parse the raw body to get events
+      // Use rawBody preserved by global JSON parser, or the Buffer from express.raw()
+      let rawBody: string;
+      if (req.rawBody instanceof Buffer) {
+        rawBody = req.rawBody.toString();
+      } else if (req.body instanceof Buffer) {
+        rawBody = req.body.toString();
+      } else if (typeof req.body === 'string') {
+        rawBody = req.body;
+      } else {
+        rawBody = JSON.stringify(req.body);
+      }
+      const events = JSON.parse(rawBody);
+      const eventList = Array.isArray(events) ? events : [events];
+      
+      console.log(`[SendGrid Webhook] Received ${eventList.length} event(s)`);
+      
+      for (const event of eventList) {
+        const eventType = event.event;
+        const email = event.email?.toLowerCase();
+        
+        // Handle bounce, dropped, and blocked events
+        if (['bounce', 'dropped', 'blocked', 'deferred'].includes(eventType) && email) {
+          console.log(`[SendGrid Webhook] Email ${eventType} for: ${email}, reason: ${event.reason || event.response || 'Unknown'}`);
+          
+          const bounceInfo = {
+            emailBounced: true,
+            bounceReason: event.reason || event.response || `Email ${eventType}`,
+            bouncedAt: new Date(),
+          };
+          
+          // Find and update regular invitations
+          const regularInvitations = await db
+            .select()
+            .from(schema.invitations)
+            .where(eq(schema.invitations.candidateEmail, email));
+          
+          for (const invitation of regularInvitations) {
+            if (!invitation.emailBounced) {
+              await db
+                .update(schema.invitations)
+                .set(bounceInfo)
+                .where(eq(schema.invitations.id, invitation.id));
+              
+              console.log(`[SendGrid Webhook] Marked invitation ${invitation.id} as bounced`);
+            }
+          }
+          
+          // Find and update partner candidate invitations
+          const partnerInvitations = await db
+            .select()
+            .from(partnerCandidateInvitations)
+            .where(eq(partnerCandidateInvitations.email, email));
+          
+          for (const invitation of partnerInvitations) {
+            if (!invitation.emailBounced) {
+              await db
+                .update(partnerCandidateInvitations)
+                .set(bounceInfo)
+                .where(eq(partnerCandidateInvitations.id, invitation.id));
+              
+              console.log(`[SendGrid Webhook] Marked partner invitation ${invitation.id} as bounced`);
+            }
+          }
+        }
+      }
+      
+      res.json({ received: true });
+    } catch (error: any) {
+      console.error('[SendGrid Webhook ERROR]', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Airwallex webhook handler for payment events (B2B billing)
   app.post("/api/webhooks/airwallex", express.raw({ type: 'application/json' }), async (req: any, res) => {
     const signature = req.headers['x-signature'];
@@ -5195,6 +5314,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching invitations:", error);
       res.status(500).json({ message: "Failed to fetch invitations" });
+    }
+  });
+
+  // Admin: Mark invitation as bounced (for testing and manual override)
+  app.patch("/api/admin/invitations/:id/bounce", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      const isSuperAdmin = user?.role === 'super_admin';
+      if (!isSuperAdmin) {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { id } = req.params;
+      const { bounced, reason, type } = req.body;
+      
+      const bounceData = {
+        emailBounced: bounced !== false,
+        bounceReason: reason || 'Manually marked as bounced by admin',
+        bouncedAt: bounced !== false ? new Date() : null,
+      };
+      
+      if (type === 'partner') {
+        await db
+          .update(partnerCandidateInvitations)
+          .set(bounceData)
+          .where(eq(partnerCandidateInvitations.id, id));
+      } else {
+        await db
+          .update(schema.invitations)
+          .set(bounceData)
+          .where(eq(schema.invitations.id, id));
+      }
+      
+      console.log(`[Admin] ${type || 'regular'} invitation ${id} marked as ${bounced !== false ? 'bounced' : 'not bounced'}`);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating invitation bounce status:", error);
+      res.status(500).json({ message: "Failed to update invitation" });
     }
   });
 

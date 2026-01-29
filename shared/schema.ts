@@ -202,6 +202,9 @@ export const invitations = pgTable("invitations", {
   expiresAt: timestamp("expires_at").notNull(),
   sentAt: timestamp("sent_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
+  emailBounced: boolean("email_bounced").default(false),
+  bounceReason: text("bounce_reason"),
+  bouncedAt: timestamp("bounced_at"),
 }, (table) => [
   index("idx_invitations_token").on(table.token),
   index("idx_invitations_email").on(table.candidateEmail),
@@ -1543,6 +1546,9 @@ export const partnerCandidateInvitations = pgTable("partner_candidate_invitation
   completedAt: timestamp("completed_at"),
   expiresAt: timestamp("expires_at"),
   tokensUsed: integer("tokens_used").notNull().default(0),
+  emailBounced: boolean("email_bounced").default(false),
+  bounceReason: text("bounce_reason"),
+  bouncedAt: timestamp("bounced_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_candidate_invitations_partner").on(table.partnerId),

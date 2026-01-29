@@ -27,6 +27,7 @@ Key features include:
 - **Golden Set Benchmark System**: Ensures GPT-5 scoring consistency.
 - **B2B Partner Integration**: Enterprise solution with embeddable assessments, 3-tier billing, API key authentication, JavaScript widget/SDK, and webhook notifications.
 - **Billing & Notifications**: Robust subscription billing edge case handling, invoice payment enforcement with escalating notifications, critical error notifications, security monitoring, and comprehensive partner notification system.
+- **Email Bounce Tracking**: SendGrid webhook integration tracks bounced, dropped, blocked, and deferred emails with secure signature verification. UI displays "Bounced" status with tooltip instead of "Sent" for undeliverable emails.
 - **Super Admin Dashboards**: Advanced analytics covering user activity, assessment funnels, partner health scoring, revenue, geographic data, SLA monitoring, audit logging, profit analytics (revenue vs. OpenAI costs), and results retention consent.
 - **Accounting Integration**: Xero integration for expense tracking and revenue synchronization.
 
