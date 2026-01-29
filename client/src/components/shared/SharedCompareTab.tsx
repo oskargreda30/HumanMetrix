@@ -1044,6 +1044,24 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
 
   return (
     <div className="h-full overflow-auto space-y-6">
+      {/* Credit usage notice for partners */}
+      {config.contextType === 'partner' && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4">
+          <div className="flex items-start gap-3">
+            <Sparkles className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                Credit Usage for AI-Powered Analysis
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                Comparing candidates uses your credits. Each candidate compared costs 1 credit. 
+                Credits are only consumed when you click the "Compare Selected" button.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <Card>
         <CardHeader>
           <CardTitle>Select Candidates to Compare</CardTitle>

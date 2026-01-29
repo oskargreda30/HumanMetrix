@@ -13861,6 +13861,54 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
       // Convert map to array in candidateIds order
       const candidatesResults = candidateIds.map(id => candidateResultsMap.get(id) || []);
 
+      // Validate all candidates belong to this partner - check if they have any data
+      // Get the full set of valid partner candidate IDs
+      const validPartnerCandidateIds = new Set<string>();
+      completedSessions.forEach(s => {
+        if (s.externalEmail) validPartnerCandidateIds.add(s.externalEmail);
+        if (s.externalUserId) validPartnerCandidateIds.add(s.externalUserId);
+        if (s.id) validPartnerCandidateIds.add(s.id);
+      });
+      partnerInvitations.forEach(inv => {
+        if (inv.email) validPartnerCandidateIds.add(inv.email);
+        if (inv.externalUserId) validPartnerCandidateIds.add(inv.externalUserId);
+        if (inv.userId) validPartnerCandidateIds.add(inv.userId);
+      });
+      
+      const unauthorizedCandidates = candidateIds.filter(id => !validPartnerCandidateIds.has(id));
+      if (unauthorizedCandidates.length > 0) {
+        return res.status(403).json({ 
+          message: "Some candidates do not belong to your organization",
+          unauthorizedCandidates 
+        });
+      }
+
+      // All validations passed - NOW pre-check credits before consuming
+      const creditsRequired = candidateIds.length;
+      const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);
+      
+      if (quotaBalance.remaining < creditsRequired) {
+        // Check if partner has overage enabled (has card on file)
+        const partnerAccount = await storage.getPartnerAccount(partner.id);
+        if (!partnerAccount?.stripeCustomerId) {
+          return res.status(402).json({ 
+            message: `Insufficient credits. You need ${creditsRequired} credits to compare ${creditsRequired} candidates, but only have ${quotaBalance.remaining} available.`,
+            creditsRequired,
+            creditsRemaining: quotaBalance.remaining
+          });
+        }
+        // If partner has card on file, allow overage - credits will be consumed below
+      }
+
+      // Consume credits atomically (1 per candidate)
+      for (let i = 0; i < creditsRequired; i++) {
+        await storage.consumePartnerTest(
+          partner.id,
+          null,
+          `Candidate comparison analysis (${i + 1}/${creditsRequired})`
+        );
+      }
+
       const skillBasedAssessmentTypes = ['fit', 'ai_readiness', 'ai-readiness'];
       
       // Build skills map for radar chart
@@ -14271,7 +14319,7 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         return res.status(400).json({ message: "Candidate ID and job role ID are required" });
       }
 
-      // Verify the candidate belongs to this partner
+      // Verify the candidate belongs to this partner FIRST (before consuming credits)
       // SOURCE 1: Check B2B Widget/API sessions
       const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
       let candidateSessions = allSessions.filter(
@@ -14297,6 +14345,21 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
       const role = await storage.getJobRole(jobRoleId as string);
       if (!role) {
         return res.status(404).json({ message: "Job role not found" });
+      }
+
+      // All validations passed - NOW consume 1 credit for single-candidate role fit analysis
+      const creditResult = await storage.consumePartnerTest(
+        partner.id,
+        null,
+        "Single candidate role fit analysis"
+      );
+      
+      if (!creditResult.success && !creditResult.isOverage) {
+        return res.status(402).json({ 
+          message: "Insufficient credits. Please purchase more credits to analyze candidates.",
+          creditsRequired: 1,
+          creditsRemaining: creditResult.remaining
+        });
       }
 
       // Collect all assessment results for this candidate
@@ -14485,7 +14548,7 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         return res.status(400).json({ message: "Maximum 10 candidates can be compared at once" });
       }
 
-      // Verify all candidates belong to this partner
+      // Verify all candidates belong to this partner FIRST (before consuming credits)
       // SOURCE 1: B2B Widget/API sessions
       const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
       const partnerCandidateIds = new Set<string>();
@@ -14526,6 +14589,32 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
           message: "Role does not have required skill scores. Please generate them first.",
           requiresGeneration: true
         });
+      }
+
+      // All validations passed - NOW pre-check credits before consuming
+      const creditsRequired = candidateIds.length;
+      const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);
+      
+      if (quotaBalance.remaining < creditsRequired) {
+        // Check if partner has overage enabled (has card on file)
+        const partnerAccount = await storage.getPartnerAccount(partner.id);
+        if (!partnerAccount?.stripeCustomerId) {
+          return res.status(402).json({ 
+            message: `Insufficient credits. You need ${creditsRequired} credits to compare ${creditsRequired} candidates, but only have ${quotaBalance.remaining} available.`,
+            creditsRequired,
+            creditsRemaining: quotaBalance.remaining
+          });
+        }
+        // If partner has card on file, allow overage - credits will be consumed below
+      }
+
+      // Consume credits atomically (1 per candidate)
+      for (let i = 0; i < creditsRequired; i++) {
+        await storage.consumePartnerTest(
+          partner.id,
+          null,
+          `Multi-candidate role fit analysis (${i + 1}/${creditsRequired})`
+        );
       }
 
       // Helper functions
