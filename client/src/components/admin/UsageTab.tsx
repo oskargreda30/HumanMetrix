@@ -61,7 +61,7 @@ interface OrgUsageStats {
 
 interface PackageTier {
   size: number;
-  pricePerTest: number;
+  pricePerCredit: number;
   name: string;
   totalPrice: number;
   displayPrice: string;
@@ -132,7 +132,7 @@ function SuperAdminUsageView({ stats }: { stats?: PlatformUsageStats }) {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tests Purchased</CardTitle>
+            <CardTitle className="text-sm font-medium">Credits Purchased</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -147,7 +147,7 @@ function SuperAdminUsageView({ stats }: { stats?: PlatformUsageStats }) {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tests Consumed</CardTitle>
+            <CardTitle className="text-sm font-medium">Credits Used</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -187,7 +187,7 @@ function SuperAdminUsageView({ stats }: { stats?: PlatformUsageStats }) {
             <span className="text-lg font-semibold w-16 text-right" data-testid="text-platform-usage-percent">{overallUsagePercent}%</span>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            {stats.totals.totalTestsConsumed.toLocaleString()} of {stats.totals.totalTestsPurchased.toLocaleString()} tests used
+            {stats.totals.totalTestsConsumed.toLocaleString()} of {stats.totals.totalTestsPurchased.toLocaleString()} credits used
           </p>
         </CardContent>
       </Card>
@@ -364,14 +364,14 @@ function SuperAdminUsageView({ stats }: { stats?: PlatformUsageStats }) {
 }
 
 // Volume-based pricing tiers per pricing document ($1.00 = 1 Credit, 6-month expiration)
-// Boutique (1-100): $20/test, Growth (101-500): $10/test, Small Enterprise (501-2,500): $5/test
-// Enterprise (2,501-9,999): $2.50/test, Pro (10,000+): $1.00/test
+// Boutique (1-100): $20/credit, Growth (101-500): $10/credit, Small Enterprise (501-2,500): $5/credit
+// Enterprise (2,501-9,999): $2.50/credit, Pro (10,000+): $1.00/credit
 const PACKAGE_TIERS: PackageTier[] = [
-  { size: 50, pricePerTest: 20.00, name: "Boutique", totalPrice: 1000, displayPrice: "$1,000", displayPricePerTest: "$20.00" },
-  { size: 250, pricePerTest: 10.00, name: "Growth", totalPrice: 2500, displayPrice: "$2,500", displayPricePerTest: "$10.00" },
-  { size: 1000, pricePerTest: 5.00, name: "Small Enterprise", totalPrice: 5000, displayPrice: "$5,000", displayPricePerTest: "$5.00" },
-  { size: 5000, pricePerTest: 2.50, name: "Enterprise", totalPrice: 12500, displayPrice: "$12,500", displayPricePerTest: "$2.50" },
-  { size: 10000, pricePerTest: 1.00, name: "Pro", totalPrice: 10000, displayPrice: "$10,000", displayPricePerTest: "$1.00" },
+  { size: 50, pricePerCredit: 20.00, name: "Boutique", totalPrice: 1000, displayPrice: "$1,000", displayPricePerTest: "$20.00" },
+  { size: 250, pricePerCredit: 10.00, name: "Growth", totalPrice: 2500, displayPrice: "$2,500", displayPricePerTest: "$10.00" },
+  { size: 1000, pricePerCredit: 5.00, name: "Small Enterprise", totalPrice: 5000, displayPrice: "$5,000", displayPricePerTest: "$5.00" },
+  { size: 5000, pricePerCredit: 2.50, name: "Enterprise", totalPrice: 12500, displayPrice: "$12,500", displayPricePerTest: "$2.50" },
+  { size: 10000, pricePerCredit: 1.00, name: "Pro", totalPrice: 10000, displayPrice: "$10,000", displayPricePerTest: "$1.00" },
 ];
 
 function OrgAdminUsageView({ stats }: { stats?: OrgUsageStats }) {
@@ -441,7 +441,7 @@ function OrgAdminUsageView({ stats }: { stats?: OrgUsageStats }) {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tests Purchased</CardTitle>
+            <CardTitle className="text-sm font-medium">Credits Purchased</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -449,14 +449,14 @@ function OrgAdminUsageView({ stats }: { stats?: OrgUsageStats }) {
               {Math.max(0, partner.testsPurchased - (partner.freeTestsAllocated || 0)).toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">
-              Total prepaid tests
+              Total prepaid credits
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tests Used</CardTitle>
+            <CardTitle className="text-sm font-medium">Credits Used</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -524,24 +524,24 @@ function OrgAdminUsageView({ stats }: { stats?: OrgUsageStats }) {
               )}
             </CardTitle>
             <CardDescription>
-              Your organisation's prepaid test package usage
+              Your organisation's prepaid credit package usage
             </CardDescription>
           </div>
           <Dialog open={isPurchaseOpen} onOpenChange={setIsPurchaseOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2" data-testid="button-top-up">
                 <Plus className="h-4 w-4" />
-                Top Up Tests
+                Top Up Credits
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <ShoppingCart className="h-5 w-5" />
-                  Purchase Test Package
+                  Purchase Credit Package
                 </DialogTitle>
                 <DialogDescription>
-                  Select a test package to add credits to your account. Larger packages offer better value.
+                  Select a credit package to add credits to your account. Larger packages offer better value.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-3 py-4">
@@ -569,15 +569,15 @@ function OrgAdminUsageView({ stats }: { stats?: OrgUsageStats }) {
                       <div>
                         <div className="font-medium">{tier.name}</div>
                         <div className="text-sm text-muted-foreground">
-                          {tier.size} tests at {tier.displayPricePerTest}/test
+                          {tier.size} credits at {tier.displayPricePerTest}/credit
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-bold">{tier.displayPrice}</div>
-                      {tier.pricePerTest < 5 && (
+                      {tier.pricePerCredit < 5 && (
                         <Badge variant="secondary" className="text-xs bg-green-500/20 text-green-600">
-                          Save {Math.round((1 - tier.pricePerTest / 5) * 100)}%
+                          Save {Math.round((1 - tier.pricePerCredit / 5) * 100)}%
                         </Badge>
                       )}
                     </div>
@@ -656,7 +656,7 @@ function OrgAdminUsageView({ stats }: { stats?: OrgUsageStats }) {
                     <span className="font-medium">Low Quota Warning</span>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
-                    You have only {partner.remaining} tests remaining. Consider purchasing additional credits.
+                    You have only {partner.remaining} credits remaining. Consider purchasing additional credits.
                   </p>
                 </div>
                 <Button variant="outline" onClick={() => setIsPurchaseOpen(true)} data-testid="button-top-up-warning">

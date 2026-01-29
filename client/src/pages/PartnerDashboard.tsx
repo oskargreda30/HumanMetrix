@@ -65,14 +65,14 @@ interface CardStatus {
   hasCard: boolean;
   cardLast4?: string;
   cardBrand?: string;
-  overageRatePerTest?: number;
+  overageRatePerCredit?: number;
   billingType: string;
 }
 
 interface OverageHistoryItem {
   id: string;
   billingMonth: string;
-  overageTests: number;
+  overageCredits: number;
   overageAmount: number;
   chargeStatus: string;
   stripePaymentIntentId?: string;
@@ -359,7 +359,7 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP', billingType =
                   </p>
                   {!isSubscription && (
                     <p className="text-sm text-muted-foreground">
-                      Overage rate: {formatAmount(cardStatus.overageRatePerTest || 500)} per test
+                      Overage rate: {formatAmount(cardStatus.overageRatePerCredit || 500)} per credit
                     </p>
                   )}
                 </div>
@@ -406,7 +406,7 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP', billingType =
                       {overageHistory.slice(0, 6).map((item) => (
                         <tr key={item.id}>
                           <td className="px-3 py-2">{item.billingMonth}</td>
-                          <td className="px-3 py-2 text-right">{item.overageTests}</td>
+                          <td className="px-3 py-2 text-right">{item.overageCredits}</td>
                           <td className="px-3 py-2 text-right">{formatAmount(item.overageAmount)}</td>
                           <td className="px-3 py-2 text-right">
                             <Badge 
@@ -872,7 +872,7 @@ interface BillingData {
     invoiceNumber?: string;
     dueDate?: string;
     tests?: number;
-    pricePerTest?: number;
+    pricePerCredit?: number;
     testsUsed?: number;
   }>;
 }
@@ -1028,12 +1028,12 @@ interface TeamData {
 }
 
 const PACKAGE_OPTIONS = [
-  { value: 'starter', label: 'Starter (10 tests)' },
-  { value: 'growth', label: 'Growth (25 tests)' },
-  { value: 'professional', label: 'Professional (50 tests)' },
-  { value: 'business', label: 'Business (100 tests)' },
-  { value: 'enterprise', label: 'Enterprise (250 tests)' },
-  { value: 'enterprise_plus', label: 'Enterprise+ (500 tests)' },
+  { value: 'starter', label: 'Starter (10 credits)' },
+  { value: 'growth', label: 'Growth (25 credits)' },
+  { value: 'professional', label: 'Professional (50 credits)' },
+  { value: 'business', label: 'Business (100 credits)' },
+  { value: 'enterprise', label: 'Enterprise (250 credits)' },
+  { value: 'enterprise_plus', label: 'Enterprise+ (500 credits)' },
 ];
 
 export default function PartnerDashboard() {
@@ -1159,7 +1159,7 @@ export default function PartnerDashboard() {
       size: number;
       name: string;
       price: number;
-      pricePerTest: number;
+      pricePerCredit: number;
     }>;
     exchangeRate: number;
     lastUpdated: string;
@@ -2394,7 +2394,7 @@ export default function PartnerDashboard() {
                 if (!partner?.freeTestsAllocated || partner.freeTestsAllocated === 0) return null;
                 if (!partner?.freeTestsExpiresAt) return null;
                 
-                // Hide when all free tests have been used up
+                // Hide when all free credits have been used up
                 const freeTestsRemaining = partner.freeTestsAllocated - (partner.testsConsumed || 0);
                 if (freeTestsRemaining <= 0) return null;
                 
@@ -2513,7 +2513,7 @@ export default function PartnerDashboard() {
                   <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
                     <div className="flex items-center gap-1.5">
                       <CardTitle className="text-sm font-medium">
-                        {account?.partner?.billingType === 'enterprise' ? 'Test Quota' : 'Tests Purchased'}
+                        {account?.partner?.billingType === 'enterprise' ? 'Test Quota' : 'Credits Purchased'}
                       </CardTitle>
                       <InfoTooltip content={account?.partner?.billingType === 'enterprise' 
                         ? "Total assessment credits allocated to your account. Each completed assessment consumes one credit."
@@ -2537,8 +2537,8 @@ export default function PartnerDashboard() {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
                     <div className="flex items-center gap-1.5">
-                      <CardTitle className="text-sm font-medium">Tests Used</CardTitle>
-                      <InfoTooltip content="Number of assessments that candidates have fully completed. Only completed tests consume credits." />
+                      <CardTitle className="text-sm font-medium">Credits Used</CardTitle>
+                      <InfoTooltip content="Number of assessments that candidates have fully completed. Only completed assessments consume credits." />
                     </div>
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
@@ -2589,7 +2589,7 @@ export default function PartnerDashboard() {
                     <span className="text-lg font-semibold w-16 text-right" data-testid="text-usage-percent">{usagePercentage}%</span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {partner.testsConsumed.toLocaleString()} of {partner.testsPurchased.toLocaleString()} tests used
+                    {partner.testsConsumed.toLocaleString()} of {partner.testsPurchased.toLocaleString()} credits used
                     {partner.freeTestsAllocated > 0 && ` (includes ${partner.freeTestsAllocated} free)`}
                   </p>
                 </CardContent>
@@ -2988,7 +2988,7 @@ export default function PartnerDashboard() {
                           <CardContent>
                             <div className="flex items-center gap-4 text-sm">
                               <div>
-                                <span className="text-muted-foreground">Tests Used:</span>{' '}
+                                <span className="text-muted-foreground">Credits Used:</span>{' '}
                                 <span className="font-semibold">{org.testsUsed}</span>
                               </div>
                               <div>
@@ -3060,7 +3060,7 @@ export default function PartnerDashboard() {
                 if (!partner?.freeTestsAllocated || partner.freeTestsAllocated === 0) return null;
                 if (!partner?.freeTestsExpiresAt) return null;
                 
-                // Hide when all free tests have been used up
+                // Hide when all free credits have been used up
                 const freeTestsRemaining = partner.freeTestsAllocated - (partner.testsConsumed || 0);
                 if (freeTestsRemaining <= 0) return null;
                 
@@ -3671,7 +3671,7 @@ export default function PartnerDashboard() {
                             {pricing.packages.map((pkg: any) => {
                               const isZeroDecimal = pricing.isZeroDecimal;
                               const displayPrice = isZeroDecimal ? pkg.price : pkg.price / 100;
-                              const displayPerTest = isZeroDecimal ? pkg.pricePerTest : pkg.pricePerTest / 100;
+                              const displayPerTest = isZeroDecimal ? pkg.pricePerCredit : pkg.pricePerCredit / 100;
                               const currencySymbols: Record<string, string> = {
                                 GBP: '£', USD: '$', EUR: '€', AUD: 'A$', CAD: 'C$', SGD: 'S$', HKD: 'HK$',
                                 INR: '₹', MYR: 'RM', THB: '฿', PHP: '₱', JPY: '¥', KRW: '₩', VND: '₫',
@@ -3700,7 +3700,7 @@ export default function PartnerDashboard() {
                                     {currencySymbol}{isZeroDecimal ? displayPrice.toLocaleString() : displayPrice.toFixed(2)}
                                   </div>
                                   <div className="text-sm text-muted-foreground mb-2">
-                                    {currencySymbol}{isZeroDecimal ? displayPerTest.toLocaleString() : displayPerTest.toFixed(2)} per test
+                                    {currencySymbol}{isZeroDecimal ? displayPerTest.toLocaleString() : displayPerTest.toFixed(2)} per credit
                                   </div>
                                   {pkg.savings > 0 && (
                                     <div className="text-xs text-green-600 dark:text-green-400 mb-3">
@@ -3744,7 +3744,7 @@ export default function PartnerDashboard() {
                     <div className="grid gap-4 md:grid-cols-3">
                       <Card>
                         <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                          <CardTitle className="text-sm font-medium">Tests Used</CardTitle>
+                          <CardTitle className="text-sm font-medium">Credits Used</CardTitle>
                           <TrendingUp className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
@@ -3886,7 +3886,7 @@ export default function PartnerDashboard() {
                                   </div>
                                   {item.tests && (
                                     <div className="text-xs text-muted-foreground">
-                                      {item.tests} tests @ {formatCurrency(item.pricePerTest || 0)}/test
+                                      {item.tests} tests @ {formatCurrency(item.pricePerCredit || 0)}/test
                                     </div>
                                   )}
                                 </div>

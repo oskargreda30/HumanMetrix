@@ -310,7 +310,7 @@ export default function PartnersTab() {
     setEditCurrency(partner.currency || "GBP");
     setEditPricePerAssessment(partner.pricePerAssessment || 500);
     setEditCurrentFreeTests(partner.freeTestsAllocated || 0);
-    setEditAdditionalFreeTests(0); // Start with 0 additional tests
+    setEditAdditionalFreeTests(0); // Start with 0 additional credits
     setEditBillingType((partner.billingType as "payg" | "subscription" | "enterprise") || "payg");
     setEditBillingCycleAnchor(partner.billingCycleAnchor || 1);
     setEditPaymentTerms(partner.paymentTermsDays || 30);
@@ -399,7 +399,7 @@ export default function PartnersTab() {
     // Build the full phone number with country code
     const fullPhone = editPhone ? `${editSelectedPhoneCountryData?.dialCode || ""} ${editPhone}`.trim() : "";
     
-    // Calculate new free tests total (current + additional)
+    // Calculate new free credits total (current + additional)
     const newFreeTestsAllocated = editCurrentFreeTests + editAdditionalFreeTests;
     
     // Check if billing/pricing/account settings changed
@@ -824,7 +824,7 @@ export default function PartnersTab() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/partners", detailPartner?.id, "ledger"] });
       setCreditAmount(10);
       setCreditReason("");
-      toast({ title: "Credits added", description: `${creditAmount} test credits added successfully.` });
+      toast({ title: "Credits added", description: `${creditAmount} credits added successfully.` });
     },
     onError: (error: any) => {
       toast({ title: "Error", description: error.message || "Failed to add credits", variant: "destructive" });
@@ -1034,12 +1034,12 @@ export default function PartnersTab() {
               <div className="bg-white/5 rounded-lg p-4">
                 <div className="text-white/60 text-sm mb-1">This Month</div>
                 <div className="text-2xl font-bold text-white">{detailPartner.currentMonthSessions}</div>
-                <div className="text-white/50 text-xs">tests completed</div>
+                <div className="text-white/50 text-xs">credits completed</div>
               </div>
               <div className="bg-white/5 rounded-lg p-4">
                 <div className="text-white/60 text-sm mb-1">All Time</div>
                 <div className="text-2xl font-bold text-white">{detailPartner.totalTestsCompleted}</div>
-                <div className="text-white/50 text-xs">tests completed</div>
+                <div className="text-white/50 text-xs">credits completed</div>
               </div>
               <div className="bg-white/5 rounded-lg p-4">
                 <div className="text-white/60 text-sm mb-1">Monthly Billable</div>
@@ -1108,9 +1108,9 @@ export default function PartnersTab() {
                             <TableCell className="text-white/80">{event.assessmentType || "-"}</TableCell>
                             <TableCell>
                               {testType === 'test' ? (
-                                <Badge className="bg-purple-500/20 text-purple-300">Test Session</Badge>
+                                <Badge className="bg-purple-500/20 text-purple-300">Assessment Session</Badge>
                               ) : testType === 'free' ? (
-                                <Badge className="bg-blue-500/20 text-blue-300">Free Test</Badge>
+                                <Badge className="bg-blue-500/20 text-blue-300">Free Credit</Badge>
                               ) : (
                                 <Badge className="bg-green-500/20 text-green-300">Billed</Badge>
                               )}
@@ -1143,7 +1143,7 @@ export default function PartnersTab() {
                         <AlertCircle className="h-5 w-5 text-red-400 shrink-0" />
                         <div className="flex-1">
                           <div className="text-red-300 font-medium">API Access Suspended</div>
-                          <div className="text-red-400/80 text-sm">This partner's API access has been suspended due to quota exhaustion. Add test credits or reactivate to restore access.</div>
+                          <div className="text-red-400/80 text-sm">This partner's API access has been suspended due to quota exhaustion. Add credits or reactivate to restore access.</div>
                         </div>
                         <Button 
                           variant="outline" 
@@ -1168,7 +1168,7 @@ export default function PartnersTab() {
                             const totalTests = partnerQuota?.testsPurchased || 0;
                             const actualPurchased = totalTests - freeTests;
                             if (detailPartner?.billingType === 'enterprise') return 'Test Quota';
-                            if (actualPurchased === 0 && freeTests > 0) return 'Free Tests';
+                            if (actualPurchased === 0 && freeTests > 0) return 'Free Credits';
                             return 'Total Credits';
                           })()}
                         </div>
@@ -1186,7 +1186,7 @@ export default function PartnersTab() {
                         </div>
                       </div>
                       <div className="bg-white/5 rounded-lg p-4">
-                        <div className="text-white/60 text-sm mb-1">Tests Consumed</div>
+                        <div className="text-white/60 text-sm mb-1">Credits Used</div>
                         <div className="text-2xl font-bold text-amber-400">{partnerQuota?.testsConsumed || 0}</div>
                         <div className="text-white/50 text-xs">used so far</div>
                       </div>
@@ -1450,7 +1450,7 @@ export default function PartnersTab() {
                       {detailPartner.freeTestsAllocated > 0 && (
                         <div className="flex items-center gap-3 pt-2 border-t border-white/10">
                           <span className="text-white/60 text-sm">Welcome Package:</span>
-                          <Badge className="bg-green-500/20 text-green-300">{detailPartner.freeTestsAllocated} Free Tests</Badge>
+                          <Badge className="bg-green-500/20 text-green-300">{detailPartner.freeTestsAllocated} Free Credits</Badge>
                         </div>
                       )}
                     </div>
@@ -1951,7 +1951,7 @@ export default function PartnersTab() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="testsUsed">Number of Tests Used</Label>
+                <Label htmlFor="testsUsed">Number of Credits Used</Label>
                 <Input
                   id="testsUsed"
                   type="number"
@@ -2465,7 +2465,7 @@ export default function PartnersTab() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>Free Tests</Label>
+                  <Label>Free Credits</Label>
                   <div className="flex items-center gap-3">
                     <div className="bg-slate-700/50 rounded-lg px-4 py-2 flex-1">
                       <div className="text-xs text-slate-400 mb-1">Current Balance</div>
@@ -2487,7 +2487,7 @@ export default function PartnersTab() {
                   </div>
                   {editAdditionalFreeTests > 0 && (
                     <p className="text-xs text-cyan-400">
-                      New total: {editCurrentFreeTests + editAdditionalFreeTests} free tests
+                      New total: {editCurrentFreeTests + editAdditionalFreeTests} free credits
                     </p>
                   )}
                 </div>
@@ -3090,7 +3090,7 @@ export default function PartnersTab() {
                   <h4 className="text-sm font-medium text-cyan-400 mb-3">Deal Configuration</h4>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="freeTests">Free Tests Allocation</Label>
+                    <Label htmlFor="freeTests">Free Credits Allocation</Label>
                     <Input 
                       id="freeTests" 
                       type="number" 
@@ -3271,8 +3271,8 @@ export default function PartnersTab() {
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-700">
-                <SelectItem value="currentMonthSessions" className="text-white">Monthly Tests</SelectItem>
-                <SelectItem value="totalTestsCompleted" className="text-white">Total Tests</SelectItem>
+                <SelectItem value="currentMonthSessions" className="text-white">Monthly Credits</SelectItem>
+                <SelectItem value="totalTestsCompleted" className="text-white">Total Credits</SelectItem>
                 <SelectItem value="currentMonthBillable" className="text-white">Monthly Billing</SelectItem>
                 <SelectItem value="name" className="text-white">Name</SelectItem>
                 <SelectItem value="createdAt" className="text-white">Date Created</SelectItem>
@@ -3301,7 +3301,7 @@ export default function PartnersTab() {
                 <div className="text-xl font-bold text-green-400">{partners.filter(p => p.isActive).length}</div>
               </div>
               <div className="bg-white/5 rounded-lg p-3">
-                <div className="text-white/60 text-xs mb-1">Monthly Tests</div>
+                <div className="text-white/60 text-xs mb-1">Monthly Credits</div>
                 <div className="text-xl font-bold text-cyan-400">{partners.reduce((sum, p) => sum + p.currentMonthSessions, 0)}</div>
               </div>
               <div className="bg-white/5 rounded-lg p-3">

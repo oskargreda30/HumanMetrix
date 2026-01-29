@@ -173,7 +173,7 @@ export default function B2BPricingCalculator() {
                         {tier.name}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {tier.name === "Pro" ? "10,000+" : `${tier.minVolume.toLocaleString()} - ${tier.maxVolume.toLocaleString()}`} tests/month
+                        {tier.name === "Pro" ? "10,000+" : `${tier.minVolume.toLocaleString()} - ${tier.maxVolume.toLocaleString()}`} credits/month
                       </p>
                     </div>
                   </div>

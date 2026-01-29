@@ -1077,7 +1077,7 @@ export async function sendPartnerQuotaWarning70(
   
   const msg = {
     to: partnerEmail,
-    subject: `Test Quota Alert: 70% Used - ${companyName}`,
+    subject: `Credit Quota Alert: 70% Used - ${companyName}`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -1101,7 +1101,7 @@ export async function sendPartnerQuotaWarning70(
             </div>
             <div class="content">
               <h2>Hello ${companyName},</h2>
-              <p>This is a friendly reminder that you've used <strong>${usagePercentage}%</strong> of your HumanMetrix test quota.</p>
+              <p>This is a friendly reminder that you've used <strong>${usagePercentage}%</strong> of your HumanMetrix credit quota.</p>
               
               <div class="stats">
                 <p style="margin: 0;"><strong>Current Usage:</strong></p>
@@ -1109,7 +1109,7 @@ export async function sendPartnerQuotaWarning70(
                   <span class="stat-number">${testsUsed}</span> / ${testsTotal} tests used
                 </p>
                 <p style="margin: 0;">
-                  <strong>${testsRemaining} tests remaining</strong>
+                  <strong>${testsRemaining} credits remaining</strong>
                 </p>
               </div>
               
@@ -1121,7 +1121,7 @@ export async function sendPartnerQuotaWarning70(
               
               <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
                 <strong>What happens when you run out?</strong><br>
-                When your quota reaches 100%, your API access will be temporarily suspended until you purchase more tests.
+                When your quota reaches 100%, your API access will be temporarily suspended until you purchase more credits.
               </p>
             </div>
             <div class="footer">
@@ -1137,18 +1137,18 @@ Quota Alert - HumanMetrix
 
 Hello ${companyName},
 
-This is a friendly reminder that you've used ${usagePercentage}% of your HumanMetrix test quota.
+This is a friendly reminder that you've used ${usagePercentage}% of your HumanMetrix credit quota.
 
 CURRENT USAGE:
 ${testsUsed} / ${testsTotal} tests used
-${testsRemaining} tests remaining
+${testsRemaining} credits remaining
 
 To ensure uninterrupted service, we recommend purchasing additional test credits before your quota runs out.
 
-Visit ${topUpUrl} to top up your tests.
+Visit ${topUpUrl} to top up your credits.
 
 What happens when you run out?
-When your quota reaches 100%, your API access will be temporarily suspended until you purchase more tests.
+When your quota reaches 100%, your API access will be temporarily suspended until you purchase more credits.
 
 Questions? Contact us at hello@humanmetrix.co.uk
 
@@ -1176,7 +1176,7 @@ export async function sendPartnerQuotaWarning90(
   
   const msg = {
     to: partnerEmail,
-    subject: `URGENT: Test Quota Critical - Only ${testsRemaining} Tests Left!`,
+    subject: `URGENT: Credit Quota Critical - Only ${testsRemaining} Credits Left!`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -1204,7 +1204,7 @@ export async function sendPartnerQuotaWarning90(
               
               <div class="urgent">
                 <p style="margin: 0; font-size: 18px; font-weight: bold; color: #dc2626;">
-                  Your test quota is almost exhausted!
+                  Your credit quota is almost exhausted!
                 </p>
               </div>
               
@@ -1219,7 +1219,7 @@ export async function sendPartnerQuotaWarning90(
               </div>
               
               <p><strong>Please top up immediately to avoid service interruption.</strong></p>
-              <p>When your quota reaches 100%, your API access will be <strong>automatically suspended</strong> and your embedded assessments will stop working until you purchase more tests.</p>
+              <p>When your quota reaches 100%, your API access will be <strong>automatically suspended</strong> and your embedded assessments will stop working until you purchase more credits.</p>
               
               <div style="text-align: center;">
                 <a href="${topUpUrl}" class="button" style="color: white !important;">Top Up Now</a>
@@ -1241,15 +1241,15 @@ URGENT: Quota Critical - HumanMetrix
 
 Hello ${companyName},
 
-YOUR TEST QUOTA IS ALMOST EXHAUSTED!
+YOUR CREDIT QUOTA IS ALMOST EXHAUSTED!
 
 CRITICAL USAGE LEVEL:
 ${usagePercentage}% used
-Only ${testsRemaining} tests remaining!
+Only ${testsRemaining} credits remaining!
 
 PLEASE TOP UP IMMEDIATELY TO AVOID SERVICE INTERRUPTION.
 
-When your quota reaches 100%, your API access will be automatically suspended and your embedded assessments will stop working until you purchase more tests.
+When your quota reaches 100%, your API access will be automatically suspended and your embedded assessments will stop working until you purchase more credits.
 
 Visit ${topUpUrl} to top up now.
 
@@ -1294,7 +1294,7 @@ export async function sendPartnerAccessSuspendedEmail(
           <div class="container">
             <div class="header">
               <h1 style="margin: 0; color: #ffffff;">Access Suspended</h1>
-              <p style="margin: 10px 0 0 0; color: #e0e7ff;">Your Test Quota Has Been Exhausted</p>
+              <p style="margin: 10px 0 0 0; color: #e0e7ff;">Your Credit Quota Has Been Exhausted</p>
             </div>
             <div class="content">
               <h2>Hello ${companyName},</h2>
@@ -1308,7 +1308,7 @@ export async function sendPartnerAccessSuspendedEmail(
                 </p>
               </div>
               
-              <p>Your test quota has been fully consumed. To restore access and reactivate your embedded assessments, please purchase a new test package.</p>
+              <p>Your credit quota has been fully consumed. To restore access and reactivate your embedded assessments, please purchase a new credit package.</p>
               
               <div style="text-align: center;">
                 <a href="${topUpUrl}" class="button" style="color: white !important;">Restore Access - Purchase Tests</a>
@@ -1335,7 +1335,7 @@ Hello ${companyName},
 Your API access has been temporarily suspended.
 All embedded assessments are currently inactive.
 
-Your test quota has been fully consumed. To restore access and reactivate your embedded assessments, please purchase a new test package.
+Your credit quota has been fully consumed. To restore access and reactivate your embedded assessments, please purchase a new credit package.
 
 Visit ${topUpUrl} to restore access.
 
@@ -1582,7 +1582,7 @@ export async function sendPartnerAutoTopUpConfirmation(
             <div class="content">
               <h2>Hello ${companyName},</h2>
               
-              <p>Your auto top-up has been successfully processed. Your test quota has been replenished automatically.</p>
+              <p>Your auto top-up has been successfully processed. Your credit quota has been replenished automatically.</p>
               
               <div class="receipt">
                 <h3 style="margin-top: 0;">Purchase Receipt</h3>
@@ -1932,7 +1932,7 @@ export async function sendPartnerWelcomeEmail(details: PartnerWelcomeDetails): P
   const developerDocsUrl = `${baseUrl}/developers`;
   
   const billingTypeDescriptions: Record<string, string> = {
-    prepaid: 'Prepaid (purchase test packages upfront)',
+    prepaid: 'Prepaid (purchase credit packages upfront)',
     auto_bill: 'Auto-Bill (monthly charges to card on file)',
     invoice: 'Invoice (monthly invoicing with payment terms)'
   };
@@ -4272,7 +4272,7 @@ export async function notifyPrepaidLowBalance(details: PrepaidLowBalanceDetails)
               <span class="value">${formatCurrency(details.currentBalance)}</span>
             </div>
             <div class="info-row">
-              <span class="label">Tests Remaining</span>
+              <span class="label">Credits Remaining</span>
               <span class="value"><span class="low-badge">${details.testsRemaining} tests</span></span>
             </div>
           </div>
@@ -4288,7 +4288,7 @@ export async function notifyPrepaidLowBalance(details: PrepaidLowBalanceDetails)
     type: 'prepaid_low_balance',
     severity,
     title: `Low Balance: ${details.partnerName} (${details.testsRemaining} tests)`,
-    message: `Partner ${details.partnerName} has only ${details.testsRemaining} tests remaining. Balance: ${formatCurrency(details.currentBalance)}`,
+    message: `Partner ${details.partnerName} has only ${details.testsRemaining} credits remaining. Balance: ${formatCurrency(details.currentBalance)}`,
     metadata: details,
     emailSubject: `[ALERT] Low Prepaid Balance: ${details.partnerName}`,
     emailHtml,
