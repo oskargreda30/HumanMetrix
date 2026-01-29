@@ -523,47 +523,11 @@ export default function GuestInvite() {
     
     return (
       <div className="min-h-screen flex flex-col">
-        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent py-3 px-4 border-b">
-          <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-muted-foreground">
-                {invitation.partnerName}
-              </span>
-              <span className="text-muted-foreground">|</span>
-              <span className="text-sm font-medium">
-                {getCurrentAssessmentName()}
-              </span>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-muted-foreground">Progress:</span>
-                <span className="font-medium">
-                  {getCompletedCount()} / {invitation.assessmentTypes.length}
-                </span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={checkProgress}
-                disabled={checkingProgress}
-                data-testid="button-check-progress"
-              >
-                {checkingProgress ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
-                <span className="ml-1 hidden sm:inline">Check Progress</span>
-              </Button>
-            </div>
-          </div>
-        </div>
-        
         <div className="flex-1">
           <iframe
             ref={iframeRef}
             src={embedUrl}
-            className="w-full h-full min-h-[calc(100vh-52px)] border-0"
+            className="w-full h-full min-h-screen border-0"
             title={getCurrentAssessmentName()}
             data-testid="assessment-iframe"
           />
