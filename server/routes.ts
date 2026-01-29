@@ -13743,6 +13743,7 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
       
       // Support both candidateIds and userIds parameter names for compatibility with shared components
       const rawCandidateIds = req.query.candidateIds || req.query.userIds;
+      const forceRefresh = req.query.forceRefresh === 'true';
       const candidateIds = Array.isArray(rawCandidateIds)
         ? rawCandidateIds as string[]
         : [rawCandidateIds as string].filter(Boolean);
@@ -13881,6 +13882,25 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
           message: "Some candidates do not belong to your organization",
           unauthorizedCandidates 
         });
+      }
+
+      // Check for existing cached report (unless forceRefresh is requested)
+      if (!forceRefresh) {
+        const existingReport = await storage.findExistingPartnerReport(
+          partner.id,
+          'comparison',
+          candidateIds
+        );
+        
+        if (existingReport) {
+          // Return cached report without charging credits
+          return res.json({
+            ...existingReport.resultData,
+            cached: true,
+            cachedAt: existingReport.createdAt,
+            reportId: existingReport.id,
+          });
+        }
       }
 
       // All validations passed - NOW pre-check credits before consuming
@@ -14105,7 +14125,7 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         } : null;
       });
 
-      res.json({
+      const resultData = {
         radarData,
         skillComparison,
         averageScores,
@@ -14114,10 +14134,139 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         aiReadinessAssessments,
         promptArchitectureAssessments,
         aiqAssessments,
+        generatedAt: new Date().toISOString(),
+        version: 1,
+      };
+
+      // Save the report for future access
+      const savedReport = await storage.createPartnerAnalysisReport({
+        partnerId: partner.id,
+        reportType: 'comparison',
+        version: 1,
+        candidateIds: candidateIds,
+        title: `Candidate Comparison: ${candidateIds.length} candidates`,
+        resultData: resultData as any,
+        creditsUsed: candidateIds.length,
+        generatedByUserId: req.user.id,
+      });
+
+      res.json({
+        ...resultData,
+        cached: false,
+        reportId: savedReport.id,
       });
     } catch (error) {
       console.error("Error comparing partner candidates:", error);
       res.status(500).json({ message: "Failed to compare candidates" });
+    }
+  });
+
+  // Partner: List all saved analysis reports
+  app.get("/api/partner/me/analysis-reports", isAuthenticated, async (req: any, res) => {
+    try {
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { reportType } = req.query;
+      
+      const reports = await storage.getPartnerAnalysisReports(
+        partner.id, 
+        reportType as string | undefined
+      );
+      
+      // Return summary info for each report (not full result data for list view)
+      const reportSummaries = reports.map(report => ({
+        id: report.id,
+        reportType: report.reportType,
+        title: report.title,
+        candidateIds: report.candidateIds,
+        roleId: report.roleId,
+        creditsUsed: report.creditsUsed,
+        createdAt: report.createdAt,
+        version: report.version,
+        // Include key summary metrics from resultData
+        summary: {
+          overallFit: report.resultData?.overallFit,
+          hasSkillData: report.resultData?.hasSkillData,
+          candidateCount: report.candidateIds?.length || 0,
+        }
+      }));
+      
+      res.json(reportSummaries);
+    } catch (error) {
+      console.error("Error fetching partner analysis reports:", error);
+      res.status(500).json({ message: "Failed to fetch analysis reports" });
+    }
+  });
+
+  // Partner: Get a specific saved analysis report
+  app.get("/api/partner/me/analysis-reports/:reportId", isAuthenticated, async (req: any, res) => {
+    try {
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { reportId } = req.params;
+      
+      const report = await storage.getPartnerAnalysisReport(reportId);
+      
+      if (!report) {
+        return res.status(404).json({ message: "Report not found" });
+      }
+      
+      // Verify the report belongs to this partner
+      if (report.partnerId !== partner.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      res.json({
+        ...report.resultData,
+        reportId: report.id,
+        reportType: report.reportType,
+        title: report.title,
+        createdAt: report.createdAt,
+        cached: true,
+        cachedAt: report.createdAt,
+      });
+    } catch (error) {
+      console.error("Error fetching partner analysis report:", error);
+      res.status(500).json({ message: "Failed to fetch analysis report" });
+    }
+  });
+
+  // Partner: Delete a saved analysis report
+  app.delete("/api/partner/me/analysis-reports/:reportId", isAuthenticated, async (req: any, res) => {
+    try {
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { reportId } = req.params;
+      
+      const report = await storage.getPartnerAnalysisReport(reportId);
+      
+      if (!report) {
+        return res.status(404).json({ message: "Report not found" });
+      }
+      
+      // Verify the report belongs to this partner
+      if (report.partnerId !== partner.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      await storage.deletePartnerAnalysisReport(reportId);
+      
+      res.json({ success: true, message: "Report deleted" });
+    } catch (error) {
+      console.error("Error deleting partner analysis report:", error);
+      res.status(500).json({ message: "Failed to delete analysis report" });
     }
   });
 
@@ -14313,7 +14462,7 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         return res.status(404).json({ message: "No partner account found" });
       }
       
-      const { candidateId, jobRoleId } = req.query;
+      const { candidateId, jobRoleId, forceRefresh } = req.query;
       
       if (!candidateId || !jobRoleId) {
         return res.status(400).json({ message: "Candidate ID and job role ID are required" });
@@ -14345,6 +14494,26 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
       const role = await storage.getJobRole(jobRoleId as string);
       if (!role) {
         return res.status(404).json({ message: "Job role not found" });
+      }
+
+      // Check for existing cached report (unless forceRefresh is requested)
+      if (forceRefresh !== 'true') {
+        const existingReport = await storage.findExistingPartnerReport(
+          partner.id,
+          'role_fit_single',
+          [candidateId as string],
+          jobRoleId as string
+        );
+        
+        if (existingReport) {
+          // Return cached report without charging credits
+          return res.json({
+            ...existingReport.resultData,
+            cached: true,
+            cachedAt: existingReport.createdAt,
+            reportId: existingReport.id,
+          });
+        }
       }
 
       // All validations passed - NOW consume 1 credit for single-candidate role fit analysis
@@ -14451,7 +14620,7 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         .map(a => a.skillName)
         .slice(0, 3);
 
-      res.json({
+      const resultData = {
         overallFit,
         fitSkillAlignments,
         aiReadinessSkillAlignments,
@@ -14459,7 +14628,7 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         aiqScore,
         strengths,
         gaps,
-        cohortBenchmarks: null, // Partners don't see cross-platform benchmarks
+        cohortBenchmarks: null,
         roleFlexibility: [],
         dataCoverage: {
           percentage: Math.round((scoredAlignments.length / allAlignments.length) * 100) || 0,
@@ -14473,6 +14642,27 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
           ],
           hasSufficientData: scoredAlignments.length >= 3,
         },
+        generatedAt: new Date().toISOString(),
+        version: 1,
+      };
+
+      // Save the report for future access
+      const savedReport = await storage.createPartnerAnalysisReport({
+        partnerId: partner.id,
+        reportType: 'role_fit_single',
+        version: 1,
+        candidateIds: [candidateId as string],
+        roleId: jobRoleId as string,
+        title: `Role Fit: ${candidateId} for ${role.title}`,
+        resultData: resultData as any,
+        creditsUsed: 1,
+        generatedByUserId: req.user.id,
+      });
+
+      res.json({
+        ...resultData,
+        cached: false,
+        reportId: savedReport.id,
       });
     } catch (error) {
       console.error("Error fetching partner role alignment:", error);
@@ -14538,7 +14728,7 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         return res.status(404).json({ message: "No partner account found" });
       }
       
-      const { jobRoleId, candidateIds } = req.body;
+      const { jobRoleId, candidateIds, forceRefresh } = req.body;
       
       if (!jobRoleId || !candidateIds || !Array.isArray(candidateIds) || candidateIds.length < 2) {
         return res.status(400).json({ message: "Job role ID and at least 2 candidate IDs are required" });
@@ -14589,6 +14779,26 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
           message: "Role does not have required skill scores. Please generate them first.",
           requiresGeneration: true
         });
+      }
+
+      // Check for existing cached report (unless forceRefresh is requested)
+      if (!forceRefresh) {
+        const existingReport = await storage.findExistingPartnerReport(
+          partner.id,
+          'role_fit_multi',
+          candidateIds,
+          jobRoleId
+        );
+        
+        if (existingReport) {
+          // Return cached report without charging credits
+          return res.json({
+            ...existingReport.resultData,
+            cached: true,
+            cachedAt: existingReport.createdAt,
+            reportId: existingReport.id,
+          });
+        }
       }
 
       // All validations passed - NOW pre-check credits before consuming
@@ -15090,7 +15300,7 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         ),
       };
 
-      // Create comparison record
+      // Create comparison record (legacy)
       const comparison = await storage.createMultiCandidateComparison({
         jobRoleId,
         createdBy: req.user.id,
@@ -15116,7 +15326,30 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
       });
 
-      res.json(comparison);
+      // Also save to partner analysis reports for unified report listing
+      const reportData = {
+        ...comparison,
+        generatedAt: new Date().toISOString(),
+        version: 1,
+      };
+      
+      const savedReport = await storage.createPartnerAnalysisReport({
+        partnerId: partner.id,
+        reportType: 'role_fit_multi',
+        version: 1,
+        candidateIds: candidateIds,
+        roleId: jobRoleId,
+        title: `Multi-Candidate Role Fit: ${candidateIds.length} candidates for ${role.title}`,
+        resultData: reportData as any,
+        creditsUsed: candidateIds.length,
+        generatedByUserId: req.user.id,
+      });
+
+      res.json({
+        ...comparison,
+        cached: false,
+        reportId: savedReport.id,
+      });
     } catch (error) {
       console.error("Error creating partner multi-candidate comparison:", error);
       res.status(500).json({ message: "Failed to create comparison" });
