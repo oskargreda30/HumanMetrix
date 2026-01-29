@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Search, FileText, StickyNote, TrendingUp, TrendingDown, AlertTriangle, Download, UserCheck, UserX, HelpCircle, Upload, ClipboardList, Building2 } from "lucide-react";
+import { Loader2, Search, FileText, StickyNote, TrendingUp, TrendingDown, AlertTriangle, Download, UserCheck, UserX, HelpCircle, Upload, ClipboardList, Building2, BarChart3, Users, Target, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { PdfImportModal } from "@/components/PdfImportModal";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -31,6 +31,22 @@ import { isSkillBasedAssessment, transformToRadarData, getTopSkills, getGrowthAr
 import { exportEnhancedCandidatePDF, captureRadarChart } from "@/lib/enhancedPdfExport";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 
+interface SavedReport {
+  id: string;
+  reportType: 'role_fit_single' | 'role_fit_multi' | 'comparison';
+  title: string;
+  candidateIds: string[];
+  roleId?: string;
+  creditsUsed: number;
+  createdAt: string;
+  version: number;
+  summary: {
+    overallFit?: number;
+    hasSkillData?: boolean;
+    candidateCount: number;
+  };
+}
+
 export default function PartnerResultsTab() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
@@ -38,10 +54,28 @@ export default function PartnerResultsTab() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newNote, setNewNote] = useState("");
   const [showPdfImportModal, setShowPdfImportModal] = useState(false);
+  const [showSavedReports, setShowSavedReports] = useState(true);
   const { toast } = useToast();
 
   const { data: candidates, isLoading } = useQuery<any[]>({
     queryKey: ['/api/partner/me/candidates'],
+  });
+
+  const { data: savedReports, isLoading: reportsLoading } = useQuery<SavedReport[]>({
+    queryKey: ['/api/partner/me/analysis-reports'],
+  });
+
+  const deleteReportMutation = useMutation({
+    mutationFn: async (reportId: string) => {
+      return apiRequest('DELETE', `/api/partner/me/analysis-reports/${reportId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/partner/me/analysis-reports'] });
+      toast({ title: "Report deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to delete report", variant: "destructive" });
+    },
   });
 
   const { data: roles } = useQuery<any[]>({
@@ -239,6 +273,110 @@ export default function PartnerResultsTab() {
         onOpenChange={setShowPdfImportModal}
         endpoint="/api/partner/import-pdf"
       />
+
+      {savedReports && savedReports.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                <CardTitle className="text-lg">Saved Analysis Reports</CardTitle>
+                <Badge variant="secondary" className="text-xs">{savedReports.length}</Badge>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSavedReports(!showSavedReports)}
+                data-testid="button-toggle-saved-reports"
+              >
+                {showSavedReports ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+            </div>
+            <CardDescription>Previously generated reports are cached and can be accessed without additional credits</CardDescription>
+          </CardHeader>
+          {showSavedReports && (
+            <CardContent>
+              <div className="space-y-3">
+                {savedReports.map((report) => {
+                  const getReportIcon = () => {
+                    switch (report.reportType) {
+                      case 'role_fit_single': return <Target className="h-4 w-4" />;
+                      case 'role_fit_multi': return <Users className="h-4 w-4" />;
+                      case 'comparison': return <BarChart3 className="h-4 w-4" />;
+                      default: return <FileText className="h-4 w-4" />;
+                    }
+                  };
+                  
+                  const getReportTypeBadge = () => {
+                    switch (report.reportType) {
+                      case 'role_fit_single': 
+                        return <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-600 border-blue-500/30">Role Fit</Badge>;
+                      case 'role_fit_multi': 
+                        return <Badge variant="outline" className="text-xs bg-purple-500/10 text-purple-600 border-purple-500/30">Multi-Candidate</Badge>;
+                      case 'comparison': 
+                        return <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30">Comparison</Badge>;
+                      default: 
+                        return <Badge variant="outline" className="text-xs">Analysis</Badge>;
+                    }
+                  };
+
+                  return (
+                    <div 
+                      key={report.id} 
+                      className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover-elevate"
+                      data-testid={`report-item-${report.id}`}
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                          {getReportIcon()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-sm truncate">{report.title}</span>
+                            {getReportTypeBadge()}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                            <span>{new Date(report.createdAt).toLocaleDateString()}</span>
+                            <span>-</span>
+                            <span>{report.summary.candidateCount} candidate{report.summary.candidateCount !== 1 ? 's' : ''}</span>
+                            {report.summary.overallFit !== undefined && (
+                              <>
+                                <span>-</span>
+                                <span className={
+                                  report.summary.overallFit >= 70 ? 'text-green-600' : 
+                                  report.summary.overallFit >= 50 ? 'text-amber-600' : 'text-red-600'
+                                }>
+                                  {report.summary.overallFit}% fit
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">{report.creditsUsed} credit{report.creditsUsed !== 1 ? 's' : ''}</Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteReportMutation.mutate(report.id)}
+                          disabled={deleteReportMutation.isPending}
+                          data-testid={`button-delete-report-${report.id}`}
+                        >
+                          {deleteReportMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          )}
+        </Card>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center py-12">
