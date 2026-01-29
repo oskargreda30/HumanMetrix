@@ -6445,9 +6445,10 @@ ${pdfText.substring(0, 15000)}`;
       }
       
       // Check and consume 1 credit for AI-powered PDF parsing
+      // Pass null for sessionId since this is a non-session credit usage
       const creditResult = await storage.consumePartnerTest(
         partnerId,
-        `pdf-parse-${Date.now()}`,
+        null,
         "AI-powered PDF parsing"
       );
       

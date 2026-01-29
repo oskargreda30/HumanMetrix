@@ -352,7 +352,7 @@ export interface IStorage {
   createQuotaLedgerEntry(entry: InsertPartnerQuotaLedger): Promise<PartnerQuotaLedger>;
   getQuotaLedger(partnerId: string, limit?: number): Promise<PartnerQuotaLedger[]>;
   getPartnerQuotaBalance(partnerId: string): Promise<{ testsPurchased: number; testsConsumed: number; remaining: number; freeTestsAllocated: number }>;
-  consumePartnerTest(partnerId: string, sessionId: string, description: string): Promise<{ success: boolean; remaining: number; suspended: boolean; isOverage?: boolean }>;
+  consumePartnerTest(partnerId: string, sessionId: string | null, description: string): Promise<{ success: boolean; remaining: number; suspended: boolean; isOverage?: boolean }>;
   creditPartnerTests(partnerId: string, packageId: string, amount: number, description: string): Promise<{ success: boolean; newBalance: number }>;
   updatePartnerQuotaNotification(partnerId: string, notificationType: '70' | '90'): Promise<void>;
   suspendPartnerApiAccess(partnerId: string): Promise<void>;
@@ -2124,7 +2124,7 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async consumePartnerTest(partnerId: string, sessionId: string, description: string): Promise<{ success: boolean; remaining: number; suspended: boolean; isOverage?: boolean }> {
+  async consumePartnerTest(partnerId: string, sessionId: string | null, description: string): Promise<{ success: boolean; remaining: number; suspended: boolean; isOverage?: boolean }> {
     // Get current balance
     const balance = await this.getPartnerQuotaBalance(partnerId);
     
