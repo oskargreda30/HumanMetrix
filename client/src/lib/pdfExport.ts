@@ -2726,13 +2726,8 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
     yPos += PDF_SPACING.medium;
     
-    yPos = addSectionHeader(pdf, 'COHORT BENCHMARKING', yPos, pageWidth);
-    yPos += 2;
-    
-    applySmallText(pdf);
-    pdf.setTextColor(107, 114, 128);
-    pdf.text("Candidate's performance compared to other candidates in the cohort", 20, yPos);
-    yPos += 8;
+    yPos = addSectionHeader(pdf, 'HUMANMETRIX DATABASE BENCHMARKING', yPos, pageWidth);
+    yPos += 6;
     
     const cohort = data.alignment.cohortBenchmarks!;
     
