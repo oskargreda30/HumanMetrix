@@ -85,6 +85,7 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [lastImportErrors, setLastImportErrors] = useState<Array<{ row: number; externalUserId: string; error: string }>>([]);
   const [copiedInvitationId, setCopiedInvitationId] = useState<string | null>(null);
+  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
 
   const { data: quota, isLoading: quotaLoading } = useQuery<QuotaData>({
     queryKey: ['/api/partner/me/quota'],
@@ -108,10 +109,12 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
 
   const sendEmailMutation = useMutation({
     mutationFn: async (invitationId: string) => {
+      setSendingEmailId(invitationId);
       const response = await apiRequest('POST', `/api/partner/me/invitations/${invitationId}/send-email`);
       return response.json();
     },
     onSuccess: (data: any) => {
+      setSendingEmailId(null);
       toast({
         title: data.message || "Email sent",
         description: "The invitation email has been sent successfully.",
@@ -119,6 +122,7 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
       queryClient.invalidateQueries({ queryKey: ['/api/partner/me/invitations'] });
     },
     onError: (error: any) => {
+      setSendingEmailId(null);
       toast({
         title: "Failed to send email",
         description: error.message || "Could not send the invitation email.",
@@ -842,10 +846,10 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
                             size="icon"
                             className="h-8 w-8"
                             onClick={() => sendEmailMutation.mutate(invitation.id)}
-                            disabled={sendEmailMutation.isPending}
+                            disabled={sendingEmailId !== null}
                             data-testid={`send-email-${invitation.id}`}
                           >
-                            {sendEmailMutation.isPending ? (
+                            {sendingEmailId === invitation.id ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
                               <Send className="h-4 w-4" />
