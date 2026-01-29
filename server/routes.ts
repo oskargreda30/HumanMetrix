@@ -13660,7 +13660,7 @@ Format your response as JSON with this structure:
       }
 
       // Verify the candidate belongs to this partner
-      const invitations = await storage.getInvitationsByPartner(partner.id);
+      const invitations = await storage.getPartnerCandidateInvitations(partner.id);
       const candidateInvitation = invitations.find(inv => inv.userId === candidateId);
       if (!candidateInvitation) {
         return res.status(403).json({ message: "Candidate not found in your organization" });
