@@ -455,7 +455,7 @@ export default function Dashboard() {
         <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
           <div className="mb-8 flex items-start justify-between">
             <div>
-              <h1 className="text-3xl font-bold mb-2 text-white">My Dashboard</h1>
+              <h1 className="text-2xl md:text-3xl font-bold mb-2 text-white">My Dashboard</h1>
               <p className="text-white/80">
                 Welcome back, {user?.firstName || 'there'}!
               </p>
@@ -563,7 +563,7 @@ export default function Dashboard() {
 
           {/* Available Assessments */}
           <section className="mb-12">
-            <h2 className="text-2xl font-semibold mb-4 text-white">Available Assessments</h2>
+            <h2 className="text-xl md:text-2xl font-semibold mb-4 text-white">Available Assessments</h2>
             {availableAssessments && availableAssessments.length > 0 ? (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {availableAssessments.map((assessment: any) => {
@@ -702,7 +702,7 @@ export default function Dashboard() {
             
             return (
               <section className="mb-12">
-                <h2 className="text-2xl font-semibold mb-4 text-white/70">Add to Testing Suite</h2>
+                <h2 className="text-xl md:text-2xl font-semibold mb-4 text-white/70">Add to Testing Suite</h2>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {missingTypes.map((type) => {
                     const metadata = getAssessmentMetadata(type);
@@ -781,7 +781,7 @@ export default function Dashboard() {
           {/* Completed Testing Series (Batches) */}
           {purchasesWithCompletedResults.length > 0 && (
             <section className="mb-12">
-              <h2 className="text-2xl font-semibold mb-4 text-white">Your Results</h2>
+              <h2 className="text-xl md:text-2xl font-semibold mb-4 text-white">Your Results</h2>
               <div className="space-y-6">
                 {purchasesWithCompletedResults.map((purchase: any, index: number) => {
                   // For progress: show consumed (completed + abandoned) / total
@@ -961,7 +961,7 @@ export default function Dashboard() {
           {/* Partner Testing Series (from partner invitations) */}
           {(partnerTestingSeries || []).length > 0 && (
             <section className="mb-12">
-              <h2 className="text-2xl font-semibold mb-4 text-white">Partner Testing Series</h2>
+              <h2 className="text-xl md:text-2xl font-semibold mb-4 text-white">Partner Testing Series</h2>
               <p className="text-white/70 text-sm mb-4">
                 Assessments completed via partner invitations
               </p>

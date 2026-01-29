@@ -66,7 +66,7 @@ export default function ForgotPassword() {
       <main className="flex-grow flex items-center justify-center py-16">
         <div className="w-full max-w-md px-4">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2 text-white">Reset Password</h1>
+            <h1 className="text-2xl md:text-3xl font-bold mb-2 text-white">Reset Password</h1>
             <p className="text-blue-100/70">
               Enter your email and we'll send you a reset link
             </p>
