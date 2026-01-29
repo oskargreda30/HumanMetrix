@@ -504,10 +504,14 @@ export default function EmbedAssessment() {
     // we need to create a NEW session by calling the invite start API again
     if (isFromInvitation && inviteToken && currentAssessmentIndex > 0) {
       try {
+        // Get the next assessment type from the queue
+        const nextAssessmentType = assessmentQueue[currentAssessmentIndex];
+        
         // Call invite start to get a new session for the next assessment
         const startRes = await fetch(`/api/invite/${inviteToken}/start`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ assessmentType: nextAssessmentType }),
         });
 
         if (!startRes.ok) {
