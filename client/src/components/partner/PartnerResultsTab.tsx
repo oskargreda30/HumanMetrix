@@ -55,6 +55,9 @@ export default function PartnerResultsTab() {
   const [newNote, setNewNote] = useState("");
   const [showPdfImportModal, setShowPdfImportModal] = useState(false);
   const [showSavedReports, setShowSavedReports] = useState(true);
+  const [reportViewerOpen, setReportViewerOpen] = useState(false);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const { toast } = useToast();
 
   const { data: candidates, isLoading } = useQuery<any[]>({
@@ -63,6 +66,11 @@ export default function PartnerResultsTab() {
 
   const { data: savedReports, isLoading: reportsLoading } = useQuery<SavedReport[]>({
     queryKey: ['/api/partner/me/analysis-reports'],
+  });
+
+  const { data: selectedReportData, isLoading: isLoadingReport } = useQuery<any>({
+    queryKey: ['/api/partner/me/analysis-reports', selectedReportId],
+    enabled: !!selectedReportId && reportViewerOpen,
   });
 
   const deleteReportMutation = useMutation({
@@ -368,17 +376,8 @@ export default function PartnerResultsTab() {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            // Navigate to appropriate tab based on report type
-                            const tabMap: Record<string, string> = {
-                              'role_fit_single': 'role-fit',
-                              'role_fit_multi': 'multi-role-fit',
-                              'comparison': 'compare',
-                            };
-                            const tab = tabMap[report.reportType] || 'compare';
-                            toast({
-                              title: "Report Available",
-                              description: `This ${report.reportType.replace(/_/g, ' ')} report will load automatically when you re-run the same analysis. Go to the "${tab}" tab to view it.`,
-                            });
+                            setSelectedReportId(report.id);
+                            setReportViewerOpen(true);
                           }}
                           data-testid={`button-view-report-${report.id}`}
                         >
@@ -790,6 +789,260 @@ export default function PartnerResultsTab() {
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={reportViewerOpen} onOpenChange={(open) => {
+        setReportViewerOpen(open);
+        if (!open) setSelectedReportId(null);
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              {selectedReportData?.title || 'Report Details'}
+            </DialogTitle>
+            <DialogDescription>
+              Generated on {selectedReportData?.createdAt ? new Date(selectedReportData.createdAt).toLocaleString() : 'N/A'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {isLoadingReport ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : selectedReportData ? (
+            <div className="space-y-6" id="report-viewer-content">
+              {selectedReportData.reportType === 'individual' || selectedReportData.reportType === 'comparison' ? (
+                <>
+                  {selectedReportData.fitAssessments?.map((fit: any, idx: number) => (
+                    <Card key={`fit-${idx}`}>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <TrendingUp className="h-5 w-5 text-primary" />
+                          FIT Assessment
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex justify-between items-center mb-4">
+                          <span className="text-sm font-medium">Total Score</span>
+                          <span className="text-2xl font-bold text-primary">{fit.totalScore}%</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {Object.entries(fit.scores || {}).map(([skill, score]) => (
+                            <div key={skill} className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">{skill}</span>
+                              <span className="font-medium">{score as number}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+
+                  {selectedReportData.aiReadinessAssessments?.map((ai: any, idx: number) => (
+                    <Card key={`ai-${idx}`}>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Target className="h-5 w-5 text-primary" />
+                          AI Readiness Assessment
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex justify-between items-center mb-4">
+                          <span className="text-sm font-medium">Total Score</span>
+                          <span className="text-2xl font-bold text-primary">{ai.totalScore}%</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {Object.entries(ai.scores || {}).map(([skill, score]) => (
+                            <div key={skill} className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">{skill}</span>
+                              <span className="font-medium">{score as number}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+
+                  {selectedReportData.aiqAssessments?.map((aiq: any, idx: number) => (
+                    <Card key={`aiq-${idx}`}>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <BarChart3 className="h-5 w-5 text-primary" />
+                          AIQ Assessment
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex justify-between items-center mb-4">
+                          <span className="text-sm font-medium">AIQ Score</span>
+                          <span className="text-2xl font-bold text-primary">{aiq.totalScore}</span>
+                        </div>
+                        {aiq.scores?.situational_awareness && (
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Situational Awareness</span>
+                              <span className="font-medium">{aiq.scores.situational_awareness}%</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">System Understanding</span>
+                              <span className="font-medium">{aiq.scores.system_understanding || 'N/A'}%</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Ethical Calibration</span>
+                              <span className="font-medium">{aiq.scores.ethical_calibration || 'N/A'}%</span>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+
+                  {selectedReportData.promptArchitectureAssessments?.map((pa: any, idx: number) => (
+                    <Card key={`pa-${idx}`}>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-primary" />
+                          Prompt Architecture Assessment
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex justify-between items-center mb-4">
+                          <span className="text-sm font-medium">Total Score</span>
+                          <span className="text-2xl font-bold text-primary">{pa.totalScore}%</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </>
+              ) : selectedReportData.reportType === 'role_fit_single' || selectedReportData.reportType === 'role_fit_multi' ? (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Target className="h-5 w-5 text-primary" />
+                      Role Fit Analysis
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex justify-between items-center mb-4">
+                      <span className="text-sm font-medium">Overall Fit Score</span>
+                      <span className={`text-2xl font-bold ${
+                        (selectedReportData.overallFit || 0) >= 70 ? 'text-green-600' :
+                        (selectedReportData.overallFit || 0) >= 50 ? 'text-amber-600' : 'text-red-600'
+                      }`}>
+                        {selectedReportData.overallFit || 0}%
+                      </span>
+                    </div>
+                    {selectedReportData.analysis && (
+                      <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                        <p className="text-sm whitespace-pre-wrap">{selectedReportData.analysis}</p>
+                      </div>
+                    )}
+                    {selectedReportData.skillAlignments && (
+                      <div className="mt-4 space-y-2">
+                        {selectedReportData.skillAlignments.map((skill: any, idx: number) => (
+                          <div key={idx} className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">{skill.skillName}</span>
+                            <div className="flex gap-2">
+                              <span>Candidate: {skill.candidateScore}%</span>
+                              <span className="text-muted-foreground">|</span>
+                              <span>Required: {skill.requiredScore}%</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="py-8 text-center text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Report preview not available for this report type.</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              Failed to load report data.
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setReportViewerOpen(false);
+                setSelectedReportId(null);
+              }}
+            >
+              Close
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!selectedReportData) return;
+                setIsExportingPdf(true);
+                try {
+                  const { jsPDF } = await import('jspdf');
+                  const html2canvas = (await import('html2canvas')).default;
+                  
+                  const element = document.getElementById('report-viewer-content');
+                  if (!element) throw new Error('Report content not found');
+                  
+                  const canvas = await html2canvas(element, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                  });
+                  
+                  const imgData = canvas.toDataURL('image/png');
+                  const pdf = new jsPDF('p', 'mm', 'a4');
+                  const imgWidth = 210;
+                  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                  
+                  let heightLeft = imgHeight;
+                  let position = 0;
+                  
+                  pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                  heightLeft -= 297;
+                  
+                  while (heightLeft > 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= 297;
+                  }
+                  
+                  const fileName = `${selectedReportData.title?.replace(/[^a-zA-Z0-9]/g, '_') || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
+                  pdf.save(fileName);
+                  
+                  toast({
+                    title: "PDF Downloaded",
+                    description: "Your report has been exported successfully.",
+                  });
+                } catch (error) {
+                  console.error('PDF export error:', error);
+                  toast({
+                    title: "Export Failed",
+                    description: "Failed to export report as PDF.",
+                    variant: "destructive",
+                  });
+                } finally {
+                  setIsExportingPdf(false);
+                }
+              }}
+              disabled={isExportingPdf || !selectedReportData}
+              data-testid="button-download-report-pdf"
+            >
+              {isExportingPdf ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              Download PDF
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
