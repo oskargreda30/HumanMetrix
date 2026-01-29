@@ -955,10 +955,18 @@ export default function EmbedAssessment() {
 
   if (status === "loading") {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${bgMain}`} data-testid="embed-loading">
+      <div className="min-h-screen flex items-center justify-center bg-slate-900" data-testid="embed-loading">
         <div className="text-center">
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <div className="relative">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center">
+                <span className="text-white font-bold text-lg">HM</span>
+              </div>
+            </div>
+            <span className="text-xl font-semibold text-white">HumanMetrix</span>
+          </div>
           <Loader2 className="h-12 w-12 animate-spin text-cyan-500 mx-auto mb-4" />
-          <p className={textSecondary}>Loading...</p>
+          <p className="text-slate-400">Loading assessment...</p>
         </div>
       </div>
     );

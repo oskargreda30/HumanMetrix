@@ -70,9 +70,23 @@ const B2COnboarding = lazy(() => import("@/pages/B2COnboarding"));
 const UnlockResults = lazy(() => import("@/pages/UnlockResults"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
-// Minimal loading fallback - shows nothing to avoid layout shift
+// Branded loading fallback - shows HumanMetrix loader during page transitions
 function PageLoader() {
-  return null;
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-900">
+      <div className="text-center">
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <div className="relative">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center">
+              <span className="text-white font-bold text-lg">HM</span>
+            </div>
+          </div>
+          <span className="text-xl font-semibold text-white">HumanMetrix</span>
+        </div>
+        <div className="h-8 w-8 mx-auto border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    </div>
+  );
 }
 
 function Router() {
