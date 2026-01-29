@@ -3701,7 +3701,7 @@ export default function PartnerDashboard() {
                               return (
                                 <div 
                                   key={pkg.size} 
-                                  className="border border-border rounded-lg p-4 flex flex-col relative"
+                                  className={`border rounded-lg p-4 flex flex-col relative ${hasDiscount ? 'border-primary' : 'border-border'}`}
                                   data-testid={`package-${pkg.size}`}
                                 >
                                   {hasDiscount && (
