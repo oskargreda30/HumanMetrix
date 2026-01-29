@@ -5305,10 +5305,12 @@ export default function PartnerDashboard() {
                     <CardTitle>Team Members</CardTitle>
                     <CardDescription>Manage access to your partner account</CardDescription>
                   </div>
-                  <Button onClick={() => setShowInviteDialog(true)} data-testid="button-invite-member">
-                    <Plus className="h-4 w-4 mr-1.5" />
-                    Invite Member
-                  </Button>
+                  {isAdmin && (
+                    <Button onClick={() => setShowInviteDialog(true)} data-testid="button-invite-member">
+                      <Plus className="h-4 w-4 mr-1.5" />
+                      Invite Member
+                    </Button>
+                  )}
                 </CardHeader>
                 <CardContent>
                   {teamLoading ? (
@@ -5330,29 +5332,31 @@ export default function PartnerDashboard() {
                                 <Badge variant="outline" className="capitalize">{member.role}</Badge>
                               </div>
                             </div>
-                            <div className="flex gap-1">
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                onClick={() => {
-                                  setEditMemberId(member.id);
-                                  setEditMemberName(member.name || "");
-                                  setEditMemberRole(member.role || "member");
-                                }}
-                                data-testid={`button-edit-member-${member.id}`}
-                              >
-                                <Pencil className="h-4 w-4 text-muted-foreground" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                onClick={() => setConfirmRemoveMemberId(member.id)}
-                                disabled={removeMemberMutation.isPending}
-                                data-testid={`button-remove-member-${member.id}`}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
+                            {isAdmin && (
+                              <div className="flex gap-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={() => {
+                                    setEditMemberId(member.id);
+                                    setEditMemberName(member.name || "");
+                                    setEditMemberRole(member.role || "member");
+                                  }}
+                                  data-testid={`button-edit-member-${member.id}`}
+                                >
+                                  <Pencil className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={() => setConfirmRemoveMemberId(member.id)}
+                                  disabled={removeMemberMutation.isPending}
+                                  data-testid={`button-remove-member-${member.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -5361,16 +5365,22 @@ export default function PartnerDashboard() {
                     <div className="py-12 text-center text-muted-foreground">
                       <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p className="font-medium">No team members yet</p>
-                      <p className="text-sm mt-1">Invite colleagues to help manage assessments and view results.</p>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="mt-4"
-                        onClick={() => setShowInviteDialog(true)}
-                      >
-                        <Plus className="h-4 w-4 mr-1.5" />
-                        Invite Your First Team Member
-                      </Button>
+                      <p className="text-sm mt-1">
+                        {isAdmin 
+                          ? "Invite colleagues to help manage assessments and view results."
+                          : "Only admins can invite team members."}
+                      </p>
+                      {isAdmin && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="mt-4"
+                          onClick={() => setShowInviteDialog(true)}
+                        >
+                          <Plus className="h-4 w-4 mr-1.5" />
+                          Invite Your First Team Member
+                        </Button>
+                      )}
                     </div>
                   )}
                 </CardContent>
