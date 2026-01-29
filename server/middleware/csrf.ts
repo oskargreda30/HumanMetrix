@@ -43,6 +43,7 @@ export function csrfProtection() {
       "/api/b2b/results/",
       "/api/b2b/process-payment",
       "/api/guest/invite/",
+      "/api/invite/",
     ];
     
     const isExempt = exemptPaths.some(path => {
