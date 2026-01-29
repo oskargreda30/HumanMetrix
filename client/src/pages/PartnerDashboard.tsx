@@ -3596,21 +3596,11 @@ export default function PartnerDashboard() {
                   {/* PAYG Credit Packages for Purchase */}
                   {account?.partner?.billingType === 'payg' && (
                     <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <Package className="h-5 w-5" />
-                          Purchase Test Packages
-                          <InfoTooltip content="Purchase test credits in bulk with volume discounts. Larger packages offer better per-test rates. Prices shown in your local currency with regional pricing." />
-                        </CardTitle>
-                        <CardDescription>
-                          Buy test credits with bulk discounts • Prices in {currency.code}
-                          {pricingTier !== 'tier1' && (
-                            <span className="ml-1 text-green-600 dark:text-green-400">(Regional pricing applied)</span>
-                          )}
-                        </CardDescription>
-                        <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
-                          <CreditCard className="h-3.5 w-3.5 flex-shrink-0" />
-                          <span><strong>1 credit = 1 assessment.</strong> Each completed candidate assessment uses 1 credit. AI features also use 1 credit per use.</span>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CreditCard className="h-4 w-4" />
+                          <span>1 credit = 1 assessment or AI feature use</span>
+                          <InfoTooltip content="Purchase credits in bulk with volume discounts. Larger packages offer better per-credit rates. Prices shown in your local currency." />
                         </div>
                       </CardHeader>
                       <CardContent>
@@ -3656,28 +3646,34 @@ export default function PartnerDashboard() {
                                 return (
                                   <div 
                                     key={pkg.size} 
-                                    className="border border-primary rounded-lg p-4 flex flex-col relative"
+                                    className="border rounded-lg p-4 flex flex-col relative hover-elevate transition-all"
                                     data-testid={`package-${pkg.size}`}
                                   >
                                     {hasDiscount && (
                                       <div className="absolute -top-2 -right-2">
-                                        <Badge className="bg-green-500 text-white border-0">
+                                        <Badge className="bg-green-500 text-white border-0 text-xs">
                                           {pkg.discountPercent}% OFF
                                         </Badge>
                                       </div>
                                     )}
-                                    <div className="flex items-center justify-between mb-2">
-                                      <span className="font-semibold text-lg">{pkg.name}</span>
-                                      <Badge variant="secondary">{pkg.size} credits</Badge>
+                                    <div className="text-center mb-3">
+                                      <div className="text-4xl font-bold mb-1">
+                                        {pkg.size}
+                                      </div>
+                                      <div className="text-sm text-muted-foreground">
+                                        credits
+                                      </div>
                                     </div>
-                                    <div className="text-2xl font-bold mb-1">
-                                      {formatLocalPrice(adjustedPriceInPence)}
-                                    </div>
-                                    <div className="text-sm text-muted-foreground mb-2">
-                                      {formatLocalPrice(adjustedPerTestInPence)} per credit
+                                    <div className="text-center border-t pt-3 mb-3">
+                                      <div className="text-lg font-semibold">
+                                        {formatLocalPrice(adjustedPriceInPence)}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground">
+                                        {formatLocalPrice(adjustedPerTestInPence)}/credit
+                                      </div>
                                     </div>
                                     {adjustedSavingsInPence > 0 && (
-                                      <div className="text-xs text-green-600 dark:text-green-400 mb-3">
+                                      <div className="text-xs text-green-600 dark:text-green-400 text-center mb-3">
                                         Save {formatLocalPrice(adjustedSavingsInPence)}
                                       </div>
                                     )}
@@ -3693,10 +3689,7 @@ export default function PartnerDashboard() {
                                           Processing...
                                         </>
                                       ) : (
-                                        <>
-                                          <ShoppingCart className="h-4 w-4 mr-2" />
-                                          Buy Now
-                                        </>
+                                        "Buy"
                                       )}
                                     </Button>
                                   </div>
