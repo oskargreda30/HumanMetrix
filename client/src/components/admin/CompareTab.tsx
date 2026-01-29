@@ -1218,14 +1218,25 @@ export default function CompareTab() {
                       <Users className="h-5 w-5" />
                       Candidate Overview & Assessment Status
                     </CardTitle>
-                    <Button 
-                      size="sm"
-                      onClick={handleExportPDF}
-                      data-testid="button-export-comparison-top"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Export as PDF
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm"
+                        onClick={handleExportPDF}
+                        data-testid="button-export-comparison-top"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Export as PDF
+                      </Button>
+                      <Button 
+                        size="sm"
+                        variant="outline"
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                        data-testid="button-back-to-top-compare"
+                      >
+                        <ChevronUp className="h-4 w-4 mr-2" />
+                        Back to Top
+                      </Button>
+                    </div>
                   </div>
                   <CardDescription>
                     Contact details, application date, and completion status for each assessment type (FIT, AI Readiness, Prompt Architecture, AIQ)

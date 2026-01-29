@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, User, Award, Brain, Target, TrendingUp, TrendingDown, FileText, BookOpen, Sparkles, Download, MessageSquare, Users, Clock, ShieldAlert, DollarSign, Lightbulb, RefreshCw, Rocket, BarChart3, Mail } from "lucide-react";
+import { Loader2, User, Award, Brain, Target, TrendingUp, TrendingDown, FileText, BookOpen, Sparkles, Download, MessageSquare, Users, Clock, ShieldAlert, DollarSign, Lightbulb, RefreshCw, Rocket, BarChart3, Mail, ChevronUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
@@ -1037,6 +1037,14 @@ export default function IndividualReportTab() {
                   Export as PDF
                 </>
               )}
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              data-testid="button-back-to-top-individual"
+            >
+              <ChevronUp className="h-4 w-4 mr-2" />
+              Back to Top
             </Button>
           </div>
         </>

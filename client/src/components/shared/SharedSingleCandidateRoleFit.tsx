@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, TrendingDown, Download, Award, Brain, Sparkles, MessageSquare, Users, Clock, ShieldAlert, DollarSign, FileText, User } from "lucide-react";
+import { Loader2, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, TrendingDown, Download, Award, Brain, Sparkles, MessageSquare, Users, Clock, ShieldAlert, DollarSign, FileText, User, ChevronUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -1210,7 +1210,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
           <SkillsLegend />
 
           {/* Bottom PDF Export Button */}
-          <div className="flex justify-center pt-4">
+          <div className="flex justify-center gap-3 pt-4">
             <Button
               variant="default"
               size="lg"
@@ -1219,7 +1219,17 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
               data-testid="button-export-pdf-bottom"
             >
               <Download className="h-5 w-5" />
-              Export Full Report as PDF
+              Export as PDF
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="gap-2"
+              data-testid="button-back-to-top-single"
+            >
+              <ChevronUp className="h-5 w-5" />
+              Back to Top
             </Button>
           </div>
         </div>
