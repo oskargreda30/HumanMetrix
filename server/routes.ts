@@ -13637,29 +13637,13 @@ Format your response as JSON with this structure:
       }
       
       const { candidateId } = req.params;
-      const { assessmentData } = req.body;
+      const { assessmentData, forceRefresh } = req.body;
       
       if (!candidateId || !assessmentData) {
         return res.status(400).json({ message: "Candidate ID and assessment data are required" });
       }
 
-      // Check and consume 1 credit for AI feature usage
-      // Pass null for sessionId since this is a non-session credit usage
-      const creditResult = await storage.consumePartnerTest(
-        partner.id,
-        null,
-        "AI Profile Insights generation"
-      );
-      
-      if (!creditResult.success && !creditResult.isOverage) {
-        return res.status(402).json({ 
-          message: "Insufficient credits. Please purchase more credits to use AI features.",
-          creditsRequired: 1,
-          creditsRemaining: creditResult.remaining
-        });
-      }
-
-      // Verify the candidate belongs to this partner
+      // Verify the candidate belongs to this partner FIRST (before checking cache or consuming credits)
       // Check BOTH partner invitations AND B2B sessions (mirrors compare endpoint logic)
       // candidateId is typically an email address
       
@@ -13676,6 +13660,40 @@ Format your response as JSON with this structure:
       
       if (!candidateInvitation && !candidateSession) {
         return res.status(403).json({ message: "Candidate not found in your organization" });
+      }
+
+      // Check for existing cached report BEFORE consuming credits (unless forceRefresh is requested)
+      if (!forceRefresh) {
+        const existingReport = await storage.findExistingPartnerReport(
+          partner.id,
+          'profile_insights',
+          [candidateId]
+        );
+        
+        if (existingReport) {
+          // Return cached report without charging credits
+          return res.json({
+            insights: existingReport.resultData?.insights || '',
+            cached: true,
+            cachedAt: existingReport.createdAt,
+            reportId: existingReport.id,
+          });
+        }
+      }
+
+      // No cached report found - NOW check and consume 1 credit for AI feature usage
+      const creditResult = await storage.consumePartnerTest(
+        partner.id,
+        null,
+        "AI Profile Insights generation"
+      );
+      
+      if (!creditResult.success && !creditResult.isOverage) {
+        return res.status(402).json({ 
+          message: "Insufficient credits. Please purchase more credits to use AI features.",
+          creditsRequired: 1,
+          creditsRemaining: creditResult.remaining
+        });
       }
 
       // Fetch candidate from database for verified name (candidateId is email)
@@ -13726,16 +13744,29 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
 
       const insights = completion.choices[0].message.content || '';
       
+      // Save the generated insights to cache for future retrieval
+      const savedReport = await storage.savePartnerReport(
+        partner.id,
+        'profile_insights',
+        [candidateId],
+        `Profile Insights: ${candidateName}`,
+        { insights, candidateName, generatedAt: new Date().toISOString() }
+      );
+      
       logAiCost({
         operationType: AI_USAGE_OPERATION_TYPES.PROFILE_INSIGHTS_PARTNER,
         model: "gpt-4o",
         usage: extractUsage(completion),
         userId: candidateId,
         partnerId: partner.id,
-        metadata: { candidateEmail: candidate.email || undefined },
+        metadata: { candidateEmail: candidate?.email || undefined },
       }).catch(console.error);
 
-      res.json({ insights });
+      res.json({ 
+        insights,
+        cached: false,
+        reportId: savedReport?.id,
+      });
     } catch (error) {
       console.error("Error generating profile insights:", error);
       res.status(500).json({ message: "Failed to generate profile insights" });
