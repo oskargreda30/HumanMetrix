@@ -13720,7 +13720,7 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
           { role: "system", content: "You are an expert HR analyst specializing in psychometric assessments and candidate profiling. Provide concise, professional, and actionable insights." },
           { role: "user", content: prompt }
         ],
-        max_tokens: 500,
+        max_completion_tokens: 500,
         temperature: 0.7,
       });
 
