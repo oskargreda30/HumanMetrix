@@ -138,6 +138,9 @@ import {
   type InsertEcosystemProject,
   type EcosystemTeamMember,
   type InsertEcosystemTeamMember,
+  aiUsageCosts,
+  type AiUsageCost,
+  type InsertAiUsageCost,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, inArray, gte, lte, count, countDistinct, isNull, isNotNull } from "drizzle-orm";
@@ -565,6 +568,36 @@ export interface IStorage {
   updateEmailVerificationCode(id: string, updates: Partial<{ attempts: number; verified: boolean }>): Promise<void>;
   deleteEmailVerificationCode(id: string): Promise<void>;
   deleteExpiredVerificationCodes(): Promise<void>;
+
+  // AI usage cost operations
+  createAiUsageCost(cost: InsertAiUsageCost): Promise<AiUsageCost>;
+  getAiUsageCostSummary(filters?: {
+    startDate?: Date;
+    endDate?: Date;
+    operationType?: string;
+    model?: string;
+  }): Promise<{
+    totalCostCents: number;
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    totalRequests: number;
+    byOperationType: Array<{
+      operationType: string;
+      count: number;
+      totalCostCents: number;
+      avgCostCents: number;
+    }>;
+    byModel: Array<{
+      model: string;
+      count: number;
+      totalCostCents: number;
+    }>;
+    dailyCosts: Array<{
+      date: string;
+      totalCostCents: number;
+      requestCount: number;
+    }>;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4122,6 +4155,120 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEcosystemTeamMembersByProject(projectId: string): Promise<void> {
     await db.delete(ecosystemTeamMembers).where(eq(ecosystemTeamMembers.projectId, projectId));
+  }
+
+  // AI Usage Cost operations
+  async createAiUsageCost(cost: InsertAiUsageCost): Promise<AiUsageCost> {
+    const [result] = await db.insert(aiUsageCosts).values(cost).returning();
+    return result;
+  }
+
+  async getAiUsageCostSummary(filters?: {
+    startDate?: Date;
+    endDate?: Date;
+    operationType?: string;
+    model?: string;
+  }): Promise<{
+    totalCostCents: number;
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    totalRequests: number;
+    byOperationType: Array<{
+      operationType: string;
+      count: number;
+      totalCostCents: number;
+      avgCostCents: number;
+    }>;
+    byModel: Array<{
+      model: string;
+      count: number;
+      totalCostCents: number;
+    }>;
+    dailyCosts: Array<{
+      date: string;
+      totalCostCents: number;
+      requestCount: number;
+    }>;
+  }> {
+    const conditions: any[] = [];
+    
+    if (filters?.startDate) {
+      conditions.push(gte(aiUsageCosts.createdAt, filters.startDate));
+    }
+    if (filters?.endDate) {
+      conditions.push(lte(aiUsageCosts.createdAt, filters.endDate));
+    }
+    if (filters?.operationType) {
+      conditions.push(eq(aiUsageCosts.operationType, filters.operationType));
+    }
+    if (filters?.model) {
+      conditions.push(eq(aiUsageCosts.model, filters.model));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    // Get totals
+    const totalsResult = await db.select({
+      totalCostCents: sql<number>`COALESCE(SUM(${aiUsageCosts.totalCostCents}), 0)`,
+      totalInputTokens: sql<number>`COALESCE(SUM(${aiUsageCosts.inputTokens}), 0)`,
+      totalOutputTokens: sql<number>`COALESCE(SUM(${aiUsageCosts.outputTokens}), 0)`,
+      totalRequests: sql<number>`COUNT(*)`,
+    }).from(aiUsageCosts).where(whereClause);
+
+    // Get breakdown by operation type
+    const byOperationType = await db.select({
+      operationType: aiUsageCosts.operationType,
+      count: sql<number>`COUNT(*)::int`,
+      totalCostCents: sql<number>`COALESCE(SUM(${aiUsageCosts.totalCostCents}), 0)::int`,
+      avgCostCents: sql<number>`COALESCE(AVG(${aiUsageCosts.totalCostCents}), 0)::int`,
+    }).from(aiUsageCosts)
+      .where(whereClause)
+      .groupBy(aiUsageCosts.operationType)
+      .orderBy(desc(sql`SUM(${aiUsageCosts.totalCostCents})`));
+
+    // Get breakdown by model
+    const byModel = await db.select({
+      model: aiUsageCosts.model,
+      count: sql<number>`COUNT(*)::int`,
+      totalCostCents: sql<number>`COALESCE(SUM(${aiUsageCosts.totalCostCents}), 0)::int`,
+    }).from(aiUsageCosts)
+      .where(whereClause)
+      .groupBy(aiUsageCosts.model)
+      .orderBy(desc(sql`SUM(${aiUsageCosts.totalCostCents})`));
+
+    // Get daily costs for the last 30 days
+    const dailyCosts = await db.select({
+      date: sql<string>`DATE(${aiUsageCosts.createdAt})::text`,
+      totalCostCents: sql<number>`COALESCE(SUM(${aiUsageCosts.totalCostCents}), 0)::int`,
+      requestCount: sql<number>`COUNT(*)::int`,
+    }).from(aiUsageCosts)
+      .where(whereClause)
+      .groupBy(sql`DATE(${aiUsageCosts.createdAt})`)
+      .orderBy(desc(sql`DATE(${aiUsageCosts.createdAt})`))
+      .limit(30);
+
+    return {
+      totalCostCents: Number(totalsResult[0]?.totalCostCents || 0),
+      totalInputTokens: Number(totalsResult[0]?.totalInputTokens || 0),
+      totalOutputTokens: Number(totalsResult[0]?.totalOutputTokens || 0),
+      totalRequests: Number(totalsResult[0]?.totalRequests || 0),
+      byOperationType: byOperationType.map(row => ({
+        operationType: row.operationType,
+        count: Number(row.count),
+        totalCostCents: Number(row.totalCostCents),
+        avgCostCents: Number(row.avgCostCents),
+      })),
+      byModel: byModel.map(row => ({
+        model: row.model,
+        count: Number(row.count),
+        totalCostCents: Number(row.totalCostCents),
+      })),
+      dailyCosts: dailyCosts.map(row => ({
+        date: row.date,
+        totalCostCents: Number(row.totalCostCents),
+        requestCount: Number(row.requestCount),
+      })),
+    };
   }
 }
 

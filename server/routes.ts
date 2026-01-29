@@ -18803,6 +18803,157 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
     }
   });
 
+  // ==================== PROFIT ANALYTICS API ====================
+
+  // Super Admin: Get profit analytics (revenue vs AI costs)
+  app.get("/api/admin/analytics/profit", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+
+      const { startDate, endDate } = req.query;
+      
+      // Parse date filters
+      const filters: { startDate?: Date; endDate?: Date } = {};
+      if (startDate) filters.startDate = new Date(startDate as string);
+      if (endDate) filters.endDate = new Date(endDate as string);
+
+      // Get AI usage cost summary
+      const aiCostSummary = await storage.getAiUsageCostSummary(filters);
+      
+      // Get revenue data for the same period
+      const { getExchangeRates } = await import("./exchange-rates");
+      const exchangeRatesData = await getExchangeRates();
+      
+      const toGBP = (amount: number, currency: string) => {
+        if (currency === 'GBP') return amount;
+        const rate = exchangeRatesData.rates[currency] || 1;
+        return Math.round(amount / rate);
+      };
+
+      // Get all purchases and invoices
+      const [allPurchases, allInvoices] = await Promise.all([
+        storage.getAllPurchasesWithDetails({ limit: 10000 }),
+        db.select().from(partnerInvoices),
+      ]);
+      
+      // Filter by date if provided
+      let filteredPurchases = allPurchases.filter((p: any) => p.purchase.resultsAccessPaid);
+      let filteredInvoices = allInvoices.filter(i => i.status === 'paid');
+      
+      if (filters.startDate) {
+        filteredPurchases = filteredPurchases.filter((p: any) => 
+          p.purchase.completedAt && new Date(p.purchase.completedAt) >= filters.startDate!);
+        filteredInvoices = filteredInvoices.filter(i => 
+          i.paidAt && new Date(i.paidAt) >= filters.startDate!);
+      }
+      if (filters.endDate) {
+        filteredPurchases = filteredPurchases.filter((p: any) => 
+          p.purchase.completedAt && new Date(p.purchase.completedAt) <= filters.endDate!);
+        filteredInvoices = filteredInvoices.filter(i => 
+          i.paidAt && new Date(i.paidAt) <= filters.endDate!);
+      }
+
+      // Calculate revenue
+      const b2cRevenue = filteredPurchases.reduce((sum: number, p: any) => 
+        sum + toGBP(p.purchase.totalAmount, p.purchase.currency || 'GBP'), 0);
+      const b2bRevenue = filteredInvoices.reduce((sum, i) => 
+        sum + toGBP(i.totalAmount, i.currency), 0);
+      const totalRevenue = b2cRevenue + b2bRevenue;
+      
+      // Convert AI costs from cents to pence (approximate)
+      // Note: AI costs are typically in USD, so convert to GBP
+      const aiCostGBP = Math.round(aiCostSummary.totalCostCents / exchangeRatesData.rates['USD'] || aiCostSummary.totalCostCents);
+      
+      // Calculate profit
+      const grossProfit = totalRevenue - aiCostGBP;
+      const profitMargin = totalRevenue > 0 ? (grossProfit / totalRevenue * 100) : 0;
+      
+      // Calculate cost per assessment (rough estimate)
+      const totalAssessments = filteredPurchases.reduce((sum: number, p: any) => {
+        const items = (p.items || []) as Array<{ assessmentType: string }>;
+        return sum + items.length;
+      }, 0);
+      const avgCostPerAssessment = totalAssessments > 0 ? aiCostGBP / totalAssessments : 0;
+      
+      // Monthly profit trends
+      const monthlyProfits: Record<string, { revenue: number; aiCost: number; profit: number }> = {};
+      
+      // Add revenue to months
+      filteredPurchases.forEach((p: any) => {
+        if (p.purchase.completedAt) {
+          const month = new Date(p.purchase.completedAt).toISOString().slice(0, 7);
+          if (!monthlyProfits[month]) monthlyProfits[month] = { revenue: 0, aiCost: 0, profit: 0 };
+          monthlyProfits[month].revenue += toGBP(p.purchase.totalAmount, p.purchase.currency || 'GBP');
+        }
+      });
+      filteredInvoices.forEach(i => {
+        if (i.paidAt) {
+          const month = new Date(i.paidAt).toISOString().slice(0, 7);
+          if (!monthlyProfits[month]) monthlyProfits[month] = { revenue: 0, aiCost: 0, profit: 0 };
+          monthlyProfits[month].revenue += toGBP(i.totalAmount, i.currency);
+        }
+      });
+      
+      // Add AI costs to months (from daily costs)
+      aiCostSummary.dailyCosts.forEach(day => {
+        const month = day.date.slice(0, 7);
+        if (!monthlyProfits[month]) monthlyProfits[month] = { revenue: 0, aiCost: 0, profit: 0 };
+        const costGBP = Math.round(day.totalCostCents / (exchangeRatesData.rates['USD'] || 1));
+        monthlyProfits[month].aiCost += costGBP;
+      });
+      
+      // Calculate profit for each month
+      Object.keys(monthlyProfits).forEach(month => {
+        monthlyProfits[month].profit = monthlyProfits[month].revenue - monthlyProfits[month].aiCost;
+      });
+      
+      const monthlyTrends = Object.entries(monthlyProfits)
+        .map(([month, data]) => ({ month, ...data }))
+        .sort((a, b) => a.month.localeCompare(b.month))
+        .slice(-12);
+
+      res.json({
+        overview: {
+          totalRevenue,
+          b2cRevenue,
+          b2bRevenue,
+          totalAiCost: aiCostGBP,
+          grossProfit,
+          profitMargin: Math.round(profitMargin * 10) / 10,
+          avgCostPerAssessment: Math.round(avgCostPerAssessment),
+        },
+        aiCosts: {
+          totalCostCents: aiCostSummary.totalCostCents,
+          totalInputTokens: aiCostSummary.totalInputTokens,
+          totalOutputTokens: aiCostSummary.totalOutputTokens,
+          totalRequests: aiCostSummary.totalRequests,
+          byOperationType: aiCostSummary.byOperationType,
+          byModel: aiCostSummary.byModel,
+          dailyCosts: aiCostSummary.dailyCosts,
+        },
+        monthlyTrends,
+        metrics: {
+          totalTransactions: filteredPurchases.length + filteredInvoices.length,
+          totalAssessments,
+          revenuePerRequest: aiCostSummary.totalRequests > 0 
+            ? Math.round(totalRevenue / aiCostSummary.totalRequests) 
+            : 0,
+          costPerRequest: aiCostSummary.totalRequests > 0 
+            ? Math.round(aiCostGBP / aiCostSummary.totalRequests) 
+            : 0,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching profit analytics:", error);
+      res.status(500).json({ message: "Failed to fetch profit analytics" });
+    }
+  });
+
   // ==================== GEOGRAPHIC ANALYTICS API ====================
 
   // Super Admin: Get geographic analytics data
