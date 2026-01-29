@@ -3614,14 +3614,93 @@ export function registerPartnerRoutes(app: Express) {
         } as any);
       }
       
+      // Check if user has an existing account
+      const existingUser = await storage.getUserByEmail(session.externalEmail);
+      const hasExistingAccount = !!existingUser;
+      
       res.json({
         success: true,
         message: "Results unlocked successfully",
-        resultsUrl: `/embed/assessment?session=${b2bSessionId}&showResults=true`
+        email: session.externalEmail,
+        sessionId: b2bSessionId,
+        hasExistingAccount,
+        userId: existingUser?.id,
+        resultsUrl: hasExistingAccount ? "/dashboard" : null
       });
     } catch (error) {
       console.error("Error processing B2B payment:", error);
       res.status(500).json({ error: "Failed to process payment" });
+    }
+  });
+
+  // POST /api/b2b/create-account - Create account for B2B user after payment
+  app.post("/api/b2b/create-account", async (req: Request, res: Response) => {
+    try {
+      const { email, sessionId } = req.body;
+      
+      if (!email || !sessionId) {
+        return res.status(400).json({ error: "Missing required parameters" });
+      }
+      
+      // Verify the session exists and belongs to this email
+      const session = await storage.getAssessmentSession(sessionId);
+      if (!session) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+      
+      if (session.externalEmail?.toLowerCase() !== email.toLowerCase()) {
+        return res.status(403).json({ error: "Email does not match session" });
+      }
+      
+      // Check if user already exists
+      let user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        // Generate random password
+        const bcrypt = await import('bcryptjs');
+        const randomPassword = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12);
+        const hashedPassword = await bcrypt.hash(randomPassword, 10);
+        
+        // Create new user with email confirmation already verified (they paid)
+        user = await storage.createUser({
+          email: email.toLowerCase(),
+          password: hashedPassword,
+          isEmailConfirmed: true,
+        });
+        
+        // Send welcome email with password reset link
+        const { sendPasswordResetEmail } = await import('./email');
+        const resetToken = Math.random().toString(36).slice(-20) + Date.now().toString(36);
+        
+        // Store reset token
+        await storage.updateUser(user.id, { 
+          passwordResetToken: resetToken,
+          passwordResetExpires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+        });
+        
+        // Send password reset email so user can set their password
+        await sendPasswordResetEmail(user.email, email.split('@')[0], resetToken);
+        
+        console.log(`[B2B Create Account] Created new user account for ${email}`);
+      }
+      
+      // Log the user in by setting session
+      (req as any).login(user, (err: any) => {
+        if (err) {
+          console.error('[B2B Create Account] Login error:', err);
+          return res.status(500).json({ error: "Failed to log in" });
+        }
+        
+        console.log(`[B2B Create Account] User ${email} logged in successfully`);
+        res.json({
+          success: true,
+          redirectTo: "/dashboard",
+          userId: user.id,
+        });
+      });
+    } catch (error: any) {
+      console.error("[B2B Create Account] Error:", error);
+      res.status(500).json({ error: "Failed to create account" });
     }
   });
 
