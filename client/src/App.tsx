@@ -76,8 +76,8 @@ function PageLoader() {
     <div className="min-h-screen flex items-center justify-center bg-slate-900">
       <div className="text-center">
         <div className="flex items-center justify-center gap-2 mb-6">
-          <div className="relative">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center">
+          <div className="relative animate-pulse">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
               <span className="text-white font-bold text-lg">HM</span>
             </div>
           </div>

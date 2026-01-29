@@ -339,15 +339,14 @@ export default function GuestInvite() {
       <div className="min-h-screen flex items-center justify-center bg-slate-900">
         <div className="text-center">
           <div className="flex items-center justify-center gap-2 mb-6">
-            <div className="relative">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center">
+            <div className="relative animate-pulse">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
                 <span className="text-white font-bold text-lg">HM</span>
               </div>
             </div>
             <span className="text-xl font-semibold text-white">HumanMetrix</span>
           </div>
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-cyan-500" data-testid="loading-spinner" />
-          <p className="text-slate-400">Loading your invitation...</p>
+          <div className="h-8 w-8 mx-auto border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" data-testid="loading-spinner" />
         </div>
       </div>
     );
