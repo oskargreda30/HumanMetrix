@@ -41,6 +41,7 @@ import { HiringPipelineTab } from "@/components/HiringPipelineTab";
 import PartnerTermsAcceptanceDialog from "@/components/PartnerTermsAcceptanceDialog";
 import { EcosystemProjectSelector } from "@/components/ecosystem/EcosystemProjectSelector";
 import { EcosystemWorkflow } from "@/components/ecosystem/EcosystemWorkflow";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 // Helper component for info tooltips - accessible with keyboard
 function InfoTooltip({ content }: { content: string }) {
@@ -1041,6 +1042,10 @@ export default function PartnerDashboard() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("home");
   const { toast } = useToast();
+  const { currency, formatLocalPrice, getAdjustedPriceInPence, countryCode, pricingTier, isLoading: currencyLoading } = useCurrency();
+  
+  // Promo code state for package purchases
+  const [promoCode, setPromoCode] = useState("");
   
   // Ecosystem Index state
   const [selectedEcosystemProjectId, setSelectedEcosystemProjectId] = useState<string | null>(null);
@@ -1438,7 +1443,11 @@ export default function PartnerDashboard() {
   // Purchase test package mutation
   const purchaseMutation = useMutation({
     mutationFn: async (packageSize: number) => {
-      const response = await apiRequest("POST", "/api/partner/purchase/checkout", { packageSize });
+      const response = await apiRequest("POST", "/api/partner/purchase/checkout", { 
+        packageSize,
+        countryCode, // Server computes PPP from this
+        promoCode: promoCode.trim() || undefined,
+      });
       return response.json();
     },
     onSuccess: (data) => {
@@ -3591,10 +3600,13 @@ export default function PartnerDashboard() {
                         <CardTitle className="text-lg flex items-center gap-2">
                           <Package className="h-5 w-5" />
                           Purchase Test Packages
-                          <InfoTooltip content="Purchase test credits in bulk with volume discounts. Larger packages offer better per-test rates. You can also apply promo codes at checkout." />
+                          <InfoTooltip content="Purchase test credits in bulk with volume discounts. Larger packages offer better per-test rates. Prices shown in your local currency with regional pricing." />
                         </CardTitle>
                         <CardDescription>
-                          Buy test credits with bulk discounts • Promo codes available at checkout
+                          Buy test credits with bulk discounts • Prices in {currency.code}
+                          {pricingTier !== 'tier1' && (
+                            <span className="ml-1 text-green-600 dark:text-green-400">(Regional pricing applied)</span>
+                          )}
                         </CardDescription>
                         <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
                           <CreditCard className="h-3.5 w-3.5 flex-shrink-0" />
@@ -3602,73 +3614,96 @@ export default function PartnerDashboard() {
                         </div>
                       </CardHeader>
                       <CardContent>
-                        {pricingLoading ? (
+                        {(pricingLoading || currencyLoading) ? (
                           <div className="flex justify-center py-8">
                             <Loader2 className="h-6 w-6 animate-spin text-primary" />
                           </div>
                         ) : pricing?.packages && pricing.packages.length > 0 ? (
-                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            {pricing.packages.map((pkg: any) => {
-                              const isZeroDecimal = pricing.isZeroDecimal;
-                              const displayPrice = isZeroDecimal ? pkg.price : pkg.price / 100;
-                              const displayPerTest = isZeroDecimal ? pkg.pricePerTest : pkg.pricePerTest / 100;
-                              const currencySymbols: Record<string, string> = {
-                                GBP: '£', USD: '$', EUR: '€', AUD: 'A$', CAD: 'C$', SGD: 'S$', HKD: 'HK$',
-                                INR: '₹', MYR: 'RM', THB: '฿', PHP: '₱', JPY: '¥', KRW: '₩', VND: '₫',
-                              };
-                              const currencySymbol = currencySymbols[pricing.currency] || pricing.currency + ' ';
-                              const hasDiscount = pkg.discountPercent > 0;
-                              
-                              return (
-                                <div 
-                                  key={pkg.size} 
-                                  className="border border-primary rounded-lg p-4 flex flex-col relative"
-                                  data-testid={`package-${pkg.size}`}
+                          <>
+                            {/* Promo Code Input */}
+                            <div className="mb-4 flex items-center gap-2">
+                              <div className="flex-1">
+                                <Label htmlFor="promo-code" className="sr-only">Promo Code</Label>
+                                <Input
+                                  id="promo-code"
+                                  placeholder="Enter promo code (optional)"
+                                  value={promoCode}
+                                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                                  className="uppercase"
+                                  data-testid="input-promo-code"
+                                />
+                              </div>
+                              {promoCode && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setPromoCode("")}
+                                  data-testid="button-clear-promo"
                                 >
-                                  {hasDiscount && (
-                                    <div className="absolute -top-2 -right-2">
-                                      <Badge className="bg-green-500 text-white border-0">
-                                        {pkg.discountPercent}% OFF
-                                      </Badge>
-                                    </div>
-                                  )}
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="font-semibold text-lg">{pkg.name}</span>
-                                    <Badge variant="secondary">{pkg.size} credits</Badge>
-                                  </div>
-                                  <div className="text-2xl font-bold mb-1">
-                                    {currencySymbol}{isZeroDecimal ? displayPrice.toLocaleString() : displayPrice.toFixed(2)}
-                                  </div>
-                                  <div className="text-sm text-muted-foreground mb-2">
-                                    {currencySymbol}{isZeroDecimal ? displayPerTest.toLocaleString() : displayPerTest.toFixed(2)} per credit
-                                  </div>
-                                  {pkg.savings > 0 && (
-                                    <div className="text-xs text-green-600 dark:text-green-400 mb-3">
-                                      Save {currencySymbol}{isZeroDecimal ? pkg.savings.toLocaleString() : (pkg.savings / 100).toFixed(2)}
-                                    </div>
-                                  )}
-                                  <Button
-                                    className="mt-auto w-full"
-                                    onClick={() => handlePurchase(pkg.size)}
-                                    disabled={purchasingPackageSize === pkg.size}
-                                    data-testid={`button-purchase-${pkg.size}`}
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                              {pricing.packages.map((pkg: any) => {
+                                // Apply PPP adjustment to the base price
+                                const basePriceInPence = pkg.price; // Price from API in smallest units
+                                const adjustedPriceInPence = getAdjustedPriceInPence(basePriceInPence);
+                                const adjustedPerTestInPence = getAdjustedPriceInPence(pkg.pricePerTest);
+                                const adjustedSavingsInPence = pkg.savings > 0 ? getAdjustedPriceInPence(pkg.savings) : 0;
+                                const hasDiscount = pkg.discountPercent > 0;
+                                
+                                return (
+                                  <div 
+                                    key={pkg.size} 
+                                    className="border border-primary rounded-lg p-4 flex flex-col relative"
+                                    data-testid={`package-${pkg.size}`}
                                   >
-                                    {purchasingPackageSize === pkg.size ? (
-                                      <>
-                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                        Processing...
-                                      </>
-                                    ) : (
-                                      <>
-                                        <ShoppingCart className="h-4 w-4 mr-2" />
-                                        Buy Now
-                                      </>
+                                    {hasDiscount && (
+                                      <div className="absolute -top-2 -right-2">
+                                        <Badge className="bg-green-500 text-white border-0">
+                                          {pkg.discountPercent}% OFF
+                                        </Badge>
+                                      </div>
                                     )}
-                                  </Button>
-                                </div>
-                              );
-                            })}
-                          </div>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="font-semibold text-lg">{pkg.name}</span>
+                                      <Badge variant="secondary">{pkg.size} credits</Badge>
+                                    </div>
+                                    <div className="text-2xl font-bold mb-1">
+                                      {formatLocalPrice(adjustedPriceInPence)}
+                                    </div>
+                                    <div className="text-sm text-muted-foreground mb-2">
+                                      {formatLocalPrice(adjustedPerTestInPence)} per credit
+                                    </div>
+                                    {adjustedSavingsInPence > 0 && (
+                                      <div className="text-xs text-green-600 dark:text-green-400 mb-3">
+                                        Save {formatLocalPrice(adjustedSavingsInPence)}
+                                      </div>
+                                    )}
+                                    <Button
+                                      className="mt-auto w-full"
+                                      onClick={() => handlePurchase(pkg.size)}
+                                      disabled={purchasingPackageSize === pkg.size}
+                                      data-testid={`button-purchase-${pkg.size}`}
+                                    >
+                                      {purchasingPackageSize === pkg.size ? (
+                                        <>
+                                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                          Processing...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <ShoppingCart className="h-4 w-4 mr-2" />
+                                          Buy Now
+                                        </>
+                                      )}
+                                    </Button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </>
                         ) : (
                           <div className="py-8 text-center text-muted-foreground">
                             <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />

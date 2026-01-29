@@ -118,6 +118,13 @@ async function initializeStripeCoupons() {
       percent_off: 20,
       duration: 'forever' as const,
       name: '20% Discount'
+    },
+    {
+      id: 'DISCOUNT_99_OFF',
+      code: 'DISCOUNT',
+      percent_off: 99,
+      duration: 'forever' as const,
+      name: 'Partner Discount (99% off)'
     }
   ];
 
@@ -11070,14 +11077,25 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         });
       }
       
-      const { packageSize } = req.body;
+      const { packageSize, countryCode, promoCode } = req.body;
       if (!packageSize || typeof packageSize !== 'number' || packageSize < 10) {
         return res.status(400).json({ message: "Package size must be at least 10 tests" });
       }
       
-      // Use partner's assigned currency and pricePerAssessment
-      const partnerCurrency = (matchingPartner.currency || 'GBP').toLowerCase();
+      // Import shared currency utilities for server-side PPP calculation
+      const { getPPPMultiplier, getCurrencyForCountry } = await import("../shared/currencies");
+      
+      // Compute PPP server-side from countryCode (don't trust client-supplied multiplier)
+      const validCountryCode = typeof countryCode === 'string' && countryCode.length === 2 ? countryCode.toUpperCase() : 'GB';
+      const serverPPPMult = getPPPMultiplier(validCountryCode);
+      const serverCurrency = getCurrencyForCountry(validCountryCode);
+      
+      // Use server-computed currency, falling back to partner's assigned currency if needed
+      const displayCurrency = serverCurrency.code.toLowerCase();
       const basePricePerTest = matchingPartner.pricePerAssessment || 500;
+      
+      // Apply server-computed PPP multiplier
+      const pppAdjustedPricePerTest = Math.round(basePricePerTest * serverPPPMult);
       
       // Volume discount tiers - must match the pricing API
       const packageTiers = [
@@ -11093,7 +11111,7 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
       const tier = packageTiers.find(t => t.size === packageSize);
       const discountPercent = tier?.discountPercent || 0;
       const discountMultiplier = 1 - (discountPercent / 100);
-      const pricePerTest = Math.round(basePricePerTest * discountMultiplier);
+      const pricePerTest = Math.round(pppAdjustedPricePerTest * discountMultiplier);
       const totalPrice = pricePerTest * packageSize;
       
       // Create package record (pending)
@@ -11102,9 +11120,11 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         packageSize,
         pricePerTest,
         totalPrice,
-        currency: partnerCurrency,
+        currency: displayCurrency,
         status: 'pending',
       });
+      
+      console.log(`[Partner Purchase] Partner: ${matchingPartner.id}, Country: ${validCountryCode}, Currency: ${displayCurrency}, PPP: ${serverPPPMult}, Price: ${totalPrice}, Promo: ${promoCode || 'none'}`);
       
       // Create Stripe checkout session
       const stripe = (await import("stripe")).default;
@@ -11138,20 +11158,41 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         gbp: '£', usd: '$', eur: '€', aud: 'A$', cad: 'C$', sgd: 'S$', hkd: 'HK$',
         inr: '₹', myr: 'RM', thb: '฿', php: '₱', jpy: '¥',
       };
-      const currSymbol = currencySymbols[partnerCurrency] || partnerCurrency.toUpperCase() + ' ';
-      const isZeroDecimal = ['jpy', 'krw', 'vnd', 'idr', 'clp', 'pyg', 'ugx', 'gnf', 'kmf', 'rwf', 'xof', 'xaf', 'xpf', 'djf', 'bif', 'mga', 'vuv'].includes(partnerCurrency);
-      const displayPrice = isZeroDecimal ? pricePerTest : (pricePerTest / 100);
+      const currSymbol = currencySymbols[displayCurrency] || displayCurrency.toUpperCase() + ' ';
+      const isZeroDecimal = ['jpy', 'krw', 'vnd', 'idr', 'clp', 'pyg', 'ugx', 'gnf', 'kmf', 'rwf', 'xof', 'xaf', 'xpf', 'djf', 'bif', 'mga', 'vuv'].includes(displayCurrency);
+      const displayPriceAmount = isZeroDecimal ? pricePerTest : (pricePerTest / 100);
+      
+      // Check if promo code is valid (if provided)
+      let promoCodeId: string | undefined;
+      if (promoCode && promoCode.trim()) {
+        try {
+          const promoCodes = await stripeClient.promotionCodes.list({
+            code: promoCode.trim().toUpperCase(),
+            active: true,
+            limit: 1,
+          });
+          if (promoCodes.data.length > 0) {
+            promoCodeId = promoCodes.data[0].id;
+            console.log(`[Partner Purchase] Found valid promo code: ${promoCode} -> ${promoCodeId}`);
+          } else {
+            console.log(`[Partner Purchase] Promo code not found: ${promoCode}`);
+          }
+        } catch (err) {
+          console.log(`[Partner Purchase] Error checking promo code: ${err}`);
+        }
+      }
       
       const session = await stripeClient.checkout.sessions.create({
         mode: 'payment',
         customer: customerId,
-        allow_promotion_codes: true, // Enable promo codes on Stripe checkout page
+        allow_promotion_codes: !promoCodeId, // Allow manual entry only if we don't have a pre-applied code
+        ...(promoCodeId ? { discounts: [{ promotion_code: promoCodeId }] } : {}),
         line_items: [{
           price_data: {
-            currency: partnerCurrency,
+            currency: displayCurrency,
             product_data: {
               name: `HumanMetrix Test Package - ${packageSize} Tests`,
-              description: `${tier?.name || 'Custom'} package: ${packageSize} assessment credits at ${currSymbol}${displayPrice.toFixed(isZeroDecimal ? 0 : 2)} per test${discountPercent > 0 ? ` (${discountPercent}% volume discount)` : ''}`,
+              description: `${tier?.name || 'Custom'} package: ${packageSize} assessment credits at ${currSymbol}${displayPriceAmount.toFixed(isZeroDecimal ? 0 : 2)} per test${discountPercent > 0 ? ` (${discountPercent}% volume discount)` : ''}`,
             },
             unit_amount: totalPrice,
           },
