@@ -33,7 +33,7 @@ import { getAIQBandInterpretation } from "@/data/aiq-questions";
 
 interface SavedReport {
   id: string;
-  reportType: 'role_fit_single' | 'role_fit_multi' | 'comparison';
+  reportType: 'role_fit_single' | 'role_fit_multi' | 'comparison' | 'profile_insights' | string;
   title: string;
   candidateIds: string[];
   roleId?: string;
@@ -303,6 +303,8 @@ export default function PartnerResultsTab() {
                       case 'role_fit_single': return <Target className="h-4 w-4" />;
                       case 'role_fit_multi': return <Users className="h-4 w-4" />;
                       case 'comparison': return <BarChart3 className="h-4 w-4" />;
+                      case 'profile_insights': return <FileText className="h-4 w-4" />;
+                      case 'assessment': return <ClipboardList className="h-4 w-4" />;
                       default: return <FileText className="h-4 w-4" />;
                     }
                   };
@@ -315,8 +317,12 @@ export default function PartnerResultsTab() {
                         return <Badge variant="outline" className="text-xs bg-purple-500/10 text-purple-600 border-purple-500/30">Multi-Candidate</Badge>;
                       case 'comparison': 
                         return <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30">Comparison</Badge>;
+                      case 'profile_insights': 
+                        return <Badge variant="outline" className="text-xs bg-cyan-500/10 text-cyan-600 border-cyan-500/30">Insights</Badge>;
+                      case 'assessment': 
+                        return <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-600 border-amber-500/30">Assessment</Badge>;
                       default: 
-                        return <Badge variant="outline" className="text-xs">Analysis</Badge>;
+                        return <Badge variant="outline" className="text-xs">{report.reportType.replace(/_/g, ' ')}</Badge>;
                     }
                   };
 
