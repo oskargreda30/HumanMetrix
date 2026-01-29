@@ -2189,7 +2189,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   yPos = 85;
   const cardGap = 5;
   const cardWidth = (pageWidth - 40 - cardGap * 2) / 3;
-  const baseCardHeight = 35;
+  const baseCardHeight = 45; // Increased to accommodate wrapped text
   
   // Pre-calculate role description lines to determine dynamic height
   let descLines: string[] = [];
@@ -2198,7 +2198,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.setFontSize(7);
     descLines = pdf.splitTextToSize(data.role.description, cardWidth - 10);
     const maxDescLines = Math.min(descLines.length, 3);
-    finalCardHeight = Math.max(baseCardHeight, 28 + (maxDescLines * 3));
+    finalCardHeight = Math.max(baseCardHeight, 38 + (maxDescLines * 3)); // Increased base for wrapped names
   }
   
   // Card 1: Candidate (left) - uses finalCardHeight
@@ -2211,8 +2211,13 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   applySubheading(pdf);
   pdf.setTextColor(17, 24, 39);
-  const truncatedName = candidateName.length > 20 ? candidateName.substring(0, 18) + '...' : candidateName;
-  pdf.text(truncatedName, 25, yPos + 17);
+  // Allow name to wrap to two lines if needed
+  const nameLines = pdf.splitTextToSize(candidateName, cardWidth - 10);
+  const displayNameLines = nameLines.slice(0, 2); // Max 2 lines
+  displayNameLines.forEach((line: string, idx: number) => {
+    pdf.text(line, 25, yPos + 17 + (idx * 5));
+  });
+  const nameEndY = yPos + 17 + (displayNameLines.length * 5);
   
   pdf.setFontSize(7);
   pdf.setFont('helvetica', 'normal');
@@ -2221,7 +2226,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   const emailLines = pdf.splitTextToSize(data.candidate.user.email, cardWidth - 10);
   const displayEmailLines = emailLines.slice(0, 2); // Max 2 lines
   displayEmailLines.forEach((line: string, idx: number) => {
-    pdf.text(line, 25, yPos + 24 + (idx * 3));
+    pdf.text(line, 25, nameEndY + 2 + (idx * 3));
   });
   
   // Card 2: Target Role (middle) - uses finalCardHeight
@@ -2235,8 +2240,13 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   applySubheading(pdf);
   pdf.setTextColor(17, 24, 39);
-  const truncatedRole = data.role.name.length > 22 ? data.role.name.substring(0, 20) + '...' : data.role.name;
-  pdf.text(truncatedRole, roleX + 5, yPos + 17);
+  // Allow role name to wrap to two lines if needed
+  const roleNameLines = pdf.splitTextToSize(data.role.name, cardWidth - 10);
+  const displayRoleNameLines = roleNameLines.slice(0, 2); // Max 2 lines
+  displayRoleNameLines.forEach((line: string, idx: number) => {
+    pdf.text(line, roleX + 5, yPos + 17 + (idx * 5));
+  });
+  const roleNameEndY = yPos + 17 + (displayRoleNameLines.length * 5);
   
   if (data.role.description && descLines.length > 0) {
     pdf.setFontSize(7);
@@ -2244,7 +2254,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.setTextColor(107, 114, 128);
     const displayLines = descLines.slice(0, 3);
     displayLines.forEach((line: string, idx: number) => {
-      pdf.text(line, roleX + 5, yPos + 23 + (idx * 3));
+      pdf.text(line, roleX + 5, roleNameEndY + 2 + (idx * 3));
     });
   }
   
