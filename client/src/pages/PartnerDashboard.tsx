@@ -3623,7 +3623,7 @@ export default function PartnerDashboard() {
                         </CardHeader>
                         <CardContent>
                           <div className="text-2xl font-bold text-primary" data-testid="text-credit-balance">
-                            {partner?.testsPurchased ? (partner.testsPurchased - partner.testsConsumed) : 0} tests
+                            {partner?.testsPurchased ? (partner.testsPurchased - partner.testsConsumed) : 0} credits
                           </div>
                           <p className="text-xs text-muted-foreground">
                             Available credits
@@ -3638,7 +3638,7 @@ export default function PartnerDashboard() {
                         </CardHeader>
                         <CardContent>
                           <div className="text-2xl font-bold" data-testid="text-total-purchased">
-                            {Math.max(0, (partner?.testsPurchased || 0) - (partner?.freeTestsAllocated || 0))} tests
+                            {Math.max(0, (partner?.testsPurchased || 0) - (partner?.freeTestsAllocated || 0))} credits
                           </div>
                           <p className="text-xs text-muted-foreground">
                             All time credits
@@ -3690,7 +3690,7 @@ export default function PartnerDashboard() {
                             {pricing.packages.map((pkg: any) => {
                               const isZeroDecimal = pricing.isZeroDecimal;
                               const displayPrice = isZeroDecimal ? pkg.price : pkg.price / 100;
-                              const displayPerTest = isZeroDecimal ? pkg.pricePerCredit : pkg.pricePerCredit / 100;
+                              const displayPerTest = isZeroDecimal ? pkg.pricePerTest : pkg.pricePerTest / 100;
                               const currencySymbols: Record<string, string> = {
                                 GBP: '£', USD: '$', EUR: '€', AUD: 'A$', CAD: 'C$', SGD: 'S$', HKD: 'HK$',
                                 INR: '₹', MYR: 'RM', THB: '฿', PHP: '₱', JPY: '¥', KRW: '₩', VND: '₫',
@@ -3713,7 +3713,7 @@ export default function PartnerDashboard() {
                                   )}
                                   <div className="flex items-center justify-between mb-2">
                                     <span className="font-semibold text-lg">{pkg.name}</span>
-                                    <Badge variant="secondary">{pkg.size} tests</Badge>
+                                    <Badge variant="secondary">{pkg.size} credits</Badge>
                                   </div>
                                   <div className="text-2xl font-bold mb-1">
                                     {currencySymbol}{isZeroDecimal ? displayPrice.toLocaleString() : displayPrice.toFixed(2)}
@@ -3768,7 +3768,7 @@ export default function PartnerDashboard() {
                         </CardHeader>
                         <CardContent>
                           <div className="text-2xl font-bold" data-testid="text-tests-used">
-                            {partner?.testsConsumed || 0} tests
+                            {partner?.testsConsumed || 0} credits
                           </div>
                           <p className="text-xs text-muted-foreground">
                             Billed automatically each month
@@ -3905,7 +3905,7 @@ export default function PartnerDashboard() {
                                   </div>
                                   {item.tests && (
                                     <div className="text-xs text-muted-foreground">
-                                      {item.tests} tests @ {formatCurrency(item.pricePerCredit || 0)}/test
+                                      {item.tests} credits @ {formatCurrency(item.pricePerCredit || 0)}/credit
                                     </div>
                                   )}
                                 </div>
