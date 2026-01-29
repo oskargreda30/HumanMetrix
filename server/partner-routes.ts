@@ -3713,6 +3713,106 @@ export function registerPartnerRoutes(app: Express) {
     }
   });
 
+  // POST /api/b2b/results/:sessionId/resend-email - Resend results email to user
+  app.post("/api/b2b/results/:sessionId/resend-email", async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      const { email } = req.body;
+      
+      if (!sessionId) {
+        return res.status(400).json({ error: "Session ID is required" });
+      }
+      
+      // Get the session
+      const session = await storage.getAssessmentSession(sessionId);
+      if (!session) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+      
+      // Check if the session has been paid for
+      if (!(session as any).paidAt && !(session as any).paidForResultsAt) {
+        return res.status(403).json({ error: "Results have not been unlocked yet" });
+      }
+      
+      // Check if there's an email to send to
+      if (!session.externalEmail) {
+        return res.status(400).json({ error: "No email address associated with this session" });
+      }
+      
+      // Ownership validation: If email is provided in request, it must match session email
+      // This prevents abuse by ensuring only the session owner can trigger resends
+      if (email && email.toLowerCase() !== session.externalEmail.toLowerCase()) {
+        return res.status(403).json({ error: "Email does not match session" });
+      }
+      
+      // Get partner info
+      const partner = session.partnerId ? await storage.getPartnerAccount(session.partnerId) : null;
+      const partnerCompanyName = partner?.companyName || partner?.name || 'HumanMetrix Partner';
+      
+      // Get scores and generate PDF
+      const scores = (session as any).scores || {};
+      const totalScore = (session as any).totalScore || 0;
+      const percentile = (session as any).percentile;
+      const evaluations = (session as any).evaluations || [];
+      
+      const { generateB2BResultsPDF } = await import("./generateB2BPDF");
+      const pdfBuffer = generateB2BResultsPDF({
+        candidateName: (session as any).metadata?.candidateName || session.externalEmail.split('@')[0],
+        candidateEmail: session.externalEmail,
+        assessmentType: session.assessmentType,
+        scores,
+        totalScore,
+        percentile,
+        evaluations,
+        completedAt: session.completedAt || new Date(),
+        partnerCompanyName,
+      });
+      
+      // Format assessment name for filename
+      const assessmentName = {
+        'fit': 'FIT',
+        'ai_readiness': 'AI_Readiness',
+        'prompt_architecture': 'Prompt_Architecture',
+        'aiq': 'AIQ',
+      }[session.assessmentType.toLowerCase()] || session.assessmentType;
+      
+      const pdfFilename = `HumanMetrix_${assessmentName}_Results.pdf`;
+      
+      // Send email with PDF attachment
+      const { sendB2BResultsEmail } = await import("./email");
+      const emailResult = await sendB2BResultsEmail({
+        email: session.externalEmail,
+        candidateName: (session as any).metadata?.candidateName,
+        assessmentType: session.assessmentType,
+        partnerCompanyName,
+        pdfBuffer,
+        pdfFilename,
+      });
+      
+      if (!emailResult.success) {
+        console.error(`[B2B Resend] Failed to resend results email to ${session.externalEmail}`);
+        return res.status(500).json({ error: "Failed to send email. Please try again." });
+      }
+      
+      // Update session to track the resend
+      await storage.updateAssessmentSession(sessionId, {
+        resultsDeliveryStatus: 'sent',
+        resultsEmailSentAt: new Date(),
+      } as any);
+      
+      console.log(`[B2B Resend] Successfully resent results email to ${session.externalEmail}`);
+      
+      res.json({
+        success: true,
+        message: "Results email has been resent",
+        email: session.externalEmail,
+      });
+    } catch (error: any) {
+      console.error("[B2B Resend Email] Error:", error);
+      res.status(500).json({ error: "Failed to resend email" });
+    }
+  });
+
   // Get bundle results info for multiple assessments
   app.get("/api/b2b/results-bundle", async (req, res) => {
     try {

@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle, Clock, Lock, CreditCard, ArrowRight, Mail } from "lucide-react";
+import { Loader2, CheckCircle, Clock, Lock, CreditCard, ArrowRight, Mail, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -51,6 +51,7 @@ export default function B2BResults() {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutType, setCheckoutType] = useState<'single' | 'bundle' | null>(null);
   const [isProcessingAccount, setIsProcessingAccount] = useState(false);
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
   const { toast } = useToast();
 
   const [, routeParams] = useRoute("/b2b-results/:sessionId");
@@ -141,6 +142,36 @@ export default function B2BResults() {
     }
   };
 
+  const handleResendEmail = async () => {
+    if (!sessionId || !data?.email) return;
+    
+    setIsResendingEmail(true);
+    
+    try {
+      const res = await apiRequest("POST", `/api/b2b/results/${sessionId}/resend-email`, {
+        email: data.email,
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to resend email");
+      }
+      
+      toast({
+        title: "Email sent!",
+        description: "Your results PDF has been resent to your email address.",
+      });
+    } catch (err: any) {
+      toast({
+        title: "Failed to resend",
+        description: err.message || "Unable to resend email. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResendingEmail(false);
+    }
+  };
+
   if (!sessionId) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -206,13 +237,33 @@ export default function B2BResults() {
             <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 mt-4">
               <div className="flex items-start gap-3">
                 <Mail className="h-5 w-5 text-cyan-600 mt-0.5 flex-shrink-0" />
-                <div className="text-left">
+                <div className="text-left flex-1">
                   <p className="font-medium text-slate-900">Results sent to your email</p>
                   <p className="text-sm text-slate-600 mt-1">
                     Your results PDF was sent to <strong>{data.email}</strong>
                   </p>
                 </div>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleResendEmail}
+                disabled={isResendingEmail}
+                className="w-full mt-3 text-cyan-700 border-cyan-300 hover:bg-cyan-50"
+                data-testid="button-resend-email"
+              >
+                {isResendingEmail ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Resend Email
+                  </>
+                )}
+              </Button>
             </div>
             
             <div className="pt-4">
