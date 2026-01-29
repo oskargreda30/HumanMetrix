@@ -1582,13 +1582,10 @@ export function EcosystemWorkflow({
             <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
               <BarChart3 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium mb-1 flex items-center gap-2">
-                  Comprehensive Analysis
-                  <Badge variant="secondary" className="text-[10px] font-normal">1 credit</Badge>
-                </p>
+                <p className="text-sm font-medium mb-1">Comprehensive Analysis</p>
                 <p className="text-sm text-muted-foreground">
                   Generate a detailed report including capability distribution, gap analysis, 
-                  hire recommendations, and risk alerts. Uses 1 credit for AI-powered analysis.
+                  hire recommendations, and risk alerts.
                 </p>
               </div>
             </div>
