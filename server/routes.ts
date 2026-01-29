@@ -13644,9 +13644,10 @@ Format your response as JSON with this structure:
       }
 
       // Check and consume 1 credit for AI feature usage
+      // Pass null for sessionId since this is a non-session credit usage
       const creditResult = await storage.consumePartnerTest(
         partner.id,
-        `profile-insights-${candidateId}`,
+        null,
         "AI Profile Insights generation"
       );
       
