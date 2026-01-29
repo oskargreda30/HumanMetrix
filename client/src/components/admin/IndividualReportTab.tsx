@@ -430,20 +430,20 @@ export default function IndividualReportTab() {
           {/* Candidate Info Summary Box - First */}
           <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20" data-testid="card-candidate-summary">
             <CardContent className="pt-6">
-              <div className="grid gap-4 md:grid-cols-4">
-                <div className="md:col-span-2">
+              <div className="grid gap-4 md:grid-cols-5">
+                <div className="md:col-span-1">
                   <div className="flex items-center gap-3">
                     <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
                       <User className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-bold text-foreground">{getCandidateName(selectedCandidateData)}</h2>
-                      <p className="text-sm text-muted-foreground">{selectedCandidateData.user.email}</p>
+                      <h2 className="text-lg font-bold text-foreground">{getCandidateName(selectedCandidateData)}</h2>
+                      <p className="text-xs text-muted-foreground">{selectedCandidateData.user.email}</p>
                     </div>
                   </div>
                 </div>
-                <div className="md:col-span-2">
-                  <div className="grid grid-cols-4 gap-4">
+                <div className="md:col-span-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {(() => {
                       const topFitSkill = fitData 
                         ? Object.entries(fitData.scores).sort((a, b) => (b[1] as number) - (a[1] as number))[0] 
