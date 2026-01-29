@@ -500,9 +500,17 @@ export default function EmbedAssessment() {
       return;
     }
     
-    // For multi-assessment invitation flows after completing the first assessment,
-    // we need to create a NEW session by calling the invite start API again
-    if (isFromInvitation && inviteToken && currentAssessmentIndex > 0) {
+    // For multi-assessment invitation flows, we only need to create a new session 
+    // when we're TRANSITIONING to the next assessment after completing one.
+    // If the current session is already for the correct assessment type, we can just start it.
+    // The session's assessment type should match what we're trying to start.
+    const expectedAssessmentType = assessmentQueue[currentAssessmentIndex];
+    const sessionMatchesExpected = session?.assessmentType === expectedAssessmentType || 
+                                    session?.assessmentType === expectedAssessmentType?.replace(/-/g, '_');
+    
+    // Only create a new session if we're in an invitation flow AND the current session 
+    // doesn't match the expected assessment type (i.e., we just completed one and need to start the next)
+    if (isFromInvitation && inviteToken && currentAssessmentIndex > 0 && !sessionMatchesExpected) {
       try {
         // Get the next assessment type from the queue
         const nextAssessmentType = assessmentQueue[currentAssessmentIndex];
