@@ -1054,6 +1054,9 @@ export default function PartnerDashboard() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialChecked, setTutorialChecked] = useState(false);
   
+  // Getting Started visibility - track session count
+  const [hideGettingStarted, setHideGettingStarted] = useState(false);
+  
   // Terms acceptance state
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [termsChecked, setTermsChecked] = useState(false);
@@ -1336,6 +1339,47 @@ export default function PartnerDashboard() {
       }
     }
   }, [account, tutorialChecked]);
+
+  // Track Getting Started session count - hide after 3 sessions
+  useEffect(() => {
+    const partnerId = account?.partner?.id;
+    if (!partnerId) return;
+    
+    try {
+      const sessionKey = `getting_started_sessions_${partnerId}`;
+      const dismissKey = `getting_started_dismissed_${partnerId}`;
+      const sessionLoadKey = `getting_started_loaded_${partnerId}`;
+      
+      // Check if permanently dismissed
+      if (localStorage.getItem(dismissKey) === 'true') {
+        setHideGettingStarted(true);
+        return;
+      }
+      
+      // Only increment once per browser session (not on every re-render)
+      const alreadyLoadedThisSession = sessionStorage.getItem(sessionLoadKey);
+      
+      if (!alreadyLoadedThisSession) {
+        const currentCount = parseInt(localStorage.getItem(sessionKey) || '0', 10);
+        const newCount = currentCount + 1;
+        localStorage.setItem(sessionKey, newCount.toString());
+        sessionStorage.setItem(sessionLoadKey, 'true');
+        
+        // Hide after 3 sessions (show on 1, 2, 3 - hide from 4+)
+        if (newCount >= 4) {
+          setHideGettingStarted(true);
+        }
+      } else {
+        // Already loaded this session, just check the count
+        const currentCount = parseInt(localStorage.getItem(sessionKey) || '0', 10);
+        if (currentCount >= 4) {
+          setHideGettingStarted(true);
+        }
+      }
+    } catch {
+      // Storage unavailable - don't hide
+    }
+  }, [account?.partner?.id]);
 
   // Tour handlers
   const handleTourComplete = () => {
@@ -2212,7 +2256,11 @@ export default function PartnerDashboard() {
                 const hasApiKey = (partner?.activeApiKeys ?? 0) > 0;
                 const hasAssessment = (partner?.testsConsumed ?? 0) > 0;
                 const hasWebhook = false; // Would need webhook data
-                const hasTeamMember = (team?.members?.length ?? 0) > 1; // More than just owner
+                // Count pending or accepted invitations (not owner - owner doesn't have inviteStatus)
+                const hasPendingOrAcceptedInvite = (team?.members?.filter(m => 
+                  m.inviteStatus === 'pending' || m.inviteStatus === 'accepted'
+                ).length ?? 0) > 0;
+                const hasTeamMember = hasPendingOrAcceptedInvite;
                 
                 // Different onboarding steps based on billing type
                 const steps = isEnterpriseBilling
@@ -2227,6 +2275,9 @@ export default function PartnerDashboard() {
                 
                 // Hide if all steps are complete
                 if (allComplete) return null;
+                
+                // Hide based on session count (managed by useEffect)
+                if (hideGettingStarted) return null;
                 
                 // Helper function to navigate to billing tab and scroll to payment methods
                 const handleAddPaymentMethod = () => {
