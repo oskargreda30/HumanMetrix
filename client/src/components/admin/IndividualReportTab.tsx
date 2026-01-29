@@ -407,6 +407,24 @@ export default function IndividualReportTab() {
               <FileText className="h-6 w-6 text-blue-300" />
               Individual Candidate Report
             </h2>
+            <Button 
+              size="sm"
+              onClick={handleExportPDF}
+              disabled={isExporting}
+              data-testid="button-export-pdf-top"
+            >
+              {isExporting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export as PDF
+                </>
+              )}
+            </Button>
           </div>
 
           {/* Candidate Info Summary Box - First */}
@@ -425,27 +443,7 @@ export default function IndividualReportTab() {
                   </div>
                 </div>
                 <div className="md:col-span-2">
-                  <div className="flex justify-end mb-2">
-                    <Button 
-                      size="sm"
-                      onClick={handleExportPDF}
-                      disabled={isExporting}
-                      data-testid="button-export-pdf-top"
-                    >
-                      {isExporting ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Exporting...
-                        </>
-                      ) : (
-                        <>
-                          <Download className="h-4 w-4 mr-2" />
-                          Export as PDF
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-4 gap-4 mb-3">
+                  <div className="grid grid-cols-4 gap-4">
                     {(() => {
                       const topFitSkill = fitData 
                         ? Object.entries(fitData.scores).sort((a, b) => (b[1] as number) - (a[1] as number))[0] 
