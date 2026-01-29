@@ -1,5 +1,6 @@
 import { scoringQueue } from './jobQueue';
 import OpenAI from 'openai';
+import { logAiCost, extractUsage, AI_USAGE_OPERATION_TYPES } from '../ai-cost-tracker';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -124,6 +125,16 @@ Please evaluate this prompt and provide a score and feedback.`;
     temperature: 0.3,
     max_tokens: 500,
   });
+
+  // Log AI cost for prompt architecture scoring
+  if (completion.usage) {
+    logAiCost({
+      operationType: AI_USAGE_OPERATION_TYPES.ASSESSMENT_SCORING_PROMPT,
+      model,
+      usage: extractUsage(completion),
+      metadata: { assessmentType: 'prompt_architecture' },
+    });
+  }
 
   const result = JSON.parse(completion.choices[0].message.content || '{}');
   

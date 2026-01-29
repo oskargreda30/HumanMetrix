@@ -23,6 +23,7 @@ import { z } from "zod";
 import { EMAIL_REGEX, isValidEmail, isValidName } from "@shared/validation";
 import { createPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured, getPaymentIntent, verifyAirwallexWebhookSignature, AirwallexWebhookEvent } from "./airwallex";
 import { consumeTestCredit } from "./partner-auth";
+import { logAiCost, extractUsage, AI_USAGE_OPERATION_TYPES } from "./ai-cost-tracker";
 import multer from "multer";
 // Use createRequire for pdf-parse as it's a CommonJS module
 import { createRequire } from "module";
@@ -5558,6 +5559,17 @@ ${pdfText.substring(0, 15000)}`;
       });
 
       const responseContent = completion.choices[0]?.message?.content;
+
+      // Log AI cost for PDF parsing
+      if (completion.usage) {
+        logAiCost({
+          operationType: AI_USAGE_OPERATION_TYPES.PDF_PARSING,
+          model: "gpt-5",
+          usage: extractUsage(completion),
+          userId: req.user?.id,
+        });
+      }
+
       if (!responseContent) {
         return res.status(500).json({ message: "Failed to parse PDF content" });
       }
@@ -5788,6 +5800,17 @@ ${pdfText.substring(0, 15000)}`;
       });
 
       const responseContent = completion.choices[0]?.message?.content;
+
+      // Log AI cost for PDF parsing
+      if (completion.usage) {
+        logAiCost({
+          operationType: AI_USAGE_OPERATION_TYPES.PDF_PARSING,
+          model: "gpt-5",
+          usage: extractUsage(completion),
+          userId: req.user?.id,
+        });
+      }
+
       if (!responseContent) {
         return res.status(500).json({ message: "Failed to parse PDF content" });
       }
@@ -6040,6 +6063,17 @@ ${pdfText.substring(0, 15000)}`;
       });
 
       const responseContent = completion.choices[0]?.message?.content;
+
+      // Log AI cost for PDF parsing
+      if (completion.usage) {
+        logAiCost({
+          operationType: AI_USAGE_OPERATION_TYPES.PDF_PARSING,
+          model: "gpt-5",
+          usage: extractUsage(completion),
+          userId: req.user?.id,
+        });
+      }
+
       if (!responseContent) {
         return res.status(500).json({ message: "Failed to parse PDF content" });
       }
@@ -6894,6 +6928,16 @@ Format your response as JSON with this exact structure and skill names:
         response_format: { type: "json_object" },
       });
 
+      // Log AI cost for role fit single - skill requirements generation
+      if (completion.usage) {
+        logAiCost({
+          operationType: AI_USAGE_OPERATION_TYPES.ROLE_FIT_SINGLE,
+          model: "gpt-5",
+          usage: extractUsage(completion),
+          metadata: { roleTitle: roleName },
+        });
+      }
+
       const requiredScores = JSON.parse(completion.choices[0].message.content || "{}");
       requiredScores.generatedAt = new Date().toISOString();
 
@@ -7636,6 +7680,17 @@ Format your response as JSON with this structure:
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
       });
+
+      // Log AI cost for role fit single - insights generation
+      if (completion.usage) {
+        logAiCost({
+          operationType: AI_USAGE_OPERATION_TYPES.ROLE_FIT_SINGLE,
+          model: "gpt-5",
+          usage: extractUsage(completion),
+          userId: req.user?.id,
+          metadata: { candidateEmail: candidateData?.email },
+        });
+      }
 
       const insights = JSON.parse(completion.choices[0].message.content || "{}");
 
@@ -13158,6 +13213,17 @@ Format your response as JSON with this structure:
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
       });
+
+      // Log AI cost for individual narrative generation
+      if (completion.usage) {
+        logAiCost({
+          operationType: AI_USAGE_OPERATION_TYPES.INDIVIDUAL_NARRATIVE,
+          model: "gpt-5",
+          usage: extractUsage(completion),
+          userId: candidateId,
+          metadata: { candidateEmail: candidateData?.email },
+        });
+      }
 
       const recommendations = JSON.parse(completion.choices[0].message.content || "{}");
       
