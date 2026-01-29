@@ -18865,9 +18865,11 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         sum + toGBP(i.totalAmount, i.currency), 0);
       const totalRevenue = b2cRevenue + b2bRevenue;
       
-      // Convert AI costs from cents to pence (approximate)
-      // Note: AI costs are typically in USD, so convert to GBP
-      const aiCostGBP = Math.round(aiCostSummary.totalCostCents / exchangeRatesData.rates['USD'] || aiCostSummary.totalCostCents);
+      // Convert AI costs from USD cents to GBP pence
+      // First convert cents to dollars, then convert USD to GBP using exchange rates
+      const usdToGbpRate = (exchangeRatesData.rates['GBP'] || 0.79) / (exchangeRatesData.rates['USD'] || 1);
+      const aiCostUsd = aiCostSummary.totalCostCents / 100; // Convert cents to dollars
+      const aiCostGBP = Math.round(aiCostUsd * usdToGbpRate * 100); // Convert to GBP pence then to pounds (as integer pence)
       
       // Calculate profit
       const grossProfit = totalRevenue - aiCostGBP;
@@ -18903,7 +18905,9 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
       aiCostSummary.dailyCosts.forEach(day => {
         const month = day.date.slice(0, 7);
         if (!monthlyProfits[month]) monthlyProfits[month] = { revenue: 0, aiCost: 0, profit: 0 };
-        const costGBP = Math.round(day.totalCostCents / (exchangeRatesData.rates['USD'] || 1));
+        // Convert USD cents to GBP pence using same formula as above
+        const costUsd = day.totalCostCents / 100;
+        const costGBP = Math.round(costUsd * usdToGbpRate * 100);
         monthlyProfits[month].aiCost += costGBP;
       });
       

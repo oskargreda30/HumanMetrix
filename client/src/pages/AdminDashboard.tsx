@@ -31,6 +31,7 @@ import PartnerHealthTab from "@/components/admin/PartnerHealthTab";
 import AuditLogTab from "@/components/admin/AuditLogTab";
 import SecurityTab from "@/components/admin/SecurityTab";
 import RevenueDashboardTab from "@/components/admin/RevenueDashboardTab";
+import ProfitAnalyticsTab from "@/components/admin/ProfitAnalyticsTab";
 import dashboardBg from "@assets/image_1763608498774.png";
 
 export default function AdminDashboard() {
@@ -344,12 +345,18 @@ export default function AdminDashboard() {
                     <TabsTrigger value="revenue" data-testid="subtab-revenue" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
                       Revenue Dashboard
                     </TabsTrigger>
+                    <TabsTrigger value="profit" data-testid="subtab-profit" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+                      Profit Analytics
+                    </TabsTrigger>
                   </TabsList>
                   <TabsContent value="overview" className="mt-4">
                     <BillingTab />
                   </TabsContent>
                   <TabsContent value="revenue" className="mt-4">
                     <RevenueDashboardTab />
+                  </TabsContent>
+                  <TabsContent value="profit" className="mt-4">
+                    <ProfitAnalyticsTab />
                   </TabsContent>
                 </Tabs>
               </TabsContent>
