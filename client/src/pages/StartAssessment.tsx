@@ -124,7 +124,7 @@ export default function StartAssessment() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900">
         <div className="text-center">
-          <div className="w-20 h-20 mx-auto mb-4 animate-pulse-scale">
+          <div className="w-20 h-20 mx-auto mb-4 loader-pulse">
             <img src="/favicon.png" alt="HumanMetrix" className="w-full h-full object-contain" />
           </div>
           <p className="font-semibold text-lg">
@@ -154,7 +154,7 @@ export default function StartAssessment() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900">
         <div className="text-center">
-          <div className="w-20 h-20 mx-auto mb-4 animate-pulse-scale">
+          <div className="w-20 h-20 mx-auto mb-4 loader-pulse">
             <img src="/favicon.png" alt="HumanMetrix" className="w-full h-full object-contain" />
           </div>
           <p className="font-semibold text-lg">
