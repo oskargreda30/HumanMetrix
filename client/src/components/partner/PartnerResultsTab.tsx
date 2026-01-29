@@ -952,11 +952,65 @@ export default function PartnerResultsTab() {
                     )}
                   </CardContent>
                 </Card>
+              ) : selectedReportData.reportType === 'profile_insights' ? (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-primary" />
+                      Profile Insights
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {selectedReportData.insights ? (
+                      <div className="prose prose-sm max-w-none dark:prose-invert">
+                        <p className="whitespace-pre-wrap">{selectedReportData.insights}</p>
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">No insights available.</p>
+                    )}
+                  </CardContent>
+                </Card>
+              ) : selectedReportData.reportType === 'assessment' ? (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <ClipboardList className="h-5 w-5 text-primary" />
+                      Assessment Report
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {selectedReportData.totalScore !== undefined && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">Total Score</span>
+                          <span className="text-2xl font-bold text-primary">{selectedReportData.totalScore}%</span>
+                        </div>
+                      )}
+                      {selectedReportData.scores && (
+                        <div className="grid grid-cols-2 gap-2">
+                          {Object.entries(selectedReportData.scores).map(([skill, score]) => (
+                            <div key={skill} className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">{skill}</span>
+                              <span className="font-medium">{score as number}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               ) : (
                 <Card>
-                  <CardContent className="py-8 text-center text-muted-foreground">
-                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Report preview not available for this report type.</p>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-primary" />
+                      Report Data
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <pre className="text-xs bg-muted/50 p-4 rounded-lg overflow-auto max-h-96">
+                      {JSON.stringify(selectedReportData, null, 2)}
+                    </pre>
                   </CardContent>
                 </Card>
               )}
