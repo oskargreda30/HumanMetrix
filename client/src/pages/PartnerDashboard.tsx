@@ -39,8 +39,7 @@ import PartnerResultsTab from "@/components/partner/PartnerResultsTab";
 import { PdfImportModal } from "@/components/PdfImportModal";
 import { HiringPipelineTab } from "@/components/HiringPipelineTab";
 import PartnerTermsAcceptanceDialog from "@/components/PartnerTermsAcceptanceDialog";
-import { EcosystemProjectSelector } from "@/components/ecosystem/EcosystemProjectSelector";
-import { EcosystemWorkflow } from "@/components/ecosystem/EcosystemWorkflow";
+import { EcosystemAutoProject } from "@/components/ecosystem/EcosystemAutoProject";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
 // Helper component for info tooltips - accessible with keyboard
@@ -1047,8 +1046,6 @@ export default function PartnerDashboard() {
   // Promo code state for package purchases
   const [promoCode, setPromoCode] = useState("");
   
-  // Ecosystem Index state
-  const [selectedEcosystemProjectId, setSelectedEcosystemProjectId] = useState<string | null>(null);
   
   // Tour state
   const [showTutorial, setShowTutorial] = useState(false);
@@ -4635,26 +4632,6 @@ export default function PartnerDashboard() {
                         )}
                       </div>
 
-                      {/* By Organization */}
-                      <div className="border rounded-lg p-4">
-                        <div className="mb-4">
-                          <h3 className="text-lg font-semibold">By Organization</h3>
-                          <p className="text-sm text-muted-foreground">Test distribution across organizations</p>
-                        </div>
-                        {analytics.byOrganization.length > 0 ? (
-                          <div className="space-y-4">
-                            {analytics.byOrganization.map((item, i) => (
-                              <div key={i} className="flex items-center justify-between">
-                                <p className="font-medium">{item.orgName}</p>
-                                <Badge variant="outline">{item.count} tests</Badge>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-muted-foreground text-sm">Create organizations to see test distribution by client.</p>
-                        )}
-                      </div>
-
                       {/* Score Distribution Charts */}
                       <div className="lg:col-span-2 border rounded-lg p-4">
                         <div className="mb-4">
@@ -4727,44 +4704,7 @@ export default function PartnerDashboard() {
 
             {/* Ecosystem Index Tab */}
             <TabsContent value="ecosystem" className="space-y-6" data-testid="panel-ecosystem">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        The Ecosystem Index
-                        <Badge variant="secondary" className="bg-cyan-500 text-white border-0">New</Badge>
-                      </CardTitle>
-                      <CardDescription>AI-powered team diagnostic and hiring recommendations</CardDescription>
-                    </div>
-                    {selectedEcosystemProjectId && (
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setSelectedEcosystemProjectId(null)}
-                        data-testid="button-back-to-projects"
-                      >
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Projects
-                      </Button>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {selectedEcosystemProjectId ? (
-                    <EcosystemWorkflow 
-                      projectId={selectedEcosystemProjectId}
-                      isPartnerDashboard={true}
-                      partnerId={partner?.id}
-                    />
-                  ) : (
-                    <EcosystemProjectSelector
-                      onSelectProject={setSelectedEcosystemProjectId}
-                      isPartnerDashboard={true}
-                      partnerId={partner?.id}
-                    />
-                  )}
-                </CardContent>
-              </Card>
+              <EcosystemAutoProject partnerId={partner?.id} />
             </TabsContent>
 
             {/* Cohort Benchmarking Tab */}

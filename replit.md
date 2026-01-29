@@ -23,7 +23,7 @@ Key features include:
 - **Admin & Partner Dashboards**: Comprehensive tools for candidate management, multi-candidate comparison, AI-powered role fit analysis, scoring QA, billing oversight, subscription management, API key management, and detailed analytics.
 - **Enhanced PDF Export System**: Dynamic, multi-page report generation.
 - **Results Access**: Gated access requiring assessment completion and explicit consent for sharing.
-- **Ecosystem Index (Team Diagnostic Tool)**: AI-powered team capability assessment, including mission statement analysis, team FIT aggregation, deep dive questions, contextual gap analysis, and ideal candidate profile generation.
+- **Ecosystem Index (Team Diagnostic Tool)**: AI-powered team capability assessment with simplified workflow. Auto-creates a default "Team Diagnostic" project per partner (no manual project management required). Features include mission statement analysis, team FIT aggregation, deep dive questions, contextual gap analysis, and ideal candidate profile generation. Uses credit-based billing (20 credits per analysis).
 - **Golden Set Benchmark System**: Ensures GPT-5 scoring consistency.
 - **B2B Partner Integration**: Enterprise solution with embeddable assessments, 3-tier billing, API key authentication, JavaScript widget/SDK, and webhook notifications.
 - **Billing & Notifications**: Robust subscription billing edge case handling, invoice payment enforcement with escalating notifications, critical error notifications, security monitoring, and comprehensive partner notification system.

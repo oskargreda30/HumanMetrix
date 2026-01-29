@@ -200,7 +200,7 @@ export function EcosystemWorkflow({
         2: 'step-2-mission', 
         3: 'step-3-org-context',
         4: 'step-4-team-members',
-        5: 'step-5-payment',
+        5: 'step-5-credits',
         6: 'step-6-generate-analysis',
         7: 'step-7-results'
       };
@@ -545,80 +545,39 @@ export function EcosystemWorkflow({
     }
   };
 
-  // Handle payment checkout
-  const handlePaymentCheckout = async () => {
+  // Credits required for ecosystem analysis
+  const ECOSYSTEM_CREDITS_REQUIRED = 20;
+  
+  // Handle credit consumption (replaces Stripe payment)
+  const handleConsumeCredits = async () => {
     setIsProcessingPayment(true);
     try {
-      // Send current path for proper redirect after payment
-      const currentPath = window.location.pathname;
-      const response = await apiRequest("POST", `/api/ecosystem/projects/${projectId}/create-checkout`, {
-        countryCode: countryCode || 'GB',
-        returnPath: currentPath,
-      });
+      const response = await apiRequest("POST", `/api/ecosystem/projects/${projectId}/consume-credits`);
       const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url;
+      
+      if (data.success) {
+        refetchProject();
+        // Invalidate partner data to refresh credit count
+        queryClient.invalidateQueries({ queryKey: ['/api/partner/me'] });
+        toast({
+          title: "Credits consumed",
+          description: `${data.creditsConsumed || ECOSYSTEM_CREDITS_REQUIRED} credits used. You can now generate your Team Diagnostic Report.`,
+        });
+        navigateToStep(6); // Go to generate analysis step
       } else {
-        throw new Error("No checkout URL returned");
+        throw new Error(data.error || "Failed to consume credits");
       }
     } catch (error: any) {
+      const errorData = await error?.json?.().catch(() => null);
       toast({
-        title: "Payment failed",
-        description: error.message || "Could not initiate payment. Please try again.",
+        title: "Insufficient credits",
+        description: errorData?.error || error.message || "Could not consume credits. Please ensure you have enough credits.",
         variant: "destructive",
       });
+    } finally {
       setIsProcessingPayment(false);
     }
   };
-
-  // Check for payment success and verify
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const paymentStatus = urlParams.get('payment');
-    
-    if (paymentStatus === 'success' && project) {
-      if (project.isPaid) {
-        // Already paid - just navigate to Step 6 and clean up URL
-        toast({
-          title: "Payment confirmed",
-          description: "You can now generate your Team Diagnostic Report.",
-        });
-        navigateToStep(6);
-        const url = new URL(window.location.href);
-        url.searchParams.delete('payment');
-        window.history.replaceState({}, '', url.pathname + url.search);
-      } else {
-        // Verify payment with backend
-        apiRequest("POST", `/api/ecosystem/projects/${projectId}/verify-payment`)
-          .then(response => response.json())
-          .then(data => {
-            if (data.paid || data.alreadyPaid) {
-              refetchProject();
-              toast({
-                title: "Payment successful",
-                description: "You can now generate your Team Diagnostic Report.",
-              });
-              navigateToStep(6); // Go to generate analysis step
-              // Clean up URL - preserve project param, remove payment param
-              const url = new URL(window.location.href);
-              url.searchParams.delete('payment');
-              window.history.replaceState({}, '', url.pathname + url.search);
-            }
-          })
-          .catch(console.error);
-      }
-    } else if (paymentStatus === 'cancelled') {
-      toast({
-        title: "Payment cancelled",
-        description: "You can complete payment anytime to unlock your report.",
-        variant: "destructive",
-      });
-      // Clean up URL - preserve project param, remove payment param
-      const url = new URL(window.location.href);
-      url.searchParams.delete('payment');
-      window.history.replaceState({}, '', url.pathname + url.search);
-    }
-  }, [project, projectId, refetchProject, toast, navigateToStep]);
 
   // Calendly URL for consultation
   const CALENDLY_URL = "https://calendly.com/hello-humanmetrix/30min";
@@ -734,10 +693,10 @@ export function EcosystemWorkflow({
                   <span>Risk alerts & insights</span>
                 </div>
               </div>
-              <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-                <p className="text-sm">
-                  <strong>Pricing:</strong> {formatLocalPrice(ECOSYSTEM_BASE_PRICE_PENCE)} per analysis 
-                  <span className="text-muted-foreground"> (one-time fee, includes full diagnostic report)</span>
+              <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                <p className="text-sm flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <span><strong className="text-amber-700 dark:text-amber-300">{ECOSYSTEM_CREDITS_REQUIRED} credits</strong> will be used for this service when you proceed to generate the analysis.</span>
                 </p>
               </div>
             </div>
@@ -1470,22 +1429,22 @@ export function EcosystemWorkflow({
         )}
       </Card>
 
-      {/* Step 5: Complete Payment - Always visible, shows paid status or payment option */}
-      <Card data-testid="step-5-payment" className={project.isPaid ? "" : "border-primary/30"}>
+      {/* Step 5: Use Credits - Always visible, shows paid status or credit consumption option */}
+      <Card data-testid="step-5-credits" className={project.isPaid ? "" : "border-primary/30"}>
         <StepHeader 
           step={5} 
-          title="Complete Payment" 
-          description={project.isPaid ? "Payment completed" : "Unlock your comprehensive diagnostic report"}
+          title="Use Credits" 
+          description={project.isPaid ? "Credits applied" : "Use credits to unlock your diagnostic report"}
           completed={project.isPaid}
         />
         {expandedStep === 5 && !project.isPaid && (
           <div className="p-6 pt-0 space-y-4">
             <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
-              <DollarSign className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+              <Sparkles className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-medium mb-1">Unlock Your Team Diagnostic Report</p>
                 <p className="text-sm text-muted-foreground">
-                  Complete payment to generate your comprehensive team capability report, 
+                  Use {ECOSYSTEM_CREDITS_REQUIRED} credits to generate your comprehensive team capability report, 
                   including AI-powered gap analysis, ideal candidate profiles, and actionable recommendations.
                 </p>
               </div>
@@ -1494,7 +1453,7 @@ export function EcosystemWorkflow({
             <div className="p-4 bg-muted/50 rounded-lg space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-medium">Team Diagnostic Report</span>
-                <span className="text-lg font-bold">{formatLocalPrice(ECOSYSTEM_BASE_PRICE_PENCE)}</span>
+                <Badge variant="secondary" className="text-sm font-semibold">{ECOSYSTEM_CREDITS_REQUIRED} credits</Badge>
               </div>
               <div className="text-sm text-muted-foreground space-y-1">
                 <div className="flex items-center gap-2">
@@ -1520,17 +1479,12 @@ export function EcosystemWorkflow({
               </div>
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <HelpCircle className="h-4 w-4" />
-              <span>Have a promo code? You can apply it at checkout.</span>
-            </div>
-
             <Button 
-              onClick={handlePaymentCheckout}
+              onClick={handleConsumeCredits}
               disabled={isProcessingPayment}
               size="lg"
               className="w-full"
-              data-testid="button-checkout"
+              data-testid="button-use-credits"
             >
               {isProcessingPayment ? (
                 <>
@@ -1539,29 +1493,10 @@ export function EcosystemWorkflow({
                 </>
               ) : (
                 <>
-                  <DollarSign className="mr-2 h-4 w-4" />
-                  Proceed to Payment
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Use {ECOSYSTEM_CREDITS_REQUIRED} Credits
                 </>
               )}
-            </Button>
-
-            {/* TEMPORARY: Bypass payment button for testing - REMOVE AFTER TESTING */}
-            <Button 
-              variant="outline"
-              onClick={async () => {
-                try {
-                  await apiRequest('POST', `/api/ecosystem/projects/${project.id}/bypass-payment`);
-                  await queryClient.refetchQueries({ queryKey: [`/api/ecosystem/projects/${project.id}`] });
-                  navigateToStep(6);
-                } catch (e) {
-                  console.error('Bypass failed:', e);
-                }
-              }}
-              size="lg"
-              className="w-full border-dashed border-orange-500 text-orange-600 hover:bg-orange-50"
-              data-testid="button-bypass-payment"
-            >
-              ⚠️ TESTING: Bypass Payment (Remove After Testing)
             </Button>
           </div>
         )}
@@ -1575,7 +1510,7 @@ export function EcosystemWorkflow({
           description={teamAnalysis ? "Analysis complete" : "AI-powered diagnostic report"}
           completed={!!teamAnalysis}
           locked={!project.isPaid}
-          lockedMessage="Unlocks after payment"
+          lockedMessage="Unlocks after credits applied"
         />
         {expandedStep === 6 && project.isPaid && !teamAnalysis && (
           <div className="p-6 pt-0 space-y-4">
@@ -1651,7 +1586,7 @@ export function EcosystemWorkflow({
           description={teamAnalysis ? "Your comprehensive analysis" : "View your results"}
           completed={!!teamAnalysis}
           locked={!project.isPaid || !teamAnalysis}
-          lockedMessage={!project.isPaid ? "Unlocks after payment" : "Unlocks after generating analysis"}
+          lockedMessage={!project.isPaid ? "Unlocks after credits applied" : "Unlocks after generating analysis"}
         />
         {expandedStep === 7 && project.isPaid && teamAnalysis && (
           <div className="p-6 pt-0 space-y-6">

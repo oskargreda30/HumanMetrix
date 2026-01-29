@@ -1799,11 +1799,16 @@ export function registerEcosystemRoutes(app: Express): void {
     }
   });
 
-  // TEMPORARY: Bypass payment for testing (REMOVE AFTER TESTING)
-  app.post("/api/ecosystem/projects/:id/bypass-payment", isAuthenticated, async (req: Request, res: Response) => {
+  // Consume partner credits for ecosystem analysis (replaces Stripe payment)
+  app.post("/api/ecosystem/projects/:id/consume-credits", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const userId = (req as any).user?.id;
+      const user = (req as any).user;
+      const userId = user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       
       // Verify project exists and belongs to user
       const project = await storage.getEcosystemProject(id);
@@ -1814,20 +1819,57 @@ export function registerEcosystemRoutes(app: Express): void {
         return res.status(403).json({ error: "Access denied" });
       }
       
+      // If already paid, return success
+      if (project.isPaid) {
+        return res.json({ success: true, alreadyPaid: true });
+      }
+      
+      // Find partner account for this user
+      const dbUser = await storage.getUser(userId);
+      if (!dbUser?.organizationId) {
+        return res.status(403).json({ error: "Partner account required to use Ecosystem Index" });
+      }
+      
+      const partner = await storage.getPartnerAccountByOrganizationId(dbUser.organizationId);
+      if (!partner) {
+        return res.status(403).json({ error: "Partner account not found" });
+      }
+      
+      // Check if partner has enough credits (20 credits required)
+      const ECOSYSTEM_CREDITS_REQUIRED = 20;
+      const remaining = partner.testsPurchased - partner.testsConsumed;
+      
+      if (remaining < ECOSYSTEM_CREDITS_REQUIRED) {
+        return res.status(400).json({ 
+          error: `Insufficient credits. This service requires ${ECOSYSTEM_CREDITS_REQUIRED} credits. You have ${remaining} credits remaining.`,
+          creditsRequired: ECOSYSTEM_CREDITS_REQUIRED,
+          creditsRemaining: remaining
+        });
+      }
+      
+      // Consume credits
+      await storage.updatePartnerAccount(partner.id, {
+        testsConsumed: partner.testsConsumed + ECOSYSTEM_CREDITS_REQUIRED,
+      });
+      
       // Mark project as paid
       await storage.updateEcosystemProject(id, {
         isPaid: true,
-        stripePaymentIntentId: "TESTING_BYPASS_" + Date.now(),
-        paidAmount: 0,
+        stripePaymentIntentId: `CREDITS_${partner.id}_${Date.now()}`,
+        paidAmount: 0, // No payment, credits used
         paidAt: new Date(),
         status: "paid",
       });
       
-      console.log(`[Ecosystem] TESTING BYPASS: Project ${id} marked as paid`);
-      res.json({ success: true, bypassed: true });
+      console.log(`[Ecosystem] Partner ${partner.id} consumed ${ECOSYSTEM_CREDITS_REQUIRED} credits for project ${id}`);
+      res.json({ 
+        success: true, 
+        creditsConsumed: ECOSYSTEM_CREDITS_REQUIRED,
+        creditsRemaining: remaining - ECOSYSTEM_CREDITS_REQUIRED
+      });
     } catch (error: any) {
-      console.error("[Ecosystem] Error bypassing payment:", error);
-      res.status(500).json({ error: "Failed to bypass payment" });
+      console.error("[Ecosystem] Error consuming credits:", error);
+      res.status(500).json({ error: "Failed to consume credits" });
     }
   });
 }

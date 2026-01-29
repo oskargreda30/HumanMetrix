@@ -10657,6 +10657,22 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         metadata: { requestId: newRequest.id, requestedType: requestedBillingType },
       });
       
+      // Send email notification to admin team
+      try {
+        const { sendBillingChangeRequestEmail } = await import('./email');
+        await sendBillingChangeRequestEmail({
+          partnerCompanyName: matchingPartner.companyName || 'Unknown Company',
+          requesterName: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email,
+          requesterEmail: user.email,
+          currentBillingType: matchingPartner.billingType,
+          requestedBillingType,
+          reason: reason || undefined,
+        });
+      } catch (emailError) {
+        console.error("Failed to send billing change request email:", emailError);
+        // Don't fail the request if email fails
+      }
+      
       res.json({ success: true, request: newRequest });
     } catch (error) {
       console.error("Error creating billing change request:", error);
@@ -12603,10 +12619,26 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(400).json({ message: "Invalid name format" });
       }
       
-      // Check if already invited
+      // Check if already invited as a team member
       const existing = await storage.getPartnerTeamMemberByEmail(partner.id, email);
       if (existing) {
         return res.status(400).json({ message: "This email has already been invited" });
+      }
+      
+      // Check if this email belongs to an existing candidate (user with candidate assessments)
+      const existingUser = await storage.getUserByEmail(email.toLowerCase());
+      if (existingUser) {
+        // Check if this user is a candidate for this partner (has assessment results or invitations)
+        const candidateInvitations = await storage.getPartnerCandidateInvitationsByEmail(email.toLowerCase());
+        const isCandidate = candidateInvitations.some((inv: any) => inv.partnerId === partner.id);
+        
+        if (isCandidate) {
+          // This email is already a candidate for this partner - they need a different email for team access
+          return res.status(400).json({ 
+            message: "This email is already registered as a candidate. To add this person as a team member with admin access, they must use a different email address.",
+            isCandidate: true
+          });
+        }
       }
       
       const crypto = await import('crypto');

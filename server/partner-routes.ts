@@ -1824,6 +1824,10 @@ export function registerPartnerRoutes(app: Express) {
       const validationErrors: Array<{ row: number; externalUserId: string; field: string; error: string }> = [];
       const seenEmails = new Map<string, number>();
       
+      // Pre-fetch all team members for this partner to check for conflicts
+      const teamMembers = await storage.getPartnerTeamMembers(partner.id);
+      const teamMemberEmails = new Set(teamMembers.map(tm => tm.email.toLowerCase()));
+      
       for (let i = 0; i < candidates.length; i++) {
         const candidate = candidates[i];
         const row = i + 1;
@@ -1838,6 +1842,17 @@ export function registerPartnerRoutes(app: Express) {
         // Validate email format using shared validation
         if (!isValidEmail(candidate.email.trim())) {
           validationErrors.push({ row, externalUserId: identifier, field: 'email', error: 'Invalid email format' });
+          continue;
+        }
+        
+        // Check if this email belongs to an existing team member
+        if (teamMemberEmails.has(candidate.email.toLowerCase())) {
+          validationErrors.push({ 
+            row, 
+            externalUserId: identifier, 
+            field: 'email', 
+            error: 'This email belongs to a team member. They cannot be invited as a candidate. Use a different email address.' 
+          });
           continue;
         }
         

@@ -734,6 +734,137 @@ Reply directly to this email to respond to ${name}
   }
 }
 
+// Send billing change request notification to admin team
+export async function sendBillingChangeRequestEmail(options: {
+  partnerCompanyName: string;
+  requesterName: string;
+  requesterEmail: string;
+  currentBillingType: string;
+  requestedBillingType: string;
+  reason?: string;
+}) {
+  const adminEmail = 'hello@humanmetrix.co.uk';
+  const { partnerCompanyName, requesterName, requesterEmail, currentBillingType, requestedBillingType, reason } = options;
+
+  const formatBillingType = (type: string) => {
+    switch (type) {
+      case 'payg': return 'Pay-As-You-Go';
+      case 'subscription': return 'Subscription';
+      case 'enterprise': return 'Enterprise';
+      default: return type;
+    }
+  };
+
+  const msg = {
+    from: { email: fromEmail, name: 'HumanMetrix Billing' },
+    to: adminEmail,
+    replyTo: requesterEmail,
+    subject: `Billing Change Request: ${partnerCompanyName} - ${formatBillingType(currentBillingType)} → ${formatBillingType(requestedBillingType)}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .field { margin-bottom: 20px; }
+            .label { font-weight: 600; color: #374151; margin-bottom: 5px; }
+            .value { color: #1f2937; }
+            .change-box { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; }
+            .reason-box { background: #f9fafb; border-left: 4px solid #06b6d4; padding: 15px; margin: 20px 0; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
+            .badge { display: inline-block; background: #f59e0b; color: white; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; margin-bottom: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0;">Billing Change Request</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">Partner Account Update</p>
+            </div>
+            <div class="content">
+              <div class="badge">ACTION REQUIRED</div>
+              
+              <div class="field">
+                <div class="label">Partner Company:</div>
+                <div class="value">${partnerCompanyName}</div>
+              </div>
+              
+              <div class="field">
+                <div class="label">Requested By:</div>
+                <div class="value">${requesterName} (<a href="mailto:${requesterEmail}" style="color: #06b6d4; text-decoration: none;">${requesterEmail}</a>)</div>
+              </div>
+              
+              <div class="change-box">
+                <div class="label">Billing Type Change:</div>
+                <div class="value" style="font-size: 16px; font-weight: 600;">
+                  ${formatBillingType(currentBillingType)} → ${formatBillingType(requestedBillingType)}
+                </div>
+              </div>
+              
+              ${reason ? `
+              <div class="field">
+                <div class="label">Reason:</div>
+                <div class="reason-box">${reason.replace(/\n/g, '<br>')}</div>
+              </div>
+              ` : ''}
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+                Submitted on ${new Date().toLocaleDateString('en-GB', { 
+                  day: 'numeric', 
+                  month: 'long', 
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </p>
+              
+              <p style="margin-top: 20px; padding: 15px; background: #f3f4f6; border-radius: 4px;">
+                Please review this request in the Super Admin dashboard under <strong>Billing Change Requests</strong>.
+              </p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+Billing Change Request - HumanMetrix
+
+ACTION REQUIRED
+
+Partner Company: ${partnerCompanyName}
+Requested By: ${requesterName} (${requesterEmail})
+
+Billing Type Change:
+${formatBillingType(currentBillingType)} → ${formatBillingType(requestedBillingType)}
+
+${reason ? `Reason:\n${reason}\n` : ''}
+
+Submitted on ${new Date().toLocaleDateString('en-GB', { 
+  day: 'numeric', 
+  month: 'long', 
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit'
+})}
+
+Please review this request in the Super Admin dashboard under Billing Change Requests.
+
+© ${new Date().getFullYear()} HumanMetrix
+    `.trim(),
+  };
+
+  const result = await sendEmail(msg);
+  if (result.success) {
+    console.log(`[Email] Billing change request notification sent to ${adminEmail} for ${partnerCompanyName} (ID: ${result.messageId})`);
+  }
+}
+
 // Format amount with currency symbol
 function formatCurrencyAmount(amountInCents: number, currency: string): string {
   const currencySymbols: Record<string, string> = {
