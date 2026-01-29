@@ -13715,19 +13715,20 @@ Write 2-3 paragraphs (max 200 words total) covering:
 Keep the tone professional and objective. Focus on describing the candidate's profile, not evaluating it.`;
 
       const completion = await openai.chat.completions.create({
-        model: "gpt-5",
+        model: "gpt-4o",
         messages: [
           { role: "system", content: "You are an expert HR analyst specializing in psychometric assessments and candidate profiling. Provide concise, professional, and actionable insights." },
           { role: "user", content: prompt }
         ],
-        max_completion_tokens: 2048,
+        max_tokens: 500,
+        temperature: 0.7,
       });
 
       const insights = completion.choices[0].message.content || '';
       
       logAiCost({
         operationType: AI_USAGE_OPERATION_TYPES.PROFILE_INSIGHTS_PARTNER,
-        model: "gpt-5",
+        model: "gpt-4o",
         usage: extractUsage(completion),
         userId: candidateId,
         partnerId: partner.id,
