@@ -450,9 +450,9 @@ export default function IndividualReportTab() {
                         : null;
                       return (
                         <div className="text-center p-3 rounded-lg border bg-card">
-                          <div className="text-[10px] text-muted-foreground mb-0.5">FIT Top Skill</div>
-                          <div className="text-xs font-medium text-foreground mb-0.5">{topFitSkill ? topFitSkill[0] : '-'}</div>
-                          <div className={`text-lg font-bold ${topFitSkill ? getScoreColor(topFitSkill[1] as number) : 'text-muted-foreground'}`}>
+                          <div className="text-xs text-muted-foreground mb-1">FIT Top Skill</div>
+                          <div className="text-sm font-medium text-foreground mb-1">{topFitSkill ? topFitSkill[0] : '-'}</div>
+                          <div className={`text-xl font-bold ${topFitSkill ? getScoreColor(topFitSkill[1] as number) : 'text-muted-foreground'}`}>
                             {topFitSkill ? `${topFitSkill[1]}%` : '-'}
                           </div>
                         </div>
@@ -464,25 +464,25 @@ export default function IndividualReportTab() {
                         : null;
                       return (
                         <div className="text-center p-3 rounded-lg border bg-card">
-                          <div className="text-[10px] text-muted-foreground mb-0.5">AI Readiness Top</div>
-                          <div className="text-xs font-medium text-foreground mb-0.5">{topAISkill ? topAISkill[0] : '-'}</div>
-                          <div className={`text-lg font-bold ${topAISkill ? getScoreColor(topAISkill[1] as number) : 'text-muted-foreground'}`}>
+                          <div className="text-xs text-muted-foreground mb-1">AI Readiness Top</div>
+                          <div className="text-sm font-medium text-foreground mb-1">{topAISkill ? topAISkill[0] : '-'}</div>
+                          <div className={`text-xl font-bold ${topAISkill ? getScoreColor(topAISkill[1] as number) : 'text-muted-foreground'}`}>
                             {topAISkill ? `${topAISkill[1]}%` : '-'}
                           </div>
                         </div>
                       );
                     })()}
                     <div className="text-center p-3 rounded-lg border bg-card">
-                      <div className="text-[10px] text-muted-foreground mb-0.5">Prompt Architecture</div>
-                      <div className="text-xs font-medium text-foreground mb-0.5">&nbsp;</div>
-                      <div className={`text-lg font-bold ${promptData ? getScoreColor(promptData.totalScore) : 'text-muted-foreground'}`}>
+                      <div className="text-xs text-muted-foreground mb-1">Prompt Architecture</div>
+                      <div className="text-sm font-medium text-foreground mb-1">&nbsp;</div>
+                      <div className={`text-xl font-bold ${promptData ? getScoreColor(promptData.totalScore) : 'text-muted-foreground'}`}>
                         {promptData ? `${promptData.totalScore}%` : '-'}
                       </div>
                     </div>
                     <div className="text-center p-3 rounded-lg border bg-card">
-                      <div className="text-[10px] text-muted-foreground mb-0.5">AIQ (Ethics)</div>
-                      <div className="text-xs font-medium text-foreground mb-0.5">&nbsp;</div>
-                      <div className={`text-lg font-bold ${aiqData ? getScoreColor(aiqData.totalScore) : 'text-muted-foreground'}`}>
+                      <div className="text-xs text-muted-foreground mb-1">AIQ (Ethics)</div>
+                      <div className="text-sm font-medium text-foreground mb-1">&nbsp;</div>
+                      <div className={`text-xl font-bold ${aiqData ? getScoreColor(aiqData.totalScore) : 'text-muted-foreground'}`}>
                         {aiqData ? `${aiqData.totalScore}%` : '-'}
                       </div>
                     </div>
