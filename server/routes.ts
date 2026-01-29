@@ -13751,25 +13751,6 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         return res.status(400).json({ message: "At least 1 candidate ID required" });
       }
 
-      // Get all sessions for this partner
-      const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
-      const completedSessions = allSessions.filter(s => s.status === 'completed');
-      
-      // Filter to only the selected candidates (by email/ID) - B2B scores are stored directly on session
-      const candidatesResults = candidateIds.map((candidateId) => {
-        const sessions = completedSessions.filter(
-          s => (s.externalEmail === candidateId || s.externalUserId === candidateId || s.id === candidateId)
-        );
-        
-        return sessions.map((session) => ({
-          assessmentType: session.assessmentType,
-          scores: session.scores || {},
-          totalScore: session.totalScore || 0,
-          completedAt: session.completedAt,
-          status: session.status,
-        }));
-      });
-
       // Normalize assessment type for comparison
       const normalizeAssessmentType = (type: string) => 
         type.toLowerCase().replace(/[\s-]+/g, '_');
@@ -13790,6 +13771,95 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         };
         return skillMap[skill] || skill;
       };
+
+      // Build candidate results from BOTH sources (sessions AND assessment_results)
+      // This mirrors the logic in /api/partner/me/candidates endpoint
+      
+      // SOURCE 1: B2B Widget/API sessions
+      const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
+      const completedSessions = allSessions.filter(s => s.status === 'completed' && !s.isTestSession);
+      
+      // Build a map of candidate results with result IDs for evaluation fetching
+      type ResultWithId = {
+        id: string;
+        assessmentType: string;
+        scores: any;
+        totalScore: number;
+        completedAt: Date | null;
+        status: string;
+        percentile?: number;
+        isFromAssessmentResults: boolean;
+      };
+      
+      const candidateResultsMap = new Map<string, ResultWithId[]>();
+      
+      // Initialize map for all requested candidates
+      for (const candidateId of candidateIds) {
+        candidateResultsMap.set(candidateId, []);
+      }
+      
+      // Add session-based results
+      for (const session of completedSessions) {
+        const email = session.externalEmail || session.externalUserId || session.id;
+        
+        if (candidateIds.includes(email)) {
+          const results = candidateResultsMap.get(email) || [];
+          results.push({
+            id: session.id,
+            assessmentType: session.assessmentType,
+            scores: session.scores || {},
+            totalScore: session.totalScore || 0,
+            completedAt: session.completedAt,
+            status: session.status,
+            percentile: 0, // Sessions don't have percentile
+            isFromAssessmentResults: false,
+          });
+          candidateResultsMap.set(email, results);
+        }
+      }
+      
+      // SOURCE 2: Partner-invited candidates (partner_candidate_invitations + assessment_results)
+      const partnerInvitations = await db.select()
+        .from(partnerCandidateInvitations)
+        .where(eq(partnerCandidateInvitations.partnerId, partner.id));
+      
+      for (const invitation of partnerInvitations) {
+        const email = invitation.email;
+        
+        if (candidateIds.includes(email)) {
+          // Get assessment results linked to this invitation
+          const invitationResults = await db.select()
+            .from(assessmentResults)
+            .where(eq(assessmentResults.partnerInvitationId, invitation.id));
+          
+          const completedResults = invitationResults.filter(r => r.status === 'completed');
+          
+          for (const result of completedResults) {
+            const results = candidateResultsMap.get(email) || [];
+            // Check for duplicates
+            const alreadyExists = results.some(r => 
+              r.assessmentType === result.assessmentType && r.id === result.id
+            );
+            
+            if (!alreadyExists) {
+              results.push({
+                id: result.id,
+                assessmentType: result.assessmentType,
+                scores: result.scores || {},
+                totalScore: result.totalScore || 0,
+                completedAt: result.completedAt,
+                status: result.status,
+                percentile: result.percentile || 0,
+                isFromAssessmentResults: true,
+              });
+              candidateResultsMap.set(email, results);
+            }
+          }
+        }
+      }
+      
+      // Convert map to array in candidateIds order
+      const candidatesResults = candidateIds.map(id => candidateResultsMap.get(id) || []);
 
       const skillBasedAssessmentTypes = ['fit', 'ai_readiness', 'ai-readiness'];
       
@@ -13856,27 +13926,130 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
 
       // Extract assessment-specific data
       const fitAssessments = candidatesResults.map((results) => {
-        const fitResult = results.find(r => normalizeAssessmentType(r.assessmentType) === 'fit');
+        const fitResult = results.find(r => normalizeAssessmentType(r.assessmentType) === 'fit' && r.status === 'completed');
         return fitResult ? { scores: fitResult.scores, completedAt: fitResult.completedAt } : null;
       });
 
       const aiReadinessAssessments = candidatesResults.map((results) => {
-        const aiResult = results.find(r => normalizeAssessmentType(r.assessmentType) === 'ai_readiness');
+        const aiResult = results.find(r => {
+          const normalized = normalizeAssessmentType(r.assessmentType);
+          return (normalized === 'ai_readiness' || normalized === 'ai-readiness') && r.status === 'completed';
+        });
         return aiResult ? { scores: aiResult.scores, completedAt: aiResult.completedAt } : null;
       });
 
-      const promptArchitectureAssessments = candidatesResults.map((results) => {
-        const paResult = results.find(r => normalizeAssessmentType(r.assessmentType) === 'prompt_architecture');
-        return paResult ? { 
-          totalScore: paResult.totalScore, 
-          levels: [],
-          percentile: 0,
-          completedAt: paResult.completedAt 
-        } : null;
-      });
+      // Prompt Architecture: Fetch evaluations for level-by-level breakdown (like admin endpoint)
+      const promptArchitectureAssessments = await Promise.all(
+        candidatesResults.map(async (results) => {
+          const promptResult = results.find(r => 
+            normalizeAssessmentType(r.assessmentType) === 'prompt_architecture' && r.status === 'completed'
+          );
+          
+          if (!promptResult) return null;
+          
+          // Helper function to scale dimension scores from 0-25 to 0-20
+          const scaleDimensionScore = (score: number): number => {
+            return Math.round((score / 25) * 20);
+          };
+          
+          // Only fetch evaluations if this is from assessment_results (has real result ID)
+          let finalLevelData: any[] = [];
+          
+          if (promptResult.isFromAssessmentResults) {
+            // Fetch evaluations for this result
+            const evaluations = await storage.getEvaluationsByResult(promptResult.id);
+            
+            // Organize evaluations by level and scale scores
+            const levelData = evaluations
+              .filter(e => e.status === 'completed' && e.evaluationScores)
+              .map(e => {
+                const scores = e.evaluationScores!;
+                return {
+                  level: e.level,
+                  scores: {
+                    clarity: scaleDimensionScore(scores.clarity),
+                    structure: scaleDimensionScore(scores.structure),
+                    contextRelevance: scaleDimensionScore(scores.contextRelevance),
+                    creativity: scaleDimensionScore(scores.creativity),
+                    iterativeImprovement: scaleDimensionScore(scores.iterativeImprovement),
+                  },
+                  totalScore: e.totalScore,
+                  feedback: e.feedback,
+                };
+              })
+              .sort((a, b) => a.level - b.level);
+            
+            finalLevelData = levelData;
+          }
+          
+          // If no level-by-level evaluations exist, create a summary from scores
+          if (finalLevelData.length === 0 && promptResult.scores && typeof promptResult.scores === 'object') {
+            const summaryScores = promptResult.scores as Record<string, number>;
+            const normalizeKey = (key: string) => key.toLowerCase().replace(/\s+/g, '');
+            
+            // Detect if scores are out of 25 or already out of 100
+            const allScoreValues = Object.values(summaryScores).filter(v => typeof v === 'number');
+            const maxScore = Math.max(...allScoreValues, 0);
+            const scoresAreOutOf100 = maxScore > 25;
+            
+            const getSummaryScore = (dimension: string): number | undefined => {
+              let rawScore: number | undefined;
+              
+              if (summaryScores[dimension] !== undefined) {
+                rawScore = summaryScores[dimension];
+              } else {
+                const normalized = normalizeKey(dimension);
+                for (const [key, value] of Object.entries(summaryScores)) {
+                  if (normalizeKey(key) === normalized) {
+                    rawScore = value;
+                    break;
+                  }
+                }
+              }
+              
+              if (rawScore === undefined) return undefined;
+              
+              if (scoresAreOutOf100) {
+                return Math.round((rawScore / 100) * 20);
+              } else {
+                return scaleDimensionScore(rawScore);
+              }
+            };
+            
+            const clarity = getSummaryScore('clarity') || getSummaryScore('Clarity');
+            const structure = getSummaryScore('structure') || getSummaryScore('Structure');
+            const contextRelevance = getSummaryScore('contextRelevance') || getSummaryScore('Context Relevance');
+            const creativity = getSummaryScore('creativity') || getSummaryScore('Creativity');
+            const iterativeImprovement = getSummaryScore('iterativeImprovement') || getSummaryScore('Iterative Improvement');
+            
+            if (clarity !== undefined || structure !== undefined || contextRelevance !== undefined || 
+                creativity !== undefined || iterativeImprovement !== undefined) {
+              finalLevelData = [{
+                level: 1,
+                scores: {
+                  clarity: clarity || 0,
+                  structure: structure || 0,
+                  contextRelevance: contextRelevance || 0,
+                  creativity: creativity || 0,
+                  iterativeImprovement: iterativeImprovement || 0,
+                },
+                totalScore: promptResult.totalScore || 0,
+                feedback: 'Summary scores from overall assessment',
+              }];
+            }
+          }
+          
+          return {
+            levels: finalLevelData,
+            totalScore: promptResult.totalScore || 0,
+            percentile: promptResult.percentile || 0,
+            completedAt: promptResult.completedAt,
+          };
+        })
+      );
 
       const aiqAssessments = candidatesResults.map((results) => {
-        const aiqResult = results.find(r => normalizeAssessmentType(r.assessmentType) === 'aiq');
+        const aiqResult = results.find(r => normalizeAssessmentType(r.assessmentType) === 'aiq' && r.status === 'completed');
         return aiqResult ? { 
           totalScore: aiqResult.totalScore, 
           scores: aiqResult.scores, 
