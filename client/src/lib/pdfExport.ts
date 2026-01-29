@@ -283,8 +283,8 @@ function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, r
     yPos = addGuideItem(3, 'Critical Skills Analysis', 
       'Summary of skills marked as critical for this role. Shows how many critical requirements are met vs. gaps needing development.', yPos);
     
-    yPos = addGuideItem(4, 'Cohort Benchmarking', 
-      'See how this candidate ranks against all other candidates in your pipeline. Percentile shows their relative standing.', yPos);
+    yPos = addGuideItem(4, 'HumanMetrix Database Benchmarking', 
+      'See how this candidate ranks against all other candidates in our database. Percentile shows their relative standing.', yPos);
     
     yPos = addGuideItem(5, 'Role Flexibility Analysis', 
       'Alternative roles where this candidate might excel if the primary role isn\'t ideal. Useful for internal mobility.', yPos);
@@ -568,6 +568,12 @@ function drawTableRow(
 }
 
 export async function exportComparisonPDF(data: ComparisonData) {
+  // Guard against empty candidates array
+  if (!data.candidates || data.candidates.length === 0) {
+    console.error('Cannot generate comparison PDF: No candidates provided');
+    return;
+  }
+  
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
@@ -901,15 +907,17 @@ export async function exportComparisonPDF(data: ComparisonData) {
     
     const candidateColor = CANDIDATE_COLORS[ranking.candidateIndex] || [100, 100, 100];
     
-    // Draw rank with medal for top position
+    // Draw rank with medal for top 3 positions only
     applySmallText(pdf);
     pdf.setFont('helvetica', 'bold');
     if (ranking.rank === 1) {
       pdf.setTextColor(245, 158, 11); // Gold
     } else if (ranking.rank === 2) {
       pdf.setTextColor(156, 163, 175); // Silver
-    } else {
+    } else if (ranking.rank === 3) {
       pdf.setTextColor(180, 83, 9); // Bronze
+    } else {
+      pdf.setTextColor(107, 114, 128); // Gray for rank 4+
     }
     pdf.text(`#${ranking.rank}`, rankTableStartX + 7, yPos + rankRowHeight / 2 + 1, { align: 'center' });
     
@@ -2590,8 +2598,8 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     .filter(skill => skill.criticality === 'critical')
     .sort((a, b) => {
       // Sort by gap (descending) - larger gaps first for priority
-      const gapA = a.requiredScore - a.candidateScore;
-      const gapB = b.requiredScore - b.candidateScore;
+      const gapA = a.requiredScore - (a.candidateScore ?? 0);
+      const gapB = b.requiredScore - (b.candidateScore ?? 0);
       return gapB - gapA;
     })
     .slice(0, 6);
@@ -2694,13 +2702,14 @@ export async function exportRoleFitPDF(data: RoleFitData) {
         pdf.text(` Assessment not completed`, 115, yPos);
       } else {
         // Score comparison with gap
-        const gap = skill.candidateScore - skill.requiredScore;
+        const candidateScoreVal = skill.candidateScore ?? 0;
+        const gap = candidateScoreVal - skill.requiredScore;
         const gapColor: [number, number, number] = gap >= 0 ? [34, 197, 94] : [239, 68, 68];
         const gapText = gap >= 0 ? `+${gap} above requirement` : `${Math.abs(gap)} below requirement`;
         
         pdf.text(`Candidate Score: `, 25, yPos);
         pdf.setFont('helvetica', 'bold');
-        pdf.text(`${skill.candidateScore}/100`, 60, yPos);
+        pdf.text(`${candidateScoreVal}/100`, 60, yPos);
         pdf.setFont('helvetica', 'normal');
         pdf.text(` (Recommended: ${skill.requiredScore})`, 75, yPos);
         
@@ -3269,6 +3278,12 @@ interface MultiCandidateComparisonData {
 }
 
 export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComparisonData) {
+  // Guard against empty candidates array
+  if (!data.candidateEntries || data.candidateEntries.length === 0) {
+    console.error('Cannot generate multi-candidate comparison PDF: No candidates provided');
+    return;
+  }
+  
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
@@ -5119,8 +5134,8 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
       description: 'Comprehensive team capability diagnostic that maps skills distribution and identifies gaps'
     },
     {
-      name: 'Cohort Benchmarking',
-      description: 'Compare candidate performance against industry benchmarks and peer organizations (Coming Soon)'
+      name: 'HumanMetrix Database Benchmarking',
+      description: 'Compare candidate performance against our assessment database and industry benchmarks'
     },
     {
       name: 'Development Investment Cost',
