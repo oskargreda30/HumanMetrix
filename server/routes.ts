@@ -13741,9 +13741,11 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         return res.status(404).json({ message: "No partner account found" });
       }
       
-      const candidateIds = Array.isArray(req.query.candidateIds)
-        ? req.query.candidateIds as string[]
-        : [req.query.candidateIds as string].filter(Boolean);
+      // Support both candidateIds and userIds parameter names for compatibility with shared components
+      const rawCandidateIds = req.query.candidateIds || req.query.userIds;
+      const candidateIds = Array.isArray(rawCandidateIds)
+        ? rawCandidateIds as string[]
+        : [rawCandidateIds as string].filter(Boolean);
 
       if (!candidateIds || candidateIds.length < 1) {
         return res.status(400).json({ message: "At least 1 candidate ID required" });
