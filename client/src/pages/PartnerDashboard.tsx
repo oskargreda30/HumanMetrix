@@ -2508,14 +2508,14 @@ export default function PartnerDashboard() {
               </Card>
 
               {/* Credit System Explainer */}
-              <Card className="border-primary bg-primary">
+              <Card className="border-border bg-card">
                 <CardContent className="flex items-center gap-4 py-4">
-                  <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                    <CreditCard className="h-6 w-6 text-white" />
+                  <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <CreditCard className="h-6 w-6 text-primary" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-base font-semibold text-white">1 Credit = 1 Assessment</p>
-                    <p className="text-sm text-white/80">
+                    <p className="text-base font-semibold text-foreground">1 Credit = 1 Assessment</p>
+                    <p className="text-sm text-foreground/70">
                       Each completed assessment consumes 1 credit. AI features (Profile Insights, PDF Import) also use 1 credit per use.
                     </p>
                   </div>
