@@ -4880,20 +4880,39 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     
     yPos += boxHeight + 8;
     
-    // Level breakdown with visual progress bars
+    // Level breakdown with visual progress bars - compact layout
     if (data.promptData.levels && data.promptData.levels.length > 0) {
-      const barStartX = 55;
-      const barWidth = 80;
-      const barHeight = 6;
+      const barStartX = 35;
+      const barWidth = 110; // Longer bars
+      const barHeight = 4; // Thinner bars
+      const levelHeight = 11; // Height per level (bar + scores + spacing)
+      const legendHeight = 15; // Space for legend + post-section padding
+      
+      // Calculate total required height for the entire section
+      const totalRequiredHeight = (data.promptData.levels.length * levelHeight) + legendHeight;
+      
+      // Check if we need a new page before starting the level breakdown
+      if (yPos + totalRequiredHeight > pageHeight - 25) {
+        pdf.addPage();
+        addBackgroundPattern(pdf, pageWidth, pageHeight);
+        addHeader(pdf, pageWidth);
+        yPos = 35;
+      }
       
       data.promptData.levels.forEach((levelData) => {
-        // Check for page overflow before drawing
-        if (yPos > pageHeight - 30) {
+        // Check for page overflow before drawing each level (account for full level height)
+        if (yPos + levelHeight > pageHeight - 20) {
           pdf.addPage();
           addBackgroundPattern(pdf, pageWidth, pageHeight);
           addHeader(pdf, pageWidth);
           yPos = 35;
         }
+        
+        // Level label before the bar
+        pdf.setFontSize(6);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(55, 65, 81);
+        pdf.text(`L${levelData.level}`, barStartX - 10, yPos + 3);
         
         // Progress bar background
         pdf.setFillColor(229, 231, 235);
@@ -4911,34 +4930,22 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
           pdf.roundedRect(barStartX, yPos, fillWidth, barHeight, 1, 1, 'F');
         }
         
-        // Score text after bar
-        pdf.setFontSize(8);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(59, 130, 246);
-        pdf.text(`${levelData.totalScore}%`, barStartX + barWidth + 5, yPos + 4);
-        
-        // Component scores on the right - show if available
-        if (levelData.scores) {
-          pdf.setFontSize(6);
-          pdf.setFont('helvetica', 'normal');
-          pdf.setTextColor(107, 114, 128);
-          const componentScores = [
-            `C:${levelData.scores.clarity}`,
-            `S:${levelData.scores.structure}`,
-            `Cx:${levelData.scores.contextRelevance}`,
-            `Cr:${levelData.scores.creativity}`,
-            `I:${levelData.scores.iterativeImprovement}`,
-          ].join(' ');
-          pdf.text(componentScores, barStartX + barWidth + 25, yPos + 4);
-        }
-        
-        // Level label underneath the bar
+        // Score percentage after bar
         pdf.setFontSize(7);
         pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(55, 65, 81);
-        pdf.text(`Level ${levelData.level}`, barStartX + barWidth / 2, yPos + barHeight + 5, { align: 'center' });
+        pdf.setTextColor(59, 130, 246);
+        pdf.text(`${levelData.totalScore}%`, barStartX + barWidth + 3, yPos + 3);
         
-        yPos += 14;
+        // Component scores underneath the bar
+        if (levelData.scores) {
+          pdf.setFontSize(5);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setTextColor(107, 114, 128);
+          const componentScores = `C:${levelData.scores.clarity} S:${levelData.scores.structure} Cx:${levelData.scores.contextRelevance} Cr:${levelData.scores.creativity} I:${levelData.scores.iterativeImprovement}`;
+          pdf.text(componentScores, barStartX, yPos + barHeight + 3);
+        }
+        
+        yPos += levelHeight; // Compact spacing between levels
       });
       
       // Check page overflow before legend
@@ -4951,13 +4958,13 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
       
       // Legend for component abbreviations
       yPos += 2;
-      pdf.setFontSize(6);
+      pdf.setFontSize(5);
       pdf.setFont('helvetica', 'italic');
       pdf.setTextColor(156, 163, 175);
-      pdf.text('C=Clarity, S=Structure, Cx=Context, Cr=Creativity, I=Iterative Improvement', 25, yPos);
+      pdf.text('C=Clarity, S=Structure, Cx=Context, Cr=Creativity, I=Iterative Improvement', barStartX, yPos);
     }
     
-    yPos += 10;
+    yPos += 8;
   }
   
   // AIQ Section
