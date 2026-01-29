@@ -725,6 +725,22 @@ export default function PartnerAnalysisTab() {
             </CardContent>
           </Card>
 
+          {/* Credit Usage Info */}
+          <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4">
+            <div className="flex items-start gap-3">
+              <Sparkles className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                  Credit Usage for AI-Powered Features
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                  Generating Profile Insights uses 1 credit per candidate. Importing PDF reports uses 1 credit for AI-powered parsing. 
+                  Viewing assessment scores and charts does not use credits. Credits are only consumed when you click action buttons marked with a credit badge.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {selectedCandidate && isLoadingReport && (
             <div className="flex justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
