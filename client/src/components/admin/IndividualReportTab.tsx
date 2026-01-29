@@ -6,7 +6,6 @@ import { Loader2, User, Award, Brain, Target, TrendingUp, TrendingDown, FileText
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   RadarChart,
   PolarGrid,
@@ -21,7 +20,6 @@ import SkillsLegend from "@/components/SkillsLegend";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import { apiRequest } from "@/lib/queryClient";
 import html2canvas from "html2canvas";
-import CompareTab from "@/components/admin/CompareTab";
 import { EnquiryModal } from "@/components/EnquiryModal";
 
 const CHART_COLOR = "#3b82f6";
@@ -64,7 +62,6 @@ interface CandidateData {
 }
 
 export default function IndividualReportTab() {
-  const [subTab, setSubTab] = useState("individual");
   const [selectedCandidate, setSelectedCandidate] = useState<string>('');
   const [profileInsights, setProfileInsights] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -360,19 +357,6 @@ export default function IndividualReportTab() {
 
   return (
     <div className="space-y-6">
-      <Tabs value={subTab} onValueChange={setSubTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6">
-          <TabsTrigger value="individual" data-testid="tab-individual">
-            <User className="h-4 w-4 mr-2" />
-            Individual Report
-          </TabsTrigger>
-          <TabsTrigger value="compare" data-testid="tab-compare">
-            <Users className="h-4 w-4 mr-2" />
-            Compare Candidates
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="individual" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -1082,14 +1066,6 @@ export default function IndividualReportTab() {
               </CardContent>
             </Card>
           )}
-
-        </TabsContent>
-
-        {/* Compare Candidates Tab */}
-        <TabsContent value="compare" className="space-y-6">
-          <CompareTab />
-        </TabsContent>
-      </Tabs>
 
       <EnquiryModal 
         open={showEnquiryModal} 
