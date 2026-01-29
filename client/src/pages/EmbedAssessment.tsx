@@ -770,6 +770,13 @@ export default function EmbedAssessment() {
       pendingScoresRef.current = null;
     }
     
+    // For invitation flows, redirect back to the invitation landing page
+    // This ensures a new session is created for the next assessment
+    if (isFromInvitation && inviteToken) {
+      window.location.href = `/invite/${inviteToken}`;
+      return;
+    }
+    
     const nextIndex = currentAssessmentIndex + 1;
     const nextType = assessmentQueue[nextIndex];
     
