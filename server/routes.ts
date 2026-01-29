@@ -7067,6 +7067,13 @@ Format your response as JSON:
             const requiredScores = JSON.parse(completion.choices[0].message.content || "{}");
             requiredScores.generatedAt = new Date().toISOString();
 
+            logAiCost({
+              operationType: AI_USAGE_OPERATION_TYPES.BATCH_ROLE_SKILLS,
+              model: "gpt-5",
+              usage: extractUsage(completion),
+              metadata: { roleTitle: role.name },
+            }).catch(console.error);
+
             // Post-process to ensure no multiples of 5 (nudge by 1-2 points)
             const nudgeScore = (score: number): number => {
               if (typeof score !== 'number') return score;
@@ -7190,6 +7197,13 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
       });
 
       const insights = completion.choices[0]?.message?.content || "Unable to generate insights.";
+
+      logAiCost({
+        operationType: AI_USAGE_OPERATION_TYPES.PROFILE_INSIGHTS_ADMIN,
+        model: "gpt-4o",
+        usage: extractUsage(completion),
+        userId,
+      }).catch(console.error);
 
       res.json({ insights });
     } catch (error) {
@@ -8305,6 +8319,14 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
 
       const analysis = response.choices[0]?.message?.content || 'Unable to generate analysis.';
       
+      logAiCost({
+        operationType: AI_USAGE_OPERATION_TYPES.PROMPT_ROLE_FIT,
+        model: "gpt-4o",
+        usage: extractUsage(response),
+        userId,
+        metadata: { roleTitle: role.name },
+      }).catch(console.error);
+
       res.json({ analysis });
     } catch (error: any) {
       console.error("Error analyzing prompt role fit:", error);
@@ -8393,6 +8415,14 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
 
       const analysis = response.choices[0]?.message?.content || 'Unable to generate analysis.';
       
+      logAiCost({
+        operationType: AI_USAGE_OPERATION_TYPES.AIQ_ROLE_FIT,
+        model: "gpt-4o",
+        usage: extractUsage(response),
+        userId,
+        metadata: { roleTitle: role.name },
+      }).catch(console.error);
+
       res.json({ analysis });
     } catch (error: any) {
       console.error("Error analyzing AIQ role fit:", error);
@@ -8488,6 +8518,13 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
 
       const analysis = response.choices[0]?.message?.content || 'Unable to generate analysis.';
       
+      logAiCost({
+        operationType: AI_USAGE_OPERATION_TYPES.MULTI_PROMPT_ANALYSIS,
+        model: "gpt-4o",
+        usage: extractUsage(response),
+        metadata: { roleTitle: role.name, candidateCount: candidateIds.length },
+      }).catch(console.error);
+
       res.json({ analysis });
     } catch (error: any) {
       console.error("Error analyzing multi-candidate prompt:", error);
@@ -8585,6 +8622,13 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
 
       const analysis = response.choices[0]?.message?.content || 'Unable to generate analysis.';
       
+      logAiCost({
+        operationType: AI_USAGE_OPERATION_TYPES.MULTI_AIQ_ANALYSIS,
+        model: "gpt-4o",
+        usage: extractUsage(response),
+        metadata: { roleTitle: role.name, candidateCount: candidateIds.length },
+      }).catch(console.error);
+
       res.json({ analysis });
     } catch (error: any) {
       console.error("Error analyzing multi-candidate AIQ:", error);
@@ -13307,6 +13351,15 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
 
       const insights = completion.choices[0].message.content || '';
       
+      logAiCost({
+        operationType: AI_USAGE_OPERATION_TYPES.PROFILE_INSIGHTS_PARTNER,
+        model: "gpt-5",
+        usage: extractUsage(completion),
+        userId: candidateId,
+        partnerId: partner.id,
+        metadata: { candidateEmail: candidate.email || undefined },
+      }).catch(console.error);
+
       res.json({ insights });
     } catch (error) {
       console.error("Error generating profile insights:", error);

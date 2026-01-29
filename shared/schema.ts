@@ -2120,6 +2120,13 @@ export const AI_USAGE_OPERATION_TYPES = {
   PDF_PARSING: "pdf_parsing",
   ECOSYSTEM_ANALYSIS: "ecosystem_analysis",
   GOLDEN_SET_EVALUATION: "golden_set_evaluation",
+  PROFILE_INSIGHTS_ADMIN: "profile_insights_admin",
+  PROFILE_INSIGHTS_PARTNER: "profile_insights_partner",
+  PROMPT_ROLE_FIT: "prompt_role_fit",
+  AIQ_ROLE_FIT: "aiq_role_fit",
+  MULTI_PROMPT_ANALYSIS: "multi_prompt_analysis",
+  MULTI_AIQ_ANALYSIS: "multi_aiq_analysis",
+  BATCH_ROLE_SKILLS: "batch_role_skills",
 } as const;
 
 export type AiUsageOperationType = typeof AI_USAGE_OPERATION_TYPES[keyof typeof AI_USAGE_OPERATION_TYPES];
