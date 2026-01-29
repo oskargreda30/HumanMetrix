@@ -13885,10 +13885,12 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
       }
 
       // Check for existing cached report (unless forceRefresh is requested)
+      // Use correct report type based on candidate count
+      const cachedReportType = candidateIds.length === 1 ? 'individual' : 'comparison';
       if (!forceRefresh) {
         const existingReport = await storage.findExistingPartnerReport(
           partner.id,
-          'comparison',
+          cachedReportType,
           candidateIds
         );
         
@@ -14146,17 +14148,23 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         }
         return id.length > 20 ? id.substring(0, 17) + '...' : id;
       });
-      const titleNames = candidateDisplayNames.length <= 3 
-        ? candidateDisplayNames.join(', ')
-        : `${candidateDisplayNames.slice(0, 2).join(', ')} +${candidateDisplayNames.length - 2} more`;
+      
+      // Determine report type based on candidate count
+      const isIndividualReport = candidateIds.length === 1;
+      const reportType = isIndividualReport ? 'individual' : 'comparison';
+      const reportTitle = isIndividualReport 
+        ? `Individual Report: ${candidateDisplayNames[0]}`
+        : candidateDisplayNames.length <= 3 
+          ? `Candidate Comparison: ${candidateDisplayNames.join(', ')}`
+          : `Candidate Comparison: ${candidateDisplayNames.slice(0, 2).join(', ')} +${candidateDisplayNames.length - 2} more`;
 
       // Save the report for future access
       const savedReport = await storage.createPartnerAnalysisReport({
         partnerId: partner.id,
-        reportType: 'comparison',
+        reportType: reportType,
         version: 1,
         candidateIds: candidateIds,
-        title: `Candidate Comparison: ${titleNames}`,
+        title: reportTitle,
         resultData: resultData as any,
         creditsUsed: candidateIds.length,
         generatedByUserId: req.user.id,
