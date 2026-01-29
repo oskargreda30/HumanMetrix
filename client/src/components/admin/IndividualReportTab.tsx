@@ -462,18 +462,48 @@ export default function IndividualReportTab() {
                     </Button>
                   </div>
                   <div className="grid grid-cols-4 gap-2 mb-3">
-                    <div className="text-center p-3 rounded-lg bg-background/50 min-h-[72px] flex flex-col justify-center">
-                      <div className="text-xs text-muted-foreground mb-1">FIT</div>
-                      <div className={`text-lg font-bold ${fitData ? getScoreColor(Math.round(Object.values(fitData.scores).reduce((a: number, b: any) => a + b, 0) / Object.keys(fitData.scores).length)) : 'text-muted-foreground'}`}>
-                        {fitData ? `${Math.round(Object.values(fitData.scores).reduce((a: number, b: any) => a + b, 0) / Object.keys(fitData.scores).length)}%` : '-'}
-                      </div>
-                    </div>
-                    <div className="text-center p-3 rounded-lg bg-background/50 min-h-[72px] flex flex-col justify-center">
-                      <div className="text-xs text-muted-foreground mb-1">AI Readiness</div>
-                      <div className={`text-lg font-bold ${aiData ? getScoreColor(Math.round(Object.values(aiData.scores).reduce((a: number, b: any) => a + b, 0) / Object.keys(aiData.scores).length)) : 'text-muted-foreground'}`}>
-                        {aiData ? `${Math.round(Object.values(aiData.scores).reduce((a: number, b: any) => a + b, 0) / Object.keys(aiData.scores).length)}%` : '-'}
-                      </div>
-                    </div>
+                    {(() => {
+                      // Get top FIT skill
+                      const topFitSkill = fitData 
+                        ? Object.entries(fitData.scores).sort((a, b) => (b[1] as number) - (a[1] as number))[0] 
+                        : null;
+                      return (
+                        <div className="text-center p-3 rounded-lg bg-background/50 min-h-[72px] flex flex-col justify-center">
+                          <div className="text-xs text-muted-foreground mb-1">FIT Top Skill</div>
+                          {topFitSkill ? (
+                            <>
+                              <div className="text-xs font-medium text-foreground truncate" title={topFitSkill[0]}>{topFitSkill[0]}</div>
+                              <div className={`text-lg font-bold ${getScoreColor(topFitSkill[1] as number)}`}>
+                                {topFitSkill[1]}%
+                              </div>
+                            </>
+                          ) : (
+                            <div className="text-lg font-bold text-muted-foreground">-</div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                    {(() => {
+                      // Get top AI Readiness skill (using canonical names from normalizedAIScores)
+                      const topAISkill = aiData && Object.keys(normalizedAIScores).length > 0
+                        ? Object.entries(normalizedAIScores).sort((a, b) => (b[1] as number) - (a[1] as number))[0]
+                        : null;
+                      return (
+                        <div className="text-center p-3 rounded-lg bg-background/50 min-h-[72px] flex flex-col justify-center">
+                          <div className="text-xs text-muted-foreground mb-1">AI Readiness Top</div>
+                          {topAISkill ? (
+                            <>
+                              <div className="text-xs font-medium text-foreground truncate" title={topAISkill[0]}>{topAISkill[0]}</div>
+                              <div className={`text-lg font-bold ${getScoreColor(topAISkill[1] as number)}`}>
+                                {topAISkill[1]}%
+                              </div>
+                            </>
+                          ) : (
+                            <div className="text-lg font-bold text-muted-foreground">-</div>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <div className="text-center p-3 rounded-lg bg-background/50 min-h-[72px] flex flex-col justify-center">
                       <div className="text-xs text-muted-foreground mb-1">Prompt Arch.</div>
                       <div className={`text-lg font-bold ${promptData ? getScoreColor(promptData.totalScore) : 'text-muted-foreground'}`}>
@@ -487,23 +517,6 @@ export default function IndividualReportTab() {
                       </div>
                     </div>
                   </div>
-                  {(() => {
-                    const topSkills = getStrengthsAndWeaknesses().strengths.slice(0, 3);
-                    return topSkills.length > 0 ? (
-                      <div className="space-y-1">
-                        <div className="text-xs text-muted-foreground font-medium">Top Skills</div>
-                        <div className="flex flex-wrap gap-2">
-                          {topSkills.map((skill, i) => (
-                            <div key={i} className="flex items-center gap-1 px-2 py-1 rounded-md bg-background/50 border">
-                              <Award className="h-3 w-3 text-primary" />
-                              <span className="text-xs font-medium">{skill.name}</span>
-                              <span className="text-xs text-primary font-bold">{skill.score}%</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null;
-                  })()}
                 </div>
               </div>
             </CardContent>
