@@ -199,14 +199,14 @@ export default function EcosystemIndex() {
               <h2 className="text-xl md:text-2xl font-semibold mb-2" data-testid="text-capabilities-title">Six Core Capabilities We Measure</h2>
               <p className="text-muted-foreground" data-testid="text-capabilities-description">Complementary capabilities that make teams succeed</p>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
               {capabilities.map((cap, index) => (
-                <Card key={index} className="p-4 text-center hover-elevate" data-testid={`capability-${cap.code}`}>
-                  <div className={`w-12 h-12 rounded-full ${cap.color} mx-auto mb-3 flex items-center justify-center`}>
-                    <span className="text-white font-bold text-sm">{cap.code}</span>
+                <Card key={index} className="p-3 md:p-4 text-center hover-elevate" data-testid={`capability-${cap.code}`}>
+                  <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full ${cap.color} mx-auto mb-2 md:mb-3 flex items-center justify-center`}>
+                    <span className="text-white font-bold text-xs md:text-sm">{cap.code}</span>
                   </div>
-                  <h3 className="font-semibold text-sm mb-1">{cap.name}</h3>
-                  <p className="text-xs text-muted-foreground">{cap.description}</p>
+                  <h3 className="font-semibold text-xs md:text-sm mb-1 leading-tight">{cap.name}</h3>
+                  <p className="text-xs text-muted-foreground leading-tight hidden sm:block">{cap.description}</p>
                 </Card>
               ))}
             </div>
@@ -368,23 +368,23 @@ export default function EcosystemIndex() {
               <p className="text-muted-foreground" data-testid="text-differentiation-description">Team diagnostics, not personality labels</p>
             </div>
             
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-2 gap-4 md:gap-6">
               {differentiators.map((group, groupIndex) => (
-                <Card key={groupIndex} className={`p-6 ${groupIndex === 0 ? 'bg-muted/50' : 'bg-primary/5 border-primary/20'}`} data-testid={`differentiator-${groupIndex === 0 ? 'traditional' : 'ecosystem'}`}>
-                  <h3 className={`font-semibold mb-4 ${groupIndex === 0 ? 'text-muted-foreground' : 'text-primary'}`}>
+                <Card key={groupIndex} className={`p-4 md:p-6 ${groupIndex === 0 ? 'bg-muted/50' : 'bg-primary/5 border-primary/20'}`} data-testid={`differentiator-${groupIndex === 0 ? 'traditional' : 'ecosystem'}`}>
+                  <h3 className={`font-semibold text-sm md:text-base mb-3 md:mb-4 ${groupIndex === 0 ? 'text-muted-foreground' : 'text-primary'}`}>
                     {group.category}
                   </h3>
-                  <ul className="space-y-3">
+                  <ul className="space-y-2 md:space-y-3">
                     {group.items.map((item, itemIndex) => (
-                      <li key={itemIndex} className="flex items-center gap-2" data-testid={`diff-item-${groupIndex}-${itemIndex}`}>
+                      <li key={itemIndex} className="flex items-start gap-2" data-testid={`diff-item-${groupIndex}-${itemIndex}`}>
                         {item.problem ? (
-                          <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                          <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
                             <span className="text-muted-foreground text-xs">—</span>
                           </div>
                         ) : (
-                          <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                          <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
                         )}
-                        <span className={item.problem ? 'text-muted-foreground' : 'text-foreground font-medium'}>
+                        <span className={`text-sm md:text-base ${item.problem ? 'text-muted-foreground' : 'text-foreground font-medium'}`}>
                           {item.label}
                         </span>
                       </li>

@@ -289,7 +289,33 @@ export default function Home() {
               </p>
             </div>
 
-            <Card className="overflow-hidden">
+            {/* Mobile: Stacked cards */}
+            <div className="md:hidden space-y-4" data-testid="comparison-mobile">
+              {comparisonData.map((row, index) => (
+                <Card key={index} className="p-4" data-testid={`comparison-card-${index}`}>
+                  <h3 className="font-medium text-sm mb-3">{row.feature}</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <X className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-xs uppercase tracking-wide text-muted-foreground/70">Traditional</span>
+                        <p>{row.traditional}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2 text-sm">
+                      <Check className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-xs uppercase tracking-wide text-primary/70">HumanMetrix</span>
+                        <p className="font-medium">{row.humanmetrix}</p>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            {/* Desktop: Table layout */}
+            <Card className="overflow-hidden hidden md:block">
               <div className="overflow-x-auto">
                 <table className="w-full" data-testid="comparison-table">
                   <thead>
