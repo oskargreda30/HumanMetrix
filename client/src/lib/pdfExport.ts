@@ -2711,46 +2711,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
       yPos += 8;
     });
     
-    // Overall critical skills analysis
-    yPos = ensurePageSpace(pdf, yPos, 20, pageHeight, pageWidth);
-    yPos += 2;
-    
-    pdf.setFillColor(249, 250, 251);
-    pdf.setDrawColor(229, 231, 235);
-    
-    const criticalMet = criticalSkills.filter(s => s.candidateScore >= s.requiredScore).length;
-    const criticalTotal = criticalSkills.length;
-    const criticalPercentage = Math.round((criticalMet / criticalTotal) * 100);
-    
-    let overallAnalysis = '';
-    if (criticalPercentage >= 75) {
-      overallAnalysis = `${candidateName} demonstrates strong alignment with critical role requirements, meeting ${criticalMet} of ${criticalTotal} critical skills. This indicates readiness to perform core role functions with minimal additional development needed.`;
-    } else if (criticalPercentage >= 50) {
-      overallAnalysis = `${candidateName} shows moderate alignment with critical skills, meeting ${criticalMet} of ${criticalTotal} key requirements. Targeted development in the remaining critical areas would strengthen role performance significantly.`;
-    } else {
-      overallAnalysis = `${candidateName} requires development in ${criticalTotal - criticalMet} of ${criticalTotal} critical skills. These gaps should be addressed through structured training before full role responsibilities are assumed.`;
-    }
-    
-    // Calculate box height based on text
-    const analysisLines = pdf.splitTextToSize(overallAnalysis, pageWidth - 55);
-    const boxHeight = Math.max(15, analysisLines.length * 4 + 8);
-    
-    pdf.roundedRect(20, yPos, pageWidth - 40, boxHeight, 2, 2, 'FD');
-    yPos += 5;
-    
-    applySubheading(pdf);
-    pdf.setTextColor(17, 24, 39);
-    pdf.text('Critical Skills Summary', 25, yPos);
-    yPos += 5;
-    
-    applyBodyText(pdf);
-    pdf.setTextColor(55, 65, 81);
-    analysisLines.forEach((line: string) => {
-      pdf.text(line, 25, yPos);
-      yPos += 4;
-    });
-    
-    yPos += 8;
+    yPos += 4;
   }
   
   // ========== COHORT BENCHMARKING ==========
