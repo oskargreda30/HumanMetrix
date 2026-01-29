@@ -1479,6 +1479,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } else {
             console.log(`[Payment Callback] ⚠ PDF generation failed, receipt email not sent to ${user.email}`);
           }
+          
+          // Also send the actual results PDF with assessment scores
+          try {
+            const { generateB2BResultsPDF } = await import('./generateB2BPDF');
+            const { sendB2BResultsEmailWithMultiplePDFs } = await import('./email');
+            
+            // Get user's completed results for the purchased assessments
+            const allResults = await storage.getResultsByUser(userId);
+            const completedResults = allResults.filter((r: any) => 
+              r.status === 'completed' && 
+              assessmentTypes.includes(normalizeAssessmentId(r.assessmentType))
+            );
+            
+            if (completedResults.length > 0) {
+              const pdfAttachments = [];
+              
+              for (const result of completedResults) {
+                const normalizedType = normalizeAssessmentId(result.assessmentType);
+                
+                const pdfBuffer = generateB2BResultsPDF({
+                  candidateName: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email.split('@')[0],
+                  candidateEmail: user.email,
+                  assessmentType: result.assessmentType,
+                  scores: result.scores || {},
+                  totalScore: result.totalScore || 0,
+                  percentile: result.percentile,
+                  evaluations: result.evaluations || [],
+                  completedAt: result.completedAt || new Date(),
+                  partnerCompanyName: 'HumanMetrix',
+                });
+                
+                const assessmentName = {
+                  'fit': 'FIT',
+                  'ai_readiness': 'AI_Readiness',
+                  'prompt_architecture': 'Prompt_Architecture',
+                  'aiq': 'AIQ',
+                }[normalizedType] || result.assessmentType;
+                
+                pdfAttachments.push({
+                  filename: `HumanMetrix_${assessmentName}_Results.pdf`,
+                  content: pdfBuffer,
+                });
+              }
+              
+              if (pdfAttachments.length > 0) {
+                const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0] 
+                  ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
+                  : 'http://localhost:5000';
+                const resultsUrl = `${baseUrl}/dashboard`;
+                
+                await sendB2BResultsEmailWithMultiplePDFs({
+                  email: user.email,
+                  candidateName: user.firstName || undefined,
+                  assessmentLabel: assessmentTypes.length === 1 
+                    ? (assessmentNames[assessmentTypes[0]] || assessmentTypes[0])
+                    : `${assessmentTypes.length} Assessments`,
+                  partnerName: 'HumanMetrix',
+                  resultsUrl,
+                  pdfAttachments,
+                });
+                console.log(`[Payment Callback] ✓ Results PDF email sent to ${user.email} (${pdfAttachments.length} PDFs)`);
+              }
+            }
+          } catch (resultsPdfError) {
+            console.error(`[Payment Callback] Failed to send results PDF email:`, resultsPdfError);
+            // Don't fail the payment if results PDF email fails
+          }
         }
       } catch (emailError) {
         console.error(`[Payment Callback] Failed to send receipt email:`, emailError);
