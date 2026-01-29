@@ -121,16 +121,9 @@ export default function GuestInvite() {
     try {
       setCreatingSession(true);
       
-      const res = await fetch(`/api/guest/invite/${token}/session`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ assessmentType: nextAssessment.type }),
+      const res = await apiRequest("POST", `/api/guest/invite/${token}/session`, { 
+        assessmentType: nextAssessment.type 
       });
-      
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to start assessment");
-      }
       
       const { sessionId } = await res.json();
       setCurrentSessionId(sessionId);
