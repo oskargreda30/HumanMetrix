@@ -1,7 +1,7 @@
 # HumanMetrix - AI Assessment Platform
 
 ## Overview
-HumanMetrix is an AI assessment platform for recruitment and career development. It provides enterprise-grade assessments to measure behavioral skills and AI literacy, offering insights into candidate fit for AI-driven roles. The platform aims to streamline hiring and support career growth through objective AI-powered skill evaluation. Key assessment types include FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity Quotient (AIQ).
+HumanMetrix is an AI assessment platform designed for recruitment and career development. It offers enterprise-grade assessments to objectively measure behavioral skills and AI literacy, providing crucial insights into candidate fit for AI-driven roles. The platform aims to streamline hiring processes and support career growth through AI-powered skill evaluation. Key assessment types include FIT, AI Readiness, Prompt Architecture, and Algorithmic Integrity Quotient (AIQ). The project's vision is to become a leading solution in AI-powered talent assessment, fostering a more skilled and adaptable workforce.
 
 ## User Preferences
 I prefer detailed explanations.
@@ -11,67 +11,33 @@ Do not make changes to the file `replit.nix`.
 ## System Architecture
 
 ### UI/UX Decisions
-The frontend utilizes React + TypeScript, Shadcn UI, and Tailwind CSS for a responsive design, with Wouter for navigation and TanStack Query for data fetching. Branding includes a new HM monogram logo with a cyan/blue gradient and professional PDF reports. Visual elements feature scroll-triggered hero section animations and a network tech background. A product roadmap visualizes upcoming assessment releases, and a dedicated marketing page (`/ecosystem-index`) showcases team capability diagnostics with a 4-step workflow and sample reports.
+The frontend leverages React + TypeScript, Shadcn UI, and Tailwind CSS for a responsive and modern user experience, utilizing Wouter for routing and TanStack Query for data management. Design elements include a new HM monogram logo with a cyan/blue gradient, professional PDF report generation, scroll-triggered hero animations, and a network tech background. A product roadmap visualizes future assessment releases, and a dedicated marketing page (`/ecosystem-index`) highlights team capability diagnostics.
 
 ### Technical Implementations
-- **Frontend**: React, TypeScript, Wouter, TanStack Query, Shadcn UI, Tailwind CSS.
-- **Backend**: Express, TypeScript.
-- **Database**: PostgreSQL with Drizzle ORM.
-- **Authentication**: Email/Password with bcryptjs and session-based authentication.
-- **Payment**: Stripe integration.
-- **AI Integration**: OpenAI API (GPT-5).
-- **Email Services**: Dual-provider system with Gmail (Nodemailer) and SendGrid, featuring automatic failover and admin-configurable primary provider toggle in System Settings. Provider preference persisted to database.
-- **PDF Generation**: `jsPDF` and `html2canvas`.
+The platform uses a React, TypeScript, and Express stack with PostgreSQL and Drizzle ORM for data persistence. Authentication is handled via email/password with bcryptjs and session-based mechanisms. Payment processing is integrated with Stripe, supporting multi-currency and PPP pricing. AI capabilities are powered by the OpenAI API (GPT-5). A dual-provider email system (Gmail via Nodemailer and SendGrid) offers automatic failover and admin-configurable preferences. PDF generation uses `jsPDF` and `html2canvas`.
 
-### Feature Specifications
-- **Assessment Types**: FIT (behavioral), AI Readiness, Prompt Architecture, and AIQ (AI ethics), including SEA-localized question wording.
-- **Payment Flow**: Pay-deferred model, allowing assessment completion before payment to unlock results, with discount code support. Multi-currency and Purchasing Power Parity (PPP) pricing via Stripe is implemented using `ipapi.co` for location detection.
-- **User Flows**: Self-service for candidates and admin-invited users, with B2C email confirmation during checkout for new users.
-- **Admin Dashboard**: Features candidate management, multi-candidate comparison, AI-powered role fit analysis with criticality levels and cohort benchmarking (percentile rankings), and Scoring QA.
-- **Enhanced PDF Export System**: Generates multi-page, dynamic PDF reports.
-- **Results Access**: Gated access requiring completion of all four distinct assessments, with explicit user consent for sharing results.
-- **Product Roadmap**: Visual timeline of future assessment releases.
-- **Ecosystem Index (Team Diagnostic Tool)**: AI-powered team capability assessment using the FIT framework. Features include: mission statement analysis with AI-extracted capability priorities, team member FIT score aggregation with radar charts, deep dive questions for nuanced context (delayed tasks, conflicts, avoided work, overloaded members, personality gaps), AI-powered contextual gap analysis using GPT-4o that weighs mission/ethos/context, and ideal candidate profile generation with realistic FIT targets, key traits, and interview focus areas. Located at `/ecosystem-index` (marketing) and `/ecosystem/start` (workflow).
-- **Golden Set Benchmark System**: Verifies GPT-5 scoring consistency using benchmark prompts.
-- **B2B Partner Integration**: Enterprise solution for embedding assessments with partner accounts, 3-tier billing (Prepaid, Auto-Bill, Invoice), a billing scheduler, flexible deal configuration, API key authentication, and an embeddable JavaScript widget/SDK. Includes a "Test API Key Mode" for development and "Card-on-File Overage Billing" for prepaid partners. Enterprise partners complete billing information as the first onboarding step.
-- **Subscription Billing Edge Case Handling**: Comprehensive billing failure system with tracking (failedBillingAttempts, lastBillingFailureAt, billingFailureReason), automated retry mechanism (3/5/7 day schedule after failures), API suspension after 3 failed attempts, card expiration warnings (14/7/1 days before expiry), Stripe webhook handlers for real-time payment event processing, and email notifications to partners and admins for billing issues.
-- **Enterprise Invoice Payment Enforcement**: Manual API suspension for enterprise partners with overdue invoices. Billing scheduler sends escalating notifications at 1, 7, 14, and 30 days overdue. Critical alerts (7+ days) prompt super admins to take action via admin dashboard. Super admins can manually suspend/restore production API keys via `/api/admin/partners/:id/suspend-api` and `/api/admin/partners/:id/restore-api` endpoints. Test keys remain active for development. Email and in-app notifications sent to partners when API access is suspended or restored.
-- **Partner Self-Service Dashboard**: Allows partners to manage usage, billing, API keys, and quota alerts. Includes assessment analytics, CSV data exports, PDF receipts, in-app notifications (role-based with smart routing), team member management (invitations, role-based access), and bulk candidate invitations (CSV upload, drag-and-drop).
-- **Guest Invitation Flow (Partner-Invited Candidates)**: Hybrid approach for partner-invited candidates with direct link access (`/invite/:token`) requiring no login. Flow: (1) Partner invites candidate via dashboard, (2) Candidate receives email with invitation link, (3) Candidate visits landing page showing assigned assessments with progress tracking, (4) Each assessment opens existing embed infrastructure with invitation context, (5) Partner credits consumed on completion, (6) Optional account creation after all assessments complete. Sessions link to invitations via metadata, and invitation status auto-updates to 'completed' when all assessments are done.
-- **Partner Result Purchase System**: B2C candidates who complete assessments via partner invitations can purchase immediate access to their detailed results or wait 30 days for automatic unlock. Features include: Stripe checkout integration with same pricing as B2C purchases (base fee + per-assessment), dashboard display showing lock/unlock status with visual badges, auto-unlock countdown showing exact date, and purchase tracking via `partner_result_purchases` table. Scores are server-side redacted when locked for security. API endpoints: `POST /api/create-partner-results-checkout`, `POST /api/confirm-partner-results-purchase`, `GET /api/partner-results-pricing/:invitationId`.
-- **Partner Integration Features**: Webhook notifications for key assessment events (HMAC-SHA256 verification, retry logic), ATS integrations (Greenhouse, Lever, Workday, SAP SuccessFactors, Oracle HCM, custom APIs), and scheduled automated CSV exports.
-- **CI/CD Testing Pipeline**: Pre-deployment test runner with an admin-controlled toggle for production environments.
-- **Health Monitoring System**: Super admin dashboard for system health, error tracking, and status workflow.
-- **Critical Error Notification System**: Comprehensive error escalation to super admins via email and in-app notifications. Covers global API errors, database pool errors, job queue failures, AI scoring failures (aggregated), Xero integration failures (OAuth, token refresh, sync operations), and payment failures (B2C and B2B). Uses `notifyCriticalError()` function in `server/email.ts` for consistent error reporting with full context (stack traces, user IDs, request info).
-- **Security Monitoring System**: Proactive security notifications via `server/security-monitor.ts` including: failed login attempts (5+ in 15 minutes), new admin/super admin creation alerts, suspicious API activity (100+ calls per minute), high API usage alerts (80%/95% quota thresholds), database size monitoring (80%/90% capacity alerts every 6 hours), and partner account deactivation notifications.
-- **Partner Admin Notification System**: Comprehensive in-app and email notifications via `server/partner-notifications.ts` across 4 categories: (1) Team Management - role changes with email alerts; (2) Security Alerts - API key regeneration, failed auth tracking (5+ in 15 min triggers alert), new IP address detection; (3) Usage & Billing - quota thresholds, payment failures, monthly usage summaries (scheduled 1st of month); (4) Assessment Activity - all-assessments-completed notifications for candidates.
-- **Payment & Billing Oversight**: Super admin dashboard for monitoring revenue, managing transactions, promo codes, and B2B invoices. B2B Invoices tab allows viewing all enterprise invoices across partners with status filtering (sent, paid, overdue, cancelled), marking invoices as paid, sending reminder emails, and cancelling invoices with reason tracking. Invoice actions automatically restore partner API access when no overdue invoices remain.
-- **Results Retention Consent Dashboard**: Super admin tab for viewing and filtering user consent.
-- **Accounting & Xero Integration**: Super admin accounting dashboard for expense tracking and revenue synchronization with Xero via OAuth2, supporting expense management and revenue sync with bulk sync functionality.
-- **Sales Revenue Targets Dashboard**: Dedicated Revenue tab in Accounting section for sales team tracking. Features: (1) Monthly targets vs actuals bar chart (Apr 2026 - Mar 2027, £500K annual target), (2) Forecast projection based on run rate with on-track indicators, (3) Month-over-month growth tracking, (4) Cumulative shortfall/surplus tracker, (5) Profit Participation Milestone Tracker showing progress toward £500K/£2M/£4.5M milestones with 6-month cliff for base 15% and performance bonuses up to +15% (5% per tier) with 60% pro-rata vesting threshold, enforced within 36-month window.
-- **Enhanced Super Admin Analytics Dashboard**: Comprehensive analytics system with multiple sub-tabs: (1) User Activity Analytics - DAU tracking, hourly usage distribution, user role breakdown, retention metrics, new user registrations over 30 days; (2) Assessment Funnel Analytics - B2C and B2B conversion funnels (started→completed→paid), completion rates by assessment type, daily funnel trends; (3) Partner Health Scoring - composite health scores (0-100) using weighted metrics (usage 30%, payment 30%, engagement 20%, API health 20%), status classification (healthy/warning/critical), actionable recommendations; (4) Revenue Dashboard - MRR/ARR calculations, monthly revenue trends, B2C vs B2B breakdown, revenue by billing type, top partners by revenue; (5) Geographic Analytics - user distribution by country, assessments by country, revenue by country, regional breakdowns using currency as proxy for location.
-- **SLA Monitoring Dashboard**: Super admin Health tab sub-section for tracking service level agreements including: uptime metrics (current, 30-day average, target), response time monitoring (average, P95, P99), error rate tracking, throughput metrics (requests per minute, peak RPM), historical trend charts for uptime and response times, and active incident alerts.
-- **Audit Logging System**: Compliance and security tracking via `audit_logs` database table. Tracks admin actions with severity levels (info/warning/critical), filterable by action, resource type, user, date range. Dedicated Audit Log tab in super admin dashboard with pagination and search filters.
+Key features include:
+- **Assessment Types**: FIT, AI Readiness, Prompt Architecture, and AIQ, with SEA-localized content.
+- **Payment Flow**: Pay-deferred model, discount codes, multi-currency, and Purchasing Power Parity (PPP) pricing.
+- **User Management**: Self-service and admin-invited user flows, B2C email confirmation, and partner invitation system.
+- **Admin & Partner Dashboards**: Comprehensive tools for candidate management, multi-candidate comparison, AI-powered role fit analysis, scoring QA, billing oversight, subscription management, API key management, and detailed analytics.
+- **Enhanced PDF Export System**: Dynamic, multi-page report generation.
+- **Results Access**: Gated access requiring assessment completion and explicit consent for sharing.
+- **Ecosystem Index (Team Diagnostic Tool)**: AI-powered team capability assessment, including mission statement analysis, team FIT aggregation, deep dive questions, contextual gap analysis, and ideal candidate profile generation.
+- **Golden Set Benchmark System**: Ensures GPT-5 scoring consistency.
+- **B2B Partner Integration**: Enterprise solution with embeddable assessments, 3-tier billing, API key authentication, JavaScript widget/SDK, and webhook notifications.
+- **Billing & Notifications**: Robust subscription billing edge case handling, invoice payment enforcement with escalating notifications, critical error notifications, security monitoring, and comprehensive partner notification system.
+- **Super Admin Dashboards**: Advanced analytics covering user activity, assessment funnels, partner health scoring, revenue, geographic data, SLA monitoring, audit logging, profit analytics (revenue vs. OpenAI costs), and results retention consent.
+- **Accounting Integration**: Xero integration for expense tracking and revenue synchronization.
 
 ### System Design Choices
-- **Modular Architecture**: Clear separation of frontend and backend.
-- **Scalable Database Schema**: Designed for users, assessments, results, and AI data.
-- **Secure Authentication**: Robust session-based authentication with CSRF protection.
-- **API-driven**: Comprehensive API endpoints.
-- **Content-Aware PDF Rendering**: Dynamic layout for readability.
-- **Cache Refresh Pattern**: For data changes.
-- **Scalability Optimizations**: Database indexes, connection pool tuning, API rate limiting, request deduplication, lazy module loading, static asset caching, HTTP Keep-Alive, security headers, and trust proxy.
-- **Route-based Code Splitting**: All page components (except Home and Login) use React.lazy() for on-demand loading. This dramatically reduces the initial JavaScript bundle size, improving first paint time. Critical pages load immediately while others are loaded when navigated to.
-- **Logging Security**: API response logging sanitises sensitive fields and is disabled in production.
-- **Input Validation System**: Centralized validation utilities with RFC 5322-compliant email regex, international name support, and phone number validation. Emails are normalized (trim + lowercase) and names trimmed on user creation.
-- **Custom Accessible Dropdowns**: Implemented for partner creation modal with full keyboard navigation and ARIA combobox semantics.
-- **SEO Implementation**: Centralized SEO component (`client/src/lib/seo.tsx`), comprehensive meta tags, structured data schemas (Organization, Product, FAQ, WebSite, Service, SoftwareApplication, Article, LocalBusiness, HowTo), sitemap (`client/public/sitemap.xml`), and `robots.txt` with crawl directives for major search engines and AI bots. Page-level SEO includes unique titles, descriptions, canonical URLs, and keywords.
+The architecture emphasizes modularity with clear separation of frontend and backend. It employs a scalable database schema, secure session-based authentication with CSRF protection, and a comprehensive API-driven approach. Content-aware PDF rendering ensures readability. Scalability is achieved through database optimizations, API rate limiting, request deduplication, lazy module loading, static asset caching, and HTTP Keep-Alive. Route-based code splitting using `React.lazy()` optimizes initial load times. Logging sanitizes sensitive data and input validation is centralized. Custom accessible dropdowns enhance usability. Comprehensive SEO is implemented with a centralized component, rich meta tags, structured data, sitemap, and `robots.txt`.
 
 ## External Dependencies
 - **PostgreSQL (Neon)**: Database hosting.
-- **Stripe**: Payment gateway.
-- **OpenAI API**: AI-powered assessment and role alignment.
-- **Gmail (via Nodemailer)**: Transactional email service with SMTP.
-- **SendGrid**: Transactional email service via API. Both providers configured with automatic failover - if primary fails, system retries with backup and notifies admins.
-- **Replit Auth**: User management.
+- **Stripe**: Payment gateway for processing transactions.
+- **OpenAI API**: Powers AI-driven assessments and role alignment features.
+- **Gmail (via Nodemailer)**: Primary transactional email provider.
+- **SendGrid**: Secondary transactional email provider, used for failover.
+- **Replit Auth**: User authentication and management.
 - **Xero (via xero-node)**: Accounting software integration.
