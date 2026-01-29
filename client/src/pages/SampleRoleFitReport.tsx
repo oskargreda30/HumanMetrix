@@ -124,7 +124,7 @@ export default function SampleRoleFitReport() {
                     Sample Report
                   </Badge>
                 </div>
-                <h1 className="text-3xl font-bold" data-testid="text-page-title">
+                <h1 className="text-2xl md:text-3xl font-bold" data-testid="text-page-title">
                   Role Fit Analysis Report
                 </h1>
                 <p className="text-muted-foreground mt-1">

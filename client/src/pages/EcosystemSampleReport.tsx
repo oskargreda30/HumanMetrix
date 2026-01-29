@@ -177,7 +177,7 @@ export default function EcosystemSampleReport() {
             </Badge>
           </div>
           
-          <h1 className="text-3xl font-bold mb-2" data-testid="text-sample-report-title">
+          <h1 className="text-2xl md:text-3xl font-bold mb-2" data-testid="text-sample-report-title">
             Team Diagnostic Report: TechFlow Solutions Team
           </h1>
           <p className="text-muted-foreground">
