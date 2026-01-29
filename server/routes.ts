@@ -13723,7 +13723,21 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         max_completion_tokens: 500,
       });
 
-      const insights = completion.choices[0].message.content || '';
+      // Debug: Log full response structure
+      console.log("[Profile Insights] GPT-5 response:", JSON.stringify(completion, null, 2));
+      
+      // Extract content - handle different response formats
+      const choice = completion.choices?.[0];
+      let insights = '';
+      if (choice?.message?.content) {
+        insights = choice.message.content;
+      } else if ((choice as any)?.text) {
+        insights = (choice as any).text;
+      } else if (typeof choice === 'string') {
+        insights = choice;
+      }
+      
+      console.log("[Profile Insights] Extracted insights:", insights ? insights.substring(0, 100) + '...' : 'EMPTY');
       
       logAiCost({
         operationType: AI_USAGE_OPERATION_TYPES.PROFILE_INSIGHTS_PARTNER,
