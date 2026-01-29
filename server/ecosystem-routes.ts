@@ -1507,6 +1507,39 @@ export function registerEcosystemRoutes(app: Express): void {
         });
       }
 
+      // Check if user is a partner and consume credit for AI analysis
+      let partnerAccount = null;
+      if (user.organizationId) {
+        partnerAccount = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      }
+      if (!partnerAccount && user.email) {
+        partnerAccount = await storage.getPartnerAccountByEmail(user.email);
+      }
+      if (!partnerAccount) {
+        const teamMembership = await storage.getPartnerTeamMemberByUserId(user.id);
+        if (teamMembership) {
+          partnerAccount = await storage.getPartnerAccount(teamMembership.partnerId);
+        }
+      }
+      
+      if (partnerAccount) {
+        // Partners consume 1 credit for AI analysis
+        const creditResult = await storage.consumePartnerTest(
+          partnerAccount.id,
+          `ecosystem-analysis-${req.params.id}`,
+          "Ecosystem Index AI analysis"
+        );
+        
+        if (!creditResult.success && !creditResult.isOverage) {
+          return res.status(402).json({ 
+            error: "Insufficient credits",
+            message: "Please purchase more credits to use AI-powered analysis features.",
+            creditsRequired: 1,
+            creditsRemaining: creditResult.remaining
+          });
+        }
+      }
+
       // Check if project has team members
       const teamMembers = await storage.getEcosystemTeamMembers(req.params.id);
       if (teamMembers.length === 0) {

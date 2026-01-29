@@ -6216,6 +6216,21 @@ ${pdfText.substring(0, 15000)}`;
         return res.status(400).json({ message: "No PDF file provided" });
       }
       
+      // Check and consume 1 credit for AI-powered PDF parsing
+      const creditResult = await storage.consumePartnerTest(
+        partnerId,
+        `pdf-parse-${Date.now()}`,
+        "AI-powered PDF parsing"
+      );
+      
+      if (!creditResult.success && !creditResult.isOverage) {
+        return res.status(402).json({ 
+          message: "Insufficient credits. Please purchase more credits to use AI features.",
+          creditsRequired: 1,
+          creditsRemaining: creditResult.remaining
+        });
+      }
+      
       // Step 1: Parse PDF to extract text
       console.log("[Partner PDF Parse] Step 1: Parsing PDF buffer, size:", file.buffer.length);
       let pdfData;
@@ -13292,6 +13307,21 @@ Format your response as JSON with this structure:
       
       if (!candidateId || !assessmentData) {
         return res.status(400).json({ message: "Candidate ID and assessment data are required" });
+      }
+
+      // Check and consume 1 credit for AI feature usage
+      const creditResult = await storage.consumePartnerTest(
+        partner.id,
+        `profile-insights-${candidateId}`,
+        "AI Profile Insights generation"
+      );
+      
+      if (!creditResult.success && !creditResult.isOverage) {
+        return res.status(402).json({ 
+          message: "Insufficient credits. Please purchase more credits to use AI features.",
+          creditsRequired: 1,
+          creditsRemaining: creditResult.remaining
+        });
       }
 
       // Verify the candidate belongs to this partner

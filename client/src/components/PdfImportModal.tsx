@@ -278,9 +278,17 @@ export function PdfImportModal({ open, onOpenChange, endpoint = "/api/admin/impo
             {step === 'upload' && 'Import Candidate from PDF'}
             {step === 'preview' && 'Review Parsed Data'}
             {step === 'success' && 'Import Complete'}
+            {step === 'upload' && endpoint.includes('/partner/') && (
+              <Badge variant="secondary" className="text-[10px] font-normal ml-2">1 credit</Badge>
+            )}
           </DialogTitle>
           <DialogDescription>
-            {step === 'upload' && 'Upload a HumanMetrix assessment report PDF to import candidate scores.'}
+            {step === 'upload' && (
+              <>
+                Upload a HumanMetrix assessment report PDF to import candidate scores.
+                {endpoint.includes('/partner/') && ' Uses 1 credit for AI-powered parsing.'}
+              </>
+            )}
             {step === 'preview' && 'Review the extracted information before creating the candidate profile.'}
             {step === 'success' && 'The candidate has been successfully added to your dashboard.'}
           </DialogDescription>

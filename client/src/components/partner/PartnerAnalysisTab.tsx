@@ -1167,6 +1167,7 @@ export default function PartnerAnalysisTab() {
                       <CardTitle className="flex items-center gap-2 text-base text-foreground">
                         <Lightbulb className="h-4 w-4 text-amber-500" />
                         AI-Powered Profile Insights
+                        <Badge variant="secondary" className="text-[10px] font-normal">1 credit</Badge>
                       </CardTitle>
                       <CardDescription className="text-xs">
                         AI-generated analysis of {getCandidateName(selectedCandidateData)}'s trait profile
@@ -1209,7 +1210,7 @@ export default function PartnerAnalysisTab() {
                     <div className="text-center py-6 text-muted-foreground">
                       <Lightbulb className="h-8 w-8 mx-auto mb-2 opacity-30" />
                       <p className="text-xs">Click "Generate Insights" to create an AI-powered analysis of this candidate's trait profile.</p>
-                      <p className="text-[10px] mt-1">The analysis considers all completed assessments and provides hiring-relevant observations.</p>
+                      <p className="text-[10px] mt-1">Uses 1 credit per generation. The analysis considers all completed assessments and provides hiring-relevant observations.</p>
                     </div>
                   )}
                 </CardContent>
