@@ -571,10 +571,15 @@ export default function GuestInvite() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="min-h-screen flex items-center justify-center bg-slate-900">
       <div className="text-center">
-        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-        <p className="text-muted-foreground">Loading...</p>
+        <div className="w-20 h-20 mx-auto mb-4 animate-pulse">
+          <img src="/favicon.png" alt="HumanMetrix" className="w-full h-full object-contain" />
+        </div>
+        <p className="font-semibold text-lg">
+          <span className="text-white">Human</span>
+          <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Metrix</span>
+        </p>
       </div>
     </div>
   );
