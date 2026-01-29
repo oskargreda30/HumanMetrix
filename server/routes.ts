@@ -13660,20 +13660,19 @@ Format your response as JSON with this structure:
       }
 
       // Verify the candidate belongs to this partner
+      // candidateId is an email address, so match against invitation email
       const invitations = await storage.getPartnerCandidateInvitations(partner.id);
-      const candidateInvitation = invitations.find(inv => inv.userId === candidateId);
+      const candidateInvitation = invitations.find(inv => inv.email === candidateId);
       if (!candidateInvitation) {
         return res.status(403).json({ message: "Candidate not found in your organization" });
       }
 
-      // Fetch candidate from database for verified name
-      const candidate = await storage.getUser(candidateId);
-      if (!candidate) {
-        return res.status(404).json({ message: "Candidate not found" });
-      }
-
-      const candidateName = `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim() || 
-        candidate.email?.split('@')[0] || 'Candidate';
+      // Fetch candidate from database for verified name (candidateId is email)
+      const candidate = await storage.getUserByEmail(candidateId);
+      // Use invitation/email data if no user record exists yet
+      const candidateName = candidate 
+        ? (`${candidate.firstName || ''} ${candidate.lastName || ''}`.trim() || candidate.email?.split('@')[0] || 'Candidate')
+        : (candidateInvitation.name || candidateId.split('@')[0] || 'Candidate');
 
       // Build prompt for OpenAI
       const prompt = `You are an expert HR analyst. Generate a concise, professional profile summary for a job candidate based on their assessment results.
