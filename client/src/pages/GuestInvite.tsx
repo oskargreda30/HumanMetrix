@@ -60,12 +60,14 @@ export default function GuestInvite() {
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
-  const fetchInvitation = useCallback(async () => {
+  const fetchInvitation = useCallback(async (silent = false) => {
     if (!token) return;
     
     try {
-      setLoading(true);
-      setError(null);
+      if (!silent) {
+        setLoading(true);
+        setError(null);
+      }
       
       const res = await fetch(`/api/guest/invite/${token}`);
       if (!res.ok) {
@@ -77,15 +79,19 @@ export default function GuestInvite() {
       setInvitation(data);
       return data;
     } catch (err: any) {
-      setError(err.message || "Failed to load invitation");
+      if (!silent) {
+        setError(err.message || "Failed to load invitation");
+      }
       return null;
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [token]);
 
   useEffect(() => {
-    fetchInvitation();
+    fetchInvitation(false);
   }, [fetchInvitation]);
 
   // Early redirect for already-logged-in users with completed assessments
@@ -213,7 +219,7 @@ export default function GuestInvite() {
            messageType === 'humanmetrix:assessment_completed') &&
           messageSessionId === currentSessionId) {
         setCurrentSessionId(null);
-        const updatedInvitation = await fetchInvitation();
+        const updatedInvitation = await fetchInvitation(true); // Silent mode to avoid loading flash
         if (updatedInvitation && !updatedInvitation.allComplete) {
           await startNextAssessment(updatedInvitation);
         } else {
@@ -226,11 +232,11 @@ export default function GuestInvite() {
     return () => window.removeEventListener('message', handleMessage);
   }, [fetchInvitation, startNextAssessment, currentSessionId]);
 
-  // Polling fallback - check status every 30 seconds while in assessment
+  // Polling fallback - check status every 30 seconds while in assessment (silent mode to avoid UI flash)
   useEffect(() => {
     if (currentSessionId && !pollIntervalRef.current) {
       pollIntervalRef.current = setInterval(async () => {
-        const updatedInvitation = await fetchInvitation();
+        const updatedInvitation = await fetchInvitation(true); // Silent mode - no loading state
         if (updatedInvitation) {
           const currentAssessment = updatedInvitation.assessmentStatuses.find(
             (s: AssessmentStatus) => s.sessionId === currentSessionId
@@ -259,7 +265,7 @@ export default function GuestInvite() {
   // Manual progress check function
   const checkProgress = async () => {
     setCheckingProgress(true);
-    const updatedInvitation = await fetchInvitation();
+    const updatedInvitation = await fetchInvitation(true); // Silent mode to avoid loading flash
     if (updatedInvitation) {
       if (updatedInvitation.allComplete) {
         setCurrentSessionId(null);
