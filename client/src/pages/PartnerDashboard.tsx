@@ -3696,12 +3696,12 @@ export default function PartnerDashboard() {
                                 INR: '₹', MYR: 'RM', THB: '฿', PHP: '₱', JPY: '¥', KRW: '₩', VND: '₫',
                               };
                               const currencySymbol = currencySymbols[pricing.currency] || pricing.currency + ' ';
-                              const hasDiscount = pkg.discountPercent && pkg.discountPercent > 0;
+                              const hasDiscount = pkg.discountPercent > 0;
                               
                               return (
                                 <div 
                                   key={pkg.size} 
-                                  className={`border rounded-lg p-4 flex flex-col relative ${hasDiscount ? 'border-primary/50' : ''}`}
+                                  className={`border rounded-lg p-4 flex flex-col relative ${hasDiscount ? 'border-primary/50' : 'border-border'}`}
                                   data-testid={`package-${pkg.size}`}
                                 >
                                   {hasDiscount && (
