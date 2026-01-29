@@ -417,7 +417,7 @@ export default function MyResults() {
 
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-bold mb-2 text-white">
+                <h1 className="text-2xl md:text-3xl font-bold mb-2 text-white">
                   {isPartnerView ? 'Partner Assessment Results' : (selectedBatch ? 'Purchase Batch Results' : 'My Assessment Results')}
                 </h1>
                 <p className="text-white/80">
@@ -730,13 +730,13 @@ export default function MyResults() {
                 <div className="grid md:grid-cols-3 gap-4 mb-4">
                   {/* Total Score */}
                   <div className="flex flex-col items-center justify-center p-4 bg-muted/30 rounded-lg">
-                    <div className="text-4xl font-bold text-amber-500 mb-1" data-testid="text-prompt-score">{totalScore}</div>
+                    <div className="text-2xl md:text-4xl font-bold text-amber-500 mb-1" data-testid="text-prompt-score">{totalScore}</div>
                     <div className="text-sm text-muted-foreground">Total Score</div>
                   </div>
 
                   {/* Percentile */}
                   <div className="flex flex-col items-center justify-center p-4 bg-muted/30 rounded-lg">
-                    <div className="text-4xl font-bold text-amber-500 mb-1" data-testid="text-prompt-percentile">{percentile}%</div>
+                    <div className="text-2xl md:text-4xl font-bold text-amber-500 mb-1" data-testid="text-prompt-percentile">{percentile}%</div>
                     <div className="text-sm text-muted-foreground">Percentile</div>
                   </div>
 
@@ -801,7 +801,7 @@ export default function MyResults() {
                 <div className="grid md:grid-cols-2 gap-6">
                   {/* Score Display */}
                   <div className="flex flex-col items-center justify-center p-6 bg-muted/30 rounded-lg">
-                    <div className="text-5xl font-bold text-green-500 mb-2" data-testid="text-aiq-score">{aiqScore}%</div>
+                    <div className="text-3xl md:text-5xl font-bold text-green-500 mb-2" data-testid="text-aiq-score">{aiqScore}%</div>
                     <div className="text-lg font-medium mb-1">{bandInfo.title}</div>
                     <div className="text-sm text-muted-foreground text-center">Band: {bandInfo.range}</div>
                   </div>

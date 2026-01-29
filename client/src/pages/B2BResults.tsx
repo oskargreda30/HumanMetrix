@@ -148,7 +148,7 @@ export default function B2BResults() {
             <CheckCircle className="w-4 h-4 mr-1" />
             Assessment Complete
           </Badge>
-          <h1 className="text-3xl font-bold mb-2">Access Your Results</h1>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">Access Your Results</h1>
           <p className="text-muted-foreground">
             Congratulations on completing your <strong>{data.assessmentType.toUpperCase()}</strong> assessment!
           </p>

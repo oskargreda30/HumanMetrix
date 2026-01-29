@@ -141,7 +141,7 @@ export default function B2BResultsBundle() {
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Unlock All Your Results</h1>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">Unlock All Your Results</h1>
           <p className="text-muted-foreground">
             Get instant access to all your assessment results with our bundle discount
           </p>

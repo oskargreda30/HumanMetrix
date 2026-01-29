@@ -155,7 +155,7 @@ export default function PartnerResult() {
             </div>
             
             <div className="text-right">
-              <div className={`text-4xl font-bold ${getScoreColor(data.overallScore || 0)}`}>
+              <div className={`text-2xl md:text-4xl font-bold ${getScoreColor(data.overallScore || 0)}`}>
                 {data.overallScore || 0}%
               </div>
               <div className="text-sm text-muted-foreground">Overall Score</div>

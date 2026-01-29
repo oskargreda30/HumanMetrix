@@ -386,7 +386,7 @@ export default function Results() {
 
             <div className="mb-8">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-2">
-                <h1 className="text-3xl font-bold">
+                <h1 className="text-2xl md:text-3xl font-bold">
                   Prompt Architecture Assessment Results
                 </h1>
                 <Button 
@@ -542,7 +542,7 @@ export default function Results() {
           <div className="mb-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
               <div>
-                <h1 className="text-3xl font-bold">
+                <h1 className="text-2xl md:text-3xl font-bold">
                   {formatAssessmentName((result as any).assessmentType)} Results
                 </h1>
                 <p className="text-muted-foreground mt-1">
@@ -627,7 +627,7 @@ export default function Results() {
                 <h2 className="text-lg font-medium text-muted-foreground mb-2">
                   Overall Score
                 </h2>
-                <div className="text-6xl font-bold text-primary mb-2">
+                <div className="text-4xl md:text-6xl font-bold text-primary mb-2">
                   {totalScore}
                 </div>
                 <p className="text-muted-foreground">out of 100</p>
@@ -647,7 +647,7 @@ export default function Results() {
             };
             return (
               <Card className="p-8 mb-8">
-                <h2 className="text-2xl font-semibold mb-6 text-center">Algorithmic Integrity Score</h2>
+                <h2 className="text-xl md:text-2xl font-semibold mb-6 text-center">Algorithmic Integrity Score</h2>
                 <div className="space-y-6">
                   {/* Band labels */}
                   <div className="flex justify-between text-xs text-muted-foreground">
@@ -779,7 +779,7 @@ export default function Results() {
 
           {/* Comprehensive Analysis for Employers */}
           <Card className="p-8 mb-8">
-            <h2 className="text-2xl font-semibold mb-6">Comprehensive Analysis</h2>
+            <h2 className="text-xl md:text-2xl font-semibold mb-6">Comprehensive Analysis</h2>
             
             {/* Overall Summary */}
             <div className="mb-6 p-4 bg-muted/50 rounded-lg">
