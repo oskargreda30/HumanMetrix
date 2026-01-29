@@ -1835,21 +1835,21 @@ export default function CompareTab() {
                               </CardTitle>
                             </CardHeader>
                             <CardContent>
-                              <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-4">
                                 {/* Strengths */}
-                                <div className="bg-green-50 dark:bg-green-900/10 rounded-lg p-3">
-                                  <div className="flex items-center gap-2 mb-3">
-                                    <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                    <span className="text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide">Strengths</span>
+                                <div className="bg-green-50 dark:bg-green-900/10 rounded-lg p-4">
+                                  <div className="flex items-center gap-2 mb-4">
+                                    <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                    <span className="text-sm font-bold text-green-700 dark:text-green-300 uppercase tracking-wide">Top Strengths</span>
                                   </div>
-                                  <div className="space-y-2">
+                                  <div className="space-y-3">
                                     {strengths.map((s) => (
-                                      <div key={s.name} className="space-y-1">
-                                        <div className="flex items-center justify-between gap-1">
-                                          <span className="text-xs truncate flex-1">{s.name}</span>
-                                          <span className="text-xs font-bold text-green-600 dark:text-green-400">{s.score}</span>
+                                      <div key={s.name} className="space-y-1.5">
+                                        <div className="flex items-center justify-between gap-2">
+                                          <span className="text-sm font-medium text-foreground">{s.name}</span>
+                                          <span className="text-sm font-bold text-green-600 dark:text-green-400">{s.score}%</span>
                                         </div>
-                                        <div className="h-1.5 bg-green-200 dark:bg-green-800 rounded-full overflow-hidden">
+                                        <div className="h-2 bg-green-200 dark:bg-green-800 rounded-full overflow-hidden">
                                           <div className="h-full bg-green-500 rounded-full" style={{ width: `${s.score}%` }} />
                                         </div>
                                       </div>
@@ -1858,19 +1858,19 @@ export default function CompareTab() {
                                 </div>
                                 
                                 {/* Weaknesses */}
-                                <div className="bg-amber-50 dark:bg-amber-900/10 rounded-lg p-3">
-                                  <div className="flex items-center gap-2 mb-3">
-                                    <TrendingDown className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                    <span className="text-xs font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide">Development</span>
+                                <div className="bg-amber-50 dark:bg-amber-900/10 rounded-lg p-4">
+                                  <div className="flex items-center gap-2 mb-4">
+                                    <TrendingDown className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                                    <span className="text-sm font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wide">Development Areas</span>
                                   </div>
-                                  <div className="space-y-2">
+                                  <div className="space-y-3">
                                     {weaknesses.map((w) => (
-                                      <div key={w.name} className="space-y-1">
-                                        <div className="flex items-center justify-between gap-1">
-                                          <span className="text-xs truncate flex-1">{w.name}</span>
-                                          <span className="text-xs font-bold text-amber-600 dark:text-amber-400">{w.score}</span>
+                                      <div key={w.name} className="space-y-1.5">
+                                        <div className="flex items-center justify-between gap-2">
+                                          <span className="text-sm font-medium text-foreground">{w.name}</span>
+                                          <span className="text-sm font-bold text-amber-600 dark:text-amber-400">{w.score}%</span>
                                         </div>
-                                        <div className="h-1.5 bg-amber-200 dark:bg-amber-800 rounded-full overflow-hidden">
+                                        <div className="h-2 bg-amber-200 dark:bg-amber-800 rounded-full overflow-hidden">
                                           <div className="h-full bg-amber-500 rounded-full" style={{ width: `${w.score}%` }} />
                                         </div>
                                       </div>
