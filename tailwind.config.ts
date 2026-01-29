@@ -98,7 +98,7 @@ export default {
         },
         "pulse-scale": {
           "0%, 100%": { opacity: "1", transform: "scale(1)" },
-          "50%": { opacity: "0.7", transform: "scale(1.08)" },
+          "50%": { opacity: "0.7", transform: "scale(0.95)" },
         },
       },
       animation: {
