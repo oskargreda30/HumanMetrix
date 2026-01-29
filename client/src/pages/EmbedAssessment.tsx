@@ -1150,7 +1150,7 @@ export default function EmbedAssessment() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <div className={`${bgCardAlt} rounded-lg p-6 text-center`}>
                     <p className={`text-sm ${textMuted} mb-2`}>Overall Score</p>
-                    <p className="text-4xl font-bold" style={{ color: accentColor }}>
+                    <p className="text-2xl md:text-4xl font-bold" style={{ color: accentColor }}>
                       {results.totalScore}%
                     </p>
                     {isAIQ && aiqBand && (
@@ -1169,7 +1169,7 @@ export default function EmbedAssessment() {
                   </div>
                   <div className={`${bgCardAlt} rounded-lg p-6 text-center`}>
                     <p className={`text-sm ${textMuted} mb-2`}>Percentile</p>
-                    <p className="text-4xl font-bold" style={{ color: accentColor }}>
+                    <p className="text-2xl md:text-4xl font-bold" style={{ color: accentColor }}>
                       {results.percentile}%
                     </p>
                     <p className={`text-xs ${textMuted} mt-1`}>

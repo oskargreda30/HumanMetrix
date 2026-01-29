@@ -178,7 +178,7 @@ export default function StartAssessment() {
             />
           ) : (
             <h1 
-              className="text-3xl font-bold mb-2"
+              className="text-2xl md:text-3xl font-bold mb-2"
               style={{ color: primaryColor }}
             >
               {companyName}

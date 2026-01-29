@@ -795,7 +795,7 @@ export default function Assessment() {
               <div className="mb-8">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h1 className="text-3xl font-bold mb-2">
+                    <h1 className="text-2xl md:text-3xl font-bold mb-2">
                       {formatAssessmentName(assessment.assessmentType)} Assessment
                     </h1>
                     <p className="text-muted-foreground">

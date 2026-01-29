@@ -30,7 +30,7 @@ export default function CheckoutSuccess() {
               </div>
             </div>
 
-            <h1 className="text-3xl font-bold mb-4">Payment Successful!</h1>
+            <h1 className="text-2xl md:text-3xl font-bold mb-4">Payment Successful!</h1>
             <p className="text-lg text-muted-foreground mb-8">
               Thank you for your purchase. Your assessments are now ready to begin.
             </p>

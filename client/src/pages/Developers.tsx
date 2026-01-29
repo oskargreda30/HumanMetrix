@@ -87,7 +87,7 @@ export default function Developers() {
             <Badge className="mb-4 bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
               Developer Documentation
             </Badge>
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+            <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
               B2B Integration Guide
             </h1>
             <p className="text-xl text-slate-300 max-w-2xl mx-auto">

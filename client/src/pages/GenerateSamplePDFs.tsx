@@ -232,7 +232,7 @@ export default function GenerateSamplePDFs() {
   return (
     <div className="min-h-screen flex items-center justify-center p-8 bg-background">
       <Card className="max-w-2xl w-full p-8">
-        <h1 className="text-3xl font-bold mb-2">Sample PDF Generator</h1>
+        <h1 className="text-2xl md:text-3xl font-bold mb-2">Sample PDF Generator</h1>
         <p className="text-muted-foreground mb-6">
           Generate sample PDFs using the exact same export function as the admin dashboard
         </p>

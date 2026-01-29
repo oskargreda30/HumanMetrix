@@ -257,7 +257,7 @@ export default function Purchase() {
       <main className="flex-grow py-16">
         <div className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8">
           <div className="mb-12 text-center">
-            <h1 className="text-4xl font-bold mb-4">Get Started with HumanMetrix</h1>
+            <h1 className="text-2xl md:text-4xl font-bold mb-4">Get Started with HumanMetrix</h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Select your assessments and take them for free. Pay only when you're ready to unlock your results.
             </p>

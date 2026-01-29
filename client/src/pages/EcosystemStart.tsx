@@ -36,7 +36,7 @@ export default function EcosystemStart() {
       <div className="min-h-screen bg-background">
         <div className="mx-auto max-w-3xl px-4 py-16 text-center">
           <Users className="h-16 w-16 text-primary mx-auto mb-6" />
-          <h1 className="text-3xl font-bold mb-4">Team Diagnostic Tool</h1>
+          <h1 className="text-2xl md:text-3xl font-bold mb-4">Team Diagnostic Tool</h1>
           <p className="text-lg text-muted-foreground mb-8">
             Discover how capabilities are distributed across your team and get AI-powered recommendations 
             for your next hire. Sign in to get started.
@@ -69,7 +69,7 @@ export default function EcosystemStart() {
             </Button>
           </Link>
           
-          <h1 className="text-3xl font-bold mb-2" data-testid="text-page-title">
+          <h1 className="text-2xl md:text-3xl font-bold mb-2" data-testid="text-page-title">
             Team Diagnostic
           </h1>
           <p className="text-muted-foreground">

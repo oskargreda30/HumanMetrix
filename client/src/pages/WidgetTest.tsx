@@ -190,7 +190,7 @@ export default function WidgetTest() {
         <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-white" data-testid="heading-widget-test">
+              <h1 className="text-2xl md:text-3xl font-bold text-white" data-testid="heading-widget-test">
                 Widget & SDK Test Lab
               </h1>
               <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
