@@ -1,0 +1,627 @@
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Search, FileText, StickyNote, TrendingUp, TrendingDown, AlertTriangle, Download, UserCheck, UserX, HelpCircle, Upload, ClipboardList, Building2 } from "lucide-react";
+import { PdfImportModal } from "@/components/PdfImportModal";
+import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { SkillRadarChart } from "@/components/admin/SkillRadarChart";
+import { isSkillBasedAssessment, transformToRadarData, getTopSkills, getGrowthAreas, formatAssessmentType, calculateAverageScore } from "@/lib/assessmentSkills";
+import { exportEnhancedCandidatePDF, captureRadarChart } from "@/lib/enhancedPdfExport";
+import { getAIQBandInterpretation } from "@/data/aiq-questions";
+
+export default function PartnerResultsTab() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
+  const [selectedRole, setSelectedRole] = useState<string | undefined>(undefined);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [newNote, setNewNote] = useState("");
+  const [showPdfImportModal, setShowPdfImportModal] = useState(false);
+  const { toast } = useToast();
+
+  const { data: candidates, isLoading } = useQuery<any[]>({
+    queryKey: ['/api/partner/me/candidates'],
+  });
+
+  const { data: roles } = useQuery<any[]>({
+    queryKey: ['/api/partner/me/roles'],
+  });
+
+  const { data: roleAlignment } = useQuery<{
+    overallFit: number;
+    skillAlignments: Array<{
+      skillName: string;
+      candidateScore: number;
+      requiredScore: number;
+      gap: number;
+      alignment: string;
+    }>;
+    strengths: string[];
+    gaps: string[];
+    recommendations: string;
+  }>({
+    queryKey: ['/api/partner/me/role-alignment', { 
+      candidateId: selectedCandidate?.user?.id || '', 
+      jobRoleId: selectedRole || '' 
+    }],
+    enabled: !!selectedCandidate && !!selectedRole && selectedRole !== "__none__",
+  });
+
+  const handleDialogChange = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setSelectedCandidate(null);
+      setSelectedRole(undefined);
+      setNewNote("");
+    }
+  };
+
+  const addNoteMutation = useMutation({
+    mutationFn: async ({ userId, note }: { userId: string; note: string }) => {
+      return apiRequest('POST', '/api/partner/me/candidates/notes', { userId, note });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/partner/me/candidates'] });
+      setNewNote("");
+      toast({ title: "Note added successfully" });
+    },
+  });
+
+  const handleExportCandidatePDF = async (candidate: any) => {
+    if (!candidate) return;
+    
+    try {
+      const completedResults = candidate.results?.filter(
+        (r: any) => r.status === 'completed' && isSkillBasedAssessment(r.assessmentType) && r.scores
+      );
+      
+      const allSkills: Array<{name: string, score: number, assessment: string}> = [];
+      completedResults?.forEach((result: any) => {
+        const radarData = transformToRadarData(result.scores, result.assessmentType);
+        radarData.forEach((skill: any) => {
+          allSkills.push({
+            name: skill.skill,
+            score: skill.score,
+            assessment: formatAssessmentType(result.assessmentType)
+          });
+        });
+      });
+      
+      toast({
+        title: "Generating PDF...",
+        description: "Please wait while we create your professional report.",
+      });
+
+      const averagesRes = await fetch('/api/partner/me/platform-averages');
+      const platformAverages = await averagesRes.json();
+
+      let radarChartImages: { fit?: string; aiReadiness?: string } = {};
+      
+      const fitResult = candidate.results?.find((r: any) => 
+        r.assessmentType === 'fit' && r.status === 'completed'
+      );
+      const aiReadinessResult = candidate.results?.find((r: any) => 
+        r.assessmentType === 'ai_readiness' && r.status === 'completed'
+      );
+
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      if (fitResult) {
+        const fitChart = await captureRadarChart('pdf-fit-chart');
+        if (fitChart) radarChartImages.fit = fitChart;
+      }
+
+      if (aiReadinessResult) {
+        const aiChart = await captureRadarChart('pdf-ai-readiness-chart');
+        if (aiChart) radarChartImages.aiReadiness = aiChart;
+      }
+      
+      const promptArchitectureResult = candidate.results?.find((r: any) => 
+        r.assessmentType === 'prompt_architecture' && r.status === 'completed'
+      );
+      let promptArchitectureData: any[] = [];
+      if (promptArchitectureResult) {
+        try {
+          const promptEvalRes = await fetch(`/api/prompt-evaluations/${promptArchitectureResult.id}`);
+          if (promptEvalRes.ok) {
+            promptArchitectureData = await promptEvalRes.json();
+          }
+        } catch (error) {
+          console.error('Error fetching prompt architecture data:', error);
+        }
+      }
+      
+      if (!platformAverages || 
+          typeof platformAverages.totalCandidates !== 'number' ||
+          typeof platformAverages.avgScoreAcrossCandidates !== 'number' ||
+          !platformAverages.skillAverages) {
+        throw new Error('Platform averages data is incomplete');
+      }
+
+      const selectedRoleData = selectedRole && selectedRole !== "__none__" 
+        ? roles?.find((r: any) => r.id === selectedRole) 
+        : null;
+      
+      const roleComparisonData = (selectedRole && selectedRole !== "__none__" && selectedRoleData && roleAlignment?.overallFit !== undefined) 
+        ? { role: selectedRoleData, alignment: roleAlignment } 
+        : undefined;
+      
+      await exportEnhancedCandidatePDF(
+        candidate, 
+        allSkills, 
+        platformAverages, 
+        radarChartImages,
+        roleComparisonData,
+        promptArchitectureData
+      );
+      
+      toast({
+        title: "PDF exported successfully",
+        description: "Professional candidate report has been downloaded.",
+      });
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast({
+        title: "Export failed",
+        description: "There was an error generating the PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const filteredCandidates = candidates?.filter((c) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      c.user.email?.toLowerCase().includes(query) ||
+      c.user.firstName?.toLowerCase().includes(query) ||
+      c.user.lastName?.toLowerCase().includes(query)
+    );
+  });
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <CardTitle className="text-lg">Candidate Results</CardTitle>
+              <CardDescription>View completed assessment results for your candidates</CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPdfImportModal(true)}
+              data-testid="button-import-pdf-results"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Import PDF Report
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search candidates by name or email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+              data-testid="input-search-candidates"
+            />
+          </div>
+        </CardContent>
+      </Card>
+      
+      <PdfImportModal
+        open={showPdfImportModal}
+        onOpenChange={setShowPdfImportModal}
+        endpoint="/api/partner/import-pdf"
+      />
+
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : filteredCandidates && filteredCandidates.length > 0 ? (
+        <div className="grid gap-4">
+          {filteredCandidates.map((candidate: any) => (
+            <Card key={candidate.user.id} className="hover-elevate" data-testid={`card-candidate-${candidate.user.id}`}>
+              <CardHeader>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg">
+                      {candidate.user.firstName || candidate.user.lastName
+                        ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
+                        : candidate.user.email || 'No Name'}
+                    </CardTitle>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <p className="text-sm text-muted-foreground">{candidate.user.email}</p>
+                      {candidate.user.resultsRetentionConsent === true ? (
+                        <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30" data-testid={`badge-consent-opted-in-${candidate.user.id}`}>
+                          <UserCheck className="h-3 w-3 mr-1" />
+                          Shared
+                        </Badge>
+                      ) : candidate.user.resultsRetentionConsent === false ? (
+                        <Badge variant="outline" className="text-xs bg-red-500/10 text-red-600 border-red-500/30" data-testid={`badge-consent-opted-out-${candidate.user.id}`}>
+                          <UserX className="h-3 w-3 mr-1" />
+                          Private
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs bg-gray-500/10 text-gray-500 border-gray-500/30" data-testid={`badge-consent-pending-${candidate.user.id}`}>
+                          <HelpCircle className="h-3 w-3 mr-1" />
+                          Pending
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <Dialog open={dialogOpen && selectedCandidate?.user?.id === candidate.user.id} onOpenChange={handleDialogChange}>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedCandidate(candidate);
+                          setDialogOpen(true);
+                        }}
+                        data-testid={`button-view-details-${candidate.user.id}`}
+                      >
+                        View Details
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>
+                          {candidate.user.firstName || candidate.user.lastName
+                            ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
+                            : 'Candidate Details'}
+                        </DialogTitle>
+                        <DialogDescription>{candidate.user.email}</DialogDescription>
+                      </DialogHeader>
+
+                      <div className="space-y-6">
+                        <div>
+                          <h3 className="font-semibold mb-3 flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            Assessment Results ({candidate.results?.length || 0})
+                          </h3>
+                          {candidate.results && candidate.results.length > 0 ? (
+                            <div className="space-y-4">
+                              {candidate.results.map((result: any) => (
+                                <div key={result.id} className="space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-medium">{formatAssessmentType(result.assessmentType)}</span>
+                                    <Badge variant={result.status === 'completed' ? 'default' : 'secondary'}>
+                                      {result.status}
+                                    </Badge>
+                                  </div>
+                                  
+                                  {result.status === 'completed' && isSkillBasedAssessment(result.assessmentType) && result.scores ? (
+                                    <div className="space-y-3">
+                                      <SkillRadarChart 
+                                        data={transformToRadarData(result.scores, result.assessmentType)}
+                                        height={250}
+                                        showCard={false}
+                                      />
+                                      
+                                      <div className="grid grid-cols-2 gap-3">
+                                        <div className="p-3 bg-muted/50 rounded-lg">
+                                          <div className="flex items-center gap-2 mb-2">
+                                            <TrendingUp className="h-4 w-4 text-green-600" />
+                                            <p className="text-xs font-medium text-muted-foreground">Top Strengths</p>
+                                          </div>
+                                          {getTopSkills(result.scores, result.assessmentType, 2).map((skill) => (
+                                            <div key={skill.name} className="flex items-center justify-between text-sm mt-1">
+                                              <span>{skill.name}</span>
+                                              <Badge variant="outline" className="font-mono text-xs">{skill.score}</Badge>
+                                            </div>
+                                          ))}
+                                        </div>
+                                        
+                                        <div className="p-3 bg-muted/50 rounded-lg">
+                                          <div className="flex items-center gap-2 mb-2">
+                                            <TrendingDown className="h-4 w-4 text-amber-600" />
+                                            <p className="text-xs font-medium text-muted-foreground">Growth Areas</p>
+                                          </div>
+                                          {getGrowthAreas(result.scores, result.assessmentType, 2).map((skill) => (
+                                            <div key={skill.name} className="flex items-center justify-between text-sm mt-1">
+                                              <span>{skill.name}</span>
+                                              <Badge variant="outline" className="font-mono text-xs">{skill.score}</Badge>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="text-center p-2 bg-primary/5 rounded-lg">
+                                        <p className="text-xs text-muted-foreground">Average Score</p>
+                                        <p className="text-xl font-bold text-primary">{calculateAverageScore(result.scores)}/100</p>
+                                      </div>
+                                    </div>
+                                  ) : result.assessmentType === 'aiq' && result.totalScore !== null && result.status === 'completed' ? (
+                                    (() => {
+                                      const aiqBand = getAIQBandInterpretation(result.totalScore);
+                                      const getBarColor = (score: number) => {
+                                        if (score >= 80) return 'bg-green-600';
+                                        if (score >= 60) return 'bg-blue-600';
+                                        if (score >= 40) return 'bg-amber-500';
+                                        if (score >= 20) return 'bg-orange-500';
+                                        return 'bg-red-500';
+                                      };
+                                      return (
+                                        <div className="p-4 bg-muted/30 rounded-lg space-y-3" data-testid={`aiq-result-${result.id}`}>
+                                          <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-medium" data-testid="text-aiq-label">AIQ Score</span>
+                                            <span className="text-xl font-bold text-primary" data-testid="text-aiq-score">{result.totalScore}%</span>
+                                          </div>
+                                          
+                                          <div className="relative">
+                                            <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                                              <span data-testid="text-aiq-min">0</span>
+                                              <span>40</span>
+                                              <span>80</span>
+                                              <span data-testid="text-aiq-max">100</span>
+                                            </div>
+                                            
+                                            <div className="relative" data-testid="container-aiq-progress">
+                                              <Progress 
+                                                value={Math.min(result.totalScore, 100)} 
+                                                className="h-6 relative"
+                                                data-testid="progress-aiq-bar"
+                                                indicatorClassName={getBarColor(result.totalScore)}
+                                              />
+                                              
+                                              {[20, 40, 60, 80].map((mark) => (
+                                                <div 
+                                                  key={mark}
+                                                  className="absolute top-0 bottom-0 w-0.5 bg-muted-foreground/30 pointer-events-none" 
+                                                  style={{ left: `${mark}%` }}
+                                                />
+                                              ))}
+                                              
+                                              {result.totalScore > 0 && (
+                                                <div 
+                                                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap pointer-events-none"
+                                                  style={{ left: `${Math.min(Math.max(result.totalScore, 8), 92)}%` }}
+                                                  data-testid="label-aiq-score-position"
+                                                >
+                                                  {result.totalScore}%
+                                                </div>
+                                              )}
+                                            </div>
+                                            
+                                            <div className="text-center mt-2" data-testid="container-aiq-band">
+                                              <Badge 
+                                                className={`text-xs ${
+                                                  result.totalScore >= 80 ? 'bg-green-600' :
+                                                  result.totalScore >= 60 ? 'bg-blue-600' :
+                                                  result.totalScore >= 40 ? 'bg-amber-500' :
+                                                  result.totalScore >= 20 ? 'bg-orange-500' : 'bg-red-500'
+                                                }`}
+                                                data-testid="badge-aiq-band"
+                                              >
+                                                {aiqBand.title}
+                                              </Badge>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })()
+                                  ) : result.totalScore !== null && (
+                                    <div className="text-center p-3 bg-muted rounded-lg">
+                                      <p className="text-lg font-bold text-primary">
+                                        {result.totalScore}%
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">No completed assessments</p>
+                          )}
+                        </div>
+
+                        <div>
+                          <h3 className="font-semibold mb-3 flex items-center gap-2">
+                            <AlertTriangle className="h-4 w-4" />
+                            Biggest Areas to Improve
+                          </h3>
+                          {(() => {
+                            const completedResults = candidate.results?.filter(
+                              (r: any) => r.status === 'completed' && isSkillBasedAssessment(r.assessmentType) && r.scores
+                            );
+                            
+                            if (!completedResults || completedResults.length === 0) {
+                              return <p className="text-sm text-muted-foreground">No completed assessments to analyze</p>;
+                            }
+
+                            const allGrowthAreas: Array<{name: string, score: number, assessment: string}> = [];
+                            completedResults.forEach((result: any) => {
+                              const growthAreas = getGrowthAreas(result.scores, result.assessmentType, 3);
+                              growthAreas.forEach((skill) => {
+                                allGrowthAreas.push({
+                                  name: skill.name,
+                                  score: skill.score,
+                                  assessment: formatAssessmentType(result.assessmentType)
+                                });
+                              });
+                            });
+
+                            const sortedGrowthAreas = allGrowthAreas
+                              .sort((a, b) => a.score - b.score)
+                              .slice(0, 3);
+
+                            return (
+                              <div className="space-y-2">
+                                {sortedGrowthAreas.map((skill, index) => (
+                                  <div key={`${skill.name}-${index}`} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                                    <div>
+                                      <span className="font-medium">{skill.name}</span>
+                                      <Badge variant="outline" className="ml-2 text-xs">{skill.assessment}</Badge>
+                                    </div>
+                                    <Badge variant="outline" className="font-mono">{skill.score}</Badge>
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          })()}
+                        </div>
+
+                        <div>
+                          <h3 className="font-semibold mb-3 flex items-center gap-2">
+                            <StickyNote className="h-4 w-4" />
+                            Notes
+                          </h3>
+                          {candidate.notes && candidate.notes.length > 0 ? (
+                            <div className="space-y-2 mb-3">
+                              {candidate.notes.map((note: any) => (
+                                <div key={note.id} className="p-2 bg-muted/50 rounded-lg">
+                                  <p className="text-sm">{note.content}</p>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {new Date(note.createdAt).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground mb-3">No notes yet</p>
+                          )}
+                          <div className="flex gap-2">
+                            <Textarea
+                              placeholder="Add a note..."
+                              value={newNote}
+                              onChange={(e) => setNewNote(e.target.value)}
+                              className="flex-1"
+                              data-testid="textarea-add-note"
+                            />
+                            <Button
+                              size="sm"
+                              disabled={!newNote.trim() || addNoteMutation.isPending}
+                              onClick={() => addNoteMutation.mutate({ userId: candidate.user.id, note: newNote })}
+                              data-testid="button-add-note"
+                            >
+                              {addNoteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add'}
+                            </Button>
+                          </div>
+                        </div>
+
+                        {roles && roles.length > 0 && (
+                          <div>
+                            <h3 className="font-semibold mb-3">Compare to Role</h3>
+                            <Select value={selectedRole} onValueChange={setSelectedRole}>
+                              <SelectTrigger data-testid="select-compare-role">
+                                <SelectValue placeholder="Select a role to compare" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__none__">No role comparison</SelectItem>
+                                {roles.map((role: any) => (
+                                  <SelectItem key={role.id} value={role.id}>
+                                    {role.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+
+                            {roleAlignment && selectedRole && selectedRole !== "__none__" && (
+                              <div className="mt-4 p-3 bg-muted/30 rounded-lg space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium">Overall Fit</span>
+                                  <Badge className={roleAlignment.overallFit >= 70 ? 'bg-green-600' : roleAlignment.overallFit >= 50 ? 'bg-amber-500' : 'bg-red-500'}>
+                                    {roleAlignment.overallFit}%
+                                  </Badge>
+                                </div>
+                                
+                                {roleAlignment.strengths.length > 0 && (
+                                  <div>
+                                    <p className="text-xs font-medium text-muted-foreground mb-1">Strengths</p>
+                                    <div className="flex flex-wrap gap-1">
+                                      {roleAlignment.strengths.map((s, i) => (
+                                        <Badge key={i} variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30">{s}</Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {roleAlignment.gaps.length > 0 && (
+                                  <div>
+                                    <p className="text-xs font-medium text-muted-foreground mb-1">Gaps</p>
+                                    <div className="flex flex-wrap gap-1">
+                                      {roleAlignment.gaps.map((g, i) => (
+                                        <Badge key={i} variant="outline" className="text-xs bg-amber-500/10 text-amber-600 border-amber-500/30">{g}</Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <DialogFooter>
+                        <Button
+                          variant="outline"
+                          onClick={() => handleExportCandidatePDF(candidate)}
+                          data-testid="button-export-candidate-pdf"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Export PDF
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardHeader>
+              
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {candidate.results?.map((result: any) => (
+                    <Badge 
+                      key={result.id} 
+                      variant={result.status === 'completed' ? 'default' : 'secondary'}
+                      data-testid={`badge-result-${result.id}`}
+                    >
+                      {formatAssessmentType(result.assessmentType)}
+                      {result.totalScore !== null && ` (${result.totalScore}%)`}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="text-center py-12">
+            <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="font-medium text-muted-foreground">No results yet</p>
+            <p className="text-sm text-muted-foreground mt-1">Results will appear here when candidates complete assessments.</p>
+            <p className="text-sm text-muted-foreground mt-2">Get started by creating an assessment session via the API or Widget Test Lab.</p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}

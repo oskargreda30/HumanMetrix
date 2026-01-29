@@ -13201,19 +13201,36 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         }
       }
       
-      // Build final candidates array
-      const candidates = Array.from(candidateMap.values()).map((candidate) => ({
-        user: {
-          id: candidate.id,
-          email: candidate.email,
-          firstName: candidate.firstName,
-          lastName: candidate.lastName,
-          externalUserId: candidate.externalUserId,
-        },
-        results: candidate.results,
-      }));
+      // Build final candidates array with notes
+      const candidateIds = Array.from(candidateMap.keys());
+      const candidatesWithNotes = await Promise.all(
+        Array.from(candidateMap.values()).map(async (candidate) => {
+          // Fetch notes for this candidate using partner-prefixed id
+          const partnerCandidateId = `partner:${partner.id}:${candidate.id}`;
+          const notes = await db.select()
+            .from(candidateNotes)
+            .where(eq(candidateNotes.userId, partnerCandidateId))
+            .orderBy(desc(candidateNotes.createdAt));
+          
+          return {
+            user: {
+              id: candidate.id,
+              email: candidate.email,
+              firstName: candidate.firstName,
+              lastName: candidate.lastName,
+              externalUserId: candidate.externalUserId,
+            },
+            results: candidate.results,
+            notes: notes.map(n => ({
+              id: n.id,
+              content: n.note,
+              createdAt: n.createdAt,
+            })),
+          };
+        })
+      );
       
-      res.json(candidates);
+      res.json(candidatesWithNotes);
     } catch (error) {
       console.error("Error fetching partner candidates:", error);
       res.status(500).json({ message: "Failed to fetch candidates" });
@@ -13560,6 +13577,171 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
     } catch (error) {
       console.error("Error comparing partner candidates:", error);
       res.status(500).json({ message: "Failed to compare candidates" });
+    }
+  });
+
+  // Partner: Get platform averages for PDF export
+  app.get("/api/partner/me/platform-averages", isAuthenticated, async (req: any, res) => {
+    try {
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      // Get partner's candidates
+      const sessions = await storage.getSessionsByPartner(partner.id, 10000);
+      const completedSessions = sessions.filter(s => s.status === 'completed' && !s.isTestSession);
+      
+      // Also get invited candidates
+      const partnerInvitations = await db.select()
+        .from(partnerCandidateInvitations)
+        .where(eq(partnerCandidateInvitations.partnerId, partner.id));
+      
+      // Calculate partner-wide averages
+      const allSkills: Record<string, number[]> = {};
+      let totalScores: number[] = [];
+      let candidateCount = 0;
+      
+      // Process session-based candidates
+      const processedEmails = new Set<string>();
+      for (const session of completedSessions) {
+        const email = session.externalEmail || session.externalUserId || session.id;
+        if (!processedEmails.has(email)) {
+          processedEmails.add(email);
+          candidateCount++;
+        }
+        
+        if (session.scores && typeof session.scores === 'object') {
+          let sessionScores: number[] = [];
+          Object.entries(session.scores).forEach(([skillName, score]) => {
+            if (typeof score === 'number') {
+              if (!allSkills[skillName]) {
+                allSkills[skillName] = [];
+              }
+              allSkills[skillName].push(score);
+              sessionScores.push(score);
+            }
+          });
+          
+          if (sessionScores.length > 0) {
+            const avg = sessionScores.reduce((a, b) => a + b, 0) / sessionScores.length;
+            totalScores.push(avg);
+          }
+        }
+      }
+      
+      // Process invited candidates
+      for (const invitation of partnerInvitations) {
+        if (!processedEmails.has(invitation.email)) {
+          const invitationResults = await db.select()
+            .from(assessmentResults)
+            .where(eq(assessmentResults.partnerInvitationId, invitation.id));
+          
+          const completedResults = invitationResults.filter(r => r.status === 'completed');
+          if (completedResults.length > 0) {
+            processedEmails.add(invitation.email);
+            candidateCount++;
+            
+            for (const result of completedResults) {
+              if (result.scores && typeof result.scores === 'object') {
+                let resultScores: number[] = [];
+                Object.entries(result.scores as Record<string, any>).forEach(([skillName, score]) => {
+                  if (typeof score === 'number') {
+                    if (!allSkills[skillName]) {
+                      allSkills[skillName] = [];
+                    }
+                    allSkills[skillName].push(score);
+                    resultScores.push(score);
+                  }
+                });
+                
+                if (resultScores.length > 0) {
+                  const avg = resultScores.reduce((a, b) => a + b, 0) / resultScores.length;
+                  totalScores.push(avg);
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      // Calculate skill averages
+      const skillAverages: Record<string, number> = {};
+      Object.entries(allSkills).forEach(([skillName, scores]) => {
+        if (scores.length > 0) {
+          skillAverages[skillName] = Math.round(
+            scores.reduce((a, b) => a + b, 0) / scores.length
+          );
+        }
+      });
+      
+      // Calculate overall partner average
+      const avgScoreAcrossCandidates = totalScores.length > 0
+        ? Math.round(totalScores.reduce((a, b) => a + b, 0) / totalScores.length)
+        : 0;
+      
+      res.json({
+        totalCandidates: candidateCount,
+        avgScoreAcrossCandidates,
+        skillAverages,
+      });
+    } catch (error) {
+      console.error("Error fetching partner platform averages:", error);
+      res.status(500).json({ message: "Failed to fetch platform averages" });
+    }
+  });
+
+  // Partner: Add note to candidate
+  app.post("/api/partner/me/candidates/notes", isAuthenticated, async (req: any, res) => {
+    try {
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { userId, note } = req.body;
+      if (!userId || !note) {
+        return res.status(400).json({ message: "User ID and note are required" });
+      }
+      
+      // Verify the candidate belongs to this partner by checking sessions or invitations
+      const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
+      const candidateSession = allSessions.find(
+        s => s.externalEmail === userId || s.externalUserId === userId || s.id === userId
+      );
+      
+      // Also check partner invitations
+      const invitations = await db.select()
+        .from(partnerCandidateInvitations)
+        .where(and(
+          eq(partnerCandidateInvitations.partnerId, partner.id),
+          eq(partnerCandidateInvitations.email, userId)
+        ));
+      
+      if (!candidateSession && invitations.length === 0) {
+        return res.status(404).json({ message: "Candidate not found for this partner" });
+      }
+
+      // Use partner-prefixed userId to store notes for partner candidates
+      // This allows notes to be associated with the candidate while keeping partner context
+      const partnerCandidateId = `partner:${partner.id}:${userId}`;
+      
+      const createdNote = await storage.createCandidateNote({
+        userId: partnerCandidateId,
+        note: note,
+        createdBy: req.user.id,
+      });
+
+      res.json({
+        id: createdNote.id,
+        content: createdNote.note,
+        createdAt: createdNote.createdAt,
+      });
+    } catch (error) {
+      console.error("Error adding partner note:", error);
+      res.status(500).json({ message: "Failed to add note" });
     }
   });
 

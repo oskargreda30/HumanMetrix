@@ -35,6 +35,7 @@ import { useToast } from "@/hooks/use-toast";
 import { BulkInvitationsTab } from "@/components/partner/BulkInvitationsTab";
 import PartnerAnalysisTab from "@/components/partner/PartnerAnalysisTab";
 import PartnerRoleFitTab from "@/components/partner/PartnerRoleFitTab";
+import PartnerResultsTab from "@/components/partner/PartnerResultsTab";
 import { PdfImportModal } from "@/components/PdfImportModal";
 import { HiringPipelineTab } from "@/components/HiringPipelineTab";
 import PartnerTermsAcceptanceDialog from "@/components/PartnerTermsAcceptanceDialog";
@@ -2737,87 +2738,7 @@ export default function PartnerDashboard() {
 
             {/* Results Tab */}
             <TabsContent value="results" className="space-y-4" data-testid="panel-results">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <CardTitle className="text-lg">Candidate Results</CardTitle>
-                        <InfoTooltip content="Assessment scores are percentages (0-100%). Higher scores indicate stronger performance. Scores above 70% are considered strong, 50-70% average, and below 50% may need development." />
-                      </div>
-                      <CardDescription>View completed assessment results for your candidates</CardDescription>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowPdfImportModal(true)}
-                      data-testid="button-import-pdf-results"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Import PDF Report
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {resultsLoading ? (
-                    <div className="flex justify-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                    </div>
-                  ) : resultsData?.results.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p className="font-medium">No results yet</p>
-                      <p className="text-sm mt-1">Results will appear here when candidates complete assessments.</p>
-                      <p className="text-sm mt-2">Get started by creating an assessment session via the API or Widget Test Lab.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {resultsData?.results.map((result) => (
-                        <div key={result.sessionId} className="flex items-center justify-between p-4 border rounded-lg" data-testid={`result-${result.sessionId}`}>
-                          <div className="flex items-center gap-4">
-                            <div className="p-2 rounded-md bg-primary/10">
-                              <ClipboardList className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                              <div className="font-medium">
-                                {result.externalEmail || result.externalUserId || 'Anonymous'}
-                              </div>
-                              <div className="text-sm text-muted-foreground flex items-center gap-2">
-                                <Badge variant="outline">{result.assessmentType}</Badge>
-                                {result.organization && (
-                                  <span className="flex items-center gap-1">
-                                    <Building2 className="h-3 w-3" />
-                                    {result.organization.name}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="text-right">
-                              {result.overallScore !== null && (
-                                <div className="text-lg font-bold text-primary">{result.overallScore}%</div>
-                              )}
-                              <div className="text-xs text-muted-foreground">
-                                {result.completedAt ? formatDate(result.completedAt) : 'Pending'}
-                              </div>
-                            </div>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => window.open(`/partner/results/${result.sessionId}`, '_blank')}
-                              data-testid={`button-view-result-${result.sessionId}`}
-                            >
-                              <Eye className="h-4 w-4 mr-1.5" />
-                              View
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <PartnerResultsTab />
             </TabsContent>
 
             {/* Invitations Tab */}
