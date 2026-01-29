@@ -288,9 +288,6 @@ function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, r
     
     yPos = addGuideItem(5, 'Role Flexibility Analysis', 
       'Alternative roles where this candidate might excel if the primary role isn\'t ideal. Useful for internal mobility.', yPos);
-    
-    yPos = addGuideItem(6, 'Hiring Recommendation', 
-      'Summary with specific hiring guidance, interview focus areas, and onboarding considerations.', yPos);
   } else if (reportType === 'individual') {
     // Individual Report Guide - matches IndividualReportTab.tsx order exactly
     yPos = addGuideItem(1, 'Understanding Trait-Based Scores', 
@@ -2328,10 +2325,10 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     const boxX = isLeftCol ? 20 : 20 + itemBoxWidth + itemBoxGap;
     const currentY = isLeftCol ? strengthLeftY : strengthRightY;
     
-    // Calculate box height based on text content
-    pdf.setFontSize(8);
-    const wrappedLines = pdf.splitTextToSize(strength, itemBoxWidth - 8);
-    const boxHeight = Math.max(12, wrappedLines.length * 3.5 + 6);
+    // Calculate box height based on text content - smaller font and tighter spacing
+    pdf.setFontSize(7);
+    const wrappedLines = pdf.splitTextToSize(strength, itemBoxWidth - 6);
+    const boxHeight = Math.max(10, wrappedLines.length * 3 + 4);
     
     // Draw individual box with subtle green styling
     pdf.setFillColor(250, 255, 250); // Very light green
@@ -2340,18 +2337,18 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.roundedRect(boxX, currentY, itemBoxWidth, boxHeight, 2, 2, 'FD');
     
     // Strength description text
-    pdf.setFontSize(8);
+    pdf.setFontSize(7);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(34, 84, 52); // Dark green text
     wrappedLines.forEach((line: string, lineIndex: number) => {
-      pdf.text(line, boxX + 4, currentY + 5 + (lineIndex * 3.5));
+      pdf.text(line, boxX + 3, currentY + 4 + (lineIndex * 3));
     });
     
-    // Update column Y position
+    // Update column Y position - reduced gap between boxes
     if (isLeftCol) {
-      strengthLeftY = currentY + boxHeight + 3;
+      strengthLeftY = currentY + boxHeight + 2;
     } else {
-      strengthRightY = currentY + boxHeight + 3;
+      strengthRightY = currentY + boxHeight + 2;
     }
   });
   
@@ -2378,10 +2375,10 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     const boxX = isLeftCol ? 20 : 20 + itemBoxWidth + itemBoxGap;
     const currentY = isLeftCol ? gapLeftY : gapRightY;
     
-    // Calculate box height based on text content
-    pdf.setFontSize(8);
-    const wrappedLines = pdf.splitTextToSize(gap, itemBoxWidth - 8);
-    const boxHeight = Math.max(12, wrappedLines.length * 3.5 + 6);
+    // Calculate box height based on text content - smaller font and tighter spacing
+    pdf.setFontSize(7);
+    const wrappedLines = pdf.splitTextToSize(gap, itemBoxWidth - 6);
+    const boxHeight = Math.max(10, wrappedLines.length * 3 + 4);
     
     // Draw individual box with subtle amber styling
     pdf.setFillColor(255, 253, 245); // Very light amber
@@ -2390,18 +2387,18 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.roundedRect(boxX, currentY, itemBoxWidth, boxHeight, 2, 2, 'FD');
     
     // Gap description text
-    pdf.setFontSize(8);
+    pdf.setFontSize(7);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(130, 90, 20); // Dark amber text
     wrappedLines.forEach((line: string, lineIndex: number) => {
-      pdf.text(line, boxX + 4, currentY + 5 + (lineIndex * 3.5));
+      pdf.text(line, boxX + 3, currentY + 4 + (lineIndex * 3));
     });
     
-    // Update column Y position
+    // Update column Y position - reduced gap between boxes
     if (isLeftCol) {
-      gapLeftY = currentY + boxHeight + 3;
+      gapLeftY = currentY + boxHeight + 2;
     } else {
-      gapRightY = currentY + boxHeight + 3;
+      gapRightY = currentY + boxHeight + 2;
     }
   });
   
@@ -2971,6 +2968,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     .replace(/OVERALL ASSESSMENT:.*?\n/gi, '') // Remove OVERALL ASSESSMENT line
     .replace(/KEY STRENGTHS:[\s\S]*?(?=\n\n[A-Z]|DEVELOPMENT AREAS:|COHORT CONTEXT:|HIRING RECOMMENDATION:|ALTERNATIVE ROLE|$)/gi, '')
     .replace(/DEVELOPMENT AREAS:[\s\S]*?(?=\n\n[A-Z]|COHORT CONTEXT:|HIRING RECOMMENDATION:|ALTERNATIVE ROLE|$)/gi, '')
+    .replace(/HIRING RECOMMENDATION:[\s\S]*?(?=\n\n[A-Z]|ALTERNATIVE ROLE|$)/gi, '') // Remove Hiring Recommendation section
     .replace(/\n{3,}/g, '\n\n') // Clean up extra newlines
     .trim();
   
@@ -2978,7 +2976,6 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   recommendationText = recommendationText
     .replace(/CRITICAL SKILLS ANALYSIS:/g, 'Critical Skills Analysis:')
     .replace(/COHORT CONTEXT:/g, 'Cohort Context:')
-    .replace(/HIRING RECOMMENDATION:/g, 'Hiring Recommendation:')
     .replace(/ALTERNATIVE ROLE INSIGHT:/g, 'Alternative Role Insight:');
   
   // Split recommendation into paragraphs (sections separated by double newlines)
