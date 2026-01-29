@@ -131,9 +131,29 @@ export default function GuestInvite() {
         assessmentType: nextAssessment.type 
       });
       
-      const { sessionId } = await res.json();
-      setCurrentSessionId(sessionId);
+      const data = await res.json();
+      
+      // If the response indicates assessment is already completed, refresh and show results
+      if (data.status === 'completed' || data.error?.includes('already completed')) {
+        // Silently refresh invitation data and check if all complete
+        const updatedInvitation = await fetchInvitation(true);
+        if (updatedInvitation?.allComplete) {
+          setShowingResults(true);
+        }
+        return;
+      }
+      
+      setCurrentSessionId(data.sessionId);
     } catch (err: any) {
+      // Handle "already completed" error gracefully - this can happen due to race conditions
+      if (err.message?.includes('already completed') || err.message?.includes('Assessment already completed')) {
+        const updatedInvitation = await fetchInvitation(true);
+        if (updatedInvitation?.allComplete) {
+          setShowingResults(true);
+        }
+        return;
+      }
+      
       toast({
         title: "Error",
         description: err.message || "Failed to start assessment",
@@ -142,7 +162,7 @@ export default function GuestInvite() {
     } finally {
       setCreatingSession(false);
     }
-  }, [token, toast]);
+  }, [token, toast, fetchInvitation]);
 
   useEffect(() => {
     if (invitation && !invitation.allComplete && !currentSessionId && !creatingSession) {
