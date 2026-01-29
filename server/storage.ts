@@ -141,6 +141,9 @@ import {
   aiUsageCosts,
   type AiUsageCost,
   type InsertAiUsageCost,
+  partnerAnalysisReports,
+  type PartnerAnalysisReport,
+  type InsertPartnerAnalysisReport,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, inArray, gte, lte, count, countDistinct, isNull, isNotNull } from "drizzle-orm";
@@ -598,6 +601,13 @@ export interface IStorage {
       requestCount: number;
     }>;
   }>;
+
+  // Partner analysis report operations (cached AI analysis results)
+  createPartnerAnalysisReport(report: InsertPartnerAnalysisReport): Promise<PartnerAnalysisReport>;
+  getPartnerAnalysisReport(id: string): Promise<PartnerAnalysisReport | undefined>;
+  getPartnerAnalysisReports(partnerId: string, reportType?: string): Promise<PartnerAnalysisReport[]>;
+  findExistingPartnerReport(partnerId: string, reportType: string, candidateIds: string[], roleId?: string): Promise<PartnerAnalysisReport | undefined>;
+  deletePartnerAnalysisReport(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4269,6 +4279,75 @@ export class DatabaseStorage implements IStorage {
         requestCount: Number(row.requestCount),
       })),
     };
+  }
+
+  // Partner analysis report operations (cached AI analysis results)
+  async createPartnerAnalysisReport(report: InsertPartnerAnalysisReport): Promise<PartnerAnalysisReport> {
+    const [created] = await db.insert(partnerAnalysisReports).values(report).returning();
+    return created;
+  }
+
+  async getPartnerAnalysisReport(id: string): Promise<PartnerAnalysisReport | undefined> {
+    const [report] = await db.select().from(partnerAnalysisReports).where(eq(partnerAnalysisReports.id, id));
+    return report;
+  }
+
+  async getPartnerAnalysisReports(partnerId: string, reportType?: string): Promise<PartnerAnalysisReport[]> {
+    if (reportType) {
+      return db.select()
+        .from(partnerAnalysisReports)
+        .where(and(
+          eq(partnerAnalysisReports.partnerId, partnerId),
+          eq(partnerAnalysisReports.reportType, reportType)
+        ))
+        .orderBy(desc(partnerAnalysisReports.createdAt));
+    }
+    return db.select()
+      .from(partnerAnalysisReports)
+      .where(eq(partnerAnalysisReports.partnerId, partnerId))
+      .orderBy(desc(partnerAnalysisReports.createdAt));
+  }
+
+  async findExistingPartnerReport(
+    partnerId: string, 
+    reportType: string, 
+    candidateIds: string[], 
+    roleId?: string
+  ): Promise<PartnerAnalysisReport | undefined> {
+    // Sort candidate IDs for consistent matching
+    const sortedIds = [...candidateIds].sort();
+    
+    // Find a report with matching partner, type, and candidates
+    const reports = await db.select()
+      .from(partnerAnalysisReports)
+      .where(and(
+        eq(partnerAnalysisReports.partnerId, partnerId),
+        eq(partnerAnalysisReports.reportType, reportType)
+      ))
+      .orderBy(desc(partnerAnalysisReports.createdAt));
+    
+    // Check for matching candidates and role
+    for (const report of reports) {
+      const reportCandidateIds = [...(report.candidateIds || [])].sort();
+      const candidatesMatch = JSON.stringify(sortedIds) === JSON.stringify(reportCandidateIds);
+      
+      // For role-based reports, also check role matches
+      if (roleId) {
+        if (candidatesMatch && report.roleId === roleId) {
+          return report;
+        }
+      } else {
+        if (candidatesMatch) {
+          return report;
+        }
+      }
+    }
+    
+    return undefined;
+  }
+
+  async deletePartnerAnalysisReport(id: string): Promise<void> {
+    await db.delete(partnerAnalysisReports).where(eq(partnerAnalysisReports.id, id));
   }
 }
 

@@ -2184,3 +2184,71 @@ export const insertAiUsageCostSchema = createInsertSchema(aiUsageCosts).omit({
 export type InsertAiUsageCost = z.infer<typeof insertAiUsageCostSchema>;
 export type AiUsageCost = typeof aiUsageCosts.$inferSelect;
 
+// Partner analysis reports - cached AI analysis results (permanent storage)
+export const partnerAnalysisReports = pgTable("partner_analysis_reports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  
+  // Report type: role_fit_single, role_fit_multi, comparison, profile_insights
+  reportType: varchar("report_type").notNull(),
+  
+  // Version for forward compatibility when report format changes
+  version: integer("version").notNull().default(1),
+  
+  // Report scope identifiers
+  candidateIds: text("candidate_ids").array().notNull(), // Array of candidate emails/IDs
+  roleId: varchar("role_id").references(() => jobRoles.id, { onDelete: "set null" }), // For role fit reports
+  
+  // Report title for display
+  title: varchar("title").notNull(),
+  
+  // The actual analysis data (structured JSON)
+  resultData: jsonb("result_data").notNull().$type<{
+    // Common fields
+    generatedAt: string;
+    modelVersion?: string;
+    
+    // Role fit specific
+    overallFit?: number;
+    skillGaps?: Array<{ skill: string; gap: number; recommendation: string }>;
+    recommendations?: string[];
+    candidateScores?: Array<{ candidateId: string; fit: number; strengths: string[]; gaps: string[] }>;
+    
+    // Comparison specific
+    radarData?: any[];
+    skillComparison?: any[];
+    averageScores?: number[];
+    rankings?: Array<{ candidateId: string; rank: number; score: number }>;
+    
+    // Profile insights specific
+    insights?: string[];
+    strengthsSummary?: string;
+    developmentAreas?: string[];
+    
+    // Any additional data
+    [key: string]: any;
+  }>(),
+  
+  // Credit tracking
+  creditsUsed: integer("credits_used").notNull().default(1),
+  
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  
+  // Optional: who generated the report
+  generatedByUserId: varchar("generated_by_user_id").references(() => users.id, { onDelete: "set null" }),
+}, (table) => [
+  index("idx_partner_reports_partner").on(table.partnerId),
+  index("idx_partner_reports_type").on(table.reportType),
+  index("idx_partner_reports_created").on(table.createdAt),
+  index("idx_partner_reports_candidates").on(table.candidateIds),
+]);
+
+export const insertPartnerAnalysisReportSchema = createInsertSchema(partnerAnalysisReports).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertPartnerAnalysisReport = z.infer<typeof insertPartnerAnalysisReportSchema>;
+export type PartnerAnalysisReport = typeof partnerAnalysisReports.$inferSelect;
+
