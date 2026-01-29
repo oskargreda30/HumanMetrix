@@ -31,19 +31,44 @@ export function csrfProtection() {
     const isStateChangingMethod = ["POST", "PUT", "PATCH", "DELETE"].includes(req.method);
     
     const exemptPaths = [
+      // Authentication endpoints (public)
       "/api/login",
       "/api/signup",
+      "/api/logout",
+      "/api/request-password-reset",
+      "/api/reset-password",
+      
+      // Public contact/enquiry forms
+      "/api/contact",
+      "/api/general-enquiry",
+      "/api/enterprise-enquiry",
+      
+      // Invitation flows (public/guest)
+      "/api/invite/",
+      "/api/guest/invite/",
       "/api/create-free-invitation",
+      
+      // Payment/checkout flows (public)
       "/api/process-results-payment",
+      "/api/unlock-results/checkout",
+      "/api/b2b/results/",
+      "/api/b2b/results-bundle/checkout",
+      "/api/b2b/process-payment",
+      
+      // Webhooks and callbacks (external services)
       "/api/stripe/webhook",
+      "/api/partner/package/callback",
+      "/api/partner/package/airwallex-callback",
+      
+      // Partner API sessions (uses API key auth)
       "/api/partner/sessions",
       "/api/partner/sessions/",
+      
+      // Embed API (uses session token)
       "/api/embed/session/",
-      "/api/partner/package/callback",
-      "/api/b2b/results/",
-      "/api/b2b/process-payment",
-      "/api/guest/invite/",
-      "/api/invite/",
+      
+      // File uploads (uses session auth)
+      "/api/uploads/request-url",
     ];
     
     const isExempt = exemptPaths.some(path => {
