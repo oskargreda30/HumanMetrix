@@ -402,8 +402,8 @@ export default function IndividualReportTab() {
       {selectedCandidate && candidateReport && selectedCandidateData && (
         <>
           {/* Individual Candidate Report Section Heading */}
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <h2 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
               <FileText className="h-6 w-6 text-blue-300" />
               Individual Candidate Report
             </h2>

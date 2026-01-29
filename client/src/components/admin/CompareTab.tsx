@@ -1213,12 +1213,12 @@ export default function CompareTab() {
               {/* Summary Cards - Candidate Details & Assessment Status */}
               <Card data-testid="card-candidate-summary">
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <CardTitle className="flex items-center gap-2">
                       <Users className="h-5 w-5" />
                       Candidate Overview & Assessment Status
                     </CardTitle>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Button 
                         size="sm"
                         onClick={handleExportPDF}
