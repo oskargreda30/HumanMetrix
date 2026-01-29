@@ -103,7 +103,12 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
       const endpoint = typeof config.profileInsightsEndpoint === 'function' 
         ? config.profileInsightsEndpoint(data.userId)
         : config.profileInsightsEndpoint;
-      const response = await apiRequest('POST', endpoint, config.contextType === 'partner' ? {} : data);
+      // Partner endpoint gets candidateId from URL, needs assessmentData in body
+      // Admin endpoint needs both userId and assessmentData in body
+      const requestBody = config.contextType === 'partner' 
+        ? { assessmentData: data.assessmentData } 
+        : data;
+      const response = await apiRequest('POST', endpoint, requestBody);
       return response.json();
     },
     onSuccess: (data) => {
