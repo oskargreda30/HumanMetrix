@@ -2,10 +2,12 @@ import { useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, Sparkles } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EcosystemWorkflow } from "./EcosystemWorkflow";
 import { useEcosystemProjects, useCreateEcosystemProject } from "@/hooks/useEcosystemProject";
+
+const ECOSYSTEM_CREDITS_REQUIRED = 20;
 
 const DEFAULT_PROJECT_NAME = "Team Diagnostic";
 
@@ -111,25 +113,42 @@ export function EcosystemAutoProject({ partnerId }: EcosystemAutoProjectProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4">
+        <div className="flex items-start gap-3">
+          <Sparkles className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
           <div>
-            <CardTitle className="flex items-center gap-2">
-              The Ecosystem Index
-              <Badge variant="secondary" className="bg-cyan-500 text-white border-0">New</Badge>
-            </CardTitle>
-            <CardDescription>AI-powered team diagnostic and hiring recommendations</CardDescription>
+            <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+              Credit Usage for Team Diagnostic
+            </p>
+            <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+              This feature uses <strong>{ECOSYSTEM_CREDITS_REQUIRED} credits</strong> for AI-powered team analysis. 
+              Credits are consumed when you click "Use Credits" to generate your comprehensive team capability report.
+            </p>
           </div>
         </div>
-      </CardHeader>
-      <CardContent>
-        <EcosystemWorkflow 
-          projectId={projectId}
-          isPartnerDashboard={true}
-          partnerId={partnerId}
-        />
-      </CardContent>
-    </Card>
+      </div>
+      
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                The Ecosystem Index
+                <Badge variant="secondary" className="bg-cyan-500 text-white border-0">New</Badge>
+              </CardTitle>
+              <CardDescription>AI-powered team diagnostic and hiring recommendations</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <EcosystemWorkflow 
+            projectId={projectId}
+            isPartnerDashboard={true}
+            partnerId={partnerId}
+          />
+        </CardContent>
+      </Card>
+    </div>
   );
 }

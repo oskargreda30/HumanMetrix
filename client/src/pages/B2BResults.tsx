@@ -4,18 +4,20 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle, Clock, Lock, CreditCard } from "lucide-react";
+import { Loader2, CheckCircle, Clock, Lock, CreditCard, ArrowRight, Mail } from "lucide-react";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface B2BResultsData {
   sessionId: string;
   assessmentType: string;
   email: string;
   partnerName: string;
-  completedAt: string;
-  countryCode: string;
-  currencyCode: string;
-  pricing: {
+  completedAt?: string;
+  countryCode?: string;
+  currencyCode?: string;
+  pricing?: {
     single: {
       originalPricePence: number;
       discountedPricePence: number;
@@ -31,15 +33,26 @@ interface B2BResultsData {
       discountPercent: number;
     };
   };
-  freeAccessDate: string | null;
+  freeAccessDate?: string | null;
+  alreadyPaid?: boolean;
+  hasExistingAccount?: boolean;
+  userId?: number;
 }
+
+const ASSESSMENT_NAMES: Record<string, string> = {
+  'fit': 'FIT Assessment',
+  'ai_readiness': 'AI Readiness Assessment',
+  'aiq': 'AIQ Assessment',
+  'prompt_architecture': 'Prompt Architecture Assessment',
+};
 
 export default function B2BResults() {
   const [, setLocation] = useLocation();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutType, setCheckoutType] = useState<'single' | 'bundle' | null>(null);
+  const [isProcessingAccount, setIsProcessingAccount] = useState(false);
+  const { toast } = useToast();
 
-  // Support both URL path parameter and query parameter for session ID
   const [, routeParams] = useRoute("/b2b-results/:sessionId");
   const params = new URLSearchParams(window.location.search);
   const sessionId = routeParams?.sessionId || params.get("session");
@@ -51,9 +64,6 @@ export default function B2BResults() {
       const res = await fetch(`/api/b2b/results/${sessionId}?country=${countryCode}`);
       if (!res.ok) {
         const errorData = await res.json();
-        if (errorData.resultsUrl) {
-          setLocation(errorData.resultsUrl);
-        }
         throw new Error(errorData.error || 'Failed to load session');
       }
       return res.json();
@@ -90,6 +100,44 @@ export default function B2BResults() {
       console.error('Checkout error:', err);
       setIsCheckingOut(false);
       setCheckoutType(null);
+    }
+  };
+
+  const handleViewResults = async () => {
+    if (!data?.email || !sessionId) return;
+    
+    setIsProcessingAccount(true);
+    
+    try {
+      const res = await apiRequest("POST", "/api/b2b/create-account", {
+        email: data.email,
+        sessionId,
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to access results");
+      }
+      
+      const result = await res.json();
+      
+      toast({
+        title: data.hasExistingAccount ? "Welcome back!" : "Account created!",
+        description: "Redirecting to your dashboard...",
+      });
+      
+      queryClient.clear();
+      
+      setTimeout(() => {
+        setLocation(result.redirectTo || "/dashboard");
+      }, 1000);
+    } catch (err: any) {
+      setIsProcessingAccount(false);
+      toast({
+        title: "Error",
+        description: err.message || "Failed to access results. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -138,6 +186,68 @@ export default function B2BResults() {
 
   if (!data) return null;
 
+  if (data.alreadyPaid) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
+        
+        <Card className="relative max-w-lg w-full p-8 space-y-6 bg-white/95 backdrop-blur-sm shadow-2xl border-0">
+          <div className="text-center space-y-4">
+            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+              <CheckCircle className="h-8 w-8 text-green-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900">Results Already Unlocked!</h1>
+            <p className="text-slate-600">
+              You've already paid for your {ASSESSMENT_NAMES[data.assessmentType] || data.assessmentType} results.
+            </p>
+            
+            <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 mt-4">
+              <div className="flex items-start gap-3">
+                <Mail className="h-5 w-5 text-cyan-600 mt-0.5 flex-shrink-0" />
+                <div className="text-left">
+                  <p className="font-medium text-slate-900">Results sent to your email</p>
+                  <p className="text-sm text-slate-600 mt-1">
+                    Your results PDF was sent to <strong>{data.email}</strong>
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="pt-4">
+              <Button
+                onClick={handleViewResults}
+                disabled={isProcessingAccount}
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-600"
+                data-testid="button-view-or-create"
+              >
+                {isProcessingAccount ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {data.hasExistingAccount ? "Logging in..." : "Creating Account..."}
+                  </>
+                ) : (
+                  <>
+                    {data.hasExistingAccount ? "View Results" : "Create Account"}
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </>
+                )}
+              </Button>
+              
+              <p className="text-xs text-slate-500 mt-3">
+                {data.hasExistingAccount 
+                  ? "You'll be logged in and taken to your dashboard"
+                  : "We'll create an account and send you login details"
+                }
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   const freeAccessDate = data.freeAccessDate ? new Date(data.freeAccessDate) : null;
 
   return (
@@ -148,73 +258,73 @@ export default function B2BResults() {
             <CheckCircle className="w-4 h-4 mr-1" />
             Assessment Complete
           </Badge>
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Access Your Results</h1>
+          <h1 className="text-3xl font-bold mb-2">Your Results Are Ready</h1>
           <p className="text-muted-foreground">
-            Congratulations on completing your <strong>{data.assessmentType.toUpperCase()}</strong> assessment!
+            Completed with <strong>{data.partnerName}</strong>
           </p>
         </div>
 
-        <Card className="border-primary/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-primary" />
-              Unlock Results Now
-            </CardTitle>
+        <Card className="border-2 border-primary/20">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Immediate Access</CardTitle>
+              <Badge className="bg-primary text-white">25% Off</Badge>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-medium">Immediate Access</span>
-                <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">
-                  {data.pricing.single.discountPercent}% OFF
-                </Badge>
-              </div>
-              <p className="text-sm text-muted-foreground mb-3">
-                Get your detailed {data.assessmentType.toUpperCase()} assessment results instantly.
-              </p>
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-lg line-through text-muted-foreground">
-                  {data.pricing.single.originalDisplay}
-                </span>
-                <span className="text-2xl font-bold text-primary">
-                  {data.pricing.single.discountedDisplay}
-                </span>
-              </div>
-              <Button 
-                className="w-full" 
-                size="lg"
-                onClick={() => handleCheckout(false)}
-                disabled={isCheckingOut}
-                data-testid="button-unlock-single"
-              >
-                {isCheckingOut && checkoutType === 'single' ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Redirecting to payment...
-                  </>
-                ) : (
-                  <>
-                    <Lock className="w-4 h-4 mr-2" />
-                    Unlock Results Now
-                  </>
-                )}
-              </Button>
-            </div>
+            <p className="text-muted-foreground">
+              Get your detailed results right now for just{" "}
+              <span className="line-through text-sm">{data.pricing?.single.originalDisplay}</span>{" "}
+              <span className="font-bold text-primary text-lg">{data.pricing?.single.discountedDisplay}</span>
+            </p>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-green-500" />
+                Comprehensive PDF report
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-green-500" />
+                Detailed insights and recommendations
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-green-500" />
+                Instant delivery to your email
+              </li>
+            </ul>
+            <Button 
+              className="w-full" 
+              size="lg"
+              onClick={() => handleCheckout(false)}
+              disabled={isCheckingOut}
+              data-testid="button-checkout-single"
+            >
+              {isCheckingOut && checkoutType === 'single' ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Redirecting to checkout...
+                </>
+              ) : (
+                <>
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Unlock Results Now
+                </>
+              )}
+            </Button>
           </CardContent>
         </Card>
 
         {freeAccessDate && (
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="bg-muted/30">
+            <CardContent className="py-6">
               <div className="flex items-start gap-4">
-                <div className="p-3 bg-muted rounded-full">
-                  <Clock className="w-5 h-5 text-muted-foreground" />
+                <div className="p-3 bg-background rounded-full">
+                  <Clock className="w-6 h-6 text-muted-foreground" />
                 </div>
                 <div>
-                  <h3 className="font-medium mb-1">Free Access Option</h3>
+                  <h3 className="font-semibold mb-1">Free Access Coming Soon</h3>
                   <p className="text-sm text-muted-foreground">
-                    Your results will be available for free on{' '}
-                    <strong>{format(freeAccessDate, 'MMMM d, yyyy')}</strong>.
+                    Your results will be available for free on{" "}
+                    <strong>{format(freeAccessDate, "MMMM d, yyyy")}</strong>.
                     We'll send you an email when they're ready.
                   </p>
                 </div>
@@ -222,10 +332,6 @@ export default function B2BResults() {
             </CardContent>
           </Card>
         )}
-
-        <p className="text-center text-sm text-muted-foreground">
-          Assessment completed as part of your evaluation with <strong>{data.partnerName}</strong>
-        </p>
       </div>
     </div>
   );

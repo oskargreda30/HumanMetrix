@@ -3266,16 +3266,25 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(400).json({ error: "Assessment not completed" });
       }
       
+      // Get partner info (needed for both already-paid and payment flow)
+      const partner = await storage.getPartnerAccount(session.partnerId);
+      
       // Check if already paid/released
       if ((session as any).resultsPaymentStatus === 'paid' || (session as any).resultsReleaseStatus === 'released') {
-        return res.status(400).json({ 
-          error: "Results already unlocked",
-          resultsUrl: `/embed/assessment?session=${sessionId}&showResults=true`
+        // Check if user has an existing account
+        const existingUser = await storage.getUserByEmail(session.externalEmail);
+        const hasExistingAccount = !!existingUser;
+        
+        return res.status(200).json({ 
+          alreadyPaid: true,
+          sessionId,
+          email: session.externalEmail,
+          assessmentType: session.assessmentType,
+          partnerName: partner?.companyName || partner?.name || 'Partner',
+          hasExistingAccount,
+          userId: existingUser?.id,
         });
       }
-      
-      // Get partner info
-      const partner = await storage.getPartnerAccount(session.partnerId);
       
       // Calculate pricing: B2C base + assessment price, then PPP, then 25% discount
       const normalizedType = normalizeAssessmentId(session.assessmentType);
