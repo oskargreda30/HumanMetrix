@@ -4936,12 +4936,12 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
         pdf.setTextColor(59, 130, 246);
         pdf.text(`${levelData.totalScore}%`, barStartX + barWidth + 3, yPos + 3);
         
-        // Component scores underneath the bar
+        // Component scores underneath the bar - full names
         if (levelData.scores) {
           pdf.setFontSize(5);
           pdf.setFont('helvetica', 'normal');
           pdf.setTextColor(107, 114, 128);
-          const componentScores = `C:${levelData.scores.clarity} S:${levelData.scores.structure} Cx:${levelData.scores.contextRelevance} Cr:${levelData.scores.creativity} I:${levelData.scores.iterativeImprovement}`;
+          const componentScores = `Clarity:${levelData.scores.clarity} Structure:${levelData.scores.structure} Context:${levelData.scores.contextRelevance} Creativity:${levelData.scores.creativity} Iterative:${levelData.scores.iterativeImprovement}`;
           pdf.text(componentScores, barStartX, yPos + barHeight + 3);
         }
         
@@ -4956,12 +4956,8 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
         yPos = 35;
       }
       
-      // Legend for component abbreviations
+      // Legend removed - using full names now
       yPos += 2;
-      pdf.setFontSize(5);
-      pdf.setFont('helvetica', 'italic');
-      pdf.setTextColor(156, 163, 175);
-      pdf.text('C=Clarity, S=Structure, Cx=Context, Cr=Creativity, I=Iterative Improvement', barStartX, yPos);
     }
     
     yPos += 8;
@@ -5036,15 +5032,16 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     pdf.text('Generated analysis based on assessment performance patterns', 20, yPos);
     yPos += 12;
     
-    // Split insights into paragraphs for separate boxes
+    // Split insights into paragraphs for separate boxes - compact layout
     const paragraphs = data.profileInsights.split('\n\n').filter((p: string) => p.trim());
     
     paragraphs.forEach((paragraph: string) => {
-      const insightLines = pdf.splitTextToSize(paragraph.trim(), pageWidth - 50);
-      const boxHeight = insightLines.length * 6 + 12;
+      pdf.setFontSize(7); // Smaller font for compact layout
+      const insightLines = pdf.splitTextToSize(paragraph.trim(), pageWidth - 46);
+      const boxHeight = insightLines.length * 4 + 8; // Reduced line height and padding
       
       // Check if we need a new page
-      if (yPos + boxHeight > pageHeight - 30) {
+      if (yPos + boxHeight > pageHeight - 25) {
         pdf.addPage();
         addBackgroundPattern(pdf, pageWidth, pageHeight);
         addHeader(pdf, pageWidth);
@@ -5053,22 +5050,22 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
       
       // Draw blue-bordered box
       pdf.setDrawColor(59, 130, 246);
-      pdf.setLineWidth(0.5);
+      pdf.setLineWidth(0.4);
       pdf.setFillColor(248, 250, 252);
-      pdf.roundedRect(18, yPos - 2, pageWidth - 36, boxHeight, 2, 2, 'FD');
+      pdf.roundedRect(18, yPos - 1, pageWidth - 36, boxHeight, 2, 2, 'FD');
       
-      // Draw text inside box
-      pdf.setFontSize(9);
+      // Draw text inside box - smaller font
+      pdf.setFontSize(7);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(55, 65, 81);
       
-      let textY = yPos + 6;
+      let textY = yPos + 4;
       insightLines.forEach((line: string) => {
-        pdf.text(line, 24, textY);
-        textY += 6;
+        pdf.text(line, 22, textY);
+        textY += 4; // Reduced line spacing
       });
       
-      yPos += boxHeight + 8;
+      yPos += boxHeight + 4; // Reduced gap between boxes
     });
   }
   
