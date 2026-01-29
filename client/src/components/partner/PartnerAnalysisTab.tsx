@@ -25,6 +25,7 @@ import SkillsLegend from "@/components/SkillsLegend";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import { apiRequest } from "@/lib/queryClient";
 import PartnerCompareTab from "@/components/partner/PartnerCompareTab";
+import PartnerRoleFitTab from "@/components/partner/PartnerRoleFitTab";
 import { EnquiryModal } from "@/components/EnquiryModal";
 
 const CHART_COLORS = [
@@ -637,6 +638,10 @@ export default function PartnerAnalysisTab() {
           <TabsTrigger value="compare" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
             <Users className="h-4 w-4 mr-2" />
             Compare Candidates
+          </TabsTrigger>
+          <TabsTrigger value="role-fit" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
+            <Target className="h-4 w-4 mr-2" />
+            Role Fit
           </TabsTrigger>
         </TabsList>
 
@@ -1405,6 +1410,11 @@ export default function PartnerAnalysisTab() {
         {/* Compare Candidates Tab */}
         <TabsContent value="compare" className="space-y-6">
           <PartnerCompareTab />
+        </TabsContent>
+
+        {/* Role Fit Tab */}
+        <TabsContent value="role-fit" className="space-y-6">
+          <PartnerRoleFitTab />
         </TabsContent>
       </Tabs>
 

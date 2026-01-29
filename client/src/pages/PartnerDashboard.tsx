@@ -34,7 +34,6 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { BulkInvitationsTab } from "@/components/partner/BulkInvitationsTab";
 import PartnerAnalysisTab from "@/components/partner/PartnerAnalysisTab";
-import PartnerRoleFitTab from "@/components/partner/PartnerRoleFitTab";
 import PartnerResultsTab from "@/components/partner/PartnerResultsTab";
 import { PdfImportModal } from "@/components/PdfImportModal";
 import { HiringPipelineTab } from "@/components/HiringPipelineTab";
@@ -2110,9 +2109,6 @@ export default function PartnerDashboard() {
               </TabsTrigger>
               <TabsTrigger value="analysis" data-testid="tab-analysis" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Analysis
-              </TabsTrigger>
-              <TabsTrigger value="role-fit" data-testid="tab-role-fit" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Role Fit
               </TabsTrigger>
               <TabsTrigger value="pipeline" data-testid="tab-pipeline" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Pipeline
@@ -4687,14 +4683,9 @@ export default function PartnerDashboard() {
               </Card>
             </TabsContent>
 
-            {/* Analysis Tab */}
+            {/* Analysis Tab - includes Individual Report, Compare Candidates, and Role Fit sub-tabs */}
             <TabsContent value="analysis" className="space-y-6" data-testid="panel-analysis">
               <PartnerAnalysisTab />
-            </TabsContent>
-
-            {/* Role Fit Tab */}
-            <TabsContent value="role-fit" className="space-y-6" data-testid="panel-role-fit">
-              <PartnerRoleFitTab />
             </TabsContent>
 
             {/* Pipeline Tab */}
