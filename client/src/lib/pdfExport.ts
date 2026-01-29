@@ -4760,12 +4760,12 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     // Right column - Radar Chart (positioned to align with skills list)
     if (data.aiChartImage) {
       try {
-        pdf.addImage(data.aiChartImage, 'PNG', rightColStart, aiScoresStartY - 5, chartWidth, aiChartHeight);
+        pdf.addImage(data.aiChartImage, 'PNG', rightColStart, aiScoresStartY + 5, chartWidth, aiChartHeight);
       } catch (e) {
         // Fallback: draw placeholder box
         pdf.setDrawColor(229, 231, 235);
         pdf.setFillColor(249, 250, 251);
-        pdf.roundedRect(rightColStart, aiScoresStartY - 5, chartWidth, aiChartHeight, 2, 2, 'FD');
+        pdf.roundedRect(rightColStart, aiScoresStartY + 5, chartWidth, aiChartHeight, 2, 2, 'FD');
         pdf.setFontSize(8);
         pdf.setTextColor(156, 163, 175);
         pdf.text('AI Readiness Chart', rightColStart + chartWidth / 2, aiScoresStartY + aiChartHeight / 2, { align: 'center' });
@@ -4774,14 +4774,14 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
       // Draw placeholder box if no chart image
       pdf.setDrawColor(229, 231, 235);
       pdf.setFillColor(249, 250, 251);
-      pdf.roundedRect(rightColStart, aiScoresStartY - 5, chartWidth, aiChartHeight, 2, 2, 'FD');
+      pdf.roundedRect(rightColStart, aiScoresStartY + 5, chartWidth, aiChartHeight, 2, 2, 'FD');
       pdf.setFontSize(9);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(55, 65, 81);
-      pdf.text('AI Readiness', rightColStart + chartWidth / 2, aiScoresStartY + 10, { align: 'center' });
+      pdf.text('AI Readiness', rightColStart + chartWidth / 2, aiScoresStartY + 20, { align: 'center' });
       // Draw simple radar placeholder
       const centerX = rightColStart + chartWidth / 2;
-      const centerY = aiScoresStartY + aiChartHeight / 2 + 5;
+      const centerY = aiScoresStartY + aiChartHeight / 2 + 15;
       const radius = 18; // Smaller to fit compact chart
       pdf.setDrawColor(34, 197, 94);
       for (let i = 0; i < 9; i++) {
