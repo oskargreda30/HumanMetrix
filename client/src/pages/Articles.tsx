@@ -9,33 +9,6 @@ import dashboardBg from "@assets/image_1763608498774.png";
 
 const articles = [
   {
-    id: "how-to-pass-psychometric-tests-job-interviews",
-    title: "How to Approach Psychometric Tests for Job Interviews: Your Ultimate UK Guide",
-    description: "Struggling with job application psychometric tests? Learn exactly how to prepare, what to expect, and the best strategies to approach psychometric tests for job interviews in the UK.",
-    category: "Career Advice",
-    readTime: "8 min read",
-    date: "November 28, 2025",
-    featured: true,
-  },
-  {
-    id: "role-of-psychometric-testing-in-recruitment",
-    title: "The Essential Role of Psychometric Testing in Recruitment: A UK Perspective",
-    description: "Explore the pivotal role of psychometric testing in modern recruitment. Learn why UK employers use these assessments, the types of tests involved, and how they shape the future of hiring.",
-    category: "Industry Insights",
-    readTime: "7 min read",
-    date: "November 28, 2025",
-    featured: true,
-  },
-  {
-    id: "humanmetrix-ai-assessment-suite",
-    title: "Introducing HumanMetrix: The Complete AI-Era Assessment Platform",
-    description: "Discover how HumanMetrix's four core assessments—FIT, AI Readiness, Prompt Architecture, and AIQ—provide comprehensive insights into candidates' readiness for the AI-driven workplace.",
-    category: "Product",
-    readTime: "6 min read",
-    date: "December 2025",
-    featured: true,
-  },
-  {
     id: "future-of-ai-assessments-2026-roadmap",
     title: "The Future of AI Talent Assessment: Our 2026-2027 Product Roadmap",
     description: "From Human-AI Collaboration Style to Adaptability Quotient—explore the upcoming assessments that will help organisations identify talent ready to thrive as AI transforms the workplace.",
@@ -54,6 +27,15 @@ const articles = [
     featured: false,
   },
   {
+    id: "humanmetrix-ai-assessment-suite",
+    title: "Introducing HumanMetrix: The Complete AI-Era Assessment Platform",
+    description: "Discover how HumanMetrix's four core assessments—FIT, AI Readiness, Prompt Architecture, and AIQ—provide comprehensive insights into candidates' readiness for the AI-driven workplace.",
+    category: "Product",
+    readTime: "6 min read",
+    date: "December 2025",
+    featured: true,
+  },
+  {
     id: "prompt-engineering-skills-workplace",
     title: "Prompt Engineering: The Skill That Separates AI-Ready Workers from the Rest",
     description: "Explore why prompt engineering has become a critical workplace skill, how it's assessed, and what makes an effective AI communicator in today's professional environment.",
@@ -61,6 +43,24 @@ const articles = [
     readTime: "6 min read",
     date: "December 2025",
     featured: false,
+  },
+  {
+    id: "how-to-pass-psychometric-tests-job-interviews",
+    title: "How to Approach Psychometric Tests for Job Interviews: Your Ultimate UK Guide",
+    description: "Struggling with job application psychometric tests? Learn exactly how to prepare, what to expect, and the best strategies to approach psychometric tests for job interviews in the UK.",
+    category: "Career Advice",
+    readTime: "8 min read",
+    date: "November 2025",
+    featured: true,
+  },
+  {
+    id: "role-of-psychometric-testing-in-recruitment",
+    title: "The Essential Role of Psychometric Testing in Recruitment: A UK Perspective",
+    description: "Explore the pivotal role of psychometric testing in modern recruitment. Learn why UK employers use these assessments, the types of tests involved, and how they shape the future of hiring.",
+    category: "Industry Insights",
+    readTime: "7 min read",
+    date: "November 2025",
+    featured: true,
   },
 ];
 
