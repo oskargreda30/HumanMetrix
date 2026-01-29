@@ -2507,6 +2507,17 @@ export default function PartnerDashboard() {
                 </CardContent>
               </Card>
 
+              {/* Credit System Explainer */}
+              <div className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                <CreditCard className="h-5 w-5 text-primary flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">1 Credit = 1 Assessment</p>
+                  <p className="text-xs text-muted-foreground">
+                    Each completed assessment consumes 1 credit. AI-powered features (Profile Insights, PDF Import) also use 1 credit per use.
+                  </p>
+                </div>
+              </div>
+
               {/* Usage Stats */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
@@ -3660,6 +3671,10 @@ export default function PartnerDashboard() {
                         <CardDescription>
                           Buy test credits with bulk discounts • Promo codes available at checkout
                         </CardDescription>
+                        <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
+                          <CreditCard className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span><strong>1 credit = 1 assessment.</strong> Each completed candidate assessment uses 1 credit. AI features also use 1 credit per use.</span>
+                        </div>
                       </CardHeader>
                       <CardContent>
                         {pricingLoading ? (
