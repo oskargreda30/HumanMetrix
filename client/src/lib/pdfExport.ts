@@ -3283,9 +3283,9 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
   
-  // Title Section with blue background
+  // Title Section - Professional dark header
   yPos = 35;
-  pdf.setFillColor(59, 130, 246);
+  pdf.setFillColor(31, 41, 55); // Gray-800 - professional dark
   pdf.rect(0, yPos, pageWidth, 28, 'F');
   
   pdf.setTextColor(255, 255, 255);
@@ -3298,6 +3298,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   pdf.text(`Target Role: ${data.roleSnapshot.roleName}`, pageWidth / 2, yPos + 18, { align: 'center' });
   
   pdf.setFontSize(8);
+  pdf.setTextColor(209, 213, 219); // Gray-300
   pdf.text(`Generated: ${new Date().toLocaleDateString()} | ${data.candidateEntries.length} Candidates`, pageWidth / 2, yPos + 24, { align: 'center' });
   
   pdf.setTextColor(0, 0, 0);
@@ -3311,19 +3312,19 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   const BLOCK_SPACING = 12;
   const ITEM_SPACING = 4;
   
-  // Summary Cards (3 cards: Top Performer, Candidates Assessed, Distribution) - Uniform styling
+  // Summary Cards (3 cards: Top Performer, Candidates Assessed, Distribution) - Professional neutral styling
   const cardWidth = (pageWidth - 50) / 3;
   const cardHeight = 32;
   const cardGap = 5;
   
-  // Card 1: Top Performer - All blue shades
-  pdf.setFillColor(239, 246, 255);
-  pdf.setDrawColor(59, 130, 246);
+  // Card 1: Top Performer - Neutral gray
+  pdf.setFillColor(249, 250, 251); // Gray-50
+  pdf.setDrawColor(209, 213, 219); // Gray-300
   pdf.setLineWidth(0.3);
   pdf.roundedRect(20, yPos, cardWidth, cardHeight, 2, 2, 'FD');
   pdf.setFontSize(LABEL_SIZE);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(59, 130, 246);
+  pdf.setTextColor(107, 114, 128); // Gray-500
   pdf.text('TOP PERFORMER', 20 + CARD_PADDING, yPos + CARD_PADDING + 2);
   // Null-safety for topPerformer
   const topPerformerName = String(data.summaryInsights.topPerformer?.userName || 'N/A');
@@ -3333,97 +3334,100 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     : topPerformerName;
   pdf.setFontSize(VALUE_SIZE - 1);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(30, 64, 175);
+  pdf.setTextColor(17, 24, 39); // Gray-900
   pdf.text(topName, 20 + CARD_PADDING, yPos + CARD_PADDING + 13);
   pdf.setFontSize(VALUE_SIZE + 4);
-  pdf.setTextColor(37, 99, 235);
+  pdf.setTextColor(31, 41, 55); // Gray-800
   pdf.text(`${topPerformerFitVal}%`, 20 + CARD_PADDING, yPos + CARD_PADDING + 24);
   
-  // Card 2: Candidates Assessed - Blue shades
+  // Card 2: Candidates Assessed - Neutral gray
   const card2X = 20 + cardWidth + cardGap;
-  pdf.setFillColor(239, 246, 255);
-  pdf.setDrawColor(59, 130, 246);
+  pdf.setFillColor(249, 250, 251);
+  pdf.setDrawColor(209, 213, 219);
   pdf.roundedRect(card2X, yPos, cardWidth, cardHeight, 2, 2, 'FD');
   pdf.setFontSize(LABEL_SIZE);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(59, 130, 246);
+  pdf.setTextColor(107, 114, 128);
   pdf.text('CANDIDATES ASSESSED', card2X + CARD_PADDING, yPos + CARD_PADDING + 2);
   pdf.setFontSize(VALUE_SIZE + 6);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(30, 64, 175);
+  pdf.setTextColor(31, 41, 55);
   pdf.text(`${data.candidateEntries.length}`, card2X + CARD_PADDING, yPos + CARD_PADDING + 20);
   
-  // Card 3: Distribution - Blue shades with colored indicators
+  // Card 3: Distribution - Neutral gray with subtle indicators
   const card3X = card2X + cardWidth + cardGap;
-  pdf.setFillColor(239, 246, 255);
-  pdf.setDrawColor(59, 130, 246);
+  pdf.setFillColor(249, 250, 251);
+  pdf.setDrawColor(209, 213, 219);
   pdf.roundedRect(card3X, yPos, cardWidth, cardHeight, 2, 2, 'FD');
   pdf.setFontSize(LABEL_SIZE);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(59, 130, 246);
+  pdf.setTextColor(107, 114, 128);
   pdf.text('FIT DISTRIBUTION', card3X + CARD_PADDING, yPos + CARD_PADDING + 2);
   
-  // Distribution with colored circles and better layout
+  // Distribution with subtle indicators
   const distY = yPos + CARD_PADDING + 12;
   const distSpacing = (cardWidth - CARD_PADDING * 2) / 3;
   
-  // Strong (green circle)
+  // Strong - subtle green
   pdf.setFillColor(34, 197, 94);
   pdf.circle(card3X + CARD_PADDING + 3, distY, 2, 'F');
   pdf.setFontSize(BODY_SIZE);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(34, 197, 94);
+  pdf.setTextColor(22, 101, 52); // Green-800 (darker)
   pdf.text(`${data.summaryInsights.fitDistribution.strong}`, card3X + CARD_PADDING + 8, distY + 1);
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(6);
+  pdf.setTextColor(55, 65, 81);
   pdf.text('Strong', card3X + CARD_PADDING + 1, distY + 8);
   
-  // Moderate (amber circle)
+  // Moderate - subtle amber
   const modX = card3X + CARD_PADDING + distSpacing;
   pdf.setFillColor(234, 179, 8);
   pdf.circle(modX + 3, distY, 2, 'F');
   pdf.setFontSize(BODY_SIZE);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(234, 179, 8);
+  pdf.setTextColor(133, 77, 14); // Amber-800 (darker)
   pdf.text(`${data.summaryInsights.fitDistribution.moderate}`, modX + 8, distY + 1);
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(6);
+  pdf.setTextColor(55, 65, 81);
   pdf.text('Moderate', modX, distY + 8);
   
-  // Dev Needed (red circle)
+  // Dev Needed - subtle red
   const devX = card3X + CARD_PADDING + distSpacing * 2;
-  pdf.setFillColor(239, 68, 68);
+  pdf.setFillColor(220, 38, 38); // Red-600 (slightly darker)
   pdf.circle(devX + 3, distY, 2, 'F');
   pdf.setFontSize(BODY_SIZE);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(239, 68, 68);
+  pdf.setTextColor(127, 29, 29); // Red-900 (darker)
   pdf.text(`${data.summaryInsights.fitDistribution.developmentNeeded}`, devX + 8, distY + 1);
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(6);
+  pdf.setTextColor(55, 65, 81);
   pdf.text('Develop', devX + 1, distY + 8);
   
   pdf.setTextColor(0, 0, 0);
   yPos += cardHeight + BLOCK_SPACING;
   
-  // ========== COHORT INSIGHTS - Uniform styling ==========
+  // ========== COHORT INSIGHTS - Professional neutral styling ==========
   yPos = addSectionHeader(pdf, 'COHORT INSIGHTS', yPos, pageWidth);
   yPos += CARD_PADDING;
   
   const halfWidth = (pageWidth - 50) / 2;
   const insightBoxHeight = 38;
   
-  // Common Strengths
-  pdf.setFillColor(236, 253, 245);
-  pdf.setDrawColor(134, 239, 172);
+  // Common Strengths - Neutral gray
+  pdf.setFillColor(249, 250, 251); // Gray-50
+  pdf.setDrawColor(209, 213, 219); // Gray-300
   pdf.setLineWidth(0.3);
   pdf.roundedRect(20, yPos, halfWidth, insightBoxHeight, 2, 2, 'FD');
   pdf.setFontSize(BODY_SIZE + 1);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(34, 197, 94);
+  pdf.setTextColor(55, 65, 81); // Gray-700
   pdf.text('Common Strengths', 20 + CARD_PADDING, yPos + CARD_PADDING + 2);
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(BODY_SIZE);
-  pdf.setTextColor(22, 101, 52);
+  pdf.setTextColor(75, 85, 99); // Gray-600
   if (data.summaryInsights.commonStrengths.length > 0) {
     data.summaryInsights.commonStrengths.slice(0, 4).forEach((s, i) => {
       const truncated = s.length > 35 ? s.slice(0, 33) + '...' : s;
@@ -3433,17 +3437,17 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     pdf.text('No common strengths identified', 20 + CARD_PADDING, yPos + CARD_PADDING + 12);
   }
   
-  // Common Gaps
-  pdf.setFillColor(254, 252, 232);
-  pdf.setDrawColor(253, 224, 71);
+  // Common Gaps - Neutral gray
+  pdf.setFillColor(249, 250, 251);
+  pdf.setDrawColor(209, 213, 219);
   pdf.roundedRect(25 + halfWidth, yPos, halfWidth, insightBoxHeight, 2, 2, 'FD');
   pdf.setFontSize(BODY_SIZE + 1);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(161, 98, 7);
+  pdf.setTextColor(55, 65, 81);
   pdf.text('Common Development Areas', 25 + halfWidth + CARD_PADDING, yPos + CARD_PADDING + 2);
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(BODY_SIZE);
-  pdf.setTextColor(133, 77, 14);
+  pdf.setTextColor(75, 85, 99);
   if (data.summaryInsights.commonGaps.length > 0) {
     data.summaryInsights.commonGaps.slice(0, 4).forEach((g, i) => {
       const truncated = g.length > 35 ? g.slice(0, 33) + '...' : g;
@@ -3455,18 +3459,18 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   
   yPos += insightBoxHeight + BLOCK_SPACING;
   
-  // Key Differentiators
+  // Key Differentiators - Neutral gray
   if (data.summaryInsights.keyDifferentiators.length > 0) {
-    pdf.setFillColor(239, 246, 255);
-    pdf.setDrawColor(147, 197, 253);
+    pdf.setFillColor(249, 250, 251);
+    pdf.setDrawColor(209, 213, 219);
     pdf.roundedRect(20, yPos, pageWidth - 40, 26, 2, 2, 'FD');
     pdf.setFontSize(BODY_SIZE + 1);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(59, 130, 246);
+    pdf.setTextColor(55, 65, 81);
     pdf.text('Key Differentiators', 20 + CARD_PADDING, yPos + CARD_PADDING + 2);
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(BODY_SIZE);
-    pdf.setTextColor(30, 64, 175);
+    pdf.setTextColor(75, 85, 99);
     data.summaryInsights.keyDifferentiators.slice(0, 3).forEach((d, i) => {
       const truncated = d.length > 90 ? d.slice(0, 88) + '...' : d;
       pdf.text(`\u2022 ${truncated}`, 20 + CARD_PADDING, yPos + CARD_PADDING + 10 + (i * 5));
@@ -3474,17 +3478,17 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     yPos += 26 + BLOCK_SPACING;
   }
   
-  // AI Hiring Suggestions Box
-  pdf.setFillColor(250, 245, 255);
-  pdf.setDrawColor(196, 181, 253);
+  // AI Hiring Suggestions Box - Neutral gray
+  pdf.setFillColor(249, 250, 251);
+  pdf.setDrawColor(209, 213, 219);
   pdf.roundedRect(20, yPos, pageWidth - 40, 30, 2, 2, 'FD');
   pdf.setFontSize(BODY_SIZE + 1);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(124, 58, 237);
+  pdf.setTextColor(55, 65, 81);
   pdf.text('AI Hiring Suggestions', 20 + CARD_PADDING, yPos + CARD_PADDING + 2);
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(BODY_SIZE);
-  pdf.setTextColor(91, 33, 182);
+  pdf.setTextColor(75, 85, 99);
   
   // Generate contextual AI suggestions based on data (with null-safety)
   const strongCount = data.summaryInsights.fitDistribution?.strong ?? 0;
@@ -3529,8 +3533,8 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE ANALYSIS', yPos, pageWidth);
     yPos += 5;
     
-    pdf.setFillColor(224, 247, 250);
-    pdf.setDrawColor(6, 182, 212);
+    pdf.setFillColor(249, 250, 251); // Gray-50
+    pdf.setDrawColor(209, 213, 219); // Gray-300
     pdf.setLineWidth(0.3);
     
     // Split text into lines that fit within the box width
@@ -3551,7 +3555,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(22, 78, 99);
+    pdf.setTextColor(55, 65, 81); // Gray-700
     
     let textY = yPos + 6;
     const maxLines = Math.floor((boxHeight - 8) / 4);
@@ -3580,8 +3584,8 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     yPos = addSectionHeader(pdf, 'AIQ ETHICAL ASSESSMENT', yPos, pageWidth);
     yPos += 5;
     
-    pdf.setFillColor(245, 243, 255);
-    pdf.setDrawColor(168, 85, 247);
+    pdf.setFillColor(249, 250, 251); // Gray-50
+    pdf.setDrawColor(209, 213, 219); // Gray-300
     pdf.setLineWidth(0.3);
     
     // Split text into lines that fit within the box width
@@ -3602,7 +3606,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(88, 28, 135);
+    pdf.setTextColor(55, 65, 81); // Gray-700
     
     let textY = yPos + 6;
     const maxLines = Math.floor((boxHeight - 8) / 4);
@@ -3773,13 +3777,13 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     const reqColWidth = 18;
     const candidateColWidth = (pageWidth - 40 - skillColWidth - reqColWidth) / candidateCount;
     
-    // Table header
-    pdf.setFillColor(254, 226, 226);
+    // Table header - Professional gray
+    pdf.setFillColor(243, 244, 246); // Gray-100
     pdf.rect(20, yPos, pageWidth - 40, 12, 'F');
     
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(127, 29, 29);
+    pdf.setTextColor(55, 65, 81); // Gray-700
     pdf.text('Critical Skill', 22, yPos + 8);
     pdf.text('Req', 20 + skillColWidth + 2, yPos + 8);
     
@@ -3788,9 +3792,9 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       const name = candidateForHeader.userName.split(' ')[0];
       const truncName = name.length > 10 ? name.slice(0, 9) + '.' : name;
       
-      // Highlight top candidate
+      // Subtle highlight for top candidate
       if (idx === 0 && candidateForHeader.overallFit != null) {
-        pdf.setFillColor(220, 252, 231);
+        pdf.setFillColor(229, 231, 235); // Gray-200
         pdf.rect(colX, yPos, candidateColWidth, 12, 'F');
       }
       
@@ -3835,9 +3839,9 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
         const meetsRequired = hasData && score >= criticalSkill.requiredScore;
         const meetsThreshold = hasData && score >= 60;
         
-        // Highlight top candidate column
+        // Subtle highlight for top candidate column
         if (idx === 0 && candidateForRow.overallFit != null) {
-          pdf.setFillColor(236, 253, 245);
+          pdf.setFillColor(243, 244, 246); // Gray-100
           pdf.rect(colX, yPos - 3, candidateColWidth, 12, 'F');
         }
         
@@ -3946,18 +3950,18 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       const skillBoxHeight = 32;
       const description = SKILL_DESCRIPTIONS[criticalSkill.skillName] || `Critical for success in roles requiring ${criticalSkill.skillName.toLowerCase()} capabilities.`;
       
-      // Skill box with blue left border
-      pdf.setFillColor(239, 246, 255);
-      pdf.setDrawColor(59, 130, 246);
+      // Skill box with gray styling - Professional neutral
+      pdf.setFillColor(249, 250, 251); // Gray-50
+      pdf.setDrawColor(209, 213, 219); // Gray-300
       pdf.setLineWidth(0.3);
       pdf.roundedRect(20, yPos, pageWidth - 40, skillBoxHeight, 2, 2, 'FD');
       
-      // Blue left accent bar
-      pdf.setFillColor(59, 130, 246);
+      // Dark gray left accent bar
+      pdf.setFillColor(55, 65, 81); // Gray-700
       pdf.rect(20, yPos, 3, skillBoxHeight, 'F');
       
-      // "CRITICAL" badge
-      pdf.setFillColor(59, 130, 246);
+      // "CRITICAL" badge - Dark gray
+      pdf.setFillColor(55, 65, 81); // Gray-700
       pdf.roundedRect(26, yPos + 4, 25, 6, 1, 1, 'F');
       pdf.setFontSize(5);
       pdf.setFont('helvetica', 'bold');
@@ -3983,27 +3987,27 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       pdf.setTextColor(107, 114, 128);
       pdf.text(`Required: ${criticalSkill.requiredScore}/100`, pageWidth - 55, yPos + 18);
       
-      // Why it matters description
+      // Why it matters description - Neutral gray
       pdf.setFontSize(7);
       pdf.setFont('helvetica', 'italic');
-      pdf.setTextColor(59, 130, 246);
+      pdf.setTextColor(75, 85, 99); // Gray-600
       const truncDesc = description.length > 110 ? description.slice(0, 108) + '...' : description;
       pdf.text(`Why it matters: ${truncDesc}`, 26, yPos + 27);
       
       yPos += skillBoxHeight + 5;
     });
     
-    // Summary of candidates meeting critical skills
+    // Summary of candidates meeting critical skills - Professional gray
     yPos = ensurePageSpace(pdf, yPos, 40, pageHeight, pageWidth);
     yPos += 5;
     
-    pdf.setFillColor(240, 253, 244);
-    pdf.setDrawColor(34, 197, 94);
+    pdf.setFillColor(249, 250, 251); // Gray-50
+    pdf.setDrawColor(209, 213, 219); // Gray-300
     pdf.roundedRect(20, yPos, pageWidth - 40, 30, 2, 2, 'FD');
     
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(22, 101, 52);
+    pdf.setTextColor(55, 65, 81); // Gray-700
     pdf.text('Critical Skills Summary by Candidate', 26, yPos + 8);
     
     const summaryColWidth = (pageWidth - 50) / Math.min(4, sortedCandidates.length);
@@ -4048,8 +4052,8 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     yPos = ensurePageSpace(pdf, yPos, 80, pageHeight, pageWidth);
     yPos += 10;
     
-    // Cyan-blue gradient header for Prompt Architecture
-    pdf.setFillColor(8, 145, 178); // Cyan-600
+    // Professional gray header for Prompt Architecture
+    pdf.setFillColor(55, 65, 81); // Gray-700
     pdf.roundedRect(20, yPos, pageWidth - 40, 18, 2, 2, 'F');
     
     pdf.setFontSize(11);
@@ -4109,7 +4113,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
         pdf.roundedRect(barX, yPos, (score / 100) * barWidth, 6, 1, 1, 'F');
         
         // Required threshold line
-        pdf.setDrawColor(8, 145, 178);
+        pdf.setDrawColor(55, 65, 81); // Gray-700
         pdf.setLineWidth(0.5);
         pdf.line(barX + (promptReq / 100) * barWidth, yPos - 1, barX + (promptReq / 100) * barWidth, yPos + 7);
         
@@ -4130,11 +4134,11 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       yPos += 10;
     });
     
-    // Why it matters
+    // Why it matters - Neutral gray
     yPos += 3;
     pdf.setFontSize(7);
     pdf.setFont('helvetica', 'italic');
-    pdf.setTextColor(8, 145, 178);
+    pdf.setTextColor(75, 85, 99); // Gray-600
     pdf.text('Why it matters: Prompt Architecture measures ability to construct effective AI prompts across increasing complexity levels.', 22, yPos);
     yPos += 10;
   }
@@ -4145,8 +4149,8 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     yPos = ensurePageSpace(pdf, yPos, 80, pageHeight, pageWidth);
     yPos += 10;
     
-    // Purple gradient header for AIQ
-    pdf.setFillColor(147, 51, 234); // Purple-600
+    // Professional gray header for AIQ
+    pdf.setFillColor(55, 65, 81); // Gray-700
     pdf.roundedRect(20, yPos, pageWidth - 40, 18, 2, 2, 'F');
     
     pdf.setFontSize(11);
@@ -4206,7 +4210,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
         pdf.roundedRect(barX, yPos, (score / 100) * barWidth, 6, 1, 1, 'F');
         
         // Required threshold line
-        pdf.setDrawColor(147, 51, 234);
+        pdf.setDrawColor(55, 65, 81); // Gray-700
         pdf.setLineWidth(0.5);
         pdf.line(barX + (aiqReq / 100) * barWidth, yPos - 1, barX + (aiqReq / 100) * barWidth, yPos + 7);
         
@@ -4227,11 +4231,11 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       yPos += 10;
     });
     
-    // Why it matters
+    // Why it matters - Neutral gray
     yPos += 3;
     pdf.setFontSize(7);
     pdf.setFont('helvetica', 'italic');
-    pdf.setTextColor(147, 51, 234);
+    pdf.setTextColor(75, 85, 99); // Gray-600
     pdf.text('Why it matters: AIQ measures understanding of AI ethics, bias recognition, and responsible AI deployment.', 22, yPos);
     yPos += 10;
   }
