@@ -3836,6 +3836,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(400).json({ message: "Assessment already completed" });
           }
           
+          // If abandoned, don't allow resume - user left without submitting
+          if (existing.status === 'abandoned') {
+            console.log(`[START ASSESSMENT] Partner invitation assessment was abandoned: ${existing.id}`);
+            return res.status(400).json({ 
+              message: "This assessment was not submitted. You left the test before completing it and cannot resume.",
+              abandoned: true 
+            });
+          }
+          
           // Check if paused and handle accordingly
           const now = Date.now();
           const nowDate = new Date();
@@ -3968,6 +3977,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(400).json({ message: "Assessment already completed" });
           }
           
+          // If abandoned, don't allow resume - user left without submitting
+          if (existing.status === 'abandoned') {
+            console.log(`[START ASSESSMENT] Invitation assessment was abandoned: ${existing.id}`);
+            return res.status(400).json({ 
+              message: "This assessment was not submitted. You left the test before completing it and cannot resume.",
+              abandoned: true 
+            });
+          }
+          
           // Check if paused session's grace period has expired
           const nowDate = new Date();
           if (existing.pausedAt && existing.pauseGraceExpiresAt && new Date(existing.pauseGraceExpiresAt) < nowDate) {
@@ -4098,6 +4116,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (existing.status === 'completed') {
           console.log(`[START ASSESSMENT] Assessment already completed: ${existing.id}`);
           return res.status(400).json({ message: "Assessment already completed" });
+        }
+        
+        // If abandoned, don't allow resume - user left without submitting
+        if (existing.status === 'abandoned') {
+          console.log(`[START ASSESSMENT] Assessment was abandoned: ${existing.id}`);
+          return res.status(400).json({ 
+            message: "This assessment was not submitted. You left the test before completing it and cannot resume.",
+            abandoned: true 
+          });
         }
         
         // Check if paused session's grace period has expired

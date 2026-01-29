@@ -71,6 +71,10 @@ export function csrfProtection() {
       "/api/uploads/request-url",
     ];
     
+    // Special handling for assessment abandon - uses sendBeacon which can't set headers
+    // Check for /api/assessments/:id/abandon pattern specifically
+    const isAbandonEndpoint = req.method === 'POST' && /^\/api\/assessments\/[^/]+\/abandon$/.test(req.path);
+    
     const isExempt = exemptPaths.some(path => {
       if (path.endsWith("/")) {
         return req.path.startsWith(path) || req.path === path.slice(0, -1);
@@ -80,7 +84,7 @@ export function csrfProtection() {
     
     const hasApiKey = req.headers["x-api-key"] || req.headers["authorization"];
     
-    if (isStateChangingMethod && !isExempt && !hasApiKey) {
+    if (isStateChangingMethod && !isExempt && !hasApiKey && !isAbandonEndpoint) {
       const headerToken = req.headers[CSRF_HEADER_NAME] as string;
       const cookieToken = req.cookies?.[CSRF_COOKIE_NAME];
       

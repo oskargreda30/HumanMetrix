@@ -473,20 +473,41 @@ export default function Assessment() {
     };
   }, [resultId, submitMutation.isSuccess, isSubmitting]);
 
-  // Show warning when user tries to leave during assessment (browser close/refresh)
+  // Show warning and auto-abandon when user tries to leave during assessment (browser close/refresh)
   useEffect(() => {
+    if (!resultId || submitMutation.isSuccess || isSubmitting || hasSubmittedRef.current) {
+      return; // No active assessment to protect
+    }
+
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (resultId && !submitMutation.isSuccess && !isSubmitting) {
-        // Show browser's native "are you sure" dialog
-        e.preventDefault();
-        e.returnValue = '';
-      }
+      if (hasSubmittedRef.current) return; // Already submitted
+      
+      // Show browser's native "are you sure" dialog
+      e.preventDefault();
+      e.returnValue = 'Your test will NOT be submitted if you leave. Are you sure?';
+      return e.returnValue;
+    };
+
+    // Use pagehide to abandon assessment when user actually leaves (more reliable than unload)
+    const handlePageHide = (e: PageTransitionEvent) => {
+      if (hasSubmittedRef.current) return; // Already submitted
+      
+      // Use sendBeacon to reliably send abandon request even during page unload
+      // The endpoint is CSRF-exempt but still requires session auth (cookies are sent automatically)
+      const abandonUrl = `/api/assessments/${resultId}/abandon`;
+      const data = JSON.stringify({ abandoned: true });
+      const blob = new Blob([data], { type: 'application/json' });
+      
+      navigator.sendBeacon(abandonUrl, blob);
+      console.log('[Assessment] Sent abandon beacon on page hide');
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
     
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide);
     };
   }, [resultId, submitMutation.isSuccess, isSubmitting]);
 
@@ -976,21 +997,21 @@ export default function Assessment() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
-              Are you sure you want to leave?
+              Warning: Your test will NOT be submitted
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-left">
-              Your assessment will be marked as <strong>incomplete</strong> and you will not be able to resume it. 
-              This action cannot be undone.
+            <AlertDialogDescription className="text-left space-y-2">
+              <p>If you leave now, your assessment will <strong>not be submitted</strong> and you will <strong>not receive results</strong>.</p>
+              <p className="text-destructive font-medium">You cannot return to complete this test later.</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-stay">Stay</AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-stay">Continue Test</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleLeaveAssessment}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               data-testid="button-leave-assessment"
             >
-              Leave Assessment
+              Leave Without Submitting
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
