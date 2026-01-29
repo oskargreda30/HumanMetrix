@@ -1213,10 +1213,20 @@ export default function CompareTab() {
               {/* Summary Cards - Candidate Details & Assessment Status */}
               <Card data-testid="card-candidate-summary">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Candidate Overview & Assessment Status
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      Candidate Overview & Assessment Status
+                    </CardTitle>
+                    <Button 
+                      size="sm"
+                      onClick={handleExportPDF}
+                      data-testid="button-export-comparison-top"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Export as PDF
+                    </Button>
+                  </div>
                   <CardDescription>
                     Contact details, application date, and completion status for each assessment type (FIT, AI Readiness, Prompt Architecture, AIQ)
                   </CardDescription>
@@ -2625,24 +2635,6 @@ export default function CompareTab() {
               {/* Skills Legend */}
               <SkillsLegend />
 
-              {/* Export Button */}
-              <div className="flex justify-end gap-2">
-                <Button 
-                  variant="secondary" 
-                  className="bg-white hover:bg-gray-100 text-gray-900 border"
-                  onClick={() => queryClient.invalidateQueries({ queryKey: ['compare', selectedCandidates] })}
-                  data-testid="button-refresh-comparison"
-                >
-                  Refresh Analysis
-                </Button>
-                <Button 
-                  onClick={handleExportPDF}
-                  data-testid="button-export-comparison"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Export as PDF
-                </Button>
-              </div>
 
               {!comparison.hasSkillData && (
                 <Card>
