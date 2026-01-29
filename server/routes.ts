@@ -13721,7 +13721,6 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
           { role: "user", content: prompt }
         ],
         max_completion_tokens: 500,
-        temperature: 0.7,
       });
 
       const insights = completion.choices[0].message.content || '';
