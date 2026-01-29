@@ -1041,6 +1041,7 @@ export default function IndividualReportTab() {
             <Button 
               variant="outline"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="text-white border-white/50 hover:bg-white/10"
               data-testid="button-back-to-top-individual"
             >
               <ChevronUp className="h-4 w-4 mr-2" />

@@ -1225,7 +1225,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
               variant="outline"
               size="lg"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="gap-2"
+              className="gap-2 text-white border-white/50 hover:bg-white/10"
               data-testid="button-back-to-top-single"
             >
               <ChevronUp className="h-5 w-5" />

@@ -1560,6 +1560,7 @@ export default function MultiCandidateRoleFitTab() {
               variant="outline"
               size="lg"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="text-white border-white/50 hover:bg-white/10"
               data-testid="button-back-to-top-multi"
             >
               <ChevronUp className="h-4 w-4 mr-2" />
