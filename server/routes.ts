@@ -14168,6 +14168,73 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         } : null;
       });
 
+      // Build a descriptive title using candidate info
+      const candidateDisplayNames = candidateIds.map(id => {
+        // Extract email local part if it looks like an email
+        if (id.includes('@')) {
+          return id.split('@')[0];
+        }
+        return id.length > 20 ? id.substring(0, 17) + '...' : id;
+      });
+
+      // Generate AI insights for comparison reports (2+ candidates)
+      let aiInsights: string | null = null;
+      if (candidateIds.length >= 2) {
+        try {
+          const candidateSummaries = candidateDisplayNames.map((name: string, idx: number) => {
+            const fitData = fitAssessments?.[idx];
+            const aiData = aiReadinessAssessments?.[idx];
+            const promptData = promptArchitectureAssessments?.[idx];
+            const aiqData = aiqAssessments?.[idx];
+            
+            return `
+${name}:
+- FIT Assessment: ${fitData ? 'Completed (Avg: ' + Math.round(Object.values(fitData.scores as Record<string, number>).reduce((a, b) => a + b, 0) / Object.keys(fitData.scores).length) + '%)' : 'Not completed'}
+- AI Readiness: ${aiData ? 'Completed (Avg: ' + Math.round(Object.values(aiData.scores as Record<string, number>).reduce((a, b) => a + b, 0) / Object.keys(aiData.scores).length) + '%)' : 'Not completed'}
+- Prompt Architecture: ${promptData ? promptData.totalScore + '%' : 'Not completed'}
+- AIQ: ${aiqData ? aiqData.totalScore + '%' : 'Not completed'}`;
+          }).join('\n');
+
+          const prompt = `You are an expert HR analyst comparing multiple job candidates. Generate a concise comparative analysis.
+
+CANDIDATES BEING COMPARED:
+${candidateSummaries}
+
+Average Scores Summary:
+${candidateDisplayNames.map((name: string, i: number) => name + ': ' + (averageScores?.[i] || 'N/A') + '%').join(', ')}
+
+Provide a brief comparative analysis (under 200 words) covering:
+1. **Key Differentiators**: What sets each candidate apart
+2. **Complementary Strengths**: Where candidates excel differently
+3. **Hiring Consideration**: Brief recommendation based on the data
+
+Use the candidates' actual names. Be specific and actionable.`;
+
+          const completion = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+              { role: "system", content: "You are an expert HR analyst specializing in candidate comparisons. Provide concise, professional insights." },
+              { role: "user", content: prompt }
+            ],
+            max_tokens: 400,
+            temperature: 0.7,
+          });
+
+          aiInsights = completion.choices[0].message.content || null;
+
+          logAiCost({
+            userId: req.user.id,
+            operation: 'compare_candidates_insights',
+            model: 'gpt-4o',
+            promptTokens: completion.usage?.prompt_tokens || 0,
+            completionTokens: completion.usage?.completion_tokens || 0,
+            metadata: { candidateCount: candidateIds.length },
+          }).catch(console.error);
+        } catch (aiError) {
+          console.error("Failed to generate AI insights for comparison:", aiError);
+        }
+      }
+
       const resultData = {
         radarData,
         skillComparison,
@@ -14177,18 +14244,10 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         aiReadinessAssessments,
         promptArchitectureAssessments,
         aiqAssessments,
+        aiInsights,
         generatedAt: new Date().toISOString(),
         version: 1,
       };
-
-      // Build a descriptive title using candidate info
-      const candidateDisplayNames = candidateIds.map(id => {
-        // Extract email local part if it looks like an email
-        if (id.includes('@')) {
-          return id.split('@')[0];
-        }
-        return id.length > 20 ? id.substring(0, 17) + '...' : id;
-      });
       
       // Determine report type based on candidate count
       const isIndividualReport = candidateIds.length === 1;
@@ -14222,7 +14281,7 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
     }
   });
 
-  // Partner: Generate AI insights for candidate comparison
+  // Partner: Generate AI insights for candidate comparison (kept for backwards compatibility)
   app.post("/api/partner/me/compare-insights", isAuthenticated, async (req: any, res) => {
     try {
       const partnerData = await getPartnerForUser(req.user.id);
@@ -15755,9 +15814,69 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
       });
 
+      // Generate AI insights for multi-candidate comparison
+      let aiInsights: string | null = null;
+      try {
+        const candidateSummaries = allCandidateEntries.map((entry: any) => {
+          const strengths = entry.strengths?.slice(0, 3).join(', ') || 'N/A';
+          const gaps = entry.gaps?.slice(0, 3).join(', ') || 'N/A';
+          const riskFlags = entry.riskFlags?.length > 0 ? entry.riskFlags.join(', ') : 'None';
+          
+          return `
+- ${entry.userName} (${entry.email}):
+  Overall Fit: ${entry.overallFit !== null ? entry.overallFit + '%' : 'Insufficient data'}
+  Tier: ${entry.fitTier}
+  Top Strengths: ${strengths}
+  Key Gaps: ${gaps}
+  Risk Flags: ${riskFlags}`;
+        }).join('\n');
+
+        const prompt = `You are a senior talent acquisition analyst. Provide strategic hiring insights for this multi-candidate role fit comparison.
+
+ROLE: ${role.name || role.title}
+${role.description ? 'Description: ' + role.description : ''}
+
+CANDIDATES ANALYZED:
+${candidateSummaries}
+
+TOP PERFORMER: ${summaryInsights.topPerformer?.userName || 'N/A'} (${summaryInsights.topPerformer?.overallFit || 0}% fit)
+
+Based on this data, provide a brief analysis (under 250 words) covering:
+1. **Hiring Recommendation**: Why the top performer stands out
+2. **Runner-Up Consideration**: When to consider the second choice
+3. **Team Dynamics**: How different candidates might complement each other
+4. **Risk Assessment**: Key concerns to address in interviews
+
+Be specific and reference the candidates by name.`;
+
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            { role: "system", content: "You are a senior talent acquisition analyst specializing in role-fit assessments. Provide strategic, actionable insights." },
+            { role: "user", content: prompt }
+          ],
+          max_tokens: 500,
+          temperature: 0.7,
+        });
+
+        aiInsights = completion.choices[0].message.content || null;
+
+        logAiCost({
+          userId: req.user.id,
+          operation: 'multi_candidate_role_fit_insights',
+          model: 'gpt-4o',
+          promptTokens: completion.usage?.prompt_tokens || 0,
+          completionTokens: completion.usage?.completion_tokens || 0,
+          metadata: { candidateCount: candidateIds.length, roleId: jobRoleId },
+        }).catch(console.error);
+      } catch (aiError) {
+        console.error("Failed to generate AI insights for multi-candidate comparison:", aiError);
+      }
+
       // Also save to partner analysis reports for unified report listing
       const reportData = {
         ...comparison,
+        aiInsights,
         generatedAt: new Date().toISOString(),
         version: 1,
       };
@@ -15776,6 +15895,7 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
 
       res.json({
         ...comparison,
+        aiInsights,
         cached: false,
         reportId: savedReport.id,
       });
@@ -15785,7 +15905,7 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
     }
   });
 
-  // Partner: Generate AI insights for multi-candidate role fit comparison
+  // Partner: Generate AI insights for multi-candidate role fit comparison (kept for backwards compatibility)
   app.post("/api/partner/me/multi-candidate-insights", isAuthenticated, async (req: any, res) => {
     try {
       const partnerData = await getPartnerForUser(req.user.id);

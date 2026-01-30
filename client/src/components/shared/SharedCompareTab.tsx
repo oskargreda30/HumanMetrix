@@ -105,6 +105,7 @@ interface ComparisonData {
     completedAt: Date;
   } | null>;
   aiqAssessments: Array<{ totalScore: number; scores: Record<string, number>; completedAt: Date } | null>;
+  aiInsights?: string | null;
 }
 
 export interface SharedCompareTabConfig {
@@ -130,9 +131,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
   });
   const [isCapturingPDF, setIsCapturingPDF] = useState(false);
   const [comparisonTriggered, setComparisonTriggered] = useState(false);
-  const [aiInsights, setAiInsights] = useState<string | null>(null);
   const reportContainerRef = useRef<HTMLDivElement>(null);
-  const lastInsightsTriggeredRef = useRef<string | null>(null);
   const { toast } = useToast();
 
   const { data: candidates, isLoading } = useQuery<any[]>({
@@ -161,78 +160,12 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
     }
   };
 
-  // Mutation for AI insights generation
-  const generateInsightsMutation = useMutation({
-    mutationFn: async () => {
-      if (!config.insightsEndpoint || !comparison || !selectedCandidateData) return null;
-      
-      const candidateNames = selectedCandidateData.map(c => ({
-        id: c.user.id,
-        name: `${c.user.firstName || ''} ${c.user.lastName || ''}`.trim() || c.user.email?.split('@')[0] || 'Unknown',
-        email: c.user.email,
-      }));
-
-      const res = await apiRequest('POST', config.insightsEndpoint, {
-        comparisonData: comparison,
-        candidateNames,
-      }, { timeoutMs: 120000 });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      if (data?.insights) {
-        setAiInsights(data.insights);
-      }
-    },
-    onError: (error: Error) => {
-      console.error("Failed to generate comparison insights:", error);
-    },
-  });
-
-  // Auto-trigger AI insights when comparison data loads
-  useEffect(() => {
-    if (config.insightsEndpoint && comparison && comparisonTriggered && selectedCandidateData?.length >= 2) {
-      // Use stable sorted key without mutating state
-      const sortedCandidates = [...selectedCandidates].sort();
-      const insightsKey = sortedCandidates.join(',');
-      
-      // Check if comparison has any meaningful data from any assessment type
-      const hasAnyData = comparison.hasSkillData || 
-        comparison.fitAssessments?.some(a => a !== null) ||
-        comparison.aiReadinessAssessments?.some(a => a !== null) ||
-        comparison.promptArchitectureAssessments?.some(a => a !== null) ||
-        comparison.aiqAssessments?.some(a => a !== null);
-      
-      if (lastInsightsTriggeredRef.current !== insightsKey) {
-        lastInsightsTriggeredRef.current = insightsKey;
-        
-        if (hasAnyData) {
-          setAiInsights(null);
-          
-          // Trigger immediately if not pending
-          if (!generateInsightsMutation.isPending) {
-            generateInsightsMutation.mutate();
-          }
-        } else {
-          // No assessment data available - set explicit no-data marker
-          setAiInsights("__NO_DATA__");
-        }
-      }
-    }
-  }, [comparison, comparisonTriggered, selectedCandidates, config.insightsEndpoint]);
-
-  // Reset insights when candidates change
-  useEffect(() => {
-    if (selectedCandidates.length < 2 || !comparisonTriggered) {
-      lastInsightsTriggeredRef.current = null;
-      setAiInsights(null);
-    }
-  }, [selectedCandidates, comparisonTriggered]);
+  // AI insights now come directly from comparison response (server-side generation)
+  // No separate mutation needed - insights are included in the main compare API response
 
   // Reset comparison when candidates change
   const handleToggleCandidate = (userId: string) => {
     setComparisonTriggered(false);
-    setAiInsights(null);
-    lastInsightsTriggeredRef.current = null;
     toggleCandidate(userId);
   };
 
@@ -2655,21 +2588,19 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                   </p>
                 </CardHeader>
                 <CardContent>
-                  {generateInsightsMutation.isPending ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Loader2 className="h-12 w-12 mx-auto mb-4 animate-spin text-purple-500" />
-                      <p className="text-sm">Generating AI insights...</p>
-                      <p className="text-xs mt-2">Analyzing candidate data and generating recommendations.</p>
-                    </div>
-                  ) : aiInsights === "__NO_DATA__" ? (
+                  {!comparison?.aiInsights && !comparison?.hasSkillData && 
+                   !comparison?.fitAssessments?.some(a => a !== null) &&
+                   !comparison?.aiReadinessAssessments?.some(a => a !== null) &&
+                   !comparison?.promptArchitectureAssessments?.some(a => a !== null) &&
+                   !comparison?.aiqAssessments?.some(a => a !== null) ? (
                     <div className="text-center py-8 text-muted-foreground">
                       <Brain className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
                       <p className="text-sm">No assessment data available for insights generation.</p>
                       <p className="text-xs mt-2">Complete assessments to enable AI-powered analysis.</p>
                     </div>
-                  ) : aiInsights ? (
+                  ) : comparison?.aiInsights ? (
                     <div className="prose prose-sm dark:prose-invert max-w-none" data-testid="text-ai-insights">
-                      {aiInsights.split('\n\n').map((paragraph, idx) => {
+                      {comparison.aiInsights.split('\n\n').map((paragraph, idx) => {
                         const headingMatch = paragraph.match(/^\*\*(.+?)\*\*/);
                         if (headingMatch) {
                           const heading = headingMatch[1];
@@ -2692,7 +2623,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                   ) : (
                     <div className="text-center py-8 text-muted-foreground">
                       <Brain className="h-12 w-12 mx-auto mb-4 text-purple-500/30" />
-                      <p className="text-sm">AI insights will appear here once the analysis completes.</p>
+                      <p className="text-sm">AI insights could not be generated for this comparison.</p>
                     </div>
                   )}
                 </CardContent>

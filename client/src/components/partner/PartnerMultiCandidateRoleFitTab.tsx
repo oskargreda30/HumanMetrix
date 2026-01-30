@@ -178,6 +178,7 @@ type MultiCandidateComparison = {
     } | null;
   };
   createdAt: string;
+  aiInsights?: string | null;
 };
 
 const CHART_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16'];
@@ -213,9 +214,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
   const [selectedRole, setSelectedRole] = useState("");
   const [isExporting, setIsExporting] = useState(false);
-  const [aiInsights, setAiInsights] = useState<string | null>(null);
   const chartRef = useRef<HTMLDivElement>(null);
-  const lastInsightsTriggeredRef = useRef<string | null>(null);
   const { toast } = useToast();
 
   const { data: candidates } = useQuery<any[]>({
@@ -279,53 +278,8 @@ export default function PartnerMultiCandidateRoleFitTab() {
     },
   });
 
-  // Mutation for AI insights generation
-  const generateInsightsMutation = useMutation({
-    mutationFn: async (comparisonData: MultiCandidateComparison) => {
-      const res = await apiRequest('POST', '/api/partner/me/multi-candidate-insights', {
-        comparisonData: {
-          roleSnapshot: comparisonData.roleSnapshot,
-          candidateEntries: comparisonData.candidateEntries,
-          summaryInsights: comparisonData.summaryInsights,
-        },
-      }, { timeoutMs: 120000 });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      setAiInsights(data.insights);
-    },
-    onError: (error: Error) => {
-      console.error("Failed to generate AI insights:", error);
-      // Don't show toast for AI insights failure - it's supplementary
-    },
-  });
-
-  // Auto-trigger AI insights when comparison data loads
-  useEffect(() => {
-    if (comparison && comparison.candidateEntries?.length > 0) {
-      // Use stable sorted key without mutating state
-      const sortedCandidates = [...selectedCandidates].sort();
-      const insightsKey = `${selectedRole}-${sortedCandidates.join(',')}`;
-      
-      if (lastInsightsTriggeredRef.current !== insightsKey) {
-        lastInsightsTriggeredRef.current = insightsKey;
-        setAiInsights(null);
-        
-        // Auto-trigger AI insights generation immediately if not pending
-        if (!generateInsightsMutation.isPending) {
-          generateInsightsMutation.mutate(comparison);
-        }
-      }
-    }
-  }, [comparison, selectedRole, selectedCandidates]);
-
-  // Reset insights when selection changes
-  useEffect(() => {
-    if (!selectedRole || selectedCandidates.length < 2) {
-      lastInsightsTriggeredRef.current = null;
-      setAiInsights(null);
-    }
-  }, [selectedRole, selectedCandidates]);
+  // AI insights now come directly from comparison response (server-side generation)
+  // No separate mutation needed - insights are included in the main comparison API response
 
   const canCompare = selectedCandidates.length >= 2 && selectedRole && selectedRoleData?.requiredSkillScores;
 
@@ -1162,15 +1116,9 @@ export default function PartnerMultiCandidateRoleFitTab() {
               </p>
             </CardHeader>
             <CardContent>
-              {generateInsightsMutation.isPending ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Loader2 className="h-12 w-12 mx-auto mb-4 animate-spin text-purple-500" />
-                  <p className="text-sm">Generating AI insights...</p>
-                  <p className="text-xs mt-2">Analyzing candidate data and generating strategic recommendations.</p>
-                </div>
-              ) : aiInsights ? (
+              {comparison?.aiInsights ? (
                 <div className="prose prose-sm dark:prose-invert max-w-none" data-testid="text-ai-insights">
-                  {aiInsights.split('\n\n').map((paragraph, idx) => {
+                  {comparison.aiInsights.split('\n\n').map((paragraph: string, idx: number) => {
                     // Check if this is a heading (starts with **)
                     const headingMatch = paragraph.match(/^\*\*(.+?)\*\*/);
                     if (headingMatch) {
