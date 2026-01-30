@@ -507,10 +507,38 @@ export function registerPartnerRoutes(app: Express) {
     isAuthenticated,
     async (req: any, res: Response) => {
       try {
-        const partnerId = req.user?.partnerId;
-        if (!partnerId) {
+        // Look up partner for the authenticated user
+        const user = await storage.getUser(req.user.id);
+        if (!user) {
           return res.status(403).json({ error: "Partner access required" });
         }
+        
+        let partner = null;
+        
+        // Check if user is a partner admin
+        const hasPartnerAccess = user.role === 'super_admin' || user.role === 'organization_admin' || user.role === 'partner_admin';
+        if (hasPartnerAccess) {
+          if (user.organizationId) {
+            partner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+          }
+          if (!partner && user.email) {
+            partner = await storage.getPartnerAccountByEmail(user.email);
+          }
+        }
+        
+        // Check if user is a team member
+        if (!partner) {
+          const teamMembership = await storage.getPartnerTeamMemberByUserId(req.user.id);
+          if (teamMembership) {
+            partner = await storage.getPartnerAccount(teamMembership.partnerId);
+          }
+        }
+        
+        if (!partner) {
+          return res.status(403).json({ error: "Partner access required" });
+        }
+        
+        const partnerId = partner.id;
         
         const organisationId = req.query.organisationId as string | undefined;
         
@@ -586,10 +614,38 @@ export function registerPartnerRoutes(app: Express) {
     isAuthenticated,
     async (req: any, res: Response) => {
       try {
-        const partnerId = req.user?.partnerId;
-        if (!partnerId) {
+        // Look up partner for the authenticated user
+        const user = await storage.getUser(req.user.id);
+        if (!user) {
           return res.status(403).json({ error: "Partner access required" });
         }
+        
+        let partner = null;
+        
+        // Check if user is a partner admin
+        const hasPartnerAccess = user.role === 'super_admin' || user.role === 'organization_admin' || user.role === 'partner_admin';
+        if (hasPartnerAccess) {
+          if (user.organizationId) {
+            partner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+          }
+          if (!partner && user.email) {
+            partner = await storage.getPartnerAccountByEmail(user.email);
+          }
+        }
+        
+        // Check if user is a team member
+        if (!partner) {
+          const teamMembership = await storage.getPartnerTeamMemberByUserId(req.user.id);
+          if (teamMembership) {
+            partner = await storage.getPartnerAccount(teamMembership.partnerId);
+          }
+        }
+        
+        if (!partner) {
+          return res.status(403).json({ error: "Partner access required" });
+        }
+        
+        const partnerId = partner.id;
         
         const { sessionId } = req.params;
         const { pipelineStage, pipelineNotes } = req.body;
