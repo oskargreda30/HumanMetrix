@@ -224,14 +224,12 @@ export function HiringPipelineTab() {
               data-testid={`pipeline-column-${stage.id}`}
             >
               <div className={`px-2 py-2 rounded-t-lg ${config?.bgColor || "bg-muted"}`} data-testid={`pipeline-header-${stage.id}`}>
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-1.5">
-                    <Icon className={`h-4 w-4 flex-shrink-0 ${config?.color || "text-foreground"}`} />
-                    <span className="font-medium text-xs truncate" data-testid={`text-stage-label-${stage.id}`}>{stage.label}</span>
-                  </div>
-                  <Badge variant="secondary" className="text-xs w-fit" data-testid={`badge-stage-count-${stage.id}`}>
-                    {sessions.length}
-                  </Badge>
+                <div className="flex items-center gap-1.5">
+                  <Icon className={`h-4 w-4 flex-shrink-0 ${config?.color || "text-foreground"}`} />
+                  <span className="font-medium text-xs truncate" data-testid={`text-stage-label-${stage.id}`}>{stage.label}</span>
+                  <span className="text-[10px] text-muted-foreground flex-shrink-0" data-testid={`badge-stage-count-${stage.id}`}>
+                    ({sessions.length})
+                  </span>
                 </div>
               </div>
               <ScrollArea className="h-[500px] p-2">
