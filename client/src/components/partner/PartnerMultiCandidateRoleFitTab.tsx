@@ -379,7 +379,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
           <Sparkles className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-              Credit Usage for AI-Powered Analysis
+              Credit Usage for Analysis
             </p>
             <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
               This feature uses your credits for AI analysis. Generating required skill scores uses 1 credit per role. 
@@ -508,7 +508,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
               )}
             </Button>
             <p className="text-[10px] text-center text-muted-foreground">
-              Uses 1 credit per candidate for AI-powered role fit analysis
+              Uses 1 credit per candidate for role fit analysis
             </p>
           </div>
         </CardContent>

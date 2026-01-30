@@ -128,6 +128,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
     aiq: 25,
   });
   const [isCapturingPDF, setIsCapturingPDF] = useState(false);
+  const [comparisonTriggered, setComparisonTriggered] = useState(false);
   const reportContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -139,7 +140,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
     queryKey: [config.rolesEndpoint],
   });
 
-  const { data: comparison, isLoading: isComparing } = useQuery<ComparisonData>({
+  const { data: comparison, isLoading: isComparing, refetch: runComparison } = useQuery<ComparisonData>({
     queryKey: ['compare', config.contextType, selectedCandidates],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -148,8 +149,20 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
       if (!response.ok) throw new Error('Failed to fetch comparison');
       return response.json();
     },
-    enabled: selectedCandidates.length >= 2,
+    enabled: selectedCandidates.length >= 2 && comparisonTriggered,
   });
+
+  const handleRunComparison = () => {
+    if (selectedCandidates.length >= 2) {
+      setComparisonTriggered(true);
+    }
+  };
+
+  // Reset comparison when candidates change
+  const handleToggleCandidate = (userId: string) => {
+    setComparisonTriggered(false);
+    toggleCandidate(userId);
+  };
 
   const toggleCandidate = (userId: string) => {
     setSelectedCandidates((prev) =>
@@ -1051,7 +1064,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
             <Sparkles className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                Credit Usage for AI-Powered Analysis
+                Credit Usage for Analysis
               </p>
               <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
                 Comparing candidates uses your credits. Each candidate compared costs 1 credit. 
@@ -1084,7 +1097,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                       ? 'border-primary bg-primary/5'
                       : 'hover-elevate'
                   }`}
-                  onClick={() => toggleCandidate(candidate.user.id)}
+                  onClick={() => handleToggleCandidate(candidate.user.id)}
                   data-testid={`checkbox-candidate-${candidate.user.id}`}
                 >
                   <div className="flex items-start gap-3">
@@ -1119,7 +1132,25 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
         </CardContent>
       </Card>
 
-      {selectedCandidates.length >= 2 && (
+      {selectedCandidates.length >= 2 && !comparisonTriggered && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Users className="h-12 w-12 mb-4 text-primary/50" />
+            <p className="text-sm text-muted-foreground mb-4 text-center">
+              {selectedCandidates.length} candidates selected. Click below to run the comparison.
+            </p>
+            <Button 
+              onClick={handleRunComparison}
+              data-testid="button-run-comparison"
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Run Comparison
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedCandidates.length >= 2 && comparisonTriggered && (
         <>
           {isComparing ? (
             <Card>
@@ -2706,17 +2737,27 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
       )}
 
       {/* Bottom Export and Back to Top buttons */}
-      {comparison && selectedCandidates.length >= 2 && (
+      {comparison && selectedCandidates.length >= 2 && comparisonTriggered && (
         <div className="flex justify-end gap-3 pt-4">
           <Button
             variant="default"
             size="lg"
             onClick={handleExportPDF}
+            disabled={isComparing}
             className="gap-2"
             data-testid="button-export-comparison-bottom"
           >
-            <Download className="h-5 w-5" />
-            Export as PDF
+            {isComparing ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Please Wait...
+              </>
+            ) : (
+              <>
+                <Download className="h-5 w-5" />
+                Export as PDF
+              </>
+            )}
           </Button>
           <Button
             variant="outline"
@@ -2732,7 +2773,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
       )}
 
       {/* Hidden radar charts for PDF export */}
-      {comparison && selectedCandidates.length >= 2 && (
+      {comparison && selectedCandidates.length >= 2 && comparisonTriggered && (
         <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
           {/* FIT radar charts */}
           {comparison.fitAssessments?.map((fitData, index) => {

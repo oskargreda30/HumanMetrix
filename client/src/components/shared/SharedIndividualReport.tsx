@@ -124,68 +124,66 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
   });
 
   const selectedCandidateData = candidates?.find(c => c.user.id === selectedCandidate);
-  
-  const insightsTriggeredForRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (selectedCandidate && candidateReport && selectedCandidateData && insightsTriggeredForRef.current !== selectedCandidate) {
-      const fitDataLocal = candidateReport?.fitAssessments?.[0];
-      const aiDataLocal = candidateReport?.aiReadinessAssessments?.[0];
-      const promptDataLocal = candidateReport?.promptArchitectureAssessments?.[0];
-      const aiqDataLocal = candidateReport?.aiqAssessments?.[0];
-      
-      if (fitDataLocal || aiDataLocal || promptDataLocal || aiqDataLocal) {
-        insightsTriggeredForRef.current = selectedCandidate;
-        
-        const candidateName = (() => {
-          const { firstName, lastName, email } = selectedCandidateData.user;
-          if (firstName || lastName) {
-            return `${firstName || ''} ${lastName || ''}`.trim();
-          }
-          return email?.split('@')[0] || 'Unknown';
-        })();
-        
-        const skills: Array<{ name: string; score: number; category: string }> = [];
-        if (fitDataLocal) {
-          Object.entries(fitDataLocal.scores).forEach(([name, score]) => {
-            skills.push({ name, score: score as number, category: 'FIT' });
-          });
-        }
-        if (aiDataLocal) {
-          const normalizedScores = normalizeAIReadinessScores(aiDataLocal.scores);
-          Object.entries(normalizedScores).forEach(([name, score]) => {
-            skills.push({ name, score: score as number, category: 'AI Readiness' });
-          });
-        }
-        skills.sort((a, b) => b.score - a.score);
-        const strengths = skills.slice(0, 3);
-        const weaknesses = skills.slice(-3).reverse();
-        
-        const assessmentData = {
-          candidateName,
-          fit: fitDataLocal ? {
-            average: Math.round(Object.values(fitDataLocal.scores).reduce((a: number, b: any) => a + b, 0) / Object.keys(fitDataLocal.scores).length),
-            scores: fitDataLocal.scores,
-          } : null,
-          aiReadiness: aiDataLocal ? {
-            average: Math.round(Object.values(aiDataLocal.scores).reduce((a: number, b: any) => a + b, 0) / Object.keys(aiDataLocal.scores).length),
-            scores: aiDataLocal.scores,
-          } : null,
-          promptArchitecture: promptDataLocal ? { totalScore: promptDataLocal.totalScore } : null,
-          aiq: aiqDataLocal ? { totalScore: aiqDataLocal.totalScore } : null,
-          strengths,
-          lowestScoring: weaknesses,
-        };
-        
-        generateInsightsMutation.mutate({ userId: selectedCandidate, assessmentData });
-      }
-    }
-  }, [selectedCandidate, candidateReport, selectedCandidateData, generateInsightsMutation]);
+  const [insightsGenerated, setInsightsGenerated] = useState(false);
 
   useEffect(() => {
     setProfileInsights(null);
-    insightsTriggeredForRef.current = null;
+    setInsightsGenerated(false);
   }, [selectedCandidate]);
+
+  const handleGenerateInsights = () => {
+    if (!selectedCandidate || !candidateReport || !selectedCandidateData) return;
+    
+    const fitDataLocal = candidateReport?.fitAssessments?.[0];
+    const aiDataLocal = candidateReport?.aiReadinessAssessments?.[0];
+    const promptDataLocal = candidateReport?.promptArchitectureAssessments?.[0];
+    const aiqDataLocal = candidateReport?.aiqAssessments?.[0];
+    
+    if (fitDataLocal || aiDataLocal || promptDataLocal || aiqDataLocal) {
+      const candidateName = (() => {
+        const { firstName, lastName, email } = selectedCandidateData.user;
+        if (firstName || lastName) {
+          return `${firstName || ''} ${lastName || ''}`.trim();
+        }
+        return email?.split('@')[0] || 'Unknown';
+      })();
+      
+      const skills: Array<{ name: string; score: number; category: string }> = [];
+      if (fitDataLocal) {
+        Object.entries(fitDataLocal.scores).forEach(([name, score]) => {
+          skills.push({ name, score: score as number, category: 'FIT' });
+        });
+      }
+      if (aiDataLocal) {
+        const normalizedScores = normalizeAIReadinessScores(aiDataLocal.scores);
+        Object.entries(normalizedScores).forEach(([name, score]) => {
+          skills.push({ name, score: score as number, category: 'AI Readiness' });
+        });
+      }
+      skills.sort((a, b) => b.score - a.score);
+      const strengths = skills.slice(0, 3);
+      const weaknesses = skills.slice(-3).reverse();
+      
+      const assessmentData = {
+        candidateName,
+        fit: fitDataLocal ? {
+          average: Math.round(Object.values(fitDataLocal.scores).reduce((a: number, b: any) => a + b, 0) / Object.keys(fitDataLocal.scores).length),
+          scores: fitDataLocal.scores,
+        } : null,
+        aiReadiness: aiDataLocal ? {
+          average: Math.round(Object.values(aiDataLocal.scores).reduce((a: number, b: any) => a + b, 0) / Object.keys(aiDataLocal.scores).length),
+          scores: aiDataLocal.scores,
+        } : null,
+        promptArchitecture: promptDataLocal ? { totalScore: promptDataLocal.totalScore } : null,
+        aiq: aiqDataLocal ? { totalScore: aiqDataLocal.totalScore } : null,
+        strengths,
+        lowestScoring: weaknesses,
+      };
+      
+      setInsightsGenerated(true);
+      generateInsightsMutation.mutate({ userId: selectedCandidate, assessmentData });
+    }
+  };
 
   const getCandidateName = (candidate: CandidateData | undefined) => {
     if (!candidate) return 'Unknown';
@@ -361,10 +359,10 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
             <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Credit Usage for AI-Powered Analysis
+                Credit Usage for Analysis
               </p>
               <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
-                AI Profile Insights generation costs 1 credit. Credits are only consumed when generating new insights. Cached insights are free.
+                Profile Insights generation costs 1 credit. Credits are only consumed when generating new insights. Cached insights are free.
               </p>
             </div>
           </div>
@@ -423,13 +421,23 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
             <Button 
               size="sm"
               onClick={handleExportPDF}
-              disabled={isExporting}
+              disabled={isExporting || !profileInsights || generateInsightsMutation.isPending}
               data-testid="button-export-pdf-top"
             >
               {isExporting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Exporting...
+                </>
+              ) : generateInsightsMutation.isPending || (!profileInsights && insightsGenerated) ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Please Wait...
+                </>
+              ) : !profileInsights ? (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Generate Insights First
                 </>
               ) : (
                 <>
@@ -821,14 +829,32 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                 Profile Insights and Recommendations
               </CardTitle>
               <CardDescription>
-                AI-powered analysis of {getCandidateName(selectedCandidateData)}'s profile with role fit recommendations
+                Analysis of {getCandidateName(selectedCandidateData)}'s profile with role fit recommendations
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {generateInsightsMutation.isPending ? (
+              {!insightsGenerated && !profileInsights ? (
+                <div className="text-center py-8">
+                  <Lightbulb className="h-12 w-12 mx-auto mb-4 text-amber-500/50" />
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Generate insights to view profile analysis and recommendations for {getCandidateName(selectedCandidateData)}.
+                  </p>
+                  <Button 
+                    onClick={handleGenerateInsights}
+                    disabled={generateInsightsMutation.isPending}
+                    data-testid="button-generate-insights"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Generate Profile Insights
+                  </Button>
+                  {config.contextType === 'partner' && (
+                    <p className="text-xs text-muted-foreground mt-3">Uses 1 credit</p>
+                  )}
+                </div>
+              ) : generateInsightsMutation.isPending ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Loader2 className="h-12 w-12 mx-auto mb-4 animate-spin text-primary" />
-                  <p className="text-sm">Generating AI-powered profile insights...</p>
+                  <p className="text-sm">Generating profile insights...</p>
                   <p className="text-xs mt-2">Analyzing assessment data across all dimensions.</p>
                 </div>
               ) : profileInsights ? (

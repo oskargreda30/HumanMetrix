@@ -101,6 +101,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
   const [selectedRole, setSelectedRole] = useState("");
   const [promptRoleFitAnalysis, setPromptRoleFitAnalysis] = useState<string | null>(null);
   const [aiqRoleFitAnalysis, setAiqRoleFitAnalysis] = useState<string | null>(null);
+  const [analysisTriggered, setAnalysisTriggered] = useState(false);
   const { toast } = useToast();
 
   const { data: candidates, isLoading: isLoadingCandidates } = useQuery<any[]>({
@@ -147,8 +148,30 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
 
   const { data: alignment, isLoading: isLoadingAlignment } = useQuery<RoleAlignment>({
     queryKey: alignmentQueryKey as any,
-    enabled: !!selectedCandidate && !!selectedRole,
+    enabled: !!selectedCandidate && !!selectedRole && analysisTriggered,
   });
+
+  // Reset analysis state when selection changes
+  const handleCandidateChange = (value: string) => {
+    setSelectedCandidate(value);
+    setAnalysisTriggered(false);
+    setPromptRoleFitAnalysis(null);
+    setAiqRoleFitAnalysis(null);
+  };
+
+  const handleRoleChange = (value: string) => {
+    setSelectedRole(value);
+    setAnalysisTriggered(false);
+    setPromptRoleFitAnalysis(null);
+    setAiqRoleFitAnalysis(null);
+  };
+
+  const handleAnalyzeRoleFit = () => {
+    if (selectedCandidate && selectedRole) {
+      setAnalysisTriggered(true);
+      analyzeRoleFitMutation.mutate();
+    }
+  };
 
   const generateRequiredScoresMutation = useMutation({
     mutationFn: async (roleId: string) => {
@@ -351,7 +374,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
             <Sparkles className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                Credit Usage for AI-Powered Analysis
+                Credit Usage for Analysis
               </p>
               <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
                 This feature uses your credits for AI analysis. Generating required skill scores uses 1 credit per role. 
@@ -364,7 +387,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
       
       <Card>
         <CardHeader>
-          <CardTitle>AI-Powered Role Alignment Analysis</CardTitle>
+          <CardTitle>Role Alignment Analysis</CardTitle>
           <p className="text-sm text-muted-foreground">
             Select a candidate and job role to see how well they match using AI analysis
           </p>
@@ -373,7 +396,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">Candidate</label>
-              <Select value={selectedCandidate} onValueChange={setSelectedCandidate}>
+              <Select value={selectedCandidate} onValueChange={handleCandidateChange}>
                 <SelectTrigger data-testid="select-candidate">
                   <SelectValue placeholder="Select a candidate" />
                 </SelectTrigger>
@@ -391,7 +414,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Job Role</label>
-              <Select value={selectedRole} onValueChange={setSelectedRole} disabled={isLoadingRoles}>
+              <Select value={selectedRole} onValueChange={handleRoleChange} disabled={isLoadingRoles}>
                 <SelectTrigger data-testid="select-role">
                   <SelectValue placeholder={isLoadingRoles ? "Loading roles..." : rolesError ? "Error loading roles" : "Select a role"} />
                 </SelectTrigger>
@@ -449,32 +472,22 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
             </div>
           )}
 
-          {selectedCandidate && selectedRole && !alignment && selectedRoleData?.requiredSkillScores && (
+          {selectedCandidate && selectedRole && !analysisTriggered && selectedRoleData?.requiredSkillScores && (
             <div className="space-y-2">
               <Button
-                onClick={() => analyzeRoleFitMutation.mutate()}
-                disabled={analyzeRoleFitMutation.isPending}
+                onClick={handleAnalyzeRoleFit}
                 className="w-full"
                 data-testid="button-analyze-fit"
               >
-                {analyzeRoleFitMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Analyzing with AI... (this may take up to 2 minutes)
-                  </>
-                ) : (
-                  <>
-                    <Target className="mr-2 h-4 w-4" />
-                    Analyze Role Fit
-                    {config.contextType === 'partner' && (
-                      <Badge variant="secondary" className="ml-2 text-[10px] font-normal">1 credit</Badge>
-                    )}
-                  </>
+                <Target className="mr-2 h-4 w-4" />
+                Analyze Role Fit
+                {config.contextType === 'partner' && (
+                  <Badge variant="secondary" className="ml-2 text-[10px] font-normal">1 credit</Badge>
                 )}
               </Button>
               {config.contextType === 'partner' && (
                 <p className="text-[10px] text-center text-muted-foreground">
-                  Uses 1 credit for AI-powered role fit analysis
+                  Uses 1 credit for role fit analysis
                 </p>
               )}
             </div>
@@ -482,12 +495,12 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
         </CardContent>
       </Card>
 
-      {isLoadingAlignment && (
+      {analysisTriggered && isLoadingAlignment && (
         <Card>
           <CardContent className="flex justify-center py-12">
             <div className="text-center">
               <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-              <p className="text-muted-foreground">Loading AI analysis...</p>
+              <p className="text-muted-foreground">Running role fit analysis...</p>
             </div>
           </CardContent>
         </Card>
@@ -561,10 +574,20 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                     variant="outline"
                     size="sm"
                     onClick={handleExportPDF}
+                    disabled={isLoadingAlignment || analyzePromptRoleFitMutation.isPending || analyzeAiqRoleFitMutation.isPending}
                     data-testid="button-export-pdf"
                   >
-                    <Download className="h-4 w-4 mr-2" />
-                    Export PDF
+                    {isLoadingAlignment || analyzePromptRoleFitMutation.isPending || analyzeAiqRoleFitMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Please Wait...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4 mr-2" />
+                        Export PDF
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
@@ -1251,11 +1274,21 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
               variant="default"
               size="lg"
               onClick={handleExportPDF}
+              disabled={isLoadingAlignment || analyzePromptRoleFitMutation.isPending || analyzeAiqRoleFitMutation.isPending}
               className="gap-2"
               data-testid="button-export-pdf-bottom"
             >
-              <Download className="h-5 w-5" />
-              Export as PDF
+              {isLoadingAlignment || analyzePromptRoleFitMutation.isPending || analyzeAiqRoleFitMutation.isPending ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Please Wait...
+                </>
+              ) : (
+                <>
+                  <Download className="h-5 w-5" />
+                  Export as PDF
+                </>
+              )}
             </Button>
             <Button
               variant="outline"
