@@ -204,7 +204,8 @@ export function HiringPipelineTab() {
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-4 overflow-x-auto pb-4">
+      {/* Desktop: Horizontal kanban grid */}
+      <div className="hidden md:grid md:grid-cols-7 gap-3 overflow-x-auto pb-4">
         {stages.map((stage) => {
           const config = stageConfig[stage.id];
           const Icon = config?.icon || User;
@@ -214,7 +215,7 @@ export function HiringPipelineTab() {
           return (
             <div
               key={stage.id}
-              className={`min-w-[220px] rounded-lg border ${
+              className={`min-w-[180px] rounded-lg border ${
                 isDropTarget ? "border-primary border-2 bg-primary/5" : "border-border"
               } transition-all`}
               onDragOver={(e) => handleDragOver(e, stage.id)}
@@ -222,13 +223,13 @@ export function HiringPipelineTab() {
               onDrop={(e) => handleDrop(e, stage.id)}
               data-testid={`pipeline-column-${stage.id}`}
             >
-              <div className={`px-3 py-2 rounded-t-lg ${config?.bgColor || "bg-muted"}`} data-testid={`pipeline-header-${stage.id}`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Icon className={`h-4 w-4 ${config?.color || "text-foreground"}`} />
-                    <span className="font-medium text-sm" data-testid={`text-stage-label-${stage.id}`}>{stage.label}</span>
+              <div className={`px-2 py-2 rounded-t-lg ${config?.bgColor || "bg-muted"}`} data-testid={`pipeline-header-${stage.id}`}>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-1.5">
+                    <Icon className={`h-4 w-4 flex-shrink-0 ${config?.color || "text-foreground"}`} />
+                    <span className="font-medium text-xs truncate" data-testid={`text-stage-label-${stage.id}`}>{stage.label}</span>
                   </div>
-                  <Badge variant="secondary" className="text-xs" data-testid={`badge-stage-count-${stage.id}`}>
+                  <Badge variant="secondary" className="text-xs w-fit" data-testid={`badge-stage-count-${stage.id}`}>
                     {sessions.length}
                   </Badge>
                 </div>
@@ -315,6 +316,110 @@ export function HiringPipelineTab() {
                   )}
                 </div>
               </ScrollArea>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Mobile: Vertical stacked view */}
+      <div className="md:hidden space-y-4">
+        {stages.map((stage) => {
+          const config = stageConfig[stage.id];
+          const Icon = config?.icon || User;
+          const sessions = filterSessions(pipeline[stage.id] || []);
+          const isDropTarget = dragOverStage === stage.id;
+
+          return (
+            <div
+              key={stage.id}
+              className={`rounded-lg border ${
+                isDropTarget ? "border-primary border-2 bg-primary/5" : "border-border"
+              } transition-all`}
+              onDragOver={(e) => handleDragOver(e, stage.id)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, stage.id)}
+              data-testid={`pipeline-column-mobile-${stage.id}`}
+            >
+              <div className={`px-4 py-3 rounded-t-lg ${config?.bgColor || "bg-muted"}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Icon className={`h-5 w-5 flex-shrink-0 ${config?.color || "text-foreground"}`} />
+                    <span className="font-medium text-sm">{stage.label}</span>
+                  </div>
+                  <Badge variant="secondary" className="text-xs">
+                    {sessions.length}
+                  </Badge>
+                </div>
+              </div>
+              {sessions.length > 0 && (
+                <div className="p-3 space-y-2">
+                  {sessions.map((session) => (
+                    <Card
+                      key={session.sessionId}
+                      className="cursor-grab active:cursor-grabbing hover-elevate"
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, session)}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1 mb-1">
+                              <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                              <span className="font-medium text-sm truncate">
+                                {session.externalEmail || session.externalUserId || "Unknown"}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge variant="outline" className="text-xs">
+                                {assessmentLabels[session.assessmentType] || session.assessmentType}
+                              </Badge>
+                              {session.status === "completed" && session.totalScore !== null && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {session.totalScore}%
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {session.completedAt
+                                ? format(new Date(session.completedAt), "MMM d, yyyy")
+                                : format(new Date(session.createdAt), "MMM d, yyyy")
+                              }
+                            </div>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openNotesDialog(session)}>
+                                <FileText className="h-4 w-4 mr-2" />
+                                {session.pipelineNotes ? "Edit Notes" : "Add Notes"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <a href={`/partner/results/${session.sessionId}`} target="_blank" rel="noopener noreferrer">
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Results
+                                </a>
+                              </DropdownMenuItem>
+                              {stages.filter(s => s.id !== session.pipelineStage).map(targetStage => (
+                                <DropdownMenuItem
+                                  key={targetStage.id}
+                                  onClick={() => moveToStage(session, targetStage.id)}
+                                >
+                                  <ChevronRight className="h-4 w-4 mr-2" />
+                                  Move to {targetStage.label}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })}
