@@ -352,14 +352,14 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
 
       {selectedCandidate && reportTriggered && !loadingTransitionComplete && (
         <AnalysisLoadingScreen 
-          isComplete={!!candidateReport?.aiInsights}
+          isComplete={!isLoadingReport && !!candidateReport}
           averageTimeSeconds={20}
           message="Generating AI-powered profile insights..."
           onTransitionComplete={() => setLoadingTransitionComplete(true)}
         />
       )}
 
-      {selectedCandidate && reportTriggered && loadingTransitionComplete && candidateReport?.aiInsights && selectedCandidateData && (
+      {selectedCandidate && reportTriggered && loadingTransitionComplete && candidateReport && selectedCandidateData && (
         <>
           <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
             <h2 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
