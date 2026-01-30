@@ -2765,7 +2765,13 @@ export default function PartnerDashboard() {
             {/* Invitations Tab */}
             <TabsContent value="invitations" className="space-y-4" data-testid="panel-invitations">
               {partner?.id && partner?.billingType ? (
-                <BulkInvitationsTab partnerId={partner.id} billingType={partner.billingType} />
+                <BulkInvitationsTab 
+                  partnerId={partner.id} 
+                  billingType={partner.billingType}
+                  hasCardOnFile={dashboardCardStatus?.hasCard}
+                  testsRemaining={partner.remaining}
+                  onNavigateToBilling={() => setActiveTab('billing')}
+                />
               ) : (
                 <Card>
                   <CardContent className="py-8 flex justify-center">

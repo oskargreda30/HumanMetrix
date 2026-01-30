@@ -54,6 +54,9 @@ interface DuplicateCandidateInfo {
 interface BulkInvitationsTabProps {
   partnerId: string;
   billingType: string;
+  hasCardOnFile?: boolean;
+  testsRemaining?: number;
+  onNavigateToBilling?: () => void;
 }
 
 interface CandidateEntry {
@@ -86,9 +89,12 @@ const ASSESSMENT_TYPES = [
   { id: 'aiq', label: 'AIQ', description: 'AI ethics and integrity' },
 ];
 
-export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTabProps) {
+export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, testsRemaining, onNavigateToBilling }: BulkInvitationsTabProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // PAYG partners without credits AND without card on file should be restricted
+  const isPaygRestricted = billingType === 'payg' && (testsRemaining === undefined || testsRemaining <= 0) && !hasCardOnFile;
   
   const [candidates, setCandidates] = useState<CandidateEntry[]>([
     { id: crypto.randomUUID(), externalUserId: '', email: '', name: '' },
@@ -540,6 +546,35 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
 
   return (
     <div className="space-y-6">
+      {/* PAYG Restriction Banner - shown when partner has no credits and no card on file */}
+      {isPaygRestricted && (
+        <Card className="border-amber-500 bg-amber-50 dark:bg-amber-950/30">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-medium text-amber-800 dark:text-amber-200">Top up required to send invitations</p>
+                <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                  You need to purchase assessment credits or add a card on file before you can send invitations to candidates. 
+                  Please visit the Billing tab to top up your account.
+                </p>
+                {onNavigateToBilling && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-3 border-amber-500 text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900"
+                    onClick={onNavigateToBilling}
+                    data-testid="button-go-to-billing-from-invitations"
+                  >
+                    Go to Billing
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
@@ -820,7 +855,8 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
               bulkInviteMutation.isPending ||
               validCandidates.length === 0 ||
               selectedAssessments.length === 0 ||
-              hasInsufficientTokens
+              hasInsufficientTokens ||
+              isPaygRestricted
             }
             data-testid="button-send-invitations"
           >
