@@ -14853,29 +14853,56 @@ Use the candidates' actual names. Be specific and actionable.`;
         );
         
         if (existingReport) {
-          // Return cached report without charging credits
-          return res.json({
-            ...existingReport.resultData,
-            cached: true,
-            cachedAt: existingReport.createdAt,
-            reportId: existingReport.id,
-          });
+          // Only use cached report if it has AI insights (promptRoleFitAnalysis or aiqRoleFitAnalysis)
+          const resultData = existingReport.resultData as any;
+          const hasAiInsights = resultData && (resultData.promptRoleFitAnalysis || resultData.aiqRoleFitAnalysis);
+          
+          if (hasAiInsights) {
+            // Return cached report without charging credits
+            return res.json({
+              ...resultData,
+              cached: true,
+              cachedAt: existingReport.createdAt,
+              reportId: existingReport.id,
+            });
+          }
+          // Cached report exists but lacks AI insights - regenerate without consuming credits
+          // (Credit was already consumed for the original report)
         }
       }
 
-      // All validations passed - NOW consume 1 credit for single-candidate role fit analysis
-      const creditResult = await storage.consumePartnerTest(
-        partner.id,
-        null,
-        "Single candidate role fit analysis"
-      );
-      
-      if (!creditResult.success && !creditResult.isOverage) {
-        return res.status(402).json({ 
-          message: "Insufficient credits. Please purchase more credits to analyze candidates.",
-          creditsRequired: 1,
-          creditsRemaining: creditResult.remaining
-        });
+      // Check if we have an incomplete cached report (exists but lacks AI insights)
+      // In this case, skip credit consumption since the original report already charged
+      let hasIncompleteCachedReport = false;
+      if (forceRefresh !== 'true') {
+        const existingReport = await storage.findExistingPartnerReport(
+          partner.id,
+          'role_fit_single',
+          [candidateId as string],
+          jobRoleId as string
+        );
+        if (existingReport) {
+          const resultData = existingReport.resultData as any;
+          hasIncompleteCachedReport = !resultData?.promptRoleFitAnalysis && !resultData?.aiqRoleFitAnalysis;
+        }
+      }
+
+      // All validations passed - consume 1 credit unless regenerating incomplete cached report
+      let creditResult: any = { success: true, remaining: 0, isOverage: false };
+      if (!hasIncompleteCachedReport) {
+        creditResult = await storage.consumePartnerTest(
+          partner.id,
+          null,
+          "Single candidate role fit analysis"
+        );
+        
+        if (!creditResult.success && !creditResult.isOverage) {
+          return res.status(402).json({ 
+            message: "Insufficient credits. Please purchase more credits to analyze candidates.",
+            creditsRequired: 1,
+            creditsRemaining: creditResult.remaining
+          });
+        }
       }
 
       // Collect all assessment results for this candidate
