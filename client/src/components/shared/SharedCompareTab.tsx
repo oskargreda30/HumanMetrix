@@ -1061,17 +1061,17 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
   };
 
   return (
-    <div className="h-full overflow-auto space-y-6">
+    <div className="h-full overflow-auto space-y-4 md:space-y-6">
       {/* Credit usage notice for partners */}
       {config.contextType === 'partner' && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4">
-          <div className="flex items-start gap-3">
-            <Sparkles className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+        <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-3 md:p-4">
+          <div className="flex items-start gap-2 md:gap-3">
+            <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-blue-500 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+              <p className="text-xs md:text-sm font-medium text-blue-800 dark:text-blue-200">
                 Credit Usage for Analysis
               </p>
-              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+              <p className="text-[11px] md:text-xs text-blue-700 dark:text-blue-300 mt-0.5 md:mt-1">
                 Comparing candidates uses your credits. Each candidate compared costs 1 credit. 
                 Credits are only consumed when you click the "Compare Selected" button.
               </p>
@@ -1081,23 +1081,23 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
       )}
       
       <Card>
-        <CardHeader>
-          <CardTitle>Select Candidates to Compare</CardTitle>
-          <p className="text-sm text-muted-foreground">
+        <CardHeader className="p-3 md:p-6">
+          <CardTitle className="text-base md:text-lg">Select Candidates to Compare</CardTitle>
+          <p className="text-xs md:text-sm text-muted-foreground">
             Select 2-3 candidates to view side-by-side comparison
           </p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
           {isLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="flex justify-center py-6 md:py-8">
+              <Loader2 className="h-6 w-6 md:h-8 md:w-8 animate-spin text-primary" />
             </div>
           ) : candidates && candidates.length > 0 ? (
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-2 md:gap-3 md:grid-cols-2 lg:grid-cols-3">
               {candidates.map((candidate: any) => (
                 <div
                   key={candidate.user.id}
-                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                  className={`p-2.5 md:p-4 border rounded-lg cursor-pointer transition-colors ${
                     selectedCandidates.includes(candidate.user.id)
                       ? 'border-primary bg-primary/5'
                       : 'hover-elevate'
@@ -1105,25 +1105,25 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                   onClick={() => handleToggleCandidate(candidate.user.id)}
                   data-testid={`checkbox-candidate-${candidate.user.id}`}
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-2 md:gap-3">
                     <Checkbox
                       checked={selectedCandidates.includes(candidate.user.id)}
                       disabled={
                         !selectedCandidates.includes(candidate.user.id) &&
                         selectedCandidates.length >= 3
                       }
-                      className="mt-1"
+                      className="mt-0.5 md:mt-1"
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">
+                      <p className="text-sm md:text-base font-medium truncate">
                         {candidate.user.firstName || candidate.user.lastName
                           ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
                           : 'No Name'}
                       </p>
-                      <p className="text-sm text-muted-foreground truncate">
+                      <p className="text-xs md:text-sm text-muted-foreground truncate">
                         {candidate.user.email}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5 md:mt-1">
                         {candidate.results?.length || 0} assessments
                       </p>
                     </div>
@@ -1132,23 +1132,25 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
               ))}
             </div>
           ) : (
-            <p className="text-center py-8 text-muted-foreground">No candidates available</p>
+            <p className="text-center py-6 md:py-8 text-xs md:text-sm text-muted-foreground">No candidates available</p>
           )}
         </CardContent>
       </Card>
 
       {selectedCandidates.length >= 2 && !comparisonTriggered && (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Users className="h-12 w-12 mb-4 text-primary/50" />
-            <p className="text-sm text-muted-foreground mb-4 text-center">
+          <CardContent className="flex flex-col items-center justify-center py-8 md:py-12 p-3 md:p-6">
+            <Users className="h-8 w-8 md:h-12 md:w-12 mb-3 md:mb-4 text-primary/50" />
+            <p className="text-xs md:text-sm text-muted-foreground mb-3 md:mb-4 text-center">
               {selectedCandidates.length} candidates selected. Click below to run the comparison.
             </p>
             <Button 
               onClick={handleRunComparison}
               data-testid="button-run-comparison"
+              className="text-xs md:text-sm"
+              size="sm"
             >
-              <BarChart3 className="h-4 w-4 mr-2" />
+              <BarChart3 className="h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2" />
               Run Comparison
             </Button>
           </CardContent>

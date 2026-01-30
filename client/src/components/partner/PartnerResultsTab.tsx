@@ -345,33 +345,34 @@ export default function PartnerResultsTab() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between flex-wrap gap-4">
+        <CardHeader className="p-3 md:p-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4">
             <div>
-              <CardTitle className="text-lg">Candidate Results</CardTitle>
-              <CardDescription>View completed assessment results for your candidates</CardDescription>
+              <CardTitle className="text-base md:text-lg">Candidate Results</CardTitle>
+              <CardDescription className="text-xs md:text-sm">View completed assessment results for your candidates</CardDescription>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowPdfImportModal(true)}
               data-testid="button-import-pdf-results"
+              className="text-xs md:text-sm self-start md:self-auto"
             >
-              <Upload className="h-4 w-4 mr-2" />
+              <Upload className="h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2" />
               Import PDF Report
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 md:space-y-4 p-3 pt-0 md:p-6 md:pt-0">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-2.5 md:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             <Input
               placeholder="Search candidates by name or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-8 md:pl-10 text-xs md:text-sm"
               data-testid="input-search-candidates"
             />
           </div>
@@ -386,23 +387,24 @@ export default function PartnerResultsTab() {
 
       {savedReports && savedReports.length > 0 && (
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-1.5 md:pb-2 p-3 md:p-6">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                <CardTitle className="text-lg">Saved Analysis Reports</CardTitle>
-                <Badge variant="secondary" className="text-xs">{savedReports.length}</Badge>
+              <div className="flex items-center gap-1.5 md:gap-2">
+                <BarChart3 className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+                <CardTitle className="text-sm md:text-lg">Saved Analysis Reports</CardTitle>
+                <Badge variant="secondary" className="text-[10px] md:text-xs">{savedReports.length}</Badge>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowSavedReports(!showSavedReports)}
                 data-testid="button-toggle-saved-reports"
+                className="h-7 w-7 md:h-8 md:w-8 p-0"
               >
-                {showSavedReports ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                {showSavedReports ? <ChevronUp className="h-3 w-3 md:h-4 md:w-4" /> : <ChevronDown className="h-3 w-3 md:h-4 md:w-4" />}
               </Button>
             </div>
-            <CardDescription>Previously generated reports are cached and can be accessed without additional credits</CardDescription>
+            <CardDescription className="text-[10px] md:text-sm">Previously generated reports are cached and can be accessed without additional credits</CardDescription>
           </CardHeader>
           {showSavedReports && (
             <CardContent>

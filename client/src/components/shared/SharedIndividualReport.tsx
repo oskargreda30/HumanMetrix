@@ -287,16 +287,16 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {config.contextType === 'partner' && (
-        <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800">
-          <div className="flex items-start gap-3">
-            <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+        <div className="p-3 md:p-4 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800">
+          <div className="flex items-start gap-2 md:gap-3">
+            <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              <p className="text-xs md:text-sm font-medium text-gray-900 dark:text-gray-100">
                 Credit Usage for Analysis
               </p>
-              <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+              <p className="text-[11px] md:text-xs text-gray-600 dark:text-gray-300 mt-0.5 md:mt-1">
                 Profile Insights generation costs 1 credit. Credits are only consumed when generating new insights. Cached insights are free.
               </p>
             </div>
@@ -305,18 +305,18 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
       )}
 
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
+        <CardHeader className="p-3 md:p-6">
+          <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+            <User className="h-4 w-4 md:h-5 md:w-5" />
             Individual Candidate Report
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-xs md:text-sm">
             Select a candidate to view their detailed assessment report
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
           <Select value={selectedCandidate} onValueChange={handleCandidateChange}>
-            <SelectTrigger className="w-full max-w-md" data-testid="select-individual-candidate">
+            <SelectTrigger className="w-full max-w-md text-xs md:text-sm" data-testid="select-individual-candidate">
               <SelectValue placeholder="Select a candidate..." />
             </SelectTrigger>
             <SelectContent>
@@ -329,12 +329,14 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
           </Select>
 
           {selectedCandidate && !reportTriggered && (
-            <div className="mt-4 flex flex-col items-start gap-2">
+            <div className="mt-3 md:mt-4 flex flex-col items-start gap-2">
               <Button 
                 onClick={handleRunAnalysis}
                 data-testid="button-run-analysis"
+                className="text-xs md:text-sm"
+                size="sm"
               >
-                <BarChart3 className="h-4 w-4 mr-2" />
+                <BarChart3 className="h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2" />
                 Run Analysis
               </Button>
             </div>
@@ -361,9 +363,9 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
 
       {selectedCandidate && reportTriggered && loadingTransitionComplete && candidateReport && selectedCandidateData && (
         <>
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <h2 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
-              <FileText className="h-6 w-6 text-blue-300" />
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3 md:mb-4">
+            <h2 className="text-base md:text-2xl font-bold text-white flex items-center gap-1.5 md:gap-2">
+              <FileText className="h-4 w-4 md:h-6 md:w-6 text-blue-300" />
               Individual Candidate Report
             </h2>
             <Button 
@@ -371,15 +373,16 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
               onClick={handleExportPDF}
               disabled={isExporting}
               data-testid="button-export-pdf-top"
+              className="text-xs md:text-sm"
             >
               {isExporting ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2 animate-spin" />
                   Exporting...
                 </>
               ) : (
                 <>
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                   Export as PDF
                 </>
               )}
@@ -387,30 +390,30 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
           </div>
 
           <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20" data-testid="card-candidate-summary">
-            <CardContent className="pt-6">
-              <div className="grid gap-4 md:grid-cols-5">
+            <CardContent className="pt-4 md:pt-6 p-3 md:p-6">
+              <div className="grid gap-3 md:gap-4 md:grid-cols-5">
                 <div className="md:col-span-1">
-                  <div className="flex items-center gap-3">
-                    <div className="h-14 w-14 rounded-full bg-primary/20 flex items-center justify-center">
-                      <User className="h-7 w-7 text-primary" />
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <div className="h-10 w-10 md:h-14 md:w-14 rounded-full bg-primary/20 flex items-center justify-center">
+                      <User className="h-5 w-5 md:h-7 md:w-7 text-primary" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-bold text-foreground">{getCandidateName(selectedCandidateData)}</h2>
-                      <p className="text-sm text-muted-foreground">{selectedCandidateData.user.email}</p>
+                      <h2 className="text-base md:text-xl font-bold text-foreground">{getCandidateName(selectedCandidateData)}</h2>
+                      <p className="text-xs md:text-sm text-muted-foreground truncate max-w-[180px] md:max-w-none">{selectedCandidateData.user.email}</p>
                     </div>
                   </div>
                 </div>
                 <div className="md:col-span-4">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
                     {(() => {
                       const topFitSkill = fitData 
                         ? Object.entries(fitData.scores).sort((a, b) => (b[1] as number) - (a[1] as number))[0] 
                         : null;
                       return (
-                        <div className="text-center p-4 rounded-lg border bg-card">
-                          <div className="text-sm text-muted-foreground mb-1">FIT Top Skill</div>
-                          <div className="text-base font-medium text-foreground mb-1">{topFitSkill ? topFitSkill[0] : '-'}</div>
-                          <div className={`text-2xl font-bold ${topFitSkill ? getScoreColor(topFitSkill[1] as number) : 'text-muted-foreground'}`}>
+                        <div className="text-center p-2 md:p-4 rounded-lg border bg-card">
+                          <div className="text-[10px] md:text-sm text-muted-foreground mb-0.5 md:mb-1">FIT Top Skill</div>
+                          <div className="text-xs md:text-base font-medium text-foreground mb-0.5 md:mb-1">{topFitSkill ? topFitSkill[0] : '-'}</div>
+                          <div className={`text-lg md:text-2xl font-bold ${topFitSkill ? getScoreColor(topFitSkill[1] as number) : 'text-muted-foreground'}`}>
                             {topFitSkill ? `${topFitSkill[1]}%` : '-'}
                           </div>
                         </div>
@@ -421,26 +424,26 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                         ? Object.entries(normalizedAIScores).sort((a, b) => (b[1] as number) - (a[1] as number))[0]
                         : null;
                       return (
-                        <div className="text-center p-4 rounded-lg border bg-card">
-                          <div className="text-sm text-muted-foreground mb-1">AI Readiness Top</div>
-                          <div className="text-base font-medium text-foreground mb-1">{topAISkill ? topAISkill[0] : '-'}</div>
-                          <div className={`text-2xl font-bold ${topAISkill ? getScoreColor(topAISkill[1] as number) : 'text-muted-foreground'}`}>
+                        <div className="text-center p-2 md:p-4 rounded-lg border bg-card">
+                          <div className="text-[10px] md:text-sm text-muted-foreground mb-0.5 md:mb-1">AI Readiness Top</div>
+                          <div className="text-xs md:text-base font-medium text-foreground mb-0.5 md:mb-1">{topAISkill ? topAISkill[0] : '-'}</div>
+                          <div className={`text-lg md:text-2xl font-bold ${topAISkill ? getScoreColor(topAISkill[1] as number) : 'text-muted-foreground'}`}>
                             {topAISkill ? `${topAISkill[1]}%` : '-'}
                           </div>
                         </div>
                       );
                     })()}
-                    <div className="text-center p-4 rounded-lg border bg-card">
-                      <div className="text-sm text-muted-foreground mb-1">Prompt Architecture</div>
-                      <div className="text-base font-medium text-foreground mb-1">&nbsp;</div>
-                      <div className={`text-2xl font-bold ${promptData ? getScoreColor(promptData.totalScore) : 'text-muted-foreground'}`}>
+                    <div className="text-center p-2 md:p-4 rounded-lg border bg-card">
+                      <div className="text-[10px] md:text-sm text-muted-foreground mb-0.5 md:mb-1">Prompt Architecture</div>
+                      <div className="text-xs md:text-base font-medium text-foreground mb-0.5 md:mb-1">&nbsp;</div>
+                      <div className={`text-lg md:text-2xl font-bold ${promptData ? getScoreColor(promptData.totalScore) : 'text-muted-foreground'}`}>
                         {promptData ? `${promptData.totalScore}%` : '-'}
                       </div>
                     </div>
-                    <div className="text-center p-4 rounded-lg border bg-card">
-                      <div className="text-sm text-muted-foreground mb-1">AIQ (Ethics)</div>
-                      <div className="text-base font-medium text-foreground mb-1">&nbsp;</div>
-                      <div className={`text-2xl font-bold ${aiqData ? getScoreColor(aiqData.totalScore) : 'text-muted-foreground'}`}>
+                    <div className="text-center p-2 md:p-4 rounded-lg border bg-card">
+                      <div className="text-[10px] md:text-sm text-muted-foreground mb-0.5 md:mb-1">AIQ (Ethics)</div>
+                      <div className="text-xs md:text-base font-medium text-foreground mb-0.5 md:mb-1">&nbsp;</div>
+                      <div className={`text-lg md:text-2xl font-bold ${aiqData ? getScoreColor(aiqData.totalScore) : 'text-muted-foreground'}`}>
                         {aiqData ? `${aiqData.totalScore}%` : '-'}
                       </div>
                     </div>
@@ -451,12 +454,12 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
           </Card>
 
           <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg text-foreground">
-                <BookOpen className="h-5 w-5 text-primary" />
+            <CardHeader className="pb-2 md:pb-3 p-3 md:p-6">
+              <CardTitle className="flex items-center gap-2 text-sm md:text-lg text-foreground">
+                <BookOpen className="h-4 w-4 md:h-5 md:w-5 text-primary" />
                 How to Read This Report
               </CardTitle>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs md:text-sm text-muted-foreground">
                 A guide to understanding {getCandidateName(selectedCandidateData)}'s assessment results
               </p>
             </CardHeader>

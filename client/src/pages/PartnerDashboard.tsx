@@ -2050,34 +2050,34 @@ export default function PartnerDashboard() {
 
       <Navigation />
 
-      <main className="flex-grow py-16 relative z-10">
-        <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
+      <main className="flex-grow py-8 md:py-16 relative z-10">
+        <div className="mx-auto max-w-7xl px-3 md:px-6 lg:px-8">
+          <div className="mb-4 md:mb-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-2xl md:text-3xl font-bold text-white" data-testid="text-partner-name">
+                <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                  <h1 className="text-xl md:text-3xl font-bold text-white" data-testid="text-partner-name">
                     {partner.companyName || partner.name}
                   </h1>
                   {partner.isSuspended ? (
-                    <Badge variant="destructive" className="gap-1.5">
+                    <Badge variant="destructive" className="gap-1 text-xs md:text-sm">
                       <AlertTriangle className="h-3 w-3" />
                       API Suspended
                     </Badge>
                   ) : (
-                    <Badge variant="secondary" className="gap-1.5 bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
+                    <Badge variant="secondary" className="gap-1 text-xs md:text-sm bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
                       <CheckCircle className="h-3 w-3" />
                       Partner
                     </Badge>
                   )}
                   {isTeamMember && teamMemberRole && (
-                    <Badge variant="outline" className="gap-1.5 bg-white/10 text-white/90 border-white/20 capitalize">
+                    <Badge variant="outline" className="gap-1 text-xs md:text-sm bg-white/10 text-white/90 border-white/20 capitalize">
                       <Users className="h-3 w-3" />
                       {teamMemberRole}
                     </Badge>
                   )}
                 </div>
-                <p className="text-white/80">
+                <p className="text-xs md:text-base text-white/80">
                   Manage your assessments, organizations, and API integrations
                 </p>
               </div>
@@ -2085,56 +2085,56 @@ export default function PartnerDashboard() {
                 variant="outline"
                 size="sm"
                 onClick={handleRestartTutorial}
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20 self-start md:self-auto text-xs md:text-sm"
                 data-testid="button-help-tutorial"
               >
-                <HelpCircle className="h-4 w-4 mr-2" />
+                <HelpCircle className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                 Take a Tour
               </Button>
             </div>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="inline-flex flex-wrap gap-1 h-auto p-1 bg-white/10 border border-white/20 w-auto">
-              <TabsTrigger value="home" data-testid="tab-home" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
+            <TabsList className="inline-flex flex-wrap gap-0.5 md:gap-1 h-auto p-0.5 md:p-1 bg-white/10 border border-white/20 w-auto">
+              <TabsTrigger value="home" data-testid="tab-home" className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Overview
               </TabsTrigger>
-              <TabsTrigger value="pipeline" data-testid="tab-pipeline" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+              <TabsTrigger value="pipeline" data-testid="tab-pipeline" className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 All Candidates
               </TabsTrigger>
-              <TabsTrigger value="analysis" data-testid="tab-analysis" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+              <TabsTrigger value="analysis" data-testid="tab-analysis" className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Analysis
               </TabsTrigger>
-              <TabsTrigger value="results" data-testid="tab-results" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+              <TabsTrigger value="results" data-testid="tab-results" className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Results
               </TabsTrigger>
               {canAccessInvitations && (
-                <TabsTrigger value="invitations" data-testid="tab-invitations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                <TabsTrigger value="invitations" data-testid="tab-invitations" className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                   Invitations
                 </TabsTrigger>
               )}
-              <TabsTrigger value="ecosystem" data-testid="tab-ecosystem" className="relative data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+              <TabsTrigger value="ecosystem" data-testid="tab-ecosystem" className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 relative data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Ecosystem Index
-                <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px] bg-cyan-500 text-white border-0">New</Badge>
+                <Badge variant="secondary" className="ml-1 px-1 md:px-1.5 py-0 text-[8px] md:text-[10px] bg-cyan-500 text-white border-0">New</Badge>
               </TabsTrigger>
-              <TabsTrigger value="cohort-benchmarking" data-testid="tab-cohort-benchmarking" className="relative data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+              <TabsTrigger value="cohort-benchmarking" data-testid="tab-cohort-benchmarking" className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 relative data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Cohort Benchmarking
-                <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px] bg-amber-500 text-white border-0">Coming Soon</Badge>
+                <Badge variant="secondary" className="ml-1 px-1 md:px-1.5 py-0 text-[8px] md:text-[10px] bg-amber-500 text-white border-0">Coming Soon</Badge>
               </TabsTrigger>
               {/* Organizations tab hidden for now - feature preserved in code */}
               {false && (
-                <TabsTrigger value="organizations" data-testid="tab-organizations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                <TabsTrigger value="organizations" data-testid="tab-organizations" className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                   Organizations
                 </TabsTrigger>
               )}
               {isAdmin && (
-                <TabsTrigger value="team" data-testid="tab-team" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                <TabsTrigger value="team" data-testid="tab-team" className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                   Team
                 </TabsTrigger>
               )}
               {canAccessBilling && (
-                <TabsTrigger value="billing" data-testid="tab-billing" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                  <CreditCard className="h-4 w-4 mr-1" />
+                <TabsTrigger value="billing" data-testid="tab-billing" className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  <CreditCard className="h-3 w-3 md:h-4 md:w-4 mr-0.5 md:mr-1" />
                   Billing
                 </TabsTrigger>
               )}
@@ -2143,21 +2143,21 @@ export default function PartnerDashboard() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
-                    className={`inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    className={`inline-flex items-center gap-0.5 md:gap-1 px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm font-medium rounded-md transition-colors ${
                       ['usage', 'developer', 'analytics', 'notifications', 'settings', 'activity'].includes(activeTab)
                         ? 'bg-white/20 text-white'
                         : 'text-white/70 hover:text-white hover:bg-white/10'
                     }`}
                     data-testid="dropdown-settings"
                   >
-                    <Settings className="h-4 w-4" />
+                    <Settings className="h-3 w-3 md:h-4 md:w-4" />
                     Settings
                     {(notifications?.unreadCount ?? 0) > 0 && (
-                      <span className="bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center ml-1">
+                      <span className="bg-red-500 text-white text-[10px] md:text-xs rounded-full h-3.5 w-3.5 md:h-4 md:w-4 flex items-center justify-center ml-0.5 md:ml-1">
                         {notifications!.unreadCount > 9 ? '9+' : notifications!.unreadCount}
                       </span>
                     )}
-                    <ChevronDown className="h-3 w-3 ml-1" />
+                    <ChevronDown className="h-2.5 w-2.5 md:h-3 md:w-3 ml-0.5 md:ml-1" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-48">
@@ -2230,7 +2230,7 @@ export default function PartnerDashboard() {
             </TabsList>
 
             {/* Home Tab */}
-            <TabsContent value="home" className="space-y-6" data-testid="panel-home">
+            <TabsContent value="home" className="space-y-4 md:space-y-6" data-testid="panel-home">
               {/* Getting Started Guide */}
               {(() => {
                 const isSubscriptionBilling = account?.partner?.billingType === 'subscription';
@@ -2276,50 +2276,50 @@ export default function PartnerDashboard() {
                 
                 return (
                   <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-primary/10">
-                            <CheckCircle className="h-5 w-5 text-primary" />
+                    <CardHeader className="pb-2 md:pb-3 p-3 md:p-6">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-0">
+                        <div className="flex items-center gap-2 md:gap-3">
+                          <div className="p-1.5 md:p-2 rounded-lg bg-primary/10">
+                            <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-primary" />
                           </div>
                           <div>
-                            <CardTitle className="text-lg">Getting Started</CardTitle>
-                            <CardDescription>Complete these steps to get the most out of HumanMetrix</CardDescription>
+                            <CardTitle className="text-sm md:text-lg">Getting Started</CardTitle>
+                            <CardDescription className="text-[11px] md:text-sm">Complete these steps to get the most out of HumanMetrix</CardDescription>
                           </div>
                         </div>
-                        <Badge variant="outline" className="text-sm" data-testid="badge-setup-progress">
+                        <Badge variant="outline" className="text-[10px] md:text-sm self-start md:self-auto" data-testid="badge-setup-progress">
                           {completedSteps}/{totalSteps} complete
                         </Badge>
                       </div>
-                      <Progress value={(completedSteps / totalSteps) * 100} className="h-2 mt-3" data-testid="progress-setup" />
+                      <Progress value={(completedSteps / totalSteps) * 100} className="h-1.5 md:h-2 mt-2 md:mt-3" data-testid="progress-setup" />
                     </CardHeader>
-                    <CardContent className="pt-0">
-                      <div className="grid gap-3 md:grid-cols-2">
+                    <CardContent className="pt-0 p-3 md:p-6">
+                      <div className="grid gap-2 md:gap-3 md:grid-cols-2">
                         {/* Step 0a: Add Payment Method (Subscription billing only) */}
                         {isSubscriptionBilling && (
                           <button
                             onClick={handleAddPaymentMethod}
-                            className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-left hover-elevate ${
+                            className={`flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg border transition-all text-left hover-elevate ${
                               hasPaymentMethod ? 'bg-green-500/5 border-green-500/20' : 'bg-amber-500/5 border-amber-500/20'
                             }`}
                             data-testid="setup-step-payment-method"
                           >
-                            <div className={`p-1.5 rounded-full ${hasPaymentMethod ? 'bg-green-500/20' : 'bg-amber-500/20'}`}>
+                            <div className={`p-1 md:p-1.5 rounded-full ${hasPaymentMethod ? 'bg-green-500/20' : 'bg-amber-500/20'}`}>
                               {hasPaymentMethod ? (
-                                <Check className="h-4 w-4 text-green-600" />
+                                <Check className="h-3 w-3 md:h-4 md:w-4 text-green-600" />
                               ) : (
-                                <CreditCard className="h-4 w-4 text-amber-600" />
+                                <CreditCard className="h-3 w-3 md:h-4 md:w-4 text-amber-600" />
                               )}
                             </div>
                             <div className="flex-1">
-                              <div className={`font-medium text-sm ${hasPaymentMethod ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                              <div className={`font-medium text-xs md:text-sm ${hasPaymentMethod ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'}`}>
                                 Add payment method
                               </div>
-                              <div className="text-xs text-muted-foreground">
+                              <div className="text-[10px] md:text-xs text-muted-foreground">
                                 {hasPaymentMethod ? 'Payment method on file' : 'Required for live API access'}
                               </div>
                             </div>
-                            {!hasPaymentMethod && <ExternalLink className="h-4 w-4 text-amber-600" />}
+                            {!hasPaymentMethod && <ExternalLink className="h-3 w-3 md:h-4 md:w-4 text-amber-600" />}
                           </button>
                         )}
 
@@ -2327,106 +2327,106 @@ export default function PartnerDashboard() {
                         {isEnterpriseBilling && (
                           <button
                             onClick={() => setShowBillingSetupDialog(true)}
-                            className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-left hover-elevate ${
+                            className={`flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg border transition-all text-left hover-elevate ${
                               hasBillingSetup ? 'bg-green-500/5 border-green-500/20' : 'bg-amber-500/5 border-amber-500/20'
                             }`}
                             data-testid="setup-step-billing-info"
                           >
-                            <div className={`p-1.5 rounded-full ${hasBillingSetup ? 'bg-green-500/20' : 'bg-amber-500/20'}`}>
+                            <div className={`p-1 md:p-1.5 rounded-full ${hasBillingSetup ? 'bg-green-500/20' : 'bg-amber-500/20'}`}>
                               {hasBillingSetup ? (
-                                <Check className="h-4 w-4 text-green-600" />
+                                <Check className="h-3 w-3 md:h-4 md:w-4 text-green-600" />
                               ) : (
-                                <FileText className="h-4 w-4 text-amber-600" />
+                                <FileText className="h-3 w-3 md:h-4 md:w-4 text-amber-600" />
                               )}
                             </div>
                             <div className="flex-1">
-                              <div className={`font-medium text-sm ${hasBillingSetup ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                              <div className={`font-medium text-xs md:text-sm ${hasBillingSetup ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'}`}>
                                 Complete billing information
                               </div>
-                              <div className="text-xs text-muted-foreground">
+                              <div className="text-[10px] md:text-xs text-muted-foreground">
                                 {hasBillingSetup ? 'Billing details on file' : 'Required for invoicing'}
                               </div>
                             </div>
-                            {!hasBillingSetup && <ExternalLink className="h-4 w-4 text-amber-600" />}
+                            {!hasBillingSetup && <ExternalLink className="h-3 w-3 md:h-4 md:w-4 text-amber-600" />}
                           </button>
                         )}
                         
                         {/* Step 1: Create API Key */}
                         <button
                           onClick={() => setActiveTab('api-keys')}
-                          className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-left hover-elevate ${
+                          className={`flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg border transition-all text-left hover-elevate ${
                             hasApiKey ? 'bg-green-500/5 border-green-500/20' : 'bg-muted/30 border-muted'
                           }`}
                           data-testid="setup-step-api-key"
                         >
-                          <div className={`p-1.5 rounded-full ${hasApiKey ? 'bg-green-500/20' : 'bg-muted'}`}>
+                          <div className={`p-1 md:p-1.5 rounded-full ${hasApiKey ? 'bg-green-500/20' : 'bg-muted'}`}>
                             {hasApiKey ? (
-                              <Check className="h-4 w-4 text-green-600" />
+                              <Check className="h-3 w-3 md:h-4 md:w-4 text-green-600" />
                             ) : (
-                              <Key className="h-4 w-4 text-muted-foreground" />
+                              <Key className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
                             )}
                           </div>
                           <div className="flex-1">
-                            <div className={`font-medium text-sm ${hasApiKey ? 'text-green-700 dark:text-green-400' : ''}`}>
+                            <div className={`font-medium text-xs md:text-sm ${hasApiKey ? 'text-green-700 dark:text-green-400' : ''}`}>
                               Create an API key
                             </div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-[10px] md:text-xs text-muted-foreground">
                               {hasApiKey ? 'API key created' : 'Required to send assessments'}
                             </div>
                           </div>
-                          {!hasApiKey && <ExternalLink className="h-4 w-4 text-muted-foreground" />}
+                          {!hasApiKey && <ExternalLink className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />}
                         </button>
 
                         {/* Step 2: Send First Assessment */}
                         <button
                           onClick={() => setActiveTab('invitations')}
-                          className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-left hover-elevate ${
+                          className={`flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg border transition-all text-left hover-elevate ${
                             hasAssessment ? 'bg-green-500/5 border-green-500/20' : 'bg-muted/30 border-muted'
                           }`}
                           data-testid="setup-step-assessment"
                         >
-                          <div className={`p-1.5 rounded-full ${hasAssessment ? 'bg-green-500/20' : 'bg-muted'}`}>
+                          <div className={`p-1 md:p-1.5 rounded-full ${hasAssessment ? 'bg-green-500/20' : 'bg-muted'}`}>
                             {hasAssessment ? (
-                              <Check className="h-4 w-4 text-green-600" />
+                              <Check className="h-3 w-3 md:h-4 md:w-4 text-green-600" />
                             ) : (
-                              <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                              <ClipboardList className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
                             )}
                           </div>
                           <div className="flex-1">
-                            <div className={`font-medium text-sm ${hasAssessment ? 'text-green-700 dark:text-green-400' : ''}`}>
+                            <div className={`font-medium text-xs md:text-sm ${hasAssessment ? 'text-green-700 dark:text-green-400' : ''}`}>
                               Send first assessment
                             </div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-[10px] md:text-xs text-muted-foreground">
                               {hasAssessment ? `${partner?.testsConsumed} assessments completed` : 'Invite candidates to take assessments'}
                             </div>
                           </div>
-                          {!hasAssessment && <ExternalLink className="h-4 w-4 text-muted-foreground" />}
+                          {!hasAssessment && <ExternalLink className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />}
                         </button>
 
                         {/* Step 3: Invite Team Member */}
                         <button
                           onClick={() => setActiveTab('team')}
-                          className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-left hover-elevate ${
+                          className={`flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg border transition-all text-left hover-elevate ${
                             hasTeamMember ? 'bg-green-500/5 border-green-500/20' : 'bg-muted/30 border-muted'
                           }`}
                           data-testid="setup-step-team"
                         >
-                          <div className={`p-1.5 rounded-full ${hasTeamMember ? 'bg-green-500/20' : 'bg-muted'}`}>
+                          <div className={`p-1 md:p-1.5 rounded-full ${hasTeamMember ? 'bg-green-500/20' : 'bg-muted'}`}>
                             {hasTeamMember ? (
-                              <Check className="h-4 w-4 text-green-600" />
+                              <Check className="h-3 w-3 md:h-4 md:w-4 text-green-600" />
                             ) : (
-                              <Users className="h-4 w-4 text-muted-foreground" />
+                              <Users className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
                             )}
                           </div>
                           <div className="flex-1">
-                            <div className={`font-medium text-sm ${hasTeamMember ? 'text-green-700 dark:text-green-400' : ''}`}>
+                            <div className={`font-medium text-xs md:text-sm ${hasTeamMember ? 'text-green-700 dark:text-green-400' : ''}`}>
                               Invite team members
                             </div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-[10px] md:text-xs text-muted-foreground">
                               {hasTeamMember ? 'Team members invited' : 'Collaborate with your colleagues'}
                             </div>
                           </div>
-                          {!hasTeamMember && <ExternalLink className="h-4 w-4 text-muted-foreground" />}
+                          {!hasTeamMember && <ExternalLink className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />}
                         </button>
                       </div>
                     </CardContent>
@@ -2527,38 +2527,38 @@ export default function PartnerDashboard() {
               </div>
 
               {/* Account Overview */}
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-2 md:gap-4 md:grid-cols-2">
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                    <div className="flex items-center gap-1.5">
-                      <CardTitle className="text-sm font-medium">Candidates Onboarded</CardTitle>
+                  <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-1 md:pb-2 p-3 md:p-6">
+                    <div className="flex items-center gap-1 md:gap-1.5">
+                      <CardTitle className="text-xs md:text-sm font-medium">Candidates Onboarded</CardTitle>
                       <InfoTooltip content="Total number of candidates who have completed assessments." />
                     </div>
-                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <Users className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
                   </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold" data-testid="text-candidates-onboarded">
+                  <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+                    <div className="text-xl md:text-2xl font-bold" data-testid="text-candidates-onboarded">
                       {resultsData?.total ?? 0}
                     </div>
-                    <p className="text-xs text-muted-foreground">completed assessments</p>
+                    <p className="text-[10px] md:text-xs text-muted-foreground">completed assessments</p>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                    <div className="flex items-center gap-1.5">
-                      <CardTitle className="text-sm font-medium">Credits Available</CardTitle>
+                  <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-1 md:pb-2 p-3 md:p-6">
+                    <div className="flex items-center gap-1 md:gap-1.5">
+                      <CardTitle className="text-xs md:text-sm font-medium">Credits Available</CardTitle>
                       <InfoTooltip content="Credits available for new assessments. Purchase more when running low." />
                     </div>
-                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                    <CreditCard className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
                   </CardHeader>
-                  <CardContent>
-                    <div className={`text-2xl font-bold ${partner.remaining <= 10 ? 'text-destructive' : partner.remaining <= 25 ? 'text-amber-500' : ''}`} data-testid="text-credits-available">
+                  <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+                    <div className={`text-xl md:text-2xl font-bold ${partner.remaining <= 10 ? 'text-destructive' : partner.remaining <= 25 ? 'text-amber-500' : ''}`} data-testid="text-credits-available">
                       {partner.remaining.toLocaleString()}
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[10px] md:text-xs text-muted-foreground">
                       <Button 
                         variant="ghost" 
-                        className="h-auto p-0 text-xs text-primary underline hover:underline" 
+                        className="h-auto p-0 text-[10px] md:text-xs text-primary underline hover:underline" 
                         onClick={() => { setActiveTab("billing"); window.scrollTo(0, 0); }}
                         data-testid="link-purchase-more"
                       >
@@ -3093,32 +3093,32 @@ export default function PartnerDashboard() {
               )}
             </TabsContent>
 
-            <TabsContent value="billing" className="space-y-4" data-testid="panel-billing">
+            <TabsContent value="billing" className="space-y-3 md:space-y-4" data-testid="panel-billing">
               {billingLoading ? (
                 <Card>
-                  <CardContent className="py-8 flex justify-center">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <CardContent className="py-6 md:py-8 flex justify-center">
+                    <Loader2 className="h-5 w-5 md:h-6 md:w-6 animate-spin text-primary" />
                   </CardContent>
                 </Card>
               ) : billing ? (
                 <>
                   {/* Billing Model Header */}
                   <Card>
-                    <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
+                    <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4 space-y-0 p-3 md:p-6">
                       <div>
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <CreditCard className="h-5 w-5" />
+                        <CardTitle className="text-sm md:text-lg flex items-center gap-1.5 md:gap-2">
+                          <CreditCard className="h-4 w-4 md:h-5 md:w-5" />
                           {(!account?.partner?.billingType || account?.partner?.billingType === 'payg') && 'Pay As You Go (PAYG)'}
                           {account?.partner?.billingType === 'subscription' && 'Subscription + Auto-Bill'}
                           {account?.partner?.billingType === 'enterprise' && 'Enterprise Prepayment'}
                         </CardTitle>
-                        <CardDescription>
+                        <CardDescription className="text-[10px] md:text-sm">
                           {(!account?.partner?.billingType || account?.partner?.billingType === 'payg') && 'No card on file. Bulk discounts via upfront purchase. API suspended at zero credits.'}
                           {account?.partner?.billingType === 'subscription' && 'Card on file. Min monthly charge + auto-bill for additional usage.'}
                           {account?.partner?.billingType === 'enterprise' && 'For high-volume BPOs. Pro-forma invoicing for bulk credit blocks.'}
                         </CardDescription>
                       </div>
-                      <Badge variant="outline" className="text-sm" data-testid="badge-billing-type">
+                      <Badge variant="outline" className="text-[10px] md:text-sm self-start md:self-auto" data-testid="badge-billing-type">
                         {(!account?.partner?.billingType || account?.partner?.billingType === 'payg') && 'PAYG'}
                         {account?.partner?.billingType === 'subscription' && 'Subscription'}
                         {account?.partner?.billingType === 'enterprise' && 'Enterprise'}
@@ -3129,15 +3129,15 @@ export default function PartnerDashboard() {
                   {/* Pending Billing Change Request Alert */}
                   {billingChangeData?.pendingRequest && (
                     <Card className="border-2 border-orange-500 bg-orange-500/20 dark:bg-orange-600/25">
-                      <CardContent className="py-4">
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2.5 rounded-full bg-orange-500 dark:bg-orange-600">
-                              <Clock className="h-5 w-5 text-white" />
+                      <CardContent className="py-3 md:py-4 p-3 md:p-6">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
+                          <div className="flex items-center gap-2 md:gap-3">
+                            <div className="p-2 md:p-2.5 rounded-full bg-orange-500 dark:bg-orange-600">
+                              <Clock className="h-4 w-4 md:h-5 md:w-5 text-white" />
                             </div>
                             <div>
-                              <p className="font-bold text-orange-700 dark:text-orange-300 text-base">Billing Change Pending</p>
-                              <p className="text-sm text-orange-900/80 dark:text-orange-100/80">
+                              <p className="font-bold text-orange-700 dark:text-orange-300 text-sm md:text-base">Billing Change Pending</p>
+                              <p className="text-xs md:text-sm text-orange-900/80 dark:text-orange-100/80">
                                 Your request to change to{' '}
                                 <span className="font-medium">
                                   {billingChangeData.pendingRequest.requestedBillingType === 'payg' && 'Pay As You Go'}
@@ -3154,11 +3154,12 @@ export default function PartnerDashboard() {
                             onClick={() => handleCancelBillingChange(billingChangeData.pendingRequest!.id)}
                             disabled={isCancellingBillingChange}
                             data-testid="button-cancel-billing-change"
+                            className="text-xs md:text-sm self-start md:self-auto"
                           >
                             {isCancellingBillingChange ? (
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              <Loader2 className="h-3 w-3 md:h-4 md:w-4 animate-spin mr-1.5 md:mr-2" />
                             ) : (
-                              <X className="h-4 w-4 mr-2" />
+                              <X className="h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2" />
                             )}
                             Cancel Request
                           </Button>
@@ -3169,47 +3170,47 @@ export default function PartnerDashboard() {
 
                   {/* Credit Balance Stats - shown for PAYG or when no billing type set */}
                   {(!account?.partner?.billingType || account?.partner?.billingType === 'payg') && (
-                    <div className="grid gap-4 md:grid-cols-3">
+                    <div className="grid gap-2 md:gap-4 md:grid-cols-3">
                       <Card>
-                        <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                          <CardTitle className="text-sm font-medium">Credit Balance</CardTitle>
-                          <Package className="h-4 w-4 text-muted-foreground" />
+                        <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-1 md:pb-2 p-3 md:p-6">
+                          <CardTitle className="text-xs md:text-sm font-medium">Credit Balance</CardTitle>
+                          <Package className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
                         </CardHeader>
-                        <CardContent>
-                          <div className="text-2xl font-bold text-primary" data-testid="text-credit-balance">
+                        <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+                          <div className="text-xl md:text-2xl font-bold text-primary" data-testid="text-credit-balance">
                             {partner?.testsPurchased ? (partner.testsPurchased - partner.testsConsumed) : 0} credits
                           </div>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-[10px] md:text-xs text-muted-foreground">
                             Available credits
                           </p>
                         </CardContent>
                       </Card>
 
                       <Card>
-                        <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                          <CardTitle className="text-sm font-medium">Total Purchased</CardTitle>
-                          <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                        <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-1 md:pb-2 p-3 md:p-6">
+                          <CardTitle className="text-xs md:text-sm font-medium">Total Purchased</CardTitle>
+                          <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
                         </CardHeader>
-                        <CardContent>
-                          <div className="text-2xl font-bold" data-testid="text-total-purchased">
+                        <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+                          <div className="text-xl md:text-2xl font-bold" data-testid="text-total-purchased">
                             {Math.max(0, (partner?.testsPurchased || 0) - (partner?.freeTestsAllocated || 0))} credits
                           </div>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-[10px] md:text-xs text-muted-foreground">
                             All time credits
                           </p>
                         </CardContent>
                       </Card>
 
                       <Card>
-                        <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                          <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
-                          <CreditCard className="h-4 w-4 text-muted-foreground" />
+                        <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-1 md:pb-2 p-3 md:p-6">
+                          <CardTitle className="text-xs md:text-sm font-medium">Total Spent</CardTitle>
+                          <CreditCard className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
                         </CardHeader>
-                        <CardContent>
-                          <div className="text-2xl font-bold" data-testid="text-total-spent">
+                        <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+                          <div className="text-xl md:text-2xl font-bold" data-testid="text-total-spent">
                             {formatCurrency(billing.summary.totalSpent)}
                           </div>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-[10px] md:text-xs text-muted-foreground">
                             All time purchases
                           </p>
                         </CardContent>
@@ -3219,23 +3220,23 @@ export default function PartnerDashboard() {
 
                   {/* Buy Credits - Available for all partners */}
                   <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg font-semibold" data-testid="text-buy-credits-title">Buy Credits</CardTitle>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <CreditCard className="h-4 w-4" />
+                      <CardHeader className="pb-1.5 md:pb-2 p-3 md:p-6">
+                        <CardTitle className="text-sm md:text-lg font-semibold" data-testid="text-buy-credits-title">Buy Credits</CardTitle>
+                        <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-sm text-muted-foreground">
+                          <CreditCard className="h-3 w-3 md:h-4 md:w-4" />
                           <span>1 credit = 1 assessment or AI feature use</span>
                           <InfoTooltip content="Purchase credits in bulk. Prices shown in your local currency." />
                         </div>
                       </CardHeader>
-                      <CardContent>
+                      <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
                         {(pricingLoading || currencyLoading) ? (
-                          <div className="flex justify-center py-8">
-                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                          <div className="flex justify-center py-6 md:py-8">
+                            <Loader2 className="h-5 w-5 md:h-6 md:w-6 animate-spin text-primary" />
                           </div>
                         ) : pricing?.packages && pricing.packages.length > 0 ? (
                           <>
                             {/* Promo Code Input */}
-                            <div className="mb-4 flex items-center gap-2">
+                            <div className="mb-3 md:mb-4 flex items-center gap-2">
                               <div className="flex-1">
                                 <Label htmlFor="promo-code" className="sr-only">Promo Code</Label>
                                 <Input
@@ -3243,7 +3244,7 @@ export default function PartnerDashboard() {
                                   placeholder="Enter promo code (optional)"
                                   value={promoCode}
                                   onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                                  className="uppercase"
+                                  className="uppercase text-xs md:text-sm h-8 md:h-10"
                                   data-testid="input-promo-code"
                                 />
                               </div>
@@ -3783,71 +3784,72 @@ export default function PartnerDashboard() {
               )}
             </TabsContent>
 
-            <TabsContent value="settings" className="space-y-4" data-testid="panel-settings">
+            <TabsContent value="settings" className="space-y-3 md:space-y-4" data-testid="panel-settings">
               {settingsLoading ? (
                 <Card>
-                  <CardContent className="py-8 flex justify-center">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <CardContent className="py-6 md:py-8 flex justify-center">
+                    <Loader2 className="h-5 w-5 md:h-6 md:w-6 animate-spin text-primary" />
                   </CardContent>
                 </Card>
               ) : (
                 <>
                   {/* Contract & Terms */}
                   <Card data-testid="card-contract-terms">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-muted">
-                            <FileText className="h-5 w-5 text-muted-foreground" />
+                    <CardHeader className="pb-2 md:pb-3 p-3 md:p-6">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-3">
+                        <div className="flex items-center gap-2 md:gap-3">
+                          <div className="p-1.5 md:p-2 rounded-lg bg-muted">
+                            <FileText className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
                           </div>
                           <div>
-                            <CardTitle className="text-lg">Contract & Terms</CardTitle>
-                            <CardDescription>Your current agreement details</CardDescription>
+                            <CardTitle className="text-sm md:text-lg">Contract & Terms</CardTitle>
+                            <CardDescription className="text-[10px] md:text-sm">Your current agreement details</CardDescription>
                           </div>
                         </div>
                         <Badge 
                           variant={partner?.isSuspended ? "destructive" : "default"}
                           data-testid="badge-account-status"
+                          className="text-[10px] md:text-xs self-start md:self-auto"
                         >
                           {partner?.isSuspended ? 'Suspended' : 'Active'}
                         </Badge>
                       </div>
                     </CardHeader>
-                    <CardContent className="pt-0">
-                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                        <div className="p-3 rounded-lg bg-muted/30 border">
-                          <div className="text-xs text-muted-foreground mb-1">Billing Model</div>
-                          <div className="font-semibold flex items-center gap-2" data-testid="text-billing-model">
-                            <CreditCard className="h-4 w-4 text-primary" />
+                    <CardContent className="pt-0 p-3 md:p-6 md:pt-0">
+                      <div className="grid gap-2 md:gap-4 grid-cols-2 lg:grid-cols-4">
+                        <div className="p-2 md:p-3 rounded-lg bg-muted/30 border">
+                          <div className="text-[10px] md:text-xs text-muted-foreground mb-0.5 md:mb-1">Billing Model</div>
+                          <div className="font-semibold flex items-center gap-1.5 md:gap-2 text-xs md:text-sm" data-testid="text-billing-model">
+                            <CreditCard className="h-3 w-3 md:h-4 md:w-4 text-primary" />
                             {account?.partner?.billingType === 'payg' && 'Pay As You Go'}
                             {account?.partner?.billingType === 'subscription' && 'Subscription'}
                             {account?.partner?.billingType === 'enterprise' && 'Enterprise'}
                           </div>
                         </div>
-                        <div className="p-3 rounded-lg bg-muted/30 border">
-                          <div className="text-xs text-muted-foreground mb-1">Member Since</div>
-                          <div className="font-semibold flex items-center gap-2" data-testid="text-member-since">
-                            <Calendar className="h-4 w-4 text-primary" />
+                        <div className="p-2 md:p-3 rounded-lg bg-muted/30 border">
+                          <div className="text-[10px] md:text-xs text-muted-foreground mb-0.5 md:mb-1">Member Since</div>
+                          <div className="font-semibold flex items-center gap-1.5 md:gap-2 text-xs md:text-sm" data-testid="text-member-since">
+                            <Calendar className="h-3 w-3 md:h-4 md:w-4 text-primary" />
                             {partner?.createdAt ? new Date(partner.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A'}
                           </div>
                         </div>
-                        <div className="p-3 rounded-lg bg-muted/30 border">
-                          <div className="text-xs text-muted-foreground mb-1">Company</div>
-                          <div className="font-semibold flex items-center gap-2" data-testid="text-company-name">
-                            <Building2 className="h-4 w-4 text-primary" />
-                            {partner?.companyName || partner?.name || 'Not specified'}
+                        <div className="p-2 md:p-3 rounded-lg bg-muted/30 border">
+                          <div className="text-[10px] md:text-xs text-muted-foreground mb-0.5 md:mb-1">Company</div>
+                          <div className="font-semibold flex items-center gap-1.5 md:gap-2 text-xs md:text-sm truncate" data-testid="text-company-name">
+                            <Building2 className="h-3 w-3 md:h-4 md:w-4 text-primary flex-shrink-0" />
+                            <span className="truncate">{partner?.companyName || partner?.name || 'Not specified'}</span>
                           </div>
                         </div>
-                        <div className="p-3 rounded-lg bg-muted/30 border">
-                          <div className="text-xs text-muted-foreground mb-1">Account ID</div>
-                          <div className="font-semibold flex items-center gap-2 font-mono text-sm" data-testid="text-account-id">
-                            <Shield className="h-4 w-4 text-primary" />
+                        <div className="p-2 md:p-3 rounded-lg bg-muted/30 border">
+                          <div className="text-[10px] md:text-xs text-muted-foreground mb-0.5 md:mb-1">Account ID</div>
+                          <div className="font-semibold flex items-center gap-1.5 md:gap-2 font-mono text-xs md:text-sm" data-testid="text-account-id">
+                            <Shield className="h-3 w-3 md:h-4 md:w-4 text-primary flex-shrink-0" />
                             {partner?.id?.slice(0, 8) || 'N/A'}...
                           </div>
                         </div>
                       </div>
-                      <div className="mt-4 pt-4 border-t">
-                        <p className="text-sm text-muted-foreground">
+                      <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t">
+                        <p className="text-[10px] md:text-sm text-muted-foreground">
                           For contract modifications or questions, please contact your account manager.
                         </p>
                       </div>
@@ -3856,33 +3858,33 @@ export default function PartnerDashboard() {
 
                   {/* Account Details */}
                   <Card data-testid="card-account-details">
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Users className="h-5 w-5" />
+                    <CardHeader className="p-3 md:p-6">
+                      <CardTitle className="text-sm md:text-lg flex items-center gap-1.5 md:gap-2">
+                        <Users className="h-4 w-4 md:h-5 md:w-5" />
                         Account Details
                       </CardTitle>
-                      <CardDescription>
+                      <CardDescription className="text-[10px] md:text-sm">
                         Your login information for this partner account
                       </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="space-y-1">
-                          <Label className="text-muted-foreground text-xs">Name</Label>
-                          <p className="font-medium" data-testid="text-account-name">{account?.user?.name || 'Partner User'}</p>
+                    <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+                      <div className="grid gap-3 md:gap-4 sm:grid-cols-2">
+                        <div className="space-y-0.5 md:space-y-1">
+                          <Label className="text-muted-foreground text-[10px] md:text-xs">Name</Label>
+                          <p className="font-medium text-xs md:text-sm" data-testid="text-account-name">{account?.user?.name || 'Partner User'}</p>
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-muted-foreground text-xs">Email</Label>
-                          <p className="font-medium" data-testid="text-account-email">{account?.user?.email || 'Not available'}</p>
+                        <div className="space-y-0.5 md:space-y-1">
+                          <Label className="text-muted-foreground text-[10px] md:text-xs">Email</Label>
+                          <p className="font-medium text-xs md:text-sm" data-testid="text-account-email">{account?.user?.email || 'Not available'}</p>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
                   <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Bell className="h-5 w-5" />
+                    <CardHeader className="p-3 md:p-6">
+                      <CardTitle className="text-sm md:text-lg flex items-center gap-1.5 md:gap-2">
+                        <Bell className="h-4 w-4 md:h-5 md:w-5" />
                         Quota Alerts
                         <InfoTooltip content="Set up email notifications to alert you when your remaining credits drop below a certain percentage. Helps prevent running out of credits unexpectedly." />
                       </CardTitle>
@@ -5141,42 +5143,42 @@ export default function PartnerDashboard() {
             </TabsContent>
 
             {/* Team Tab */}
-            <TabsContent value="team" className="space-y-6" data-testid="panel-team">
+            <TabsContent value="team" className="space-y-4 md:space-y-6" data-testid="panel-team">
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
+                <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4 space-y-0 p-3 md:p-6">
                   <div>
-                    <CardTitle>Team Members</CardTitle>
-                    <CardDescription>Manage access to your partner account</CardDescription>
+                    <CardTitle className="text-sm md:text-lg">Team Members</CardTitle>
+                    <CardDescription className="text-xs md:text-sm">Manage access to your partner account</CardDescription>
                   </div>
                   {isAdmin && (
-                    <Button onClick={() => setShowInviteDialog(true)} data-testid="button-invite-member">
-                      <Plus className="h-4 w-4 mr-1.5" />
+                    <Button onClick={() => setShowInviteDialog(true)} data-testid="button-invite-member" size="sm" className="text-xs md:text-sm self-start md:self-auto">
+                      <Plus className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-1.5" />
                       Invite Member
                     </Button>
                   )}
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
                   {teamLoading ? (
-                    <div className="flex justify-center py-12">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <div className="flex justify-center py-8 md:py-12">
+                      <Loader2 className="h-6 w-6 md:h-8 md:w-8 animate-spin text-primary" />
                     </div>
                   ) : team?.members && team.members.length > 0 ? (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-2 md:gap-4 md:grid-cols-2 lg:grid-cols-3">
                       {team.members.map((member) => (
-                        <div key={member.id} className="p-4 border rounded-lg">
+                        <div key={member.id} className="p-3 md:p-4 border rounded-lg">
                           <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <p className="font-medium">{member.name || member.email}</p>
-                              <p className="text-sm text-muted-foreground">{member.email}</p>
-                              <div className="flex items-center gap-2 mt-2">
-                                <Badge variant={member.inviteStatus === 'accepted' ? 'secondary' : 'outline'}>
+                            <div className="min-w-0">
+                              <p className="font-medium text-sm md:text-base truncate">{member.name || member.email}</p>
+                              <p className="text-xs md:text-sm text-muted-foreground truncate">{member.email}</p>
+                              <div className="flex items-center gap-1.5 md:gap-2 mt-1.5 md:mt-2">
+                                <Badge variant={member.inviteStatus === 'accepted' ? 'secondary' : 'outline'} className="text-[10px] md:text-xs">
                                   {member.inviteStatus === 'accepted' ? 'Active' : 'Pending'}
                                 </Badge>
-                                <Badge variant="outline" className="capitalize">{member.role}</Badge>
+                                <Badge variant="outline" className="capitalize text-[10px] md:text-xs">{member.role}</Badge>
                               </div>
                             </div>
                             {isAdmin && (
-                              <div className="flex gap-1">
+                              <div className="flex gap-0.5 md:gap-1 flex-shrink-0">
                                 {member.inviteStatus !== 'accepted' && (
                                   <Button 
                                     variant="ghost" 
@@ -5221,10 +5223,10 @@ export default function PartnerDashboard() {
                       ))}
                     </div>
                   ) : (
-                    <div className="py-12 text-center text-muted-foreground">
-                      <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p className="font-medium">No team members yet</p>
-                      <p className="text-sm mt-1">
+                    <div className="py-8 md:py-12 text-center text-muted-foreground">
+                      <Users className="h-10 w-10 md:h-12 md:w-12 mx-auto mb-3 md:mb-4 opacity-50" />
+                      <p className="font-medium text-sm md:text-base">No team members yet</p>
+                      <p className="text-xs md:text-sm mt-1">
                         {isAdmin 
                           ? "Invite colleagues to help manage assessments and view results."
                           : "Only admins can invite team members."}
@@ -5233,10 +5235,10 @@ export default function PartnerDashboard() {
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="mt-4"
+                          className="mt-3 md:mt-4 text-xs md:text-sm"
                           onClick={() => setShowInviteDialog(true)}
                         >
-                          <Plus className="h-4 w-4 mr-1.5" />
+                          <Plus className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-1.5" />
                           Invite Your First Team Member
                         </Button>
                       )}

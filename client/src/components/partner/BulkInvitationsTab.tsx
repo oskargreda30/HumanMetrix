@@ -545,16 +545,16 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* PAYG Restriction Banner - shown when partner has no credits and no card on file */}
       {isPaygRestricted && (
         <Card className="border-amber-500 bg-amber-50 dark:bg-amber-950/30">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+          <CardContent className="p-3 md:p-4">
+            <div className="flex items-start gap-2 md:gap-3">
+              <AlertCircle className="h-4 w-4 md:h-5 md:w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-amber-800 dark:text-amber-200">Top up required to send invitations</p>
-                <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                <p className="font-medium text-amber-800 dark:text-amber-200 text-sm md:text-base">Top up required to send invitations</p>
+                <p className="text-xs md:text-sm text-amber-700 dark:text-amber-300 mt-1">
                   You need to purchase assessment credits or add a card on file before you can send invitations to candidates. 
                   Please visit the Billing tab to top up your account.
                 </p>
@@ -562,7 +562,7 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="mt-3 border-amber-500 text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900"
+                    className="mt-2 md:mt-3 border-amber-500 text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900 text-xs md:text-sm"
                     onClick={onNavigateToBilling}
                     data-testid="button-go-to-billing-from-invitations"
                   >
@@ -576,18 +576,18 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
       )}
       
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
+        <CardHeader className="p-3 md:p-6">
+          <CardTitle className="text-sm md:text-lg flex items-center gap-1.5 md:gap-2">
+            <Users className="h-4 w-4 md:h-5 md:w-5 text-primary" />
             Bulk Invite Candidates
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-xs md:text-sm">
             Import candidates via CSV or add them manually to send assessment invitations
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 md:space-y-6 p-3 pt-0 md:p-6 md:pt-0">
           <div
-            className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+            className={`border-2 border-dashed rounded-lg p-4 md:p-6 text-center transition-colors ${
               isDragOver ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
             }`}
             onDragOver={handleDragOver}
@@ -595,11 +595,11 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
             onDrop={handleDrop}
             data-testid="csv-dropzone"
           >
-            <Upload className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground mb-2">
+            <Upload className="h-8 w-8 md:h-10 md:w-10 mx-auto mb-3 md:mb-4 text-muted-foreground" />
+            <p className="text-xs md:text-sm text-muted-foreground mb-2">
               Drag and drop a CSV file here, or click to browse
             </p>
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-2">
               <input
                 type="file"
                 accept=".csv"
@@ -608,40 +608,40 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
                 id="csv-upload"
               />
               <Label htmlFor="csv-upload">
-                <Button variant="outline" size="sm" asChild>
-                  <span><FileText className="h-4 w-4 mr-2" />Upload CSV</span>
+                <Button variant="outline" size="sm" asChild className="text-xs md:text-sm">
+                  <span><FileText className="h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2" />Upload CSV</span>
                 </Button>
               </Label>
-              <Button variant="ghost" size="sm" onClick={downloadTemplate} data-testid="button-download-template">
-                <Download className="h-4 w-4 mr-2" />
+              <Button variant="ghost" size="sm" onClick={downloadTemplate} data-testid="button-download-template" className="text-xs md:text-sm">
+                <Download className="h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2" />
                 Download Template
               </Button>
             </div>
           </div>
 
           {/* Coming Soon: Alternative Import Methods */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
             {/* Copy-Paste from Spreadsheet */}
-            <div className="border border-dashed border-muted-foreground/20 rounded-lg p-3 opacity-50">
-              <div className="flex items-center gap-3">
-                <ClipboardPaste className="h-4 w-4 text-muted-foreground shrink-0" />
+            <div className="border border-dashed border-muted-foreground/20 rounded-lg p-2.5 md:p-3 opacity-50">
+              <div className="flex items-center gap-2 md:gap-3">
+                <ClipboardPaste className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground shrink-0" />
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Paste from Spreadsheet</span>
-                    <span className="text-[10px] text-muted-foreground/70 border border-muted-foreground/30 rounded px-1">Soon</span>
+                  <div className="flex items-center gap-1.5 md:gap-2">
+                    <span className="text-xs md:text-sm text-muted-foreground">Paste from Spreadsheet</span>
+                    <span className="text-[8px] md:text-[10px] text-muted-foreground/70 border border-muted-foreground/30 rounded px-1">Soon</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* ATS Integrations */}
-            <div className="border border-dashed border-muted-foreground/20 rounded-lg p-3 opacity-50">
-              <div className="flex items-center gap-3">
-                <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+            <div className="border border-dashed border-muted-foreground/20 rounded-lg p-2.5 md:p-3 opacity-50">
+              <div className="flex items-center gap-2 md:gap-3">
+                <Building2 className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground shrink-0" />
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">ATS Integrations</span>
-                    <span className="text-[10px] text-muted-foreground/70 border border-muted-foreground/30 rounded px-1">Soon</span>
+                  <div className="flex items-center gap-1.5 md:gap-2">
+                    <span className="text-xs md:text-sm text-muted-foreground">ATS Integrations</span>
+                    <span className="text-[8px] md:text-[10px] text-muted-foreground/70 border border-muted-foreground/30 rounded px-1">Soon</span>
                   </div>
                 </div>
               </div>
