@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, BellOff, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, EyeOff, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info, Upload, Lock, ChevronDown, Pencil, Download, ShoppingCart } from "lucide-react";
+import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, BellOff, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, EyeOff, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info, Upload, Lock, ChevronDown, Pencil, Download, ShoppingCart, Send } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DeveloperSubTabs } from "@/components/DeveloperSubTabs";
 import { PartnerTour } from "@/components/PartnerTour";
@@ -2463,264 +2463,30 @@ export default function PartnerDashboard() {
                 );
               })()}
 
-              {/* Contract & Terms View */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-muted">
-                        <FileText className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">Contract & Terms</CardTitle>
-                        <CardDescription>Your current agreement details</CardDescription>
-                      </div>
-                    </div>
-                    <Badge 
-                      variant={partner?.isSuspended ? "destructive" : "default"}
-                      data-testid="badge-account-status"
-                    >
-                      {partner?.isSuspended ? 'Suspended' : 'Active'}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <div className="p-3 rounded-lg bg-muted/30 border">
-                      <div className="text-xs text-muted-foreground mb-1">Billing Model</div>
-                      <div className="font-semibold flex items-center gap-2" data-testid="text-billing-model">
-                        <CreditCard className="h-4 w-4 text-primary" />
-                        {account?.partner?.billingType === 'payg' && 'Pay As You Go'}
-                        {account?.partner?.billingType === 'subscription' && 'Subscription'}
-                        {account?.partner?.billingType === 'enterprise' && 'Enterprise'}
-                      </div>
-                    </div>
-                    <div className="p-3 rounded-lg bg-muted/30 border">
-                      <div className="text-xs text-muted-foreground mb-1">Member Since</div>
-                      <div className="font-semibold flex items-center gap-2" data-testid="text-member-since">
-                        <Calendar className="h-4 w-4 text-primary" />
-                        {partner?.createdAt ? new Date(partner.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A'}
-                      </div>
-                    </div>
-                    <div className="p-3 rounded-lg bg-muted/30 border">
-                      <div className="text-xs text-muted-foreground mb-1">Company</div>
-                      <div className="font-semibold flex items-center gap-2" data-testid="text-company-name">
-                        <Building2 className="h-4 w-4 text-primary" />
-                        {partner?.companyName || partner?.name || 'Not specified'}
-                      </div>
-                    </div>
-                    <div className="p-3 rounded-lg bg-muted/30 border">
-                      <div className="text-xs text-muted-foreground mb-1">Account ID</div>
-                      <div className="font-semibold flex items-center gap-2 font-mono text-sm" data-testid="text-account-id">
-                        <Shield className="h-4 w-4 text-primary" />
-                        {partner?.id?.slice(0, 8) || 'N/A'}...
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-4 border-t flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground">
-                      For contract modifications or questions, please contact your account manager.
-                    </p>
-                    <Button variant="outline" size="sm" onClick={() => setActiveTab('billing')} data-testid="button-view-billing">
-                      View Billing
-                      <ExternalLink className="h-3 w-3 ml-2" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Credit System Explainer */}
-              <Card className="border-border bg-card">
-                <CardContent className="flex items-center gap-4 py-4">
-                  <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                    <CreditCard className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-base font-semibold text-foreground">1 Credit = 1 Assessment</p>
-                    <p className="text-sm text-foreground/70">
-                      Each completed assessment consumes 1 credit. AI features (Profile Insights, PDF Import) also use 1 credit per use.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Usage Stats */}
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                    <div className="flex items-center gap-1.5">
-                      <CardTitle className="text-sm font-medium">
-                        {account?.partner?.billingType === 'enterprise' ? 'Test Quota' : 'Credits Purchased'}
-                      </CardTitle>
-                      <InfoTooltip content={account?.partner?.billingType === 'enterprise' 
-                        ? "Total assessment credits allocated to your account. Each completed assessment consumes one credit."
-                        : "Total assessment credits purchased for your account. Each completed assessment consumes one credit."
-                      } />
-                    </div>
-                    <Package className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold" data-testid="text-tests-purchased">
-                      {account?.partner?.billingType === 'enterprise' 
-                        ? partner.testsPurchased.toLocaleString()
-                        : Math.max(0, partner.testsPurchased - (partner.freeTestsAllocated || 0)).toLocaleString()
-                      }
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {account?.partner?.billingType === 'enterprise' ? 'Allocated credits' : 'Total credits'}
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                    <div className="flex items-center gap-1.5">
-                      <CardTitle className="text-sm font-medium">Credits Used</CardTitle>
-                      <InfoTooltip content="Number of assessments that candidates have fully completed. Only completed assessments consume credits." />
-                    </div>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold" data-testid="text-tests-used">
-                      {partner.testsConsumed.toLocaleString()}
-                    </div>
-                    <p className="text-xs text-muted-foreground">Completed assessments</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                    <div className="flex items-center gap-1.5">
-                      <CardTitle className="text-sm font-medium">Remaining</CardTitle>
-                      <InfoTooltip content="Credits available for new assessments. Low balance shown in amber/red. Consider purchasing more credits when low." />
-                    </div>
-                    <CreditCard className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className={`text-2xl font-bold ${partner.remaining <= 10 ? 'text-destructive' : partner.remaining <= 25 ? 'text-amber-500' : ''}`} data-testid="text-remaining">
-                      {partner.remaining.toLocaleString()}
-                    </div>
-                    <p className="text-xs text-muted-foreground">Available credits</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                    <div className="flex items-center gap-1.5">
-                      <CardTitle className="text-sm font-medium">Active API Keys</CardTitle>
-                      <InfoTooltip content="Number of API keys currently active. Each key can be used to integrate assessments into your applications." />
-                    </div>
-                    <Activity className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold" data-testid="text-api-keys">
-                      {partner.activeApiKeys}
-                    </div>
-                    <p className="text-xs text-muted-foreground">Connected applications</p>
-                  </CardContent>
-                </Card>
+              {/* Welcome Message */}
+              <div className="text-center py-6">
+                <h2 className="text-2xl font-semibold mb-2" data-testid="text-welcome">
+                  Welcome back{partner?.companyName ? `, ${partner.companyName}` : ''}
+                </h2>
+                <p className="text-muted-foreground text-lg">What do you want to do today?</p>
               </div>
-
-              {/* Usage Progress */}
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="flex items-center gap-4 mb-2">
-                    <Progress value={usagePercentage} className="flex-1 h-3" data-testid="progress-usage" />
-                    <span className="text-lg font-semibold w-16 text-right" data-testid="text-usage-percent">{usagePercentage}%</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {partner.testsConsumed.toLocaleString()} of {partner.testsPurchased.toLocaleString()} credits used
-                    {partner.freeTestsAllocated > 0 && ` (includes ${partner.freeTestsAllocated} free)`}
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* Secondary Stats */}
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                    <div className="flex items-center gap-1.5">
-                      <CardTitle className="text-sm font-medium">This Month</CardTitle>
-                      <InfoTooltip content="Assessments completed during the current calendar month. Resets on the 1st of each month." />
-                    </div>
-                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-primary" data-testid="home-month-sessions">
-                      {usage?.currentMonth?.sessions ?? 0}
-                    </div>
-                    <p className="text-xs text-muted-foreground">assessments completed</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                    <div className="flex items-center gap-1.5">
-                      <CardTitle className="text-sm font-medium">Organizations</CardTitle>
-                      <InfoTooltip content="Separate workspaces to group assessments by client, department, or project. Each org can have its own API key." />
-                    </div>
-                    <Building2 className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-lg font-semibold text-muted-foreground" data-testid="home-org-count">
-                      Coming Soon
-                    </div>
-                    <p className="text-xs text-muted-foreground">manage client workspaces</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
-                    <div className="flex items-center gap-1.5">
-                      <CardTitle className="text-sm font-medium">Completed Results</CardTitle>
-                      <InfoTooltip content="Total number of assessment results available for review. Only completed assessments appear here." />
-                    </div>
-                    <ClipboardList className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold" data-testid="home-results-count">
-                      {resultsData?.total ?? 0}
-                    </div>
-                    <p className="text-xs text-muted-foreground">assessment results</p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Recent Activity */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Recent Activity</CardTitle>
-                  <CardDescription>Latest events across your account</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {activityLoading ? (
-                    <div className="flex justify-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                    </div>
-                  ) : activityLog?.activities.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No recent activity</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {activityLog?.activities.slice(0, 5).map((activity) => (
-                        <div key={activity.id} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-md bg-primary/10">
-                              <Activity className="h-4 w-4 text-primary" />
-                            </div>
-                            <div>
-                              <div className="font-medium text-sm">{activity.description}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {formatDate(activity.createdAt)}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
 
               {/* Quick Actions */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("invitations"); window.scrollTo(0, 0); }} data-testid="card-quick-invite">
+                  <CardContent className="pt-6 text-center">
+                    <Send className="h-8 w-8 mx-auto mb-2 text-primary" />
+                    <h3 className="font-semibold">Quick Invite</h3>
+                    <p className="text-sm text-muted-foreground">Send assessment invitations</p>
+                  </CardContent>
+                </Card>
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("billing"); window.scrollTo(0, 0); }} data-testid="card-quick-billing">
+                  <CardContent className="pt-6 text-center">
+                    <CreditCard className="h-8 w-8 mx-auto mb-2 text-primary" />
+                    <h3 className="font-semibold">Purchase Credits</h3>
+                    <p className="text-sm text-muted-foreground">Top up your balance</p>
+                  </CardContent>
+                </Card>
                 <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("results"); window.scrollTo(0, 0); }} data-testid="card-quick-results">
                   <CardContent className="pt-6 text-center">
                     <ClipboardList className="h-8 w-8 mx-auto mb-2 text-primary" />
@@ -2728,30 +2494,54 @@ export default function PartnerDashboard() {
                     <p className="text-sm text-muted-foreground">See assessment results</p>
                   </CardContent>
                 </Card>
-                <Card className="relative opacity-75" data-testid="card-quick-organizations">
-                  <div className="absolute top-2 right-2">
-                    <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
-                      Coming Soon
-                    </Badge>
-                  </div>
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("ecosystem"); window.scrollTo(0, 0); }} data-testid="card-quick-team-analysis">
                   <CardContent className="pt-6 text-center">
-                    <Building2 className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                    <h3 className="font-semibold text-muted-foreground">Organizations</h3>
-                    <p className="text-sm text-muted-foreground">Manage clients</p>
+                    <Sparkles className="h-8 w-8 mx-auto mb-2 text-primary" />
+                    <h3 className="font-semibold">Team Analysis</h3>
+                    <p className="text-sm text-muted-foreground">AI-powered diagnostics</p>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("billing"); window.scrollTo(0, 0); }} data-testid="card-quick-billing">
-                  <CardContent className="pt-6 text-center">
-                    <CreditCard className="h-8 w-8 mx-auto mb-2 text-primary" />
-                    <h3 className="font-semibold">Buy Tests</h3>
-                    <p className="text-sm text-muted-foreground">Purchase credits</p>
+              </div>
+
+              {/* Account Overview */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                    <div className="flex items-center gap-1.5">
+                      <CardTitle className="text-sm font-medium">Candidates Onboarded</CardTitle>
+                      <InfoTooltip content="Total number of candidates who have completed assessments." />
+                    </div>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold" data-testid="text-candidates-onboarded">
+                      {resultsData?.total ?? 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">completed assessments</p>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => window.open('/developers', '_blank')} data-testid="card-quick-api-docs">
-                  <CardContent className="pt-6 text-center">
-                    <ExternalLink className="h-8 w-8 mx-auto mb-2 text-primary" />
-                    <h3 className="font-semibold">API Docs</h3>
-                    <p className="text-sm text-muted-foreground">Integration guides</p>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+                    <div className="flex items-center gap-1.5">
+                      <CardTitle className="text-sm font-medium">Credits Available</CardTitle>
+                      <InfoTooltip content="Credits available for new assessments. Purchase more when running low." />
+                    </div>
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className={`text-2xl font-bold ${partner.remaining <= 10 ? 'text-destructive' : partner.remaining <= 25 ? 'text-amber-500' : ''}`} data-testid="text-credits-available">
+                      {partner.remaining.toLocaleString()}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      <Button 
+                        variant="link" 
+                        className="h-auto p-0 text-xs text-primary" 
+                        onClick={() => { setActiveTab("billing"); window.scrollTo(0, 0); }}
+                        data-testid="link-purchase-more"
+                      >
+                        Purchase more
+                      </Button>
+                    </p>
                   </CardContent>
                 </Card>
               </div>
@@ -3961,6 +3751,68 @@ export default function PartnerDashboard() {
                 </Card>
               ) : (
                 <>
+                  {/* Contract & Terms */}
+                  <Card data-testid="card-contract-terms">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-muted">
+                            <FileText className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg">Contract & Terms</CardTitle>
+                            <CardDescription>Your current agreement details</CardDescription>
+                          </div>
+                        </div>
+                        <Badge 
+                          variant={partner?.isSuspended ? "destructive" : "default"}
+                          data-testid="badge-account-status"
+                        >
+                          {partner?.isSuspended ? 'Suspended' : 'Active'}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        <div className="p-3 rounded-lg bg-muted/30 border">
+                          <div className="text-xs text-muted-foreground mb-1">Billing Model</div>
+                          <div className="font-semibold flex items-center gap-2" data-testid="text-billing-model">
+                            <CreditCard className="h-4 w-4 text-primary" />
+                            {account?.partner?.billingType === 'payg' && 'Pay As You Go'}
+                            {account?.partner?.billingType === 'subscription' && 'Subscription'}
+                            {account?.partner?.billingType === 'enterprise' && 'Enterprise'}
+                          </div>
+                        </div>
+                        <div className="p-3 rounded-lg bg-muted/30 border">
+                          <div className="text-xs text-muted-foreground mb-1">Member Since</div>
+                          <div className="font-semibold flex items-center gap-2" data-testid="text-member-since">
+                            <Calendar className="h-4 w-4 text-primary" />
+                            {partner?.createdAt ? new Date(partner.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A'}
+                          </div>
+                        </div>
+                        <div className="p-3 rounded-lg bg-muted/30 border">
+                          <div className="text-xs text-muted-foreground mb-1">Company</div>
+                          <div className="font-semibold flex items-center gap-2" data-testid="text-company-name">
+                            <Building2 className="h-4 w-4 text-primary" />
+                            {partner?.companyName || partner?.name || 'Not specified'}
+                          </div>
+                        </div>
+                        <div className="p-3 rounded-lg bg-muted/30 border">
+                          <div className="text-xs text-muted-foreground mb-1">Account ID</div>
+                          <div className="font-semibold flex items-center gap-2 font-mono text-sm" data-testid="text-account-id">
+                            <Shield className="h-4 w-4 text-primary" />
+                            {partner?.id?.slice(0, 8) || 'N/A'}...
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-4 pt-4 border-t">
+                        <p className="text-sm text-muted-foreground">
+                          For contract modifications or questions, please contact your account manager.
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
                   {/* Account Details */}
                   <Card data-testid="card-account-details">
                     <CardHeader>
