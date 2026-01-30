@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Key, Webhook, TestTube, Plus, RefreshCw, Trash2, Shield, Clock, AlertTriangle, Loader2, Info, Lock, CreditCard, Code, Copy, Check, Play, ExternalLink, FileJson, Eye } from "lucide-react";
+import { Key, Webhook, TestTube, Plus, RefreshCw, Trash2, Shield, Clock, AlertTriangle, Loader2, Info, Lock, CreditCard, Code, Copy, Check, Play, ExternalLink, FileJson } from "lucide-react";
 
 // Lazy load Swagger UI for better performance
 const SwaggerUI = lazy(() => import("swagger-ui-react"));
@@ -458,14 +458,6 @@ export function DeveloperSubTabs({
                 <FileJson className="h-4 w-4" />
                 API Sandbox
               </TabsTrigger>
-              <TabsTrigger 
-                value="preview" 
-                data-testid="sandbox-subtab-preview" 
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
-              >
-                <Eye className="h-4 w-4" />
-                Assessment Preview
-              </TabsTrigger>
             </TabsList>
 
             {/* Widget Sandbox Tab */}
@@ -772,189 +764,6 @@ export function DeveloperSubTabs({
               </Card>
             </TabsContent>
 
-            {/* Assessment Preview Tab */}
-            <TabsContent value="preview" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-purple-500/10">
-                      <Eye className="h-5 w-5 text-purple-500" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <CardTitle>Assessment Preview</CardTitle>
-                        <InfoTooltip content="Preview each assessment type to understand the candidate experience. These are samples only - no scores recorded." />
-                      </div>
-                      <CardDescription>
-                        See sample questions from each assessment type
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-6">
-                    Get a sneak peek at each assessment type to understand the candidate experience. 
-                    These are preview samples only - no scores will be recorded.
-                  </p>
-                  
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <Card className="border-2 border-dashed hover-elevate">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <Badge className="bg-cyan-500/10 text-cyan-600 border-cyan-500/30">FIT</Badge>
-                          <Badge variant="outline" className="text-xs">40 questions</Badge>
-                        </div>
-                        <CardTitle className="text-lg mt-2">Behavioural FIT Assessment</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <p className="text-sm text-muted-foreground">
-                          Measures workplace behaviour patterns and cultural fit across adaptability, 
-                          collaboration, initiative, and other key competencies.
-                        </p>
-                        <div className="p-3 rounded-lg bg-muted/50 border">
-                          <p className="text-xs font-medium text-muted-foreground mb-2">Sample Question:</p>
-                          <p className="text-sm">
-                            "When facing a challenging deadline, I typically..."
-                          </p>
-                          <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                            <p>A. Work independently to maximize focus</p>
-                            <p>B. Collaborate with team members for support</p>
-                            <p>C. Break tasks into smaller manageable steps</p>
-                            <p>D. Communicate proactively about progress</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          <span>~15 minutes to complete</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-2 border-dashed hover-elevate">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <Badge className="bg-green-500/10 text-green-600 border-green-500/30">AI Readiness</Badge>
-                          <Badge variant="outline" className="text-xs">30 questions</Badge>
-                        </div>
-                        <CardTitle className="text-lg mt-2">AI Readiness Assessment</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <p className="text-sm text-muted-foreground">
-                          Evaluates preparedness for AI-driven work environments, measuring adaptability 
-                          to AI tools and comfort with AI-augmented workflows.
-                        </p>
-                        <div className="p-3 rounded-lg bg-muted/50 border">
-                          <p className="text-xs font-medium text-muted-foreground mb-2">Sample Question:</p>
-                          <p className="text-sm">
-                            "When a new AI tool is introduced at work, I..."
-                          </p>
-                          <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                            <p>A. Immediately explore its capabilities</p>
-                            <p>B. Wait for training before trying it</p>
-                            <p>C. Prefer sticking to familiar methods</p>
-                            <p>D. Research reviews and best practices first</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          <span>~12 minutes to complete</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-2 border-dashed hover-elevate">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/30">Prompt Architecture</Badge>
-                          <Badge variant="outline" className="text-xs">7 levels</Badge>
-                        </div>
-                        <CardTitle className="text-lg mt-2">Prompt Architecture Assessment</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <p className="text-sm text-muted-foreground">
-                          Tests ability to craft effective AI prompts through progressively challenging 
-                          scenarios, from basic instructions to complex multi-step tasks.
-                        </p>
-                        <div className="p-3 rounded-lg bg-muted/50 border">
-                          <p className="text-xs font-medium text-muted-foreground mb-2">Sample Scenario:</p>
-                          <p className="text-sm mb-2">
-                            <span className="font-medium">Level 1 - Basic Instruction:</span>
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            "You're a marketing manager. Write a prompt that asks an AI to create 
-                            3 subject lines for an email campaign about a summer sale."
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          <span>~25 minutes to complete (2 min per level)</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-2 border-dashed hover-elevate">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/30">AIQ</Badge>
-                          <Badge variant="outline" className="text-xs">15 questions</Badge>
-                        </div>
-                        <CardTitle className="text-lg mt-2">Algorithmic Integrity Quotient</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <p className="text-sm text-muted-foreground">
-                          Measures understanding of AI ethics, bias awareness, and responsible AI usage. 
-                          Assesses critical thinking about AI limitations and implications.
-                        </p>
-                        <div className="p-3 rounded-lg bg-muted/50 border">
-                          <p className="text-xs font-medium text-muted-foreground mb-2">Sample Question:</p>
-                          <p className="text-sm">
-                            "When an AI system makes a decision that seems unfair, I would..."
-                          </p>
-                          <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                            <p>A. Trust the AI's judgement without question</p>
-                            <p>B. Question the training data and methodology</p>
-                            <p>C. Escalate to a human decision-maker</p>
-                            <p>D. Document the issue for review</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          <span>~10 minutes to complete</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <div className="mt-6 p-4 rounded-lg bg-primary/5 border border-primary/20">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle className="h-5 w-5 text-primary mt-0.5" />
-                      <div>
-                        <p className="font-medium text-sm">Ready to deploy assessments?</p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          These previews show the format only. To send real assessments to candidates, 
-                          create an API key and use our SDK or API to create assessment sessions.
-                        </p>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="mt-3"
-                          onClick={() => {
-                            setActiveSubTab('api-keys');
-                            setTimeout(() => {
-                              document.querySelector('[data-value="api-keys"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            }, 50);
-                          }}
-                          data-testid="button-sandbox-to-api"
-                        >
-                          <Key className="h-4 w-4 mr-2" />
-                          Set up API Keys
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
           </Tabs>
         </TabsContent>
       </Tabs>
