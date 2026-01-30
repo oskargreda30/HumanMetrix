@@ -14233,6 +14233,98 @@ Use the candidates' actual names. Be specific and actionable.`;
         } catch (aiError) {
           console.error("Failed to generate AI insights for comparison:", aiError);
         }
+      } else if (candidateIds.length === 1) {
+        // Profile insights for individual candidate report
+        try {
+          const fitData = fitAssessments?.[0];
+          const aiData = aiReadinessAssessments?.[0];
+          const promptData = promptArchitectureAssessments?.[0];
+          const aiqData = aiqAssessments?.[0];
+          
+          // Only generate if there's at least some assessment data
+          if (fitData || aiData || promptData || aiqData) {
+            const candidateName = candidateDisplayNames[0];
+            
+            // Calculate strengths and weaknesses
+            const skills: Array<{ name: string; score: number; category: string }> = [];
+            if (fitData) {
+              Object.entries(fitData.scores as Record<string, number>).forEach(([name, score]) => {
+                skills.push({ name, score: score as number, category: 'FIT' });
+              });
+            }
+            if (aiData) {
+              Object.entries(aiData.scores as Record<string, number>).forEach(([name, score]) => {
+                skills.push({ name, score: score as number, category: 'AI Readiness' });
+              });
+            }
+            skills.sort((a, b) => b.score - a.score);
+            const strengths = skills.slice(0, 3);
+            const weaknesses = skills.slice(-3).reverse();
+            
+            const prompt = `You are an expert HR analyst. Generate a comprehensive profile analysis for a job candidate based on their assessment results.
+
+CANDIDATE: ${candidateName}
+
+ASSESSMENT DATA:
+${fitData ? \`FIT (Behavioral Traits) - Average: ${Math.round(Object.values(fitData.scores as Record<string, number>).reduce((a, b) => a + b, 0) / Object.keys(fitData.scores).length)}%
+Individual Scores: ${JSON.stringify(fitData.scores, null, 2)}\` : 'FIT Assessment: Not completed'}
+
+${aiData ? \`AI Readiness (Technical) - Average: ${Math.round(Object.values(aiData.scores as Record<string, number>).reduce((a, b) => a + b, 0) / Object.keys(aiData.scores).length)}%
+Individual Scores: ${JSON.stringify(aiData.scores, null, 2)}\` : 'AI Readiness Assessment: Not completed'}
+
+${promptData ? \`Prompt Architecture: ${promptData.totalScore}%\` : 'Prompt Architecture: Not completed'}
+
+${aiqData ? \`AIQ (AI Ethics): ${aiqData.totalScore}%\` : 'AIQ Assessment: Not completed'}
+
+HIGHEST SCORING TRAITS: ${strengths.map(s => \`${s.name} (${s.score}%)\`).join(', ') || 'N/A'}
+
+LOWEST SCORING TRAITS: ${weaknesses.map(s => \`${s.name} (${s.score}%)\`).join(', ') || 'N/A'}
+
+IMPORTANT: FIT and AI Readiness are TRAIT-BASED assessments. High scores mean the trait is STRONGLY PRESENT, not that it's "good" or "bad". Whether a high score is beneficial depends on role requirements.
+
+Generate a structured analysis with EXACTLY these 5 sections. Use the headers exactly as shown:
+
+**ROLE SUITABILITY**
+Based on the trait profile, describe 2-3 types of roles or work environments where this candidate would excel. Be specific about role characteristics.
+
+**KEY STRENGTHS**
+List the top 3 standout traits and explain how they benefit the workplace. Reference specific scores.
+
+**DEVELOPMENT AREAS**
+Identify 2-3 areas for growth based on lower-scoring traits. Frame constructively with actionable suggestions.
+
+**TEAM DYNAMICS**
+Describe how this candidate would likely interact with teams, their communication style, and collaboration approach.
+
+**HIRING RECOMMENDATION**
+Provide a concise recommendation for hiring managers, including ideal role types and potential concerns.
+
+Keep each section concise (2-3 sentences). Use professional but accessible language.`;
+
+            const completion = await openai.chat.completions.create({
+              model: "gpt-4o",
+              messages: [
+                { role: "system", content: "You are an expert HR analyst specializing in candidate assessments. Provide insightful, balanced profile analyses." },
+                { role: "user", content: prompt }
+              ],
+              max_tokens: 600,
+              temperature: 0.7,
+            });
+
+            aiInsights = completion.choices[0].message.content || null;
+
+            logAiCost({
+              userId: req.user.id,
+              operation: 'individual_candidate_profile_insights',
+              model: 'gpt-4o',
+              promptTokens: completion.usage?.prompt_tokens || 0,
+              completionTokens: completion.usage?.completion_tokens || 0,
+              metadata: { candidateId: candidateIds[0] },
+            }).catch(console.error);
+          }
+        } catch (aiError) {
+          console.error("Failed to generate AI insights for individual report:", aiError);
+        }
       }
 
       const resultData = {

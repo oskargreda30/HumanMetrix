@@ -47,7 +47,7 @@ const renderInsideLabel = (props: any) => {
 export interface SharedIndividualReportConfig {
   candidatesEndpoint: string;
   reportEndpoint: string;
-  profileInsightsEndpoint: string | ((candidateId: string) => string);
+  candidateReport?.aiInsightsEndpoint: string | ((candidateId: string) => string);
   contextType: 'admin' | 'partner';
 }
 
@@ -75,7 +75,7 @@ interface SharedIndividualReportProps {
 export function SharedIndividualReport({ config }: SharedIndividualReportProps) {
   const [selectedCandidate, setSelectedCandidate] = useState<string>('');
   const [reportTriggered, setReportTriggered] = useState(false);
-  const [profileInsights, setProfileInsights] = useState<string | null>(null);
+  // AI insights now come from candidateReport.aiInsights (generated server-side)
   const [isExporting, setIsExporting] = useState(false);
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
   const { toast } = useToast();
@@ -102,7 +102,6 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
   const handleCandidateChange = (value: string) => {
     setSelectedCandidate(value);
     setReportTriggered(false);
-    setProfileInsights(null);
     setInsightsGenerated(false);
     setNoAssessmentData(false);
   };
@@ -113,28 +112,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
     }
   };
 
-  const generateInsightsMutation = useMutation({
-    mutationFn: async (data: { userId: string; assessmentData: any }) => {
-      const endpoint = typeof config.profileInsightsEndpoint === 'function' 
-        ? config.profileInsightsEndpoint(data.userId)
-        : config.profileInsightsEndpoint;
-      // Partner endpoint gets candidateId from URL, needs assessmentData in body
-      // Admin endpoint needs both userId and assessmentData in body
-      const requestBody = config.contextType === 'partner' 
-        ? { assessmentData: data.assessmentData } 
-        : data;
-      const response = await apiRequest('POST', endpoint, requestBody);
-      return response.json();
-    },
-    onSuccess: (data) => {
-      setProfileInsights(data.insights);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to generate profile insights",
-        variant: "destructive",
-      });
+  // Insights generation now happens server-side during the report call
     },
   });
 
@@ -142,65 +120,9 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
   const [insightsGenerated, setInsightsGenerated] = useState(false);
   const [noAssessmentData, setNoAssessmentData] = useState(false);
 
-  // Auto-trigger insights generation when report data loads after clicking Run Analysis
-  useEffect(() => {
-    if (reportTriggered && candidateReport && selectedCandidateData && !insightsGenerated && !profileInsights && !generateInsightsMutation.isPending) {
-      const fitDataLocal = candidateReport?.fitAssessments?.[0];
-      const aiDataLocal = candidateReport?.aiReadinessAssessments?.[0];
-      const promptDataLocal = candidateReport?.promptArchitectureAssessments?.[0];
-      const aiqDataLocal = candidateReport?.aiqAssessments?.[0];
-      
-      if (fitDataLocal || aiDataLocal || promptDataLocal || aiqDataLocal) {
-        const candidateName = (() => {
-          const { firstName, lastName, email } = selectedCandidateData.user;
-          if (firstName || lastName) {
-            return `${firstName || ''} ${lastName || ''}`.trim();
-          }
-          return email?.split('@')[0] || 'Unknown';
-        })();
-        
-        const skills: Array<{ name: string; score: number; category: string }> = [];
-        if (fitDataLocal) {
-          Object.entries(fitDataLocal.scores).forEach(([name, score]) => {
-            skills.push({ name, score: score as number, category: 'FIT' });
-          });
-        }
-        if (aiDataLocal) {
-          const normalizedScores = normalizeAIReadinessScores(aiDataLocal.scores);
-          Object.entries(normalizedScores).forEach(([name, score]) => {
-            skills.push({ name, score: score as number, category: 'AI Readiness' });
-          });
-        }
-        skills.sort((a, b) => b.score - a.score);
-        const strengths = skills.slice(0, 3);
-        const weaknesses = skills.slice(-3).reverse();
-        
-        const assessmentData = {
-          candidateName,
-          fit: fitDataLocal ? {
-            average: Math.round(Object.values(fitDataLocal.scores).reduce((a: number, b: any) => a + b, 0) / Object.keys(fitDataLocal.scores).length),
-            scores: fitDataLocal.scores,
-          } : null,
-          aiReadiness: aiDataLocal ? {
-            average: Math.round(Object.values(aiDataLocal.scores).reduce((a: number, b: any) => a + b, 0) / Object.keys(aiDataLocal.scores).length),
-            scores: aiDataLocal.scores,
-          } : null,
-          promptArchitecture: promptDataLocal ? { totalScore: promptDataLocal.totalScore } : null,
-          aiq: aiqDataLocal ? { totalScore: aiqDataLocal.totalScore } : null,
-          strengths,
-          lowestScoring: weaknesses,
-        };
-        
-        setInsightsGenerated(true);
-        setNoAssessmentData(false);
-        generateInsightsMutation.mutate({ userId: selectedCandidate, assessmentData });
-      } else {
-        // No assessment data available
-        setNoAssessmentData(true);
-        setInsightsGenerated(true);
-      }
-    }
-  }, [reportTriggered, candidateReport, selectedCandidateData, insightsGenerated, profileInsights]);
+  // AI insights are now generated server-side during the report call
+  // No auto-trigger needed - candidateReport.aiInsights contains the insights
+
 
 
   const getCandidateName = (candidate: CandidateData | undefined) => {
@@ -301,7 +223,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
   };
 
   const handleExportPDF = async () => {
-    if (!selectedCandidateData || !candidateReport || !profileInsights || generateInsightsMutation.isPending) return;
+    if (!selectedCandidateData || !candidateReport || !candidateReport?.aiInsights || false /* insights generated with report */) return;
     
     setIsExporting(true);
     try {
@@ -349,7 +271,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
         aiData: aiData ? { scores: aiData.scores } : null,
         promptData: promptData ? { totalScore: promptData.totalScore, levels: promptData.levels } : null,
         aiqData: aiqData ? { totalScore: aiqData.totalScore } : null,
-        profileInsights,
+        candidateReport?.aiInsights,
         fitChartImage,
         aiChartImage,
       });
@@ -451,7 +373,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
             <Button 
               size="sm"
               onClick={handleExportPDF}
-              disabled={isExporting || !profileInsights || generateInsightsMutation.isPending || noAssessmentData}
+              disabled={isExporting || !candidateReport?.aiInsights || false /* insights generated with report */ || noAssessmentData}
               data-testid="button-export-pdf-top"
             >
               {isExporting ? (
@@ -464,12 +386,12 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                   <AlertCircle className="h-4 w-4 mr-2" />
                   No Data
                 </>
-              ) : generateInsightsMutation.isPending || (!profileInsights && insightsGenerated) ? (
+              ) : false /* insights generated with report */ || (!candidateReport?.aiInsights && insightsGenerated) ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Analyzing...
                 </>
-              ) : !profileInsights ? (
+              ) : !candidateReport?.aiInsights ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Analyzing...
@@ -874,13 +796,13 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                   <p className="text-sm font-medium">No Assessment Data Available</p>
                   <p className="text-xs mt-2">This candidate has not completed any assessments yet.</p>
                 </div>
-              ) : generateInsightsMutation.isPending || (!profileInsights && insightsGenerated) ? (
+              ) : false /* insights generated with report */ || (!candidateReport?.aiInsights && insightsGenerated) ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Loader2 className="h-12 w-12 mx-auto mb-4 animate-spin text-primary" />
                   <p className="text-sm">Generating profile insights...</p>
                   <p className="text-xs mt-2">Analyzing assessment data across all dimensions.</p>
                 </div>
-              ) : profileInsights ? (
+              ) : candidateReport?.aiInsights ? (
                 <div className="space-y-6" data-testid="text-profile-insights">
                   {(() => {
                     const sections = [
@@ -893,13 +815,13 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                     
                     const parsedSections = sections.map((section) => {
                       const regex = new RegExp(`\\*\\*${section.key}\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*[A-Z]|$)`, 'i');
-                      const match = profileInsights.match(regex);
+                      const match = candidateReport?.aiInsights.match(regex);
                       const content = match?.[1]?.trim();
                       return { ...section, content };
                     }).filter(s => s.content);
                     
                     if (parsedSections.length === 0) {
-                      return profileInsights.split('\n').map((paragraph, i) => (
+                      return candidateReport?.aiInsights.split('\n').map((paragraph, i) => (
                         paragraph.trim() && <p key={i} className="text-sm text-muted-foreground mb-3">{paragraph}</p>
                       ));
                     }
@@ -1077,7 +999,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
           <div className="flex justify-end gap-2">
             <Button 
               onClick={handleExportPDF}
-              disabled={isExporting || !profileInsights || generateInsightsMutation.isPending || noAssessmentData}
+              disabled={isExporting || !candidateReport?.aiInsights || false /* insights generated with report */ || noAssessmentData}
               data-testid="button-export-individual-report"
             >
               {isExporting ? (
@@ -1090,12 +1012,12 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                   <AlertCircle className="h-4 w-4 mr-2" />
                   No Data
                 </>
-              ) : generateInsightsMutation.isPending || (!profileInsights && insightsGenerated) ? (
+              ) : false /* insights generated with report */ || (!candidateReport?.aiInsights && insightsGenerated) ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Analyzing...
                 </>
-              ) : !profileInsights ? (
+              ) : !candidateReport?.aiInsights ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Analyzing...
