@@ -330,6 +330,64 @@ export default function EmbedAssessment() {
     fetchSession();
   }, [sessionId, isDemo, currentAssessmentType]);
 
+  // Handle page restored from bfcache (back/forward navigation) and visibility changes
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      // If page is restored from bfcache, re-fetch session to get current state
+      if (event.persisted && sessionId && !isDemo) {
+        console.log('[EmbedAssessment] Page restored from bfcache, re-fetching session');
+        setStatus('loading');
+        fetchSession();
+      }
+    };
+
+    // Also handle visibility change (tab becomes visible again)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && sessionId && !isDemo && status === 'loading') {
+        console.log('[EmbedAssessment] Page visible with loading status, re-fetching session');
+        fetchSession();
+      }
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('pageshow', handlePageShow);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [sessionId, isDemo, status]);
+
+  // Track loading retry attempts
+  const loadingRetryCountRef = useRef<number>(0);
+  const MAX_LOADING_RETRIES = 3;
+
+  // Loading timeout recovery - if stuck at loading for more than 10 seconds, retry with limit
+  useEffect(() => {
+    if (status !== 'loading' || isDemo || !sessionId) {
+      // Reset retry count when not loading
+      if (status !== 'loading') {
+        loadingRetryCountRef.current = 0;
+      }
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      if (status === 'loading') {
+        if (loadingRetryCountRef.current < MAX_LOADING_RETRIES) {
+          loadingRetryCountRef.current += 1;
+          console.log(`[EmbedAssessment] Loading timeout, retry ${loadingRetryCountRef.current}/${MAX_LOADING_RETRIES}`);
+          fetchSession();
+        } else {
+          console.log('[EmbedAssessment] Max retries reached, transitioning to error state');
+          setStatus('error');
+          setErrorMessage('Failed to load session after multiple attempts. Please refresh the page.');
+        }
+      }
+    }, 10000);
+
+    return () => clearTimeout(timeoutId);
+  }, [status, sessionId, isDemo]);
+
   const fetchSession = async () => {
     try {
       const res = await fetch(`/api/embed/session/${sessionId}`);
@@ -737,6 +795,86 @@ export default function EmbedAssessment() {
       setShowTimeWarning(false);
     }
   }, [currentIndex]);
+
+  // Track navigation state to prevent re-entry
+  const allowNavigationRef = useRef<boolean>(false);
+  const historyPushedRef = useRef<boolean>(false);
+  const guardPushedRef = useRef<boolean>(false); // Track if cancel guard was pushed
+
+  // Warn user before leaving page during active assessment (tab close/refresh and back button)
+  useEffect(() => {
+    if (status !== 'started') {
+      // Reset refs when not in started state
+      allowNavigationRef.current = false;
+      historyPushedRef.current = false;
+      guardPushedRef.current = false;
+      return;
+    }
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!isSubmitting && !allowNavigationRef.current) {
+        e.preventDefault();
+        e.returnValue = 'You have an assessment in progress. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    };
+
+    // Handle browser back button
+    const handlePopState = () => {
+      // If navigation was explicitly allowed, don't intercept
+      if (allowNavigationRef.current || isSubmitting) {
+        return;
+      }
+
+      // Show confirmation dialog
+      const confirmLeave = window.confirm(
+        'You have an assessment in progress. Your answers have been saved, but leaving now may affect your results. Are you sure you want to leave?'
+      );
+      
+      if (confirmLeave) {
+        // Save progress before leaving
+        if (sessionId && Object.keys(answersRef.current).length > 0) {
+          saveProgressImmediately(currentIndex);
+        }
+        // Set flag to allow the next navigation without interception
+        allowNavigationRef.current = true;
+        // Remove listener before navigation to prevent re-entry
+        window.removeEventListener('popstate', handlePopState);
+        
+        // If embedded, notify parent about exit
+        if (window.parent !== window) {
+          window.parent.postMessage(
+            { type: "humanmetrix:exit", sessionId, reason: "user_back" },
+            "*"
+          );
+        }
+        // Navigate back to complete exit
+        window.history.back();
+      } else {
+        // User cancelled - replace current state and push guard only once
+        // This prevents unbounded history growth on repeated cancels
+        window.history.replaceState({ assessment: true }, '', window.location.href);
+        if (!guardPushedRef.current) {
+          guardPushedRef.current = true;
+          window.history.pushState({ assessment: true, guard: true }, '', window.location.href);
+        }
+      }
+    };
+
+    // Push initial history state to enable back button detection (only once)
+    if (!historyPushedRef.current) {
+      historyPushedRef.current = true;
+      window.history.pushState({ assessment: true }, '', window.location.href);
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [status, isSubmitting, sessionId, currentIndex, saveProgressImmediately]);
 
   const handleAnswerChange = (value: string) => {
     const currentQ = questions[currentIndex];
