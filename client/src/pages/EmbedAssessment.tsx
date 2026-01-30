@@ -2009,13 +2009,13 @@ export default function EmbedAssessment() {
               <span className={`text-sm ${textMuted}`}>
                 Question {currentIndex + 1} of {questions.length}
               </span>
-              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg ${
+              <div className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 ${
                 timeRemaining <= (isPromptArchitecture ? 30 : 300) 
-                  ? 'bg-red-500/20 text-red-400' 
-                  : isLight ? 'bg-gray-200 text-gray-700' : 'bg-slate-700 text-slate-300'
+                  ? 'bg-red-500/20 text-red-400 border-red-500/50 animate-pulse' 
+                  : isLight ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-blue-900/30 text-blue-300 border-blue-500/30'
               }`}>
-                <Clock className="h-4 w-4" />
-                <span className="text-sm font-semibold" data-testid="timer-display">
+                <Clock className="h-5 w-5" />
+                <span className="text-lg font-bold tabular-nums" data-testid="timer-display">
                   {formatTime(timeRemaining)}
                 </span>
               </div>

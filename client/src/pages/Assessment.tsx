@@ -823,11 +823,13 @@ export default function Assessment() {
                       Question {currentQuestion + 1} of {questions.length}
                     </p>
                   </div>
-                  <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                    timeRemaining <= 300 ? 'bg-destructive/10 text-destructive' : 'bg-muted'
+                  <div className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-lg border-2 ${
+                    timeRemaining <= 300 
+                      ? 'bg-destructive/10 text-destructive border-destructive/50 animate-pulse' 
+                      : 'bg-primary/10 border-primary/30'
                   }`}>
-                    <Clock className="h-5 w-5" />
-                    <span className="text-lg font-semibold" data-testid="timer-display">
+                    <Clock className="h-5 w-5 md:h-5 md:w-5" />
+                    <span className="text-xl md:text-lg font-bold tabular-nums" data-testid="timer-display">
                       {formatTime(timeRemaining)}
                     </span>
                   </div>
