@@ -13745,13 +13745,13 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
       const insights = completion.choices[0].message.content || '';
       
       // Save the generated insights to cache for future retrieval
-      const savedReport = await storage.savePartnerReport(
-        partner.id,
-        'profile_insights',
-        [candidateId],
-        `Profile Insights: ${candidateName}`,
-        { insights, candidateName, generatedAt: new Date().toISOString() }
-      );
+      const savedReport = await storage.createPartnerAnalysisReport({
+        partnerId: partner.id,
+        reportType: 'profile_insights',
+        candidateIds: [candidateId],
+        title: `Profile Insights: ${candidateName}`,
+        resultData: { insights, candidateName, generatedAt: new Date().toISOString() },
+      });
       
       logAiCost({
         operationType: AI_USAGE_OPERATION_TYPES.PROFILE_INSIGHTS_PARTNER,

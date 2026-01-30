@@ -424,6 +424,22 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
             </Button>
           </div>
 
+          {config.contextType === 'partner' && (
+            <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30 mb-4">
+              <div className="flex items-start gap-3">
+                <Sparkles className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                    Credit Usage for AI-Powered Analysis
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                    AI Profile Insights generation costs 1 credit. Credits are only consumed when generating new insights. Cached insights are free.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20" data-testid="card-candidate-summary">
             <CardContent className="pt-6">
               <div className="grid gap-4 md:grid-cols-5">
@@ -797,22 +813,6 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
               </Card>
             );
           })()}
-
-          {config.contextType === 'partner' && (
-            <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
-              <div className="flex items-start gap-3">
-                <Sparkles className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                    Credit Usage for AI-Powered Analysis
-                  </p>
-                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                    AI Profile Insights generation costs 1 credit. Credits are only consumed when generating new insights. Cached insights are free.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
 
           <Card data-testid="card-profile-insights">
             <CardHeader>
