@@ -283,7 +283,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
   };
 
   const handleExportPDF = async () => {
-    if (!selectedCandidateData || !candidateReport) return;
+    if (!selectedCandidateData || !candidateReport || !profileInsights || generateInsightsMutation.isPending) return;
     
     setIsExporting(true);
     try {
@@ -1054,13 +1054,23 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
           <div className="flex justify-end gap-2">
             <Button 
               onClick={handleExportPDF}
-              disabled={isExporting}
+              disabled={isExporting || !profileInsights || generateInsightsMutation.isPending}
               data-testid="button-export-individual-report"
             >
               {isExporting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Exporting...
+                </>
+              ) : generateInsightsMutation.isPending || (!profileInsights && insightsGenerated) ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Please Wait...
+                </>
+              ) : !profileInsights ? (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Generate Insights First
                 </>
               ) : (
                 <>
