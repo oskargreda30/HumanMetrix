@@ -3108,18 +3108,18 @@ export default function PartnerDashboard() {
                       <div>
                         <CardTitle className="text-lg flex items-center gap-2">
                           <CreditCard className="h-5 w-5" />
-                          {account?.partner?.billingType === 'payg' && 'Pay As You Go (PAYG)'}
+                          {(!account?.partner?.billingType || account?.partner?.billingType === 'payg') && 'Pay As You Go (PAYG)'}
                           {account?.partner?.billingType === 'subscription' && 'Subscription + Auto-Bill'}
                           {account?.partner?.billingType === 'enterprise' && 'Enterprise Prepayment'}
                         </CardTitle>
                         <CardDescription>
-                          {account?.partner?.billingType === 'payg' && 'No card on file. Bulk discounts via upfront purchase. API suspended at zero credits.'}
+                          {(!account?.partner?.billingType || account?.partner?.billingType === 'payg') && 'No card on file. Bulk discounts via upfront purchase. API suspended at zero credits.'}
                           {account?.partner?.billingType === 'subscription' && 'Card on file. Min monthly charge + auto-bill for additional usage.'}
                           {account?.partner?.billingType === 'enterprise' && 'For high-volume BPOs. Pro-forma invoicing for bulk credit blocks.'}
                         </CardDescription>
                       </div>
                       <Badge variant="outline" className="text-sm" data-testid="badge-billing-type">
-                        {account?.partner?.billingType === 'payg' && 'PAYG'}
+                        {(!account?.partner?.billingType || account?.partner?.billingType === 'payg') && 'PAYG'}
                         {account?.partner?.billingType === 'subscription' && 'Subscription'}
                         {account?.partner?.billingType === 'enterprise' && 'Enterprise'}
                       </Badge>
@@ -3167,8 +3167,8 @@ export default function PartnerDashboard() {
                     </Card>
                   )}
 
-                  {/* PAYG Billing Stats */}
-                  {account?.partner?.billingType === 'payg' && (
+                  {/* Credit Balance Stats - shown for PAYG or when no billing type set */}
+                  {(!account?.partner?.billingType || account?.partner?.billingType === 'payg') && (
                     <div className="grid gap-4 md:grid-cols-3">
                       <Card>
                         <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
@@ -3217,9 +3217,8 @@ export default function PartnerDashboard() {
                     </div>
                   )}
 
-                  {/* Buy Credits - Available for all billing types */}
-                  {(account?.partner?.billingType === 'payg' || account?.partner?.billingType === 'subscription' || account?.partner?.billingType === 'enterprise') && (
-                    <Card>
+                  {/* Buy Credits - Available for all partners */}
+                  <Card>
                       <CardHeader className="pb-2">
                         <CardTitle className="text-lg font-semibold" data-testid="text-buy-credits-title">Buy Credits</CardTitle>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -3349,7 +3348,6 @@ export default function PartnerDashboard() {
                         )}
                       </CardContent>
                     </Card>
-                  )}
 
                   {/* Auto-Bill Billing Stats */}
                   {account?.partner?.billingType === 'subscription' && (
