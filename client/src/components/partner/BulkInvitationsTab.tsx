@@ -35,6 +35,21 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+interface DuplicateCandidateInfo {
+  candidateName: string;
+  candidateEmail: string;
+  invitationId: string;
+  hasResults: boolean;
+}
 
 interface BulkInvitationsTabProps {
   partnerId: string;
@@ -86,6 +101,8 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
   const [lastImportErrors, setLastImportErrors] = useState<Array<{ row: number; externalUserId: string; error: string }>>([]);
   const [copiedInvitationId, setCopiedInvitationId] = useState<string | null>(null);
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
+  const [duplicateCandidates, setDuplicateCandidates] = useState<DuplicateCandidateInfo[]>([]);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
 
   const { data: quota, isLoading: quotaLoading } = useQuery<QuotaData>({
     queryKey: ['/api/partner/me/quota'],
@@ -187,6 +204,19 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
     onError: (error: any) => {
       // Try to parse structured error response from server
       if (error.errors && Array.isArray(error.errors)) {
+        // Check for duplicate candidate errors
+        const duplicateErrors = error.errors.filter((e: any) => e.error === 'DUPLICATE_CANDIDATE');
+        if (duplicateErrors.length > 0) {
+          setDuplicateCandidates(duplicateErrors.map((e: any) => ({
+            candidateName: e.candidateName || e.candidateEmail,
+            candidateEmail: e.candidateEmail,
+            invitationId: e.invitationId,
+            hasResults: e.hasResults || false,
+          })));
+          setShowDuplicateDialog(true);
+          return;
+        }
+        
         setLastImportErrors(error.errors.map((e: any) => ({
           row: e.row || 0,
           externalUserId: e.externalUserId || '',
@@ -993,6 +1023,57 @@ export function BulkInvitationsTab({ partnerId, billingType }: BulkInvitationsTa
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}>
+        <DialogContent className="max-w-md" data-testid="dialog-duplicate-candidate">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              Candidate Already Exists
+            </DialogTitle>
+            <DialogDescription className="pt-2 text-left">
+              {duplicateCandidates.length === 1 ? (
+                <>
+                  <strong>{duplicateCandidates[0]?.candidateName}</strong> ({duplicateCandidates[0]?.candidateEmail}) is already in your candidate list.
+                </>
+              ) : (
+                <>
+                  The following candidates are already in your system:
+                  <ul className="list-disc pl-5 mt-2 space-y-1">
+                    {duplicateCandidates.map((c, i) => (
+                      <li key={i}><strong>{c.candidateName}</strong> ({c.candidateEmail})</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mt-2">
+            <p className="text-sm text-amber-800 dark:text-amber-200">
+              <strong>To re-invite {duplicateCandidates.length === 1 ? 'this candidate' : 'these candidates'}:</strong>
+            </p>
+            <ol className="text-sm text-amber-700 dark:text-amber-300 list-decimal pl-5 mt-2 space-y-1">
+              <li>Go to the <strong>All Candidates</strong> tab</li>
+              <li>Find and delete the existing candidate record</li>
+              <li>Return here to send a new invitation</li>
+            </ol>
+            <p className="text-sm text-amber-600 dark:text-amber-400 mt-3 italic">
+              Note: Deleting a candidate will permanently remove their current assessment results.
+            </p>
+          </div>
+
+          <DialogFooter className="mt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowDuplicateDialog(false)}
+              data-testid="button-close-duplicate-dialog"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

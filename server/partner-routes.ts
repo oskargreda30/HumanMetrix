@@ -1884,6 +1884,18 @@ export function registerPartnerRoutes(app: Express) {
       const teamMembers = await storage.getPartnerTeamMembers(partner.id);
       const teamMemberEmails = new Set(teamMembers.map(tm => tm.email.toLowerCase()));
       
+      // Pre-fetch existing invitations for this partner to check for duplicates
+      const candidateEmails = candidates
+        .map(c => c.email?.trim().toLowerCase())
+        .filter((e): e is string => !!e);
+      const existingInvitations = await storage.getPartnerCandidateInvitationsByPartnerAndEmails(partner.id, candidateEmails);
+      const existingInvitationEmails = new Map<string, any>();
+      for (const inv of existingInvitations) {
+        if (inv.email) {
+          existingInvitationEmails.set(inv.email.toLowerCase(), inv);
+        }
+      }
+      
       for (let i = 0; i < candidates.length; i++) {
         const candidate = candidates[i];
         const row = i + 1;
@@ -1909,6 +1921,22 @@ export function registerPartnerRoutes(app: Express) {
             field: 'email', 
             error: 'This email belongs to a team member. They cannot be invited as a candidate. Use a different email address.' 
           });
+          continue;
+        }
+        
+        // Check if this candidate already exists in the system
+        const existingInvitation = existingInvitationEmails.get(candidate.email.toLowerCase());
+        if (existingInvitation) {
+          validationErrors.push({ 
+            row, 
+            externalUserId: identifier, 
+            field: 'email', 
+            error: 'DUPLICATE_CANDIDATE',
+            candidateName: existingInvitation.name || candidate.email,
+            candidateEmail: candidate.email,
+            invitationId: existingInvitation.id,
+            hasResults: existingInvitation.status === 'completed' || existingInvitation.status === 'in_progress',
+          } as any);
           continue;
         }
         
