@@ -104,7 +104,6 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP', billingType =
     return () => observer.disconnect();
   }, []);
   const [isSettingUp, setIsSettingUp] = useState(false);
-  const [isRemoving, setIsRemoving] = useState(false);
   const [showAddCard, setShowAddCard] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
   const [cardComplete, setCardComplete] = useState(false);
@@ -286,27 +285,6 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP', billingType =
     }
   };
 
-  const handleRemoveCard = async () => {
-    setIsRemoving(true);
-    try {
-      await apiRequest("DELETE", "/api/partner/card");
-      toast({
-        title: "Card removed",
-        description: "Your saved card has been removed.",
-      });
-      refetch();
-      // Also refresh overage history
-      queryClient.invalidateQueries({ queryKey: ["/api/partner/overage-history"] });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to remove card",
-        variant: "destructive",
-      });
-    } finally {
-      setIsRemoving(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -357,27 +335,17 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP', billingType =
                   <p className="font-medium">
                     {formatCardBrand(cardStatus.cardBrand)} ending in {cardStatus.cardLast4}
                   </p>
-                  {!isSubscription && (
-                    <p className="text-sm text-muted-foreground">
-                      Overage rate: {formatAmount(cardStatus.overageRatePerCredit || 500)} per credit
-                    </p>
-                  )}
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRemoveCard}
-                disabled={isRemoving}
-                data-testid="button-remove-card"
-              >
-                {isRemoving ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <Trash2 className="h-4 w-4 mr-2" />
-                )}
-                Remove
-              </Button>
+            </div>
+            <div className="p-3 bg-muted/50 rounded-lg border">
+              <p className="text-sm text-muted-foreground">
+                <Info className="h-4 w-4 inline mr-1" />
+                To update or remove your payment method, please contact us at{' '}
+                <a href="mailto:hello@humanmetrix.com" className="text-primary hover:underline font-medium">
+                  hello@humanmetrix.com
+                </a>
+              </p>
             </div>
             <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
               <p className="text-sm text-blue-700 dark:text-blue-300">
