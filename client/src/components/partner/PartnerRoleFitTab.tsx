@@ -10,6 +10,8 @@ const partnerConfig: SharedRoleFitConfig = {
   roleAlignmentEndpoint: '/api/partner/me/role-alignment',
   generateScoresEndpoint: (roleId: string) => `/api/partner/me/roles/${roleId}/generate-required-scores`,
   analyzeRoleFitEndpoint: '/api/partner/me/role-alignment',
+  analyzePromptRoleFitEndpoint: '/api/partner/me/analyze-prompt-role-fit',
+  analyzeAiqRoleFitEndpoint: '/api/partner/me/analyze-aiq-role-fit',
   candidateIdParam: 'candidateId',
   contextType: 'partner',
 };

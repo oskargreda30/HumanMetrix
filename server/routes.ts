@@ -14785,6 +14785,248 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
     }
   });
 
+  // Partner: Analyze Prompt Architecture Role Fit
+  app.post("/api/partner/me/analyze-prompt-role-fit", isAuthenticated, async (req: any, res) => {
+    try {
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { candidateId, jobRoleId } = req.body;
+      
+      if (!candidateId || !jobRoleId) {
+        return res.status(400).json({ message: "Candidate ID and job role ID are required" });
+      }
+
+      // Verify the candidate belongs to this partner (mirrors profile-insights pattern)
+      // SOURCE 1: Partner-invited candidates
+      const invitations = await storage.getPartnerCandidateInvitations(partner.id);
+      const candidateInvitation = invitations.find(inv => 
+        inv.email === candidateId || inv.externalUserId === candidateId || inv.userId === candidateId
+      );
+      
+      // SOURCE 2: B2B Widget/API sessions (includes manually imported candidates)
+      const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
+      const candidateSession = allSessions.find(s => 
+        s.externalEmail === candidateId || s.externalUserId === candidateId || 
+        s.id === candidateId || s.userId === candidateId
+      );
+      
+      if (!candidateInvitation && !candidateSession) {
+        return res.status(403).json({ message: "Candidate not found in your organization" });
+      }
+
+      // Get user by various methods (candidateId can be email, userId, or externalUserId)
+      let user = await storage.getUserByEmail(candidateId);
+      if (!user) {
+        user = await storage.getUser(candidateId);
+      }
+      // Try via invitation userId
+      if (!user && candidateInvitation?.userId) {
+        user = await storage.getUser(candidateInvitation.userId);
+      }
+      // Try via session userId
+      if (!user && candidateSession?.userId) {
+        user = await storage.getUser(candidateSession.userId);
+      }
+      if (!user) {
+        return res.status(404).json({ message: "Candidate assessment data not found" });
+      }
+
+      // Get role data
+      const role = await storage.getJobRole(jobRoleId);
+      if (!role) {
+        return res.status(404).json({ message: "Job role not found" });
+      }
+
+      // Get Prompt Architecture assessment results
+      const results = await storage.getResultsByUser(user.id);
+      const promptResult = results.find(r => r.assessmentType === 'prompt_architecture' && r.status === 'completed');
+      
+      const candidateName = user.firstName && user.lastName 
+        ? `${user.firstName} ${user.lastName}` 
+        : user.email;
+
+      let promptScore = 'No data available';
+      let promptLevels = '';
+      
+      if (promptResult) {
+        promptScore = `${promptResult.totalScore || 0}%`;
+        const levels = (promptResult as any).levels || [];
+        if (levels.length > 0) {
+          promptLevels = levels.map((l: any) => 
+            `Level ${l.level}: ${l.passed ? 'Passed' : 'Failed'}${l.scores ? ` (Clarity: ${l.scores.clarity}%, Structure: ${l.scores.structure}%, Context: ${l.scores.contextRelevance}%, Creativity: ${l.scores.creativity}%, Iterative: ${l.scores.iterativeImprovement}%)` : ''}`
+          ).join('\n');
+        }
+      }
+
+      // Generate AI analysis
+      const prompt = `You are an expert HR analyst evaluating how a candidate's prompt engineering skills align with a specific job role.
+
+CANDIDATE: ${candidateName}
+JOB ROLE: ${role.name}
+${role.description ? `ROLE DESCRIPTION: ${role.description}` : ''}
+
+PROMPT ARCHITECTURE ASSESSMENT RESULTS:
+- Overall Score: ${promptScore}
+${promptLevels ? `- Level Details:\n${promptLevels}` : '- No detailed level data available'}
+
+Analyze how the candidate's prompt engineering capabilities align with this role. Consider:
+1. Whether the role requires frequent AI interaction and prompt crafting
+2. How the candidate's prompt skills (clarity, structure, context awareness, creativity, iterative improvement) match role demands
+3. Potential risks or benefits of their current skill level for this role
+4. Recommendations for development if gaps exist
+
+Provide a concise 2-3 paragraph analysis focusing on practical implications for the hiring decision.`;
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 800,
+        temperature: 0.7,
+      });
+
+      const analysis = response.choices[0]?.message?.content || 'Unable to generate analysis.';
+      
+      logAiCost({
+        operationType: AI_USAGE_OPERATION_TYPES.PROMPT_ROLE_FIT,
+        model: "gpt-4o",
+        usage: extractUsage(response),
+        userId: user.id,
+        partnerId: partner.id,
+        metadata: { roleTitle: role.name },
+      }).catch(console.error);
+
+      res.json({ analysis });
+    } catch (error: any) {
+      console.error("Error analyzing partner prompt role fit:", error);
+      res.status(500).json({ message: "Failed to analyze prompt role fit: " + error.message });
+    }
+  });
+
+  // Partner: Analyze AIQ Role Fit
+  app.post("/api/partner/me/analyze-aiq-role-fit", isAuthenticated, async (req: any, res) => {
+    try {
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      
+      const { candidateId, jobRoleId } = req.body;
+      
+      if (!candidateId || !jobRoleId) {
+        return res.status(400).json({ message: "Candidate ID and job role ID are required" });
+      }
+
+      // Verify the candidate belongs to this partner (mirrors profile-insights pattern)
+      // SOURCE 1: Partner-invited candidates
+      const invitations = await storage.getPartnerCandidateInvitations(partner.id);
+      const candidateInvitation = invitations.find(inv => 
+        inv.email === candidateId || inv.externalUserId === candidateId || inv.userId === candidateId
+      );
+      
+      // SOURCE 2: B2B Widget/API sessions (includes manually imported candidates)
+      const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
+      const candidateSession = allSessions.find(s => 
+        s.externalEmail === candidateId || s.externalUserId === candidateId || 
+        s.id === candidateId || s.userId === candidateId
+      );
+      
+      if (!candidateInvitation && !candidateSession) {
+        return res.status(403).json({ message: "Candidate not found in your organization" });
+      }
+
+      // Get user by various methods (candidateId can be email, userId, or externalUserId)
+      let user = await storage.getUserByEmail(candidateId);
+      if (!user) {
+        user = await storage.getUser(candidateId);
+      }
+      // Try via invitation userId
+      if (!user && candidateInvitation?.userId) {
+        user = await storage.getUser(candidateInvitation.userId);
+      }
+      // Try via session userId
+      if (!user && candidateSession?.userId) {
+        user = await storage.getUser(candidateSession.userId);
+      }
+      if (!user) {
+        return res.status(404).json({ message: "Candidate assessment data not found" });
+      }
+
+      // Get role data
+      const role = await storage.getJobRole(jobRoleId);
+      if (!role) {
+        return res.status(404).json({ message: "Job role not found" });
+      }
+
+      // Get AIQ assessment results
+      const results = await storage.getResultsByUser(user.id);
+      const aiqResult = results.find(r => r.assessmentType === 'aiq' && r.status === 'completed');
+      
+      const candidateName = user.firstName && user.lastName 
+        ? `${user.firstName} ${user.lastName}` 
+        : user.email;
+
+      let aiqScore = 'No data available';
+      let aiqBand = '';
+      
+      if (aiqResult) {
+        aiqScore = `${aiqResult.totalScore || 0}%`;
+        const score = aiqResult.totalScore || 0;
+        if (score >= 80) aiqBand = 'Exemplary (80-100%): Strong ethical foundation with nuanced understanding of AI implications';
+        else if (score >= 60) aiqBand = 'Strong (60-79%): Solid grasp of AI ethics with some areas for deeper exploration';
+        else if (score >= 40) aiqBand = 'Developing (40-59%): Foundational understanding with room for growth';
+        else if (score >= 20) aiqBand = 'Gaps Identified (20-39%): Requires focused development on AI ethical principles';
+        else aiqBand = 'Critical Concerns (0-19%): Fundamental misalignment with ethical AI principles';
+      }
+
+      // Generate AI analysis
+      const prompt = `You are an expert HR analyst evaluating how a candidate's ethical AI stance (AIQ - Algorithmic Integrity Quotient) aligns with a specific job role.
+
+CANDIDATE: ${candidateName}
+JOB ROLE: ${role.name}
+${role.description ? `ROLE DESCRIPTION: ${role.description}` : ''}
+
+AIQ ASSESSMENT RESULTS:
+- Overall Score: ${aiqScore}
+${aiqBand ? `- Performance Band: ${aiqBand}` : ''}
+
+Analyze how the candidate's ethical AI understanding aligns with this role. Consider:
+1. The importance of AI ethics and responsible AI practices for this role
+2. How the candidate's ethical stance matches role demands
+3. Potential risks if there are ethical blind spots for AI-related decisions
+4. Recommendations for development if gaps exist
+
+Provide a concise 2-3 paragraph analysis focusing on practical implications for the hiring decision.`;
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 800,
+        temperature: 0.7,
+      });
+
+      const analysis = response.choices[0]?.message?.content || 'Unable to generate analysis.';
+      
+      logAiCost({
+        operationType: AI_USAGE_OPERATION_TYPES.AIQ_ROLE_FIT,
+        model: "gpt-4o",
+        usage: extractUsage(response),
+        userId: user.id,
+        partnerId: partner.id,
+        metadata: { roleTitle: role.name },
+      }).catch(console.error);
+
+      res.json({ analysis });
+    } catch (error: any) {
+      console.error("Error analyzing partner AIQ role fit:", error);
+      res.status(500).json({ message: "Failed to analyze AIQ role fit: " + error.message });
+    }
+  });
+
   // Partner: Multi-candidate role fit comparison - compare multiple candidates against one role
   app.post("/api/partner/me/multi-candidate-comparison", isAuthenticated, async (req: any, res) => {
     try {

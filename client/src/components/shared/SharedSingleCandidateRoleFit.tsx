@@ -26,6 +26,8 @@ export interface SharedRoleFitConfig {
   roleAlignmentEndpoint: string;
   generateScoresEndpoint: (roleId: string) => string;
   analyzeRoleFitEndpoint: string;
+  analyzePromptRoleFitEndpoint?: string;
+  analyzeAiqRoleFitEndpoint?: string;
   
   // Query parameter name for candidate ID
   candidateIdParam: 'userId' | 'candidateId';
@@ -193,7 +195,8 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
       const payload = config.candidateIdParam === 'userId' 
         ? { userId: selectedCandidate, jobRoleId: selectedRole }
         : { candidateId: selectedCandidate, jobRoleId: selectedRole };
-      const res = await apiRequest('POST', '/api/admin/analyze-prompt-role-fit', payload, { timeoutMs: 120000 });
+      const endpoint = config.analyzePromptRoleFitEndpoint || '/api/admin/analyze-prompt-role-fit';
+      const res = await apiRequest('POST', endpoint, payload, { timeoutMs: 120000 });
       return res.json();
     },
     onSuccess: (data) => {
@@ -215,7 +218,8 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
       const payload = config.candidateIdParam === 'userId' 
         ? { userId: selectedCandidate, jobRoleId: selectedRole }
         : { candidateId: selectedCandidate, jobRoleId: selectedRole };
-      const res = await apiRequest('POST', '/api/admin/analyze-aiq-role-fit', payload, { timeoutMs: 120000 });
+      const endpoint = config.analyzeAiqRoleFitEndpoint || '/api/admin/analyze-aiq-role-fit';
+      const res = await apiRequest('POST', endpoint, payload, { timeoutMs: 120000 });
       return res.json();
     },
     onSuccess: (data) => {
