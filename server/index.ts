@@ -43,6 +43,26 @@ app.use((req, res, next) => {
   next();
 });
 
+// Trailing slash redirect middleware - remove trailing slashes for canonical URLs
+// Exception: Root path "/" and API routes
+app.use((req, res, next) => {
+  const path = req.path;
+  
+  // Skip API routes and root path
+  if (path === '/' || path.startsWith('/api/')) {
+    return next();
+  }
+  
+  // Redirect paths with trailing slashes to non-trailing slash versions
+  if (path.length > 1 && path.endsWith('/')) {
+    const query = req.url.slice(path.length);
+    const safePath = path.slice(0, -1);
+    return res.redirect(301, safePath + query);
+  }
+  
+  next();
+});
+
 app.use(compression({
   filter: (req, res) => {
     if (req.headers['x-no-compression']) {
