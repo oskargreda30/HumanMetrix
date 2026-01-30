@@ -556,7 +556,8 @@ export function EcosystemWorkflow({
       const data = await response.json();
       
       if (data.success) {
-        refetchProject();
+        // Await refetch to ensure project data is updated before navigation
+        await refetchProject();
         // Invalidate partner data to refresh credit count
         queryClient.invalidateQueries({ queryKey: ['/api/partner/me'] });
         toast({
@@ -693,18 +694,12 @@ export function EcosystemWorkflow({
                   <span>Risk alerts & insights</span>
                 </div>
               </div>
-              <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
-                <p className="text-sm flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                  <span><strong className="text-amber-700 dark:text-amber-300">{ECOSYSTEM_CREDITS_REQUIRED} credits</strong> will be used for this service when you proceed to generate the analysis.</span>
-                </p>
-              </div>
             </div>
           </div>
         </div>
       </Card>
 
-      {/* Step 1: Book Consultation (Optional) */}
+      {/* Step 1: Book Consultation (Optional) - considered complete when user has moved to step 2+ */}
       <Card data-testid="step-1-consultation">
         <div 
           className="flex items-center gap-3 p-4 cursor-pointer hover-elevate rounded-lg"
@@ -717,8 +712,12 @@ export function EcosystemWorkflow({
           }}
           data-testid="step-header-1"
         >
-          <div className="h-10 w-10 rounded-full flex items-center justify-center font-bold bg-primary text-primary-foreground">
-            1
+          <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold ${
+            (project.currentStep || 1) > 1 || !!missionAnalysis
+              ? 'bg-green-500 text-white' 
+              : 'bg-primary text-primary-foreground'
+          }`}>
+            {(project.currentStep || 1) > 1 || !!missionAnalysis ? <CheckCircle className="h-5 w-5" /> : 1}
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
@@ -764,8 +763,8 @@ export function EcosystemWorkflow({
                 onClick={() => navigateToStep(2)}
                 data-testid="button-skip-consultation"
               >
-                Skip - Start Analysis
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="mr-2 h-4 w-4" />
+                Save and Continue
               </Button>
             </div>
           </div>
@@ -1405,24 +1404,24 @@ export function EcosystemWorkflow({
               </div>
             )}
 
-            {/* Show Continue to Payment only when team members have FIT scores and not yet paid */}
+            {/* Show Save and Continue button when team members have FIT scores */}
             {teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores).length > 0).length > 0 && !project.isPaid && (
               <Button 
                 onClick={() => navigateToStep(5)}
-                data-testid="button-continue-to-payment"
+                data-testid="button-save-continue-step4"
               >
-                Continue to Payment
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="mr-2 h-4 w-4" />
+                Save and Continue
               </Button>
             )}
-            {/* Show Continue to Generate when already paid */}
+            {/* Show Save and Continue when already paid */}
             {teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores).length > 0).length > 0 && project.isPaid && !teamAnalysis && (
               <Button 
                 onClick={() => navigateToStep(6)}
-                data-testid="button-continue-to-generate"
+                data-testid="button-save-continue-step4-paid"
               >
-                Continue to Generate Analysis
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="mr-2 h-4 w-4" />
+                Save and Continue
               </Button>
             )}
           </div>
@@ -1493,10 +1492,28 @@ export function EcosystemWorkflow({
                 </>
               ) : (
                 <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Use {ECOSYSTEM_CREDITS_REQUIRED} Credits
+                  <ArrowRight className="mr-2 h-4 w-4" />
+                  Save and Continue
                 </>
               )}
+            </Button>
+          </div>
+        )}
+        {/* Show Save and Continue when step 5 is already completed */}
+        {expandedStep === 5 && project.isPaid && !teamAnalysis && (
+          <div className="p-6 pt-0">
+            <div className="p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg mb-4">
+              <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                <CheckCircle className="h-5 w-5" />
+                <span className="font-medium">Credits applied successfully! You can now generate your team analysis.</span>
+              </div>
+            </div>
+            <Button 
+              onClick={() => navigateToStep(6)}
+              data-testid="button-continue-to-generate"
+            >
+              <ArrowRight className="mr-2 h-4 w-4" />
+              Save and Continue
             </Button>
           </div>
         )}
