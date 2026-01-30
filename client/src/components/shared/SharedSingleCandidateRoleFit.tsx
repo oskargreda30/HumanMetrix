@@ -473,24 +473,14 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
           )}
 
           {selectedCandidate && selectedRole && !analysisTriggered && selectedRoleData?.requiredSkillScores && (
-            <div className="space-y-2">
-              <Button
-                onClick={handleAnalyzeRoleFit}
-                className="w-full"
-                data-testid="button-analyze-fit"
-              >
-                <Target className="mr-2 h-4 w-4" />
-                Analyze Role Fit
-                {config.contextType === 'partner' && (
-                  <Badge variant="secondary" className="ml-2 text-[10px] font-normal">1 credit</Badge>
-                )}
-              </Button>
-              {config.contextType === 'partner' && (
-                <p className="text-[10px] text-center text-muted-foreground">
-                  Uses 1 credit for role fit analysis
-                </p>
-              )}
-            </div>
+            <Button
+              onClick={handleAnalyzeRoleFit}
+              className="w-full"
+              data-testid="button-analyze-fit"
+            >
+              <Target className="mr-2 h-4 w-4" />
+              Analyze Role Fit
+            </Button>
           )}
         </CardContent>
       </Card>
