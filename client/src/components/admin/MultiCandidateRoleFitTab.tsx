@@ -97,8 +97,8 @@ type CandidateEntry = {
     category: 'fit' | 'ai_readiness';
     dataAvailable?: boolean;
   }>;
-  strengths: string[];
-  gaps: string[];
+  strengths: (string | { skill: string; summary: string; description: string })[];
+  gaps: (string | { skill: string; summary: string; description: string })[];
   riskFlags: string[];
   dataCoverage?: {
     percentage: number;
@@ -248,10 +248,16 @@ export default function MultiCandidateRoleFitTab() {
 
   const compareMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest('POST', '/api/admin/multi-candidate-comparison', {
-        jobRoleId: selectedRole,
-        candidateIds: selectedCandidates,
-      }, { timeoutMs: 120000 });
+      // Use fetch directly to handle error responses with custom data
+      const res = await fetch('/api/admin/multi-candidate-comparison', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jobRoleId: selectedRole,
+          candidateIds: selectedCandidates,
+        }),
+        credentials: 'include',
+      });
       
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Failed to generate comparison" }));

@@ -97,8 +97,8 @@ type CandidateEntry = {
     category: 'fit' | 'ai_readiness';
     dataAvailable?: boolean;
   }>;
-  strengths: string[];
-  gaps: string[];
+  strengths: (string | { skill: string; summary: string; description: string })[];
+  gaps: (string | { skill: string; summary: string; description: string })[];
   riskFlags: string[];
   dataCoverage?: {
     percentage: number;
@@ -249,10 +249,16 @@ export default function PartnerMultiCandidateRoleFitTab() {
 
   const compareMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest('POST', '/api/partner/me/multi-candidate-comparison', {
-        jobRoleId: selectedRole,
-        candidateIds: selectedCandidates,
-      }, { timeoutMs: 120000 });
+      // Use fetch directly to handle error responses with custom data
+      const res = await fetch('/api/partner/me/multi-candidate-comparison', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jobRoleId: selectedRole,
+          candidateIds: selectedCandidates,
+        }),
+        credentials: 'include',
+      });
       
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ message: "Failed to generate comparison" }));
@@ -1104,14 +1110,14 @@ export default function PartnerMultiCandidateRoleFitTab() {
                                 {topStrengths.length > 0 && (
                                   <div className="flex items-start gap-2 text-green-600">
                                     <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                                    <span>{topStrengths.join(', ')}</span>
+                                    <span>{topStrengths.map(s => typeof s === 'string' ? s : s.skill).join(', ')}</span>
                                   </div>
                                 )}
                                 
                                 {topGaps.length > 0 && (
                                   <div className="flex items-start gap-2 text-amber-600">
                                     <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                                    <span>{topGaps.join(', ')}</span>
+                                    <span>{topGaps.map(g => typeof g === 'string' ? g : g.skill).join(', ')}</span>
                                   </div>
                                 )}
                               </>
