@@ -2085,6 +2085,11 @@ export default function PartnerDashboard() {
               <TabsTrigger value="results" data-testid="tab-results" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Results
               </TabsTrigger>
+              {canAccessInvitations && (
+                <TabsTrigger value="invitations" data-testid="tab-invitations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  Invitations
+                </TabsTrigger>
+              )}
               <TabsTrigger value="ecosystem" data-testid="tab-ecosystem" className="relative data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Ecosystem Index
                 <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px] bg-cyan-500 text-white border-0">New</Badge>
@@ -2099,23 +2104,24 @@ export default function PartnerDashboard() {
                   Organizations
                 </TabsTrigger>
               )}
-              {canAccessInvitations && (
-                <TabsTrigger value="invitations" data-testid="tab-invitations" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                  Invitations
-                </TabsTrigger>
-              )}
               {isAdmin && (
                 <TabsTrigger value="team" data-testid="tab-team" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                   Team
                 </TabsTrigger>
               )}
+              {canAccessBilling && (
+                <TabsTrigger value="billing" data-testid="tab-billing" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  <CreditCard className="h-4 w-4 mr-1" />
+                  Billing
+                </TabsTrigger>
+              )}
               
-              {/* Settings Dropdown - contains Usage, Billing, Developer, Analytics, Notifications, Settings, Activity Log */}
+              {/* Settings Dropdown - contains Usage, Developer, Analytics, Notifications, Settings, Activity Log */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
                     className={`inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      ['usage', 'billing', 'developer', 'analytics', 'notifications', 'settings', 'activity'].includes(activeTab)
+                      ['usage', 'developer', 'analytics', 'notifications', 'settings', 'activity'].includes(activeTab)
                         ? 'bg-white/20 text-white'
                         : 'text-white/70 hover:text-white hover:bg-white/10'
                     }`}
@@ -2140,16 +2146,6 @@ export default function PartnerDashboard() {
                     >
                       <Activity className="h-4 w-4 mr-2" />
                       Usage
-                    </DropdownMenuItem>
-                  )}
-                  {canAccessBilling && (
-                    <DropdownMenuItem 
-                      onClick={() => setActiveTab('billing')}
-                      className={activeTab === 'billing' ? 'bg-accent' : ''}
-                      data-testid="dropdown-item-billing"
-                    >
-                      <CreditCard className="h-4 w-4 mr-2" />
-                      Billing
                     </DropdownMenuItem>
                   )}
                   {canAccessDeveloperTools && (
@@ -3352,213 +3348,6 @@ export default function PartnerDashboard() {
                     </Card>
                   )}
 
-                  {/* Billing Options */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Settings className="h-5 w-5" />
-                        Billing Options
-                        <InfoTooltip content="Choose the billing model that works best for your organization. Request a change and our team will review it within 1-2 business days." />
-                      </CardTitle>
-                      <CardDescription>
-                        Compare billing models and request a change if needed
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid gap-4 md:grid-cols-3">
-                        {/* PAYG Option */}
-                        <div 
-                          className={`border rounded-lg p-4 transition-colors flex flex-col ${
-                            account?.partner?.billingType === 'payg' 
-                              ? 'border-primary bg-primary/5' 
-                              : 'hover:border-muted-foreground/50'
-                          }`}
-                          data-testid="billing-option-payg"
-                        >
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2">
-                              <Package className="h-5 w-5 text-primary" />
-                              <span className="font-semibold">Pay As You Go</span>
-                            </div>
-                            {account?.partner?.billingType === 'payg' && (
-                              <Badge className="bg-primary/20 text-primary border-0">Current</Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-4 flex-1">
-                            No card on file. Purchase credits upfront with bulk discounts. API suspended at zero.
-                          </p>
-                          <ul className="text-sm space-y-1 mb-4">
-                            <li className="flex items-center gap-2">
-                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
-                              No recurring charges
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
-                              Bulk discounts available
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
-                              Control your spend
-                            </li>
-                          </ul>
-                          {!billingChangeData?.pendingRequest && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full mt-auto"
-                              onClick={() => {
-                                if (account?.partner?.billingType === 'payg') {
-                                  setSelectedBillingType(null);
-                                } else {
-                                  setSelectedBillingType('payg');
-                                }
-                                setShowBillingChangeDialog(true);
-                              }}
-                              data-testid="button-request-payg"
-                            >
-                              Request Change
-                            </Button>
-                          )}
-                        </div>
-
-                        {/* Subscription Option */}
-                        <div 
-                          className={`border rounded-lg p-4 transition-colors flex flex-col ${
-                            account?.partner?.billingType === 'subscription' 
-                              ? 'border-primary bg-primary/5' 
-                              : 'hover:border-muted-foreground/50'
-                          }`}
-                          data-testid="billing-option-subscription"
-                        >
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2">
-                              <CreditCard className="h-5 w-5 text-primary" />
-                              <span className="font-semibold">Subscription</span>
-                            </div>
-                            {account?.partner?.billingType === 'subscription' && (
-                              <Badge className="bg-primary/20 text-primary border-0">Current</Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-4 flex-1">
-                            Card on file. Min monthly charge + auto-bill for additional usage at base rates.
-                          </p>
-                          <ul className="text-sm space-y-1 mb-4">
-                            <li className="flex items-center gap-2">
-                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
-                              Predictable monthly base
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
-                              Pay as you grow
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
-                              Automatic billing
-                            </li>
-                          </ul>
-                          {!billingChangeData?.pendingRequest && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full mt-auto"
-                              onClick={() => {
-                                if (account?.partner?.billingType === 'subscription') {
-                                  setSelectedBillingType(null);
-                                } else {
-                                  setSelectedBillingType('subscription');
-                                }
-                                setShowBillingChangeDialog(true);
-                              }}
-                              data-testid="button-request-subscription"
-                            >
-                              Request Change
-                            </Button>
-                          )}
-                        </div>
-
-                        {/* Enterprise Option */}
-                        <div 
-                          className={`border rounded-lg p-4 transition-colors flex flex-col ${
-                            account?.partner?.billingType === 'enterprise' 
-                              ? 'border-primary bg-primary/5' 
-                              : 'hover:border-muted-foreground/50'
-                          }`}
-                          data-testid="billing-option-enterprise"
-                        >
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2">
-                              <FileText className="h-5 w-5 text-primary" />
-                              <span className="font-semibold">Enterprise</span>
-                            </div>
-                            {account?.partner?.billingType === 'enterprise' && (
-                              <Badge className="bg-primary/20 text-primary border-0">Current</Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-4 flex-1">
-                            For high-volume BPOs. Pro-forma invoicing for bulk credit blocks.
-                          </p>
-                          <ul className="text-sm space-y-1 mb-4">
-                            <li className="flex items-center gap-2">
-                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
-                              Bulk credit blocks
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
-                              Pro-forma invoicing
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
-                              Custom contracts
-                            </li>
-                          </ul>
-                          {!billingChangeData?.pendingRequest && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full mt-auto"
-                              onClick={() => {
-                                if (account?.partner?.billingType === 'enterprise') {
-                                  setSelectedBillingType(null);
-                                } else {
-                                  setSelectedBillingType('enterprise');
-                                }
-                                setShowBillingChangeDialog(true);
-                              }}
-                              data-testid="button-request-enterprise"
-                            >
-                              Request Change
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Request History */}
-                      {billingChangeData?.history && billingChangeData.history.length > 0 && (
-                        <div className="mt-6 pt-6 border-t">
-                          <h4 className="text-sm font-medium mb-3">Request History</h4>
-                          <div className="space-y-2">
-                            {billingChangeData.history.slice(0, 5).map((request) => (
-                              <div key={request.id} className="flex items-center justify-between text-sm p-2 rounded bg-muted/50">
-                                <div className="flex items-center gap-2">
-                                  <span>
-                                    {request.currentBillingType} → {request.requestedBillingType}
-                                  </span>
-                                  <Badge 
-                                    variant={request.status === 'approved' ? 'secondary' : request.status === 'rejected' ? 'destructive' : 'outline'}
-                                    className={request.status === 'approved' ? 'bg-green-500/20 text-green-600' : ''}
-                                  >
-                                    {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                                  </Badge>
-                                </div>
-                                <span className="text-muted-foreground">{formatDate(request.createdAt)}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-
                   {/* PAYG Billing Stats */}
                   {account?.partner?.billingType === 'payg' && (
                     <div className="grid gap-4 md:grid-cols-3">
@@ -3822,6 +3611,213 @@ export default function PartnerDashboard() {
                       </Card>
                     </div>
                   )}
+
+                  {/* Billing Options */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Settings className="h-5 w-5" />
+                        Billing Options
+                        <InfoTooltip content="Choose the billing model that works best for your organization. Request a change and our team will review it within 1-2 business days." />
+                      </CardTitle>
+                      <CardDescription>
+                        Compare billing models and request a change if needed
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid gap-4 md:grid-cols-3">
+                        {/* PAYG Option */}
+                        <div 
+                          className={`border rounded-lg p-4 transition-colors flex flex-col ${
+                            account?.partner?.billingType === 'payg' 
+                              ? 'border-primary bg-primary/5' 
+                              : 'hover:border-muted-foreground/50'
+                          }`}
+                          data-testid="billing-option-payg"
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <Package className="h-5 w-5 text-primary" />
+                              <span className="font-semibold">Pay As You Go</span>
+                            </div>
+                            {account?.partner?.billingType === 'payg' && (
+                              <Badge className="bg-primary/20 text-primary border-0">Current</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-4 flex-1">
+                            No card on file. Purchase credits upfront with bulk discounts. API suspended at zero.
+                          </p>
+                          <ul className="text-sm space-y-1 mb-4">
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
+                              No recurring charges
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
+                              Bulk discounts available
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
+                              Control your spend
+                            </li>
+                          </ul>
+                          {!billingChangeData?.pendingRequest && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full mt-auto"
+                              onClick={() => {
+                                if (account?.partner?.billingType === 'payg') {
+                                  setSelectedBillingType(null);
+                                } else {
+                                  setSelectedBillingType('payg');
+                                }
+                                setShowBillingChangeDialog(true);
+                              }}
+                              data-testid="button-request-payg"
+                            >
+                              Request Change
+                            </Button>
+                          )}
+                        </div>
+
+                        {/* Subscription Option */}
+                        <div 
+                          className={`border rounded-lg p-4 transition-colors flex flex-col ${
+                            account?.partner?.billingType === 'subscription' 
+                              ? 'border-primary bg-primary/5' 
+                              : 'hover:border-muted-foreground/50'
+                          }`}
+                          data-testid="billing-option-subscription"
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <CreditCard className="h-5 w-5 text-primary" />
+                              <span className="font-semibold">Subscription</span>
+                            </div>
+                            {account?.partner?.billingType === 'subscription' && (
+                              <Badge className="bg-primary/20 text-primary border-0">Current</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-4 flex-1">
+                            Card on file. Min monthly charge + auto-bill for additional usage at base rates.
+                          </p>
+                          <ul className="text-sm space-y-1 mb-4">
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
+                              Predictable monthly base
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
+                              Pay as you grow
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
+                              Automatic billing
+                            </li>
+                          </ul>
+                          {!billingChangeData?.pendingRequest && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full mt-auto"
+                              onClick={() => {
+                                if (account?.partner?.billingType === 'subscription') {
+                                  setSelectedBillingType(null);
+                                } else {
+                                  setSelectedBillingType('subscription');
+                                }
+                                setShowBillingChangeDialog(true);
+                              }}
+                              data-testid="button-request-subscription"
+                            >
+                              Request Change
+                            </Button>
+                          )}
+                        </div>
+
+                        {/* Enterprise Option */}
+                        <div 
+                          className={`border rounded-lg p-4 transition-colors flex flex-col ${
+                            account?.partner?.billingType === 'enterprise' 
+                              ? 'border-primary bg-primary/5' 
+                              : 'hover:border-muted-foreground/50'
+                          }`}
+                          data-testid="billing-option-enterprise"
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-5 w-5 text-primary" />
+                              <span className="font-semibold">Enterprise</span>
+                            </div>
+                            {account?.partner?.billingType === 'enterprise' && (
+                              <Badge className="bg-primary/20 text-primary border-0">Current</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-4 flex-1">
+                            For high-volume BPOs. Pro-forma invoicing for bulk credit blocks.
+                          </p>
+                          <ul className="text-sm space-y-1 mb-4">
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
+                              Bulk credit blocks
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
+                              Pro-forma invoicing
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
+                              Custom contracts
+                            </li>
+                          </ul>
+                          {!billingChangeData?.pendingRequest && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full mt-auto"
+                              onClick={() => {
+                                if (account?.partner?.billingType === 'enterprise') {
+                                  setSelectedBillingType(null);
+                                } else {
+                                  setSelectedBillingType('enterprise');
+                                }
+                                setShowBillingChangeDialog(true);
+                              }}
+                              data-testid="button-request-enterprise"
+                            >
+                              Request Change
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Request History */}
+                      {billingChangeData?.history && billingChangeData.history.length > 0 && (
+                        <div className="mt-6 pt-6 border-t">
+                          <h4 className="text-sm font-medium mb-3">Request History</h4>
+                          <div className="space-y-2">
+                            {billingChangeData.history.slice(0, 5).map((request) => (
+                              <div key={request.id} className="flex items-center justify-between text-sm p-2 rounded bg-muted/50">
+                                <div className="flex items-center gap-2">
+                                  <span>
+                                    {request.currentBillingType} → {request.requestedBillingType}
+                                  </span>
+                                  <Badge 
+                                    variant={request.status === 'approved' ? 'secondary' : request.status === 'rejected' ? 'destructive' : 'outline'}
+                                    className={request.status === 'approved' ? 'bg-green-500/20 text-green-600' : ''}
+                                  >
+                                    {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                                  </Badge>
+                                </div>
+                                <span className="text-muted-foreground">{formatDate(request.createdAt)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
 
                   {/* Payment Methods Section - for Subscription and PAYG billing types */}
                   {(account?.partner?.billingType === 'subscription' || account?.partner?.billingType === 'payg') && (
