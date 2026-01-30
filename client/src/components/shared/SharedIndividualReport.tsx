@@ -425,14 +425,14 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
           </div>
 
           {config.contextType === 'partner' && (
-            <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30 mb-4">
+            <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 mb-4">
               <div className="flex items-start gap-3">
-                <Sparkles className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     Credit Usage for AI-Powered Analysis
                   </p>
-                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                  <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
                     AI Profile Insights generation costs 1 credit. Credits are only consumed when generating new insights. Cached insights are free.
                   </p>
                 </div>
