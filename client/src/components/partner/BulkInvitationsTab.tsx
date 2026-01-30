@@ -663,8 +663,8 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
                 const hasErrors = rowErrors.length > 0;
                 
                 return (
-                  <div key={candidate.id} className={`flex items-center gap-2 p-2 border rounded-lg ${hasErrors ? 'border-red-500 bg-red-500/5' : ''}`} data-testid={`candidate-row-${index}`}>
-                    <div className="flex-1 grid grid-cols-3 gap-2">
+                  <div key={candidate.id} className={`flex flex-col md:flex-row md:items-center gap-2 p-2 border rounded-lg ${hasErrors ? 'border-red-500 bg-red-500/5' : ''}`} data-testid={`candidate-row-${index}`}>
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
                       <div className="relative">
                         <Input
                           placeholder="External ID (optional)"
@@ -704,6 +704,7 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
                       onClick={() => removeCandidate(candidate.id)}
                       disabled={candidates.length === 1}
                       data-testid={`button-remove-candidate-${index}`}
+                      className="self-end md:self-auto"
                     >
                       <Trash2 className="h-4 w-4 text-muted-foreground" />
                     </Button>
@@ -755,8 +756,8 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
           </div>
 
           <div className="space-y-4">
-            <Label className="text-base font-medium">Assessment Types</Label>
-            <div className="grid grid-cols-2 gap-3">
+            <Label className="text-sm md:text-base font-medium">Assessment Types</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {ASSESSMENT_TYPES.map((assessment) => (
                 <div
                   key={assessment.id}

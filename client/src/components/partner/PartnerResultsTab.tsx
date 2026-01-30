@@ -597,7 +597,7 @@ export default function PartnerResultsTab() {
                                         showCard={false}
                                       />
                                       
-                                      <div className="grid grid-cols-2 gap-3">
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         <div className="p-3 bg-muted/50 rounded-lg">
                                           <div className="flex items-center gap-2 mb-2">
                                             <TrendingUp className="h-4 w-4 text-green-600" />
@@ -1198,7 +1198,7 @@ export default function PartnerResultsTab() {
                               </div>
                             </div>
                             {aiqData.scores && (
-                              <div className="grid grid-cols-3 gap-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 {Object.entries(aiqData.scores).map(([key, score]) => (
                                   <div key={key} className="text-center p-3 rounded-lg border bg-card">
                                     <div className="text-xs text-muted-foreground mb-1">{key.replace(/_/g, ' ')}</div>

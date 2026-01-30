@@ -360,8 +360,8 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP', billingType =
             {overageHistory && overageHistory.length > 0 && (
               <div className="space-y-2">
                 <p className="text-sm font-medium">Overage History</p>
-                <div className="border rounded-lg overflow-hidden">
-                  <table className="w-full text-sm">
+                <div className="border rounded-lg overflow-x-auto">
+                  <table className="w-full text-sm min-w-[400px]">
                     <thead className="bg-muted/50">
                       <tr>
                         <th className="px-3 py-2 text-left font-medium">Month</th>
@@ -440,7 +440,7 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP', billingType =
                     />
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="billing-city" className="text-sm text-muted-foreground">City *</Label>
                       <Input
@@ -467,7 +467,7 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP', billingType =
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div ref={countryDropdownRef} className="relative">
                       <Label className="text-sm text-muted-foreground">Country *</Label>
                       <div className="relative mt-1">
@@ -5742,7 +5742,7 @@ export default function PartnerDashboard() {
                   data-testid="input-billing-address2"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="billingCity">City *</Label>
                   <Input
@@ -5777,7 +5777,7 @@ export default function PartnerDashboard() {
                   data-testid="input-billing-country"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="vatNumber">VAT Number</Label>
                   <Input
