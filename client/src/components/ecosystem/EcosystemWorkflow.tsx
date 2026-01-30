@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -38,6 +38,7 @@ import {
   BarChart3,
   Target,
   AlertTriangle,
+  AlertCircle,
   CheckCircle,
   Upload,
   Send,
@@ -104,6 +105,10 @@ interface EcosystemWorkflowProps {
   onComplete?: () => void;
   isPartnerDashboard?: boolean;
   partnerId?: string;
+  billingType?: string;
+  hasCardOnFile?: boolean;
+  creditsRemaining?: number;
+  onNavigateToBilling?: () => void;
 }
 
 export function EcosystemWorkflow({ 
@@ -111,6 +116,10 @@ export function EcosystemWorkflow({
   onComplete,
   isPartnerDashboard = false,
   partnerId,
+  billingType,
+  hasCardOnFile,
+  creditsRemaining,
+  onNavigateToBilling,
 }: EcosystemWorkflowProps) {
   const { toast } = useToast();
   const { data: project, isLoading: projectLoading, refetch: refetchProject } = useEcosystemProject(projectId);
@@ -548,6 +557,11 @@ export function EcosystemWorkflow({
   // Credits required for ecosystem analysis
   const ECOSYSTEM_CREDITS_REQUIRED = 20;
   
+  // PAYG partners without enough credits AND without card on file should be restricted from consuming credits
+  const isPaygRestricted = billingType === 'payg' && 
+    (creditsRemaining === undefined || creditsRemaining < ECOSYSTEM_CREDITS_REQUIRED) && 
+    !hasCardOnFile;
+  
   // Handle credit consumption (replaces Stripe payment)
   const handleConsumeCredits = async () => {
     setIsProcessingPayment(true);
@@ -698,6 +712,35 @@ export function EcosystemWorkflow({
           </div>
         </div>
       </Card>
+
+      {/* PAYG Restriction Banner - shown when partner has insufficient credits and no card on file */}
+      {isPaygRestricted && (
+        <Card className="border-amber-500 bg-amber-50 dark:bg-amber-950/30">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-medium text-amber-800 dark:text-amber-200">Top up required to use Team Diagnostics</p>
+                <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                  You need at least {ECOSYSTEM_CREDITS_REQUIRED} credits or a card on file before you can use the Team Diagnostic service. 
+                  Please visit the Billing tab to top up your account.
+                </p>
+                {onNavigateToBilling && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-3 border-amber-500 text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900"
+                    onClick={onNavigateToBilling}
+                    data-testid="button-go-to-billing-from-ecosystem"
+                  >
+                    Go to Billing
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Step 1: Book Consultation (Optional) - considered complete when user has moved to step 2+ */}
       <Card data-testid="step-1-consultation">
@@ -1480,7 +1523,7 @@ export function EcosystemWorkflow({
 
             <Button 
               onClick={handleConsumeCredits}
-              disabled={isProcessingPayment}
+              disabled={isProcessingPayment || isPaygRestricted}
               size="lg"
               className="w-full"
               data-testid="button-use-credits"

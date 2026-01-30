@@ -4708,7 +4708,13 @@ export default function PartnerDashboard() {
 
             {/* Ecosystem Index Tab */}
             <TabsContent value="ecosystem" className="space-y-6" data-testid="panel-ecosystem">
-              <EcosystemAutoProject partnerId={partner?.id} />
+              <EcosystemAutoProject 
+                partnerId={partner?.id}
+                billingType={partner?.billingType}
+                hasCardOnFile={dashboardCardStatus?.hasCard}
+                creditsRemaining={partner?.remaining}
+                onNavigateToBilling={() => setActiveTab('billing')}
+              />
             </TabsContent>
 
             {/* Cohort Benchmarking Tab */}

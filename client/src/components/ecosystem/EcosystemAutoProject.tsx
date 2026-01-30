@@ -13,9 +13,19 @@ const DEFAULT_PROJECT_NAME = "Team Diagnostic";
 
 interface EcosystemAutoProjectProps {
   partnerId?: string;
+  billingType?: string;
+  hasCardOnFile?: boolean;
+  creditsRemaining?: number;
+  onNavigateToBilling?: () => void;
 }
 
-export function EcosystemAutoProject({ partnerId }: EcosystemAutoProjectProps) {
+export function EcosystemAutoProject({ 
+  partnerId, 
+  billingType, 
+  hasCardOnFile, 
+  creditsRemaining, 
+  onNavigateToBilling 
+}: EcosystemAutoProjectProps) {
   const { data: projects = [], isLoading: projectsLoading, refetch } = useEcosystemProjects(partnerId);
   const createProject = useCreateEcosystemProject();
   const [projectId, setProjectId] = useState<string | null>(null);
@@ -146,6 +156,10 @@ export function EcosystemAutoProject({ partnerId }: EcosystemAutoProjectProps) {
             projectId={projectId}
             isPartnerDashboard={true}
             partnerId={partnerId}
+            billingType={billingType}
+            hasCardOnFile={hasCardOnFile}
+            creditsRemaining={creditsRemaining}
+            onNavigateToBilling={onNavigateToBilling}
           />
         </CardContent>
       </Card>
