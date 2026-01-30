@@ -1242,7 +1242,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
           <SkillsLegend />
 
           {/* Bottom PDF Export Button */}
-          <div className="flex justify-center gap-3 pt-4">
+          <div className="flex justify-end gap-3 pt-4">
             <Button
               variant="default"
               size="lg"

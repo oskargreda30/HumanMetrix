@@ -2705,6 +2705,32 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
         </Card>
       )}
 
+      {/* Bottom Export and Back to Top buttons */}
+      {comparison && selectedCandidates.length >= 2 && (
+        <div className="flex justify-end gap-3 pt-4">
+          <Button
+            variant="default"
+            size="lg"
+            onClick={handleExportPDF}
+            className="gap-2"
+            data-testid="button-export-comparison-bottom"
+          >
+            <Download className="h-5 w-5" />
+            Export as PDF
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="gap-2 text-white border-white/50 hover:bg-white/10"
+            data-testid="button-back-to-top-compare-bottom"
+          >
+            <ChevronUp className="h-5 w-5" />
+            Back to Top
+          </Button>
+        </div>
+      )}
+
       {/* Hidden radar charts for PDF export */}
       {comparison && selectedCandidates.length >= 2 && (
         <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
