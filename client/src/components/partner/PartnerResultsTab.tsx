@@ -509,91 +509,24 @@ export default function PartnerResultsTab() {
         </Card>
       )}
 
-      {isLoading ? (
+      {/* Individual candidate boxes removed - use Analysis tab for detailed candidate views */}
+      {isLoading && (
         <div className="flex justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      ) : filteredCandidates && filteredCandidates.length > 0 ? (
-        <div className="grid gap-4">
-          {filteredCandidates.map((candidate: any) => (
-            <Card key={candidate.user.id} className="hover-elevate" data-testid={`card-candidate-${candidate.user.id}`}>
-              <CardHeader>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">
-                      {candidate.user.firstName || candidate.user.lastName
-                        ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
-                        : candidate.user.email || 'No Name'}
-                    </CardTitle>
-                    <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      <p className="text-sm text-muted-foreground">{candidate.user.email}</p>
-                      {candidate.user.resultsRetentionConsent === true ? (
-                        <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30" data-testid={`badge-consent-opted-in-${candidate.user.id}`}>
-                          <UserCheck className="h-3 w-3 mr-1" />
-                          Shared
-                        </Badge>
-                      ) : candidate.user.resultsRetentionConsent === false ? (
-                        <Badge variant="outline" className="text-xs bg-red-500/10 text-red-600 border-red-500/30" data-testid={`badge-consent-opted-out-${candidate.user.id}`}>
-                          <UserX className="h-3 w-3 mr-1" />
-                          Private
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-xs bg-gray-500/10 text-gray-500 border-gray-500/30" data-testid={`badge-consent-pending-${candidate.user.id}`}>
-                          <HelpCircle className="h-3 w-3 mr-1" />
-                          Pending
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <Dialog open={dialogOpen && selectedCandidate?.user?.id === candidate.user.id} onOpenChange={handleDialogChange}>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedCandidate(candidate);
-                          setDialogOpen(true);
-                        }}
-                        data-testid={`button-view-details-${candidate.user.id}`}
-                      >
-                        View Details
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>
-                          {candidate.user.firstName || candidate.user.lastName
-                            ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
-                            : 'Candidate Details'}
-                        </DialogTitle>
-                        <DialogDescription>{candidate.user.email}</DialogDescription>
-                      </DialogHeader>
+      )}
 
-                      <div className="space-y-6">
-                        <div>
-                          <h3 className="font-semibold mb-3 flex items-center gap-2">
-                            <FileText className="h-4 w-4" />
-                            Assessment Results ({candidate.results?.length || 0})
-                          </h3>
-                          {candidate.results && candidate.results.length > 0 ? (
-                            <div className="space-y-4">
-                              {candidate.results.map((result: any) => (
-                                <div key={result.id} className="space-y-3">
-                                  <div className="flex items-center justify-between">
-                                    <span className="font-medium">{formatAssessmentType(result.assessmentType)}</span>
-                                    <Badge variant={result.status === 'completed' ? 'default' : 'secondary'}>
-                                      {result.status}
-                                    </Badge>
-                                  </div>
-                                  
-                                  {result.status === 'completed' && isSkillBasedAssessment(result.assessmentType) && result.scores ? (
-                                    <div className="space-y-3">
-                                      <SkillRadarChart 
-                                        data={transformToRadarData(result.scores, result.assessmentType)}
-                                        height={250}
-                                        showCard={false}
-                                      />
+      {/* Placeholder for empty state when no saved reports */}
+      {!isLoading && (!savedReports || savedReports.length === 0) && (
+        <Card>
+          <CardContent className="text-center py-12">
+            <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="font-medium text-muted-foreground">No saved analysis reports yet</p>
+            <p className="text-sm text-muted-foreground mt-1">Generate reports from the Analysis tab to view them here.</p>
+          </CardContent>
+        </Card>
+      )}
+
                                       
                                       <div className="grid grid-cols-2 gap-3">
                                         <div className="p-3 bg-muted/50 rounded-lg">
