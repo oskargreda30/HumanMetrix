@@ -195,18 +195,26 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
       const sortedCandidates = [...selectedCandidates].sort();
       const insightsKey = sortedCandidates.join(',');
       
-      // Check if comparison has any meaningful data
+      // Check if comparison has any meaningful data from any assessment type
       const hasAnyData = comparison.hasSkillData || 
         comparison.fitAssessments?.some(a => a !== null) ||
-        comparison.aiReadinessAssessments?.some(a => a !== null);
+        comparison.aiReadinessAssessments?.some(a => a !== null) ||
+        comparison.promptArchitectureAssessments?.some(a => a !== null) ||
+        comparison.aiqAssessments?.some(a => a !== null);
       
-      if (lastInsightsTriggeredRef.current !== insightsKey && hasAnyData) {
+      if (lastInsightsTriggeredRef.current !== insightsKey) {
         lastInsightsTriggeredRef.current = insightsKey;
-        setAiInsights(null);
         
-        // Trigger immediately if not pending
-        if (!generateInsightsMutation.isPending) {
-          generateInsightsMutation.mutate();
+        if (hasAnyData) {
+          setAiInsights(null);
+          
+          // Trigger immediately if not pending
+          if (!generateInsightsMutation.isPending) {
+            generateInsightsMutation.mutate();
+          }
+        } else {
+          // No assessment data available - set explicit no-data marker
+          setAiInsights("__NO_DATA__");
         }
       }
     }
@@ -1353,6 +1361,12 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                       <p className="text-sm">Generating AI insights...</p>
                       <p className="text-xs mt-2">Analyzing candidate data and generating recommendations.</p>
                     </div>
+                  ) : aiInsights === "__NO_DATA__" ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Brain className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
+                      <p className="text-sm">No assessment data available for insights generation.</p>
+                      <p className="text-xs mt-2">Complete assessments to enable AI-powered analysis.</p>
+                    </div>
                   ) : aiInsights ? (
                     <div className="prose prose-sm dark:prose-invert max-w-none" data-testid="text-ai-insights">
                       {aiInsights.split('\n\n').map((paragraph, idx) => {
@@ -1621,7 +1635,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
               )}
 
               {/* 2. Role Suitability Scoring - TEMPORARILY DISABLED */}
-              {false && comparison.hasSkillData && (
+              {false && comparison?.hasSkillData && (
                 <Card data-testid="card-role-suitability" data-report-section="role-suitability">
                   <CardHeader>
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

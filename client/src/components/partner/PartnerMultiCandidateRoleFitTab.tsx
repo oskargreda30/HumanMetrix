@@ -303,18 +303,18 @@ export default function PartnerMultiCandidateRoleFitTab() {
   // Auto-trigger AI insights when comparison data loads
   useEffect(() => {
     if (comparison && comparison.candidateEntries?.length > 0) {
-      const insightsKey = `${selectedRole}-${selectedCandidates.sort().join(',')}`;
+      // Use stable sorted key without mutating state
+      const sortedCandidates = [...selectedCandidates].sort();
+      const insightsKey = `${selectedRole}-${sortedCandidates.join(',')}`;
       
       if (lastInsightsTriggeredRef.current !== insightsKey) {
         lastInsightsTriggeredRef.current = insightsKey;
         setAiInsights(null);
         
-        // Auto-trigger AI insights generation
-        setTimeout(() => {
-          if (!generateInsightsMutation.isPending) {
-            generateInsightsMutation.mutate(comparison);
-          }
-        }, 100);
+        // Auto-trigger AI insights generation immediately if not pending
+        if (!generateInsightsMutation.isPending) {
+          generateInsightsMutation.mutate(comparison);
+        }
       }
     }
   }, [comparison, selectedRole, selectedCandidates]);
