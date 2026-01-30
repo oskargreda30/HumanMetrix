@@ -305,13 +305,43 @@ export default function PartnerResultsTab() {
   };
 
   const filteredCandidates = candidates?.filter((c) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      c.user.email?.toLowerCase().includes(query) ||
-      c.user.firstName?.toLowerCase().includes(query) ||
-      c.user.lastName?.toLowerCase().includes(query)
-    );
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase().trim();
+    
+    // Search by name
+    const firstName = c.user.firstName?.toLowerCase() || '';
+    const lastName = c.user.lastName?.toLowerCase() || '';
+    const fullName = `${firstName} ${lastName}`.trim();
+    const email = c.user.email?.toLowerCase() || '';
+    
+    // Check user info
+    if (firstName.includes(query) || lastName.includes(query) || fullName.includes(query) || email.includes(query)) {
+      return true;
+    }
+    
+    // Search through assessment types and statuses
+    if (c.results && Array.isArray(c.results)) {
+      for (const result of c.results) {
+        const assessmentType = result.assessmentType?.toLowerCase() || '';
+        const formattedType = formatAssessmentType(result.assessmentType)?.toLowerCase() || '';
+        const status = result.status?.toLowerCase() || '';
+        
+        if (assessmentType.includes(query) || formattedType.includes(query) || status.includes(query)) {
+          return true;
+        }
+        
+        // Search through skill names
+        if (result.scores && typeof result.scores === 'object') {
+          for (const skillName of Object.keys(result.scores)) {
+            if (skillName.toLowerCase().includes(query)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+    
+    return false;
   });
 
   return (
