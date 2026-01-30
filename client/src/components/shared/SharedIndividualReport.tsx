@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, User, Award, Brain, Target, TrendingUp, TrendingDown, FileText, BookOpen, Sparkles, Download, MessageSquare, Users, Clock, ShieldAlert, DollarSign, Lightbulb, RefreshCw, Rocket, BarChart3, Mail, ChevronUp, AlertCircle } from "lucide-react";
+import { AnalysisLoadingScreen } from "./AnalysisLoadingScreen";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
@@ -75,7 +76,7 @@ interface SharedIndividualReportProps {
 export function SharedIndividualReport({ config }: SharedIndividualReportProps) {
   const [selectedCandidate, setSelectedCandidate] = useState<string>('');
   const [reportTriggered, setReportTriggered] = useState(false);
-  // AI insights now come from candidateReport.aiInsights (generated server-side)
+  const [loadingTransitionComplete, setLoadingTransitionComplete] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
   const { toast } = useToast();
@@ -102,6 +103,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
   const handleCandidateChange = (value: string) => {
     setSelectedCandidate(value);
     setReportTriggered(false);
+    setLoadingTransitionComplete(false);
   };
 
   const handleRunAnalysis = () => {
@@ -348,15 +350,16 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
         </Card>
       )}
 
-      {selectedCandidate && isLoadingReport && (
-        <Card>
-          <CardContent className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </CardContent>
-        </Card>
+      {selectedCandidate && reportTriggered && !loadingTransitionComplete && (
+        <AnalysisLoadingScreen 
+          isComplete={!!candidateReport?.aiInsights}
+          averageTimeSeconds={20}
+          message="Generating AI-powered profile insights..."
+          onTransitionComplete={() => setLoadingTransitionComplete(true)}
+        />
       )}
 
-      {selectedCandidate && reportTriggered && candidateReport && selectedCandidateData && (
+      {selectedCandidate && reportTriggered && loadingTransitionComplete && candidateReport?.aiInsights && selectedCandidateData && (
         <>
           <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
             <h2 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
@@ -366,28 +369,13 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
             <Button 
               size="sm"
               onClick={handleExportPDF}
-              disabled={isExporting || !candidateReport?.aiInsights || false /* no secondary loading */}
+              disabled={isExporting}
               data-testid="button-export-pdf-top"
             >
               {isExporting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Exporting...
-                </>
-              ) : (!candidateReport?.fitAssessments?.[0] && !candidateReport?.aiReadinessAssessments?.[0] && !candidateReport?.promptArchitectureAssessments?.[0] && !candidateReport?.aiqAssessments?.[0]) ? (
-                <>
-                  <AlertCircle className="h-4 w-4 mr-2" />
-                  No Data
-                </>
-              ) : isLoadingReport ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Analyzing...
-                </>
-              ) : !candidateReport?.aiInsights ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Analyzing...
                 </>
               ) : (
                 <>

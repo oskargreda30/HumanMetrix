@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, TrendingDown, Download, Award, Brain, Sparkles, MessageSquare, Users, Clock, ShieldAlert, DollarSign, FileText, User, ChevronUp } from "lucide-react";
+import { AnalysisLoadingScreen } from "./AnalysisLoadingScreen";
 import { Badge } from "@/components/ui/badge";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -101,9 +102,8 @@ interface SharedSingleCandidateRoleFitProps {
 export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRoleFitProps) {
   const [selectedCandidate, setSelectedCandidate] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
-  // AI analyses are now pre-loaded from the role-alignment endpoint
-  // alignment?.alignment?.promptRoleFitAnalysis and alignment?.alignment?.aiqRoleFitAnalysis
   const [analysisTriggered, setAnalysisTriggered] = useState(false);
+  const [loadingTransitionComplete, setLoadingTransitionComplete] = useState(false);
   const { toast } = useToast();
 
   const { data: candidates, isLoading: isLoadingCandidates } = useQuery<any[]>({
@@ -160,12 +160,14 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
   const handleCandidateChange = (value: string) => {
     setSelectedCandidate(value);
     setAnalysisTriggered(false);
-          };
+    setLoadingTransitionComplete(false);
+  };
 
   const handleRoleChange = (value: string) => {
     setSelectedRole(value);
     setAnalysisTriggered(false);
-          };
+    setLoadingTransitionComplete(false);
+  };
 
   const handleAnalyzeRoleFit = () => {
     // Single-loading UX: just enable the GET query which handles all analysis server-side
@@ -388,18 +390,16 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
         </CardContent>
       </Card>
 
-      {analysisTriggered && isLoadingAlignment && (
-        <Card>
-          <CardContent className="flex justify-center py-12">
-            <div className="text-center">
-              <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-              <p className="text-muted-foreground">Running role fit analysis...</p>
-            </div>
-          </CardContent>
-        </Card>
+      {analysisTriggered && !loadingTransitionComplete && (
+        <AnalysisLoadingScreen 
+          isComplete={!isLoadingAlignment && !!alignment && 'promptRoleFitAnalysis' in alignment && 'aiqRoleFitAnalysis' in alignment}
+          averageTimeSeconds={25}
+          message="Analyzing role fit and generating insights..."
+          onTransitionComplete={() => setLoadingTransitionComplete(true)}
+        />
       )}
 
-      {alignment && !isLoadingAlignment && (
+      {alignment && loadingTransitionComplete && 'promptRoleFitAnalysis' in alignment && 'aiqRoleFitAnalysis' in alignment && (
         <div className="space-y-6">
           {/* Executive Summary - Guide for Hiring Managers */}
           <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
