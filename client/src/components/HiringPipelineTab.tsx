@@ -35,6 +35,7 @@ import {
   XCircle,
   Eye,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -87,7 +88,7 @@ export function HiringPipelineTab() {
   const [draggedSession, setDraggedSession] = useState<PipelineSession | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
 
-  const { data: pipelineData, isLoading, refetch } = useQuery<PipelineData>({
+  const { data: pipelineData, isLoading, isFetching, refetch } = useQuery<PipelineData>({
     queryKey: ["/api/partner/pipeline"],
   });
 
@@ -244,6 +245,7 @@ export function HiringPipelineTab() {
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={() => refetch()} className="border-white/30 text-white hover:bg-white/10" data-testid="button-refresh-pipeline">
+            <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
         </div>
