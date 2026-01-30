@@ -355,6 +355,22 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
 
   return (
     <div className="space-y-6">
+      {config.contextType === 'partner' && (
+        <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800">
+          <div className="flex items-start gap-3">
+            <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                Credit Usage for AI-Powered Analysis
+              </p>
+              <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                AI Profile Insights generation costs 1 credit. Credits are only consumed when generating new insights. Cached insights are free.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -380,22 +396,6 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
           </Select>
         </CardContent>
       </Card>
-
-      {config.contextType === 'partner' && (
-        <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800">
-          <div className="flex items-start gap-3">
-            <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Credit Usage for AI-Powered Analysis
-              </p>
-              <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
-                AI Profile Insights generation costs 1 credit. Credits are only consumed when generating new insights. Cached insights are free.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {isLoading && (
         <Card>
