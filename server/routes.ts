@@ -14261,24 +14261,25 @@ Use the candidates' actual names. Be specific and actionable.`;
             const strengths = skills.slice(0, 3);
             const weaknesses = skills.slice(-3).reverse();
             
+            const fitAvg = fitData ? Math.round(Object.values(fitData.scores as Record<string, number>).reduce((a, b) => a + b, 0) / Object.keys(fitData.scores).length) : null;
+            const aiAvg = aiData ? Math.round(Object.values(aiData.scores as Record<string, number>).reduce((a, b) => a + b, 0) / Object.keys(aiData.scores).length) : null;
+            
             const prompt = `You are an expert HR analyst. Generate a comprehensive profile analysis for a job candidate based on their assessment results.
 
 CANDIDATE: ${candidateName}
 
 ASSESSMENT DATA:
-${fitData ? \`FIT (Behavioral Traits) - Average: ${Math.round(Object.values(fitData.scores as Record<string, number>).reduce((a, b) => a + b, 0) / Object.keys(fitData.scores).length)}%
-Individual Scores: ${JSON.stringify(fitData.scores, null, 2)}\` : 'FIT Assessment: Not completed'}
+${fitData ? 'FIT (Behavioral Traits) - Average: ' + fitAvg + '%\nIndividual Scores: ' + JSON.stringify(fitData.scores, null, 2) : 'FIT Assessment: Not completed'}
 
-${aiData ? \`AI Readiness (Technical) - Average: ${Math.round(Object.values(aiData.scores as Record<string, number>).reduce((a, b) => a + b, 0) / Object.keys(aiData.scores).length)}%
-Individual Scores: ${JSON.stringify(aiData.scores, null, 2)}\` : 'AI Readiness Assessment: Not completed'}
+${aiData ? 'AI Readiness (Technical) - Average: ' + aiAvg + '%\nIndividual Scores: ' + JSON.stringify(aiData.scores, null, 2) : 'AI Readiness Assessment: Not completed'}
 
-${promptData ? \`Prompt Architecture: ${promptData.totalScore}%\` : 'Prompt Architecture: Not completed'}
+${promptData ? 'Prompt Architecture: ' + promptData.totalScore + '%' : 'Prompt Architecture: Not completed'}
 
-${aiqData ? \`AIQ (AI Ethics): ${aiqData.totalScore}%\` : 'AIQ Assessment: Not completed'}
+${aiqData ? 'AIQ (AI Ethics): ' + aiqData.totalScore + '%' : 'AIQ Assessment: Not completed'}
 
-HIGHEST SCORING TRAITS: ${strengths.map(s => \`${s.name} (${s.score}%)\`).join(', ') || 'N/A'}
+HIGHEST SCORING TRAITS: ${strengths.map(s => s.name + ' (' + s.score + '%)').join(', ') || 'N/A'}
 
-LOWEST SCORING TRAITS: ${weaknesses.map(s => \`${s.name} (${s.score}%)\`).join(', ') || 'N/A'}
+LOWEST SCORING TRAITS: ${weaknesses.map(s => s.name + ' (' + s.score + '%)').join(', ') || 'N/A'}
 
 IMPORTANT: FIT and AI Readiness are TRAIT-BASED assessments. High scores mean the trait is STRONGLY PRESENT, not that it's "good" or "bad". Whether a high score is beneficial depends on role requirements.
 
@@ -14326,6 +14327,7 @@ Keep each section concise (2-3 sentences). Use professional but accessible langu
           console.error("Failed to generate AI insights for individual report:", aiError);
         }
       }
+
 
       const resultData = {
         radarData,
@@ -14953,12 +14955,141 @@ Use the candidates' actual names. Be specific and actionable.`;
         .map(a => a.skillName)
         .slice(0, 3);
 
+      // Generate Prompt and AIQ Role Fit analyses (single-loading UX)
+      let promptRoleFitAnalysis: string | null = null;
+      let aiqRoleFitAnalysis: string | null = null;
+      
+      try {
+        // Get user for assessment results lookup
+        const invitations = await storage.getPartnerCandidateInvitations(partner.id);
+        const candidateInvitation = invitations.find(inv => 
+          inv.email === candidateId || inv.externalUserId === candidateId || inv.userId === candidateId
+        );
+        
+        let user = await storage.getUserByEmail(candidateId as string);
+        if (!user) user = await storage.getUser(candidateId as string);
+        if (!user && candidateInvitation?.userId) user = await storage.getUser(candidateInvitation.userId);
+        if (!user && candidateSessions[0]?.userId) user = await storage.getUser(candidateSessions[0].userId);
+        
+        if (user) {
+          const results = await storage.getResultsByUser(user.id);
+          const promptResult = results.find(r => r.assessmentType === 'prompt_architecture' && r.status === 'completed');
+          const aiqResult = results.find(r => r.assessmentType === 'aiq' && r.status === 'completed');
+          
+          const candidateName = user.firstName && user.lastName 
+            ? `${user.firstName} ${user.lastName}` 
+            : user.email;
+
+          // Generate Prompt Role Fit analysis
+          if (promptArchitectureScore !== null || promptResult) {
+            let promptScore = promptResult ? `${promptResult.totalScore || 0}%` : 'No data available';
+            let promptLevels = '';
+            if (promptResult) {
+              const levels = (promptResult as any).levels || [];
+              if (levels.length > 0) {
+                promptLevels = levels.map((l: any) => 
+                  `Level ${l.level}: ${l.passed ? 'Passed' : 'Failed'}${l.scores ? ` (Clarity: ${l.scores.clarity}%, Structure: ${l.scores.structure}%, Context: ${l.scores.contextRelevance}%, Creativity: ${l.scores.creativity}%, Iterative: ${l.scores.iterativeImprovement}%)` : ''}`
+                ).join('\n');
+              }
+            }
+            
+            const promptAnalysisPrompt = `You are an expert HR analyst evaluating how a candidate's prompt engineering skills align with a specific job role.
+
+CANDIDATE: ${candidateName}
+JOB ROLE: ${role.name}
+${role.description ? `ROLE DESCRIPTION: ${role.description}` : ''}
+
+PROMPT ARCHITECTURE ASSESSMENT RESULTS:
+- Overall Score: ${promptScore}
+${promptLevels ? `- Level Details:\n${promptLevels}` : '- No detailed level data available'}
+
+Analyze how the candidate's prompt engineering capabilities align with this role. Consider:
+1. Whether the role requires frequent AI interaction and prompt crafting
+2. How the candidate's prompt skills (clarity, structure, context awareness, creativity, iterative improvement) match role demands
+3. Potential risks or benefits of their current skill level for this role
+4. Recommendations for development if gaps exist
+
+Provide a concise 2-3 paragraph analysis focusing on practical implications for the hiring decision.`;
+
+            const promptResponse = await openai.chat.completions.create({
+              model: 'gpt-4o',
+              messages: [{ role: 'user', content: promptAnalysisPrompt }],
+              max_tokens: 800,
+              temperature: 0.7,
+            });
+            promptRoleFitAnalysis = promptResponse.choices[0]?.message?.content || null;
+            
+            logAiCost({
+              operationType: AI_USAGE_OPERATION_TYPES.PROMPT_ROLE_FIT,
+              model: "gpt-4o",
+              usage: extractUsage(promptResponse),
+              userId: user.id,
+              partnerId: partner.id,
+              metadata: { roleTitle: role.name },
+            }).catch(console.error);
+          }
+
+          // Generate AIQ Role Fit analysis
+          if (aiqScore !== null || aiqResult) {
+            let aiqScoreStr = aiqResult ? `${aiqResult.totalScore || 0}%` : 'No data available';
+            let aiqBand = '';
+            if (aiqResult) {
+              const score = aiqResult.totalScore || 0;
+              if (score >= 80) aiqBand = 'Exemplary (80-100%): Strong ethical foundation with nuanced understanding of AI implications';
+              else if (score >= 60) aiqBand = 'Strong (60-79%): Solid grasp of AI ethics with some areas for deeper exploration';
+              else if (score >= 40) aiqBand = 'Developing (40-59%): Foundational understanding with room for growth';
+              else if (score >= 20) aiqBand = 'Gaps Identified (20-39%): Requires focused development on AI ethical principles';
+              else aiqBand = 'Critical Concerns (0-19%): Fundamental misalignment with ethical AI principles';
+            }
+
+            const aiqAnalysisPrompt = `You are an expert HR analyst evaluating how a candidate's ethical AI stance (AIQ - Algorithmic Integrity Quotient) aligns with a specific job role.
+
+CANDIDATE: ${candidateName}
+JOB ROLE: ${role.name}
+${role.description ? `ROLE DESCRIPTION: ${role.description}` : ''}
+
+AIQ ASSESSMENT RESULTS:
+- Overall Score: ${aiqScoreStr}
+${aiqBand ? `- Performance Band: ${aiqBand}` : ''}
+
+Analyze how the candidate's ethical AI understanding aligns with this role. Consider:
+1. The importance of AI ethics and responsible AI practices for this role
+2. How the candidate's ethical stance matches role demands
+3. Potential risks if there are ethical blind spots for AI-related decisions
+4. Recommendations for development if gaps exist
+
+Provide a concise 2-3 paragraph analysis focusing on practical implications for the hiring decision.`;
+
+            const aiqResponse = await openai.chat.completions.create({
+              model: 'gpt-4o',
+              messages: [{ role: 'user', content: aiqAnalysisPrompt }],
+              max_tokens: 800,
+              temperature: 0.7,
+            });
+            aiqRoleFitAnalysis = aiqResponse.choices[0]?.message?.content || null;
+            
+            logAiCost({
+              operationType: AI_USAGE_OPERATION_TYPES.AIQ_ROLE_FIT,
+              model: "gpt-4o",
+              usage: extractUsage(aiqResponse),
+              userId: user.id,
+              partnerId: partner.id,
+              metadata: { roleTitle: role.name },
+            }).catch(console.error);
+          }
+        }
+      } catch (aiError) {
+        console.error("Failed to generate Prompt/AIQ role fit analyses:", aiError);
+      }
+
       const resultData = {
         overallFit,
         fitSkillAlignments,
         aiReadinessSkillAlignments,
         promptArchitectureScore,
         aiqScore,
+        promptRoleFitAnalysis,
+        aiqRoleFitAnalysis,
         strengths,
         gaps,
         cohortBenchmarks: null,

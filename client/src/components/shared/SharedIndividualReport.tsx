@@ -47,7 +47,7 @@ const renderInsideLabel = (props: any) => {
 export interface SharedIndividualReportConfig {
   candidatesEndpoint: string;
   reportEndpoint: string;
-  candidateReport?.aiInsightsEndpoint: string | ((candidateId: string) => string);
+  profileInsightsEndpoint: string | ((candidateId: string) => string);
   contextType: 'admin' | 'partner';
 }
 
@@ -102,8 +102,6 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
   const handleCandidateChange = (value: string) => {
     setSelectedCandidate(value);
     setReportTriggered(false);
-    setInsightsGenerated(false);
-    setNoAssessmentData(false);
   };
 
   const handleRunAnalysis = () => {
@@ -112,17 +110,12 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
     }
   };
 
-  // Insights generation now happens server-side during the report call
-    },
-  });
+  // Insights are now generated server-side during the report call (kept for backwards compatibility)
 
   const selectedCandidateData = candidates?.find(c => c.user.id === selectedCandidate);
-  const [insightsGenerated, setInsightsGenerated] = useState(false);
-  const [noAssessmentData, setNoAssessmentData] = useState(false);
 
   // AI insights are now generated server-side during the report call
-  // No auto-trigger needed - candidateReport.aiInsights contains the insights
-
+  // candidateReport.aiInsights contains the pre-loaded insights
 
 
   const getCandidateName = (candidate: CandidateData | undefined) => {
@@ -223,7 +216,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
   };
 
   const handleExportPDF = async () => {
-    if (!selectedCandidateData || !candidateReport || !candidateReport?.aiInsights || false /* insights generated with report */) return;
+    if (!selectedCandidateData || !candidateReport || !candidateReport?.aiInsights) return;
     
     setIsExporting(true);
     try {
@@ -271,7 +264,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
         aiData: aiData ? { scores: aiData.scores } : null,
         promptData: promptData ? { totalScore: promptData.totalScore, levels: promptData.levels } : null,
         aiqData: aiqData ? { totalScore: aiqData.totalScore } : null,
-        candidateReport?.aiInsights,
+        profileInsights: candidateReport?.aiInsights,
         fitChartImage,
         aiChartImage,
       });
@@ -373,7 +366,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
             <Button 
               size="sm"
               onClick={handleExportPDF}
-              disabled={isExporting || !candidateReport?.aiInsights || false /* insights generated with report */ || noAssessmentData}
+              disabled={isExporting || !candidateReport?.aiInsights || false /* no secondary loading */}
               data-testid="button-export-pdf-top"
             >
               {isExporting ? (
@@ -381,12 +374,12 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Exporting...
                 </>
-              ) : noAssessmentData ? (
+              ) : (!candidateReport?.fitAssessments?.[0] && !candidateReport?.aiReadinessAssessments?.[0] && !candidateReport?.promptArchitectureAssessments?.[0] && !candidateReport?.aiqAssessments?.[0]) ? (
                 <>
                   <AlertCircle className="h-4 w-4 mr-2" />
                   No Data
                 </>
-              ) : false /* insights generated with report */ || (!candidateReport?.aiInsights && insightsGenerated) ? (
+              ) : isLoadingReport ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Analyzing...
@@ -790,13 +783,13 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {noAssessmentData ? (
+              {(!candidateReport?.fitAssessments?.[0] && !candidateReport?.aiReadinessAssessments?.[0] && !candidateReport?.promptArchitectureAssessments?.[0] && !candidateReport?.aiqAssessments?.[0]) ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <AlertCircle className="h-12 w-12 mx-auto mb-4 text-amber-500/50" />
                   <p className="text-sm font-medium">No Assessment Data Available</p>
                   <p className="text-xs mt-2">This candidate has not completed any assessments yet.</p>
                 </div>
-              ) : false /* insights generated with report */ || (!candidateReport?.aiInsights && insightsGenerated) ? (
+              ) : isLoadingReport ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Loader2 className="h-12 w-12 mx-auto mb-4 animate-spin text-primary" />
                   <p className="text-sm">Generating profile insights...</p>
@@ -815,13 +808,13 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                     
                     const parsedSections = sections.map((section) => {
                       const regex = new RegExp(`\\*\\*${section.key}\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*[A-Z]|$)`, 'i');
-                      const match = candidateReport?.aiInsights.match(regex);
+                      const match = candidateReport?.aiInsights?.match(regex);
                       const content = match?.[1]?.trim();
                       return { ...section, content };
                     }).filter(s => s.content);
                     
                     if (parsedSections.length === 0) {
-                      return candidateReport?.aiInsights.split('\n').map((paragraph, i) => (
+                      return candidateReport?.aiInsights?.split('\n').map((paragraph: string, i: number) => (
                         paragraph.trim() && <p key={i} className="text-sm text-muted-foreground mb-3">{paragraph}</p>
                       ));
                     }
@@ -999,7 +992,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
           <div className="flex justify-end gap-2">
             <Button 
               onClick={handleExportPDF}
-              disabled={isExporting || !candidateReport?.aiInsights || false /* insights generated with report */ || noAssessmentData}
+              disabled={isExporting || !candidateReport?.aiInsights || false /* no secondary loading */}
               data-testid="button-export-individual-report"
             >
               {isExporting ? (
@@ -1007,12 +1000,12 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Exporting...
                 </>
-              ) : noAssessmentData ? (
+              ) : (!candidateReport?.fitAssessments?.[0] && !candidateReport?.aiReadinessAssessments?.[0] && !candidateReport?.promptArchitectureAssessments?.[0] && !candidateReport?.aiqAssessments?.[0]) ? (
                 <>
                   <AlertCircle className="h-4 w-4 mr-2" />
                   No Data
                 </>
-              ) : false /* insights generated with report */ || (!candidateReport?.aiInsights && insightsGenerated) ? (
+              ) : isLoadingReport ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Analyzing...

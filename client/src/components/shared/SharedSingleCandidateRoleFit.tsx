@@ -90,6 +90,8 @@ type RoleAlignment = {
     missingAssessments: string[];
     hasSufficientData: boolean;
   };
+  promptRoleFitAnalysis?: string | null;
+  aiqRoleFitAnalysis?: string | null;
 };
 
 interface SharedSingleCandidateRoleFitProps {
@@ -99,8 +101,8 @@ interface SharedSingleCandidateRoleFitProps {
 export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRoleFitProps) {
   const [selectedCandidate, setSelectedCandidate] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
-  const [promptRoleFitAnalysis, setPromptRoleFitAnalysis] = useState<string | null>(null);
-  const [aiqRoleFitAnalysis, setAiqRoleFitAnalysis] = useState<string | null>(null);
+  // AI analyses are now pre-loaded from the role-alignment endpoint
+  // alignment?.alignment?.promptRoleFitAnalysis and alignment?.alignment?.aiqRoleFitAnalysis
   const [analysisTriggered, setAnalysisTriggered] = useState(false);
   const { toast } = useToast();
 
@@ -155,16 +157,12 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
   const handleCandidateChange = (value: string) => {
     setSelectedCandidate(value);
     setAnalysisTriggered(false);
-    setPromptRoleFitAnalysis(null);
-    setAiqRoleFitAnalysis(null);
-  };
+          };
 
   const handleRoleChange = (value: string) => {
     setSelectedRole(value);
     setAnalysisTriggered(false);
-    setPromptRoleFitAnalysis(null);
-    setAiqRoleFitAnalysis(null);
-  };
+          };
 
   const handleAnalyzeRoleFit = () => {
     if (selectedCandidate && selectedRole) {
@@ -223,8 +221,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
       return res.json();
     },
     onSuccess: (data) => {
-      setPromptRoleFitAnalysis(data.analysis);
-      toast({ title: "Prompt Engineering analysis completed" });
+            toast({ title: "Prompt Engineering analysis completed" });
     },
     onError: (error: Error) => {
       toast({
@@ -246,8 +243,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
       return res.json();
     },
     onSuccess: (data) => {
-      setAiqRoleFitAnalysis(data.analysis);
-      toast({ title: "AIQ analysis completed" });
+            toast({ title: "AIQ analysis completed" });
     },
     onError: (error: Error) => {
       toast({
@@ -262,48 +258,10 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
   const selectedRoleData = roles?.find((r) => r.id === selectedRole);
 
   // Track last triggered selection to avoid re-triggering
-  const lastTriggeredRef = useRef<string | null>(null);
 
-  // Auto-trigger Prompt and AIQ analyses when alignment data is loaded
-  useEffect(() => {
-    const selectionKey = `${selectedCandidate}-${selectedRole}`;
-    
-    // Only trigger if:
-    // 1. We have alignment data
-    // 2. We have valid selection
-    // 3. Haven't triggered for this selection OR analyses are null (fresh start)
-    // 4. Not already pending
-    if (alignment && selectedCandidate && selectedRole) {
-      const shouldTrigger = lastTriggeredRef.current !== selectionKey;
-      
-      if (shouldTrigger) {
-        lastTriggeredRef.current = selectionKey;
-        
-        // Clear previous analyses for new selection
-        setPromptRoleFitAnalysis(null);
-        setAiqRoleFitAnalysis(null);
-        
-        // Auto-trigger both analyses with small delay to ensure state is updated
-        setTimeout(() => {
-          if (!analyzePromptRoleFitMutation.isPending) {
-            analyzePromptRoleFitMutation.mutate();
-          }
-          if (!analyzeAiqRoleFitMutation.isPending) {
-            analyzeAiqRoleFitMutation.mutate();
-          }
-        }, 100);
-      }
-    }
-  }, [alignment?.overallFit, selectedCandidate, selectedRole]); // Only trigger when alignment changes meaningfully
+  // AI analyses are now pre-loaded from the role-alignment endpoint (single-loading UX) // Only trigger when alignment changes meaningfully
 
-  // Reset trigger ref when selection is cleared
-  useEffect(() => {
-    if (!selectedCandidate || !selectedRole) {
-      lastTriggeredRef.current = null;
-      setPromptRoleFitAnalysis(null);
-      setAiqRoleFitAnalysis(null);
-    }
-  }, [selectedCandidate, selectedRole]);
+
 
   const handleExportPDF = async () => {
     if (!alignment || !selectedCandidateData || !selectedRoleData) return;
@@ -564,10 +522,10 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                     variant="outline"
                     size="sm"
                     onClick={handleExportPDF}
-                    disabled={isLoadingAlignment || analyzePromptRoleFitMutation.isPending || analyzeAiqRoleFitMutation.isPending}
+                    disabled={isLoadingAlignment || false /* pre-loaded */ || false /* pre-loaded */}
                     data-testid="button-export-pdf"
                   >
-                    {isLoadingAlignment || analyzePromptRoleFitMutation.isPending || analyzeAiqRoleFitMutation.isPending ? (
+                    {isLoadingAlignment || false /* pre-loaded */ || false /* pre-loaded */ ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         Please Wait...
@@ -984,14 +942,14 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
               </p>
             </CardHeader>
             <CardContent className="pt-6">
-              {analyzePromptRoleFitMutation.isPending ? (
+              {false /* pre-loaded */ ? (
                 <div className="text-center py-8">
                   <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin text-primary" />
                   <p className="text-sm text-muted-foreground">Analyzing prompt engineering fit...</p>
                 </div>
-              ) : promptRoleFitAnalysis ? (
+              ) : alignment?.promptRoleFitAnalysis ? (
                 <div className="space-y-4" data-testid="text-prompt-role-fit-analysis">
-                  {promptRoleFitAnalysis.split('\n\n').map((paragraph, idx) => (
+                  {alignment?.promptRoleFitAnalysis?.split('\n\n').map((paragraph, idx) => (
                     <p key={idx} className="text-sm text-muted-foreground leading-relaxed">
                       {paragraph}
                     </p>
@@ -1018,14 +976,14 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
               </p>
             </CardHeader>
             <CardContent className="pt-6">
-              {analyzeAiqRoleFitMutation.isPending ? (
+              {false /* pre-loaded */ ? (
                 <div className="text-center py-8">
                   <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin text-primary" />
                   <p className="text-sm text-muted-foreground">Analyzing AIQ role fit...</p>
                 </div>
-              ) : aiqRoleFitAnalysis ? (
+              ) : alignment?.aiqRoleFitAnalysis ? (
                 <div className="space-y-4" data-testid="text-aiq-role-fit-analysis">
-                  {aiqRoleFitAnalysis.split('\n\n').map((paragraph, idx) => (
+                  {alignment?.aiqRoleFitAnalysis?.split('\n\n').map((paragraph, idx) => (
                     <p key={idx} className="text-sm text-muted-foreground leading-relaxed">
                       {paragraph}
                     </p>
@@ -1264,11 +1222,11 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
               variant="default"
               size="lg"
               onClick={handleExportPDF}
-              disabled={isLoadingAlignment || analyzePromptRoleFitMutation.isPending || analyzeAiqRoleFitMutation.isPending}
+              disabled={isLoadingAlignment || false /* pre-loaded */ || false /* pre-loaded */}
               className="gap-2"
               data-testid="button-export-pdf-bottom"
             >
-              {isLoadingAlignment || analyzePromptRoleFitMutation.isPending || analyzeAiqRoleFitMutation.isPending ? (
+              {isLoadingAlignment || false /* pre-loaded */ || false /* pre-loaded */ ? (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin" />
                   Please Wait...
