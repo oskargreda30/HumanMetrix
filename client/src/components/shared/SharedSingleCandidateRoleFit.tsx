@@ -392,14 +392,14 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
 
       {analysisTriggered && !loadingTransitionComplete && (
         <AnalysisLoadingScreen 
-          isComplete={!isLoadingAlignment && !!alignment && 'promptRoleFitAnalysis' in alignment && 'aiqRoleFitAnalysis' in alignment}
+          isComplete={!isLoadingAlignment && !!alignment}
           averageTimeSeconds={25}
           message="Analyzing role fit and generating insights..."
           onTransitionComplete={() => setLoadingTransitionComplete(true)}
         />
       )}
 
-      {alignment && loadingTransitionComplete && 'promptRoleFitAnalysis' in alignment && 'aiqRoleFitAnalysis' in alignment && (
+      {alignment && loadingTransitionComplete && (
         <div className="space-y-6">
           {/* Executive Summary - Guide for Hiring Managers */}
           <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
