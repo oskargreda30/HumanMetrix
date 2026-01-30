@@ -74,6 +74,7 @@ interface SharedIndividualReportProps {
 
 export function SharedIndividualReport({ config }: SharedIndividualReportProps) {
   const [selectedCandidate, setSelectedCandidate] = useState<string>('');
+  const [reportTriggered, setReportTriggered] = useState(false);
   const [profileInsights, setProfileInsights] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
@@ -95,8 +96,21 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
       if (!response.ok) throw new Error('Failed to fetch candidate report');
       return response.json();
     },
-    enabled: !!selectedCandidate,
+    enabled: !!selectedCandidate && reportTriggered,
   });
+
+  const handleCandidateChange = (value: string) => {
+    setSelectedCandidate(value);
+    setReportTriggered(false);
+    setProfileInsights(null);
+    setInsightsGenerated(false);
+  };
+
+  const handleRunAnalysis = () => {
+    if (selectedCandidate) {
+      setReportTriggered(true);
+    }
+  };
 
   const generateInsightsMutation = useMutation({
     mutationFn: async (data: { userId: string; assessmentData: any }) => {
@@ -125,11 +139,6 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
 
   const selectedCandidateData = candidates?.find(c => c.user.id === selectedCandidate);
   const [insightsGenerated, setInsightsGenerated] = useState(false);
-
-  useEffect(() => {
-    setProfileInsights(null);
-    setInsightsGenerated(false);
-  }, [selectedCandidate]);
 
   const handleGenerateInsights = () => {
     if (!selectedCandidate || !candidateReport || !selectedCandidateData) return;
@@ -380,7 +389,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Select value={selectedCandidate} onValueChange={setSelectedCandidate}>
+          <Select value={selectedCandidate} onValueChange={handleCandidateChange}>
             <SelectTrigger className="w-full max-w-md" data-testid="select-individual-candidate">
               <SelectValue placeholder="Select a candidate..." />
             </SelectTrigger>
@@ -392,6 +401,18 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
               ))}
             </SelectContent>
           </Select>
+
+          {selectedCandidate && !reportTriggered && (
+            <div className="mt-4 flex flex-col items-start gap-2">
+              <Button 
+                onClick={handleRunAnalysis}
+                data-testid="button-run-analysis"
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Run Analysis
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -411,7 +432,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
         </Card>
       )}
 
-      {selectedCandidate && candidateReport && selectedCandidateData && (
+      {selectedCandidate && reportTriggered && candidateReport && selectedCandidateData && (
         <>
           <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
             <h2 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
