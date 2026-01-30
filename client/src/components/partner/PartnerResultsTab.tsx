@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Search, FileText, StickyNote, TrendingUp, TrendingDown, AlertTriangle, Download, UserCheck, UserX, HelpCircle, Upload, ClipboardList, Building2, BarChart3, Users, Target, ChevronDown, ChevronUp, Trash2, Eye, User } from "lucide-react";
+import { Loader2, Search, FileText, StickyNote, TrendingUp, TrendingDown, AlertTriangle, Download, UserCheck, UserX, HelpCircle, Upload, ClipboardList, Building2, BarChart3, Users, Target, ChevronDown, ChevronUp, Trash2, Eye, User, Award, Brain, Sparkles, BookOpen } from "lucide-react";
 import { PdfImportModal } from "@/components/PdfImportModal";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -26,10 +26,77 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  ResponsiveContainer,
+} from "recharts";
 import { SkillRadarChart } from "@/components/admin/SkillRadarChart";
-import { isSkillBasedAssessment, transformToRadarData, getTopSkills, getGrowthAreas, formatAssessmentType, calculateAverageScore } from "@/lib/assessmentSkills";
+import { isSkillBasedAssessment, transformToRadarData, getTopSkills, getGrowthAreas, formatAssessmentType, calculateAverageScore, FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym, getAIReadinessScore, normalizeAIReadinessScores } from "@/lib/assessmentSkills";
 import { exportEnhancedCandidatePDF, captureRadarChart } from "@/lib/enhancedPdfExport";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
+
+const CHART_COLOR = "#3b82f6";
+
+const renderInsideLabel = (props: any) => {
+  const { cx, cy, x, y, value } = props;
+  const insideX = cx + (x - cx) * 0.8;
+  const insideY = cy + (y - cy) * 0.8;
+  
+  return (
+    <text
+      x={insideX}
+      y={insideY}
+      fill="#374151"
+      fontSize={10}
+      fontWeight="bold"
+      textAnchor="middle"
+      dominantBaseline="middle"
+    >
+      {value}
+    </text>
+  );
+};
+
+const getScoreColor = (score: number) => {
+  if (score >= 80) return 'text-green-600';
+  if (score >= 60) return 'text-amber-600';
+  return 'text-red-600';
+};
+
+const getPromptArchBandInterpretation = (score: number): { title: string; description: string } => {
+  if (score >= 80) {
+    return {
+      title: "Expert Prompt Engineer",
+      description: "Demonstrates mastery of prompt engineering across all difficulty levels."
+    };
+  }
+  if (score >= 70) {
+    return {
+      title: "Advanced Prompt Skills",
+      description: "Shows strong prompt engineering capabilities with consistent performance."
+    };
+  }
+  if (score >= 50) {
+    return {
+      title: "Competent Practitioner",
+      description: "Demonstrates solid foundational skills in prompt construction."
+    };
+  }
+  if (score >= 30) {
+    return {
+      title: "Developing Skills",
+      description: "Shows basic understanding of prompt engineering principles."
+    };
+  }
+  return {
+    title: "Foundational Level",
+    description: "Early stage in prompt engineering development."
+  };
+};
 
 interface SavedReport {
   id: string;
@@ -816,209 +883,419 @@ export default function PartnerResultsTab() {
             </div>
           ) : selectedReportData ? (
             <div className="space-y-6" id="report-viewer-content">
-              {selectedReportData.reportType === 'individual' || selectedReportData.reportType === 'comparison' ? (
-                <>
-                  {selectedReportData.fitAssessments?.map((fit: any, idx: number) => (
-                    <Card key={`fit-${idx}`}>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <TrendingUp className="h-5 w-5 text-primary" />
-                          FIT Assessment
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex justify-between items-center mb-4">
-                          <span className="text-sm font-medium">Total Score</span>
-                          <span className="text-2xl font-bold text-primary">{fit.totalScore}%</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          {Object.entries(fit.scores || {}).map(([skill, score]) => (
-                            <div key={skill} className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">{skill}</span>
-                              <span className="font-medium">{score as number}%</span>
+              {(() => {
+                const fitData = selectedReportData.fitAssessments?.[0];
+                const aiData = selectedReportData.aiReadinessAssessments?.[0];
+                const promptData = selectedReportData.promptArchitectureAssessments?.[0];
+                const aiqData = selectedReportData.aiqAssessments?.[0];
+                
+                const fitRadarData = fitData ? FIT_SKILLS.map(skill => ({
+                  skill: getSkillAcronym(skill.displayName),
+                  fullName: skill.displayName,
+                  score: fitData.scores?.[skill.key] || 0,
+                })) : [];
+                
+                const normalizedAIScores = aiData ? normalizeAIReadinessScores(aiData.scores) : {};
+                const aiRadarData = aiData ? AI_READINESS_SKILLS.map(skill => ({
+                  skill: getSkillAcronym(skill.displayName),
+                  fullName: skill.displayName,
+                  score: getAIReadinessScore(aiData.scores, skill.displayName),
+                })) : [];
+                
+                const getAllSkills = () => {
+                  const skills: Array<{ name: string; score: number; category: string }> = [];
+                  if (fitData?.scores) {
+                    Object.entries(fitData.scores).forEach(([name, score]) => {
+                      skills.push({ name, score: score as number, category: 'FIT' });
+                    });
+                  }
+                  if (aiData?.scores) {
+                    const normalized = normalizeAIReadinessScores(aiData.scores);
+                    Object.entries(normalized).forEach(([name, score]) => {
+                      skills.push({ name, score: score as number, category: 'AI Readiness' });
+                    });
+                  }
+                  return skills;
+                };
+                
+                const getStrengthsAndWeaknesses = () => {
+                  const allSkills = getAllSkills();
+                  const sorted = [...allSkills].sort((a, b) => b.score - a.score);
+                  return {
+                    strengths: sorted.slice(0, 3),
+                    weaknesses: sorted.slice(-3).reverse(),
+                  };
+                };
+                
+                if (selectedReportData.reportType === 'individual' || selectedReportData.reportType === 'comparison') {
+                  return (
+                    <>
+                      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="flex items-center gap-2">
+                            <User className="h-5 w-5 text-primary" />
+                            Assessment Overview
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div className="text-center p-4 rounded-lg border bg-card">
+                              <div className="text-sm text-muted-foreground mb-1">FIT Score</div>
+                              <div className={`text-2xl font-bold ${fitData ? getScoreColor(fitData.totalScore) : 'text-muted-foreground'}`}>
+                                {fitData ? `${fitData.totalScore}%` : '-'}
+                              </div>
                             </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                            <div className="text-center p-4 rounded-lg border bg-card">
+                              <div className="text-sm text-muted-foreground mb-1">AI Readiness</div>
+                              <div className={`text-2xl font-bold ${aiData ? getScoreColor(aiData.totalScore) : 'text-muted-foreground'}`}>
+                                {aiData ? `${aiData.totalScore}%` : '-'}
+                              </div>
+                            </div>
+                            <div className="text-center p-4 rounded-lg border bg-card">
+                              <div className="text-sm text-muted-foreground mb-1">Prompt Architecture</div>
+                              <div className={`text-2xl font-bold ${promptData ? getScoreColor(promptData.totalScore) : 'text-muted-foreground'}`}>
+                                {promptData ? `${promptData.totalScore}%` : '-'}
+                              </div>
+                            </div>
+                            <div className="text-center p-4 rounded-lg border bg-card">
+                              <div className="text-sm text-muted-foreground mb-1">AIQ (Ethics)</div>
+                              <div className={`text-2xl font-bold ${aiqData ? getScoreColor(aiqData.totalScore) : 'text-muted-foreground'}`}>
+                                {aiqData ? `${aiqData.totalScore}%` : '-'}
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
 
-                  {selectedReportData.aiReadinessAssessments?.map((ai: any, idx: number) => (
-                    <Card key={`ai-${idx}`}>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg flex items-center gap-2">
+                      {(fitData || aiData) && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <Award className="h-5 w-5" />
+                              Trait Profile Summary
+                            </CardTitle>
+                            <CardDescription>
+                              Highest and lowest scoring traits across assessments
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid gap-6 md:grid-cols-2">
+                              <div>
+                                <h4 className="flex items-center gap-2 mb-4 font-semibold text-blue-600">
+                                  <TrendingUp className="h-4 w-4" />
+                                  Highest Scoring Traits
+                                </h4>
+                                <div className="space-y-3">
+                                  {getStrengthsAndWeaknesses().strengths.map((skill, i) => (
+                                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20">
+                                      <div>
+                                        <span className="font-medium">{skill.name}</span>
+                                        <Badge variant="outline" className="ml-2 text-xs">{skill.category}</Badge>
+                                      </div>
+                                      <span className="font-bold text-blue-600">{skill.score}%</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              <div>
+                                <h4 className="flex items-center gap-2 mb-4 font-semibold text-slate-600 dark:text-slate-400">
+                                  <TrendingDown className="h-4 w-4" />
+                                  Lowest Scoring Traits
+                                </h4>
+                                <div className="space-y-3">
+                                  {getStrengthsAndWeaknesses().weaknesses.map((skill, i) => (
+                                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-950/20">
+                                      <div>
+                                        <span className="font-medium">{skill.name}</span>
+                                        <Badge variant="outline" className="ml-2 text-xs">{skill.category}</Badge>
+                                      </div>
+                                      <span className="font-bold text-slate-600 dark:text-slate-400">{skill.score}%</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {fitData && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <Target className="h-5 w-5 text-blue-500" />
+                              FIT Assessment Details
+                            </CardTitle>
+                            <CardDescription>
+                              Behavioral trait scores - higher values indicate stronger trait presence
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid gap-6 lg:grid-cols-2">
+                              <div className="h-72 bg-white dark:bg-gray-900 rounded-lg p-2">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <RadarChart data={fitRadarData} cx="50%" cy="50%" outerRadius="70%">
+                                    <PolarGrid strokeDasharray="3 3" />
+                                    <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11 }} />
+                                    <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
+                                    <Radar
+                                      dataKey="score"
+                                      stroke={CHART_COLOR}
+                                      fill={CHART_COLOR}
+                                      fillOpacity={0.5}
+                                      label={renderInsideLabel}
+                                    />
+                                  </RadarChart>
+                                </ResponsiveContainer>
+                              </div>
+                              <div className="space-y-3">
+                                {Object.entries(fitData.scores || {}).map(([skill, score]) => (
+                                  <div key={skill} className="space-y-1">
+                                    <div className="flex justify-between text-sm">
+                                      <span>{skill}</span>
+                                      <span className={`font-medium ${getScoreColor(score as number)}`}>{score as number}%</span>
+                                    </div>
+                                    <Progress value={score as number} className="h-2" />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {aiData && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <Brain className="h-5 w-5 text-purple-500" />
+                              AI Readiness Assessment Details
+                            </CardTitle>
+                            <CardDescription>
+                              AI-related capabilities and technical readiness scores
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid gap-6 lg:grid-cols-2">
+                              <div className="h-72 bg-white dark:bg-gray-900 rounded-lg p-2">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <RadarChart data={aiRadarData} cx="50%" cy="50%" outerRadius="70%">
+                                    <PolarGrid strokeDasharray="3 3" />
+                                    <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10 }} />
+                                    <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
+                                    <Radar
+                                      dataKey="score"
+                                      stroke="#8b5cf6"
+                                      fill="#8b5cf6"
+                                      fillOpacity={0.5}
+                                      label={renderInsideLabel}
+                                    />
+                                  </RadarChart>
+                                </ResponsiveContainer>
+                              </div>
+                              <div className="space-y-3 max-h-72 overflow-y-auto">
+                                {Object.entries(normalizedAIScores).map(([skill, score]) => (
+                                  <div key={skill} className="space-y-1">
+                                    <div className="flex justify-between text-sm">
+                                      <span className="truncate">{skill}</span>
+                                      <span className={`font-medium ${getScoreColor(score as number)}`}>{score as number}%</span>
+                                    </div>
+                                    <Progress value={score as number} className="h-2" />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {promptData && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <FileText className="h-5 w-5 text-orange-500" />
+                              Prompt Architecture Assessment
+                            </CardTitle>
+                            <CardDescription>
+                              Prompt engineering skills across difficulty levels
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="flex items-center gap-4 mb-4">
+                              <div className={`text-4xl font-bold ${getScoreColor(promptData.totalScore)}`}>
+                                {promptData.totalScore}%
+                              </div>
+                              <div>
+                                <div className="font-semibold">{getPromptArchBandInterpretation(promptData.totalScore).title}</div>
+                                <div className="text-sm text-muted-foreground">{getPromptArchBandInterpretation(promptData.totalScore).description}</div>
+                              </div>
+                            </div>
+                            {promptData.scores && (
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                {Object.entries(promptData.scores).map(([level, score]) => (
+                                  <div key={level} className="text-center p-3 rounded-lg border bg-card">
+                                    <div className="text-xs text-muted-foreground mb-1">{level}</div>
+                                    <div className={`text-xl font-bold ${getScoreColor(score as number)}`}>{score as number}%</div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {aiqData && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <BarChart3 className="h-5 w-5 text-green-500" />
+                              AIQ Assessment (AI Ethics)
+                            </CardTitle>
+                            <CardDescription>
+                              Algorithmic Integrity Quotient - understanding of AI ethics and responsible AI
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="flex items-center gap-4 mb-4">
+                              <div className={`text-4xl font-bold ${getScoreColor(aiqData.totalScore)}`}>
+                                {aiqData.totalScore}%
+                              </div>
+                              <div>
+                                <div className="font-semibold">{getAIQBandInterpretation(aiqData.totalScore).title}</div>
+                                <div className="text-sm text-muted-foreground">{getAIQBandInterpretation(aiqData.totalScore).description}</div>
+                              </div>
+                            </div>
+                            {aiqData.scores && (
+                              <div className="grid grid-cols-3 gap-3">
+                                {Object.entries(aiqData.scores).map(([key, score]) => (
+                                  <div key={key} className="text-center p-3 rounded-lg border bg-card">
+                                    <div className="text-xs text-muted-foreground mb-1">{key.replace(/_/g, ' ')}</div>
+                                    <div className={`text-xl font-bold ${getScoreColor(score as number)}`}>{score as number}%</div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {selectedReportData.aiInsights && (
+                        <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <Sparkles className="h-5 w-5 text-primary" />
+                              AI-Generated Insights
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="prose prose-sm max-w-none dark:prose-invert">
+                              <p className="whitespace-pre-wrap">{selectedReportData.aiInsights}</p>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </>
+                  );
+                }
+                
+                if (selectedReportData.reportType === 'role_fit_single' || selectedReportData.reportType === 'role_fit_multi') {
+                  return (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
                           <Target className="h-5 w-5 text-primary" />
-                          AI Readiness Assessment
+                          Role Fit Analysis
                         </CardTitle>
                       </CardHeader>
-                      <CardContent>
-                        <div className="flex justify-between items-center mb-4">
-                          <span className="text-sm font-medium">Total Score</span>
-                          <span className="text-2xl font-bold text-primary">{ai.totalScore}%</span>
+                      <CardContent className="space-y-6">
+                        <div className="flex items-center gap-4">
+                          <div className={`text-4xl font-bold ${getScoreColor(selectedReportData.overallFit || 0)}`}>
+                            {selectedReportData.overallFit || 0}%
+                          </div>
+                          <div>
+                            <div className="font-semibold">Overall Fit Score</div>
+                            <div className="text-sm text-muted-foreground">
+                              {(selectedReportData.overallFit || 0) >= 70 ? 'Strong candidate match' :
+                               (selectedReportData.overallFit || 0) >= 50 ? 'Moderate candidate match' : 'Limited candidate match'}
+                            </div>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          {Object.entries(ai.scores || {}).map(([skill, score]) => (
-                            <div key={skill} className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">{skill}</span>
-                              <span className="font-medium">{score as number}%</span>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-
-                  {selectedReportData.aiqAssessments?.map((aiq: any, idx: number) => (
-                    <Card key={`aiq-${idx}`}>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <BarChart3 className="h-5 w-5 text-primary" />
-                          AIQ Assessment
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex justify-between items-center mb-4">
-                          <span className="text-sm font-medium">AIQ Score</span>
-                          <span className="text-2xl font-bold text-primary">{aiq.totalScore}</span>
-                        </div>
-                        {aiq.scores?.situational_awareness && (
-                          <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Situational Awareness</span>
-                              <span className="font-medium">{aiq.scores.situational_awareness}%</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">System Understanding</span>
-                              <span className="font-medium">{aiq.scores.system_understanding || 'N/A'}%</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Ethical Calibration</span>
-                              <span className="font-medium">{aiq.scores.ethical_calibration || 'N/A'}%</span>
-                            </div>
+                        
+                        {selectedReportData.skillAlignments && selectedReportData.skillAlignments.length > 0 && (
+                          <div className="space-y-3">
+                            <h4 className="font-semibold">Skill Alignment</h4>
+                            {selectedReportData.skillAlignments.map((skill: any, idx: number) => {
+                              const gap = skill.candidateScore - skill.requiredScore;
+                              return (
+                                <div key={idx} className="p-3 rounded-lg border bg-card">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <span className="font-medium">{skill.skillName}</span>
+                                    <Badge variant={gap >= 0 ? "default" : "destructive"}>
+                                      {gap >= 0 ? `+${gap}%` : `${gap}%`}
+                                    </Badge>
+                                  </div>
+                                  <div className="flex gap-4 text-sm">
+                                    <span>Candidate: <span className={getScoreColor(skill.candidateScore)}>{skill.candidateScore}%</span></span>
+                                    <span>Required: {skill.requiredScore}%</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        
+                        {selectedReportData.analysis && (
+                          <div className="p-4 bg-muted/50 rounded-lg">
+                            <h4 className="font-semibold mb-2 flex items-center gap-2">
+                              <Sparkles className="h-4 w-4 text-primary" />
+                              AI Analysis
+                            </h4>
+                            <p className="text-sm whitespace-pre-wrap">{selectedReportData.analysis}</p>
                           </div>
                         )}
                       </CardContent>
                     </Card>
-                  ))}
-
-                  {selectedReportData.promptArchitectureAssessments?.map((pa: any, idx: number) => (
-                    <Card key={`pa-${idx}`}>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <FileText className="h-5 w-5 text-primary" />
-                          Prompt Architecture Assessment
+                  );
+                }
+                
+                if (selectedReportData.reportType === 'profile_insights') {
+                  return (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Sparkles className="h-5 w-5 text-primary" />
+                          Profile Insights
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="flex justify-between items-center mb-4">
-                          <span className="text-sm font-medium">Total Score</span>
-                          <span className="text-2xl font-bold text-primary">{pa.totalScore}%</span>
-                        </div>
+                        {selectedReportData.insights ? (
+                          <div className="prose prose-sm max-w-none dark:prose-invert">
+                            <div className="whitespace-pre-wrap">{selectedReportData.insights}</div>
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground">No insights available.</p>
+                        )}
                       </CardContent>
                     </Card>
-                  ))}
-                </>
-              ) : selectedReportData.reportType === 'role_fit_single' || selectedReportData.reportType === 'role_fit_multi' ? (
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Target className="h-5 w-5 text-primary" />
-                      Role Fit Analysis
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="text-sm font-medium">Overall Fit Score</span>
-                      <span className={`text-2xl font-bold ${
-                        (selectedReportData.overallFit || 0) >= 70 ? 'text-green-600' :
-                        (selectedReportData.overallFit || 0) >= 50 ? 'text-amber-600' : 'text-red-600'
-                      }`}>
-                        {selectedReportData.overallFit || 0}%
-                      </span>
-                    </div>
-                    {selectedReportData.analysis && (
-                      <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-                        <p className="text-sm whitespace-pre-wrap">{selectedReportData.analysis}</p>
-                      </div>
-                    )}
-                    {selectedReportData.skillAlignments && (
-                      <div className="mt-4 space-y-2">
-                        {selectedReportData.skillAlignments.map((skill: any, idx: number) => (
-                          <div key={idx} className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">{skill.skillName}</span>
-                            <div className="flex gap-2">
-                              <span>Candidate: {skill.candidateScore}%</span>
-                              <span className="text-muted-foreground">|</span>
-                              <span>Required: {skill.requiredScore}%</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ) : selectedReportData.reportType === 'profile_insights' ? (
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-primary" />
-                      Profile Insights
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {selectedReportData.insights ? (
-                      <div className="prose prose-sm max-w-none dark:prose-invert">
-                        <p className="whitespace-pre-wrap">{selectedReportData.insights}</p>
-                      </div>
-                    ) : (
-                      <p className="text-muted-foreground">No insights available.</p>
-                    )}
-                  </CardContent>
-                </Card>
-              ) : selectedReportData.reportType === 'assessment' ? (
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <ClipboardList className="h-5 w-5 text-primary" />
-                      Assessment Report
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {selectedReportData.totalScore !== undefined && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">Total Score</span>
-                          <span className="text-2xl font-bold text-primary">{selectedReportData.totalScore}%</span>
-                        </div>
-                      )}
-                      {selectedReportData.scores && (
-                        <div className="grid grid-cols-2 gap-2">
-                          {Object.entries(selectedReportData.scores).map(([skill, score]) => (
-                            <div key={skill} className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">{skill}</span>
-                              <span className="font-medium">{score as number}%</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-primary" />
-                      Report Data
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <pre className="text-xs bg-muted/50 p-4 rounded-lg overflow-auto max-h-96">
-                      {JSON.stringify(selectedReportData, null, 2)}
-                    </pre>
-                  </CardContent>
-                </Card>
-              )}
+                  );
+                }
+                
+                return (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <FileText className="h-5 w-5 text-primary" />
+                        Report Data
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <pre className="text-xs bg-muted/50 p-4 rounded-lg overflow-auto max-h-96">
+                        {JSON.stringify(selectedReportData, null, 2)}
+                      </pre>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
