@@ -13928,48 +13928,60 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
       // Check for existing cached report (unless forceRefresh is requested)
       // Use correct report type based on candidate count
       const cachedReportType = candidateIds.length === 1 ? 'individual' : 'comparison';
+      let hasIncompleteCachedReport = false;
+      
       if (!forceRefresh) {
         const existingReport = await storage.findExistingPartnerReport(
           partner.id,
           cachedReportType,
           candidateIds
         );
-        
+
         if (existingReport) {
-          // Return cached report without charging credits
-          return res.json({
-            ...existingReport.resultData,
-            cached: true,
-            cachedAt: existingReport.createdAt,
-            reportId: existingReport.id,
-          });
+          // Only use cached report if it has aiInsights (for complete data)
+          const resultData = existingReport.resultData as any;
+          if (resultData && 'aiInsights' in resultData) {
+            // Return cached report without charging credits
+            return res.json({
+              ...resultData,
+              cached: true,
+              cachedAt: existingReport.createdAt,
+              reportId: existingReport.id,
+            });
+          }
+          // Cached report lacks aiInsights - mark for regeneration without credit charge
+          hasIncompleteCachedReport = true;
         }
       }
 
       // All validations passed - NOW pre-check credits before consuming
+      // Skip credit consumption if regenerating an incomplete cached report (already paid)
       const creditsRequired = candidateIds.length;
-      const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);
       
-      if (quotaBalance.remaining < creditsRequired) {
-        // Check if partner has overage enabled (has card on file)
-        const partnerAccount = await storage.getPartnerAccount(partner.id);
-        if (!partnerAccount?.stripeCustomerId) {
-          return res.status(402).json({ 
-            message: `Insufficient credits. You need ${creditsRequired} credits to compare ${creditsRequired} candidates, but only have ${quotaBalance.remaining} available.`,
-            creditsRequired,
-            creditsRemaining: quotaBalance.remaining
-          });
+      if (!hasIncompleteCachedReport) {
+        const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);
+        
+        if (quotaBalance.remaining < creditsRequired) {
+          // Check if partner has overage enabled (has card on file)
+          const partnerAccount = await storage.getPartnerAccount(partner.id);
+          if (!partnerAccount?.stripeCustomerId) {
+            return res.status(402).json({ 
+              message: `Insufficient credits. You need ${creditsRequired} credits to compare ${creditsRequired} candidates, but only have ${quotaBalance.remaining} available.`,
+              creditsRequired,
+              creditsRemaining: quotaBalance.remaining
+            });
+          }
+          // If partner has card on file, allow overage - credits will be consumed below
         }
-        // If partner has card on file, allow overage - credits will be consumed below
-      }
 
-      // Consume credits atomically (1 per candidate)
-      for (let i = 0; i < creditsRequired; i++) {
-        await storage.consumePartnerTest(
-          partner.id,
-          null,
-          `Candidate comparison analysis (${i + 1}/${creditsRequired})`
-        );
+        // Consume credits atomically (1 per candidate)
+        for (let i = 0; i < creditsRequired; i++) {
+          await storage.consumePartnerTest(
+            partner.id,
+            null,
+            `Candidate comparison analysis (${i + 1}/${creditsRequired})`
+          );
+        }
       }
 
       const skillBasedAssessmentTypes = ['fit', 'ai_readiness', 'ai-readiness'];
