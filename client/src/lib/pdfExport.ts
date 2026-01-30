@@ -118,8 +118,8 @@ interface RoleFitData {
       criticality?: 'critical' | 'important' | 'nice-to-have';
       dataAvailable?: boolean;
     }> | null;
-    strengths: string[];
-    gaps: string[];
+    strengths: (string | { skill: string; summary: string; description: string })[];
+    gaps: (string | { skill: string; summary: string; description: string })[];
     cohortBenchmarks?: {
       overall?: { percentile: number; totalCandidates: number; position: string };
       fit?: { percentile: number; totalCandidates: number; skillCount: number; avgScore: number };
@@ -2330,15 +2330,21 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   let strengthLeftY = yPos;
   let strengthRightY = yPos;
   
-  strengthDescriptions.forEach((strength: string, index: number) => {
+  strengthDescriptions.forEach((strength: string | { skill: string; summary: string; description: string }, index: number) => {
     const isLeftCol = index % 2 === 0;
     const boxX = isLeftCol ? 20 : 20 + itemBoxWidth + itemBoxGap;
     const currentY = isLeftCol ? strengthLeftY : strengthRightY;
     
+    // Handle both string and object formats
+    const isObject = typeof strength === 'object' && strength !== null;
+    const summaryText = isObject ? strength.summary : String(strength);
+    const descriptionText = isObject ? strength.description : null;
+    const fullText = descriptionText ? summaryText + ' - ' + descriptionText : summaryText;
+    
     // Calculate box height based on text content - smaller font and tighter spacing
     pdf.setFontSize(7);
-    const wrappedLines = pdf.splitTextToSize(strength, itemBoxWidth - 6);
-    const boxHeight = Math.max(10, wrappedLines.length * 3 + 4);
+    const wrappedLines = pdf.splitTextToSize(fullText, itemBoxWidth - 6);
+    const boxHeight = Math.max(12, wrappedLines.length * 3 + 4);
     
     // Draw individual box with subtle green styling
     pdf.setFillColor(250, 255, 250); // Very light green
@@ -2380,15 +2386,21 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   let gapLeftY = yPos;
   let gapRightY = yPos;
   
-  gapDescriptions.forEach((gap: string, index: number) => {
+  gapDescriptions.forEach((gap: string | { skill: string; summary: string; description: string }, index: number) => {
     const isLeftCol = index % 2 === 0;
     const boxX = isLeftCol ? 20 : 20 + itemBoxWidth + itemBoxGap;
     const currentY = isLeftCol ? gapLeftY : gapRightY;
     
+    // Handle both string and object formats
+    const isObject = typeof gap === 'object' && gap !== null;
+    const summaryText = isObject ? gap.summary : String(gap);
+    const descriptionText = isObject ? gap.description : null;
+    const fullText = descriptionText ? summaryText + ' - ' + descriptionText : summaryText;
+    
     // Calculate box height based on text content - smaller font and tighter spacing
     pdf.setFontSize(7);
-    const wrappedLines = pdf.splitTextToSize(gap, itemBoxWidth - 6);
-    const boxHeight = Math.max(10, wrappedLines.length * 3 + 4);
+    const wrappedLines = pdf.splitTextToSize(fullText, itemBoxWidth - 6);
+    const boxHeight = Math.max(12, wrappedLines.length * 3 + 4);
     
     // Draw individual box with subtle amber styling
     pdf.setFillColor(255, 253, 245); // Very light amber

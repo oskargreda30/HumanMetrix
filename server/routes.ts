@@ -25,6 +25,7 @@ import { createPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured, g
 import { consumeTestCredit } from "./partner-auth";
 import { logAiCost, extractUsage, AI_USAGE_OPERATION_TYPES } from "./ai-cost-tracker";
 import multer from "multer";
+import { getStrengthDescription, getDevelopmentDescription } from "../shared/skillNames";
 // Use createRequire for pdf-parse as it's a CommonJS module
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
@@ -9445,8 +9446,8 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         let criticalGaps = 0;
         let totalCriticalSkills = 0;
         let assessedCriticalSkills = 0;
-        const strengths: string[] = [];
-        const gaps: string[] = [];
+        const strengths: Array<{skill: string; summary: string; description: string}> = [];
+        const gaps: Array<{skill: string; summary: string; description: string}> = [];
         const missingAssessments: string[] = [];
         
         // Track which assessment types are missing
@@ -9479,11 +9480,19 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
               criticalGaps++;
             }
 
-            // Identify strengths and gaps (only for assessed skills)
+            // Identify strengths and gaps (only for assessed skills) with expanded descriptions
             if (skill.score > skill.requiredScore + 5) {
-              strengths.push(`Strong ${skill.skillName}`);
+              strengths.push({
+                skill: skill.skillName,
+                summary: `Strong ${skill.skillName} (+${skill.score - skill.requiredScore} above required)`,
+                description: getStrengthDescription(skill.skillName)
+              });
             } else if (skill.gap > 15) {
-              gaps.push(`Gap in ${skill.skillName}`);
+              gaps.push({
+                skill: skill.skillName,
+                summary: `Gap in ${skill.skillName} (${skill.gap} below required)`,
+                description: getDevelopmentDescription(skill.skillName)
+              });
             }
           }
         });
@@ -16254,15 +16263,23 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         const hasSufficientData = dataCoverage >= 40;
 
         // Build strengths and gaps
-        const strengths: string[] = [];
-        const gaps: string[] = [];
+        const strengths: Array<{skill: string; summary: string; description: string}> = [];
+        const gaps: Array<{skill: string; summary: string; description: string}> = [];
         const riskFlags: string[] = [];
         
         assessedSkills.forEach(skill => {
           if (skill.gap <= -10) {
-            strengths.push(`Strong in ${skill.skillName} (+${Math.abs(skill.gap)} above required)`);
+            strengths.push({
+              skill: skill.skillName,
+              summary: `Strong in ${skill.skillName} (+${Math.abs(skill.gap)} above required)`,
+              description: getStrengthDescription(skill.skillName)
+            });
           } else if (skill.gap > 15) {
-            gaps.push(`Gap in ${skill.skillName} (${skill.gap} points below required)`);
+            gaps.push({
+              skill: skill.skillName,
+              summary: `Gap in ${skill.skillName} (${skill.gap} below required)`,
+              description: getDevelopmentDescription(skill.skillName)
+            });
             if (skill.criticality === 'critical') {
               riskFlags.push(`Critical skill gap: ${skill.skillName}`);
             }

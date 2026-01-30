@@ -280,3 +280,99 @@ export type FitScores = Record<FitSkillName, number>;
 export type AIReadinessScores = Record<AIReadinessSkillName, number>;
 export type AIQScores = Record<AIQSkillName, number>;
 export type PromptArchitectureScores = Record<PromptArchitectureSkillName, number>;
+
+// ============================================================================
+// SKILL DESCRIPTIONS - Brief explanations for strengths/development areas
+// ============================================================================
+
+export const FIT_SKILL_DESCRIPTIONS: Record<string, { strength: string; development: string }> = {
+  'High Agency': {
+    strength: 'Takes initiative and drives results independently without waiting for direction.',
+    development: 'May need support building confidence to take ownership of outcomes.',
+  },
+  'Intellectual Curiosity': {
+    strength: 'Actively seeks to understand new concepts and asks insightful questions.',
+    development: 'Could benefit from developing deeper inquiry habits and exploration.',
+  },
+  'Resilience': {
+    strength: 'Maintains composure and adapts effectively when facing setbacks.',
+    development: 'May need coaching to build coping strategies under pressure.',
+  },
+  'Empathy & Ethics': {
+    strength: 'Demonstrates strong moral compass and consideration for others.',
+    development: 'Could improve awareness of diverse perspectives and ethical nuances.',
+  },
+  'Growth Mindset': {
+    strength: 'Embraces challenges as opportunities and learns from feedback.',
+    development: 'May benefit from reframing setbacks as learning opportunities.',
+  },
+  'Interpersonal Agility': {
+    strength: 'Navigates diverse relationships and adapts communication style effectively.',
+    development: 'Could strengthen skills in building rapport across different contexts.',
+  },
+};
+
+export const AI_READINESS_SKILL_DESCRIPTIONS: Record<string, { strength: string; development: string }> = {
+  'AI Literacy & Prompt Engineering': {
+    strength: 'Strong understanding of AI capabilities and crafts effective prompts.',
+    development: 'Would benefit from hands-on practice with AI tools and prompt techniques.',
+  },
+  'Technical Fundamentals': {
+    strength: 'Solid grasp of technical concepts needed to work with AI systems.',
+    development: 'Could strengthen foundational technical knowledge for AI integration.',
+  },
+  'Data Fluency': {
+    strength: 'Comfortable interpreting data and making data-driven decisions.',
+    development: 'May need development in data analysis and interpretation skills.',
+  },
+  'Critical Thinking & Problem-Solving': {
+    strength: 'Approaches problems systematically and evaluates AI outputs critically.',
+    development: 'Could improve analytical thinking when validating AI-generated content.',
+  },
+  'Adaptability & Continuous Learning': {
+    strength: 'Quickly adapts to new AI tools and embraces ongoing learning.',
+    development: 'May need encouragement to stay current with rapidly evolving AI landscape.',
+  },
+  'Collaboration & Communication': {
+    strength: 'Effectively communicates AI concepts and collaborates across teams.',
+    development: 'Could improve ability to explain AI capabilities to diverse audiences.',
+  },
+  'Responsible AI & Ethical Awareness': {
+    strength: 'Strong awareness of AI ethics, bias, and responsible use principles.',
+    development: 'Would benefit from deeper understanding of AI governance and ethics.',
+  },
+  'Creativity & Innovation': {
+    strength: 'Applies creative thinking to leverage AI in novel ways.',
+    development: 'Could explore more innovative applications of AI in their work.',
+  },
+  'Domain Expertise': {
+    strength: 'Deep domain knowledge that enhances AI application in their field.',
+    development: 'May need to strengthen industry-specific knowledge for AI integration.',
+  },
+};
+
+/**
+ * Get a brief description for a strength based on skill name
+ */
+export function getStrengthDescription(skillName: string): string {
+  const fitDesc = FIT_SKILL_DESCRIPTIONS[skillName];
+  if (fitDesc) return fitDesc.strength;
+  
+  const aiDesc = AI_READINESS_SKILL_DESCRIPTIONS[skillName];
+  if (aiDesc) return aiDesc.strength;
+  
+  return 'Demonstrates strong capability in this area.';
+}
+
+/**
+ * Get a brief description for a development area based on skill name
+ */
+export function getDevelopmentDescription(skillName: string): string {
+  const fitDesc = FIT_SKILL_DESCRIPTIONS[skillName];
+  if (fitDesc) return fitDesc.development;
+  
+  const aiDesc = AI_READINESS_SKILL_DESCRIPTIONS[skillName];
+  if (aiDesc) return aiDesc.development;
+  
+  return 'Could benefit from focused development in this area.';
+}

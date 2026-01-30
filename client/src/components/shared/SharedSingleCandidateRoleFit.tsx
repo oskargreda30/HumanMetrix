@@ -57,8 +57,8 @@ type RoleAlignment = {
     criticality?: 'critical' | 'important' | 'nice-to-have';
     dataAvailable?: boolean;
   }> | null;
-  strengths: string[];
-  gaps: string[];
+  strengths: (string | { skill: string; summary: string; description: string })[];
+  gaps: (string | { skill: string; summary: string; description: string })[];
   cohortBenchmarks?: {
     overall?: { percentile: number; totalCandidates: number; position: string };
     fit?: { percentile: number; totalCandidates: number; skillCount: number; avgScore: number };
@@ -524,13 +524,23 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-2">
-                  {alignment.strengths.map((strength, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm">{strength}</span>
-                    </li>
-                  ))}
+                <ul className="space-y-3">
+                  {alignment.strengths.map((strength, index) => {
+                    const isObject = typeof strength === 'object' && strength !== null;
+                    const summary = isObject ? strength.summary : strength;
+                    const description = isObject ? strength.description : null;
+                    return (
+                      <li key={index} className="flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <span className="text-sm font-medium">{summary}</span>
+                          {description && (
+                            <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
                   {alignment.strengths.length === 0 && (
                     <li className="text-sm text-muted-foreground">No significant strengths identified</li>
                   )}
@@ -546,13 +556,23 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-2">
-                  {alignment.gaps.map((gap, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm">{gap}</span>
-                    </li>
-                  ))}
+                <ul className="space-y-3">
+                  {alignment.gaps.map((gap, index) => {
+                    const isObject = typeof gap === 'object' && gap !== null;
+                    const summary = isObject ? gap.summary : gap;
+                    const description = isObject ? gap.description : null;
+                    return (
+                      <li key={index} className="flex items-start gap-2">
+                        <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <span className="text-sm font-medium">{summary}</span>
+                          {description && (
+                            <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
                   {alignment.gaps.length === 0 && (
                     <li className="text-sm text-muted-foreground">No significant gaps identified</li>
                   )}
