@@ -18,27 +18,37 @@ export function AnalysisLoadingScreen({
   const [startTime] = useState(Date.now());
   const [showComplete, setShowComplete] = useState(false);
 
+  // Handle progress bar animation to 95%
+  useEffect(() => {
+    if (isComplete) return; // Don't animate when complete
+    
+    const interval = setInterval(() => {
+      const elapsed = (Date.now() - startTime) / 1000;
+      const expectedProgress = (elapsed / averageTimeSeconds) * 95;
+      const newProgress = Math.min(expectedProgress, 95);
+      setProgress(newProgress);
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [isComplete, startTime, averageTimeSeconds]);
+
+  // Handle completion: show 100% then call callback after 500ms
   useEffect(() => {
     if (isComplete && !showComplete) {
       setProgress(100);
       setShowComplete(true);
+    }
+  }, [isComplete, showComplete]);
+
+  // Separate effect for the transition callback to avoid cleanup issues
+  useEffect(() => {
+    if (showComplete && onTransitionComplete) {
       const timer = setTimeout(() => {
-        onTransitionComplete?.();
+        onTransitionComplete();
       }, 500);
       return () => clearTimeout(timer);
     }
-
-    if (!isComplete) {
-      const interval = setInterval(() => {
-        const elapsed = (Date.now() - startTime) / 1000;
-        const expectedProgress = (elapsed / averageTimeSeconds) * 95;
-        const newProgress = Math.min(expectedProgress, 95);
-        setProgress(newProgress);
-      }, 100);
-
-      return () => clearInterval(interval);
-    }
-  }, [isComplete, startTime, averageTimeSeconds, showComplete, onTransitionComplete]);
+  }, [showComplete, onTransitionComplete]);
 
   return (
     <div 
