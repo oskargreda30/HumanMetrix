@@ -3,7 +3,15 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Users, Target, TrendingUp, Trophy, AlertTriangle, Download, CheckCircle2, AlertCircle, FileText, BarChart2, Sparkles, MessageSquare, Clock, ShieldAlert, DollarSign, ArrowUp, Brain } from "lucide-react";
+import { Loader2, Users, Target, TrendingUp, Trophy, AlertTriangle, Download, CheckCircle2, AlertCircle, FileText, BarChart2, Sparkles, MessageSquare, Clock, ShieldAlert, DollarSign, ArrowUp, Brain, Send, ExternalLink } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -210,10 +218,22 @@ const getCoverageBadge = (coverage?: { percentage: number }) => {
   }
 };
 
+type InsufficientDataError = {
+  message: string;
+  insufficientDataCandidates?: Array<{
+    userName: string;
+    email: string;
+    dataCoverage: number;
+    missingAssessments: string[];
+  }>;
+};
+
 export default function PartnerMultiCandidateRoleFitTab() {
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
   const [selectedRole, setSelectedRole] = useState("");
   const [isExporting, setIsExporting] = useState(false);
+  const [insufficientDataDialogOpen, setInsufficientDataDialogOpen] = useState(false);
+  const [insufficientDataError, setInsufficientDataError] = useState<InsufficientDataError | null>(null);
   const chartRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -233,18 +253,41 @@ export default function PartnerMultiCandidateRoleFitTab() {
         jobRoleId: selectedRole,
         candidateIds: selectedCandidates,
       }, { timeoutMs: 120000 });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Failed to generate comparison" }));
+        // If the error contains insufficient data candidates, throw with that data
+        const error = new Error(errorData.message || "Failed to generate comparison") as Error & { 
+          insufficientDataCandidates?: InsufficientDataError['insufficientDataCandidates'] 
+        };
+        if (errorData.insufficientDataCandidates) {
+          (error as any).insufficientDataCandidates = errorData.insufficientDataCandidates;
+        }
+        throw error;
+      }
+      
       return res.json();
     },
     onSuccess: (data: MultiCandidateComparison) => {
       queryClient.setQueryData(['multi-candidate-comparison', selectedRole, selectedCandidates.join(',')], data);
       toast({ title: "Comparison generated successfully" });
     },
-    onError: (error: Error) => {
-      toast({
-        title: "Comparison failed",
-        description: error.message || "Failed to generate comparison. Please try again.",
-        variant: "destructive",
-      });
+    onError: (error: Error & { insufficientDataCandidates?: InsufficientDataError['insufficientDataCandidates'] }) => {
+      // Check if this is an insufficient data error that should show a dialog
+      if (error.insufficientDataCandidates && error.insufficientDataCandidates.length > 0) {
+        setInsufficientDataError({
+          message: error.message,
+          insufficientDataCandidates: error.insufficientDataCandidates,
+        });
+        setInsufficientDataDialogOpen(true);
+      } else {
+        // Regular error - show toast
+        toast({
+          title: "Comparison failed",
+          description: error.message || "Failed to generate comparison. Please try again.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -1527,6 +1570,79 @@ export default function PartnerMultiCandidateRoleFitTab() {
           </div>
         </>
       )}
+
+      {/* Insufficient Data Dialog */}
+      <Dialog open={insufficientDataDialogOpen} onOpenChange={setInsufficientDataDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-600">
+              <AlertTriangle className="h-5 w-5" />
+              Insufficient Assessment Data
+            </DialogTitle>
+            <DialogDescription>
+              Some candidates don't have enough assessment data to generate a meaningful comparison.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {insufficientDataError?.insufficientDataCandidates && insufficientDataError.insufficientDataCandidates.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  The following candidates need to complete additional assessments:
+                </p>
+                
+                {insufficientDataError.insufficientDataCandidates.map((candidate, index) => (
+                  <div key={index} className="p-3 bg-muted rounded-lg">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="font-medium">{candidate.userName}</p>
+                        <p className="text-sm text-muted-foreground">{candidate.email}</p>
+                      </div>
+                      <Badge variant="outline" className="text-amber-600 border-amber-300">
+                        {candidate.dataCoverage}% Coverage
+                      </Badge>
+                    </div>
+                    
+                    {candidate.missingAssessments && candidate.missingAssessments.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-xs text-muted-foreground mb-1">Missing assessments:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {candidate.missingAssessments.map((assessment, i) => (
+                            <Badge key={i} variant="secondary" className="text-xs">
+                              {assessment}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-sm text-blue-800 dark:text-blue-200 flex items-start gap-2">
+                <Send className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <span>
+                  Invite these candidates to complete the missing assessments from the{' '}
+                  <Link href="/partner?tab=invitations" onClick={() => setInsufficientDataDialogOpen(false)}>
+                    <span className="font-medium underline inline-flex items-center gap-1 cursor-pointer hover:text-blue-600">
+                      Invitations tab
+                      <ExternalLink className="h-3 w-3" />
+                    </span>
+                  </Link>
+                </span>
+              </p>
+            </div>
+            
+            <div className="flex justify-end">
+              <Button onClick={() => setInsufficientDataDialogOpen(false)} data-testid="button-close-insufficient-data-dialog">
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
