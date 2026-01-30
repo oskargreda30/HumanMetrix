@@ -2488,10 +2488,10 @@ export default function PartnerDashboard() {
 
               {/* Welcome Message */}
               <div className="text-center py-6">
-                <h2 className="text-2xl font-semibold mb-2" data-testid="text-welcome">
+                <h2 className="text-2xl font-semibold mb-2 text-white" data-testid="text-welcome">
                   Welcome back{partner?.companyName ? `, ${partner.companyName}` : ''}
                 </h2>
-                <p className="text-muted-foreground text-lg">What do you want to do today?</p>
+                <p className="text-white/90 text-lg">What do you want to do today?</p>
               </div>
 
               {/* Quick Actions */}
