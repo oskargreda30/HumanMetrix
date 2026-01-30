@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Users, Target, TrendingUp, Trophy, AlertTriangle, Download, CheckCircle2, AlertCircle, FileText, BarChart2, Sparkles, MessageSquare, Clock, ShieldAlert, DollarSign } from "lucide-react";
+import { Loader2, Users, Target, TrendingUp, Trophy, AlertTriangle, Download, CheckCircle2, AlertCircle, FileText, BarChart2, Sparkles, MessageSquare, Clock, ShieldAlert, DollarSign, ArrowUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -1468,8 +1468,8 @@ export default function PartnerMultiCandidateRoleFitTab() {
           {/* Skills Legend */}
           <SkillsLegend />
 
-          {/* Export PDF Button - Bottom of Dashboard */}
-          <div className="flex justify-center pt-6 pb-4">
+          {/* Export PDF and Back to Top Buttons - Bottom of Dashboard */}
+          <div className="flex justify-center gap-4 pt-6 pb-4">
             <Button
               onClick={handleExportPDF}
               disabled={isExporting}
@@ -1487,6 +1487,15 @@ export default function PartnerMultiCandidateRoleFitTab() {
                   Export as PDF
                 </>
               )}
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              data-testid="button-back-to-top-bottom"
+            >
+              <ArrowUp className="h-4 w-4 mr-2" />
+              Back to Top
             </Button>
           </div>
         </>
