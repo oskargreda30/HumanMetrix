@@ -13,6 +13,14 @@ Do not make changes to the file `replit.nix`.
 ### UI/UX Decisions
 The frontend leverages React + TypeScript, Shadcn UI, and Tailwind CSS for a responsive and modern user experience, utilizing Wouter for routing and TanStack Query for data management. Design elements include a new HM monogram logo with a cyan/blue gradient, professional PDF report generation, scroll-triggered hero animations, and a network tech background. A product roadmap visualizes future assessment releases, and a dedicated marketing page (`/ecosystem-index`) highlights team capability diagnostics.
 
+**Mobile Responsiveness**: The Partner Dashboard is fully optimized for mobile devices using Tailwind responsive classes. Key patterns applied:
+- Font sizes: `text-xs md:text-base` or `text-sm md:text-lg` for smaller mobile text
+- Padding: `p-3 md:p-6` for tighter mobile spacing
+- Icons: `h-3 w-3 md:h-4 md:w-4` for smaller mobile icons
+- Gaps: `gap-2 md:gap-4` for reduced mobile spacing
+- Layouts: `flex-col md:flex-row` for stacked mobile layouts
+All tabs (Overview, Analysis, Results, Invitations, Billing, Team, Settings, Ecosystem Index) use these consistent responsive patterns.
+
 ### Technical Implementations
 The platform uses a React, TypeScript, and Express stack with PostgreSQL and Drizzle ORM for data persistence. Authentication is handled via email/password with bcryptjs and session-based mechanisms. Payment processing is integrated with Stripe, supporting multi-currency and PPP pricing. AI capabilities are powered by the OpenAI API (GPT-5). A dual-provider email system (Gmail via Nodemailer and SendGrid) offers automatic failover and admin-configurable preferences. PDF generation uses `jsPDF` and `html2canvas`.
 
