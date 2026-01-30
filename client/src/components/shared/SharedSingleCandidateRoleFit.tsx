@@ -151,6 +151,9 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
   const { data: alignment, isLoading: isLoadingAlignment } = useQuery<RoleAlignment>({
     queryKey: alignmentQueryKey as any,
     enabled: !!selectedCandidate && !!selectedRole && analysisTriggered,
+    staleTime: Infinity, // Prevent refetch - report is cached server-side
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   // Reset analysis state when selection changes
@@ -165,9 +168,10 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
           };
 
   const handleAnalyzeRoleFit = () => {
+    // Single-loading UX: just enable the GET query which handles all analysis server-side
     if (selectedCandidate && selectedRole) {
       setAnalysisTriggered(true);
-      analyzeRoleFitMutation.mutate();
+      // analyzeRoleFitMutation removed - GET role-alignment endpoint handles everything
     }
   };
 
@@ -189,70 +193,11 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
     },
   });
 
-  const analyzeRoleFitMutation = useMutation({
-    mutationFn: async () => {
-      const payload = config.candidateIdParam === 'userId' 
-        ? { userId: selectedCandidate, jobRoleId: selectedRole }
-        : { candidateId: selectedCandidate, jobRoleId: selectedRole };
-      const res = await apiRequest('POST', config.analyzeRoleFitEndpoint, payload, { timeoutMs: 120000 });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData([`${config.roleAlignmentEndpoint}?${config.candidateIdParam}=${selectedCandidate}&jobRoleId=${selectedRole}`], data);
-      toast({ title: "Role fit analysis completed" });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Analysis failed",
-        description: error.message || "Failed to analyze role fit. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
+  // analyzeRoleFitMutation removed - now handled server-side in GET role-alignment
 
-  // Mutation for Prompt Engineering Role Fit Analysis
-  const analyzePromptRoleFitMutation = useMutation({
-    mutationFn: async () => {
-      const payload = config.candidateIdParam === 'userId' 
-        ? { userId: selectedCandidate, jobRoleId: selectedRole }
-        : { candidateId: selectedCandidate, jobRoleId: selectedRole };
-      const endpoint = config.analyzePromptRoleFitEndpoint || '/api/admin/analyze-prompt-role-fit';
-      const res = await apiRequest('POST', endpoint, payload, { timeoutMs: 120000 });
-      return res.json();
-    },
-    onSuccess: (data) => {
-            toast({ title: "Prompt Engineering analysis completed" });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Analysis failed",
-        description: error.message || "Failed to analyze prompt engineering fit.",
-        variant: "destructive",
-      });
-    },
-  });
+  // analyzePromptRoleFitMutation removed - now handled server-side in GET role-alignment
 
-  // Mutation for AIQ Role Fit Analysis
-  const analyzeAiqRoleFitMutation = useMutation({
-    mutationFn: async () => {
-      const payload = config.candidateIdParam === 'userId' 
-        ? { userId: selectedCandidate, jobRoleId: selectedRole }
-        : { candidateId: selectedCandidate, jobRoleId: selectedRole };
-      const endpoint = config.analyzeAiqRoleFitEndpoint || '/api/admin/analyze-aiq-role-fit';
-      const res = await apiRequest('POST', endpoint, payload, { timeoutMs: 120000 });
-      return res.json();
-    },
-    onSuccess: (data) => {
-            toast({ title: "AIQ analysis completed" });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Analysis failed",
-        description: error.message || "Failed to analyze AIQ role fit.",
-        variant: "destructive",
-      });
-    },
-  });
+  // analyzeAiqRoleFitMutation removed - now handled server-side in GET role-alignment
 
   const selectedCandidateData = candidates?.find((c) => c.user.id === selectedCandidate);
   const selectedRoleData = roles?.find((r) => r.id === selectedRole);
@@ -956,9 +901,8 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin text-cyan-500" />
-                  <p className="text-sm text-muted-foreground">Preparing prompt engineering analysis...</p>
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-sm">No Prompt Architecture assessment data available for this candidate.</p>
                 </div>
               )}
             </CardContent>
@@ -990,9 +934,8 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin text-purple-500" />
-                  <p className="text-sm text-muted-foreground">Preparing AIQ role fit analysis...</p>
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-sm">No AIQ assessment data available for this candidate.</p>
                 </div>
               )}
             </CardContent>
