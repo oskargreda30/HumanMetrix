@@ -70,6 +70,11 @@ export default function PartnerResultsTab() {
 
   const { data: selectedReportData, isLoading: isLoadingReport } = useQuery<any>({
     queryKey: ['/api/partner/me/analysis-reports', selectedReportId],
+    queryFn: async () => {
+      const response = await fetch(`/api/partner/me/analysis-reports/${selectedReportId}`);
+      if (!response.ok) throw new Error('Failed to fetch report');
+      return response.json();
+    },
     enabled: !!selectedReportId && reportViewerOpen,
   });
 
