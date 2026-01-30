@@ -13938,9 +13938,9 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
         );
 
         if (existingReport) {
-          // Only use cached report if it has aiInsights (for complete data)
+          // Only use cached report if it has non-null aiInsights (for complete data)
           const resultData = existingReport.resultData as any;
-          if (resultData && 'aiInsights' in resultData) {
+          if (resultData && resultData.aiInsights) {
             // Return cached report without charging credits
             return res.json({
               ...resultData,
