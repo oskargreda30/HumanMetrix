@@ -3324,8 +3324,8 @@ interface MultiCandidateComparisonData {
       category: 'fit' | 'ai_readiness';
       dataAvailable?: boolean;
     }>;
-    strengths: string[];
-    gaps: string[];
+    strengths: (string | { skill: string; summary: string; description: string })[];
+    gaps: (string | { skill: string; summary: string; description: string })[];
     riskFlags: string[];
     dataCoverage?: {
       percentage: number;
@@ -3802,11 +3802,12 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     pdf.setFontSize(7);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
+    const firstStrength = candidate.strengths.length > 0 
+      ? (typeof candidate.strengths[0] === 'string' ? candidate.strengths[0] : candidate.strengths[0].skill) 
+      : '';
     const notes = candidate.riskFlags.length > 0 
       ? candidate.riskFlags[0] 
-      : candidate.strengths.length > 0 
-        ? candidate.strengths[0].replace('Strong ', '')
-        : '';
+      : firstStrength.replace('Strong ', '');
     const truncNotes = notes.length > 25 ? notes.slice(0, 23) + '...' : notes;
     pdf.text(truncNotes, tableX + colWidths.rank + colWidths.name + colWidths.fit + colWidths.tier + 2, yPos + 6);
     

@@ -1578,7 +1578,12 @@ export default function PartnerMultiCandidateRoleFitTab() {
       )}
 
       {/* Insufficient Data Dialog */}
-      <Dialog open={insufficientDataDialogOpen} onOpenChange={setInsufficientDataDialogOpen}>
+      <Dialog open={insufficientDataDialogOpen} onOpenChange={(open) => {
+        setInsufficientDataDialogOpen(open);
+        if (!open) {
+          setInsufficientDataError(null);
+        }
+      }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-amber-600">

@@ -446,8 +446,8 @@ export const multiCandidateComparisons = pgTable("multi_candidate_comparisons", 
       criticality?: 'critical' | 'important' | 'nice-to-have';
       category: 'fit' | 'ai_readiness';
     }[];
-    strengths: string[];
-    gaps: string[];
+    strengths: (string | { skill: string; summary: string; description: string })[];
+    gaps: (string | { skill: string; summary: string; description: string })[];
     riskFlags?: string[];
   }[]>(),
   roleSnapshot: jsonb("role_snapshot").notNull().$type<{
