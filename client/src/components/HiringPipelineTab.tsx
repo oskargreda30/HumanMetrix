@@ -82,6 +82,7 @@ export function HiringPipelineTab() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSession, setSelectedSession] = useState<PipelineSession | null>(null);
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [notes, setNotes] = useState("");
   const [draggedSession, setDraggedSession] = useState<PipelineSession | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
@@ -199,6 +200,11 @@ export function HiringPipelineTab() {
     setNotesDialogOpen(true);
   };
 
+  const openDetailsDialog = (session: PipelineSession) => {
+    setSelectedSession(session);
+    setDetailsDialogOpen(true);
+  };
+
   const moveToStage = async (session: PipelineSession, targetStage: string) => {
     await updateStageMutation.mutateAsync({
       sessionId: session.sessionId,
@@ -286,16 +292,17 @@ export function HiringPipelineTab() {
                   {sessions.map((session) => (
                     <Card
                       key={session.sessionId}
-                      className="cursor-grab active:cursor-grabbing hover-elevate"
+                      className="cursor-pointer hover-elevate"
                       draggable
                       onDragStart={(e) => handleDragStart(e, session)}
+                      onClick={() => openDetailsDialog(session)}
                       data-testid={`pipeline-card-${session.sessionId}`}
                     >
                       <CardContent className="p-3">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1 mb-1">
-                              <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                              <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0 cursor-grab" />
                               <span className="font-medium text-sm truncate" data-testid={`text-candidate-${session.sessionId}`}>
                                 {session.externalEmail || session.externalUserId || "Unknown"}
                               </span>
@@ -325,7 +332,7 @@ export function HiringPipelineTab() {
                           </div>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" data-testid={`button-card-menu-${session.sessionId}`}>
+                              <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()} data-testid={`button-card-menu-${session.sessionId}`}>
                                 <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -403,15 +410,16 @@ export function HiringPipelineTab() {
                   {sessions.map((session) => (
                     <Card
                       key={session.sessionId}
-                      className="cursor-grab active:cursor-grabbing hover-elevate"
+                      className="cursor-pointer hover-elevate"
                       draggable
                       onDragStart={(e) => handleDragStart(e, session)}
+                      onClick={() => openDetailsDialog(session)}
                     >
                       <CardContent className="p-3">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1 mb-1">
-                              <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                              <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0 cursor-grab" />
                               <span className="font-medium text-sm truncate">
                                 {session.externalEmail || session.externalUserId || "Unknown"}
                               </span>
@@ -435,7 +443,7 @@ export function HiringPipelineTab() {
                           </div>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
                                 <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -503,6 +511,83 @@ export function HiringPipelineTab() {
               ) : null}
               Save Notes
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Candidate Details Dialog */}
+      <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Candidate Details</DialogTitle>
+          </DialogHeader>
+          {selectedSession && (
+            <div className="space-y-4 py-2">
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Email</p>
+                  <p className="font-medium">{selectedSession.externalEmail || "Not provided"}</p>
+                </div>
+                {selectedSession.externalUserId && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">User ID</p>
+                    <p className="font-medium">{selectedSession.externalUserId}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-muted-foreground">Assessment</p>
+                  <Badge variant="outline">
+                    {assessmentLabels[selectedSession.assessmentType] || selectedSession.assessmentType}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Status</p>
+                  <Badge variant={selectedSession.status === "completed" ? "default" : "secondary"}>
+                    {selectedSession.status}
+                  </Badge>
+                </div>
+                {selectedSession.status === "completed" && selectedSession.totalScore !== null && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Score</p>
+                    <p className="text-2xl font-bold">{selectedSession.totalScore}%</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-muted-foreground">Pipeline Stage</p>
+                  <Badge variant="outline">
+                    {stages.find(s => s.id === selectedSession.pipelineStage)?.label || selectedSession.pipelineStage}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Date</p>
+                  <p className="text-sm">
+                    {selectedSession.completedAt
+                      ? `Completed: ${format(new Date(selectedSession.completedAt), "MMM d, yyyy 'at' h:mm a")}`
+                      : `Started: ${format(new Date(selectedSession.createdAt), "MMM d, yyyy 'at' h:mm a")}`
+                    }
+                  </p>
+                </div>
+                {selectedSession.pipelineNotes && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Notes</p>
+                    <p className="text-sm bg-muted p-2 rounded">{selectedSession.pipelineNotes}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setDetailsDialogOpen(false)} data-testid="button-close-details">
+              Close
+            </Button>
+            {selectedSession?.status === "completed" && (
+              <Button asChild data-testid="button-view-results">
+                <a href={`/partner/results/${selectedSession.sessionId}`} target="_blank" rel="noopener noreferrer">
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Results
+                </a>
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
