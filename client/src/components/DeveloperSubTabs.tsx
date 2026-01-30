@@ -43,6 +43,7 @@ interface ApiKey {
   lastUsedAt: string | null;
   createdAt: string;
   organisationId: string | null;
+  revokedAt: string | null;
 }
 
 interface ApiKeysData {
@@ -104,10 +105,10 @@ export function DeveloperSubTabs({
   const isSubscriptionBilling = billingType === 'subscription';
   const canCreateLiveKey = !isSubscriptionBilling || hasCardOnFile === true;
 
-  // Get a test API key for the widget sandbox
+  // Get a test API key for the widget sandbox (excluding revoked keys)
   const testApiKey = useMemo(() => {
     if (!apiKeys?.apiKeys) return null;
-    const testKey = apiKeys.apiKeys.find(k => k.environment === 'test');
+    const testKey = apiKeys.apiKeys.find(k => k.environment === 'test' && !k.revokedAt);
     return testKey?.displayKey || null;
   }, [apiKeys]);
 
@@ -272,9 +273,9 @@ export function DeveloperSubTabs({
                 <div className="flex justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
-              ) : apiKeys?.apiKeys && apiKeys.apiKeys.length > 0 ? (
+              ) : apiKeys?.apiKeys && apiKeys.apiKeys.filter(k => !k.revokedAt).length > 0 ? (
                 <div className="space-y-4">
-                  {apiKeys.apiKeys.map((key) => (
+                  {apiKeys.apiKeys.filter(k => !k.revokedAt).map((key) => (
                     <div 
                       key={key.id} 
                       className="flex items-center justify-between p-4 border rounded-lg bg-muted/30"

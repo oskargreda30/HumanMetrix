@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, BellOff, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info, Upload, Lock, ChevronDown, Pencil, Download, ShoppingCart } from "lucide-react";
+import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, BellOff, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, EyeOff, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info, Upload, Lock, ChevronDown, Pencil, Download, ShoppingCart } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DeveloperSubTabs } from "@/components/DeveloperSubTabs";
 import { PartnerTour } from "@/components/PartnerTour";
@@ -911,6 +911,7 @@ interface ApiKey {
   createdAt: string;
   organisationId: string | null;
   isActive: boolean;
+  revokedAt: string | null;
 }
 
 interface ApiKeysData {
@@ -1085,6 +1086,9 @@ export default function PartnerDashboard() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // API key rotation state
   const [rotatingKeyId, setRotatingKeyId] = useState<string | null>(null);
@@ -4413,36 +4417,75 @@ export default function PartnerDashboard() {
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="current-password">Current Password</Label>
-                        <Input
-                          id="current-password"
-                          type="password"
-                          placeholder="Enter current password"
-                          value={currentPassword}
-                          onChange={(e) => setCurrentPassword(e.target.value)}
-                          data-testid="input-current-password"
-                        />
+                        <div className="relative">
+                          <Input
+                            id="current-password"
+                            type={showCurrentPassword ? "text" : "password"}
+                            placeholder="Enter current password"
+                            value={currentPassword}
+                            onChange={(e) => setCurrentPassword(e.target.value)}
+                            data-testid="input-current-password"
+                            className="pr-10"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                            onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                            data-testid="button-toggle-current-password"
+                          >
+                            {showCurrentPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                          </Button>
+                        </div>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="new-password">New Password</Label>
-                        <Input
-                          id="new-password"
-                          type="password"
-                          placeholder="Enter new password (min 8 characters)"
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          data-testid="input-new-password"
-                        />
+                        <div className="relative">
+                          <Input
+                            id="new-password"
+                            type={showNewPassword ? "text" : "password"}
+                            placeholder="Enter new password (min 8 characters)"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            data-testid="input-new-password"
+                            className="pr-10"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                            data-testid="button-toggle-new-password"
+                          >
+                            {showNewPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                          </Button>
+                        </div>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="confirm-password">Confirm New Password</Label>
-                        <Input
-                          id="confirm-password"
-                          type="password"
-                          placeholder="Confirm new password"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          data-testid="input-confirm-password"
-                        />
+                        <div className="relative">
+                          <Input
+                            id="confirm-password"
+                            type={showConfirmPassword ? "text" : "password"}
+                            placeholder="Confirm new password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            data-testid="input-confirm-password"
+                            className="pr-10"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            data-testid="button-toggle-confirm-password"
+                          >
+                            {showConfirmPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                          </Button>
+                        </div>
                       </div>
                       <Button
                         onClick={handleChangePassword}
