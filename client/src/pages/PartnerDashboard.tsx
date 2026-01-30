@@ -1781,16 +1781,39 @@ export default function PartnerDashboard() {
       const response = await apiRequest("POST", "/api/partner/me/team/invite", data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/partner/me/team"] });
       setShowInviteDialog(false);
       setInviteEmail("");
       setInviteName("");
       setInviteRole("member");
-      toast({ title: "Invitation sent", description: "Team member has been invited." });
+      const message = data?.message || "Team member has been invited.";
+      const title = data?.reactivated ? "Invitation renewed" : (data?.resent ? "Invitation resent" : "Invitation sent");
+      toast({ title, description: message });
     },
     onError: (error: Error) => {
-      toast({ title: "Failed to invite", description: error.message, variant: "destructive" });
+      toast({ title: "Unable to send invitation", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const resendInvitationMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await apiRequest("POST", `/api/partner/me/team/${id}/resend`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/me/team"] });
+      toast({ 
+        title: "Invitation resent", 
+        description: data.message || "A new invitation email has been sent."
+      });
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: "Failed to resend invitation", 
+        description: error.message, 
+        variant: "destructive" 
+      });
     },
   });
 
@@ -5136,6 +5159,22 @@ export default function PartnerDashboard() {
                             </div>
                             {isAdmin && (
                               <div className="flex gap-1">
+                                {member.inviteStatus !== 'accepted' && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    onClick={() => resendInvitationMutation.mutate(member.id)}
+                                    disabled={resendInvitationMutation.isPending}
+                                    title="Resend invitation"
+                                    data-testid={`button-resend-invite-${member.id}`}
+                                  >
+                                    {resendInvitationMutation.isPending ? (
+                                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                    ) : (
+                                      <RefreshCw className="h-4 w-4 text-muted-foreground" />
+                                    )}
+                                  </Button>
+                                )}
                                 <Button 
                                   variant="ghost" 
                                   size="icon" 

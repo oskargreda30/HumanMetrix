@@ -1878,6 +1878,7 @@ export function registerPartnerRoutes(app: Express) {
       
       // Server-side validation: collect ALL errors before processing
       const validationErrors: Array<{ row: number; externalUserId: string; field: string; error: string }> = [];
+      const candidatesToReactivate: Array<{ row: number; candidate: any; existingInvitation: any; identifier: string }> = [];
       const seenEmails = new Map<string, number>();
       
       // Pre-fetch all team members for this partner to check for conflicts
@@ -1927,15 +1928,43 @@ export function registerPartnerRoutes(app: Express) {
         // Check if this candidate already exists in the system
         const existingInvitation = existingInvitationEmails.get(candidate.email.toLowerCase());
         if (existingInvitation) {
+          // Check the invitation status to determine action
+          if (existingInvitation.status === 'revoked' || existingInvitation.status === 'expired') {
+            // Allow re-invitation for revoked/expired invitations - track for reactivation
+            candidatesToReactivate.push({
+              row,
+              candidate,
+              existingInvitation,
+              identifier
+            });
+            continue;
+          }
+          
+          // For active invitations (pending, sent, opened, started, completed), provide specific errors
+          let errorMessage = 'DUPLICATE_CANDIDATE';
+          let additionalInfo: any = {
+            candidateName: existingInvitation.name || candidate.email,
+            candidateEmail: candidate.email,
+            invitationId: existingInvitation.id,
+            status: existingInvitation.status,
+            hasResults: existingInvitation.status === 'completed' || existingInvitation.status === 'in_progress',
+          };
+          
+          if (existingInvitation.status === 'completed') {
+            additionalInfo.message = 'This candidate has already completed their assessment.';
+          } else if (existingInvitation.status === 'in_progress' || existingInvitation.status === 'started') {
+            additionalInfo.message = 'This candidate has an assessment in progress.';
+          } else if (existingInvitation.status === 'pending' || existingInvitation.status === 'sent') {
+            additionalInfo.message = 'An invitation is already pending for this candidate. Use the resend option if needed.';
+            additionalInfo.canResend = true;
+          }
+          
           validationErrors.push({ 
             row, 
             externalUserId: identifier, 
             field: 'email', 
-            error: 'DUPLICATE_CANDIDATE',
-            candidateName: existingInvitation.name || candidate.email,
-            candidateEmail: candidate.email,
-            invitationId: existingInvitation.id,
-            hasResults: existingInvitation.status === 'completed' || existingInvitation.status === 'in_progress',
+            error: errorMessage,
+            ...additionalInfo
           } as any);
           continue;
         }
@@ -2075,6 +2104,55 @@ export function registerPartnerRoutes(app: Express) {
         }
       }
       
+      // Handle reactivation of revoked/expired invitations
+      let reactivatedInvitations: any[] = [];
+      if (candidatesToReactivate.length > 0) {
+        console.log(`[Bulk Invitations] Reactivating ${candidatesToReactivate.length} revoked/expired invitations`);
+        for (const { row, candidate, existingInvitation, identifier } of candidatesToReactivate) {
+          try {
+                        const newInviteToken = crypto.randomBytes(32).toString('hex');
+            const newExpiresAt = new Date();
+            newExpiresAt.setDate(newExpiresAt.getDate() + expiryDays);
+            const baseUrl = process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER?.toLowerCase() || 'repl'}.repl.co` : 'http://localhost:5000';
+            const newInviteUrl = `${baseUrl}/invite/${newInviteToken}`;
+            
+            // Determine assessment types - use existing or new ones
+            const assessmentTypes = candidate.assessmentTypes?.length > 0 
+              ? candidate.assessmentTypes.map((t: string) => t.toLowerCase())
+              : existingInvitation.assessmentTypes || ['fit'];
+            
+            await storage.updatePartnerCandidateInvitation(existingInvitation.id, {
+              status: 'pending',
+              inviteToken: newInviteToken,
+              inviteUrl: newInviteUrl,
+              expiresAt: newExpiresAt,
+              name: candidate.name || existingInvitation.name,
+              metadata: candidate.metadata || existingInvitation.metadata,
+              assessmentTypes: assessmentTypes,
+              tokensUsed: assessmentTypes.length,
+              emailSentAt: null, // Reset email tracking
+            });
+            
+            reactivatedInvitations.push({
+              ...existingInvitation,
+              status: 'pending',
+              inviteToken: newInviteToken,
+              inviteUrl: newInviteUrl,
+              expiresAt: newExpiresAt,
+              tokensUsed: assessmentTypes.length,
+            });
+          } catch (err: any) {
+            console.error(`[Bulk Invitations] Failed to reactivate invitation for ${candidate.email}:`, err);
+            errors.push({
+              row,
+              externalUserId: identifier,
+              error: `Failed to reactivate invitation: ${err.message || 'Unknown error'}`,
+            });
+          }
+        }
+        console.log(`[Bulk Invitations] Reactivated ${reactivatedInvitations.length} invitations`);
+      }
+      
       // Bulk insert invitations
       console.log(`[Bulk Invitations] Prepared ${invitations.length} invitations, ${errors.length} errors`);
       let createdInvitations: any[] = [];
@@ -2088,12 +2166,17 @@ export function registerPartnerRoutes(app: Express) {
         
       }
       
+      // Combine created and reactivated invitations for totals
+      const allSuccessfulInvitations = [...createdInvitations, ...reactivatedInvitations];
+      const totalSuccess = allSuccessfulInvitations.length;
+      const totalTokensUsed = allSuccessfulInvitations.reduce((sum, inv) => sum + (inv.tokensUsed || 0), 0);
+      
       // Update import record
       await storage.updatePartnerCandidateImport(importRecord.id, {
-        successCount: createdInvitations.length,
+        successCount: totalSuccess,
         failedCount: errors.length,
-        tokensUsed: createdInvitations.reduce((sum, inv) => sum + inv.tokensUsed, 0),
-        status: errors.length === 0 ? 'completed' : (createdInvitations.length > 0 ? 'partial' : 'failed'),
+        tokensUsed: totalTokensUsed,
+        status: errors.length === 0 ? 'completed' : (totalSuccess > 0 ? 'partial' : 'failed'),
         errorReport: errors.length > 0 ? { errors } : null,
         completedAt: new Date(),
       });
@@ -2104,18 +2187,21 @@ export function registerPartnerRoutes(app: Express) {
         importId: importRecord.id,
         summary: {
           totalCandidates: candidates.length,
-          successCount: createdInvitations.length,
+          successCount: totalSuccess,
+          newInvitations: createdInvitations.length,
+          reactivatedInvitations: reactivatedInvitations.length,
           failedCount: errors.length,
-          tokensUsed: createdInvitations.reduce((sum, inv) => sum + inv.tokensUsed, 0),
+          tokensUsed: totalTokensUsed,
         },
         errors: errors.length > 0 ? errors : undefined,
-        invitations: createdInvitations.map(inv => ({
+        invitations: allSuccessfulInvitations.map(inv => ({
           id: inv.id,
           externalUserId: inv.externalUserId,
           email: inv.email,
           inviteUrl: inv.inviteUrl,
           status: inv.status,
           expiresAt: inv.expiresAt,
+          reactivated: reactivatedInvitations.some(r => r.id === inv.id),
         })),
       });
       
@@ -2335,13 +2421,31 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(400).json({ error: "Invitation has no email address" });
       }
       
-      // Check if invitation is still valid (not completed or expired)
+      // Check if invitation is still valid (not completed)
       if (invitation.status === 'completed') {
         return res.status(400).json({ error: "Cannot send email for completed invitation" });
       }
       
-      if (invitation.expiresAt && new Date(invitation.expiresAt) < new Date()) {
-        return res.status(400).json({ error: "Invitation has expired" });
+      // For expired or revoked invitations, regenerate token and extend expiry
+      let inviteToken = invitation.inviteToken;
+      let expiresAt = invitation.expiresAt;
+      const isExpired = invitation.expiresAt && new Date(invitation.expiresAt) < new Date();
+      const isRevoked = invitation.status === 'revoked';
+      
+      if (isExpired || isRevoked) {
+                inviteToken = crypto.randomBytes(32).toString('hex');
+        expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 14); // 14 day expiry
+        
+        const baseUrl = process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER?.toLowerCase() || 'repl'}.repl.co` : 'http://localhost:5000';
+        const inviteUrl = `${baseUrl}/invite/${inviteToken}`;
+        
+        await storage.updatePartnerCandidateInvitation(invitation.id, {
+          status: 'pending',
+          inviteToken,
+          inviteUrl,
+          expiresAt,
+        });
       }
       
       // Send the email
@@ -2349,11 +2453,11 @@ export function registerPartnerRoutes(app: Express) {
         candidateEmail: invitation.email,
         candidateName: invitation.name || undefined,
         assessmentTypes: invitation.assessmentTypes,
-        inviteToken: invitation.inviteToken,
+        inviteToken,
         partnerCompanyName: partner.companyName || 'HumanMetrix Partner',
         partnerLogoUrl: partner.logoUrl,
         partnerPrimaryColor: partner.brandingPrimaryColor,
-        expiresAt: invitation.expiresAt,
+        expiresAt,
       });
       
       if (!emailResult.success) {
@@ -2366,9 +2470,20 @@ export function registerPartnerRoutes(app: Express) {
         emailSentAt: new Date(),
       });
       
+      let message = "Email sent successfully";
+      if (isExpired) {
+        message = "Invitation renewed and email sent. The invitation now has a new expiry date.";
+      } else if (isRevoked) {
+        message = "Invitation reactivated and email sent.";
+      } else if (invitation.emailSentAt) {
+        message = "Email resent successfully";
+      }
+      
       res.json({ 
         success: true, 
-        message: invitation.emailSentAt ? "Email resent successfully" : "Email sent successfully" 
+        message,
+        reactivated: isExpired || isRevoked,
+        newExpiresAt: (isExpired || isRevoked) ? expiresAt : undefined,
       });
     } catch (error) {
       console.error("Error sending invitation email:", error);

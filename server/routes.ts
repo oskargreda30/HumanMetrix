@@ -12641,38 +12641,145 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(403).json({ message: "Admin access required to invite team members" });
       }
       
-      const { email, name, role } = req.body;
+      const { email: rawEmail, name, role } = req.body;
+      
+      // Normalize email: trim whitespace and convert to lowercase
+      const email = rawEmail?.trim()?.toLowerCase();
       
       if (!email) {
         return res.status(400).json({ message: "Email is required" });
       }
       
       if (!isValidEmail(email)) {
-        return res.status(400).json({ message: "Please provide a valid email address" });
+        return res.status(400).json({ message: "Please provide a valid email address (e.g., name@company.com)" });
       }
       
       if (name && !isValidName(name)) {
-        return res.status(400).json({ message: "Invalid name format" });
+        return res.status(400).json({ message: "Invalid name format. Please use only letters, spaces, hyphens, and apostrophes." });
+      }
+      
+      // Check for self-invitation
+      if (req.user.email?.toLowerCase() === email) {
+        return res.status(400).json({ message: "You cannot invite yourself as a team member." });
       }
       
       // Check if already invited as a team member
       const existing = await storage.getPartnerTeamMemberByEmail(partner.id, email);
       if (existing) {
-        return res.status(400).json({ message: "This email has already been invited" });
+        // Provide specific messages based on invitation status
+        if (existing.inviteStatus === 'accepted') {
+          return res.status(400).json({ 
+            message: "This person is already an active team member.",
+            errorType: 'already_active'
+          });
+        } else if (existing.inviteStatus === 'pending') {
+          // Check if invitation has expired
+          if (existing.inviteExpiresAt && new Date(existing.inviteExpiresAt) < new Date()) {
+            // Expired invitation - allow re-invitation by updating the existing record
+            const crypto = await import('crypto');
+            const newInviteToken = crypto.randomBytes(32).toString('hex');
+            const newExpiresAt = new Date();
+            newExpiresAt.setDate(newExpiresAt.getDate() + 7);
+            
+            await storage.updatePartnerTeamMember(existing.id, {
+              inviteToken: newInviteToken,
+              inviteExpiresAt: newExpiresAt,
+              invitedByUserId: req.user.id,
+              name: name || existing.name,
+              role: role || existing.role,
+            });
+            
+            // Send new invitation email
+            try {
+              const { sendPartnerTeamInvitationEmail } = await import('./email');
+              await sendPartnerTeamInvitationEmail({
+                email,
+                inviteeName: name || existing.name || undefined,
+                inviterName: [req.user.firstName, req.user.lastName].filter(Boolean).join(' ') || req.user.email,
+                companyName: partner.companyName || 'HumanMetrix Partner',
+                inviteToken: newInviteToken,
+                role: role || existing.role || 'member',
+              });
+            } catch (emailError) {
+              console.error("Failed to send invitation email:", emailError);
+            }
+            
+            return res.json({ 
+              member: { ...existing, inviteToken: newInviteToken, inviteExpiresAt: newExpiresAt },
+              message: "Previous invitation expired. A new invitation has been sent.",
+              resent: true
+            });
+          }
+          
+          return res.status(400).json({ 
+            message: "An invitation is already pending for this email. Would you like to resend the invitation?",
+            errorType: 'pending_invitation',
+            existingMemberId: existing.id,
+            canResend: true
+          });
+        } else if (existing.inviteStatus === 'expired' || existing.inviteStatus === 'revoked') {
+          // Expired or revoked invitation - reactivate by updating the existing record
+          const crypto = await import('crypto');
+          const newInviteToken = crypto.randomBytes(32).toString('hex');
+          const newExpiresAt = new Date();
+          newExpiresAt.setDate(newExpiresAt.getDate() + 7);
+          
+          await storage.updatePartnerTeamMember(existing.id, {
+            inviteStatus: 'pending',
+            inviteToken: newInviteToken,
+            inviteExpiresAt: newExpiresAt,
+            invitedByUserId: req.user.id,
+            name: name || existing.name,
+            role: role || existing.role,
+          });
+          
+          // Send new invitation email
+          try {
+            const { sendPartnerTeamInvitationEmail } = await import('./email');
+            await sendPartnerTeamInvitationEmail({
+              email,
+              inviteeName: name || existing.name || undefined,
+              inviterName: [req.user.firstName, req.user.lastName].filter(Boolean).join(' ') || req.user.email,
+              companyName: partner.companyName || 'HumanMetrix Partner',
+              inviteToken: newInviteToken,
+              role: role || existing.role || 'member',
+            });
+          } catch (emailError) {
+            console.error("Failed to send invitation email:", emailError);
+          }
+          
+          return res.json({ 
+            member: { ...existing, inviteStatus: 'pending', inviteToken: newInviteToken, inviteExpiresAt: newExpiresAt },
+            message: "Invitation has been sent successfully.",
+            reactivated: true
+          });
+        }
+        
+        // Fallback for unknown status
+        return res.status(400).json({ message: "This email has already been invited." });
       }
       
       // Check if this email belongs to an existing candidate (user with candidate assessments)
-      const existingUser = await storage.getUserByEmail(email.toLowerCase());
+      const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         // Check if this user is a candidate for this partner (has assessment results or invitations)
-        const candidateInvitations = await storage.getPartnerCandidateInvitationsByEmail(email.toLowerCase());
+        const candidateInvitations = await storage.getPartnerCandidateInvitationsByEmail(email);
         const isCandidate = candidateInvitations.some((inv: any) => inv.partnerId === partner.id);
         
         if (isCandidate) {
           // This email is already a candidate for this partner - they need a different email for team access
           return res.status(400).json({ 
-            message: "This email is already registered as a candidate. To add this person as a team member with admin access, they must use a different email address.",
-            isCandidate: true
+            message: "This email is registered as a candidate for assessments. To add this person as a team member, they should use a different email address to avoid conflicts.",
+            errorType: 'candidate_conflict'
+          });
+        }
+        
+        // Check if this user is a team member of a different partner
+        const otherPartnerMember = await storage.getPartnerTeamMemberByUserId(existingUser.id);
+        if (otherPartnerMember && otherPartnerMember.partnerId !== partner.id) {
+          return res.status(400).json({ 
+            message: "This email is already associated with another partner organization. They must use a different email address.",
+            errorType: 'different_partner'
           });
         }
       }
@@ -12684,8 +12791,8 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
       
       const member = await storage.createPartnerTeamMember({
         partnerId: partner.id,
-        email: email.toLowerCase(),
-        name: name || null,
+        email,
+        name: name?.trim() || null,
         role: role || 'member',
         inviteStatus: 'pending',
         inviteToken,
@@ -12697,8 +12804,8 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
       try {
         const { sendPartnerTeamInvitationEmail } = await import('./email');
         await sendPartnerTeamInvitationEmail({
-          email: email.toLowerCase(),
-          inviteeName: name || undefined,
+          email,
+          inviteeName: name?.trim() || undefined,
           inviterName: [req.user.firstName, req.user.lastName].filter(Boolean).join(' ') || req.user.email,
           companyName: partner.companyName || 'HumanMetrix Partner',
           inviteToken,
@@ -12854,6 +12961,67 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
     } catch (error) {
       console.error("Error accepting team invitation:", error);
       res.status(500).json({ message: "Failed to accept invitation" });
+    }
+  });
+  
+  // Resend team member invitation
+  app.post("/api/partner/me/team/:id/resend", isAuthenticated, async (req: any, res) => {
+    try {
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerAdmin(partnerData)) {
+        return res.status(403).json({ message: "Admin access required to resend invitations" });
+      }
+      
+      const member = await storage.getPartnerTeamMember(req.params.id);
+      if (!member || member.partnerId !== partner.id) {
+        return res.status(404).json({ message: "Team member not found" });
+      }
+      
+      if (member.inviteStatus === 'accepted') {
+        return res.status(400).json({ message: "This person has already accepted their invitation." });
+      }
+      
+      // Generate new invite token and extend expiry
+      const crypto = await import('crypto');
+      const newInviteToken = crypto.randomBytes(32).toString('hex');
+      const newExpiresAt = new Date();
+      newExpiresAt.setDate(newExpiresAt.getDate() + 7);
+      
+      await storage.updatePartnerTeamMember(member.id, {
+        inviteStatus: 'pending',
+        inviteToken: newInviteToken,
+        inviteExpiresAt: newExpiresAt,
+        invitedByUserId: req.user.id,
+      });
+      
+      // Send invitation email
+      try {
+        const { sendPartnerTeamInvitationEmail } = await import('./email');
+        await sendPartnerTeamInvitationEmail({
+          email: member.email,
+          inviteeName: member.name || undefined,
+          inviterName: [req.user.firstName, req.user.lastName].filter(Boolean).join(' ') || req.user.email,
+          companyName: partner.companyName || 'HumanMetrix Partner',
+          inviteToken: newInviteToken,
+          role: member.role || 'member',
+        });
+      } catch (emailError) {
+        console.error("Failed to send invitation email:", emailError);
+        return res.status(500).json({ message: "Failed to send invitation email. Please try again." });
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "Invitation resent successfully.",
+        member: { ...member, inviteStatus: 'pending', inviteExpiresAt: newExpiresAt }
+      });
+    } catch (error) {
+      console.error("Error resending team invitation:", error);
+      res.status(500).json({ message: "Failed to resend invitation" });
     }
   });
   
