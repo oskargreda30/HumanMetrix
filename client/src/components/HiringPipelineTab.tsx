@@ -97,12 +97,61 @@ export function HiringPipelineTab() {
         pipelineNotes,
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/partner/pipeline"] });
-      toast({ title: "Pipeline updated", description: "Candidate stage has been updated." });
+    onMutate: async ({ sessionId, pipelineStage }) => {
+      // Only do optimistic updates for stage changes
+      if (!pipelineStage) return;
+      
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["/api/partner/pipeline"] });
+      
+      // Snapshot previous value
+      const previousData = queryClient.getQueryData<PipelineData>(["/api/partner/pipeline"]);
+      
+      // Optimistically update the cache
+      if (previousData) {
+        const newPipeline = { ...previousData.pipeline };
+        let movedSession: PipelineSession | undefined;
+        
+        // Find and remove session from its current stage
+        for (const stageId of Object.keys(newPipeline)) {
+          const idx = newPipeline[stageId].findIndex(s => s.sessionId === sessionId);
+          if (idx !== -1) {
+            movedSession = { ...newPipeline[stageId][idx], pipelineStage };
+            newPipeline[stageId] = newPipeline[stageId].filter(s => s.sessionId !== sessionId);
+            break;
+          }
+        }
+        
+        // Add to target stage
+        if (movedSession && newPipeline[pipelineStage]) {
+          newPipeline[pipelineStage] = [movedSession, ...newPipeline[pipelineStage]];
+        }
+        
+        // Update stages counts
+        const newStages = previousData.stages.map(stage => ({
+          ...stage,
+          count: newPipeline[stage.id]?.length || 0
+        }));
+        
+        queryClient.setQueryData<PipelineData>(["/api/partner/pipeline"], {
+          ...previousData,
+          pipeline: newPipeline,
+          stages: newStages
+        });
+      }
+      
+      return { previousData };
     },
-    onError: () => {
+    onError: (_err, _variables, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(["/api/partner/pipeline"], context.previousData);
+      }
       toast({ title: "Error", description: "Failed to update pipeline", variant: "destructive" });
+    },
+    onSettled: () => {
+      // Refetch to ensure consistency
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/pipeline"] });
     },
   });
 
