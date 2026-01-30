@@ -1342,63 +1342,6 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
               </Card>
               )}
 
-              {/* AI-Powered Comparison Insights */}
-              {config.insightsEndpoint && (
-              <Card className="bg-gradient-to-r from-purple-500/10 via-purple-500/5 to-transparent border-purple-500/20" data-testid="card-ai-insights">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Brain className="h-5 w-5 text-purple-500" />
-                    AI-Powered Comparison Insights
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    AI-generated analysis based on the comparison data
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  {generateInsightsMutation.isPending ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Loader2 className="h-12 w-12 mx-auto mb-4 animate-spin text-purple-500" />
-                      <p className="text-sm">Generating AI insights...</p>
-                      <p className="text-xs mt-2">Analyzing candidate data and generating recommendations.</p>
-                    </div>
-                  ) : aiInsights === "__NO_DATA__" ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Brain className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
-                      <p className="text-sm">No assessment data available for insights generation.</p>
-                      <p className="text-xs mt-2">Complete assessments to enable AI-powered analysis.</p>
-                    </div>
-                  ) : aiInsights ? (
-                    <div className="prose prose-sm dark:prose-invert max-w-none" data-testid="text-ai-insights">
-                      {aiInsights.split('\n\n').map((paragraph, idx) => {
-                        const headingMatch = paragraph.match(/^\*\*(.+?)\*\*/);
-                        if (headingMatch) {
-                          const heading = headingMatch[1];
-                          const content = paragraph.replace(/^\*\*.+?\*\*\n?/, '').trim();
-                          return (
-                            <div key={idx} className="mb-4">
-                              <h4 className="font-semibold text-foreground flex items-center gap-2 mb-2">
-                                <Sparkles className="h-4 w-4 text-purple-500" />
-                                {heading}
-                              </h4>
-                              {content && <p className="text-muted-foreground text-sm leading-relaxed">{content}</p>}
-                            </div>
-                          );
-                        }
-                        return (
-                          <p key={idx} className="text-muted-foreground text-sm leading-relaxed mb-3">{paragraph}</p>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Brain className="h-12 w-12 mx-auto mb-4 text-purple-500/30" />
-                      <p className="text-sm">AI insights will appear here once the analysis completes.</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-              )}
-
               {/* Summary Cards - Candidate Details & Assessment Status */}
               <Card data-testid="card-candidate-summary">
                 <CardHeader>
@@ -1407,26 +1350,14 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                       <Users className="h-5 w-5" />
                       Candidate Overview & Assessment Status
                     </CardTitle>
-                    <div className="flex flex-wrap gap-2">
-                      <Button 
-                        size="sm"
-                        onClick={handleExportPDF}
-                        data-testid="button-export-comparison-top"
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Export as PDF
-                      </Button>
-                      <Button 
-                        size="sm"
-                        variant="outline"
-                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                        className="text-white border-white/50 hover:bg-white/10"
-                        data-testid="button-back-to-top-compare"
-                      >
-                        <ChevronUp className="h-4 w-4 mr-2" />
-                        Back to Top
-                      </Button>
-                    </div>
+                    <Button 
+                      size="sm"
+                      onClick={handleExportPDF}
+                      data-testid="button-export-comparison-top"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Export as PDF
+                    </Button>
                   </div>
                   <CardDescription>
                     Contact details, application date, and completion status for each assessment type (FIT, AI Readiness, Prompt Architecture, AIQ)
@@ -2021,7 +1952,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                 </Card>
               )}
 
-              {/* 4. Strengths & Weaknesses Summary */}
+              {/* 4. Strengths & Weaknesses Summary - Clean horizontal bar design */}
               {comparison.hasSkillData && (
                 <Card data-testid="card-strengths-weaknesses" data-report-section="strengths-weaknesses">
                   <CardHeader>
@@ -2034,63 +1965,65 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                       {selectedCandidateData?.map((candidate: any, index: number) => {
                         const { strengths, weaknesses } = getStrengthsAndWeaknesses(index);
                         
                         return (
-                          <Card key={candidate.user.id} className="border" style={{ borderColor: CHART_COLORS[index] }}>
-                            <CardHeader className="pb-3">
-                              <CardTitle className="text-base" style={{ color: CHART_COLORS[index] }}>
-                                {getCandidateName(candidate)}
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="space-y-4">
-                                {/* Strengths */}
-                                <div className="bg-green-50 dark:bg-green-900/10 rounded-lg p-4">
-                                  <div className="flex items-center gap-2 mb-4">
-                                    <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
-                                    <span className="text-sm font-bold text-green-700 dark:text-green-300 uppercase tracking-wide">Top Strengths</span>
-                                  </div>
-                                  <div className="space-y-3">
-                                    {strengths.map((s) => (
-                                      <div key={s.name} className="space-y-1.5">
-                                        <div className="flex items-center justify-between gap-2">
-                                          <span className="text-sm font-medium text-foreground">{s.name}</span>
-                                          <span className="text-sm font-bold text-green-600 dark:text-green-400">{s.score}%</span>
-                                        </div>
-                                        <div className="h-2 bg-green-200 dark:bg-green-800 rounded-full overflow-hidden">
-                                          <div className="h-full bg-green-500 rounded-full" style={{ width: `${s.score}%` }} />
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                                
-                                {/* Weaknesses */}
-                                <div className="bg-amber-50 dark:bg-amber-900/10 rounded-lg p-4">
-                                  <div className="flex items-center gap-2 mb-4">
-                                    <TrendingDown className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                                    <span className="text-sm font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wide">Development Areas</span>
-                                  </div>
-                                  <div className="space-y-3">
-                                    {weaknesses.map((w) => (
-                                      <div key={w.name} className="space-y-1.5">
-                                        <div className="flex items-center justify-between gap-2">
-                                          <span className="text-sm font-medium text-foreground">{w.name}</span>
-                                          <span className="text-sm font-bold text-amber-600 dark:text-amber-400">{w.score}%</span>
-                                        </div>
-                                        <div className="h-2 bg-amber-200 dark:bg-amber-800 rounded-full overflow-hidden">
-                                          <div className="h-full bg-amber-500 rounded-full" style={{ width: `${w.score}%` }} />
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
+                          <div key={candidate.user.id} className="space-y-6">
+                            {/* Candidate Name Header */}
+                            <h3 className="text-lg font-semibold pb-2 border-b-2" style={{ color: CHART_COLORS[index], borderColor: CHART_COLORS[index] }}>
+                              {getCandidateName(candidate)}
+                            </h3>
+                            
+                            {/* Strengths Section */}
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2">
+                                <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                <span className="text-sm font-semibold text-green-700 dark:text-green-400 uppercase tracking-wide">Top Strengths</span>
                               </div>
-                            </CardContent>
-                          </Card>
+                              <div className="space-y-4">
+                                {strengths.map((s) => (
+                                  <div key={s.name} className="space-y-1">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="text-sm text-foreground truncate flex-1">{s.name}</span>
+                                      <span className="text-sm font-bold text-green-600 dark:text-green-400 tabular-nums">{s.score}%</span>
+                                    </div>
+                                    <div className="h-3 bg-green-100 dark:bg-green-900/30 rounded-full overflow-hidden">
+                                      <div 
+                                        className="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full transition-all duration-500" 
+                                        style={{ width: `${s.score}%` }} 
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            
+                            {/* Development Areas Section */}
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2">
+                                <TrendingDown className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                <span className="text-sm font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Development Areas</span>
+                              </div>
+                              <div className="space-y-4">
+                                {weaknesses.map((w) => (
+                                  <div key={w.name} className="space-y-1">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="text-sm text-foreground truncate flex-1">{w.name}</span>
+                                      <span className="text-sm font-bold text-amber-600 dark:text-amber-400 tabular-nums">{w.score}%</span>
+                                    </div>
+                                    <div className="h-3 bg-amber-100 dark:bg-amber-900/30 rounded-full overflow-hidden">
+                                      <div 
+                                        className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all duration-500" 
+                                        style={{ width: `${w.score}%` }} 
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
                         );
                       })}
                     </div>
@@ -2709,56 +2642,62 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
               </div>
               {/* End of Report Container */}
 
-              {/* Employer Recommendation - Shows for all comparisons (with or without role selection) */}
-              {selectedCandidateData.length > 0 && (() => {
-                // Use shared helper function for single source of truth
-                const recommendations = generateComparisonRecommendations();
-                if (!recommendations) return null;
-                
-                const { employerRecommendation, nextSteps } = recommendations;
-                
-                return (
-                  <>
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Award className="h-5 w-5 text-primary" />
-                          Hiring Recommendation
-                        </CardTitle>
-                        <CardDescription>
-                          Based on comprehensive assessment data across all four evaluation types
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-employer-recommendation">
-                          {employerRecommendation}
-                        </p>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Target className="h-5 w-5 text-blue-600" />
-                          Recommended Next Steps
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <ul className="space-y-3">
-                          {nextSteps.map((step, index) => (
-                            <li key={index} className="flex items-start gap-3" data-testid={`list-item-comparison-next-step-${index}`}>
-                              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-medium">
-                                {index + 1}
-                              </span>
-                              <span className="text-sm text-muted-foreground">{step}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </CardContent>
-                    </Card>
-                  </>
-                );
-              })()}
+              {/* Comparison Insights and Hiring Recommendation - AI-powered section */}
+              {config.insightsEndpoint && (
+              <Card className="bg-gradient-to-r from-purple-500/10 via-purple-500/5 to-transparent border-purple-500/20" data-testid="card-ai-insights">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Brain className="h-5 w-5 text-purple-500" />
+                    Comparison Insights and Hiring Recommendation
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    AI-generated analysis and recommendations based on comprehensive assessment data
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  {generateInsightsMutation.isPending ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Loader2 className="h-12 w-12 mx-auto mb-4 animate-spin text-purple-500" />
+                      <p className="text-sm">Generating AI insights...</p>
+                      <p className="text-xs mt-2">Analyzing candidate data and generating recommendations.</p>
+                    </div>
+                  ) : aiInsights === "__NO_DATA__" ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Brain className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
+                      <p className="text-sm">No assessment data available for insights generation.</p>
+                      <p className="text-xs mt-2">Complete assessments to enable AI-powered analysis.</p>
+                    </div>
+                  ) : aiInsights ? (
+                    <div className="prose prose-sm dark:prose-invert max-w-none" data-testid="text-ai-insights">
+                      {aiInsights.split('\n\n').map((paragraph, idx) => {
+                        const headingMatch = paragraph.match(/^\*\*(.+?)\*\*/);
+                        if (headingMatch) {
+                          const heading = headingMatch[1];
+                          const content = paragraph.replace(/^\*\*.+?\*\*\n?/, '').trim();
+                          return (
+                            <div key={idx} className="mb-4">
+                              <h4 className="font-semibold text-foreground flex items-center gap-2 mb-2">
+                                <Sparkles className="h-4 w-4 text-purple-500" />
+                                {heading}
+                              </h4>
+                              {content && <p className="text-muted-foreground text-sm leading-relaxed">{content}</p>}
+                            </div>
+                          );
+                        }
+                        return (
+                          <p key={idx} className="text-muted-foreground text-sm leading-relaxed mb-3">{paragraph}</p>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Brain className="h-12 w-12 mx-auto mb-4 text-purple-500/30" />
+                      <p className="text-sm">AI insights will appear here once the analysis completes.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              )}
 
               {/* Additional Services On Request */}
               <Card className="border-primary/20 bg-primary">
@@ -2816,6 +2755,16 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                       </h4>
                       <p className="text-sm text-white/70">
                         Estimated training and development investment to close identified skill gaps
+                      </p>
+                    </div>
+                    <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                      <h4 className="font-medium flex items-center gap-2 mb-2 text-white flex-wrap">
+                        <TrendingUp className="h-4 w-4 text-white" />
+                        Cohort Benchmarking
+                        <Badge className="bg-amber-500 text-white border-amber-600 text-xs ml-auto">Coming Soon</Badge>
+                      </h4>
+                      <p className="text-sm text-white/70">
+                        Compare candidate performance against industry benchmarks and peer organizations
                       </p>
                     </div>
                   </div>
