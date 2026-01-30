@@ -798,6 +798,22 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
             );
           })()}
 
+          {config.contextType === 'partner' && (
+            <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+              <div className="flex items-start gap-3">
+                <Sparkles className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                    Credit Usage for AI-Powered Analysis
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                    AI Profile Insights generation costs 1 credit. Credits are only consumed when generating new insights. Cached insights are free.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <Card data-testid="card-profile-insights">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-foreground">
