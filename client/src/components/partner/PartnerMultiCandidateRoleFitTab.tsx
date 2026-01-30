@@ -378,21 +378,6 @@ export default function PartnerMultiCandidateRoleFitTab() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4">
-        <div className="flex items-start gap-3">
-          <Sparkles className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-              Credit Usage for Analysis
-            </p>
-            <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-              This feature uses your credits for AI analysis. Generating required skill scores uses 1 credit per role. 
-              Comparing candidates uses 1 credit per candidate selected. Credits are only consumed when you click the action buttons.
-            </p>
-          </div>
-        </div>
-      </div>
-      
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -505,15 +490,9 @@ export default function PartnerMultiCandidateRoleFitTab() {
                 <>
                   <Target className="mr-2 h-4 w-4" />
                   Compare {selectedCandidates.length} Candidates Against Role
-                  <Badge variant="secondary" className="ml-2 text-[10px] font-normal">
-                    {selectedCandidates.length} credit{selectedCandidates.length !== 1 ? 's' : ''}
-                  </Badge>
                 </>
               )}
             </Button>
-            <p className="text-[10px] text-center text-muted-foreground">
-              Uses 1 credit per candidate for role fit analysis
-            </p>
           </div>
         </CardContent>
       </Card>
