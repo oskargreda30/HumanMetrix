@@ -2557,8 +2557,8 @@ export default function PartnerDashboard() {
                     </div>
                     <p className="text-xs text-muted-foreground">
                       <Button 
-                        variant="link" 
-                        className="h-auto p-0 text-xs text-primary" 
+                        variant="ghost" 
+                        className="h-auto p-0 text-xs text-primary underline hover:underline" 
                         onClick={() => { setActiveTab("billing"); window.scrollTo(0, 0); }}
                         data-testid="link-purchase-more"
                       >
@@ -3217,14 +3217,15 @@ export default function PartnerDashboard() {
                     </div>
                   )}
 
-                  {/* PAYG Credit Packages for Purchase */}
-                  {account?.partner?.billingType === 'payg' && (
+                  {/* Buy Credits - Available for all billing types */}
+                  {(account?.partner?.billingType === 'payg' || account?.partner?.billingType === 'subscription' || account?.partner?.billingType === 'enterprise') && (
                     <Card>
                       <CardHeader className="pb-2">
+                        <CardTitle className="text-lg font-semibold" data-testid="text-buy-credits-title">Buy Credits</CardTitle>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <CreditCard className="h-4 w-4" />
                           <span>1 credit = 1 assessment or AI feature use</span>
-                          <InfoTooltip content="Purchase credits in bulk with volume discounts. Larger packages offer better per-credit rates. Prices shown in your local currency." />
+                          <InfoTooltip content="Purchase credits in bulk. Prices shown in your local currency." />
                         </div>
                       </CardHeader>
                       <CardContent>
@@ -3266,6 +3267,9 @@ export default function PartnerDashboard() {
                                 const adjustedPerTestInPence = getAdjustedPriceInPence(pkg.pricePerTest);
                                 const adjustedSavingsInPence = pkg.savings > 0 ? getAdjustedPriceInPence(pkg.savings) : 0;
                                 const hasDiscount = pkg.discountPercent > 0;
+                                const isPayg = account?.partner?.billingType === 'payg';
+                                const isEnterprise = account?.partner?.billingType === 'enterprise';
+                                const subscriptionDiscountPercent = pkg.subscriptionDiscountPercent || 0;
                                 
                                 return (
                                   <div 
@@ -3273,6 +3277,7 @@ export default function PartnerDashboard() {
                                     className="border rounded-lg p-4 flex flex-col relative hover-elevate transition-all"
                                     data-testid={`package-${pkg.size}`}
                                   >
+                                    {/* Show discount badge for subscription users */}
                                     {hasDiscount && (
                                       <div className="absolute -top-2 -right-2">
                                         <Badge className="bg-green-500 text-white border-0 text-xs">
@@ -3296,9 +3301,16 @@ export default function PartnerDashboard() {
                                         {formatLocalPrice(adjustedPerTestInPence)}/credit
                                       </div>
                                     </div>
+                                    {/* Show savings for subscription users with discounts */}
                                     {adjustedSavingsInPence > 0 && (
                                       <div className="text-xs text-green-600 dark:text-green-400 text-center mb-3">
                                         Save {formatLocalPrice(adjustedSavingsInPence)}
+                                      </div>
+                                    )}
+                                    {/* Show subscription discount info for PAYG/Enterprise users */}
+                                    {(isPayg || isEnterprise) && subscriptionDiscountPercent > 0 && (
+                                      <div className="text-xs text-blue-600 dark:text-blue-400 text-center mb-3" data-testid={`subscription-discount-note-${pkg.size}`}>
+                                        Subscription: {subscriptionDiscountPercent}% off
                                       </div>
                                     )}
                                     <Button
@@ -3320,6 +3332,14 @@ export default function PartnerDashboard() {
                                 );
                               })}
                             </div>
+                            {/* Note for PAYG/Enterprise users about subscription discounts */}
+                            {(account?.partner?.billingType === 'payg' || account?.partner?.billingType === 'enterprise') && (
+                              <div className="mt-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800" data-testid="subscription-discount-banner">
+                                <p className="text-sm text-blue-700 dark:text-blue-300">
+                                  <span className="font-medium">Subscription users get volume discounts</span> ranging from 2% to 15% off on credit packages. Upgrade to a subscription plan to unlock these savings.
+                                </p>
+                              </div>
+                            )}
                           </>
                         ) : (
                           <div className="py-8 text-center text-muted-foreground">

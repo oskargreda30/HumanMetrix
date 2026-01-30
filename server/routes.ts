@@ -10555,17 +10555,26 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
       // Use partner's assigned pricePerAssessment (in smallest currency units, e.g. pence/cents)
       // Default to 500 (£5.00 / $5.00) if not set
       const basePricePerTest = matchingPartner.pricePerAssessment || 500;
+      const billingType = matchingPartner.billingType || 'payg';
       
-      // Volume discount tiers - larger packages get better rates
-      // Discount percentages applied to the partner's base price
+      // Subscription discount tiers - these are available only to subscription plan users
+      // PAYG and Enterprise users pay full price (no discounts)
+      const subscriptionDiscounts = [2, 4, 6, 8, 10, 15]; // For tiers: 10, 25, 50, 100, 250, 500
+      
+      // Volume discount tiers - discounts only apply to subscription billing
       const packageTiers = [
-        { size: 10, name: 'Starter', discountPercent: 0 },       // No discount
-        { size: 25, name: 'Growth', discountPercent: 5 },        // 5% off
-        { size: 50, name: 'Professional', discountPercent: 10 }, // 10% off
-        { size: 100, name: 'Business', discountPercent: 15 },    // 15% off
-        { size: 250, name: 'Enterprise', discountPercent: 20 },  // 20% off
-        { size: 500, name: 'Enterprise+', discountPercent: 25 }, // 25% off
-      ];
+        { size: 10, name: 'Starter' },
+        { size: 25, name: 'Growth' },
+        { size: 50, name: 'Professional' },
+        { size: 100, name: 'Business' },
+        { size: 250, name: 'Enterprise' },
+        { size: 500, name: 'Enterprise+' },
+      ].map((tier, index) => ({
+        ...tier,
+        // Only subscription users get discounts
+        discountPercent: billingType === 'subscription' ? subscriptionDiscounts[index] : 0,
+        subscriptionDiscountPercent: subscriptionDiscounts[index], // Always include what subscription users would get
+      }));
       
       // Calculate prices for each package tier
       const packages = packageTiers.map(tier => {
@@ -10579,11 +10588,12 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
           price: totalPrice,
           pricePerTest: discountedPricePerTest,
           discountPercent: tier.discountPercent,
+          subscriptionDiscountPercent: tier.subscriptionDiscountPercent,
           savings: tier.discountPercent > 0 ? (basePricePerTest * tier.size) - totalPrice : 0,
         };
       });
       
-      console.log(`[Partner Pricing] Partner: ${matchingPartner.id}, Currency: ${partnerCurrency}, Base price/test: ${basePricePerTest}, Zero-decimal: ${isZeroDecimal}`);
+      console.log(`[Partner Pricing] Partner: ${matchingPartner.id}, BillingType: ${billingType}, Currency: ${partnerCurrency}, Base price/test: ${basePricePerTest}, Zero-decimal: ${isZeroDecimal}`);
       
       res.json({
         currency: partnerCurrency,
@@ -11357,15 +11367,23 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
       // Apply server-computed PPP multiplier
       const pppAdjustedPricePerTest = Math.round(basePricePerTest * serverPPPMult);
       
+      // Subscription discount tiers - only subscription users get discounts
+      const billingType = matchingPartner.billingType || 'payg';
+      const subscriptionDiscounts = [2, 4, 6, 8, 10, 15]; // For tiers: 10, 25, 50, 100, 250, 500
+      
       // Volume discount tiers - must match the pricing API
       const packageTiers = [
-        { size: 10, name: 'Starter', discountPercent: 0 },
-        { size: 25, name: 'Growth', discountPercent: 5 },
-        { size: 50, name: 'Professional', discountPercent: 10 },
-        { size: 100, name: 'Business', discountPercent: 15 },
-        { size: 250, name: 'Enterprise', discountPercent: 20 },
-        { size: 500, name: 'Enterprise+', discountPercent: 25 },
-      ];
+        { size: 10, name: 'Starter' },
+        { size: 25, name: 'Growth' },
+        { size: 50, name: 'Professional' },
+        { size: 100, name: 'Business' },
+        { size: 250, name: 'Enterprise' },
+        { size: 500, name: 'Enterprise+' },
+      ].map((tier, index) => ({
+        ...tier,
+        // Only subscription users get discounts
+        discountPercent: billingType === 'subscription' ? subscriptionDiscounts[index] : 0,
+      }));
       
       // Find matching tier or use no discount for custom sizes
       const tier = packageTiers.find(t => t.size === packageSize);
