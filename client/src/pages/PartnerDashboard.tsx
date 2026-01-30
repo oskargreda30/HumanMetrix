@@ -4929,7 +4929,7 @@ export default function PartnerDashboard() {
                     <CardTitle>Notifications</CardTitle>
                     <CardDescription>Stay updated with your account activity</CardDescription>
                   </div>
-                  {notifications?.unreadCount && notifications.unreadCount > 0 && (
+                  {(notifications?.unreadCount ?? 0) > 0 && (
                     <Button variant="outline" size="sm" onClick={() => markAllReadMutation.mutate()} disabled={markAllReadMutation.isPending} data-testid="button-mark-all-read">
                       <Check className="h-4 w-4 mr-1.5" />
                       Mark All Read
