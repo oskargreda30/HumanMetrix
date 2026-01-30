@@ -15121,6 +15121,224 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         console.error("Failed to generate Prompt/AIQ role fit analyses:", aiError);
       }
 
+      // Calculate cohort benchmarks from all partner sessions
+      const cohortBenchmarks: {
+        overall?: { percentile: number; totalCandidates: number; position: string };
+        fit?: { percentile: number; totalCandidates: number; skillCount: number; avgScore: number };
+        ai_readiness?: { percentile: number; totalCandidates: number; skillCount: number; avgScore: number };
+        prompt_architecture?: { percentile: number; totalCandidates: number; avgScore: number };
+        aiq?: { percentile: number; totalCandidates: number; avgScore: number };
+      } = {};
+
+      try {
+        // Get all completed sessions for this partner to calculate cohort benchmarks
+        const allPartnerSessions = await storage.getSessionsByPartner(partner.id, 10000);
+        const completedPartnerSessions = allPartnerSessions.filter(s => s.status === 'completed' && s.scores);
+        
+        // Group sessions by assessment type
+        const sessionsByType: Record<string, typeof completedPartnerSessions> = {};
+        completedPartnerSessions.forEach(session => {
+          if (!sessionsByType[session.assessmentType]) {
+            sessionsByType[session.assessmentType] = [];
+          }
+          sessionsByType[session.assessmentType].push(session);
+        });
+
+        const calculatePercentile = (score: number, allScores: number[]): number => {
+          const sorted = [...allScores].sort((a, b) => a - b);
+          const belowCount = sorted.filter(s => s < score).length;
+          return Math.round((belowCount / Math.max(sorted.length - 1, 1)) * 100);
+        };
+
+        // FIT benchmarks
+        const fitSessions = sessionsByType['fit'] || [];
+        if (fitSessions.length >= 5 && fitScores) {
+          const fitAverages = fitSessions.map(s => {
+            const scores = Object.values(s.scores as Record<string, number>);
+            return scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+          });
+          const candidateFitAvg = Object.keys(fitScores).length > 0
+            ? Object.values(fitScores).reduce((a, b) => a + b, 0) / Object.keys(fitScores).length
+            : 0;
+          if (candidateFitAvg > 0) {
+            cohortBenchmarks.fit = {
+              percentile: calculatePercentile(candidateFitAvg, fitAverages),
+              totalCandidates: fitSessions.length,
+              skillCount: Object.keys(fitScores).length,
+              avgScore: Math.round(candidateFitAvg)
+            };
+          }
+        }
+
+        // AI Readiness benchmarks
+        const aiSessions = sessionsByType['ai_readiness'] || [];
+        if (aiSessions.length >= 5 && aiReadinessScores) {
+          const aiAverages = aiSessions.map(s => {
+            const scores = Object.values(s.scores as Record<string, number>);
+            return scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+          });
+          const candidateAiAvg = Object.keys(aiReadinessScores).length > 0
+            ? Object.values(aiReadinessScores).reduce((a, b) => a + b, 0) / Object.keys(aiReadinessScores).length
+            : 0;
+          if (candidateAiAvg > 0) {
+            cohortBenchmarks.ai_readiness = {
+              percentile: calculatePercentile(candidateAiAvg, aiAverages),
+              totalCandidates: aiSessions.length,
+              skillCount: Object.keys(aiReadinessScores).length,
+              avgScore: Math.round(candidateAiAvg)
+            };
+          }
+        }
+
+        // Prompt Architecture benchmarks
+        const paSessions = sessionsByType['prompt_architecture'] || [];
+        if (paSessions.length >= 5 && promptArchitectureScore !== null) {
+          const paScores = paSessions.map(s => s.totalScore || 0);
+          cohortBenchmarks.prompt_architecture = {
+            percentile: calculatePercentile(promptArchitectureScore, paScores),
+            totalCandidates: paSessions.length,
+            avgScore: promptArchitectureScore
+          };
+        }
+
+        // AIQ benchmarks
+        const aiqSessions = sessionsByType['aiq'] || [];
+        if (aiqSessions.length >= 5 && aiqScore !== null) {
+          const aiqScoresArray = aiqSessions.map(s => s.totalScore || 0);
+          cohortBenchmarks.aiq = {
+            percentile: calculatePercentile(aiqScore, aiqScoresArray),
+            totalCandidates: aiqSessions.length,
+            avgScore: aiqScore
+          };
+        }
+
+        // Calculate overall position
+        if (Object.keys(cohortBenchmarks).length > 0) {
+          const uniqueCandidates = new Set(completedPartnerSessions.map(s => s.externalEmail || s.externalUserId || s.id));
+          const candidateOverallScores: { id: string; avgScore: number }[] = [];
+          
+          uniqueCandidates.forEach(candId => {
+            const candSessions = completedPartnerSessions.filter(s => 
+              (s.externalEmail || s.externalUserId || s.id) === candId
+            );
+            if (candSessions.length > 0) {
+              const avgScores = candSessions.map(s => {
+                const scores = Object.values(s.scores as Record<string, number>);
+                return scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : s.totalScore || 0;
+              });
+              candidateOverallScores.push({
+                id: candId,
+                avgScore: avgScores.reduce((a, b) => a + b, 0) / avgScores.length
+              });
+            }
+          });
+
+          candidateOverallScores.sort((a, b) => b.avgScore - a.avgScore);
+          
+          const thisCandidateAvg = overallFit || 0;
+          let thisIndex = candidateOverallScores.findIndex(c => 
+            Math.abs(c.avgScore - thisCandidateAvg) < 1
+          );
+          if (thisIndex === -1) thisIndex = candidateOverallScores.length;
+          
+          if (candidateOverallScores.length >= 5) {
+            const actualPosition = thisIndex + 1;
+            const totalCandidates = candidateOverallScores.length;
+            const belowCount = totalCandidates - actualPosition;
+            const overallPercentile = Math.round((belowCount / Math.max(totalCandidates - 1, 1)) * 100);
+            
+            const getOrdinalSuffix = (n: number): string => {
+              const s = ['th', 'st', 'nd', 'rd'];
+              const v = n % 100;
+              return n + (s[(v - 20) % 10] || s[v] || s[0]);
+            };
+            
+            cohortBenchmarks.overall = {
+              percentile: overallPercentile,
+              totalCandidates: totalCandidates,
+              position: getOrdinalSuffix(actualPosition)
+            };
+          }
+        }
+      } catch (cohortError) {
+        console.error('Failed to calculate cohort benchmarks:', cohortError);
+      }
+
+      // Calculate role flexibility - find alternative roles this candidate fits
+      const roleFlexibilityResults: Array<{
+        roleId: string;
+        roleName: string;
+        fitScore: number;
+        rawFitScore: number;
+        roleSimilarity: number;
+        coveragePercent: number;
+        coverageLabel: 'High' | 'Medium' | 'Limited';
+        missingCriticalSkills: string[];
+        description: string;
+      }> = [];
+
+      try {
+        const allRoles = await storage.getAllJobRoles();
+        const targetRoleSkills = role.requiredScores as Record<string, number> || {};
+
+        for (const altRole of allRoles) {
+          if (altRole.id === role.id) continue; // Skip target role
+          
+          const altRequiredScores = altRole.requiredScores as Record<string, number> || {};
+          if (Object.keys(altRequiredScores).length === 0) continue;
+          
+          // Calculate candidate's fit to alternative role
+          let fitSum = 0;
+          let fitCount = 0;
+          const missingCritical: string[] = [];
+          
+          for (const [skill, required] of Object.entries(altRequiredScores)) {
+            const candidateScore = fitScores?.[skill] || aiReadinessScores?.[skill] || null;
+            if (candidateScore !== null) {
+              fitSum += Math.min(100, (candidateScore / required) * 100);
+              fitCount++;
+            }
+          }
+          
+          if (fitCount === 0) continue;
+          
+          const rawFitScore = Math.round(fitSum / fitCount);
+          
+          // Calculate role similarity (how similar is this role to target role)
+          const targetSkillSet = new Set(Object.keys(targetRoleSkills));
+          const altSkillSet = new Set(Object.keys(altRequiredScores));
+          const intersection = [...targetSkillSet].filter(s => altSkillSet.has(s));
+          const union = new Set([...targetSkillSet, ...altSkillSet]);
+          const roleSimilarity = union.size > 0 ? Math.round((intersection.length / union.size) * 100) : 0;
+          
+          // Combined score weights role similarity and candidate fit
+          const fitScore = Math.round((roleSimilarity * 0.3) + (rawFitScore * 0.7));
+          
+          const coveragePercent = Math.round((fitCount / Object.keys(altRequiredScores).length) * 100);
+          const coverageLabel = coveragePercent >= 70 ? 'High' : coveragePercent >= 40 ? 'Medium' : 'Limited';
+          
+          if (fitScore >= 50) { // Only include reasonably good fits
+            roleFlexibilityResults.push({
+              roleId: altRole.id,
+              roleName: altRole.name,
+              fitScore,
+              rawFitScore,
+              roleSimilarity,
+              coveragePercent,
+              coverageLabel,
+              missingCriticalSkills: missingCritical,
+              description: altRole.description || ''
+            });
+          }
+        }
+        
+        roleFlexibilityResults.sort((a, b) => b.fitScore - a.fitScore);
+      } catch (roleFlexError) {
+        console.error('Failed to calculate role flexibility:', roleFlexError);
+      }
+
+      const topAlternativeRoles = roleFlexibilityResults.slice(0, 5);
+
       const resultData = {
         overallFit,
         fitSkillAlignments,
@@ -15131,8 +15349,8 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         aiqRoleFitAnalysis,
         strengths,
         gaps,
-        cohortBenchmarks: null,
-        roleFlexibility: [],
+        cohortBenchmarks: Object.keys(cohortBenchmarks).length > 0 ? cohortBenchmarks : null,
+        roleFlexibility: topAlternativeRoles,
         dataCoverage: {
           percentage: Math.round((scoredAlignments.length / allAlignments.length) * 100) || 0,
           assessedSkillCount: scoredAlignments.length,

@@ -144,6 +144,8 @@ interface RoleFitData {
     }> | null;
     finalRecommendation?: string;
     nextSteps?: string[];
+    promptRoleFitAnalysis?: string | null;
+    aiqRoleFitAnalysis?: string | null;
   };
 }
 
@@ -2904,6 +2906,70 @@ export async function exportRoleFitPDF(data: RoleFitData) {
       }
       
       yPos += 4;
+    });
+    
+    yPos += PDF_SPACING.medium;
+  }
+  
+  // ========== PROMPT ENGINEERING ROLE FIT ANALYSIS ==========
+  if (data.alignment.promptRoleFitAnalysis) {
+    yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
+    yPos += PDF_SPACING.large;
+    
+    yPos = addSectionHeader(pdf, 'PROMPT ENGINEERING ROLE FIT ANALYSIS', yPos, pageWidth);
+    yPos += 2;
+    
+    applySmallText(pdf);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('AI-generated insights on candidate\'s prompt engineering capabilities for the target role', 20, yPos);
+    yPos += PDF_SPACING.large;
+    
+    // Split analysis into paragraphs
+    const promptAnalysisParagraphs = data.alignment.promptRoleFitAnalysis.split(/\n\n+/).filter(p => p.trim());
+    
+    promptAnalysisParagraphs.forEach((paragraph) => {
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(55, 65, 81);
+      
+      const paragraphLines = pdf.splitTextToSize(paragraph.trim(), pageWidth - 50);
+      paragraphLines.forEach((line: string, idx: number) => {
+        yPos = ensurePageSpace(pdf, yPos, 10, pageHeight, pageWidth);
+        pdf.text(line, 25, yPos + (idx * 4));
+      });
+      yPos += (paragraphLines.length * 4) + 4;
+    });
+    
+    yPos += PDF_SPACING.medium;
+  }
+  
+  // ========== AIQ (ETHICAL AI) ROLE FIT ANALYSIS ==========
+  if (data.alignment.aiqRoleFitAnalysis) {
+    yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
+    yPos += PDF_SPACING.large;
+    
+    yPos = addSectionHeader(pdf, 'AIQ (ETHICAL AI) ROLE FIT ANALYSIS', yPos, pageWidth);
+    yPos += 2;
+    
+    applySmallText(pdf);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('AI-generated insights on candidate\'s ethical AI judgment for the target role', 20, yPos);
+    yPos += PDF_SPACING.large;
+    
+    // Split analysis into paragraphs
+    const aiqAnalysisParagraphs = data.alignment.aiqRoleFitAnalysis.split(/\n\n+/).filter(p => p.trim());
+    
+    aiqAnalysisParagraphs.forEach((paragraph) => {
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(55, 65, 81);
+      
+      const paragraphLines = pdf.splitTextToSize(paragraph.trim(), pageWidth - 50);
+      paragraphLines.forEach((line: string, idx: number) => {
+        yPos = ensurePageSpace(pdf, yPos, 10, pageHeight, pageWidth);
+        pdf.text(line, 25, yPos + (idx * 4));
+      });
+      yPos += (paragraphLines.length * 4) + 4;
     });
     
     yPos += PDF_SPACING.medium;
