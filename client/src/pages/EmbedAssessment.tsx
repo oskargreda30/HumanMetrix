@@ -310,7 +310,8 @@ export default function EmbedAssessment() {
         isTestSession: true,
       };
       setSession(demoSession);
-      const loadedQuestions = getQuestions(currentAssessmentType, 'default');
+      // Limit to 2 questions per test in demo/sandbox mode
+      const loadedQuestions = getQuestions(currentAssessmentType, 'default').slice(0, 2);
       setQuestions(loadedQuestions);
       setVerificationStep("verified"); // Skip verification for demo
       setStatus("ready");
@@ -815,7 +816,8 @@ export default function EmbedAssessment() {
     
     // Load new questions for the next assessment type
     if (isDemo) {
-      const loadedQuestions = getQuestions(nextType, 'default');
+      // Limit to 2 questions per test in demo/sandbox mode
+      const loadedQuestions = getQuestions(nextType, 'default').slice(0, 2);
       setQuestions(loadedQuestions);
     }
     // For real sessions, questions will reload via fetchSession/startAssessment
