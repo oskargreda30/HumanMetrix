@@ -1,9 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Users, Target, TrendingUp, Trophy, AlertTriangle, Download, CheckCircle2, AlertCircle, FileText, BarChart2, Sparkles, MessageSquare, Clock, ShieldAlert, DollarSign, ArrowUp } from "lucide-react";
+import { Loader2, Users, Target, TrendingUp, Trophy, AlertTriangle, Download, CheckCircle2, AlertCircle, FileText, BarChart2, Sparkles, MessageSquare, Clock, ShieldAlert, DollarSign, ArrowUp, Brain } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -213,7 +213,9 @@ export default function PartnerMultiCandidateRoleFitTab() {
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
   const [selectedRole, setSelectedRole] = useState("");
   const [isExporting, setIsExporting] = useState(false);
+  const [aiInsights, setAiInsights] = useState<string | null>(null);
   const chartRef = useRef<HTMLDivElement>(null);
+  const lastInsightsTriggeredRef = useRef<string | null>(null);
   const { toast } = useToast();
 
   const { data: candidates } = useQuery<any[]>({
@@ -276,6 +278,54 @@ export default function PartnerMultiCandidateRoleFitTab() {
       });
     },
   });
+
+  // Mutation for AI insights generation
+  const generateInsightsMutation = useMutation({
+    mutationFn: async (comparisonData: MultiCandidateComparison) => {
+      const res = await apiRequest('POST', '/api/partner/me/multi-candidate-insights', {
+        comparisonData: {
+          roleSnapshot: comparisonData.roleSnapshot,
+          candidateEntries: comparisonData.candidateEntries,
+          summaryInsights: comparisonData.summaryInsights,
+        },
+      }, { timeoutMs: 120000 });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setAiInsights(data.insights);
+    },
+    onError: (error: Error) => {
+      console.error("Failed to generate AI insights:", error);
+      // Don't show toast for AI insights failure - it's supplementary
+    },
+  });
+
+  // Auto-trigger AI insights when comparison data loads
+  useEffect(() => {
+    if (comparison && comparison.candidateEntries?.length > 0) {
+      const insightsKey = `${selectedRole}-${selectedCandidates.sort().join(',')}`;
+      
+      if (lastInsightsTriggeredRef.current !== insightsKey) {
+        lastInsightsTriggeredRef.current = insightsKey;
+        setAiInsights(null);
+        
+        // Auto-trigger AI insights generation
+        setTimeout(() => {
+          if (!generateInsightsMutation.isPending) {
+            generateInsightsMutation.mutate(comparison);
+          }
+        }, 100);
+      }
+    }
+  }, [comparison, selectedRole, selectedCandidates]);
+
+  // Reset insights when selection changes
+  useEffect(() => {
+    if (!selectedRole || selectedCandidates.length < 2) {
+      lastInsightsTriggeredRef.current = null;
+      setAiInsights(null);
+    }
+  }, [selectedRole, selectedCandidates]);
 
   const canCompare = selectedCandidates.length >= 2 && selectedRole && selectedRoleData?.requiredSkillScores;
 
@@ -1097,6 +1147,56 @@ export default function PartnerMultiCandidateRoleFitTab() {
                   });
                 })()}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* AI-Powered Strategic Insights */}
+          <Card className="bg-gradient-to-r from-purple-500/10 via-purple-500/5 to-transparent border-purple-500/20" data-testid="card-ai-insights">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5 text-purple-500" />
+                AI-Powered Strategic Insights
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                AI-generated analysis and hiring recommendations based on the comparison data
+              </p>
+            </CardHeader>
+            <CardContent>
+              {generateInsightsMutation.isPending ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Loader2 className="h-12 w-12 mx-auto mb-4 animate-spin text-purple-500" />
+                  <p className="text-sm">Generating AI insights...</p>
+                  <p className="text-xs mt-2">Analyzing candidate data and generating strategic recommendations.</p>
+                </div>
+              ) : aiInsights ? (
+                <div className="prose prose-sm dark:prose-invert max-w-none" data-testid="text-ai-insights">
+                  {aiInsights.split('\n\n').map((paragraph, idx) => {
+                    // Check if this is a heading (starts with **)
+                    const headingMatch = paragraph.match(/^\*\*(.+?)\*\*/);
+                    if (headingMatch) {
+                      const heading = headingMatch[1];
+                      const content = paragraph.replace(/^\*\*.+?\*\*\n?/, '').trim();
+                      return (
+                        <div key={idx} className="mb-4">
+                          <h4 className="font-semibold text-foreground flex items-center gap-2 mb-2">
+                            <Sparkles className="h-4 w-4 text-purple-500" />
+                            {heading}
+                          </h4>
+                          {content && <p className="text-muted-foreground text-sm leading-relaxed">{content}</p>}
+                        </div>
+                      );
+                    }
+                    return (
+                      <p key={idx} className="text-muted-foreground text-sm leading-relaxed mb-3">{paragraph}</p>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Brain className="h-12 w-12 mx-auto mb-4 text-purple-500/30" />
+                  <p className="text-sm">AI insights will appear here once the analysis completes.</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

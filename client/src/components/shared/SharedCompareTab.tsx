@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { useState, useRef, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -111,6 +111,7 @@ export interface SharedCompareTabConfig {
   candidatesEndpoint: string;
   rolesEndpoint: string;
   compareEndpoint: string;
+  insightsEndpoint?: string;
   contextType: 'admin' | 'partner';
 }
 
@@ -129,7 +130,9 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
   });
   const [isCapturingPDF, setIsCapturingPDF] = useState(false);
   const [comparisonTriggered, setComparisonTriggered] = useState(false);
+  const [aiInsights, setAiInsights] = useState<string | null>(null);
   const reportContainerRef = useRef<HTMLDivElement>(null);
+  const lastInsightsTriggeredRef = useRef<string | null>(null);
   const { toast } = useToast();
 
   const { data: candidates, isLoading } = useQuery<any[]>({
@@ -158,9 +161,70 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
     }
   };
 
+  // Mutation for AI insights generation
+  const generateInsightsMutation = useMutation({
+    mutationFn: async () => {
+      if (!config.insightsEndpoint || !comparison || !selectedCandidateData) return null;
+      
+      const candidateNames = selectedCandidateData.map(c => ({
+        id: c.user.id,
+        name: `${c.user.firstName || ''} ${c.user.lastName || ''}`.trim() || c.user.email?.split('@')[0] || 'Unknown',
+        email: c.user.email,
+      }));
+
+      const res = await apiRequest('POST', config.insightsEndpoint, {
+        comparisonData: comparison,
+        candidateNames,
+      }, { timeoutMs: 120000 });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      if (data?.insights) {
+        setAiInsights(data.insights);
+      }
+    },
+    onError: (error: Error) => {
+      console.error("Failed to generate comparison insights:", error);
+    },
+  });
+
+  // Auto-trigger AI insights when comparison data loads
+  useEffect(() => {
+    if (config.insightsEndpoint && comparison && comparisonTriggered && selectedCandidateData?.length >= 2) {
+      // Use stable sorted key without mutating state
+      const sortedCandidates = [...selectedCandidates].sort();
+      const insightsKey = sortedCandidates.join(',');
+      
+      // Check if comparison has any meaningful data
+      const hasAnyData = comparison.hasSkillData || 
+        comparison.fitAssessments?.some(a => a !== null) ||
+        comparison.aiReadinessAssessments?.some(a => a !== null);
+      
+      if (lastInsightsTriggeredRef.current !== insightsKey && hasAnyData) {
+        lastInsightsTriggeredRef.current = insightsKey;
+        setAiInsights(null);
+        
+        // Trigger immediately if not pending
+        if (!generateInsightsMutation.isPending) {
+          generateInsightsMutation.mutate();
+        }
+      }
+    }
+  }, [comparison, comparisonTriggered, selectedCandidates, config.insightsEndpoint]);
+
+  // Reset insights when candidates change
+  useEffect(() => {
+    if (selectedCandidates.length < 2 || !comparisonTriggered) {
+      lastInsightsTriggeredRef.current = null;
+      setAiInsights(null);
+    }
+  }, [selectedCandidates, comparisonTriggered]);
+
   // Reset comparison when candidates change
   const handleToggleCandidate = (userId: string) => {
     setComparisonTriggered(false);
+    setAiInsights(null);
+    lastInsightsTriggeredRef.current = null;
     toggleCandidate(userId);
   };
 
@@ -1266,6 +1330,57 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                       </div>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+              )}
+
+              {/* AI-Powered Comparison Insights */}
+              {config.insightsEndpoint && (
+              <Card className="bg-gradient-to-r from-purple-500/10 via-purple-500/5 to-transparent border-purple-500/20" data-testid="card-ai-insights">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Brain className="h-5 w-5 text-purple-500" />
+                    AI-Powered Comparison Insights
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    AI-generated analysis based on the comparison data
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  {generateInsightsMutation.isPending ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Loader2 className="h-12 w-12 mx-auto mb-4 animate-spin text-purple-500" />
+                      <p className="text-sm">Generating AI insights...</p>
+                      <p className="text-xs mt-2">Analyzing candidate data and generating recommendations.</p>
+                    </div>
+                  ) : aiInsights ? (
+                    <div className="prose prose-sm dark:prose-invert max-w-none" data-testid="text-ai-insights">
+                      {aiInsights.split('\n\n').map((paragraph, idx) => {
+                        const headingMatch = paragraph.match(/^\*\*(.+?)\*\*/);
+                        if (headingMatch) {
+                          const heading = headingMatch[1];
+                          const content = paragraph.replace(/^\*\*.+?\*\*\n?/, '').trim();
+                          return (
+                            <div key={idx} className="mb-4">
+                              <h4 className="font-semibold text-foreground flex items-center gap-2 mb-2">
+                                <Sparkles className="h-4 w-4 text-purple-500" />
+                                {heading}
+                              </h4>
+                              {content && <p className="text-muted-foreground text-sm leading-relaxed">{content}</p>}
+                            </div>
+                          );
+                        }
+                        return (
+                          <p key={idx} className="text-muted-foreground text-sm leading-relaxed mb-3">{paragraph}</p>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Brain className="h-12 w-12 mx-auto mb-4 text-purple-500/30" />
+                      <p className="text-sm">AI insights will appear here once the analysis completes.</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
               )}

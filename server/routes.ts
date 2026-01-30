@@ -14222,6 +14222,127 @@ Keep the tone professional and objective. Focus on describing the candidate's pr
     }
   });
 
+  // Partner: Generate AI insights for candidate comparison
+  app.post("/api/partner/me/compare-insights", isAuthenticated, async (req: any, res) => {
+    try {
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+
+      const { comparisonData, candidateNames, forceRefresh } = req.body;
+
+      if (!comparisonData || !candidateNames || candidateNames.length < 2) {
+        return res.status(400).json({ message: "Comparison data and at least 2 candidate names are required" });
+      }
+
+      const candidateIds = candidateNames.map((n: any) => n.id || n.email || n.name);
+
+      // Check for cached insights
+      if (!forceRefresh) {
+        const existingReport = await storage.findExistingPartnerReport(
+          partner.id,
+          'compare_insights',
+          candidateIds
+        );
+
+        if (existingReport) {
+          return res.json({
+            insights: existingReport.resultData?.insights || '',
+            cached: true,
+            cachedAt: existingReport.createdAt,
+            reportId: existingReport.id,
+          });
+        }
+      }
+
+      // Consume 1 credit for AI feature usage
+      const creditResult = await storage.consumePartnerTest(
+        partner.id,
+        null,
+        "Candidate comparison AI insights"
+      );
+
+      if (!creditResult.success && !creditResult.isOverage) {
+        return res.status(402).json({
+          message: "Insufficient credits. Please purchase more credits to use AI features.",
+          creditsRequired: 1,
+          creditsRemaining: creditResult.remaining
+        });
+      }
+
+      // Build summaries for each candidate
+      const candidateSummaries = candidateNames.map((candidate: any, idx: number) => {
+        const fitData = comparisonData.fitAssessments?.[idx];
+        const aiData = comparisonData.aiReadinessAssessments?.[idx];
+        const promptData = comparisonData.promptArchitectureAssessments?.[idx];
+        const aiqData = comparisonData.aiqAssessments?.[idx];
+        
+        return `
+${candidate.name}:
+- FIT Assessment: ${fitData ? 'Completed (Avg: ' + Math.round(Object.values(fitData.scores as Record<string, number>).reduce((a, b) => a + b, 0) / Object.keys(fitData.scores).length) + '%)' : 'Not completed'}
+- AI Readiness: ${aiData ? 'Completed (Avg: ' + Math.round(Object.values(aiData.scores as Record<string, number>).reduce((a, b) => a + b, 0) / Object.keys(aiData.scores).length) + '%)' : 'Not completed'}
+- Prompt Architecture: ${promptData ? promptData.totalScore + '%' : 'Not completed'}
+- AIQ: ${aiqData ? aiqData.totalScore + '%' : 'Not completed'}`;
+      }).join('\n');
+
+      const prompt = `You are an expert HR analyst comparing multiple job candidates. Generate a concise comparative analysis.
+
+CANDIDATES BEING COMPARED:
+${candidateSummaries}
+
+Average Scores Summary:
+${candidateNames.map((c: any, i: number) => c.name + ': ' + (comparisonData.averageScores?.[i] || 'N/A') + '%').join(', ')}
+
+Provide a brief comparative analysis (under 200 words) covering:
+1. **Key Differentiators**: What sets each candidate apart
+2. **Complementary Strengths**: Where candidates excel differently
+3. **Hiring Consideration**: Brief recommendation based on the data
+
+Use the candidates' actual names. Be specific and actionable.`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: "You are an expert HR analyst specializing in candidate comparisons. Provide concise, professional insights." },
+          { role: "user", content: prompt }
+        ],
+        max_tokens: 400,
+        temperature: 0.7,
+      });
+
+      const insights = completion.choices[0].message.content || '';
+
+      // Save to cache
+      const savedReport = await storage.createPartnerAnalysisReport({
+        partnerId: partner.id,
+        reportType: 'compare_insights',
+        candidateIds,
+        title: 'Comparison Insights: ' + candidateNames.map((c: any) => c.name).join(' vs '),
+        resultData: { insights, candidateCount: candidateNames.length, generatedAt: new Date().toISOString() },
+      });
+
+      logAiCost({
+        operationType: 'compare_insights',
+        model: "gpt-4o",
+        usage: extractUsage(completion),
+        userId: req.user.id,
+        partnerId: partner.id,
+        metadata: { candidateCount: candidateNames.length },
+      }).catch(console.error);
+
+      res.json({
+        insights,
+        cached: false,
+        reportId: savedReport?.id,
+      });
+    } catch (error) {
+      console.error("Error generating comparison insights:", error);
+      res.status(500).json({ message: "Failed to generate insights" });
+    }
+  });
+
   // Partner: List all saved analysis reports
   app.get("/api/partner/me/analysis-reports", isAuthenticated, async (req: any, res) => {
     try {
@@ -15661,6 +15782,144 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
     } catch (error) {
       console.error("Error creating partner multi-candidate comparison:", error);
       res.status(500).json({ message: "Failed to create comparison" });
+    }
+  });
+
+  // Partner: Generate AI insights for multi-candidate role fit comparison
+  app.post("/api/partner/me/multi-candidate-insights", isAuthenticated, async (req: any, res) => {
+    try {
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+
+      const { comparisonData, forceRefresh } = req.body;
+
+      if (!comparisonData || !comparisonData.roleSnapshot || !comparisonData.candidateEntries) {
+        return res.status(400).json({ message: "Comparison data with role snapshot and candidate entries is required" });
+      }
+
+      const { roleSnapshot, candidateEntries, summaryInsights } = comparisonData;
+      const candidateIds = candidateEntries.map((c: any) => c.userId);
+
+      // Check for existing cached insights (unless forceRefresh)
+      if (!forceRefresh) {
+        const existingReport = await storage.findExistingPartnerReport(
+          partner.id,
+          'multi_candidate_insights',
+          candidateIds,
+          roleSnapshot.roleId
+        );
+
+        if (existingReport) {
+          return res.json({
+            insights: existingReport.resultData?.insights || '',
+            cached: true,
+            cachedAt: existingReport.createdAt,
+            reportId: existingReport.id,
+          });
+        }
+      }
+
+      // Consume 1 credit for AI feature usage
+      const creditResult = await storage.consumePartnerTest(
+        partner.id,
+        null,
+        "Multi-candidate AI insights generation"
+      );
+
+      if (!creditResult.success && !creditResult.isOverage) {
+        return res.status(402).json({
+          message: "Insufficient credits. Please purchase more credits to use AI features.",
+          creditsRequired: 1,
+          creditsRemaining: creditResult.remaining
+        });
+      }
+
+      // Build comprehensive prompt for OpenAI
+      const candidateSummaries = candidateEntries.map((entry: any) => {
+        const strengths = entry.strengths?.slice(0, 3).join(', ') || 'N/A';
+        const gaps = entry.gaps?.slice(0, 3).join(', ') || 'N/A';
+        const riskFlags = entry.riskFlags?.length > 0 ? entry.riskFlags.join(', ') : 'None';
+        
+        return `
+- ${entry.userName} (${entry.email}):
+  Overall Fit: ${entry.overallFit !== null ? entry.overallFit + '%' : 'Insufficient data'}
+  Tier: ${entry.fitTier}
+  Top Strengths: ${strengths}
+  Development Areas: ${gaps}
+  Risk Flags: ${riskFlags}`;
+      }).join('\n');
+
+      const recommendationText = summaryInsights?.recommendation 
+        ? '\nCurrent Recommendation: ' + summaryInsights.recommendation.recommendedCandidate + ' with ' + summaryInsights.recommendation.fitScore + '% fit'
+        : '';
+
+      const prompt = `You are an expert HR analyst specializing in multi-candidate role fit comparisons. Generate strategic insights for comparing multiple candidates against a specific role.
+
+ROLE: ${roleSnapshot.roleName}
+${roleSnapshot.roleDescription ? 'Description: ' + roleSnapshot.roleDescription : ''}
+
+CANDIDATES BEING COMPARED:
+${candidateSummaries}
+${recommendationText}
+
+Based on this multi-candidate comparison, provide:
+
+**STRATEGIC OVERVIEW**
+A 2-3 sentence high-level summary of the candidate pool quality for this role.
+
+**COMPARATIVE ANALYSIS**
+Key differentiators between the top candidates (2-3 points).
+
+**HIRING RECOMMENDATION**
+Your primary recommendation with brief justification, plus an alternative consideration.
+
+**TEAM DYNAMICS CONSIDERATION**
+Brief insight on how each top candidate might impact team dynamics differently.
+
+Keep the total response under 300 words. Be specific and actionable. Use the candidates' actual names.`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: "You are an expert HR analyst specializing in multi-candidate comparisons and strategic hiring decisions. Provide concise, professional, and actionable insights." },
+          { role: "user", content: prompt }
+        ],
+        max_tokens: 600,
+        temperature: 0.7,
+      });
+
+      const insights = completion.choices[0].message.content || '';
+
+      // Save insights to cache
+      const savedReport = await storage.createPartnerAnalysisReport({
+        partnerId: partner.id,
+        reportType: 'multi_candidate_insights',
+        candidateIds,
+        jobRoleId: roleSnapshot.roleId,
+        title: 'Multi-Candidate Insights: ' + roleSnapshot.roleName,
+        resultData: { insights, roleName: roleSnapshot.roleName, candidateCount: candidateEntries.length, generatedAt: new Date().toISOString() },
+      });
+
+      logAiCost({
+        operationType: 'multi_candidate_insights',
+        model: "gpt-4o",
+        usage: extractUsage(completion),
+        userId: req.user.id,
+        partnerId: partner.id,
+        metadata: { roleName: roleSnapshot.roleName, candidateCount: candidateEntries.length },
+      }).catch(console.error);
+
+      res.json({
+        insights,
+        cached: false,
+        reportId: savedReport?.id,
+      });
+    } catch (error) {
+      console.error("Error generating multi-candidate insights:", error);
+      res.status(500).json({ message: "Failed to generate insights" });
     }
   });
 
