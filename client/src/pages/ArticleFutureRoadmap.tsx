@@ -47,8 +47,8 @@ export default function ArticleFutureRoadmap() {
             </div>
           </header>
 
-          <div className="prose prose-slate prose-lg max-w-none">
-            <p className="lead text-xl text-slate-600 mb-8">
+          <div className="prose prose-slate prose-base max-w-none">
+            <p className="lead text-base md:text-lg text-slate-600 mb-6">
               As AI continues to reshape the workplace at an unprecedented pace, the competencies required for success evolve alongside it. At HumanMetrix, we're continuously developing new assessments to help organisations identify talent ready to thrive in tomorrow's AI-augmented world. Here's a preview of what's coming.
             </p>
 

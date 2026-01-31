@@ -48,8 +48,8 @@ export default function ArticleHumanMetrixSuite() {
             </div>
           </header>
 
-          <div className="prose prose-slate prose-lg max-w-none">
-            <p className="lead text-xl text-slate-600 mb-8">
+          <div className="prose prose-slate prose-base max-w-none">
+            <p className="lead text-base md:text-lg text-slate-600 mb-6">
               As artificial intelligence transforms every industry, the skills that define workplace success are evolving rapidly. HumanMetrix has developed a comprehensive assessment platform designed specifically for this new era—measuring not just traditional competencies, but the critical capabilities needed to thrive alongside AI.
             </p>
 

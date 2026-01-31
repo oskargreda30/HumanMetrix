@@ -47,8 +47,8 @@ export default function ArticleAILiteracy() {
             </div>
           </header>
 
-          <div className="prose prose-slate prose-lg max-w-none">
-            <p className="lead text-xl text-slate-600 mb-8">
+          <div className="prose prose-slate prose-base max-w-none">
+            <p className="lead text-base md:text-lg text-slate-600 mb-6">
               A year ago, AI literacy might have seemed like a nice-to-have skill, relevant mainly for tech roles. Today, it's rapidly becoming a baseline expectation across virtually every industry and job function. As AI tools become ubiquitous, employers are prioritising candidates who can effectively collaborate with artificial intelligence—regardless of their job title.
             </p>
 

@@ -56,8 +56,8 @@ export default function ArticleRecruitmentTesting() {
             </div>
           </header>
 
-          <div className="prose prose-slate prose-lg max-w-none">
-            <p className="lead text-xl text-slate-600 mb-8">
+          <div className="prose prose-slate prose-base max-w-none">
+            <p className="lead text-base md:text-lg text-slate-600 mb-6">
               The modern talent acquisition landscape is moving beyond traditional CV screening and unstructured interviews to make more informed, data-driven decisions. A key component of this strategic shift is the widespread and sophisticated adoption of psychometric testing in recruitment. This robust methodology helps UK companies predict future job performance, assess crucial elements of cultural fit, and identify high-potential candidates efficiently and objectively.
             </p>
 

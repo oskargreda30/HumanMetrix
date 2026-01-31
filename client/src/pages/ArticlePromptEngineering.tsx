@@ -47,8 +47,8 @@ export default function ArticlePromptEngineering() {
             </div>
           </header>
 
-          <div className="prose prose-slate prose-lg max-w-none">
-            <p className="lead text-xl text-slate-600 mb-8">
+          <div className="prose prose-slate prose-base max-w-none">
+            <p className="lead text-base md:text-lg text-slate-600 mb-6">
               You've probably noticed it: some colleagues seem to get remarkable results from AI tools while others struggle to get anything useful. The difference often comes down to a single skill—prompt engineering. And it's rapidly becoming one of the most valuable competencies in the modern workplace.
             </p>
 

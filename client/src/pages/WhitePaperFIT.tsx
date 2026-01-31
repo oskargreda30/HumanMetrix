@@ -44,7 +44,7 @@ export default function WhitePaperFIT() {
             </div>
           </header>
 
-          <div className="prose prose-slate prose-lg max-w-none">
+          <div className="prose prose-slate prose-base max-w-none">
             <Card className="mb-8 bg-gradient-to-r from-slate-100 to-slate-50 border-slate-200">
               <CardContent className="p-6">
                 <h2 className="text-xl font-bold text-slate-900 mb-3 mt-0">Executive Summary</h2>

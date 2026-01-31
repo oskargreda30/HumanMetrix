@@ -192,11 +192,47 @@ export default function HeroSection({ variant = 'b2c' }: HeroSectionProps) {
             >
               {isB2B ? (
                 <>
+                  <Link href="/assessments" data-testid="link-hero-view-assessments">
+                    <Button 
+                      size="lg"
+                      className={getAnimationClass(
+                        'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 overflow-hidden shadow-lg hover:shadow-cyan-500/50 text-sm md:text-lg px-5 md:px-6 py-2.5 md:py-3',
+                        'transition-all duration-300'
+                      )}
+                      data-testid="button-hero-view-assessments"
+                    >
+                      {!prefersReducedMotion && (
+                        <span className="absolute inset-0 rounded-md animate-pulse bg-cyan-400/20"></span>
+                      )}
+                      <span className="relative flex items-center">
+                        View Assessments
+                        <ArrowRight className={getAnimationClass('ml-2 h-4 w-4 md:h-5 md:w-5', 'transition-transform group-hover:translate-x-1')} />
+                      </span>
+                    </Button>
+                  </Link>
+                  <Link href="/pricing" data-testid="link-hero-pricing">
+                    <Button 
+                      size="lg"
+                      className={getAnimationClass(
+                        'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 overflow-hidden shadow-lg hover:shadow-cyan-500/50 text-sm md:text-lg px-5 md:px-6 py-2.5 md:py-3',
+                        'transition-all duration-300'
+                      )}
+                      data-testid="button-hero-pricing"
+                    >
+                      {!prefersReducedMotion && (
+                        <span className="absolute inset-0 rounded-md animate-pulse bg-cyan-400/20"></span>
+                      )}
+                      <span className="relative flex items-center">
+                        Pricing
+                        <ArrowRight className={getAnimationClass('ml-2 h-4 w-4 md:h-5 md:w-5', 'transition-transform group-hover:translate-x-1')} />
+                      </span>
+                    </Button>
+                  </Link>
                   <Button 
                     size="lg"
                     onClick={() => openDialog('demo')}
                     className={getAnimationClass(
-                      'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 overflow-hidden shadow-lg hover:shadow-cyan-500/50 text-sm md:text-lg px-5 md:px-6 py-2.5 md:py-3',
+                      'group relative bg-cyan-500 hover:bg-cyan-600 text-white border-0 overflow-hidden shadow-lg hover:shadow-cyan-500/50 text-sm md:text-lg px-5 md:px-6 py-2.5 md:py-3 order-last md:order-none',
                       'transition-all duration-300'
                     )}
                     data-testid="button-hero-request-demo"
@@ -209,38 +245,6 @@ export default function HeroSection({ variant = 'b2c' }: HeroSectionProps) {
                       <ArrowRight className={getAnimationClass('ml-2 h-4 w-4 md:h-5 md:w-5', 'transition-transform group-hover:translate-x-1')} />
                     </span>
                   </Button>
-                  <Link href="/assessments" data-testid="link-hero-view-assessments">
-                    <Button 
-                      size="lg"
-                      variant="ghost"
-                      className={getAnimationClass(
-                        'group text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/20 text-sm md:text-base px-3 md:px-4',
-                        'transition-all duration-300'
-                      )}
-                      data-testid="button-hero-view-assessments"
-                    >
-                      <span className="relative flex items-center">
-                        View Assessments
-                        <ArrowRight className={getAnimationClass('ml-1.5 h-4 w-4', 'transition-transform group-hover:translate-x-1')} />
-                      </span>
-                    </Button>
-                  </Link>
-                  <Link href="/pricing" data-testid="link-hero-pricing">
-                    <Button 
-                      size="lg"
-                      variant="ghost"
-                      className={getAnimationClass(
-                        'group text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/20 text-sm md:text-base px-3 md:px-4',
-                        'transition-all duration-300'
-                      )}
-                      data-testid="button-hero-pricing"
-                    >
-                      <span className="relative flex items-center">
-                        Pricing
-                        <ArrowRight className={getAnimationClass('ml-1.5 h-4 w-4', 'transition-transform group-hover:translate-x-1')} />
-                      </span>
-                    </Button>
-                  </Link>
                 </>
               ) : (
                 <>

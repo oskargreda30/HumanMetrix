@@ -48,8 +48,8 @@ export default function ArticlePsychometricTests() {
             </div>
           </header>
 
-          <div className="prose prose-slate prose-lg max-w-none">
-            <p className="lead text-xl text-slate-600 mb-8">
+          <div className="prose prose-slate prose-base max-w-none">
+            <p className="lead text-base md:text-lg text-slate-600 mb-6">
               Navigating the modern job application process in the UK often means encountering formal psychometric testing. If you're currently researching how to approach psychometric tests for job interviews, you've discovered a critical stage in modern talent acquisition. These assessments are now a standard component of many UK employers' selection process, designed to measure your cognitive abilities, behavioral style, and personality traits far beyond the limitations of a standard CV.
             </p>
 
