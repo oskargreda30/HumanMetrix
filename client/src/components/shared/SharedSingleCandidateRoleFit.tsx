@@ -823,61 +823,73 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                   </div>
                 )}
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                <div className="overflow-x-auto -mx-2 md:mx-0">
+                  <table className="w-full text-xs md:text-sm">
                     <thead>
                       <tr className="border-b">
-                        <th className="text-left py-2 font-medium">Assessment Type</th>
-                        <th className="text-center py-2 font-medium">Skills Compared</th>
-                        <th className="text-center py-2 font-medium">Avg Percentile</th>
-                        <th className="text-center py-2 font-medium">Position</th>
+                        <th className="text-left py-2 px-2 md:px-3 font-medium min-w-[100px]">Assessment</th>
+                        <th className="text-center py-2 px-1 md:px-3 font-medium">Skills</th>
+                        <th className="text-center py-2 px-1 md:px-3 font-medium">%ile</th>
+                        <th className="text-center py-2 px-1 md:px-3 font-medium">Status</th>
                       </tr>
                     </thead>
                     <tbody>
                       {alignment.cohortBenchmarks.fit && (
                         <tr className="border-b">
-                          <td className="py-3">FIT Assessment (Behavioral)</td>
-                          <td className="text-center">{alignment.cohortBenchmarks.fit.skillCount} skills</td>
-                          <td className="text-center">{alignment.cohortBenchmarks.fit.percentile}th</td>
-                          <td className="text-center">
-                            <Badge variant={alignment.cohortBenchmarks.fit.percentile >= 50 ? 'default' : 'outline'}>
-                              {alignment.cohortBenchmarks.fit.percentile >= 50 ? 'Above Avg' : 'Below Avg'}
+                          <td className="py-2 md:py-3 px-2 md:px-3">
+                            <span className="hidden md:inline">FIT Assessment (Behavioral)</span>
+                            <span className="md:hidden">FIT</span>
+                          </td>
+                          <td className="text-center px-1 md:px-3">{alignment.cohortBenchmarks.fit.skillCount}</td>
+                          <td className="text-center px-1 md:px-3">{alignment.cohortBenchmarks.fit.percentile}th</td>
+                          <td className="text-center px-1 md:px-3">
+                            <Badge variant={alignment.cohortBenchmarks.fit.percentile >= 50 ? 'default' : 'outline'} className="text-[10px] md:text-xs px-1 md:px-2">
+                              {alignment.cohortBenchmarks.fit.percentile >= 50 ? 'Above' : 'Below'}
                             </Badge>
                           </td>
                         </tr>
                       )}
                       {alignment.cohortBenchmarks.ai_readiness && (
                         <tr className="border-b">
-                          <td className="py-3">AI Readiness Assessment</td>
-                          <td className="text-center">{alignment.cohortBenchmarks.ai_readiness.skillCount} skills</td>
-                          <td className="text-center">{alignment.cohortBenchmarks.ai_readiness.percentile}th</td>
-                          <td className="text-center">
-                            <Badge variant={alignment.cohortBenchmarks.ai_readiness.percentile >= 50 ? 'default' : 'outline'}>
-                              {alignment.cohortBenchmarks.ai_readiness.percentile >= 50 ? 'Above Avg' : 'Below Avg'}
+                          <td className="py-2 md:py-3 px-2 md:px-3">
+                            <span className="hidden md:inline">AI Readiness Assessment</span>
+                            <span className="md:hidden">AI Ready</span>
+                          </td>
+                          <td className="text-center px-1 md:px-3">{alignment.cohortBenchmarks.ai_readiness.skillCount}</td>
+                          <td className="text-center px-1 md:px-3">{alignment.cohortBenchmarks.ai_readiness.percentile}th</td>
+                          <td className="text-center px-1 md:px-3">
+                            <Badge variant={alignment.cohortBenchmarks.ai_readiness.percentile >= 50 ? 'default' : 'outline'} className="text-[10px] md:text-xs px-1 md:px-2">
+                              {alignment.cohortBenchmarks.ai_readiness.percentile >= 50 ? 'Above' : 'Below'}
                             </Badge>
                           </td>
                         </tr>
                       )}
                       {alignment.cohortBenchmarks.prompt_architecture && (
                         <tr className="border-b">
-                          <td className="py-3">Prompt Architecture</td>
-                          <td className="text-center">1 composite score</td>
-                          <td className="text-center">{alignment.cohortBenchmarks.prompt_architecture.percentile}th</td>
-                          <td className="text-center">
-                            <Badge variant={alignment.cohortBenchmarks.prompt_architecture.percentile >= 50 ? 'default' : 'outline'}>
-                              {alignment.cohortBenchmarks.prompt_architecture.percentile >= 50 ? 'Above Avg' : 'Below Avg'}
+                          <td className="py-2 md:py-3 px-2 md:px-3">
+                            <span className="hidden md:inline">Prompt Architecture</span>
+                            <span className="md:hidden">Prompt</span>
+                          </td>
+                          <td className="text-center px-1 md:px-3">1</td>
+                          <td className="text-center px-1 md:px-3">{alignment.cohortBenchmarks.prompt_architecture.percentile}th</td>
+                          <td className="text-center px-1 md:px-3">
+                            <Badge variant={alignment.cohortBenchmarks.prompt_architecture.percentile >= 50 ? 'default' : 'outline'} className="text-[10px] md:text-xs px-1 md:px-2">
+                              {alignment.cohortBenchmarks.prompt_architecture.percentile >= 50 ? 'Above' : 'Below'}
                             </Badge>
                           </td>
                         </tr>
                       )}
                       {alignment.cohortBenchmarks.aiq && (
                         <tr>
-                          <td className="py-3">Artificial Intelligence Quotient (AIQ)</td>
-                          <td className="text-center">1 composite score</td>
-                          <td className="text-center">{alignment.cohortBenchmarks.aiq.percentile}th</td>
-                          <td className="text-center">
-                            <Badge variant={alignment.cohortBenchmarks.aiq.percentile >= 50 ? 'default' : 'outline'}>
-                              {alignment.cohortBenchmarks.aiq.percentile >= 50 ? 'Above Avg' : 'Below Avg'}
+                          <td className="py-2 md:py-3 px-2 md:px-3">
+                            <span className="hidden md:inline">Artificial Intelligence Quotient (AIQ)</span>
+                            <span className="md:hidden">AIQ</span>
+                          </td>
+                          <td className="text-center px-1 md:px-3">1</td>
+                          <td className="text-center px-1 md:px-3">{alignment.cohortBenchmarks.aiq.percentile}th</td>
+                          <td className="text-center px-1 md:px-3">
+                            <Badge variant={alignment.cohortBenchmarks.aiq.percentile >= 50 ? 'default' : 'outline'} className="text-[10px] md:text-xs px-1 md:px-2">
+                              {alignment.cohortBenchmarks.aiq.percentile >= 50 ? 'Above' : 'Below'}
                             </Badge>
                           </td>
                         </tr>

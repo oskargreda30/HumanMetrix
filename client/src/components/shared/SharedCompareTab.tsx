@@ -1394,7 +1394,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                       {/* Weight Adjustment */}
                       <div className="p-4 border rounded-lg bg-muted/30">
                         <h4 className="text-sm font-medium mb-3">Assessment Weight Distribution</h4>
-                        <div className="grid gap-4 md:grid-cols-4">
+                        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
                           <div>
                             <label className="text-xs text-muted-foreground">FIT ({assessmentWeights.fit}%)</label>
                             <Slider
@@ -1443,7 +1443,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                       </div>
 
                       {/* Rankings */}
-                      <div className="grid gap-4 md:grid-cols-3">
+                      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
                         {getRankings().map((ranking) => {
                           const candidate = selectedCandidateData?.[ranking.candidateIndex];
                           if (!candidate) return null;
@@ -1707,28 +1707,28 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
               {comparison.hasSkillData && (
                 <Card data-testid="card-head-to-head" data-report-section="head-to-head">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Scale className="h-5 w-5" />
-                      Head-to-Head Skill Comparison
+                    <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                      <Scale className="h-4 w-4 md:h-5 md:w-5" />
+                      Head-to-Head Comparison
                     </CardTitle>
-                    <CardDescription>
-                      Color-coded comparison showing who leads in each skill (green = highest, red = lowest)
+                    <CardDescription className="text-xs md:text-sm">
+                      Color-coded comparison (green = highest, red = lowest)
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <div className="overflow-x-auto">
-                      <table className="w-full border-collapse">
+                  <CardContent className="p-2 md:p-6">
+                    <div className="overflow-x-auto -mx-2 md:mx-0">
+                      <table className="w-full border-collapse text-xs md:text-sm">
                         <thead>
                           <tr className="border-b">
-                            <th className="text-left p-3 font-medium">Skill</th>
+                            <th className="text-left p-2 md:p-3 font-medium min-w-[100px] md:min-w-[150px]">Skill</th>
                             {selectedCandidateData?.map((candidate: any, index: number) => (
-                              <th key={candidate.user.id} className="text-center p-3 font-medium min-w-[120px]">
-                                <span style={{ color: CHART_COLORS[index] }}>
-                                  {getCandidateName(candidate)}
+                              <th key={candidate.user.id} className="text-center p-2 md:p-3 font-medium min-w-[60px] md:min-w-[100px]">
+                                <span style={{ color: CHART_COLORS[index] }} className="text-xs md:text-sm truncate block max-w-[60px] md:max-w-none">
+                                  {getCandidateName(candidate).split(' ')[0]}
                                 </span>
                               </th>
                             ))}
-                            <th className="text-center p-3 font-medium">Average</th>
+                            <th className="text-center p-2 md:p-3 font-medium min-w-[50px]">Avg</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1741,19 +1741,19 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                             
                             return (
                               <tr key={skill.key} className="border-b">
-                                <td className="p-3 font-medium">
+                                <td className="p-2 md:p-3 font-medium">
                                   <Tooltip>
                                     <TooltipTrigger className="text-left">
-                                      {skill.displayName}
-                                      <Badge variant="outline" className="ml-2 text-xs">FIT</Badge>
+                                      <span className="text-xs md:text-sm">{skill.displayName}</span>
+                                      <Badge variant="outline" className="ml-1 md:ml-2 text-[10px] md:text-xs px-1">FIT</Badge>
                                     </TooltipTrigger>
                                     <TooltipContent>{skill.description}</TooltipContent>
                                   </Tooltip>
                                 </td>
                                 {scores.map((score: number | null, index: number) => (
-                                  <td key={index} className="p-3 text-center">
+                                  <td key={index} className="p-2 md:p-3 text-center">
                                     {score !== null ? (
-                                      <span className={`px-3 py-1 rounded-md font-semibold ${getScoreColorClass(score, scores.filter((s): s is number => s !== null))}`}>
+                                      <span className={`px-2 md:px-3 py-0.5 md:py-1 rounded-md font-semibold text-xs md:text-sm ${getScoreColorClass(score, scores.filter((s): s is number => s !== null))}`}>
                                         {score}
                                       </span>
                                     ) : (
@@ -1761,7 +1761,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                                     )}
                                   </td>
                                 ))}
-                                <td className="p-3 text-center">
+                                <td className="p-2 md:p-3 text-center text-xs md:text-sm">
                                   <span className="text-muted-foreground">
                                     {calculateAverage(scores)}
                                   </span>
@@ -1778,19 +1778,19 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                             
                             return (
                               <tr key={skill.key} className="border-b">
-                                <td className="p-3 font-medium">
+                                <td className="p-2 md:p-3 font-medium">
                                   <Tooltip>
                                     <TooltipTrigger className="text-left">
-                                      {skill.displayName}
-                                      <Badge variant="outline" className="ml-2 text-xs">AI</Badge>
+                                      <span className="text-xs md:text-sm">{skill.displayName}</span>
+                                      <Badge variant="outline" className="ml-1 md:ml-2 text-[10px] md:text-xs px-1">AI</Badge>
                                     </TooltipTrigger>
                                     <TooltipContent>{skill.description}</TooltipContent>
                                   </Tooltip>
                                 </td>
                                 {scores.map((score: number | null, index: number) => (
-                                  <td key={index} className="p-3 text-center">
+                                  <td key={index} className="p-2 md:p-3 text-center">
                                     {score !== null ? (
-                                      <span className={`px-3 py-1 rounded-md font-semibold ${getScoreColorClass(score, scores.filter((s): s is number => s !== null))}`}>
+                                      <span className={`px-2 md:px-3 py-0.5 md:py-1 rounded-md font-semibold text-xs md:text-sm ${getScoreColorClass(score, scores.filter((s): s is number => s !== null))}`}>
                                         {score}
                                       </span>
                                     ) : (
@@ -1798,7 +1798,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                                     )}
                                   </td>
                                 ))}
-                                <td className="p-3 text-center">
+                                <td className="p-2 md:p-3 text-center text-xs md:text-sm">
                                   <span className="text-muted-foreground">
                                     {calculateAverage(scores)}
                                   </span>
@@ -1815,19 +1815,19 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                             
                             return (
                               <tr key="prompt-arch" className="border-b bg-muted/20">
-                                <td className="p-3 font-medium">
+                                <td className="p-2 md:p-3 font-medium">
                                   <Tooltip>
                                     <TooltipTrigger className="text-left">
-                                      Prompt Architecture
-                                      <Badge variant="outline" className="ml-2 text-xs">PROMPT</Badge>
+                                      <span className="text-xs md:text-sm">Prompt Arch</span>
+                                      <Badge variant="outline" className="ml-1 md:ml-2 text-[10px] md:text-xs px-1">PA</Badge>
                                     </TooltipTrigger>
                                     <TooltipContent>Total score across all prompt engineering dimensions and levels</TooltipContent>
                                   </Tooltip>
                                 </td>
                                 {scores.map((score: number | null, index: number) => (
-                                  <td key={index} className="p-3 text-center">
+                                  <td key={index} className="p-2 md:p-3 text-center">
                                     {score !== null ? (
-                                      <span className={`px-3 py-1 rounded-md font-semibold ${getScoreColorClass(score, scores.filter((s): s is number => s !== null))}`}>
+                                      <span className={`px-2 md:px-3 py-0.5 md:py-1 rounded-md font-semibold text-xs md:text-sm ${getScoreColorClass(score, scores.filter((s): s is number => s !== null))}`}>
                                         {score}
                                       </span>
                                     ) : (
@@ -1835,7 +1835,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                                     )}
                                   </td>
                                 ))}
-                                <td className="p-3 text-center">
+                                <td className="p-2 md:p-3 text-center text-xs md:text-sm">
                                   <span className="text-muted-foreground">
                                     {calculateAverage(scores)}
                                   </span>
@@ -1852,19 +1852,19 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                             
                             return (
                               <tr key="aiq" className="border-b bg-muted/20">
-                                <td className="p-3 font-medium">
+                                <td className="p-2 md:p-3 font-medium">
                                   <Tooltip>
                                     <TooltipTrigger className="text-left">
-                                      Algorithmic Integrity (AIQ)
-                                      <Badge variant="outline" className="ml-2 text-xs">AIQ</Badge>
+                                      <span className="text-xs md:text-sm">AIQ</span>
+                                      <Badge variant="outline" className="ml-1 md:ml-2 text-[10px] md:text-xs px-1">AIQ</Badge>
                                     </TooltipTrigger>
                                     <TooltipContent>Single integrated score measuring ethical reasoning in AI-related scenarios</TooltipContent>
                                   </Tooltip>
                                 </td>
                                 {scores.map((score: number | null, index: number) => (
-                                  <td key={index} className="p-3 text-center">
+                                  <td key={index} className="p-2 md:p-3 text-center">
                                     {score !== null ? (
-                                      <span className={`px-3 py-1 rounded-md font-semibold ${getScoreColorClass(score, scores.filter((s): s is number => s !== null))}`}>
+                                      <span className={`px-2 md:px-3 py-0.5 md:py-1 rounded-md font-semibold text-xs md:text-sm ${getScoreColorClass(score, scores.filter((s): s is number => s !== null))}`}>
                                         {score}
                                       </span>
                                     ) : (
@@ -1872,7 +1872,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                                     )}
                                   </td>
                                 ))}
-                                <td className="p-3 text-center">
+                                <td className="p-2 md:p-3 text-center text-xs md:text-sm">
                                   <span className="text-muted-foreground">
                                     {calculateAverage(scores)}
                                   </span>

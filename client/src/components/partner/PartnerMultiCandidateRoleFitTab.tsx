@@ -780,12 +780,12 @@ export default function PartnerMultiCandidateRoleFitTab() {
                 });
                 
                 return (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                  <div className="overflow-x-auto -mx-2 md:mx-0">
+                    <table className="w-full text-xs md:text-sm">
                       <thead>
                         <tr className="border-b">
-                          <th className="text-left p-3 font-semibold bg-muted/50">Critical Skill</th>
-                          <th className="text-center p-3 font-semibold bg-muted/50">Required</th>
+                          <th className="text-left p-2 md:p-3 font-semibold bg-muted/50 min-w-[80px] md:min-w-[120px]">Skill</th>
+                          <th className="text-center p-2 md:p-3 font-semibold bg-muted/50">Req</th>
                           {sortedCandidates.map((candidate, idx) => {
                             // Use hasSufficientData and dataCoverage for more accurate assessment
                             const hasInsufficientData = candidate.hasSufficientData === false || 
@@ -793,11 +793,11 @@ export default function PartnerMultiCandidateRoleFitTab() {
                               candidate.fitTier === 'insufficient-data' || 
                               candidate.overallFit == null;
                             return (
-                              <th key={candidate.userId} className={`text-center p-3 font-semibold ${idx === 0 && !hasInsufficientData ? 'bg-green-50 dark:bg-green-950/30' : hasInsufficientData ? 'bg-gray-100 dark:bg-gray-800' : 'bg-muted/50'}`}>
-                                <div className="flex flex-col items-center gap-1">
-                                  <span className="truncate max-w-[100px]">{candidate.userName.split(' ')[0]}</span>
-                                  {idx === 0 && !hasInsufficientData && <Badge className="bg-green-600 text-white text-xs">Top</Badge>}
-                                  {hasInsufficientData && <Badge variant="outline" className="text-xs text-gray-500">Incomplete</Badge>}
+                              <th key={candidate.userId} className={`text-center p-2 md:p-3 font-semibold min-w-[50px] md:min-w-[80px] ${idx === 0 && !hasInsufficientData ? 'bg-green-50 dark:bg-green-950/30' : hasInsufficientData ? 'bg-gray-100 dark:bg-gray-800' : 'bg-muted/50'}`}>
+                                <div className="flex flex-col items-center gap-0.5 md:gap-1">
+                                  <span className="truncate max-w-[50px] md:max-w-[100px] text-xs md:text-sm">{candidate.userName.split(' ')[0]}</span>
+                                  {idx === 0 && !hasInsufficientData && <Badge className="bg-green-600 text-white text-[10px] md:text-xs px-1">Top</Badge>}
+                                  {hasInsufficientData && <Badge variant="outline" className="text-[10px] md:text-xs text-gray-500 px-1">Inc</Badge>}
                                 </div>
                               </th>
                             );
@@ -808,9 +808,9 @@ export default function PartnerMultiCandidateRoleFitTab() {
                         {criticalSkillsWithRequirements.map((criticalSkill, skillIdx) => {
                           return (
                             <tr key={criticalSkill.skillName} className={skillIdx % 2 === 0 ? 'bg-muted/20' : ''}>
-                              <td className="p-3 font-medium">{criticalSkill.skillName}</td>
-                              <td className="text-center p-3">
-                                <Badge variant="outline" className="text-red-600 border-red-300">{criticalSkill.requiredScore}+</Badge>
+                              <td className="p-2 md:p-3 font-medium text-xs md:text-sm">{criticalSkill.skillName}</td>
+                              <td className="text-center p-2 md:p-3">
+                                <Badge variant="outline" className="text-red-600 border-red-300 text-[10px] md:text-xs px-1">{criticalSkill.requiredScore}+</Badge>
                               </td>
                               {sortedCandidates.map((candidate, idx) => {
                                 // Use hasSufficientData and dataCoverage for more accurate assessment
@@ -825,20 +825,20 @@ export default function PartnerMultiCandidateRoleFitTab() {
                                 const meetsRequired = hasData && score >= criticalSkill.requiredScore;
                                 
                                 return (
-                                  <td key={candidate.userId} className={`text-center p-3 ${idx === 0 && !hasInsufficientData ? 'bg-green-50/50 dark:bg-green-950/20' : hasInsufficientData ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}>
+                                  <td key={candidate.userId} className={`text-center p-2 md:p-3 ${idx === 0 && !hasInsufficientData ? 'bg-green-50/50 dark:bg-green-950/20' : hasInsufficientData ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}>
                                     {!hasData ? (
-                                      <span className="text-muted-foreground italic">N/A</span>
+                                      <span className="text-muted-foreground italic text-xs">N/A</span>
                                     ) : (
-                                      <div className="flex flex-col items-center gap-1">
-                                        <span className={`font-bold text-lg ${meetsRequired ? 'text-green-600' : meetsThreshold ? 'text-amber-600' : 'text-red-600'}`}>
+                                      <div className="flex flex-col items-center gap-0.5 md:gap-1">
+                                        <span className={`font-bold text-sm md:text-lg ${meetsRequired ? 'text-green-600' : meetsThreshold ? 'text-amber-600' : 'text-red-600'}`}>
                                           {score}
                                         </span>
                                         {meetsRequired ? (
-                                          <CheckCircle2 className="h-5 w-5 text-green-500" />
+                                          <CheckCircle2 className="h-3 w-3 md:h-5 md:w-5 text-green-500" />
                                         ) : meetsThreshold ? (
-                                          <AlertCircle className="h-5 w-5 text-amber-500" />
+                                          <AlertCircle className="h-3 w-3 md:h-5 md:w-5 text-amber-500" />
                                         ) : (
-                                          <AlertTriangle className="h-5 w-5 text-red-500" />
+                                          <AlertTriangle className="h-3 w-3 md:h-5 md:w-5 text-red-500" />
                                         )}
                                       </div>
                                     )}
@@ -851,8 +851,8 @@ export default function PartnerMultiCandidateRoleFitTab() {
                       </tbody>
                       <tfoot>
                         <tr className="border-t-2 font-semibold">
-                          <td className="p-3">Critical Skills Met</td>
-                          <td className="text-center p-3">—</td>
+                          <td className="p-2 md:p-3 text-xs md:text-sm">Critical Met</td>
+                          <td className="text-center p-2 md:p-3">—</td>
                           {sortedCandidates.map((candidate, idx) => {
                             // Use hasSufficientData and dataCoverage for more accurate assessment
                             const hasInsufficientData = candidate.hasSufficientData === false || 
@@ -871,12 +871,12 @@ export default function PartnerMultiCandidateRoleFitTab() {
                             const allMet = criticalSkillsMet === totalCritical && totalCritical > 0;
                             
                             return (
-                              <td key={candidate.userId} className={`text-center p-3 ${idx === 0 && !hasInsufficientData ? 'bg-green-50/50 dark:bg-green-950/20' : hasInsufficientData ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}>
+                              <td key={candidate.userId} className={`text-center p-2 md:p-3 ${idx === 0 && !hasInsufficientData ? 'bg-green-50/50 dark:bg-green-950/20' : hasInsufficientData ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}>
                                 {assessedCritical === 0 ? (
-                                  <span className="text-muted-foreground italic">No data</span>
+                                  <span className="text-muted-foreground italic text-xs">No data</span>
                                 ) : (
                                   <>
-                                    <span className={`text-lg font-bold ${allMet ? 'text-green-600' : 'text-red-600'}`}>
+                                    <span className={`text-sm md:text-lg font-bold ${allMet ? 'text-green-600' : 'text-red-600'}`}>
                                       {criticalSkillsMet}/{assessedCritical}
                                     </span>
                                     {assessedCritical < totalCritical && (
