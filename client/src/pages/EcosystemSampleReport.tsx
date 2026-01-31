@@ -766,7 +766,7 @@ export default function EcosystemSampleReport() {
                   {/* FIT Score Targets */}
                   <div className="mb-4">
                     <p className="text-xs font-medium text-muted-foreground mb-2">Target FIT Scores</p>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {Object.entries(profile.fitTargets).map(([code, targets]) => {
                         const capInfo = FIT_CAPABILITIES.find(c => c.code === code);
                         return (

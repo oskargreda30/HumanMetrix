@@ -421,7 +421,7 @@ export function PartnerIntegrationsTab() {
         </CardHeader>
         <CardContent>
           <Tabs value={activeSubTab} onValueChange={setActiveSubTab}>
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 h-auto">
               <TabsTrigger value="webhooks" className="gap-2" data-testid="subtab-webhooks">
                 <Webhook className="h-4 w-4" />
                 Webhooks
@@ -753,7 +753,7 @@ export function PartnerIntegrationsTab() {
                 ))}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="max-retries">Max Retries</Label>
                 <Input
@@ -984,7 +984,7 @@ export function PartnerIntegrationsTab() {
                 data-testid="input-export-name"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Export Type</Label>
                 <Select value={exportForm.exportType} onValueChange={(v) => setExportForm({ ...exportForm, exportType: v })}>

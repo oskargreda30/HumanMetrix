@@ -1715,7 +1715,7 @@ export function EcosystemWorkflow({
           </DialogHeader>
           
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="member-name">Name *</Label>
                 <Input
@@ -1740,7 +1740,7 @@ export function EcosystemWorkflow({
             
             <div className="space-y-2">
               <Label>FIT Scores (0-100)</Label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {FIT_CAPABILITIES.map((cap) => (
                   <div key={cap.code} className="flex items-center gap-2">
                     <div className={`h-6 w-6 rounded ${cap.color} flex items-center justify-center flex-shrink-0`}>
@@ -2813,7 +2813,7 @@ function TeamAnalysisResults({
                 {/* FIT Score Targets */}
                 <div className="mb-4">
                   <p className="text-xs font-medium text-muted-foreground mb-2">Target FIT Scores</p>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {profile.fitTargets && Object.entries(profile.fitTargets).map(([code, targets]: [string, any]) => {
                       const capInfo = FIT_CAPABILITIES.find(c => c.code === code);
                       return (

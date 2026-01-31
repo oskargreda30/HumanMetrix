@@ -478,18 +478,18 @@ export default function MyResults() {
               : 0;
 
             return (
-              <Card className="p-6 mb-8" data-testid="card-key-metrics">
-                <h2 className="text-lg font-semibold mb-4">Key Metrics</h2>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center p-4 bg-muted/30 rounded-lg">
-                    <div className="text-3xl font-bold text-primary mb-1">{uniqueAssessmentTypes.size}</div>
+              <Card className="p-4 md:p-6 mb-8" data-testid="card-key-metrics">
+                <h2 className="text-base md:text-lg font-semibold mb-4">Key Metrics</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+                  <div className="text-center p-3 md:p-4 bg-muted/30 rounded-lg">
+                    <div className="text-2xl md:text-3xl font-bold text-primary mb-1">{uniqueAssessmentTypes.size}</div>
                     <div className="text-xs text-muted-foreground">Assessments Completed</div>
                   </div>
-                  <div className="text-center p-4 bg-muted/30 rounded-lg">
-                    <div className="text-3xl font-bold text-primary mb-1">{skillCount}</div>
+                  <div className="text-center p-3 md:p-4 bg-muted/30 rounded-lg">
+                    <div className="text-2xl md:text-3xl font-bold text-primary mb-1">{skillCount}</div>
                     <div className="text-xs text-muted-foreground">Skills Assessed</div>
                   </div>
-                  <div className="text-center p-4 bg-muted/30 rounded-lg">
+                  <div className="text-center p-3 md:p-4 bg-muted/30 rounded-lg">
                     <div className="text-sm font-bold text-primary mb-1 px-1 leading-tight">{topSkill.name}</div>
                     <div className="text-xs text-muted-foreground">Top Skill ({topSkill.score})</div>
                   </div>

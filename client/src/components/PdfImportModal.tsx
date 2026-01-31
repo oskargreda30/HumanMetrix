@@ -382,11 +382,15 @@ export function PdfImportModal({ open, onOpenChange, endpoint = "/api/admin/impo
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <span className="text-muted-foreground">Name:</span>
-                    <span className="font-medium">{parsedData.candidateName}</span>
-                    <span className="text-muted-foreground">Email:</span>
-                    <span className="font-medium">{parsedData.candidateEmail || 'Not found'}</span>
+                  <div className="flex flex-col gap-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Name:</span>
+                      <span className="font-medium">{parsedData.candidateName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Email:</span>
+                      <span className="font-medium truncate max-w-[60%]">{parsedData.candidateEmail || 'Not found'}</span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -403,7 +407,7 @@ export function PdfImportModal({ open, onOpenChange, endpoint = "/api/admin/impo
                         <span className="font-medium text-sm">{formatAssessmentType(assessment.type)}</span>
                         <Badge variant="outline">{Math.round(assessment.totalScore)}%</Badge>
                       </div>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs">
                         {Object.entries(assessment.scores).map(([skill, score]) => (
                           <div key={skill} className="flex justify-between">
                             <span className="text-muted-foreground truncate pr-2">{skill}:</span>

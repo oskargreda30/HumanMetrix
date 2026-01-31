@@ -177,7 +177,7 @@ export function DeveloperSubTabs({
       </div>
 
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-4">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 h-auto mb-4">
           <TabsTrigger value="api-keys" data-testid="subtab-api-keys" className="flex items-center gap-2">
             <Key className="h-4 w-4" />
             API Keys
