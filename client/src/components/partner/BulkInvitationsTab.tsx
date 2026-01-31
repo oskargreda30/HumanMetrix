@@ -43,6 +43,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface DuplicateCandidateInfo {
   candidateName: string;
@@ -110,6 +120,8 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const [duplicateCandidates, setDuplicateCandidates] = useState<DuplicateCandidateInfo[]>([]);
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [revokeConfirmId, setRevokeConfirmId] = useState<string | null>(null);
+  const [revokeConfirmEmail, setRevokeConfirmEmail] = useState<string>('');
 
   const { data: quota, isLoading: quotaLoading } = useQuery<QuotaData>({
     queryKey: ['/api/partner/me/quota'],
@@ -1043,14 +1055,13 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
                             size="icon"
                             className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
                             onClick={() => {
-                              if (window.confirm('Are you sure you want to revoke this invitation? The candidate will no longer be able to access the assessment.')) {
-                                revokeInvitationMutation.mutate(invitation.id);
-                              }
+                              setRevokeConfirmId(invitation.id);
+                              setRevokeConfirmEmail(invitation.candidateEmail);
                             }}
                             disabled={revokeInvitationMutation.isPending}
                             data-testid={`revoke-invitation-${invitation.id}`}
                           >
-                            {revokeInvitationMutation.isPending ? (
+                            {revokeInvitationMutation.isPending && revokeConfirmId === invitation.id ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
                               <X className="h-4 w-4" />
@@ -1173,6 +1184,33 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!revokeConfirmId} onOpenChange={(open) => !open && setRevokeConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke Invitation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to revoke the invitation for <strong>{revokeConfirmEmail}</strong>? 
+              The candidate will no longer be able to access the assessment.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-revoke">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-500 hover:bg-red-600"
+              onClick={() => {
+                if (revokeConfirmId) {
+                  revokeInvitationMutation.mutate(revokeConfirmId);
+                  setRevokeConfirmId(null);
+                }
+              }}
+              data-testid="button-confirm-revoke"
+            >
+              Revoke
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
