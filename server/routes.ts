@@ -3801,6 +3801,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             partnerName: partner?.companyName || partner?.name || 'Partner',
             partnerId: invitation.partnerId,
             assessmentTypes: invitation.assessmentTypes,
+            inviteToken: invitation.inviteToken, // Token for resuming assessments
             results: results.map((r: any) => {
               const unlocked = isAssessmentUnlocked(r.assessmentType);
               return {

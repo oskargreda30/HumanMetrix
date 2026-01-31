@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, CheckCircle2, Clock, FileText, Brain, Sparkles, Code, Scale, Timer, Key, X, Eye, EyeOff, Plus, Lock, Unlock, CreditCard } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, FileText, Brain, Sparkles, Code, Scale, Timer, Key, X, Eye, EyeOff, Plus, Lock, Unlock, CreditCard, PlayCircle } from "lucide-react";
 import { format } from "date-fns";
 import { formatAssessmentName } from "@/lib/assessmentHelpers";
 import { useEffect, useState } from "react";
@@ -1124,19 +1124,35 @@ export default function Dashboard() {
                               .filter((r: any) => r.isUnlocked || series.resultsUnlocked);
                             const hasUnlockedResults = unlockedResults.length > 0;
                             
-                            // Only show action section if there are completed results
-                            if (!hasCompletedResults) return null;
+                            // Check if series is incomplete (more assessments to complete)
+                            const isIncomplete = !series.allComplete;
                             
                             return (
                               <>
-                                <p className="text-sm text-muted-foreground font-medium text-center">
-                                  Results shared with {series.partnerName}
-                                </p>
+                                {hasCompletedResults && (
+                                  <p className="text-sm text-muted-foreground font-medium text-center">
+                                    Results shared with {series.partnerName}
+                                  </p>
+                                )}
+                                {/* Resume Testing button - shown when series is not complete */}
+                                {isIncomplete && series.inviteToken && (
+                                  <Link href={`/start-assessment?token=${series.inviteToken}`}>
+                                    <Button
+                                      className="mt-2 w-full"
+                                      variant="default"
+                                      data-testid={`button-resume-testing-${series.id}`}
+                                    >
+                                      <PlayCircle className="mr-2 h-4 w-4" />
+                                      Resume Testing
+                                    </Button>
+                                  </Link>
+                                )}
                                 {/* View Results button - shown when any results are unlocked */}
                                 {hasUnlockedResults && (
                                   <Link href={`/my-results?partnerInvitationId=${series.id}`}>
                                     <Button
                                       className="mt-2 w-full"
+                                      variant={isIncomplete ? "outline" : "default"}
                                       data-testid={`button-view-partner-results-${series.id}`}
                                     >
                                       <FileText className="mr-2 h-4 w-4" />
