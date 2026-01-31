@@ -372,7 +372,7 @@ export default function B2BResults() {
                   <Clock className="w-6 h-6 text-muted-foreground" />
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-1">Free Access Coming Soon</h3>
+                  <h3 className="font-semibold mb-1">Free Access in 30 Days</h3>
                   <p className="text-sm text-muted-foreground">
                     Your results will be available for free on{" "}
                     <strong>{format(freeAccessDate, "MMMM d, yyyy")}</strong>.
