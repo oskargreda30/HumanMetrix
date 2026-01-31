@@ -79,10 +79,10 @@ export default function SessionsTab() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold" data-testid="text-sessions-title">Active Sessions</h2>
-          <p className="text-muted-foreground">Monitor and manage user sessions</p>
+          <h2 className="text-2xl font-bold text-white" data-testid="text-sessions-title">Active Sessions</h2>
+          <p className="text-white/70">Monitor and manage user sessions</p>
         </div>
-        <Button onClick={() => refetch()} variant="outline" data-testid="button-refresh-sessions">
+        <Button onClick={() => refetch()} variant="outline" className="text-white border-white/30 hover:bg-white/10" data-testid="button-refresh-sessions">
           <RefreshCw className="h-4 w-4 mr-2" />
           Refresh
         </Button>

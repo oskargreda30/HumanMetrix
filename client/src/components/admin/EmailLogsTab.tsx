@@ -106,10 +106,10 @@ export default function EmailLogsTab() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold" data-testid="text-email-logs-title">Email Logs</h2>
-          <p className="text-muted-foreground">Track all emails sent from the platform</p>
+          <h2 className="text-2xl font-bold text-white" data-testid="text-email-logs-title">Email Logs</h2>
+          <p className="text-white/70">Track all emails sent from the platform</p>
         </div>
-        <Button onClick={handleRefresh} variant="outline" data-testid="button-refresh-emails">
+        <Button onClick={handleRefresh} variant="outline" className="text-white border-white/30 hover:bg-white/10" data-testid="button-refresh-emails">
           <RefreshCw className="h-4 w-4 mr-2" />
           Refresh
         </Button>
