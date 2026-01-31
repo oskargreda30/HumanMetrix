@@ -289,29 +289,32 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Mobile: Stacked cards */}
-            <div className="md:hidden space-y-4" data-testid="comparison-mobile">
-              {comparisonData.map((row, index) => (
-                <Card key={index} className="p-4" data-testid={`comparison-card-${index}`}>
-                  <h3 className="font-medium text-sm mb-3">{row.feature}</h3>
-                  <div className="space-y-2">
-                    <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <X className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
-                      <div>
-                        <span className="text-xs uppercase tracking-wide text-muted-foreground/70">Traditional</span>
-                        <p>{row.traditional}</p>
+            {/* Mobile: Side-by-side comparison table */}
+            <div className="md:hidden" data-testid="comparison-mobile">
+              <Card className="overflow-hidden">
+                <div className="grid grid-cols-3 border-b bg-muted/50">
+                  <div className="p-2 text-xs font-semibold">Feature</div>
+                  <div className="p-2 text-xs font-semibold text-muted-foreground">Traditional</div>
+                  <div className="p-2 text-xs font-semibold text-primary">HumanMetrix</div>
+                </div>
+                {comparisonData.map((row, index) => (
+                  <div key={index} className="grid grid-cols-3 border-b last:border-0" data-testid={`comparison-card-${index}`}>
+                    <div className="p-2 text-xs font-medium flex items-center">{row.feature}</div>
+                    <div className="p-2 text-xs text-muted-foreground">
+                      <div className="flex items-start gap-1">
+                        <X className="h-3 w-3 text-destructive flex-shrink-0 mt-0.5" />
+                        <span className="leading-tight">{row.traditional}</span>
                       </div>
                     </div>
-                    <div className="flex items-start gap-2 text-sm">
-                      <Check className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <span className="text-xs uppercase tracking-wide text-primary/70">HumanMetrix</span>
-                        <p className="font-medium">{row.humanmetrix}</p>
+                    <div className="p-2 text-xs">
+                      <div className="flex items-start gap-1">
+                        <Check className="h-3 w-3 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span className="font-medium leading-tight">{row.humanmetrix}</span>
                       </div>
                     </div>
                   </div>
-                </Card>
-              ))}
+                ))}
+              </Card>
             </div>
 
             {/* Desktop: Table layout */}

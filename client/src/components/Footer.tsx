@@ -113,9 +113,9 @@ export default function Footer() {
     <>
       <footer className="border-t border-cyan-400/20 bg-[#0a1628]">
         <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-8 md:py-12 lg:py-16">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 lg:gap-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 lg:gap-12">
             {/* Brand Column */}
-            <div className="col-span-2 md:col-span-1 space-y-2 md:space-y-4">
+            <div className="col-span-2 md:col-span-1 space-y-3 md:space-y-4">
               <div className="flex items-center gap-1">
                 <div className="h-8 w-8 md:h-10 md:w-10 flex items-center justify-center -mr-1 mt-1 md:mt-2">
                   <img 
@@ -129,60 +129,28 @@ export default function Footer() {
                   <span className="font-bold text-lg md:text-2xl bg-gradient-to-r from-cyan-400 to-blue-500 text-transparent bg-clip-text">Metrix</span>
                 </div>
               </div>
-              <p className="text-[11px] md:text-sm text-blue-100/60">
+              <p className="text-xs md:text-sm text-blue-100/60">
                 Professional AI assessments for the modern workforce
               </p>
-              <a
-                href="https://www.linkedin.com/company/humanmetrix/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 md:gap-2 text-[11px] md:text-sm text-blue-100/60 hover:text-cyan-300 transition-colors"
-                data-testid="link-linkedin"
-              >
-                <SiLinkedin className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
-                <span>Follow us on LinkedIn</span>
-              </a>
-              <a
-                href="https://www.facebook.com/profile.php?id=61585522262716"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 md:gap-2 text-[11px] md:text-sm text-blue-100/60 hover:text-cyan-300 transition-colors"
-                data-testid="link-facebook"
-              >
-                <SiFacebook className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
-                <span>Follow us on Facebook</span>
-              </a>
-              {/* Instagram link hidden for now - may use in the future
-              <a
-                href="https://www.instagram.com/human_metrix/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 md:gap-2 text-[11px] md:text-sm text-blue-100/60 hover:text-cyan-300 transition-colors"
-                data-testid="link-instagram"
-              >
-                <SiInstagram className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
-                <span>Follow us on Instagram</span>
-              </a>
-              */}
             </div>
 
             {/* Company Links */}
             <div>
-              <h3 className="font-semibold mb-2 md:mb-4 text-xs md:text-base text-white">Company</h3>
-              <ul className="space-y-1.5 md:space-y-3">
+              <h3 className="font-semibold mb-3 md:mb-4 text-sm md:text-base text-white">Company</h3>
+              <ul className="space-y-2 md:space-y-3">
                 {footerLinks.company.map((link) => (
                   <li key={link.href}>
                     {link.isAnchor ? (
                       <button
                         onClick={() => handleAnchorClick(link.href)}
-                        className="text-[11px] md:text-sm text-blue-100/60 hover:text-cyan-300 transition-colors cursor-pointer text-left"
+                        className="text-xs md:text-sm text-blue-100/60 hover:text-cyan-300 transition-colors cursor-pointer text-left"
                         data-testid={`link-footer-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
                       >
                         {link.label}
                       </button>
                     ) : (
                       <Link href={link.href}>
-                        <span className="text-[11px] md:text-sm text-blue-100/60 hover:text-cyan-300 transition-colors cursor-pointer" data-testid={`link-footer-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                        <span className="text-xs md:text-sm text-blue-100/60 hover:text-cyan-300 transition-colors cursor-pointer" data-testid={`link-footer-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
                           {link.label}
                         </span>
                       </Link>
@@ -192,55 +160,147 @@ export default function Footer() {
               </ul>
             </div>
 
-            {/* Careers Section */}
-            <div>
-              <h3 className="font-semibold mb-2 md:mb-4 text-xs md:text-base text-white">Careers</h3>
-              <p className="text-[11px] md:text-sm text-blue-100/60 leading-relaxed mb-3">
+            {/* Careers Section with Follow + Contact on mobile */}
+            <div className="col-span-2 md:col-span-1">
+              <h3 className="font-semibold mb-3 md:mb-4 text-sm md:text-base text-white">Careers</h3>
+              <p className="text-xs md:text-sm text-blue-100/60 leading-relaxed mb-3">
                 We're always on the lookout for talented, driven individuals. If you share our passion for innovation, send us your CV — we believe in creating roles for the right people.
               </p>
               <a
                 href="mailto:hello@humanmetrix.co.uk?subject=Career Opportunity"
-                className="inline-flex items-center gap-1.5 text-[11px] md:text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
+                className="inline-flex items-center gap-2 text-xs md:text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
                 data-testid="link-careers-email"
               >
-                <Mail className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+                <Mail className="h-4 w-4 md:h-4 md:w-4 flex-shrink-0" />
                 <span>Send your CV</span>
               </a>
+              
+              {/* Follow section - shown under careers on mobile */}
+              <div className="mt-5 md:hidden">
+                <h4 className="font-semibold mb-3 text-sm text-white">Follow Us</h4>
+                <div className="space-y-2">
+                  <a
+                    href="https://www.linkedin.com/company/humanmetrix/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-xs text-blue-100/60 hover:text-cyan-300 transition-colors"
+                    data-testid="link-linkedin-mobile"
+                  >
+                    <SiLinkedin className="h-4 w-4 flex-shrink-0" />
+                    <span>Follow us on LinkedIn</span>
+                  </a>
+                  <a
+                    href="https://www.facebook.com/profile.php?id=61585522262716"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-xs text-blue-100/60 hover:text-cyan-300 transition-colors"
+                    data-testid="link-facebook-mobile"
+                  >
+                    <SiFacebook className="h-4 w-4 flex-shrink-0" />
+                    <span>Follow us on Facebook</span>
+                  </a>
+                </div>
+              </div>
+              
+              {/* Contact section - shown under follow on mobile */}
+              <div className="mt-5 md:hidden">
+                <h4 className="font-semibold mb-3 text-sm text-white">Contact</h4>
+                <div className="space-y-2">
+                  <a
+                    href="mailto:hello@humanmetrix.co.uk"
+                    className="flex items-center gap-2 text-xs text-blue-100/60 hover:text-cyan-300 transition-colors"
+                    data-testid="link-email-mobile"
+                  >
+                    <Mail className="h-4 w-4 flex-shrink-0" />
+                    <span>hello@humanmetrix.co.uk</span>
+                  </a>
+                  <button
+                    onClick={() => setShowContactForm(true)}
+                    className="flex items-center gap-2 text-xs text-blue-100/60 hover:text-cyan-300 transition-colors cursor-pointer"
+                    data-testid="button-contact-form-mobile"
+                  >
+                    <MessageSquare className="h-4 w-4 flex-shrink-0" />
+                    <span>Contact Form</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
-            {/* Resources Links */}
-            <div>
-              <h3 className="font-semibold mb-2 md:mb-4 text-xs md:text-base text-white">Resources</h3>
-              <ul className="space-y-1.5 md:space-y-3">
+            {/* Resources Links - desktop view includes follow and contact */}
+            <div className="hidden md:block">
+              <h3 className="font-semibold mb-4 text-base text-white">Resources</h3>
+              <ul className="space-y-3">
                 {footerLinks.resources.map((link) => (
                   <li key={link.href}>
                     <Link href={link.href}>
-                      <span className="text-[11px] md:text-sm text-blue-100/60 hover:text-cyan-300 transition-colors cursor-pointer" data-testid={`link-footer-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                      <span className="text-sm text-blue-100/60 hover:text-cyan-300 transition-colors cursor-pointer" data-testid={`link-footer-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
                         {link.label}
                       </span>
                     </Link>
                   </li>
                 ))}
               </ul>
-              <div className="mt-3 md:mt-6 space-y-1.5 md:space-y-3">
-                <h4 className="font-medium text-[11px] md:text-sm text-white">Contact</h4>
+              
+              {/* Follow section - desktop */}
+              <div className="mt-6 space-y-3">
+                <h4 className="font-medium text-sm text-white">Follow Us</h4>
+                <a
+                  href="https://www.linkedin.com/company/humanmetrix/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-blue-100/60 hover:text-cyan-300 transition-colors"
+                  data-testid="link-linkedin"
+                >
+                  <SiLinkedin className="h-4 w-4 flex-shrink-0" />
+                  <span>Follow us on LinkedIn</span>
+                </a>
+                <a
+                  href="https://www.facebook.com/profile.php?id=61585522262716"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-blue-100/60 hover:text-cyan-300 transition-colors"
+                  data-testid="link-facebook"
+                >
+                  <SiFacebook className="h-4 w-4 flex-shrink-0" />
+                  <span>Follow us on Facebook</span>
+                </a>
+              </div>
+              
+              <div className="mt-6 space-y-3">
+                <h4 className="font-medium text-sm text-white">Contact</h4>
                 <a
                   href="mailto:hello@humanmetrix.co.uk"
-                  className="flex items-start gap-1 md:gap-2 text-[11px] md:text-sm text-blue-100/60 hover:text-cyan-300 transition-colors"
+                  className="flex items-start gap-2 text-sm text-blue-100/60 hover:text-cyan-300 transition-colors"
                   data-testid="link-email"
                 >
-                  <Mail className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0 mt-0.5" />
+                  <Mail className="h-4 w-4 flex-shrink-0 mt-0.5" />
                   <span className="break-words">hello@humanmetrix.co.uk</span>
                 </a>
                 <button
                   onClick={() => setShowContactForm(true)}
-                  className="flex items-start gap-1 md:gap-2 text-[11px] md:text-sm text-blue-100/60 hover:text-cyan-300 transition-colors cursor-pointer"
+                  className="flex items-start gap-2 text-sm text-blue-100/60 hover:text-cyan-300 transition-colors cursor-pointer"
                   data-testid="button-contact-form"
                 >
-                  <MessageSquare className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0 mt-0.5" />
+                  <MessageSquare className="h-4 w-4 flex-shrink-0 mt-0.5" />
                   <span>Contact Form</span>
                 </button>
               </div>
+            </div>
+            
+            {/* Resources Links - mobile only (just the links without contact/follow) */}
+            <div className="md:hidden">
+              <h3 className="font-semibold mb-3 text-sm text-white">Resources</h3>
+              <ul className="space-y-2">
+                {footerLinks.resources.map((link) => (
+                  <li key={link.href}>
+                    <Link href={link.href}>
+                      <span className="text-xs text-blue-100/60 hover:text-cyan-300 transition-colors cursor-pointer" data-testid={`link-footer-mobile-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                        {link.label}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
 

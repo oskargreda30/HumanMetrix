@@ -96,27 +96,27 @@ export default function Developers() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-5xl mx-auto">
-            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 h-auto gap-1 bg-slate-800/50 border border-slate-700 mb-8 p-1">
-              <TabsTrigger value="quickstart" className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-xs sm:text-sm px-2 py-1.5" data-testid="tab-quickstart">
-                <Zap className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 h-auto gap-1.5 bg-slate-800/50 border border-slate-700 mb-8 p-1.5">
+              <TabsTrigger value="quickstart" className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-sm sm:text-base px-3 py-2.5" data-testid="tab-quickstart">
+                <Zap className="w-4 h-4 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                 <span className="hidden sm:inline">Quick Start</span>
                 <span className="sm:hidden">Start</span>
               </TabsTrigger>
-              <TabsTrigger value="widget" className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-xs sm:text-sm px-2 py-1.5" data-testid="tab-widget">
-                <Puzzle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <TabsTrigger value="widget" className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-sm sm:text-base px-3 py-2.5" data-testid="tab-widget">
+                <Puzzle className="w-4 h-4 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                 Widget
               </TabsTrigger>
-              <TabsTrigger value="sdk" className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-xs sm:text-sm px-2 py-1.5" data-testid="tab-sdk">
-                <Code2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <TabsTrigger value="sdk" className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-sm sm:text-base px-3 py-2.5" data-testid="tab-sdk">
+                <Code2 className="w-4 h-4 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                 SDK
               </TabsTrigger>
-              <TabsTrigger value="api" className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-xs sm:text-sm px-2 py-1.5" data-testid="tab-api">
-                <Book className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <TabsTrigger value="api" className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-sm sm:text-base px-3 py-2.5" data-testid="tab-api">
+                <Book className="w-4 h-4 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                 <span className="hidden sm:inline">API Reference</span>
                 <span className="sm:hidden">API</span>
               </TabsTrigger>
-              <TabsTrigger value="swagger" className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-xs sm:text-sm px-2 py-1.5" data-testid="tab-swagger">
-                <FileJson className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <TabsTrigger value="swagger" className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-sm sm:text-base px-3 py-2.5" data-testid="tab-swagger">
+                <FileJson className="w-4 h-4 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                 Swagger
               </TabsTrigger>
             </TabsList>
