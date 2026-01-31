@@ -96,68 +96,85 @@ export function savePdfMobile(pdf: jsPDF, filename: string) {
   // Mobile approach: Generate blob and use multiple fallback strategies
   const pdfBlob = pdf.output('blob');
   
-  if (isIOS && isSafari) {
-    // iOS Safari: Use FileReader to convert to data URL and open in new tab
-    // This is the most reliable method for iOS Safari
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const dataUrl = reader.result as string;
-      // Open the data URL in a new window/tab
-      const newWindow = window.open();
-      if (newWindow) {
-        newWindow.document.write(`
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <title>${filename}</title>
-              <meta name="viewport" content="width=device-width, initial-scale=1">
-              <style>
-                body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background: #f0f0f0; }
-                embed { width: 100%; height: 100vh; }
-              </style>
-            </head>
-            <body>
-              <embed src="${dataUrl}" type="application/pdf" width="100%" height="100%">
-            </body>
-          </html>
-        `);
-        newWindow.document.close();
-      } else {
-        // Fallback: try to download directly if popup blocked
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-    };
-    reader.readAsDataURL(pdfBlob);
-  } else if (isAndroid) {
-    // Android: Create blob URL and open in new tab, or trigger download
+  if (isIOS) {
+    // iOS: Use blob URL approach which works better than embed on iOS
+    // Creating a download link with blob URL is more reliable than embed
     const blobUrl = URL.createObjectURL(pdfBlob);
     
-    // Try opening in new tab first
-    const newWindow = window.open(blobUrl, '_blank');
+    // For iOS Safari, directly triggering download via link works best
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
     
-    if (!newWindow) {
-      // Fallback: create download link
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = filename;
-      link.style.display = 'none';
-      document.body.appendChild(link);
+    // Style the link to be invisible
+    link.style.position = 'fixed';
+    link.style.top = '-10000px';
+    link.style.left = '-10000px';
+    
+    document.body.appendChild(link);
+    
+    // Use setTimeout to ensure the DOM is updated before clicking
+    setTimeout(() => {
       link.click();
       
       // Cleanup after a delay
       setTimeout(() => {
-        document.body.removeChild(link);
+        if (document.body.contains(link)) {
+          document.body.removeChild(link);
+        }
         URL.revokeObjectURL(blobUrl);
-      }, 1000);
-    } else {
-      // Revoke URL after delay to allow download
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-    }
+      }, 5000);
+    }, 100);
+    
+    // Also try opening in new window as fallback for viewing
+    // Some iOS versions work better with window.open
+    setTimeout(() => {
+      try {
+        const newWindow = window.open(blobUrl, '_blank');
+        if (newWindow) {
+          // PDF opened successfully in new tab
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 120000);
+        }
+      } catch (e) {
+        // Fallback already triggered via link click
+        console.log('PDF download initiated via link');
+      }
+    }, 200);
+  } else if (isAndroid) {
+    // Android: Create blob URL and trigger download
+    const blobUrl = URL.createObjectURL(pdfBlob);
+    
+    // Create download link - more reliable than window.open on Android
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    link.target = '_blank';
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    
+    // Trigger download
+    setTimeout(() => {
+      link.click();
+      
+      // Also try opening in new tab for viewing
+      setTimeout(() => {
+        try {
+          window.open(blobUrl, '_blank');
+        } catch (e) {
+          // Download already triggered
+        }
+      }, 300);
+      
+      // Cleanup after a delay
+      setTimeout(() => {
+        if (document.body.contains(link)) {
+          document.body.removeChild(link);
+        }
+        URL.revokeObjectURL(blobUrl);
+      }, 60000);
+    }, 100);
   } else {
     // Other mobile browsers: try standard approach with fallback
     try {
