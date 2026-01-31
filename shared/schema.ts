@@ -2337,3 +2337,20 @@ export const insertEmailLogSchema = createInsertSchema(emailLogs).omit({
 export type InsertEmailLog = z.infer<typeof insertEmailLogSchema>;
 export type EmailLog = typeof emailLogs.$inferSelect;
 
+
+// App logs table for CloudWatch-like functionality
+export const appLogs = pgTable("app_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  level: varchar("level").notNull().default("info"), // 'info', 'warn', 'error', 'debug'
+  source: varchar("source").notNull(), // e.g., 'express', 'stripe', 'email', 'auth', 'scoring'
+  message: text("message").notNull(),
+  metadata: jsonb("metadata").$type<Record<string, any> | null>(),
+}, (table) => [
+  index("idx_app_logs_timestamp").on(table.timestamp),
+  index("idx_app_logs_level").on(table.level),
+  index("idx_app_logs_source").on(table.source),
+]);
+
+export type AppLog = typeof appLogs.$inferSelect;
+export type InsertAppLog = typeof appLogs.$inferInsert;

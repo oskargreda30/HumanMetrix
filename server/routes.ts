@@ -7,7 +7,7 @@ import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema, B2B_VOLUME_TIERS, CREDIT_EXPIRATION_MONTHS, getTrialQuotaForTier } from "@shared/schema";
 import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, calculateStripeAmountFromTotalPence, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES, roundPriceUp, formatPrice, getCurrencyForCountry } from "@shared/currencies";
 import { db } from "./db";
-import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, broadcastMessages, SYSTEM_SETTING_KEYS, auditLogs, errorLogs, partnerInvoices, invitations, partnerCandidateInvitations, candidateNotes, emailLogs, sessions, type PartnerAccount, type AssessmentSession } from "@shared/schema";
+import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, broadcastMessages, SYSTEM_SETTING_KEYS, auditLogs, errorLogs, partnerInvoices, invitations, partnerCandidateInvitations, candidateNotes, emailLogs, sessions, appLogs, type PartnerAccount, type AssessmentSession } from "@shared/schema";
 import { eq, desc, sql, and, or, gte, isNotNull } from "drizzle-orm";
 import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPartnerWelcomeEmail, sendGeneralEnquiryEmail, sendB2BResultsEmail, sendPaymentReceiptWithPdf, type PdfReceiptEmailDetails, getEmailProvider, setEmailProvider, type EmailProvider } from "./email";
 import { generateB2BResultsPDF } from "./generateB2BPDF";
@@ -23697,6 +23697,141 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
     }
   });
 
+
+  // ========================================
+  // App Logs API (CloudWatch-like functionality)
+  // ========================================
+  
+  app.get("/api/admin/app-logs/stats", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!req.user?.isSuperAdmin) {
+        return res.status(403).json({ message: "Super admin access required" });
+      }
+      
+      const timeRange = req.query.timeRange || '1h';
+      
+      // Calculate time filter
+      let hoursAgo = 1;
+      if (timeRange === '15m') hoursAgo = 0.25;
+      else if (timeRange === '1h') hoursAgo = 1;
+      else if (timeRange === '6h') hoursAgo = 6;
+      else if (timeRange === '24h') hoursAgo = 24;
+      else if (timeRange === '7d') hoursAgo = 24 * 7;
+      
+      const since = new Date(Date.now() - hoursAgo * 60 * 60 * 1000);
+      
+      const stats = await db.execute(sql`
+        SELECT 
+          COUNT(*) as total,
+          COUNT(*) FILTER (WHERE level = 'info') as info,
+          COUNT(*) FILTER (WHERE level = 'warn') as warn,
+          COUNT(*) FILTER (WHERE level = 'error') as error,
+          COUNT(*) FILTER (WHERE level = 'debug') as debug,
+          ARRAY_AGG(DISTINCT source) FILTER (WHERE source IS NOT NULL) as sources
+        FROM app_logs
+        WHERE timestamp >= ${since}
+      `);
+      
+      const row = stats.rows[0] as any;
+      res.json({
+        total: parseInt(row?.total || '0'),
+        info: parseInt(row?.info || '0'),
+        warn: parseInt(row?.warn || '0'),
+        error: parseInt(row?.error || '0'),
+        debug: parseInt(row?.debug || '0'),
+        sources: row?.sources?.filter(Boolean) || [],
+      });
+    } catch (error) {
+      console.error("Error fetching app log stats:", error);
+      res.status(500).json({ message: "Failed to fetch app log stats" });
+    }
+  });
+  
+  app.get("/api/admin/app-logs", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!req.user?.isSuperAdmin) {
+        return res.status(403).json({ message: "Super admin access required" });
+      }
+      
+      const { search, level, source, timeRange = '1h', limit = '500' } = req.query;
+      
+      // Calculate time filter
+      let hoursAgo = 1;
+      if (timeRange === '15m') hoursAgo = 0.25;
+      else if (timeRange === '1h') hoursAgo = 1;
+      else if (timeRange === '6h') hoursAgo = 6;
+      else if (timeRange === '24h') hoursAgo = 24;
+      else if (timeRange === '7d') hoursAgo = 24 * 7;
+      
+      const since = new Date(Date.now() - hoursAgo * 60 * 60 * 1000);
+      const maxLimit = Math.min(parseInt(limit as string) || 500, 1000);
+      
+      // Build dynamic query with filters
+      let query = sql`
+        SELECT id, timestamp, level, source, message, metadata
+        FROM app_logs
+        WHERE timestamp >= ${since}
+      `;
+      
+      if (level && level !== 'all') {
+        query = sql`${query} AND level = ${level}`;
+      }
+      
+      if (source && source !== 'all') {
+        query = sql`${query} AND source = ${source}`;
+      }
+      
+      if (search) {
+        query = sql`${query} AND message ILIKE ${'%' + search + '%'}`;
+      }
+      
+      query = sql`${query} ORDER BY timestamp DESC LIMIT ${maxLimit}`;
+      
+      const result = await db.execute(query);
+      
+      // Get total count
+      let countQuery = sql`SELECT COUNT(*) as total FROM app_logs WHERE timestamp >= ${since}`;
+      if (level && level !== 'all') {
+        countQuery = sql`${countQuery} AND level = ${level}`;
+      }
+      if (source && source !== 'all') {
+        countQuery = sql`${countQuery} AND source = ${source}`;
+      }
+      if (search) {
+        countQuery = sql`${countQuery} AND message ILIKE ${'%' + search + '%'}`;
+      }
+      
+      const countResult = await db.execute(countQuery);
+      const total = parseInt((countResult.rows[0] as any)?.total || '0');
+      
+      res.json({
+        logs: result.rows,
+        total,
+      });
+    } catch (error) {
+      console.error("Error fetching app logs:", error);
+      res.status(500).json({ message: "Failed to fetch app logs" });
+    }
+  });
+  
+  // Helper function to log app events (for internal use)
+  app.post("/api/internal/app-log", isAuthenticated, async (req: any, res) => {
+    try {
+      const { level, source, message, metadata } = req.body;
+      
+      await db.insert(appLogs).values({
+        level: level || 'info',
+        source: source || 'unknown',
+        message: message || '',
+        metadata: metadata || null,
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error creating app log:", error);
+      res.status(500).json({ message: "Failed to create app log" });
+    }
+  });
   const httpServer = createServer(app);
   return httpServer;
 }
