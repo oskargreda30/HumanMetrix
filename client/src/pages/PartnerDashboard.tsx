@@ -1181,7 +1181,21 @@ export default function PartnerDashboard() {
   
   // Currency symbols map for partner pricing (uses partner's assigned currency, not geolocation)
   const currencySymbols: Record<string, string> = {
-    'GBP': '£', 'USD': '
+    'GBP': '£', 'USD': '$', 'EUR': '€', 'SGD': 'S$', 'AUD': 'A$', 'CAD': 'C$',
+    'INR': '₹', 'MYR': 'RM', 'THB': '฿', 'PHP': '₱', 'JPY': '¥', 'KRW': '₩',
+    'IDR': 'Rp', 'VND': '₫', 'ZAR': 'R', 'BRL': 'R$', 'MXN': '$', 'AED': 'AED',
+    'SAR': 'SAR', 'TWD': 'NT$', 'HKD': 'HK$', 'NZD': 'NZ$', 'CHF': 'CHF', 'SEK': 'kr',
+  };
+  
+  // Format price using partner's assigned currency (from API), not geolocation
+  const formatPartnerPrice = (amountInSmallestUnit: number): string => {
+    const partnerCurrency = pricing?.currency || 'GBP';
+    const symbol = currencySymbols[partnerCurrency] || partnerCurrency + ' ';
+    const isZeroDecimal = pricing?.isZeroDecimal || false;
+    const amount = isZeroDecimal ? amountInSmallestUnit : amountInSmallestUnit / 100;
+    return `${symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })`;
+  };
+
   interface BillingChangeRequestData {
     pendingRequest: {
       id: string;
