@@ -2300,3 +2300,40 @@ export const insertAutoTopUpRetrySchema = createInsertSchema(autoTopUpRetries).o
 export type InsertAutoTopUpRetry = z.infer<typeof insertAutoTopUpRetrySchema>;
 export type AutoTopUpRetry = typeof autoTopUpRetries.$inferSelect;
 
+// Email logs table - track all emails sent from the platform
+export const emailLogs = pgTable("email_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  recipientEmail: varchar("recipient_email").notNull(),
+  recipientName: varchar("recipient_name"),
+  recipientType: varchar("recipient_type").notNull(), // 'partner', 'b2b_test_taker', 'b2c_customer', 'super_admin'
+  subject: varchar("subject").notNull(),
+  emailType: varchar("email_type").notNull(), // e.g., 'invitation', 'results', 'password_reset', 'welcome', 'billing', etc.
+  provider: varchar("provider").notNull(), // 'gmail' or 'sendgrid'
+  status: varchar("status").notNull().default("sent"), // 'sent', 'failed', 'bounced'
+  messageId: varchar("message_id"),
+  error: text("error"),
+  metadata: jsonb("metadata").$type<{
+    partnerId?: string;
+    partnerName?: string;
+    userId?: string;
+    assessmentType?: string;
+    invitationId?: string;
+    [key: string]: any;
+  } | null>(),
+  sentAt: timestamp("sent_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_email_logs_recipient").on(table.recipientEmail),
+  index("idx_email_logs_type").on(table.emailType),
+  index("idx_email_logs_recipient_type").on(table.recipientType),
+  index("idx_email_logs_sent").on(table.sentAt),
+  index("idx_email_logs_status").on(table.status),
+]);
+
+export const insertEmailLogSchema = createInsertSchema(emailLogs).omit({
+  id: true,
+  sentAt: true,
+});
+
+export type InsertEmailLog = z.infer<typeof insertEmailLogSchema>;
+export type EmailLog = typeof emailLogs.$inferSelect;
+
