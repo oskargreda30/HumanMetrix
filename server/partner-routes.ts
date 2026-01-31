@@ -1737,6 +1737,41 @@ export function registerPartnerRoutes(app: Express) {
                 });
                 console.log(`[Partner Invitation] All assessments completed for invitation ${invitationId}`);
               }
+              
+              // CRITICAL FIX: Sync assessment_results for logged-in users immediately after completion
+              // This ensures the dashboard shows the result without requiring a separate account creation flow
+              if (invitation.email) {
+                // Find user by email to check if they have an account
+                const linkedUser = await storage.getUserByEmail(invitation.email);
+                if (linkedUser) {
+                  // User has an account - sync this completed session immediately
+                  const existingResults = await storage.getResultsByUser(linkedUser.id);
+                  const hasExistingResult = existingResults.some(
+                    (r: any) => r.partnerInvitationId === invitationId && r.assessmentType === session.assessmentType
+                  );
+                  
+                  if (!hasExistingResult) {
+                    // Fetch the updated session to get the final scores
+                    const updatedSessionForSync = await storage.getAssessmentSession(sessionId);
+                    if (updatedSessionForSync && updatedSessionForSync.status === 'completed') {
+                      await storage.createAssessmentResult({
+                        userId: linkedUser.id,
+                        partnerInvitationId: invitationId,
+                        assessmentType: updatedSessionForSync.assessmentType,
+                        questionLocale: updatedSessionForSync.questionLocale || 'default',
+                        answers: updatedSessionForSync.answers || {},
+                        scores: updatedSessionForSync.scores || {},
+                        totalScore: updatedSessionForSync.totalScore,
+                        percentile: updatedSessionForSync.percentile,
+                        evaluations: updatedSessionForSync.evaluations,
+                        status: 'completed',
+                        completedAt: updatedSessionForSync.completedAt,
+                      });
+                      console.log(`[Partner Invitation] Synced assessment_result for user ${linkedUser.id}, type: ${session.assessmentType}`);
+                    }
+                  }
+                }
+              }
             }
           } catch (invError) {
             console.error('[Partner Invitation] Failed to update invitation status:', invError);
