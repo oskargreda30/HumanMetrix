@@ -190,7 +190,7 @@ export default function AdminDashboard() {
               )}
               {isSuperAdmin && (
                 <TabsTrigger value="monitoring" data-testid="tab-monitoring" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                  Monitor
+                  Monitoring
                 </TabsTrigger>
               )}
               {isSuperAdmin && (
