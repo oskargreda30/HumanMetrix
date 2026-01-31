@@ -10633,26 +10633,19 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(403).json({ message: "Admin access required" });
       }
       
-      // Import PPP conversion functions
-      const { getPPPMultiplier, getCurrencyForCountry } = await import("../shared/currencies");
-      
-      // Get countryCode from query parameter, validate and default to 'GB'
-      const countryCode = req.query.countryCode;
-      const validCountryCode = typeof countryCode === 'string' && countryCode.length === 2 ? countryCode.toUpperCase() : 'GB';
-      
-      // Get PPP multiplier and currency for the country
-      const pppMultiplier = getPPPMultiplier(validCountryCode);
-      const userCurrency = getCurrencyForCountry(validCountryCode);
-      const userCurrencyCode = userCurrency.code;
-      const exchangeRate = userCurrency.exchangeRate;
-      const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(userCurrencyCode as any);
+      // Use partner's assigned currency from database, NOT geolocation
+      // Partners have negotiated pricing that should not change based on their location
+      const partnerCurrency = (matchingPartner.currency || 'GBP').toUpperCase();
+      const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(partnerCurrency as any);
       
       // Use partner's assigned pricePerAssessment (in smallest currency units, e.g. pence/cents)
       // Default to 500 (£5.00 / $5.00) if not set
       const basePricePerTest = matchingPartner.pricePerAssessment || 500;
       
-      // Apply PPP multiplier to base price per test
-      const pppAdjustedPricePerTest = Math.round(basePricePerTest * pppMultiplier);
+      // No PPP adjustment for B2B partners - they pay their assigned rate in their assigned currency
+      const pppAdjustedPricePerTest = basePricePerTest;
+      const pppMultiplier = 1.0;
+      const exchangeRate = 1.0;
       
       const billingType = matchingPartner.billingType || 'payg';
       
@@ -10692,10 +10685,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         };
       });
       
-      console.log(`[Partner Pricing] Partner: ${matchingPartner.id}, BillingType: ${billingType}, Country: ${validCountryCode}, Currency: ${userCurrencyCode}, PPP Multiplier: ${pppMultiplier}, Exchange Rate: ${exchangeRate}, Base price/test: ${basePricePerTest}, PPP-adjusted price/test: ${pppAdjustedPricePerTest}, Zero-decimal: ${isZeroDecimal}`);
+      console.log(`[Partner Pricing] Partner: ${matchingPartner.id}, BillingType: ${billingType}, Partner Currency: ${partnerCurrency}, PPP Multiplier: ${pppMultiplier}, Exchange Rate: ${exchangeRate}, Base price/test: ${basePricePerTest}, PPP-adjusted price/test: ${pppAdjustedPricePerTest}, Zero-decimal: ${isZeroDecimal}`);
       
       res.json({
-        currency: userCurrencyCode,
+        currency: partnerCurrency,
         exchangeRate,
         pppMultiplier,
         packages,
@@ -11503,7 +11496,7 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         status: 'pending',
       });
       
-      console.log(`[Partner Purchase] Partner: ${matchingPartner.id}, Country: ${validCountryCode}, Currency: ${displayCurrency}, PPP: ${serverPPPMult}, Price: ${totalPrice}, Promo: ${promoCode || 'none'}`);
+      console.log(`[Partner Purchase] Partner: ${matchingPartner.id}, Partner Currency: ${displayCurrency}, PPP: ${serverPPPMult}, Price: ${totalPrice}, Promo: ${promoCode || 'none'}`);
       
       // Create Stripe checkout session
       const stripe = (await import("stripe")).default;
