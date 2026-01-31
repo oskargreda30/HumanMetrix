@@ -714,6 +714,35 @@ export default function EmbedAssessment() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Handle confirming to leave the assessment
+  const handleConfirmLeave = useCallback(() => {
+    setShowLeaveConfirmModal(false);
+    
+    // Save progress before leaving
+    if (sessionId && Object.keys(answersRef.current).length > 0) {
+      saveProgressImmediately(currentIndex);
+    }
+    
+    // Set flag to allow navigation
+    allowNavigationRef.current = true;
+    
+    // If embedded, notify parent about exit
+    if (window.parent !== window) {
+      window.parent.postMessage(
+        { type: "humanmetrix:exit", sessionId, reason: "user_back" },
+        "*"
+      );
+    }
+    
+    // Navigate back
+    window.history.back();
+  }, [sessionId, currentIndex, saveProgressImmediately]);
+
+  // Handle canceling the leave action
+  const handleCancelLeave = useCallback(() => {
+    setShowLeaveConfirmModal(false);
+  }, []);
+
   // Get time limit based on assessment type (in seconds)
   const getTimeLimit = () => {
     if (!session) return 1200;
@@ -837,39 +866,11 @@ export default function EmbedAssessment() {
         return;
       }
 
-      // Show confirmation dialog
-      const confirmLeave = window.confirm(
-        'You have an assessment in progress. Your answers have been saved, but leaving now may affect your results. Are you sure you want to leave?'
-      );
+      // Show confirmation modal instead of browser dialog
+      setShowLeaveConfirmModal(true);
       
-      if (confirmLeave) {
-        // Save progress before leaving
-        if (sessionId && Object.keys(answersRef.current).length > 0) {
-          saveProgressImmediately(currentIndex);
-        }
-        // Set flag to allow the next navigation without interception
-        allowNavigationRef.current = true;
-        // Remove listener before navigation to prevent re-entry
-        window.removeEventListener('popstate', handlePopState);
-        
-        // If embedded, notify parent about exit
-        if (window.parent !== window) {
-          window.parent.postMessage(
-            { type: "humanmetrix:exit", sessionId, reason: "user_back" },
-            "*"
-          );
-        }
-        // Navigate back to complete exit
-        window.history.back();
-      } else {
-        // User cancelled - replace current state and push guard only once
-        // This prevents unbounded history growth on repeated cancels
-        window.history.replaceState({ assessment: true }, '', window.location.href);
-        if (!guardPushedRef.current) {
-          guardPushedRef.current = true;
-          window.history.pushState({ assessment: true, guard: true }, '', window.location.href);
-        }
-      }
+      // Push state to prevent immediate navigation while modal is shown
+      window.history.pushState({ assessment: true, pending: true }, '', window.location.href);
     };
 
     // Push initial history state to enable back button detection (only once)
@@ -921,6 +922,9 @@ export default function EmbedAssessment() {
       clearTimeout(transitionTimerRef.current);
       transitionTimerRef.current = null;
     }
+    
+    // Allow navigation for advancing to next assessment (prevents beforeunload dialog)
+    allowNavigationRef.current = true;
     
     // Use stored scores from ref to avoid stale state
     const scoresForCompletion = pendingScoresRef.current;
@@ -2295,6 +2299,33 @@ export default function EmbedAssessment() {
           </div>
         </div>
       </div>
+
+      <AlertDialog open={showLeaveConfirmModal} onOpenChange={setShowLeaveConfirmModal}>
+        <AlertDialogContent className="bg-slate-800 border-slate-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Leave Assessment?</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-300">
+              You have an assessment in progress. Your answers have been saved, but leaving now may affect your results. Are you sure you want to leave?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              onClick={handleCancelLeave}
+              className="bg-slate-700 text-white border-slate-600 hover:bg-slate-600"
+              data-testid="button-cancel-leave"
+            >
+              Stay
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmLeave}
+              className="bg-red-500 hover:bg-red-600 text-white"
+              data-testid="button-confirm-leave"
+            >
+              Leave
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
