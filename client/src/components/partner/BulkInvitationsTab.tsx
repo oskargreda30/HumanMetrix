@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { EMAIL_REGEX, isValidName } from "@/lib/validation";
+import { EMAIL_REGEX, isValidName, detectEmailTypo } from "@/lib/validation";
 import {
   Upload,
   Plus,
@@ -104,6 +104,7 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
   const [csvData, setCsvData] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+  const [emailTypoWarnings, setEmailTypoWarnings] = useState<Array<{ row: number; email: string; suggestedEmail: string }>>([]);
   const [lastImportErrors, setLastImportErrors] = useState<Array<{ row: number; externalUserId: string; error: string }>>([]);
   const [copiedInvitationId, setCopiedInvitationId] = useState<string | null>(null);
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
@@ -245,8 +246,9 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
     },
   });
 
-  const validateCandidates = (): ValidationError[] => {
+  const validateCandidates = (): { errors: ValidationError[]; typoWarnings: Array<{ row: number; email: string; suggestedEmail: string }> } => {
     const errors: ValidationError[] = [];
+    const typoWarnings: Array<{ row: number; email: string; suggestedEmail: string }> = [];
     const seenEmails = new Set<string>();
     const emailRegex = EMAIL_REGEX;
     
@@ -283,6 +285,16 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
         });
       } else {
         seenEmails.add(candidate.email.trim().toLowerCase());
+        
+        // Check for common email typos (warnings, not errors)
+        const typoCheck = detectEmailTypo(candidate.email);
+        if (typoCheck.hasTypo && typoCheck.suggestedEmail) {
+          typoWarnings.push({
+            row,
+            email: candidate.email.trim(),
+            suggestedEmail: typoCheck.suggestedEmail,
+          });
+        }
       }
       
       // Name is mandatory
@@ -296,7 +308,7 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
       }
     });
     
-    return errors;
+    return { errors, typoWarnings };
   };
 
   const downloadErrorReport = () => {
@@ -458,8 +470,9 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
   };
 
   const handleSubmit = () => {
-    const errors = validateCandidates();
+    const { errors, typoWarnings } = validateCandidates();
     setValidationErrors(errors);
+    setEmailTypoWarnings(typoWarnings);
     
     if (errors.length > 0) {
       toast({
@@ -468,6 +481,15 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
         variant: "destructive",
       });
       return;
+    }
+    
+    // Show typo warnings but don't block submission
+    if (typoWarnings.length > 0) {
+      toast({
+        title: "Email typos detected",
+        description: `${typoWarnings.length} email(s) may have typos. Review the warnings before sending.`,
+        variant: "default",
+      });
     }
     
     // Filter candidates that have email (which is required)
@@ -747,6 +769,46 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
                     {lastImportErrors.map((error, idx) => (
                       <div key={`import-${idx}`} className="text-red-600 py-1">
                         Row {error.row} ({error.externalUserId}): {error.error}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {emailTypoWarnings.length > 0 && (
+              <Card className="border-amber-500 bg-amber-500/5">
+                <CardContent className="py-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className="h-5 w-5 text-amber-500" />
+                    <p className="font-medium text-amber-700">
+                      Possible Email Typos Detected
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    {emailTypoWarnings.map((warning, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-sm py-1 px-2 bg-amber-100/50 rounded">
+                        <span className="text-amber-700">
+                          Row {warning.row}: <span className="font-mono">{warning.email}</span>
+                          {' '}- Did you mean <span className="font-mono font-medium">{warning.suggestedEmail}</span>?
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => {
+                            setCandidates(prev => prev.map((c, i) => 
+                              i === warning.row - 1 
+                                ? { ...c, email: warning.suggestedEmail }
+                                : c
+                            ));
+                            setEmailTypoWarnings(prev => prev.filter((_, i) => i !== idx));
+                          }}
+                          data-testid={`button-fix-typo-${idx}`}
+                        >
+                          <Check className="h-3 w-3 mr-1" />
+                          Fix
+                        </Button>
                       </div>
                     ))}
                   </div>

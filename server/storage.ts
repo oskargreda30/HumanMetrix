@@ -354,8 +354,9 @@ export interface IStorage {
   updatePartnerTestPackage(id: string, updates: Partial<InsertPartnerTestPackage>): Promise<void>;
   createQuotaLedgerEntry(entry: InsertPartnerQuotaLedger): Promise<PartnerQuotaLedger>;
   getQuotaLedger(partnerId: string, limit?: number): Promise<PartnerQuotaLedger[]>;
+  hasLedgerEntryForSession(sessionId: string): Promise<boolean>;
   getPartnerQuotaBalance(partnerId: string): Promise<{ testsPurchased: number; testsConsumed: number; remaining: number; freeTestsAllocated: number }>;
-  consumePartnerTest(partnerId: string, sessionId: string | null, description: string): Promise<{ success: boolean; remaining: number; suspended: boolean; isOverage?: boolean }>;
+  consumePartnerTest(partnerId: string, sessionId: string | null, description: string): Promise<{ success: boolean; remaining: number; suspended: boolean; isOverage?: boolean; alreadyConsumed?: boolean }>;
   creditPartnerTests(partnerId: string, packageId: string, amount: number, description: string): Promise<{ success: boolean; newBalance: number }>;
   updatePartnerQuotaNotification(partnerId: string, notificationType: '70' | '90'): Promise<void>;
   suspendPartnerApiAccess(partnerId: string): Promise<void>;
@@ -2112,6 +2113,17 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
   }
 
+  async hasLedgerEntryForSession(sessionId: string): Promise<boolean> {
+    const [existing] = await db.select({ id: partnerQuotaLedger.id })
+      .from(partnerQuotaLedger)
+      .where(and(
+        eq(partnerQuotaLedger.sessionId, sessionId),
+        eq(partnerQuotaLedger.entryType, 'debit')
+      ))
+      .limit(1);
+    return !!existing;
+  }
+
   async getPartnerQuotaBalance(partnerId: string): Promise<{ testsPurchased: number; testsConsumed: number; remaining: number; freeTestsAllocated: number }> {
     const [partner] = await db.select({
       testsPurchased: partnerAccounts.testsPurchased,
@@ -2135,7 +2147,17 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async consumePartnerTest(partnerId: string, sessionId: string | null, description: string): Promise<{ success: boolean; remaining: number; suspended: boolean; isOverage?: boolean }> {
+  async consumePartnerTest(partnerId: string, sessionId: string | null, description: string): Promise<{ success: boolean; remaining: number; suspended: boolean; isOverage?: boolean; alreadyConsumed?: boolean }> {
+    // DEDUPLICATION: Check if credit was already consumed for this session
+    if (sessionId) {
+      const alreadyConsumed = await this.hasLedgerEntryForSession(sessionId);
+      if (alreadyConsumed) {
+        console.log(`[Partner Credit] Credit already consumed for session ${sessionId} - skipping duplicate`);
+        const balance = await this.getPartnerQuotaBalance(partnerId);
+        return { success: true, remaining: balance.remaining, suspended: false, alreadyConsumed: true };
+      }
+    }
+    
     // Get current balance
     const balance = await this.getPartnerQuotaBalance(partnerId);
     

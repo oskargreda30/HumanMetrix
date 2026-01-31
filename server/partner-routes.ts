@@ -4451,11 +4451,55 @@ async function linkPartnerResultsToUser(userId: string, invitation: any) {
   }
 }
 
+// Rate limiting for token validation attempts (security: prevent brute force)
+const tokenValidationAttempts = new Map<string, { count: number; firstAttempt: number }>();
+const TOKEN_RATE_LIMIT = 10; // Max attempts per window
+const TOKEN_RATE_WINDOW = 60 * 1000; // 1 minute window
+
+function checkTokenRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  const now = Date.now();
+  const attempt = tokenValidationAttempts.get(ip);
+  
+  if (!attempt || (now - attempt.firstAttempt) > TOKEN_RATE_WINDOW) {
+    // Reset or create new entry
+    tokenValidationAttempts.set(ip, { count: 1, firstAttempt: now });
+    return { allowed: true };
+  }
+  
+  if (attempt.count >= TOKEN_RATE_LIMIT) {
+    const retryAfter = Math.ceil((TOKEN_RATE_WINDOW - (now - attempt.firstAttempt)) / 1000);
+    return { allowed: false, retryAfter };
+  }
+  
+  attempt.count++;
+  return { allowed: true };
+}
+
+// Cleanup old rate limit entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, attempt] of tokenValidationAttempts.entries()) {
+    if ((now - attempt.firstAttempt) > TOKEN_RATE_WINDOW * 2) {
+      tokenValidationAttempts.delete(ip);
+    }
+  }
+}, 5 * 60 * 1000);
+
 export function registerGuestAssessmentRoutes(app: Express) {
   // Get invitation details by token - landing page
   app.get("/api/guest/invite/:token", async (req: Request, res: Response) => {
     try {
       const { token } = req.params;
+      
+      // Rate limiting to prevent brute force token guessing
+      const clientIp = req.ip || req.headers['x-forwarded-for']?.toString().split(',')[0] || 'unknown';
+      const rateCheck = checkTokenRateLimit(clientIp);
+      if (!rateCheck.allowed) {
+        return res.status(429).json({ 
+          error: "Too many requests. Please try again later.",
+          retryAfter: rateCheck.retryAfter
+        });
+      }
       
       const invitation = await storage.getPartnerCandidateInvitationByToken(token);
       if (!invitation) {

@@ -29,3 +29,59 @@ export function isValidName(name: string): boolean {
 export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
+
+// Common email domain typos and their corrections
+const EMAIL_DOMAIN_TYPOS: Record<string, string> = {
+  'gmial.com': 'gmail.com',
+  'gmal.com': 'gmail.com',
+  'gmaill.com': 'gmail.com',
+  'gmali.com': 'gmail.com',
+  'gmail.co': 'gmail.com',
+  'gmail.con': 'gmail.com',
+  'gmai.com': 'gmail.com',
+  'hotmal.com': 'hotmail.com',
+  'hotmai.com': 'hotmail.com',
+  'hotmail.co': 'hotmail.com',
+  'hotmail.con': 'hotmail.com',
+  'outloo.com': 'outlook.com',
+  'outlok.com': 'outlook.com',
+  'outlook.co': 'outlook.com',
+  'yahoo.co': 'yahoo.com',
+  'yahoo.con': 'yahoo.com',
+  'yaho.com': 'yahoo.com',
+  'yahooo.com': 'yahoo.com',
+  'icloud.co': 'icloud.com',
+  'icould.com': 'icloud.com',
+  'protonmail.co': 'protonmail.com',
+  'protonmal.com': 'protonmail.com',
+};
+
+export interface EmailTypoSuggestion {
+  hasTypo: boolean;
+  suggestedEmail?: string;
+  typoType?: 'domain' | 'format';
+}
+
+export function detectEmailTypo(email: string): EmailTypoSuggestion {
+  if (!email || !email.includes('@')) {
+    return { hasTypo: false };
+  }
+  
+  const parts = email.toLowerCase().trim().split('@');
+  if (parts.length !== 2) {
+    return { hasTypo: false };
+  }
+  
+  const [localPart, domain] = parts;
+  
+  // Check for known domain typos
+  if (EMAIL_DOMAIN_TYPOS[domain]) {
+    return {
+      hasTypo: true,
+      suggestedEmail: `${localPart}@${EMAIL_DOMAIN_TYPOS[domain]}`,
+      typoType: 'domain'
+    };
+  }
+  
+  return { hasTypo: false };
+}
