@@ -10,6 +10,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Loader2, CheckCircle, CheckCircle2, AlertCircle, ArrowLeft, ArrowRight, Clock, Mail, Calendar, TrendingUp, Target, Lightbulb } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { getFITQuestions, getAIReadinessQuestions, getAIQQuestions, type QuestionLocale } from "@shared/questions";
 import { PROMPT_ARCHITECTURE_LEVELS } from "../data/prompt-architecture-questions";
 import { getHumanReadableError } from "@/lib/queryClient";
@@ -280,6 +290,7 @@ export default function EmbedAssessment() {
   const [currentAssessmentIndex, setCurrentAssessmentIndex] = useState(0);
   const [completedAssessments, setCompletedAssessments] = useState<Array<{ type: string; scores: any }>>([]);
   const [showTransitionScreen, setShowTransitionScreen] = useState(false);
+  const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false);
   const [awaitingNextStart, setAwaitingNextStart] = useState(false); // Require user to click Start for next assessment
   const transitionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const pendingScoresRef = useRef<any>(null); // Store scores for transition
