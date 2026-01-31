@@ -11441,25 +11441,19 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         });
       }
       
-      const { packageSize, countryCode, promoCode } = req.body;
+      const { packageSize, promoCode } = req.body;
       if (!packageSize || typeof packageSize !== 'number' || packageSize < 10) {
         return res.status(400).json({ message: "Package size must be at least 10 tests" });
       }
       
-      // Import shared currency utilities for server-side PPP calculation
-      const { getPPPMultiplier, getCurrencyForCountry } = await import("../shared/currencies");
-      
-      // Compute PPP server-side from countryCode (don't trust client-supplied multiplier)
-      const validCountryCode = typeof countryCode === 'string' && countryCode.length === 2 ? countryCode.toUpperCase() : 'GB';
-      const serverPPPMult = getPPPMultiplier(validCountryCode);
-      const serverCurrency = getCurrencyForCountry(validCountryCode);
-      
-      // Use server-computed currency, falling back to partner's assigned currency if needed
-      const displayCurrency = serverCurrency.code.toLowerCase();
+      // Use partner's assigned currency and pricing (no PPP adjustment for B2B partners)
+      // Partners have negotiated pricing that should not change based on their location
+      const partnerCurrency = (matchingPartner.currency || 'GBP').toLowerCase();
+      const displayCurrency = partnerCurrency;
       const basePricePerTest = matchingPartner.pricePerAssessment || 500;
       
-      // Apply server-computed PPP multiplier
-      const pppAdjustedPricePerTest = Math.round(basePricePerTest * serverPPPMult);
+      // No PPP adjustment for B2B partners - they pay their assigned rate
+      const pppAdjustedPricePerTest = basePricePerTest;
       
       // Subscription discount tiers - only subscription users get discounts
       const billingType = matchingPartner.billingType || 'payg';
