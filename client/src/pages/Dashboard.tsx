@@ -15,6 +15,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -186,6 +187,13 @@ export default function Dashboard() {
   
   // Track selected assessments for individual purchase
   const [selectedAssessments, setSelectedAssessments] = useState<Set<string>>(new Set());
+  
+  // Result selection dialog state (for viewing multiple results)
+  const [resultSelectionDialog, setResultSelectionDialog] = useState<{
+    seriesId: string;
+    partnerName: string;
+    unlockedResults: { id: string; assessmentType: string; totalScore: number | null }[];
+  } | null>(null);
   
   // Helper to format assessment type for display
   const formatAssessmentTypeDisplay = (type: string): string => {
@@ -1149,16 +1157,38 @@ export default function Dashboard() {
                                 )}
                                 {/* View Results button - shown when any results are unlocked */}
                                 {hasUnlockedResults && (
-                                  <Link href={`/my-results?partnerInvitationId=${series.id}`}>
+                                  unlockedResults.length > 1 ? (
                                     <Button
                                       className="mt-2 w-full"
                                       variant={isIncomplete ? "outline" : "default"}
                                       data-testid={`button-view-partner-results-${series.id}`}
+                                      onClick={() => {
+                                        setResultSelectionDialog({
+                                          seriesId: series.id,
+                                          partnerName: series.partnerName,
+                                          unlockedResults: unlockedResults.map((r: any) => ({
+                                            id: r.id,
+                                            assessmentType: r.assessmentType,
+                                            totalScore: r.totalScore,
+                                          })),
+                                        });
+                                      }}
                                     >
                                       <FileText className="mr-2 h-4 w-4" />
                                       View Results
                                     </Button>
-                                  </Link>
+                                  ) : (
+                                    <Link href={`/my-results?partnerInvitationId=${series.id}`}>
+                                      <Button
+                                        className="mt-2 w-full"
+                                        variant={isIncomplete ? "outline" : "default"}
+                                        data-testid={`button-view-partner-results-${series.id}`}
+                                      >
+                                        <FileText className="mr-2 h-4 w-4" />
+                                        View Results
+                                      </Button>
+                                    </Link>
+                                  )
                                 )}
                                 {/* Unlock Results button - shown when any results are locked */}
                                 {hasLockedResults && (
@@ -1224,6 +1254,61 @@ export default function Dashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Result Selection Dialog - for choosing which result to view */}
+      <Dialog open={!!resultSelectionDialog} onOpenChange={(open) => {
+        if (!open) {
+          setResultSelectionDialog(null);
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              Select Assessment Result
+            </DialogTitle>
+            <DialogDescription>
+              You have {resultSelectionDialog?.unlockedResults.length} completed assessments from {resultSelectionDialog?.partnerName}. Select which result to view.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 mt-4">
+            {resultSelectionDialog?.unlockedResults.map((result) => (
+              <Link 
+                key={result.id} 
+                href={`/my-results?partnerInvitationId=${resultSelectionDialog.seriesId}&assessmentType=${result.assessmentType}`}
+                onClick={() => setResultSelectionDialog(null)}
+              >
+                <Button
+                  variant="outline"
+                  className="w-full justify-between"
+                  data-testid={`button-select-result-${result.assessmentType}`}
+                >
+                  <span className="flex items-center gap-2">
+                    {result.assessmentType === 'fit' && <Brain className="h-4 w-4 text-blue-500" />}
+                    {result.assessmentType === 'ai_readiness' && <Sparkles className="h-4 w-4 text-purple-500" />}
+                    {result.assessmentType === 'prompt_architecture' && <Code className="h-4 w-4 text-green-500" />}
+                    {result.assessmentType === 'aiq' && <Scale className="h-4 w-4 text-cyan-500" />}
+                    {formatAssessmentName(result.assessmentType)}
+                  </span>
+                  {result.totalScore !== null && (
+                    <Badge variant="secondary">{result.totalScore}%</Badge>
+                  )}
+                </Button>
+              </Link>
+            ))}
+          </div>
+          <DialogFooter className="mt-4">
+            <Link 
+              href={`/my-results?partnerInvitationId=${resultSelectionDialog?.seriesId}`}
+              onClick={() => setResultSelectionDialog(null)}
+            >
+              <Button variant="default" data-testid="button-view-all-results">
+                View All Results
+              </Button>
+            </Link>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Locked Results Payment Dialog */}
       <Dialog open={!!lockedResultsDialog} onOpenChange={(open) => {
