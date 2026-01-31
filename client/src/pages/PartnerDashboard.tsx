@@ -1011,6 +1011,26 @@ export default function PartnerDashboard() {
   const { toast } = useToast();
   const { currency, formatLocalPrice, getAdjustedPriceInPence, countryCode, pricingTier, isLoading: currencyLoading } = useCurrency();
   
+  // Handle URL query parameters for tab navigation and purchase cancellation
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    const purchaseCancelled = params.get('purchase_cancelled');
+    
+    if (tab && ['home', 'billing', 'results', 'invitations', 'team', 'api-keys', 'settings', 'ecosystem', 'usage', 'developer', 'analytics', 'notifications', 'activity', 'pipeline'].includes(tab)) {
+      setActiveTab(tab);
+    }
+    
+    if (purchaseCancelled === 'true') {
+      toast({
+        title: "Purchase cancelled",
+        description: "Your credit purchase was cancelled. You can try again anytime.",
+      });
+      // Clear the query params from URL without triggering a reload
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [toast]);
+  
   // Promo code state for package purchases
   const [promoCode, setPromoCode] = useState("");
   
@@ -1136,16 +1156,27 @@ export default function PartnerDashboard() {
       size: number;
       name: string;
       price: number;
-      pricePerCredit: number;
+      pricePerTest: number;
+      discountPercent: number;
+      subscriptionDiscountPercent: number;
+      savings: number;
     }>;
     exchangeRate: number;
-    lastUpdated: string;
+    pppMultiplier: number;
+    basePricePerTest: number;
     isZeroDecimal: boolean;
   }
 
   const { data: pricing, isLoading: pricingLoading } = useQuery<PricingData>({
-    queryKey: ["/api/partner/me/pricing"],
-    enabled: !!account?.hasPartnerAccount,
+    queryKey: ["/api/partner/me/pricing", countryCode],
+    queryFn: async () => {
+      const res = await fetch(`/api/partner/me/pricing?countryCode=${countryCode || 'GB'}`, {
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to fetch pricing');
+      return res.json();
+    },
+    enabled: !!account?.hasPartnerAccount && !currencyLoading,
   });
 
   // Billing change request data

@@ -10633,12 +10633,27 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(403).json({ message: "Admin access required" });
       }
       
-      const partnerCurrency = (matchingPartner.currency || 'GBP').toUpperCase();
-      const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(partnerCurrency as any);
+      // Import PPP conversion functions
+      const { getPPPMultiplier, getCurrencyForCountry } = await import("../shared/currencies");
+      
+      // Get countryCode from query parameter, validate and default to 'GB'
+      const countryCode = req.query.countryCode;
+      const validCountryCode = typeof countryCode === 'string' && countryCode.length === 2 ? countryCode.toUpperCase() : 'GB';
+      
+      // Get PPP multiplier and currency for the country
+      const pppMultiplier = getPPPMultiplier(validCountryCode);
+      const userCurrency = getCurrencyForCountry(validCountryCode);
+      const userCurrencyCode = userCurrency.code;
+      const exchangeRate = userCurrency.exchangeRate;
+      const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.includes(userCurrencyCode as any);
       
       // Use partner's assigned pricePerAssessment (in smallest currency units, e.g. pence/cents)
       // Default to 500 (£5.00 / $5.00) if not set
       const basePricePerTest = matchingPartner.pricePerAssessment || 500;
+      
+      // Apply PPP multiplier to base price per test
+      const pppAdjustedPricePerTest = Math.round(basePricePerTest * pppMultiplier);
+      
       const billingType = matchingPartner.billingType || 'payg';
       
       // Subscription discount tiers - these are available only to subscription plan users
@@ -10660,10 +10675,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         subscriptionDiscountPercent: subscriptionDiscounts[index], // Always include what subscription users would get
       }));
       
-      // Calculate prices for each package tier
+      // Calculate prices for each package tier using PPP-adjusted price
       const packages = packageTiers.map(tier => {
         const discountMultiplier = 1 - (tier.discountPercent / 100);
-        const discountedPricePerTest = Math.round(basePricePerTest * discountMultiplier);
+        const discountedPricePerTest = Math.round(pppAdjustedPricePerTest * discountMultiplier);
         const totalPrice = discountedPricePerTest * tier.size;
         
         return {
@@ -10673,16 +10688,18 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
           pricePerTest: discountedPricePerTest,
           discountPercent: tier.discountPercent,
           subscriptionDiscountPercent: tier.subscriptionDiscountPercent,
-          savings: tier.discountPercent > 0 ? (basePricePerTest * tier.size) - totalPrice : 0,
+          savings: tier.discountPercent > 0 ? (pppAdjustedPricePerTest * tier.size) - totalPrice : 0,
         };
       });
       
-      console.log(`[Partner Pricing] Partner: ${matchingPartner.id}, BillingType: ${billingType}, Currency: ${partnerCurrency}, Base price/test: ${basePricePerTest}, Zero-decimal: ${isZeroDecimal}`);
+      console.log(`[Partner Pricing] Partner: ${matchingPartner.id}, BillingType: ${billingType}, Country: ${validCountryCode}, Currency: ${userCurrencyCode}, PPP Multiplier: ${pppMultiplier}, Exchange Rate: ${exchangeRate}, Base price/test: ${basePricePerTest}, PPP-adjusted price/test: ${pppAdjustedPricePerTest}, Zero-decimal: ${isZeroDecimal}`);
       
       res.json({
-        currency: partnerCurrency,
+        currency: userCurrencyCode,
+        exchangeRate,
+        pppMultiplier,
         packages,
-        basePricePerTest,
+        basePricePerTest: pppAdjustedPricePerTest,
         isZeroDecimal,
       });
     } catch (error) {
