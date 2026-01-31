@@ -1193,7 +1193,7 @@ export default function PartnerDashboard() {
     const symbol = currencySymbols[partnerCurrency] || partnerCurrency + ' ';
     const isZeroDecimal = pricing?.isZeroDecimal || false;
     const amount = isZeroDecimal ? amountInSmallestUnit : amountInSmallestUnit / 100;
-    return `${symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })`;
+    return `${symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
   };
 
   interface BillingChangeRequestData {
