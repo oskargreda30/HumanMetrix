@@ -3307,11 +3307,10 @@ export default function PartnerDashboard() {
                             </div>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                               {pricing.packages.map((pkg: any) => {
-                                // Apply PPP adjustment to the base price
-                                const basePriceInPence = pkg.price; // Price from API in smallest units
-                                const adjustedPriceInPence = getAdjustedPriceInPence(basePriceInPence);
-                                const adjustedPerTestInPence = getAdjustedPriceInPence(pkg.pricePerTest);
-                                const adjustedSavingsInPence = pkg.savings > 0 ? getAdjustedPriceInPence(pkg.savings) : 0;
+                                // Use partner's assigned pricing (no PPP adjustment for B2B partners)
+                                const packagePrice = pkg.price; // Price from API already in partner's currency
+                                const pricePerTest = pkg.pricePerTest;
+                                const savings = pkg.savings || 0;
                                 const hasDiscount = pkg.discountPercent > 0;
                                 const isPayg = account?.partner?.billingType === 'payg';
                                 const isEnterprise = account?.partner?.billingType === 'enterprise';
@@ -3341,16 +3340,16 @@ export default function PartnerDashboard() {
                                     </div>
                                     <div className="text-center border-t pt-3 mb-3">
                                       <div className="text-lg font-semibold">
-                                        {formatLocalPrice(adjustedPriceInPence)}
+                                        {formatPartnerPrice(packagePrice)}
                                       </div>
                                       <div className="text-xs text-muted-foreground">
-                                        {formatLocalPrice(adjustedPerTestInPence)}/credit
+                                        {formatPartnerPrice(pricePerTest)}/credit
                                       </div>
                                     </div>
                                     {/* Show savings for subscription users with discounts */}
-                                    {adjustedSavingsInPence > 0 && (
+                                    {savings > 0 && (
                                       <div className="text-xs text-green-600 dark:text-green-400 text-center mb-3">
-                                        Save {formatLocalPrice(adjustedSavingsInPence)}
+                                        Save {formatPartnerPrice(savings)}
                                       </div>
                                     )}
                                     {/* Show subscription discount info for PAYG/Enterprise users */}
