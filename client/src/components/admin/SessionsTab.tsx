@@ -83,7 +83,7 @@ export default function SessionsTab() {
           <p className="text-white/70">Monitor and manage user sessions</p>
         </div>
         <Button onClick={() => refetch()} variant="outline" className="text-white border-white/30 hover:bg-white/10" data-testid="button-refresh-sessions">
-          <RefreshCw className="h-4 w-4 mr-2" />
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>

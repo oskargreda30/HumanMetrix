@@ -110,7 +110,7 @@ export default function EmailLogsTab() {
           <p className="text-white/70">Track all emails sent from the platform</p>
         </div>
         <Button onClick={handleRefresh} variant="outline" className="text-white border-white/30 hover:bg-white/10" data-testid="button-refresh-emails">
-          <RefreshCw className="h-4 w-4 mr-2" />
+          <RefreshCw className={`h-4 w-4 mr-2 ${statsLoading || logsLoading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>
