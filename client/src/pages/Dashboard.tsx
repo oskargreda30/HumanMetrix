@@ -210,6 +210,7 @@ export default function Dashboard() {
     hasBulkDiscount: boolean;
     individualDiscountRate: number;
     bulkDiscountRate: number;
+    lockedExchangeRate: number; // Exchange rate locked at pricing time for checkout consistency
   }>({
     queryKey: ['/api/partner-results-pricing', lockedResultsDialog?.seriesId, countryCode],
     queryFn: async () => {
@@ -304,12 +305,14 @@ export default function Dashboard() {
       partnerInvitationId: string; 
       isBulkPurchase?: boolean;
       assessmentTypes?: string[];
+      lockedExchangeRate?: number;
     }) => {
       const res = await apiRequest("POST", "/api/create-partner-results-checkout", { 
         partnerInvitationId: params.partnerInvitationId,
         countryCode: countryCode || 'GB', // Use detected country from geolocation
         isBulkPurchase: params.isBulkPurchase,
         assessmentTypes: params.assessmentTypes,
+        lockedExchangeRate: params.lockedExchangeRate, // Pass locked rate to prevent price changes
       });
       return res.json();
     },
@@ -1387,12 +1390,14 @@ export default function Dashboard() {
                     partnerResultsPurchaseMutation.mutate({
                       partnerInvitationId: lockedResultsDialog.seriesId,
                       isBulkPurchase: true,
+                      lockedExchangeRate: pricingData?.lockedExchangeRate,
                     });
                   } else {
                     partnerResultsPurchaseMutation.mutate({
                       partnerInvitationId: lockedResultsDialog.seriesId,
                       isBulkPurchase: useBulkPricing,
                       assessmentTypes: Array.from(selectedAssessments),
+                      lockedExchangeRate: pricingData?.lockedExchangeRate,
                     });
                   }
                 }

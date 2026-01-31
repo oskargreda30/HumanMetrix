@@ -2876,7 +2876,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create checkout session for partner result purchases (B2C candidates purchasing access to their partner assessment results)
   app.post("/api/create-partner-results-checkout", isAuthenticated, async (req: any, res) => {
     try {
-      const { partnerInvitationId, countryCode, assessmentTypes, isBulkPurchase } = req.body;
+      const { partnerInvitationId, countryCode, assessmentTypes, isBulkPurchase, lockedExchangeRate } = req.body;
       
       if (!partnerInvitationId) {
         return res.status(400).json({ message: "Partner invitation ID is required" });
@@ -2964,8 +2964,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stripeCurrency = getStripeCurrencyCode(userCountry);
       const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
       
-      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
-      let totalPriceInPence = 0;
+      // Fetch server-side exchange rate for consistency (dont trust client-provided rate)
+      // This ensures the checkout price matches what the pricing endpoint returned
+      const exchangeRatesData = await getExchangeRates();
+      const userCurrency = getCurrencyForCountry(userCountry);
+      const serverLockedExchangeRate = exchangeRatesData.rates?.[localCurrencyCode] ?? userCurrency.exchangeRate;
+      
+      // Log if client rate differs significantly from server rate (potential stale pricing)
+      if (lockedExchangeRate && Math.abs(lockedExchangeRate - serverLockedExchangeRate) / serverLockedExchangeRate > 0.01) {
+        console.log(`[Partner Results Checkout] Exchange rate drift detected: client=${lockedExchangeRate}, server=${serverLockedExchangeRate}`);
+      }
 
       // Calculate assessment prices with proper discounts
       // Individual: 25% off the B2C price
@@ -2985,7 +2993,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const discountRate = (isBulk && resultsToPurchase.length > 1) ? 0.50 : 0.25;
       
       // Calculate prices consistently with the pricing endpoint display
-      const userCurrency = getCurrencyForCountry(userCountry);
       let sumOfRoundedOriginalPrices = 0;
       let sumOfDiscountedPrices = 0; // For individual purchases: sum of individually-discounted prices
       
@@ -3335,6 +3342,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userCurrency = getCurrencyForCountry(userCountry);
       const pricingTier = getPricingTier(userCountry);
       
+      
+      // Fetch live exchange rate and lock it for this pricing session
+      const exchangeRatesData = await getExchangeRates();
+      const lockedExchangeRate = exchangeRatesData.rates?.[localCurrencyCode] ?? userCurrency.exchangeRate;
       // Calculate pricing: Individual = 25% off B2C, Bulk = 50% off B2C
       // Individual discount rate: 25% off
       const individualDiscountRate = 0.25;
@@ -3421,6 +3432,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         hasBulkDiscount,
         individualDiscountRate,
         bulkDiscountRate: hasBulkDiscount ? bulkDiscountRate : individualDiscountRate,
+        lockedExchangeRate, // Exchange rate locked at pricing time for checkout consistency
       });
     } catch (error: any) {
       console.error("Error getting partner results pricing:", error);
