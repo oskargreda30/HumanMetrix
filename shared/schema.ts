@@ -2252,3 +2252,51 @@ export const insertPartnerAnalysisReportSchema = createInsertSchema(partnerAnaly
 export type InsertPartnerAnalysisReport = z.infer<typeof insertPartnerAnalysisReportSchema>;
 export type PartnerAnalysisReport = typeof partnerAnalysisReports.$inferSelect;
 
+// Stripe webhook event idempotency - prevent duplicate processing
+export const stripeWebhookEvents = pgTable("stripe_webhook_events", {
+  id: varchar("id").primaryKey(), // Stripe event ID (e.g., evt_xxx)
+  eventType: varchar("event_type").notNull(),
+  processedAt: timestamp("processed_at").defaultNow().notNull(),
+  status: varchar("status").notNull().default("processed"),
+  metadata: jsonb("metadata").$type<{
+    partnerId?: string;
+    paymentIntentId?: string;
+    customerId?: string;
+    error?: string;
+  } | null>(),
+}, (table) => [
+  index("idx_stripe_events_type").on(table.eventType),
+  index("idx_stripe_events_processed").on(table.processedAt),
+]);
+
+export type StripeWebhookEvent = typeof stripeWebhookEvents.$inferSelect;
+
+// Auto top-up retry queue - for failed payment retries with exponential backoff
+export const autoTopUpRetries = pgTable("auto_top_up_retries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  packageTier: varchar("package_tier").notNull(),
+  retryCount: integer("retry_count").notNull().default(0),
+  maxRetries: integer("max_retries").notNull().default(3),
+  nextRetryAt: timestamp("next_retry_at").notNull(),
+  lastError: varchar("last_error"),
+  status: varchar("status").notNull().default("pending"),
+  paymentIntentId: varchar("payment_intent_id"),
+  requires3DS: boolean("requires_3ds").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_auto_topup_retries_partner").on(table.partnerId),
+  index("idx_auto_topup_retries_status").on(table.status),
+  index("idx_auto_topup_retries_next").on(table.nextRetryAt),
+]);
+
+export const insertAutoTopUpRetrySchema = createInsertSchema(autoTopUpRetries).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertAutoTopUpRetry = z.infer<typeof insertAutoTopUpRetrySchema>;
+export type AutoTopUpRetry = typeof autoTopUpRetries.$inferSelect;
+

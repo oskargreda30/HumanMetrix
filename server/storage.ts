@@ -144,6 +144,11 @@ import {
   partnerAnalysisReports,
   type PartnerAnalysisReport,
   type InsertPartnerAnalysisReport,
+  stripeWebhookEvents,
+  type StripeWebhookEvent,
+  autoTopUpRetries,
+  type AutoTopUpRetry,
+  type InsertAutoTopUpRetry,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, inArray, gte, lte, count, countDistinct, isNull, isNotNull } from "drizzle-orm";
@@ -463,6 +468,18 @@ export interface IStorage {
   getWebhookDeliveryLogs(webhookId: string, limit?: number): Promise<WebhookDeliveryLog[]>;
   getPendingWebhookDeliveries(): Promise<WebhookDeliveryLog[]>;
   updateWebhookDeliveryLog(id: string, updates: Partial<InsertWebhookDeliveryLog>): Promise<void>;
+  
+  // Stripe webhook idempotency operations
+  isStripeEventProcessed(eventId: string): Promise<boolean>;
+  acquireStripeEventLock(eventId: string, eventType: string): Promise<boolean>;
+  markStripeEventProcessed(eventId: string, eventType: string, status: string, metadata?: Record<string, any>): Promise<void>;
+  
+  // Auto top-up retry operations
+  createAutoTopUpRetry(retry: { partnerId: string; packageTier: string; nextRetryAt: Date; lastError?: string; paymentIntentId?: string; requires3DS?: boolean }): Promise<AutoTopUpRetry>;
+  getPendingAutoTopUpRetries(): Promise<AutoTopUpRetry[]>;
+  getAutoTopUpRetry(id: string): Promise<AutoTopUpRetry | undefined>;
+  updateAutoTopUpRetry(id: string, updates: Partial<{ retryCount: number; nextRetryAt: Date; lastError: string; status: string; paymentIntentId: string; requires3DS: boolean }>): Promise<void>;
+  cancelPendingAutoTopUpRetries(partnerId: string): Promise<void>;
   
   // Partner ATS integration operations
   createPartnerAtsIntegration(integration: InsertPartnerAtsIntegration): Promise<PartnerAtsIntegration>;
@@ -3228,6 +3245,144 @@ export class DatabaseStorage implements IStorage {
 
   async updateWebhookDeliveryLog(id: string, updates: Partial<InsertWebhookDeliveryLog>): Promise<void> {
     await db.update(webhookDeliveryLogs).set(updates).where(eq(webhookDeliveryLogs.id, id));
+  }
+
+  // Stripe webhook idempotency operations
+  async isStripeEventProcessed(eventId: string): Promise<boolean> {
+    // Check if event has been processed or is currently being processed
+    // Allow reprocessing only for "failed" events or stale "processing" events (older than 5 minutes)
+    const [existing] = await db.select({ 
+      id: stripeWebhookEvents.id, 
+      status: stripeWebhookEvents.status,
+      processedAt: stripeWebhookEvents.processedAt,
+    })
+      .from(stripeWebhookEvents)
+      .where(eq(stripeWebhookEvents.id, eventId))
+      .limit(1);
+    
+    if (!existing) return false;
+    
+    // Successfully processed events should be skipped
+    if (existing.status === 'processed') return true;
+    
+    // Allow reprocessing for failed events (Stripe will retry)
+    if (existing.status === 'failed') return false;
+    
+    // For "processing" status: skip if fresh (prevents race conditions)
+    // Allow retry only if stale (server crashed mid-processing)
+    if (existing.status === 'processing') {
+      const processedAt = existing.processedAt ? new Date(existing.processedAt) : null;
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      // Fresh processing event - skip to prevent duplicate processing
+      if (processedAt && processedAt >= fiveMinutesAgo) {
+        return true; 
+      }
+      // Stale processing event - allow retry
+      return false;
+    }
+    
+    return false;
+  }
+
+  // Atomic idempotency lock - attempts to acquire lock and returns true if successful
+  // Uses single atomic SQL statement to handle both new events and retry scenarios
+  async acquireStripeEventLock(eventId: string, eventType: string): Promise<boolean> {
+    const now = new Date();
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+
+    try {
+      // Single atomic operation: INSERT or UPDATE if retryable
+      // This uses raw SQL for true atomicity with conditional UPDATE
+      const result = await db.execute(sql`
+        INSERT INTO stripe_webhook_events (id, event_type, status, processed_at, metadata)
+        VALUES (${eventId}, ${eventType}, 'processing', ${now}, NULL)
+        ON CONFLICT (id) DO UPDATE 
+        SET status = 'processing', processed_at = ${now}
+        WHERE stripe_webhook_events.status = 'failed'
+           OR (stripe_webhook_events.status = 'processing' AND stripe_webhook_events.processed_at <= ${fiveMinutesAgo})
+        RETURNING id
+      `);
+      
+      // Lock acquired if we got a row back (either inserted or updated)
+      // Handle different driver result shapes (pg: rowCount, node-postgres: rows)
+      const rows = (result as any).rows;
+      const rowCount = (result as any).rowCount;
+      
+      // Validate we have a usable result shape
+      const hasRowsArray = Array.isArray(rows) && rows.length > 0;
+      const hasRowCount = typeof rowCount === 'number' && rowCount > 0;
+      
+      if (!Array.isArray(rows) && typeof rowCount !== 'number') {
+        console.warn('[Stripe Webhook Lock] Unexpected result shape from db.execute:', Object.keys(result as any));
+      }
+      
+      return hasRowsArray || hasRowCount;
+    } catch (error) {
+      console.error('[Stripe Webhook Lock] Failed to acquire lock:', error);
+      return false;
+    }
+  }
+
+  async markStripeEventProcessed(eventId: string, eventType: string, status: string, metadata?: Record<string, any>): Promise<void> {
+    await db.insert(stripeWebhookEvents).values({
+      id: eventId,
+      eventType,
+      status,
+      metadata: metadata || null,
+    }).onConflictDoUpdate({
+      target: stripeWebhookEvents.id,
+      set: {
+        status,
+        metadata: metadata || null,
+        processedAt: new Date(),
+      },
+    });
+  }
+
+  // Auto top-up retry operations
+  async createAutoTopUpRetry(retry: { partnerId: string; packageTier: string; nextRetryAt: Date; lastError?: string; paymentIntentId?: string; requires3DS?: boolean }): Promise<AutoTopUpRetry> {
+    const [result] = await db.insert(autoTopUpRetries).values({
+      partnerId: retry.partnerId,
+      packageTier: retry.packageTier,
+      nextRetryAt: retry.nextRetryAt,
+      lastError: retry.lastError || null,
+      paymentIntentId: retry.paymentIntentId || null,
+      requires3DS: retry.requires3DS || false,
+      status: 'pending',
+      retryCount: 0,
+      maxRetries: 3,
+    }).returning();
+    return result;
+  }
+
+  async getPendingAutoTopUpRetries(): Promise<AutoTopUpRetry[]> {
+    return await db.select().from(autoTopUpRetries)
+      .where(and(
+        eq(autoTopUpRetries.status, 'pending'),
+        lte(autoTopUpRetries.nextRetryAt, new Date())
+      ))
+      .orderBy(autoTopUpRetries.nextRetryAt);
+  }
+
+  async getAutoTopUpRetry(id: string): Promise<AutoTopUpRetry | undefined> {
+    const [result] = await db.select().from(autoTopUpRetries).where(eq(autoTopUpRetries.id, id));
+    return result;
+  }
+
+  async updateAutoTopUpRetry(id: string, updates: Partial<{ retryCount: number; nextRetryAt: Date; lastError: string; status: string; paymentIntentId: string; requires3DS: boolean }>): Promise<void> {
+    await db.update(autoTopUpRetries).set({
+      ...updates,
+      updatedAt: new Date(),
+    }).where(eq(autoTopUpRetries.id, id));
+  }
+
+  async cancelPendingAutoTopUpRetries(partnerId: string): Promise<void> {
+    await db.update(autoTopUpRetries)
+      .set({ status: 'cancelled', updatedAt: new Date() })
+      .where(and(
+        eq(autoTopUpRetries.partnerId, partnerId),
+        eq(autoTopUpRetries.status, 'pending')
+      ));
   }
 
   // Partner ATS integration operations

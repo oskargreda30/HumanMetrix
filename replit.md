@@ -35,6 +35,7 @@ Key features include:
 - **Golden Set Benchmark System**: Ensures GPT-5 scoring consistency.
 - **B2B Partner Integration**: Enterprise solution with embeddable assessments, 3-tier billing, API key authentication, JavaScript widget/SDK, and webhook notifications.
 - **Billing & Notifications**: Robust subscription billing edge case handling, invoice payment enforcement with escalating notifications, critical error notifications, security monitoring, and comprehensive partner notification system.
+- **Payment Edge Case Handling**: Stripe webhook idempotency via `stripeWebhookEvents` table prevents duplicate event processing. 3DS/SCA authentication creates retry entries in `autoTopUpRetries` table with 24-hour delay and email notification. Auto top-up failures use exponential backoff (max 3 retries).
 - **Email Bounce Tracking**: SendGrid webhook integration tracks bounced, dropped, blocked, and deferred emails with secure signature verification. UI displays "Bounced" status with tooltip instead of "Sent" for undeliverable emails.
 - **Super Admin Dashboards**: Advanced analytics covering user activity, assessment funnels, partner health scoring, revenue, geographic data, SLA monitoring, audit logging, profit analytics (revenue vs. OpenAI costs), and results retention consent.
 - **Accounting Integration**: Xero integration for expense tracking and revenue synchronization.

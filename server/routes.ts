@@ -1859,6 +1859,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     console.log(`[Stripe Webhook] Received event: ${event.type}, id: ${event.id}`);
     
+    // Atomic idempotency lock - prevents duplicate processing and handles retries
+    // Returns true for: new events, failed events (Stripe retry), stale processing (crash recovery)
+    // Returns false for: successfully processed events, fresh processing events (race prevention)
+    const lockAcquired = await storage.acquireStripeEventLock(event.id, event.type);
+    if (!lockAcquired) {
+      console.log(`[Stripe Webhook] Event ${event.id} already processed or locked - skipping`);
+      return res.json({ received: true, skipped: true });
+    }
+    
+    let eventStatus: 'processed' | 'failed' = 'processed';
+    let errorMessage: string | undefined;
+    
     try {
       switch (event.type) {
         case 'payment_intent.payment_failed': {
@@ -1988,19 +2000,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
           break;
         }
         
+        case 'payment_intent.requires_action': {
+          // 3DS/SCA authentication required
+          const paymentIntent = event.data.object;
+          const partnerId = paymentIntent.metadata?.partnerId || paymentIntent.metadata?.partner_id;
+          const autoTopUp = paymentIntent.metadata?.autoTopUp === 'true';
+          
+          if (partnerId && autoTopUp) {
+            console.log(`[Stripe Webhook] 3DS authentication required for auto top-up, partner ${partnerId}`);
+            
+            // Create retry entry with 3DS flag
+            const partner = await storage.getPartnerAccount(partnerId);
+            if (partner && partner.autoTopUpPackage) {
+              await storage.createAutoTopUpRetry({
+                partnerId,
+                packageTier: partner.autoTopUpPackage,
+                nextRetryAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+                lastError: 'Requires 3DS authentication - customer action needed',
+                paymentIntentId: paymentIntent.id,
+                requires3DS: true,
+              });
+              
+              // Notify partner about required action
+              const { sendPayment3DSRequiredEmail } = await import('./email');
+              if (typeof sendPayment3DSRequiredEmail === 'function') {
+                await sendPayment3DSRequiredEmail(
+                  partner.email,
+                  partner.companyName || partner.name,
+                  paymentIntent.amount / 100,
+                  'GBP'
+                );
+              }
+            }
+          }
+          break;
+        }
+        
         default:
           // Unhandled event type
           console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
       }
       
-      res.json({ received: true });
+      // Mark event as processed for idempotency
+      return res.json({ received: true });
     } catch (error: any) {
       console.error('[Stripe Webhook ERROR]', error);
-      res.status(500).json({ error: error.message });
+      eventStatus = 'failed';
+      errorMessage = error.message;
+      return res.status(500).json({ error: error.message });
+    } finally {
+      try {
+        await storage.markStripeEventProcessed(event.id, event.type, eventStatus, {
+          partnerId: event.data.object?.metadata?.partnerId || event.data.object?.metadata?.partner_id,
+          paymentIntentId: event.data.object?.id,
+          ...(errorMessage ? { error: errorMessage } : {}),
+        });
+      } catch (markError) {
+        console.error('[Stripe Webhook] Failed to mark event status:', markError);
+      }
     }
   });
-
-  // SendGrid Event Webhook handler for email bounce/block notifications
   // Use raw body parser for signature verification
   app.post("/api/webhooks/sendgrid", express.raw({ type: 'application/json' }), async (req: any, res) => {
     try {
