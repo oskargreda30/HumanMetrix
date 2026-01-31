@@ -16,7 +16,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useToast } from "@/hooks/use-toast";
-import { FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym, getAIReadinessScore, normalizeAIReadinessScores } from "@/lib/assessmentSkills";
+import { FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym, getAIReadinessScore, normalizeAIReadinessScores, transformToRadarData, isSkillBasedAssessment, formatAssessmentType } from "@/lib/assessmentSkills";
 import SkillsLegend from "@/components/SkillsLegend";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import { apiRequest } from "@/lib/queryClient";
@@ -224,7 +224,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
     try {
       toast({
         title: "Generating PDF",
-        description: "Please wait while we prepare your report...",
+        description: "Please wait while we prepare your comprehensive report...",
       });
       
       let fitChartImage: string | null = null;
@@ -258,22 +258,94 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
         }
       }
       
-      const { generateIndividualReportPDF } = await import('@/lib/pdfExport');
-      await generateIndividualReportPDF({
-        candidate: selectedCandidateData,
-        candidateName: getCandidateName(selectedCandidateData),
-        fitData: fitData ? { scores: fitData.scores } : null,
-        aiData: aiData ? { scores: aiData.scores } : null,
-        promptData: promptData ? { totalScore: promptData.totalScore, levels: promptData.levels } : null,
-        aiqData: aiqData ? { totalScore: aiqData.totalScore } : null,
-        profileInsights: candidateReport?.aiInsights,
-        fitChartImage,
-        aiChartImage,
+      // Use enhanced PDF export (same as B2C) for comprehensive reports
+      const { exportEnhancedCandidatePDF } = await import('@/lib/enhancedPdfExport');
+      
+      // Prepare candidate data in the format expected by enhanced PDF
+      // Include user.id and all completed results with proper structure
+      const candidateForPDF = {
+        user: {
+          id: selectedCandidateData.user.id,
+          firstName: selectedCandidateData.user.firstName,
+          lastName: selectedCandidateData.user.lastName,
+          email: selectedCandidateData.user.email,
+        },
+        results: selectedCandidateData.results?.filter(r => r.status === 'completed') || [],
+      };
+      
+      // Transform scores into skills array using the same method as B2C
+      // This ensures consistent skill naming and normalization
+      const allSkills: Array<{name: string, score: number, assessment: string}> = [];
+      
+      // Use transformToRadarData for proper skill transformation (same as B2C)
+      const completedResults = selectedCandidateData.results?.filter(
+        (r: any) => r.status === 'completed' && isSkillBasedAssessment(r.assessmentType) && r.scores
+      ) || [];
+      
+      completedResults.forEach((result: any) => {
+        const radarData = transformToRadarData(result.scores, result.assessmentType);
+        radarData.forEach((skill: any) => {
+          allSkills.push({
+            name: skill.skill,
+            score: skill.score,
+            assessment: formatAssessmentType(result.assessmentType),
+          });
+        });
       });
+      
+      // Fetch platform averages - try admin endpoint, fall back to defaults if not accessible
+      // This matches B2C behavior which also fetches from /api/admin/platform-averages
+      let platformAverages = {
+        totalCandidates: 1,
+        avgScoreAcrossCandidates: 0,
+        skillAverages: {},
+      };
+      try {
+        const averagesRes = await fetch('/api/admin/platform-averages', {
+          credentials: 'include',
+        });
+        if (averagesRes.ok) {
+          platformAverages = await averagesRes.json();
+        }
+      } catch (e) {
+        // Silently use defaults if fetch fails (partner may not have access)
+      }
+      
+      // Prepare radar chart images
+      const radarChartImages: { fit?: string; aiReadiness?: string } = {};
+      if (fitChartImage) radarChartImages.fit = fitChartImage;
+      if (aiChartImage) radarChartImages.aiReadiness = aiChartImage;
+      
+      // Fetch Prompt Architecture evaluation data if applicable
+      let promptArchitectureData: any[] = [];
+      const promptArchResult = selectedCandidateData.results?.find(
+        r => r.assessmentType === 'prompt_architecture' && r.status === 'completed'
+      );
+      if (promptArchResult?.id) {
+        try {
+          const promptEvalRes = await fetch(`/api/prompt-evaluations/${promptArchResult.id}`, {
+            credentials: 'include',
+          });
+          if (promptEvalRes.ok) {
+            promptArchitectureData = await promptEvalRes.json();
+          }
+        } catch (e) {
+          console.error('Failed to fetch prompt evaluations:', e);
+        }
+      }
+      
+      await exportEnhancedCandidatePDF(
+        candidateForPDF,
+        allSkills,
+        platformAverages,
+        radarChartImages,
+        undefined,
+        promptArchitectureData
+      );
       
       toast({
         title: "PDF Generated",
-        description: "Your individual report has been downloaded.",
+        description: "Your comprehensive report has been downloaded.",
       });
     } catch (error: any) {
       toast({
