@@ -520,14 +520,26 @@ export function generateB2BResultsPDF(data: B2BAssessmentData): Buffer {
     addHeader(pdf, pageWidth);
     yPos = 38;
     
-    yPos = addSectionHeader(pdf, 'SKILL SCORES - BEHAVIORAL COMPETENCIES', yPos, pageWidth);
+    yPos = addSectionHeader(pdf, 'FIT ASSESSMENT - BEHAVIORAL SKILLS', yPos, pageWidth);
     yPos += 5;
     
-    pdf.setFontSize(9);
+    // What It Measures description
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(59, 130, 246);
+    pdf.text('What It Measures:', 20, yPos);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
-    pdf.text('Your performance across the six core behavioral skills:', 20, yPos);
-    yPos += 12;
+    pdf.text('Six core behavioural skills: High Agency, Intellectual Curiosity, Resilience, Empathy & Ethics,', 52, yPos);
+    yPos += 4;
+    pdf.text('Growth Mindset, and Interpersonal Agility.', 20, yPos);
+    yPos += 10;
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Individual Skill Scores:', 20, yPos);
+    yPos += 8;
     
     FIT_SKILLS.forEach((skill) => {
       yPos = ensurePageSpace(pdf, yPos, 18, pageHeight, pageWidth);
@@ -584,20 +596,48 @@ export function generateB2BResultsPDF(data: B2BAssessmentData): Buffer {
       pdf.text('• All skills above threshold', rightBoxX + 8, yPos + 22);
     }
     
+    yPos += 55;
+    
+    // Workplace Impact section
+    yPos = ensurePageSpace(pdf, yPos, 15, pageHeight, pageWidth);
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(59, 130, 246);
+    pdf.text('Workplace Impact:', 20, yPos);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Predicts adaptability, initiative, collaboration quality, and resilience under pressure.', 52, yPos);
+    yPos += 4;
+    pdf.text('High scorers drive innovation and navigate ambiguity effectively.', 20, yPos);
+    
   } else if (assessmentLower === 'ai_readiness' || assessmentLower === 'aireadiness') {
     pdf.addPage();
     addBackgroundPattern(pdf, pageWidth, pageHeight);
     addHeader(pdf, pageWidth);
     yPos = 38;
     
-    yPos = addSectionHeader(pdf, 'SKILL SCORES - AI COMPETENCIES', yPos, pageWidth);
+    yPos = addSectionHeader(pdf, 'AI READINESS ASSESSMENT', yPos, pageWidth);
     yPos += 5;
     
-    pdf.setFontSize(9);
+    // What It Measures description
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(59, 130, 246);
+    pdf.text('What It Measures:', 20, yPos);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
-    pdf.text('Your performance across the nine AI readiness skills:', 20, yPos);
-    yPos += 12;
+    pdf.text('Nine AI-specific competencies: AI Literacy & Prompt Engineering, Technical Fundamentals,', 52, yPos);
+    yPos += 4;
+    pdf.text('Data Fluency, Critical Thinking & Problem-Solving, Adaptability & Continuous Learning,', 20, yPos);
+    yPos += 4;
+    pdf.text('Collaboration & Communication, Responsible AI & Ethical Awareness, Creativity & Innovation, Domain Expertise.', 20, yPos);
+    yPos += 10;
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Individual Skill Scores:', 20, yPos);
+    yPos += 8;
     
     AI_READINESS_SKILLS.forEach((skill) => {
       yPos = ensurePageSpace(pdf, yPos, 18, pageHeight, pageWidth);
@@ -655,20 +695,46 @@ export function generateB2BResultsPDF(data: B2BAssessmentData): Buffer {
       pdf.text('• All skills above threshold', rightAIBoxX + 8, yPos + 22);
     }
     
+    yPos += 65;
+    
+    // Workplace Impact section
+    yPos = ensurePageSpace(pdf, yPos, 15, pageHeight, pageWidth);
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(59, 130, 246);
+    pdf.text('Workplace Impact:', 20, yPos);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Determines ability to leverage AI tools for productivity gains, make sound AI-assisted decisions,', 52, yPos);
+    yPos += 4;
+    pdf.text('and integrate AI responsibly into workflows. High scorers multiply their output through effective AI collaboration.', 20, yPos);
+    
   } else if (assessmentLower === 'prompt_architecture') {
     pdf.addPage();
     addBackgroundPattern(pdf, pageWidth, pageHeight);
     addHeader(pdf, pageWidth);
     yPos = 38;
     
-    yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE RESULTS', yPos, pageWidth);
+    yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE ASSESSMENT', yPos, pageWidth);
     yPos += 5;
+    
+    // What It Measures description
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(245, 158, 11);
+    pdf.text('What It Measures:', 20, yPos);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Prompt engineering expertise across five equal dimensions (20% each): Clarity, Structure,', 52, yPos);
+    yPos += 4;
+    pdf.text('Context Relevance, Creativity, and Iterative Improvement. Progressive difficulty levels test real-world prompting skills.', 20, yPos);
+    yPos += 10;
     
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
-    pdf.text('Your prompt engineering skills assessed across multiple difficulty levels:', 20, yPos);
-    yPos += 15;
+    pdf.text('Your performance across multiple difficulty levels:', 20, yPos);
+    yPos += 10;
     
     if (data.evaluations && data.evaluations.length > 0) {
       data.evaluations.forEach((level: any, idx: number) => {
@@ -715,6 +781,30 @@ export function generateB2BResultsPDF(data: B2BAssessmentData): Buffer {
       });
     }
     
+    // Assessed Dimensions and Workplace Impact
+    yPos = ensurePageSpace(pdf, yPos, 35, pageHeight, pageWidth);
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Assessed Dimensions:', 20, yPos);
+    yPos += 5;
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    pdf.text('Clarity (20%) • Structure (20%) • Context Relevance (20%) • Creativity (20%) • Iterative Improvement (20%)', 20, yPos);
+    yPos += 8;
+    
+    // Workplace Impact section
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(245, 158, 11);
+    pdf.text('Workplace Impact:', 20, yPos);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Directly correlates with AI productivity. Skilled prompt engineers extract 3-5x more value from AI tools,', 52, yPos);
+    yPos += 4;
+    pdf.text('solve complex problems faster, and produce higher-quality AI-assisted outputs.', 20, yPos);
+    
   } else if (assessmentLower === 'aiq') {
     pdf.addPage();
     addBackgroundPattern(pdf, pageWidth, pageHeight);
@@ -724,11 +814,17 @@ export function generateB2BResultsPDF(data: B2BAssessmentData): Buffer {
     yPos = addSectionHeader(pdf, 'ALGORITHMIC INTEGRITY QUOTIENT (AIQ)', yPos, pageWidth);
     yPos += 5;
     
-    pdf.setFontSize(9);
+    // What It Measures description
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(34, 197, 94);
+    pdf.text('What It Measures:', 20, yPos);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
-    pdf.text('Your AI ethics and responsible AI awareness assessment:', 20, yPos);
-    yPos += 15;
+    pdf.text('AI ethics judgment through scenario-based assessment. Measures understanding of bias, fairness,', 52, yPos);
+    yPos += 4;
+    pdf.text('transparency, privacy, and responsible AI deployment practices.', 20, yPos);
+    yPos += 12;
     
     const aiqInterpretation = getAIQBandInterpretation(overallScore);
     
@@ -770,6 +866,19 @@ export function generateB2BResultsPDF(data: B2BAssessmentData): Buffer {
         yPos = drawSkillBar(pdf, category, score, yPos, pageWidth);
       });
     }
+    
+    // Workplace Impact section
+    yPos = ensurePageSpace(pdf, yPos, 25, pageHeight, pageWidth);
+    yPos += 10;
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(34, 197, 94);
+    pdf.text('Workplace Impact:', 20, yPos);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Predicts ethical decision-making in AI-augmented workflows. High scorers navigate AI ethics dilemmas', 52, yPos);
+    yPos += 4;
+    pdf.text('confidently, ensuring responsible AI deployment and maintaining stakeholder trust.', 20, yPos);
   }
   
   addSkillsLegendPage(pdf, pageWidth, pageHeight);
