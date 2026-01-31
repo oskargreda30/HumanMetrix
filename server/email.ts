@@ -1,7 +1,66 @@
 import sgMail from '@sendgrid/mail';
 import nodemailer from 'nodemailer';
 import type { Invitation } from '@shared/schema';
+import { emailLogs } from '@shared/schema';
 import { generateReceiptPDF, generateInvoiceReceiptNumber, type ReceiptData } from './generateReceipt';
+import { db } from './db';
+
+// Email logging types
+export type RecipientType = 'partner' | 'b2b_test_taker' | 'b2c_customer' | 'super_admin';
+export type EmailType = 
+  | 'invitation' 
+  | 'results' 
+  | 'password_reset' 
+  | 'welcome' 
+  | 'billing' 
+  | 'payment_receipt'
+  | 'invoice_reminder'
+  | 'low_credits'
+  | 'credits_added'
+  | 'subscription_cancelled'
+  | 'subscription_activated'
+  | 'partner_signup'
+  | 'partner_welcome'
+  | 'assessment_complete'
+  | 'b2c_assessment_complete'
+  | 'trial_ending'
+  | 'auto_topup_failed'
+  | 'system_notification'
+  | 'other';
+
+interface EmailLogParams {
+  recipientEmail: string;
+  recipientName?: string;
+  recipientType: RecipientType;
+  subject: string;
+  emailType: EmailType;
+  provider: 'gmail' | 'sendgrid';
+  status: 'sent' | 'failed' | 'bounced';
+  messageId?: string;
+  error?: string;
+  metadata?: Record<string, any>;
+}
+
+// Log an email to the database
+async function logEmailToDb(params: EmailLogParams): Promise<void> {
+  try {
+    await db.insert(emailLogs).values({
+      recipientEmail: params.recipientEmail,
+      recipientName: params.recipientName || null,
+      recipientType: params.recipientType,
+      subject: params.subject,
+      emailType: params.emailType,
+      provider: params.provider,
+      status: params.status,
+      messageId: params.messageId || null,
+      error: params.error || null,
+      metadata: params.metadata || null,
+    });
+  } catch (err) {
+    console.error('[Email Log] Failed to log email:', err);
+    // Don't throw - logging failure shouldn't break email sending
+  }
+}
 
 // Email provider types
 export type EmailProvider = 'sendgrid' | 'gmail';
@@ -320,8 +379,16 @@ async function sendEmailFailureNotification(
   }
 }
 
-// Unified email sending with automatic failover
-async function sendEmail(msg: EmailMessage): Promise<{ success: boolean; messageId?: string }> {
+// Email logging context for tracking sent emails
+interface EmailLogContext {
+  recipientType: RecipientType;
+  emailType: EmailType;
+  recipientName?: string;
+  metadata?: Record<string, any>;
+}
+
+// Unified email sending with automatic failover and optional logging
+async function sendEmail(msg: EmailMessage, logContext?: EmailLogContext): Promise<{ success: boolean; messageId?: string }> {
   const primaryProvider = currentEmailProvider;
   const backupProvider: 'gmail' | 'sendgrid' = primaryProvider === 'sendgrid' ? 'gmail' : 'sendgrid';
   
@@ -332,6 +399,20 @@ async function sendEmail(msg: EmailMessage): Promise<{ success: boolean; message
     : await sendViaGmail(msg);
   
   if (primaryResult.success) {
+    // Log successful email
+    if (logContext) {
+      logEmailToDb({
+        recipientEmail: Array.isArray(msg.to) ? msg.to.join(", ") : msg.to,
+        recipientName: logContext.recipientName,
+        recipientType: logContext.recipientType,
+        subject: msg.subject,
+        emailType: logContext.emailType,
+        provider: primaryProvider,
+        status: 'sent',
+        messageId: primaryResult.messageId,
+        metadata: logContext.metadata,
+      });
+    }
     return { success: true, messageId: primaryResult.messageId };
   }
   
@@ -345,27 +426,61 @@ async function sendEmail(msg: EmailMessage): Promise<{ success: boolean; message
   
   if (backupResult.success) {
     console.log(`[Email] Successfully sent via backup provider (${backupProvider})`);
+    // Log successful email via backup
+    if (logContext) {
+      logEmailToDb({
+        recipientEmail: Array.isArray(msg.to) ? msg.to.join(", ") : msg.to,
+        recipientName: logContext.recipientName,
+        recipientType: logContext.recipientType,
+        subject: msg.subject,
+        emailType: logContext.emailType,
+        provider: backupProvider,
+        status: 'sent',
+        messageId: backupResult.messageId,
+        metadata: logContext.metadata,
+      });
+    }
     // Notify admins about the primary failure (but email was delivered)
     sendEmailFailureNotification(msg, primaryProvider, primaryResult.error || 'Unknown error', backupProvider);
     return { success: true, messageId: backupResult.messageId };
   }
   
   console.error(`[Email] Both providers failed! Primary: ${primaryResult.error}, Backup: ${backupResult.error}`);
+  // Log failed email
+  if (logContext) {
+    logEmailToDb({
+      recipientEmail: Array.isArray(msg.to) ? msg.to.join(", ") : msg.to,
+      recipientName: logContext.recipientName,
+      recipientType: logContext.recipientType,
+      subject: msg.subject,
+      emailType: logContext.emailType,
+      provider: primaryProvider,
+      status: 'failed',
+      error: `Primary (${primaryProvider}): ${primaryResult.error}; Backup (${backupProvider}): ${backupResult.error}`,
+      metadata: logContext.metadata,
+    });
+  }
   // Notify admins about complete failure
   sendEmailFailureNotification(msg, primaryProvider, primaryResult.error || 'Unknown error', backupProvider, backupResult.error);
   
   return { success: false };
 }
 
-// Generic partner email function for simple notifications
-export async function sendPartnerEmail(options: { to: string; subject: string; html: string; text?: string }): Promise<{ success: boolean; messageId?: string }> {
+// Generic partner email function for simple notifications with optional logging
+export async function sendPartnerEmail(options: { 
+  to: string; 
+  subject: string; 
+  html: string; 
+  text?: string;
+  logContext?: EmailLogContext;
+}): Promise<{ success: boolean; messageId?: string }> {
   return sendEmail({
     to: options.to,
     subject: options.subject,
     html: options.html,
     text: options.text,
     from: { email: fromEmail || process.env.GMAIL_USER || '', name: 'HumanMetrix' },
-  });
+  }, options.logContext);
 }
 
 
@@ -457,7 +572,12 @@ This invitation expires on ${new Date(invitation.expiresAt).toLocaleDateString('
     `.trim(),
   };
 
-  const result = await sendEmail(msg);
+  const result = await sendEmail(msg, {
+    recipientType: 'b2b_test_taker',
+    emailType: 'invitation',
+    recipientName: invitation.candidateName,
+    metadata: { invitationId: invitation.id, assessmentTypes: invitation.assessmentTypes },
+  });
   if (result.success) {
     console.log(`[Email] Invitation email sent to ${invitation.candidateEmail} (ID: ${result.messageId})`);
   }
@@ -533,7 +653,11 @@ If you didn't request a password reset, please ignore this email.
     `.trim(),
   };
 
-  const result = await sendEmail(msg);
+  const result = await sendEmail(msg, {
+    recipientType: 'b2c_customer',
+    emailType: 'password_reset',
+    recipientName: name,
+  });
   if (result.success) {
     console.log(`[Email] Password reset email sent to ${email} (ID: ${result.messageId})`);
   }

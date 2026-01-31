@@ -21,6 +21,8 @@ import PartnersTab from "@/components/admin/PartnersTab";
 import UsageTab from "@/components/admin/UsageTab";
 import WidgetTestTab from "@/components/admin/WidgetTestTab";
 import HealthTab from "@/components/admin/HealthTab";
+import EmailLogsTab from "@/components/admin/EmailLogsTab";
+import SessionsTab from "@/components/admin/SessionsTab";
 import BillingTab from "@/components/admin/BillingTab";
 import AnalyticsTab from "@/components/admin/AnalyticsTab";
 import SystemSettingsTab from "@/components/admin/SystemSettingsTab";
@@ -38,7 +40,8 @@ export default function AdminDashboard() {
   const { user, isLoading: userLoading } = useUser();
   const [activeTab, setActiveTab] = useState("overview");
   const [analyticsSubTab, setAnalyticsSubTab] = useState("platform");
-  const [partnersSubTab, setPartnersSubTab] = useState("accounts"); // Default to accounts for super admins
+  const [partnersSubTab, setPartnersSubTab] = useState("accounts");
+  const [monitoringSubTab, setMonitoringSubTab] = useState("emails"); // Default to accounts for super admins
   const [analysisSubTab, setAnalysisSubTab] = useState("individual");
   const [billingSubTab, setBillingSubTab] = useState("overview");
   
@@ -186,7 +189,7 @@ export default function AdminDashboard() {
                 </TabsTrigger>
               )}
               {isSuperAdmin && (
-                <TabsTrigger value="health" data-testid="tab-health" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                <TabsTrigger value="monitoring" data-testid="tab-monitoring" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                   Health
                 </TabsTrigger>
               )}
@@ -369,8 +372,29 @@ export default function AdminDashboard() {
             )}
 
             {isSuperAdmin && (
-              <TabsContent value="health" className="space-y-4">
-                <HealthTab />
+              <TabsContent value="monitoring" className="space-y-4">
+                <Tabs value={monitoringSubTab} onValueChange={setMonitoringSubTab} className="w-full">
+                  <TabsList className="bg-white/10 mb-6">
+                    <TabsTrigger value="emails" data-testid="subtab-monitoring-emails" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+                      Emails
+                    </TabsTrigger>
+                    <TabsTrigger value="sessions" data-testid="subtab-monitoring-sessions" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+                      Sessions
+                    </TabsTrigger>
+                    <TabsTrigger value="health" data-testid="subtab-monitoring-health" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+                      Health
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="emails" className="mt-4">
+                    <EmailLogsTab />
+                  </TabsContent>
+                  <TabsContent value="sessions" className="mt-4">
+                    <SessionsTab />
+                  </TabsContent>
+                  <TabsContent value="health" className="mt-4">
+                    <HealthTab />
+                  </TabsContent>
+                </Tabs>
               </TabsContent>
             )}
 

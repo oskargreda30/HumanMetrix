@@ -7,7 +7,7 @@ import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema, B2B_VOLUME_TIERS, CREDIT_EXPIRATION_MONTHS, getTrialQuotaForTier } from "@shared/schema";
 import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, calculateStripeAmountFromTotalPence, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES, roundPriceUp, formatPrice, getCurrencyForCountry } from "@shared/currencies";
 import { db } from "./db";
-import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, broadcastMessages, SYSTEM_SETTING_KEYS, auditLogs, errorLogs, partnerInvoices, invitations, partnerCandidateInvitations, candidateNotes, type PartnerAccount, type AssessmentSession } from "@shared/schema";
+import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, broadcastMessages, SYSTEM_SETTING_KEYS, auditLogs, errorLogs, partnerInvoices, invitations, partnerCandidateInvitations, candidateNotes, emailLogs, sessions, type PartnerAccount, type AssessmentSession } from "@shared/schema";
 import { eq, desc, sql, and, or, gte, isNotNull } from "drizzle-orm";
 import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPartnerWelcomeEmail, sendGeneralEnquiryEmail, sendB2BResultsEmail, sendPaymentReceiptWithPdf, type PdfReceiptEmailDetails, getEmailProvider, setEmailProvider, type EmailProvider } from "./email";
 import { generateB2BResultsPDF } from "./generateB2BPDF";
@@ -20464,6 +20464,207 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
     } catch (error) {
       console.error("Error fetching latency metrics:", error);
       res.status(500).json({ message: "Failed to fetch latency metrics" });
+    }
+  });
+
+
+  // ==================== EMAIL LOGS MONITORING API ====================
+
+  // Super Admin: Get email logs with filtering
+  app.get("/api/admin/email-logs", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { recipientType, emailType, status, startDate, endDate, search, limit = '100', offset = '0' } = req.query;
+      
+      // Build where conditions
+      const conditions: any[] = [];
+      
+      if (recipientType && recipientType !== 'all') {
+        conditions.push(eq(emailLogs.recipientType, recipientType));
+      }
+      if (emailType && emailType !== 'all') {
+        conditions.push(eq(emailLogs.emailType, emailType));
+      }
+      if (status && status !== 'all') {
+        conditions.push(eq(emailLogs.status, status));
+      }
+      if (startDate) {
+        conditions.push(gte(emailLogs.sentAt, new Date(startDate)));
+      }
+      if (search) {
+        conditions.push(
+          or(
+            sql`${emailLogs.recipientEmail} ILIKE ${'%' + search + '%'}`,
+            sql`${emailLogs.subject} ILIKE ${'%' + search + '%'}`
+          )
+        );
+      }
+      
+      const query = conditions.length > 0
+        ? db.select().from(emailLogs).where(and(...conditions))
+        : db.select().from(emailLogs);
+      
+      const logs = await query
+        .orderBy(desc(emailLogs.sentAt))
+        .limit(parseInt(limit))
+        .offset(parseInt(offset));
+      
+      // Get total count
+      const countQuery = conditions.length > 0
+        ? db.select({ count: sql<number>`count(*)` }).from(emailLogs).where(and(...conditions))
+        : db.select({ count: sql<number>`count(*)` }).from(emailLogs);
+      const [{ count }] = await countQuery;
+      
+      res.json({ logs, total: Number(count) });
+    } catch (error) {
+      console.error("Error fetching email logs:", error);
+      res.status(500).json({ message: "Failed to fetch email logs" });
+    }
+  });
+
+  // Super Admin: Get email log statistics
+  app.get("/api/admin/email-logs/stats", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const now = new Date();
+      const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      
+      const [total, sent24h, failed24h, byType, byRecipientType] = await Promise.all([
+        db.select({ count: sql<number>`count(*)` }).from(emailLogs),
+        db.select({ count: sql<number>`count(*)` }).from(emailLogs)
+          .where(and(eq(emailLogs.status, 'sent'), gte(emailLogs.sentAt, last24Hours))),
+        db.select({ count: sql<number>`count(*)` }).from(emailLogs)
+          .where(and(eq(emailLogs.status, 'failed'), gte(emailLogs.sentAt, last24Hours))),
+        db.select({ 
+          type: emailLogs.emailType, 
+          count: sql<number>`count(*)` 
+        }).from(emailLogs)
+          .groupBy(emailLogs.emailType)
+          .orderBy(desc(sql`count(*)`)),
+        db.select({ 
+          recipientType: emailLogs.recipientType, 
+          count: sql<number>`count(*)` 
+        }).from(emailLogs)
+          .groupBy(emailLogs.recipientType),
+      ]);
+      
+      res.json({
+        total: Number(total[0]?.count || 0),
+        sent24h: Number(sent24h[0]?.count || 0),
+        failed24h: Number(failed24h[0]?.count || 0),
+        byType,
+        byRecipientType,
+      });
+    } catch (error) {
+      console.error("Error fetching email stats:", error);
+      res.status(500).json({ message: "Failed to fetch email statistics" });
+    }
+  });
+
+  // ==================== ACTIVE SESSIONS MONITORING API ====================
+
+  // Super Admin: Get active sessions
+  app.get("/api/admin/active-sessions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const now = new Date();
+      
+      // Get all non-expired sessions
+      const activeSessions = await db.select().from(sessions)
+        .where(gte(sessions.expire, now))
+        .orderBy(desc(sessions.expire));
+      
+      // Parse session data and enhance with user info
+      const enhancedSessions = await Promise.all(
+        activeSessions.map(async (session) => {
+          const sessData = session.sess as any;
+          let userInfo = null;
+          
+          if (sessData?.passport?.user) {
+            const sessionUser = await storage.getUser(sessData.passport.user);
+            if (sessionUser) {
+              userInfo = {
+                id: sessionUser.id,
+                email: sessionUser.email,
+                firstName: sessionUser.firstName,
+                lastName: sessionUser.lastName,
+                role: sessionUser.role,
+              };
+            }
+          }
+          
+          return {
+            sid: session.sid,
+            expire: session.expire,
+            userInfo,
+            createdAt: sessData?.cookie?.originalMaxAge ? 
+              new Date(session.expire.getTime() - sessData.cookie.originalMaxAge) : null,
+          };
+        })
+      );
+      
+      // Filter to only sessions with user info (authenticated sessions)
+      const authenticatedSessions = enhancedSessions.filter(s => s.userInfo);
+      
+      // Get session statistics
+      const totalActive = authenticatedSessions.length;
+      const byRole: Record<string, number> = {};
+      authenticatedSessions.forEach(s => {
+        const role = s.userInfo?.role || 'unknown';
+        byRole[role] = (byRole[role] || 0) + 1;
+      });
+      
+      res.json({
+        sessions: authenticatedSessions,
+        stats: {
+          totalActive,
+          byRole,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching active sessions:", error);
+      res.status(500).json({ message: "Failed to fetch active sessions" });
+    }
+  });
+
+  // Super Admin: Invalidate a specific session (force logout)
+  app.delete("/api/admin/active-sessions/:sid", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { sid } = req.params;
+      
+      // Delete the session
+      await db.delete(sessions).where(eq(sessions.sid, sid));
+      
+      res.json({ success: true, message: "Session invalidated" });
+    } catch (error) {
+      console.error("Error invalidating session:", error);
+      res.status(500).json({ message: "Failed to invalidate session" });
     }
   });
 
