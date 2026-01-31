@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +31,7 @@ import {
   MoreVertical,
   Search,
   ChevronRight,
+  ChevronDown,
   GripVertical,
   FileText,
   CheckCircle2,
@@ -87,6 +93,19 @@ export function HiringPipelineTab() {
   const [notes, setNotes] = useState("");
   const [draggedSession, setDraggedSession] = useState<PipelineSession | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
+  const [expandedStages, setExpandedStages] = useState<Set<string>>(new Set(["new", "reviewing", "shortlisted"]));
+  
+  const toggleStage = useCallback((stageId: string) => {
+    setExpandedStages(prev => {
+      const next = new Set(prev);
+      if (next.has(stageId)) {
+        next.delete(stageId);
+      } else {
+        next.add(stageId);
+      }
+      return next;
+    });
+  }, []);
 
   const { data: pipelineData, isLoading, isFetching, refetch } = useQuery<PipelineData>({
     queryKey: ["/api/partner/pipeline"],
@@ -186,12 +205,18 @@ export function HiringPipelineTab() {
 
   const handleSaveNotes = async () => {
     if (selectedSession) {
-      await updateStageMutation.mutateAsync({
-        sessionId: selectedSession.sessionId,
-        pipelineNotes: notes,
-      });
-      setNotesDialogOpen(false);
-      setSelectedSession(null);
+      try {
+        await updateStageMutation.mutateAsync({
+          sessionId: selectedSession.sessionId,
+          pipelineNotes: notes,
+        });
+        toast({ title: "Notes saved", description: "Candidate notes have been updated" });
+        setNotesDialogOpen(false);
+        setSelectedSession(null);
+      } catch (error) {
+        console.error("Failed to save notes:", error);
+        toast({ title: "Error", description: "Failed to save notes. Please try again.", variant: "destructive" });
+      }
     }
   };
 
@@ -206,12 +231,22 @@ export function HiringPipelineTab() {
     setDetailsDialogOpen(true);
   };
 
-  const moveToStage = async (session: PipelineSession, targetStage: string) => {
-    await updateStageMutation.mutateAsync({
-      sessionId: session.sessionId,
-      pipelineStage: targetStage,
-    });
-  };
+  const moveToStage = useCallback(async (session: PipelineSession, targetStage: string, e?: React.MouseEvent) => {
+    // Stop event propagation to prevent card click from opening details
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    try {
+      await updateStageMutation.mutateAsync({
+        sessionId: session.sessionId,
+        pipelineStage: targetStage,
+      });
+      toast({ title: "Success", description: `Moved to ${targetStage.replace('_', ' ')}` });
+    } catch (error) {
+      console.error("Move failed:", error);
+    }
+  }, [updateStageMutation, toast]);
 
   const filterSessions = (sessions: PipelineSession[]) => {
     if (!searchQuery.trim()) return sessions;
@@ -339,12 +374,21 @@ export function HiringPipelineTab() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => openNotesDialog(session)} data-testid={`menu-item-notes-${session.sessionId}`}>
+                              <DropdownMenuItem 
+                                onClick={(e) => { e.stopPropagation(); openNotesDialog(session); }} 
+                                data-testid={`menu-item-notes-${session.sessionId}`}
+                              >
                                 <FileText className="h-4 w-4 mr-2" />
                                 {session.pipelineNotes ? "Edit Notes" : "Add Notes"}
                               </DropdownMenuItem>
                               <DropdownMenuItem asChild>
-                                <a href={`/partner/results/${session.sessionId}`} target="_blank" rel="noopener noreferrer" data-testid={`menu-item-results-${session.sessionId}`}>
+                                <a 
+                                  href={`/partner/results/${session.sessionId}`} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  data-testid={`menu-item-results-${session.sessionId}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                   <Eye className="h-4 w-4 mr-2" />
                                   View Results
                                 </a>
@@ -352,7 +396,7 @@ export function HiringPipelineTab() {
                               {stages.filter(s => s.id !== session.pipelineStage).map(targetStage => (
                                 <DropdownMenuItem
                                   key={targetStage.id}
-                                  onClick={() => moveToStage(session, targetStage.id)}
+                                  onClick={(e) => moveToStage(session, targetStage.id, e)}
                                   data-testid={`menu-item-move-${session.sessionId}-${targetStage.id}`}
                                 >
                                   <ChevronRight className="h-4 w-4 mr-2" />
@@ -377,107 +421,132 @@ export function HiringPipelineTab() {
         })}
       </div>
 
-      {/* Mobile: Vertical stacked view */}
-      <div className="md:hidden space-y-4">
+      {/* Mobile: Collapsible vertical stacked view */}
+      <div className="md:hidden space-y-3">
         {stages.map((stage) => {
           const config = stageConfig[stage.id];
           const Icon = config?.icon || User;
           const sessions = filterSessions(pipeline[stage.id] || []);
           const isDropTarget = dragOverStage === stage.id;
+          const isExpanded = expandedStages.has(stage.id);
 
           return (
-            <div
+            <Collapsible
               key={stage.id}
-              className={`rounded-lg border ${
-                isDropTarget ? "border-primary border-2 bg-primary/5" : "border-border"
-              } transition-all`}
-              onDragOver={(e) => handleDragOver(e, stage.id)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, stage.id)}
-              data-testid={`pipeline-column-mobile-${stage.id}`}
+              open={isExpanded}
+              onOpenChange={() => toggleStage(stage.id)}
             >
-              <div className={`px-4 py-3 rounded-t-lg ${config?.bgColor || "bg-muted"}`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Icon className={`h-5 w-5 flex-shrink-0 ${config?.color || "text-foreground"}`} />
-                    <span className="font-medium text-sm">{stage.label}</span>
-                  </div>
-                  <Badge variant="secondary" className="text-xs">
-                    {sessions.length}
-                  </Badge>
-                </div>
+              <div
+                className={`rounded-lg border ${
+                  isDropTarget ? "border-primary border-2 bg-primary/5" : "border-border"
+                } transition-all overflow-hidden`}
+                onDragOver={(e) => handleDragOver(e, stage.id)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, stage.id)}
+                data-testid={`pipeline-column-mobile-${stage.id}`}
+              >
+                <CollapsibleTrigger asChild>
+                  <button 
+                    className={`w-full px-4 py-3 ${config?.bgColor || "bg-muted"} ${isExpanded ? '' : 'rounded-b-lg'}`}
+                    data-testid={`toggle-stage-${stage.id}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Icon className={`h-5 w-5 flex-shrink-0 ${config?.color || "text-foreground"}`} />
+                        <span className="font-medium text-sm">{stage.label}</span>
+                        <Badge variant="secondary" className="text-xs">
+                          {sessions.length}
+                        </Badge>
+                      </div>
+                      <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                    </div>
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  {sessions.length > 0 ? (
+                    <div className="p-3 space-y-2 bg-card">
+                      {sessions.map((session) => (
+                        <Card
+                          key={session.sessionId}
+                          className="cursor-pointer hover-elevate"
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, session)}
+                          onClick={() => openDetailsDialog(session)}
+                          data-testid={`pipeline-card-mobile-${session.sessionId}`}
+                        >
+                          <CardContent className="p-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1 mb-1">
+                                  <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0 cursor-grab" />
+                                  <span className="font-medium text-sm truncate">
+                                    {session.externalEmail || session.externalUserId || "Unknown"}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Badge variant="outline" className="text-xs">
+                                    {assessmentLabels[session.assessmentType] || session.assessmentType}
+                                  </Badge>
+                                  {session.status === "completed" && session.totalScore !== null && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {session.totalScore}%
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {session.completedAt
+                                    ? format(new Date(session.completedAt), "MMM d, yyyy")
+                                    : format(new Date(session.createdAt), "MMM d, yyyy")
+                                  }
+                                </div>
+                              </div>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openNotesDialog(session); }}>
+                                    <FileText className="h-4 w-4 mr-2" />
+                                    {session.pipelineNotes ? "Edit Notes" : "Add Notes"}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem asChild>
+                                    <a 
+                                      href={`/partner/results/${session.sessionId}`} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <Eye className="h-4 w-4 mr-2" />
+                                      View Results
+                                    </a>
+                                  </DropdownMenuItem>
+                                  {stages.filter(s => s.id !== session.pipelineStage).map(targetStage => (
+                                    <DropdownMenuItem
+                                      key={targetStage.id}
+                                      onClick={(e) => moveToStage(session, targetStage.id, e)}
+                                      data-testid={`menu-item-move-mobile-${session.sessionId}-${targetStage.id}`}
+                                    >
+                                      <ChevronRight className="h-4 w-4 mr-2" />
+                                      Move to {targetStage.label}
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-muted-foreground text-sm bg-card">
+                      No candidates in this stage
+                    </div>
+                  )}
+                </CollapsibleContent>
               </div>
-              {sessions.length > 0 && (
-                <div className="p-3 space-y-2">
-                  {sessions.map((session) => (
-                    <Card
-                      key={session.sessionId}
-                      className="cursor-pointer hover-elevate"
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, session)}
-                      onClick={() => openDetailsDialog(session)}
-                    >
-                      <CardContent className="p-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1 mb-1">
-                              <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0 cursor-grab" />
-                              <span className="font-medium text-sm truncate">
-                                {session.externalEmail || session.externalUserId || "Unknown"}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge variant="outline" className="text-xs">
-                                {assessmentLabels[session.assessmentType] || session.assessmentType}
-                              </Badge>
-                              {session.status === "completed" && session.totalScore !== null && (
-                                <Badge variant="secondary" className="text-xs">
-                                  {session.totalScore}%
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {session.completedAt
-                                ? format(new Date(session.completedAt), "MMM d, yyyy")
-                                : format(new Date(session.createdAt), "MMM d, yyyy")
-                              }
-                            </div>
-                          </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => openNotesDialog(session)}>
-                                <FileText className="h-4 w-4 mr-2" />
-                                {session.pipelineNotes ? "Edit Notes" : "Add Notes"}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem asChild>
-                                <a href={`/partner/results/${session.sessionId}`} target="_blank" rel="noopener noreferrer">
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Results
-                                </a>
-                              </DropdownMenuItem>
-                              {stages.filter(s => s.id !== session.pipelineStage).map(targetStage => (
-                                <DropdownMenuItem
-                                  key={targetStage.id}
-                                  onClick={() => moveToStage(session, targetStage.id)}
-                                >
-                                  <ChevronRight className="h-4 w-4 mr-2" />
-                                  Move to {targetStage.label}
-                                </DropdownMenuItem>
-                              ))}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
+            </Collapsible>
           );
         })}
       </div>
