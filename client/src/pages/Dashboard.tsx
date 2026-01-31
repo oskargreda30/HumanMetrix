@@ -1273,39 +1273,46 @@ export default function Dashboard() {
           </DialogHeader>
           <div className="space-y-2 mt-4">
             {resultSelectionDialog?.unlockedResults.map((result) => (
-              <Link 
-                key={result.id} 
-                href={`/my-results?partnerInvitationId=${resultSelectionDialog.seriesId}&assessmentType=${result.assessmentType}`}
-                onClick={() => setResultSelectionDialog(null)}
+              <Button
+                key={result.id}
+                variant="outline"
+                className="w-full justify-between h-auto py-3"
+                data-testid={`button-select-result-${result.assessmentType}`}
+                onClick={() => {
+                  const seriesId = resultSelectionDialog?.seriesId;
+                  setResultSelectionDialog(null);
+                  if (seriesId) {
+                    setLocation(`/my-results?partnerInvitationId=${seriesId}&assessmentType=${result.assessmentType}`);
+                  }
+                }}
               >
-                <Button
-                  variant="outline"
-                  className="w-full justify-between"
-                  data-testid={`button-select-result-${result.assessmentType}`}
-                >
-                  <span className="flex items-center gap-2">
-                    {result.assessmentType === 'fit' && <Brain className="h-4 w-4 text-blue-500" />}
-                    {result.assessmentType === 'ai_readiness' && <Sparkles className="h-4 w-4 text-purple-500" />}
-                    {result.assessmentType === 'prompt_architecture' && <Code className="h-4 w-4 text-green-500" />}
-                    {result.assessmentType === 'aiq' && <Scale className="h-4 w-4 text-cyan-500" />}
-                    {formatAssessmentName(result.assessmentType)}
-                  </span>
-                  {result.totalScore !== null && (
-                    <Badge variant="secondary">{result.totalScore}%</Badge>
-                  )}
-                </Button>
-              </Link>
+                <span className="flex items-center gap-2">
+                  {result.assessmentType === 'fit' && <Brain className="h-4 w-4 text-blue-500" />}
+                  {result.assessmentType === 'ai_readiness' && <Sparkles className="h-4 w-4 text-purple-500" />}
+                  {result.assessmentType === 'prompt_architecture' && <Code className="h-4 w-4 text-green-500" />}
+                  {result.assessmentType === 'aiq' && <Scale className="h-4 w-4 text-cyan-500" />}
+                  {formatAssessmentName(result.assessmentType)}
+                </span>
+                {result.totalScore !== null && (
+                  <Badge variant="secondary">{result.totalScore}%</Badge>
+                )}
+              </Button>
             ))}
           </div>
           <DialogFooter className="mt-4">
-            <Link 
-              href={`/my-results?partnerInvitationId=${resultSelectionDialog?.seriesId}`}
-              onClick={() => setResultSelectionDialog(null)}
+            <Button 
+              variant="default" 
+              data-testid="button-view-all-results"
+              onClick={() => {
+                const seriesId = resultSelectionDialog?.seriesId;
+                setResultSelectionDialog(null);
+                if (seriesId) {
+                  setLocation(`/my-results?partnerInvitationId=${seriesId}`);
+                }
+              }}
             >
-              <Button variant="default" data-testid="button-view-all-results">
-                View All Results
-              </Button>
-            </Link>
+              View All Results
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

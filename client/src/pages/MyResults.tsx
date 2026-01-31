@@ -37,6 +37,7 @@ export default function MyResults() {
   const urlParams = new URLSearchParams(window.location.search);
   const purchaseId = urlParams.get('purchaseId');
   const partnerInvitationId = urlParams.get('partnerInvitationId');
+  const filterAssessmentType = urlParams.get('assessmentType'); // Optional: filter to show only specific assessment type
   
   // Is this a partner result view?
   const isPartnerView = !!partnerInvitationId;
@@ -186,6 +187,15 @@ export default function MyResults() {
       const batchResultIds = (selectedBatch.results || []).map((r: any) => r.id);
       completedResults = completedResults.filter((r: any) => batchResultIds.includes(r.id));
     }
+  }
+  
+  // Apply assessmentType filter if specified
+  if (filterAssessmentType) {
+    // Normalize the filter value to match stored format (e.g., "ai_readiness" or "aiq")
+    const normalizedFilter = filterAssessmentType.toLowerCase().replace(/-/g, '_');
+    completedResults = completedResults.filter((r: any) => 
+      r.assessmentType.toLowerCase() === normalizedFilter
+    );
   }
   
   // Check if all REQUIRED assessment types are completed
