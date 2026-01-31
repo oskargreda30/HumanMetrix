@@ -2095,31 +2095,32 @@ export default function PartnerDashboard() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
-            <TabsList className="inline-flex flex-wrap gap-0.5 md:gap-1 h-auto p-0.5 md:p-1 bg-white/10 border border-white/20 w-auto">
-              <TabsTrigger value="home" data-testid="tab-home" className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+            <TabsList className="grid grid-cols-3 sm:grid-cols-4 md:inline-flex md:flex-wrap gap-0.5 md:gap-1 h-auto p-0.5 md:p-1 bg-white/10 border border-white/20 w-full md:w-auto">
+              <TabsTrigger value="home" data-testid="tab-home" className="text-[10px] md:text-sm px-1.5 md:px-3 py-1 md:py-1.5 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Overview
               </TabsTrigger>
-              <TabsTrigger value="pipeline" data-testid="tab-pipeline" className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                All Candidates
+              <TabsTrigger value="pipeline" data-testid="tab-pipeline" className="text-[10px] md:text-sm px-1.5 md:px-3 py-1 md:py-1.5 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Candidates
               </TabsTrigger>
-              <TabsTrigger value="analysis" data-testid="tab-analysis" className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+              <TabsTrigger value="analysis" data-testid="tab-analysis" className="text-[10px] md:text-sm px-1.5 md:px-3 py-1 md:py-1.5 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Analysis
               </TabsTrigger>
-              <TabsTrigger value="results" data-testid="tab-results" className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+              <TabsTrigger value="results" data-testid="tab-results" className="text-[10px] md:text-sm px-1.5 md:px-3 py-1 md:py-1.5 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Results
               </TabsTrigger>
               {canAccessInvitations && (
-                <TabsTrigger value="invitations" data-testid="tab-invitations" className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                <TabsTrigger value="invitations" data-testid="tab-invitations" className="text-[10px] md:text-sm px-1.5 md:px-3 py-1 md:py-1.5 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                   Invitations
                 </TabsTrigger>
               )}
-              <TabsTrigger value="ecosystem" data-testid="tab-ecosystem" className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 relative data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Ecosystem Index
-                <Badge variant="secondary" className="ml-1 px-1 md:px-1.5 py-0 text-[8px] md:text-[10px] bg-cyan-500 text-white border-0">New</Badge>
+              <TabsTrigger value="ecosystem" data-testid="tab-ecosystem" className="text-[10px] md:text-sm px-1.5 md:px-3 py-1 md:py-1.5 relative data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                <span className="hidden sm:inline">Ecosystem</span>
+                <span className="sm:hidden">Eco</span>
+                <Badge variant="secondary" className="ml-0.5 md:ml-1 px-0.5 md:px-1.5 py-0 text-[6px] md:text-[10px] bg-cyan-500 text-white border-0">New</Badge>
               </TabsTrigger>
-              <TabsTrigger value="cohort-benchmarking" data-testid="tab-cohort-benchmarking" className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 relative data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Cohort Benchmarking
-                <Badge variant="secondary" className="ml-1 px-1 md:px-1.5 py-0 text-[8px] md:text-[10px] bg-amber-500 text-white border-0">Coming Soon</Badge>
+              <TabsTrigger value="cohort-benchmarking" data-testid="tab-cohort-benchmarking" className="text-[10px] md:text-sm px-1.5 md:px-3 py-1 md:py-1.5 relative data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                Cohort
+                <Badge variant="secondary" className="ml-0.5 md:ml-1 px-0.5 md:px-1.5 py-0 text-[6px] md:text-[10px] bg-amber-500 text-white border-0">Soon</Badge>
               </TabsTrigger>
               {/* Organizations tab hidden for now - feature preserved in code */}
               {false && (

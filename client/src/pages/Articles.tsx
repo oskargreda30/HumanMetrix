@@ -130,35 +130,35 @@ export default function Articles() {
                   className="group cursor-pointer border-slate-200 hover-elevate transition-all duration-300"
                   data-testid={`card-article-${article.id}`}
                 >
-                  <CardContent className="p-6 md:p-8">
-                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                  <CardContent className="p-4 md:p-8">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 md:gap-4">
                       <div className="flex-1">
-                        <div className="flex flex-wrap items-center gap-2 mb-3">
-                          <Badge variant="secondary" className="text-xs">
+                        <div className="flex flex-wrap items-center gap-2 mb-2 md:mb-3">
+                          <Badge variant="secondary" className="text-[10px] md:text-xs">
                             {article.category}
                           </Badge>
                           {article.featured && (
-                            <Badge className="text-xs bg-cyan-500 hover:bg-cyan-600">
+                            <Badge className="text-[10px] md:text-xs bg-cyan-500 hover:bg-cyan-600">
                               Featured
                             </Badge>
                           )}
                         </div>
                         
-                        <h2 className="text-xl md:text-2xl font-semibold text-slate-900 mb-3 group-hover:text-cyan-600 transition-colors">
+                        <h2 className="text-base md:text-2xl font-semibold text-slate-900 mb-2 md:mb-3 group-hover:text-cyan-600 transition-colors">
                           {article.title}
                         </h2>
                         
-                        <p className="text-slate-600 mb-4 line-clamp-2">
+                        <p className="text-xs md:text-base text-slate-600 mb-3 md:mb-4 line-clamp-2">
                           {article.description}
                         </p>
                         
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                        <div className="flex flex-wrap items-center gap-3 md:gap-4 text-xs md:text-sm text-slate-500">
                           <span className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
+                            <Calendar className="w-3 h-3 md:w-4 md:h-4" />
                             {article.date}
                           </span>
                           <span className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
+                            <Clock className="w-3 h-3 md:w-4 md:h-4" />
                             {article.readTime}
                           </span>
                         </div>

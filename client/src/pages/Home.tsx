@@ -461,73 +461,74 @@ export default function Home() {
               </p>
             </div>
 
-            <Card className="p-6 md:p-8 lg:p-10 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-              <div className="grid md:grid-cols-2 gap-8 items-center">
+            <Card className="p-4 md:p-8 lg:p-10 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+              <div className="grid md:grid-cols-2 gap-4 md:gap-8 items-center">
                 <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <Target className="h-6 w-6 text-primary" />
+                  <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
+                    <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Target className="h-5 w-5 md:h-6 md:w-6 text-primary" />
                     </div>
-                    <div>
-                      <h3 className="text-lg md:text-xl font-semibold">The Ecosystem Index</h3>
-                      <Badge variant="outline" className="text-xs">New Service</Badge>
+                    <div className="min-w-0">
+                      <h3 className="text-base md:text-xl font-semibold">The Ecosystem Index</h3>
+                      <Badge variant="outline" className="text-[10px] md:text-xs">New Service</Badge>
                     </div>
                   </div>
-                  <p className="text-muted-foreground mb-6 leading-relaxed">
+                  <p className="text-xs md:text-base text-muted-foreground mb-4 md:mb-6 leading-relaxed">
                     A comprehensive team capability diagnostic that maps how skills are distributed across your team, 
                     identifies gaps and concentration risks, and provides actionable recommendations for hiring and development.
                   </p>
                   
-                  <div className="space-y-3 mb-6">
-                    <div className="flex items-start gap-3">
-                      <div className="h-6 w-6 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                  <div className="space-y-2 md:space-y-3 mb-4 md:mb-6">
+                    <div className="flex items-start gap-2 md:gap-3">
+                      <div className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <CheckCircle className="h-3 w-3 md:h-3.5 md:w-3.5 text-green-600" />
                       </div>
-                      <div>
-                        <span className="font-medium">Pre-Consultation Session</span>
-                        <p className="text-sm text-muted-foreground">Define goals, scope, and team context with our consultants</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="h-6 w-6 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="h-3.5 w-3.5 text-green-600" />
-                      </div>
-                      <div>
-                        <span className="font-medium">Team FIT Assessment</span>
-                        <p className="text-sm text-muted-foreground">All team members complete the FIT behavioral assessment</p>
+                      <div className="min-w-0">
+                        <span className="text-sm md:text-base font-medium">Pre-Consultation Session</span>
+                        <p className="text-xs md:text-sm text-muted-foreground">Define goals, scope, and team context with our consultants</p>
                       </div>
                     </div>
-                    <div className="flex items-start gap-3">
-                      <div className="h-6 w-6 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                    <div className="flex items-start gap-2 md:gap-3">
+                      <div className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <CheckCircle className="h-3 w-3 md:h-3.5 md:w-3.5 text-green-600" />
                       </div>
-                      <div>
-                        <span className="font-medium">AI-Powered Team Analysis</span>
-                        <p className="text-sm text-muted-foreground">Comprehensive capability mapping and risk identification</p>
+                      <div className="min-w-0">
+                        <span className="text-sm md:text-base font-medium">Team FIT Assessment</span>
+                        <p className="text-xs md:text-sm text-muted-foreground">All team members complete the FIT behavioral assessment</p>
                       </div>
                     </div>
-                    <div className="flex items-start gap-3">
-                      <div className="h-6 w-6 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                    <div className="flex items-start gap-2 md:gap-3">
+                      <div className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <CheckCircle className="h-3 w-3 md:h-3.5 md:w-3.5 text-green-600" />
                       </div>
-                      <div>
-                        <span className="font-medium">Post-Consultation Debrief</span>
-                        <p className="text-sm text-muted-foreground">Review findings and develop an actionable implementation plan</p>
+                      <div className="min-w-0">
+                        <span className="text-sm md:text-base font-medium">AI-Powered Team Analysis</span>
+                        <p className="text-xs md:text-sm text-muted-foreground">Comprehensive capability mapping and risk identification</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2 md:gap-3">
+                      <div className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <CheckCircle className="h-3 w-3 md:h-3.5 md:w-3.5 text-green-600" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-sm md:text-base font-medium">Post-Consultation Debrief</span>
+                        <p className="text-xs md:text-sm text-muted-foreground">Review findings and develop an actionable implementation plan</p>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
                     <Link href="/ecosystem-index">
-                      <Button size="lg" data-testid="button-ecosystem-index">
-                        Learn More About The Ecosystem Index
-                        <ChevronDown className="ml-2 h-4 w-4 rotate-[-90deg]" />
+                      <Button size="default" className="text-xs md:text-sm w-full sm:w-auto" data-testid="button-ecosystem-index">
+                        <span className="hidden sm:inline">Learn More About The Ecosystem Index</span>
+                        <span className="sm:hidden">Learn More</span>
+                        <ChevronDown className="ml-1 md:ml-2 h-3 w-3 md:h-4 md:w-4 rotate-[-90deg]" />
                       </Button>
                     </Link>
                     <a href="https://calendly.com/hello-humanmetrix/30min" target="_blank" rel="noopener noreferrer">
-                      <Button size="lg" variant="outline" data-testid="button-book-consultation">
+                      <Button size="default" variant="outline" className="text-xs md:text-sm w-full sm:w-auto" data-testid="button-book-consultation">
                         Book a Consultation
-                        <ChevronDown className="ml-2 h-4 w-4 rotate-[-90deg]" />
+                        <ChevronDown className="ml-1 md:ml-2 h-3 w-3 md:h-4 md:w-4 rotate-[-90deg]" />
                       </Button>
                     </a>
                   </div>
@@ -556,64 +557,64 @@ export default function Home() {
             </Card>
 
             {/* Cohort Benchmarking Service Card */}
-            <Card className="mt-6 p-6 md:p-8 lg:p-10 border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
-              <div className="grid md:grid-cols-2 gap-8 items-center">
+            <Card className="mt-4 md:mt-6 p-4 md:p-8 lg:p-10 border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
+              <div className="grid md:grid-cols-2 gap-4 md:gap-8 items-center">
                 <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="h-12 w-12 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                      <Users className="h-6 w-6 text-amber-600" />
+                  <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
+                    <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                      <Users className="h-5 w-5 md:h-6 md:w-6 text-amber-600" />
                     </div>
-                    <div>
-                      <h3 className="text-lg md:text-xl font-semibold">Cohort Benchmarking</h3>
-                      <Badge variant="outline" className="text-xs border-amber-500/40 text-amber-700 bg-amber-50">Coming Soon</Badge>
+                    <div className="min-w-0">
+                      <h3 className="text-base md:text-xl font-semibold">Cohort Benchmarking</h3>
+                      <Badge variant="outline" className="text-[10px] md:text-xs border-amber-500/40 text-amber-700 bg-amber-50">Coming Soon</Badge>
                     </div>
                   </div>
-                  <p className="text-muted-foreground mb-6 leading-relaxed">
+                  <p className="text-xs md:text-base text-muted-foreground mb-4 md:mb-6 leading-relaxed">
                     Compare your team's performance against industry benchmarks and similar cohorts. Understand where your team 
                     stands relative to peers and identify competitive advantages and areas for strategic improvement.
                   </p>
                   
-                  <div className="space-y-3 mb-6">
-                    <div className="flex items-start gap-3">
-                      <div className="h-6 w-6 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="h-3.5 w-3.5 text-amber-600" />
+                  <div className="space-y-2 md:space-y-3 mb-4 md:mb-6">
+                    <div className="flex items-start gap-2 md:gap-3">
+                      <div className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <CheckCircle className="h-3 w-3 md:h-3.5 md:w-3.5 text-amber-600" />
                       </div>
-                      <div>
-                        <span className="font-medium">Industry Benchmarks</span>
-                        <p className="text-sm text-muted-foreground">Compare against sector-specific performance data</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="h-6 w-6 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="h-3.5 w-3.5 text-amber-600" />
-                      </div>
-                      <div>
-                        <span className="font-medium">Percentile Rankings</span>
-                        <p className="text-sm text-muted-foreground">See exactly where your team ranks across key metrics</p>
+                      <div className="min-w-0">
+                        <span className="text-sm md:text-base font-medium">Industry Benchmarks</span>
+                        <p className="text-xs md:text-sm text-muted-foreground">Compare against sector-specific performance data</p>
                       </div>
                     </div>
-                    <div className="flex items-start gap-3">
-                      <div className="h-6 w-6 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="h-3.5 w-3.5 text-amber-600" />
+                    <div className="flex items-start gap-2 md:gap-3">
+                      <div className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <CheckCircle className="h-3 w-3 md:h-3.5 md:w-3.5 text-amber-600" />
                       </div>
-                      <div>
-                        <span className="font-medium">Competitive Intelligence</span>
-                        <p className="text-sm text-muted-foreground">Identify strengths and opportunities relative to market</p>
+                      <div className="min-w-0">
+                        <span className="text-sm md:text-base font-medium">Percentile Rankings</span>
+                        <p className="text-xs md:text-sm text-muted-foreground">See exactly where your team ranks across key metrics</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2 md:gap-3">
+                      <div className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <CheckCircle className="h-3 w-3 md:h-3.5 md:w-3.5 text-amber-600" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-sm md:text-base font-medium">Competitive Intelligence</span>
+                        <p className="text-xs md:text-sm text-muted-foreground">Identify strengths and opportunities relative to market</p>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
                     <Link href="/cohort-benchmarking">
-                      <Button size="lg" variant="outline" className="border-amber-500/40 text-amber-700" data-testid="button-cohort-benchmarking">
+                      <Button size="default" variant="outline" className="text-xs md:text-sm w-full sm:w-auto border-amber-500/40 text-amber-700" data-testid="button-cohort-benchmarking">
                         Learn More
-                        <ChevronDown className="ml-2 h-4 w-4 rotate-[-90deg]" />
+                        <ChevronDown className="ml-1 md:ml-2 h-3 w-3 md:h-4 md:w-4 rotate-[-90deg]" />
                       </Button>
                     </Link>
                     <a href="https://calendly.com/hello-humanmetrix/30min" target="_blank" rel="noopener noreferrer">
-                      <Button size="lg" variant="outline" data-testid="button-book-cohort-consultation">
+                      <Button size="default" variant="outline" className="text-xs md:text-sm w-full sm:w-auto" data-testid="button-book-cohort-consultation">
                         Book a Consultation
-                        <ChevronDown className="ml-2 h-4 w-4 rotate-[-90deg]" />
+                        <ChevronDown className="ml-1 md:ml-2 h-3 w-3 md:h-4 md:w-4 rotate-[-90deg]" />
                       </Button>
                     </a>
                   </div>
