@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, TrendingUp, AlertTriangle, User, Calendar, FileText, Target, MessageSquare, Users, Rocket, Star, Mail } from "lucide-react";
+import { ArrowLeft, ArrowUp, TrendingUp, AlertTriangle, User, Calendar, FileText, Target, MessageSquare, Users, Rocket, Star, Mail } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { getSkillAcronym } from "@/lib/assessmentSkills";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
@@ -189,31 +189,31 @@ export default function SampleIndividualReport() {
     <div className="min-h-screen flex flex-col">
       <Navigation />
       
-      <main className="flex-grow py-8 md:py-16">
-        <div className="mx-auto max-w-5xl px-4 md:px-6 lg:px-8">
-          <div className="mb-6">
+      <main className="flex-grow py-4 md:py-16">
+        <div className="mx-auto max-w-5xl px-3 md:px-6 lg:px-8">
+          <div className="mb-4 md:mb-6">
             <Link href="/#sample-reports">
-              <Button variant="ghost" data-testid="button-back-to-samples">
-                <ArrowLeft className="mr-2 h-4 w-4" />
+              <Button variant="ghost" size="sm" className="text-xs md:text-sm" data-testid="button-back-to-samples">
+                <ArrowLeft className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
                 Back to Sample Reports
               </Button>
             </Link>
           </div>
 
-          <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b pb-4 mb-8 -mx-4 px-4 md:-mx-6 md:px-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b pb-3 md:pb-4 mb-4 md:mb-8 -mx-3 px-3 md:-mx-6 md:px-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 md:gap-4">
               <div>
-                <Badge variant="secondary" className="mb-2" data-testid="badge-sample-report">Sample Report</Badge>
-                <h1 className="text-2xl md:text-3xl font-bold" data-testid="text-sample-report-title">
+                <Badge variant="secondary" className="mb-1 md:mb-2 text-[10px] md:text-xs" data-testid="badge-sample-report">Sample Report</Badge>
+                <h1 className="text-lg md:text-3xl font-bold" data-testid="text-sample-report-title">
                   Individual Candidate Report
                 </h1>
-                <div className="flex items-center gap-4 text-muted-foreground mt-2 flex-wrap">
-                  <div className="flex items-center gap-1.5">
-                    <User className="h-4 w-4" />
+                <div className="flex items-center gap-2 md:gap-4 text-xs md:text-base text-muted-foreground mt-1 md:mt-2 flex-wrap">
+                  <div className="flex items-center gap-1">
+                    <User className="h-3 w-3 md:h-4 md:w-4" />
                     <span data-testid="text-candidate-name">{DEMO_CANDIDATE.name}</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="h-4 w-4" />
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3 md:h-4 md:w-4" />
                     <span data-testid="text-completed-date">{DEMO_CANDIDATE.completedDate}</span>
                   </div>
                 </div>
@@ -274,14 +274,14 @@ export default function SampleIndividualReport() {
             </div>
           </Card>
 
-          <section className="mb-12" data-testid="section-fit-assessment">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-primary" />
+          <section className="mb-6 md:mb-12" data-testid="section-fit-assessment">
+            <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <FileText className="h-4 w-4 md:h-5 md:w-5 text-primary" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold" data-testid="heading-fit-assessment">FIT Assessment</h2>
-                <p className="text-muted-foreground text-sm" data-testid="text-fit-subtitle">Behavioral competencies for workplace success</p>
+                <h2 className="text-lg md:text-2xl font-bold" data-testid="heading-fit-assessment">FIT Assessment</h2>
+                <p className="text-muted-foreground text-xs md:text-sm" data-testid="text-fit-subtitle">Behavioral competencies for workplace success</p>
               </div>
             </div>
 
@@ -736,29 +736,26 @@ export default function SampleIndividualReport() {
             </Card>
           </section>
 
-          <div className="text-center py-8 border-t" data-testid="container-footer-cta">
-            <p className="text-muted-foreground mb-4" data-testid="text-sample-report-description">
+          <div className="text-center py-6 md:py-8 border-t" data-testid="container-footer-cta">
+            <p className="text-xs md:text-base text-muted-foreground mb-3 md:mb-4" data-testid="text-sample-report-description">
               This is a sample report showing what your complete assessment results will look like.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
-              <Button size="lg" variant="secondary" disabled className="opacity-50 cursor-not-allowed" data-testid="button-role-fit-disabled">
-                <Target className="mr-2 h-4 w-4" />
-                AI Role Fit Analysis
+            <div className="flex flex-col sm:flex-row gap-2 md:gap-4 justify-center flex-wrap">
+              <Button size="default" variant="secondary" className="text-xs md:text-sm" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} data-testid="button-back-to-top">
+                <ArrowUp className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
+                Back to Top
               </Button>
               <Link href="/#sample-reports">
-                <Button size="lg" data-testid="button-back-to-samples">
+                <Button size="default" className="text-xs md:text-sm" data-testid="button-back-to-samples">
                   Back to Sample Reports
                 </Button>
               </Link>
               <Link href="/assessments">
-                <Button size="lg" variant="outline" data-testid="button-start-assessments">
+                <Button size="default" variant="outline" className="text-xs md:text-sm" data-testid="button-start-assessments">
                   Start Your Assessment
                 </Button>
               </Link>
             </div>
-            <p className="text-xs text-muted-foreground mt-3" data-testid="text-role-fit-note">
-              AI Role Fit Analysis powered by OpenAI is available with real candidate data in the Partner Dashboard
-            </p>
           </div>
         </div>
       </main>

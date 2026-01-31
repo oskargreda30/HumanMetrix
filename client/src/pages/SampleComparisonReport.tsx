@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Users, TrendingUp, TrendingDown, Award, Target, FileText, CheckCircle2, AlertCircle, Trophy, BarChart3, Sparkles, ChevronUp, ChevronDown, Star, MessageSquare, Rocket, Mail, Building2 } from "lucide-react";
+import { ArrowLeft, ArrowUp, Users, TrendingUp, TrendingDown, Award, Target, FileText, CheckCircle2, AlertCircle, Trophy, BarChart3, Sparkles, ChevronUp, ChevronDown, Star, MessageSquare, Rocket, Mail, Building2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import SkillsLegend from "@/components/SkillsLegend";
 import {
@@ -212,26 +212,26 @@ export default function SampleComparisonReport() {
       <Navigation />
       
       <main className="flex-1">
-        <div className="container mx-auto px-4 py-8 max-w-7xl">
-          <div className="mb-6">
+        <div className="container mx-auto px-3 md:px-4 py-4 md:py-8 max-w-7xl">
+          <div className="mb-4 md:mb-6">
             <Link href="/#sample-reports">
-              <Button variant="ghost" size="sm" className="mb-4" data-testid="button-back">
-                <ArrowLeft className="mr-2 h-4 w-4" />
+              <Button variant="ghost" size="sm" className="mb-2 md:mb-4 text-xs md:text-sm" data-testid="button-back">
+                <ArrowLeft className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
                 Back to Sample Reports
               </Button>
             </Link>
             
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-4">
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="outline" className="text-primary border-primary">
+                <div className="flex items-center gap-2 mb-1 md:mb-2">
+                  <Badge variant="outline" className="text-primary border-primary text-[10px] md:text-xs">
                     Sample Report
                   </Badge>
                 </div>
-                <h1 className="text-2xl md:text-3xl font-bold" data-testid="text-page-title">
+                <h1 className="text-lg md:text-3xl font-bold" data-testid="text-page-title">
                   Candidate Comparison Report
                 </h1>
-                <p className="text-muted-foreground mt-1">
+                <p className="text-xs md:text-base text-muted-foreground mt-1">
                   Side-by-side analysis of 3 candidates for Product Manager role
                 </p>
               </div>
@@ -1054,30 +1054,27 @@ export default function SampleComparisonReport() {
 
           {/* CTA */}
           <Card data-testid="section-cta">
-            <CardContent className="py-8 text-center">
-              <h3 className="text-xl font-semibold mb-2">Want to compare your candidates?</h3>
-              <p className="text-muted-foreground mb-4">
+            <CardContent className="py-6 md:py-8 text-center">
+              <h3 className="text-lg md:text-xl font-semibold mb-2">Want to compare your candidates?</h3>
+              <p className="text-xs md:text-base text-muted-foreground mb-3 md:mb-4">
                 Get detailed comparison reports for your hiring decisions with HumanMetrix assessments.
               </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
-                <Button variant="secondary" disabled className="opacity-50 cursor-not-allowed" data-testid="button-role-fit-disabled">
-                  <Target className="mr-2 h-4 w-4" />
-                  AI Role Fit Analysis
+              <div className="flex flex-col sm:flex-row gap-2 md:gap-3 justify-center flex-wrap">
+                <Button size="default" variant="secondary" className="text-xs md:text-sm" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} data-testid="button-back-to-top">
+                  <ArrowUp className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
+                  Back to Top
                 </Button>
                 <Link href="/#sample-reports">
-                  <Button data-testid="button-back-to-samples">
+                  <Button size="default" className="text-xs md:text-sm" data-testid="button-back-to-samples">
                     Back to Sample Reports
                   </Button>
                 </Link>
                 <Link href="/assessments">
-                  <Button variant="outline" data-testid="button-view-assessments">
+                  <Button size="default" variant="outline" className="text-xs md:text-sm" data-testid="button-view-assessments">
                     View Assessments
                   </Button>
                 </Link>
               </div>
-              <p className="text-xs text-muted-foreground mt-3" data-testid="text-role-fit-note">
-                AI Role Fit Analysis powered by OpenAI is available with real candidate data in the Partner Dashboard
-              </p>
             </CardContent>
           </Card>
         </div>
