@@ -3789,6 +3789,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (isPurchased && purchasedTypes) {
               // Partial purchase - check if this specific type was purchased
               const normalizedType = normalizeAssessmentId(assessmentType);
+              console.log(`[Unlock Check] Type: ${assessmentType}, Normalized: ${normalizedType}, PurchasedTypes: ${JSON.stringify(purchasedTypes)}, Unlocked: ${purchasedTypes.includes(normalizedType)}`);
               return purchasedTypes.includes(normalizedType);
             }
             // Check B2B session payment status
@@ -3925,6 +3926,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             for (const assessmentType of invitation.assessmentTypes) {
               // Normalize assessment type for consistent comparison
               const normalizedType = normalizeAssessmentId(assessmentType);
+              console.log(`[Unlock Check] Type: ${assessmentType}, Normalized: ${normalizedType}, PurchasedTypes: ${JSON.stringify(purchasedTypes)}, Unlocked: ${purchasedTypes.includes(normalizedType)}`);
               
               // Check if this SPECIFIC INVITATION's assessment was already completed or abandoned
               // (Not checking ALL results - allow multiple test series)
@@ -3966,6 +3968,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             for (const assessmentType of partnerInv.assessmentTypes) {
               // Normalize assessment type for consistent comparison
               const normalizedType = normalizeAssessmentId(assessmentType);
+              console.log(`[Unlock Check] Type: ${assessmentType}, Normalized: ${normalizedType}, PurchasedTypes: ${JSON.stringify(purchasedTypes)}, Unlocked: ${purchasedTypes.includes(normalizedType)}`);
               
               // Check if this partner invitation's assessment was already completed or abandoned
               const existingPartnerResult = await storage.getResultByPartnerInvitationAndType(partnerInv.id, normalizedType);
