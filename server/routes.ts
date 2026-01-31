@@ -11490,7 +11490,7 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         status: 'pending',
       });
       
-      console.log(`[Partner Purchase] Partner: ${matchingPartner.id}, Partner Currency: ${displayCurrency}, PPP: ${serverPPPMult}, Price: ${totalPrice}, Promo: ${promoCode || 'none'}`);
+      console.log(`[Partner Purchase] Partner: ${matchingPartner.id}, Partner Currency: ${displayCurrency}, PPP: 1 (no adjustment), Price: ${totalPrice}, Promo: ${promoCode || 'none'}`);
       
       // Create Stripe checkout session
       const stripe = (await import("stripe")).default;
