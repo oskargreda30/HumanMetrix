@@ -1168,16 +1168,31 @@ export default function PartnerDashboard() {
   }
 
   const { data: pricing, isLoading: pricingLoading } = useQuery<PricingData>({
-    queryKey: ["/api/partner/me/pricing", countryCode],
+    queryKey: ["/api/partner/me/pricing"],
     queryFn: async () => {
-      const res = await fetch(`/api/partner/me/pricing?countryCode=${countryCode || 'GB'}`, {
+      const res = await fetch(`/api/partner/me/pricing`, {
         credentials: 'include',
       });
       if (!res.ok) throw new Error('Failed to fetch pricing');
       return res.json();
     },
-    enabled: !!account?.hasPartnerAccount && !currencyLoading,
+    enabled: !!account?.hasPartnerAccount,
   });
+
+  // Currency symbols for partner pricing display (uses partner's assigned currency, not geolocation)
+  const partnerCurrencySymbols: Record<string, string> = {
+    'GBP': '£', 'USD': '$', 'EUR': '€', 'SGD': 'S$', 'AUD': 'A$', 'CAD': 'C$',
+    'HKD': 'HK$', 'JPY': '¥', 'INR': '₹', 'MYR': 'RM', 'THB': '฿',
+  };
+
+  // Format price using partner's assigned currency from API (not geolocation)
+  const formatPartnerPrice = (amountInSmallestUnit: number): string => {
+    const partnerCurrency = pricing?.currency || 'GBP';
+    const symbol = partnerCurrencySymbols[partnerCurrency] || partnerCurrency + ' ';
+    const isZeroDecimal = pricing?.isZeroDecimal || false;
+    const amount = isZeroDecimal ? amountInSmallestUnit : amountInSmallestUnit / 100;
+    return `${symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  };
 
   // Billing change request data
   interface BillingChangeRequestData {
