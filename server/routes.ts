@@ -2976,8 +2976,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Calculate assessment prices with proper discounts
-      // Individual: 25% off the B2C price
-      // Bulk (all assessments): 50% off the combined B2C price
+      // Individual: Full price (no discount)
+      // Bulk (all assessments): 25% off the combined B2C price
       // Enforce: bulk discount only applies when purchasing all completed assessments
       const isBuyingAll = resultsToPurchase.length === completedResults.length;
       
@@ -2989,8 +2989,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const isBulk = (isBulkPurchase || !purchasedTypes) && isBuyingAll;
-      // 50% bulk discount or 25% individual discount
-      const discountRate = (isBulk && resultsToPurchase.length > 1) ? 0.50 : 0.25;
+      // 25% bundle discount, no individual discount (full price)
+      const discountRate = (isBulk && resultsToPurchase.length > 1) ? 0.25 : 0;
       
       // Calculate prices consistently with the pricing endpoint display
       let sumOfRoundedOriginalPrices = 0;
@@ -3009,8 +3009,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const roundedPrice = parseFloat(formattedPrice.replace(/[^\d.]/g, ''));
         sumOfRoundedOriginalPrices += roundedPrice;
         
-        // For individual pricing: apply 25% discount at pence level, then convert (matches pricing endpoint)
-        const discountedPence = Math.round(pppB2CPrice * 0.75); // 25% off
+        // For individual pricing: no discount (full price)
+        const discountedPence = pppB2CPrice; // Full price, no discount
         const discountedFormatted = formatPrice(discountedPence, userCurrency, { skipPPPAdjustment: true });
         const discountedRounded = parseFloat(discountedFormatted.replace(/[^\d.]/g, ''));
         sumOfDiscountedPrices += discountedRounded;
@@ -3018,15 +3018,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const roundedSumOriginal = roundPriceUp(sumOfRoundedOriginalPrices, userCurrency);
       
-      // For bulk (50% off): apply to sum of original rounded prices
-      // For individual (25% off): use sum of individually-discounted prices (matches display)
+      // For bulk (25% off): apply to sum of original rounded prices
+      // For individual (full price): use sum of original prices (no discount)
       let discountedLocalPrice: number;
       if (isBulk && resultsToPurchase.length > 1) {
-        // 50% off the sum of rounded original prices (e.g., 50% of 450 = 225 → 230)
-        discountedLocalPrice = roundPriceUp(roundedSumOriginal * 0.5, userCurrency);
+        // 25% off the sum of rounded original prices
+        discountedLocalPrice = roundPriceUp(roundedSumOriginal * 0.75, userCurrency);
       } else {
-        // Use sum of individually-calculated discounted prices (matches pricing endpoint display)
-        discountedLocalPrice = sumOfDiscountedPrices;
+        // Full price for individual purchases (no discount)
+        discountedLocalPrice = roundedSumOriginal;
       }
       
       // Convert to Stripe amount using the correct zero-decimal currency list
@@ -3038,8 +3038,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       totalPriceInPence = Math.round(discountedLocalPrice); // Store local currency amount for records
       
-      // Create a single line item for the discounted total
-      const discountDescription = isBulk && resultsToPurchase.length > 1 ? "50% bulk discount" : "25% partner discount";
+      // Create a single line item for the total
+      const discountDescription = isBulk && resultsToPurchase.length > 1 ? "25% bundle discount" : "";
       const assessmentTypesList = resultsToPurchase.map((r: any) => {
         const normalizedType = normalizeAssessmentId(r.assessmentType);
         return {
@@ -3346,11 +3346,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Fetch live exchange rate and lock it for this pricing session
       const exchangeRatesData = await getExchangeRates();
       const lockedExchangeRate = exchangeRatesData.rates?.[localCurrencyCode] ?? userCurrency.exchangeRate;
-      // Calculate pricing: Individual = 25% off B2C, Bulk = 50% off B2C
-      // Individual discount rate: 25% off
-      const individualDiscountRate = 0.25;
-      // Bulk discount rate: 50% off (additional 25% on top of individual discount)
-      const bulkDiscountRate = 0.50;
+      // Calculate pricing: Individual = full price (no discount), Bulk = 25% off B2C
+      // Individual discount rate: 0% (full price)
+      const individualDiscountRate = 0;
+      // Bulk discount rate: 25% off
+      const bulkDiscountRate = 0.25;
       
       let totalB2CPriceInPence = 0;
       let sumOfRoundedOriginalPrices = 0; // Sum of individually-rounded prices for consistency
@@ -3370,8 +3370,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const originalPriceNumeric = parseFloat(originalPriceDisplay.replace(/[^\d.]/g, ''));
         sumOfRoundedOriginalPrices += originalPriceNumeric;
         
-        // Apply 25% discount to the LOCAL CURRENCY price (not pence), then round UP
-        // This ensures: 220 * 0.75 = 165 → rounds to 170
+        // Apply individual discount (now 0%) to the LOCAL CURRENCY price, then round UP
+        // With no discount: price remains the same
         const discountedLocalPrice = originalPriceNumeric * (1 - individualDiscountRate);
         const roundedDiscountedPrice = roundPriceUp(discountedLocalPrice, userCurrency);
         const priceDisplay = `${userCurrency.symbol}${roundedDiscountedPrice.toLocaleString()}`;
@@ -3397,8 +3397,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const individualTotalPpp = Math.round(totalPppB2C * (1 - individualDiscountRate));
       const individualTotalDisplay = formatPrice(individualTotalPpp, userCurrency, { skipPPPAdjustment: true });
       
-      // Bulk pricing: 50% off the sum of rounded original prices
-      // This ensures discount is applied to the displayed original price (e.g., 50% of 450 = 225)
+      // Bulk pricing: 25% off the sum of rounded original prices
+      // This ensures discount is applied to the displayed original price
       const hasBulkDiscount = purchasableResults.length > 1;
       const bulkDiscountedLocalPrice = hasBulkDiscount 
         ? roundPriceUp(roundedSumOriginal * (1 - bulkDiscountRate), userCurrency)

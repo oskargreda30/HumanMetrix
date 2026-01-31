@@ -174,13 +174,9 @@ export default function B2BResultsBundle() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="text-sm text-muted-foreground line-through">
-                      {assessment.originalPriceDisplay}
-                    </span>
                     <div className="font-semibold text-primary">
                       {assessment.discountedPriceDisplay}
                     </div>
-                    <Badge variant="secondary" className="text-xs">25% off</Badge>
                   </div>
                 </div>
               ))}

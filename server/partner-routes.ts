@@ -1581,9 +1581,9 @@ export function registerPartnerRoutes(app: Express) {
             const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400; // Default to £4 if unknown
             const b2cPriceInPence = BASE_FEE + assessmentPrice;
             
-            // Apply PPP adjustment, then 25% B2B discount
+            // Apply PPP adjustment (no individual discount - full price)
             const pppAdjustedPricePence = getPPPAdjustedPriceInPence(b2cPriceInPence, userCountryCode);
-            const discountedPricePence = Math.round(pppAdjustedPricePence * 0.75); // 25% off PPP-adjusted price
+            const discountedPricePence = pppAdjustedPricePence; // Full price, no individual discount
             
             // Format prices in user's local currency using same B2C functions
             const originalPriceDisplay = formatPrice(pppAdjustedPricePence, userCurrency);
@@ -1676,7 +1676,7 @@ export function registerPartnerRoutes(app: Express) {
                   const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
                   const individualB2CPrice = BASE_FEE + assessmentPrice;
                   const individualPppPrice = getPPPAdjustedPriceInPence(individualB2CPrice, userCountryCode);
-                  const individualDiscountedPrice = Math.round(individualPppPrice * 0.75); // 25% off each
+                  const individualDiscountedPrice = individualPppPrice; // Full price, no individual discount
                   
                   sumOfIndividualOriginalPrices += individualPppPrice;
                   sumOfIndividualDiscountedPrices += individualDiscountedPrice;
@@ -2886,7 +2886,7 @@ export function registerPartnerRoutes(app: Express) {
       const assessmentCount = completedTypes.length;
       const pricePerAssessment = 20; // £20 per assessment
       const originalTotal = assessmentCount * pricePerAssessment;
-      const discountPercentage = assessmentCount >= 4 ? 40 : assessmentCount >= 2 ? 25 : 0;
+      const discountPercentage = assessmentCount >= 2 ? 25 : 0;
       const bundlePrice = originalTotal * (1 - discountPercentage / 100);
       
       // Free unlock date (30 days from now)
@@ -3000,7 +3000,7 @@ export function registerPartnerRoutes(app: Express) {
       const singleDiscounted = singleOriginal;
       
       const bundleOriginal = unpaidCount * pricePerAssessment;
-      const bundleDiscountPercent = unpaidCount >= 4 ? 40 : unpaidCount >= 2 ? 25 : 0;
+      const bundleDiscountPercent = unpaidCount >= 2 ? 25 : 0;
       const bundleDiscounted = Math.round(bundleOriginal * (1 - bundleDiscountPercent / 100));
       
       // Free unlock date (30 days from first completion)
@@ -3098,7 +3098,7 @@ export function registerPartnerRoutes(app: Express) {
       let description: string;
       
       if (isBundle && unpaidSessions.length > 1) {
-        const discountPercent = unpaidSessions.length >= 4 ? 40 : 25;
+        const discountPercent = 25;
         totalPrice = Math.round(unpaidSessions.length * pricePerAssessment * (1 - discountPercent / 100));
         description = `HumanMetrix - Unlock ${unpaidSessions.length} Assessment Results (${discountPercent}% Bundle Discount)`;
       } else {
@@ -3520,7 +3520,7 @@ export function registerPartnerRoutes(app: Express) {
         });
       }
       
-      // Calculate pricing: B2C base + assessment price, then PPP, then 25% discount
+      // Calculate pricing: B2C base + assessment price, then PPP (no individual discount)
       const normalizedType = normalizeAssessmentId(session.assessmentType);
       const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
       const b2cPriceInPence = BASE_FEE + assessmentPrice;
@@ -3528,8 +3528,8 @@ export function registerPartnerRoutes(app: Express) {
       // PPP adjustment
       const pppAdjustedPricePence = getPPPAdjustedPriceInPence(b2cPriceInPence, countryCode);
       
-      // 25% discount for single assessment
-      const discountedPricePence = Math.round(pppAdjustedPricePence * 0.75);
+      // Full price for single assessment (no discount)
+      const discountedPricePence = pppAdjustedPricePence;
       
       // Get currency config for display - both original and discounted should show PPP-adjusted prices
       const userCurrency = getCurrencyForCountry(countryCode);
@@ -3541,7 +3541,7 @@ export function registerPartnerRoutes(app: Express) {
       const allAssessmentPrices = Object.values(ASSESSMENT_PRICES).reduce((sum, price) => sum + price, 0);
       const bundleB2CPricePence = BASE_FEE + allAssessmentPrices;
       const bundlePppAdjustedPence = getPPPAdjustedPriceInPence(bundleB2CPricePence, countryCode);
-      const bundleDiscountedPence = Math.round(bundlePppAdjustedPence * 0.60); // 40% discount for bundle
+      const bundleDiscountedPence = Math.round(bundlePppAdjustedPence * 0.75); // 25% discount for bundle
       // Format PPP-adjusted bundle prices - skip double PPP adjustment
       const bundleOriginalDisplay = formatPrice(bundlePppAdjustedPence, userCurrency, { countryCode, skipPPPAdjustment: true });
       const bundleDiscountedDisplay = formatPrice(bundleDiscountedPence, userCurrency, { countryCode, skipPPPAdjustment: true });
@@ -3563,14 +3563,14 @@ export function registerPartnerRoutes(app: Express) {
             discountedPricePence,
             originalDisplay: originalPriceDisplay,
             discountedDisplay: discountedPriceDisplay,
-            discountPercent: 25
+            discountPercent: 0
           },
           bundle: {
             originalPricePence: bundlePppAdjustedPence,
             discountedPricePence: bundleDiscountedPence,
             originalDisplay: bundleOriginalDisplay,
             discountedDisplay: bundleDiscountedDisplay,
-            discountPercent: 40
+            discountPercent: 25
           }
         },
         freeAccessDate: releaseDate ? new Date(releaseDate).toISOString() : null,
@@ -3612,14 +3612,14 @@ export function registerPartnerRoutes(app: Express) {
         const allAssessmentPrices = Object.values(ASSESSMENT_PRICES).reduce((sum, price) => sum + price, 0);
         const bundleB2CPricePence = BASE_FEE + allAssessmentPrices;
         const bundlePppAdjustedPence = getPPPAdjustedPriceInPence(bundleB2CPricePence, countryCode.toUpperCase());
-        priceInPence = Math.round(bundlePppAdjustedPence * 0.60); // 40% discount
-        discountPercent = 40;
+        priceInPence = Math.round(bundlePppAdjustedPence * 0.75); // 25% discount for bundle
+        discountPercent = 25;
         productName = 'HumanMetrix Complete Assessment Bundle';
       } else {
         const b2cPriceInPence = BASE_FEE + assessmentPrice;
         const pppAdjustedPricePence = getPPPAdjustedPriceInPence(b2cPriceInPence, countryCode.toUpperCase());
-        priceInPence = Math.round(pppAdjustedPricePence * 0.75); // 25% discount
-        discountPercent = 25;
+        priceInPence = pppAdjustedPricePence; // Full price, no individual discount
+        discountPercent = 0;
         productName = `HumanMetrix ${session.assessmentType.toUpperCase()} Assessment Results`;
       }
       
@@ -4108,7 +4108,7 @@ export function registerPartnerRoutes(app: Express) {
         const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
         const individualB2CPrice = BASE_FEE + assessmentPrice;
         const individualPppPrice = getPPPAdjustedPriceInPence(individualB2CPrice, countryCode);
-        const individualDiscountedPrice = Math.round(individualPppPrice * 0.75); // 25% off each
+        const individualDiscountedPrice = individualPppPrice; // Full price, no individual discount
         
         sumOfIndividualDiscountedPrices += individualDiscountedPrice;
         
@@ -4123,9 +4123,9 @@ export function registerPartnerRoutes(app: Express) {
         });
       }
       
-      // Apply bundle discount (25%) to sum of individual discounted prices
+      // Apply bundle discount (25%) to sum of individual prices
       // Use unique count (seenTypes.size) not filteredSessions.length
-      const bundleDiscountPercent = seenTypes.size >= 4 ? 40 : 25;
+      const bundleDiscountPercent = 25;
       const bundleDiscountedPrice = Math.round(sumOfIndividualDiscountedPrices * ((100 - bundleDiscountPercent) / 100));
       
       // Free unlock date (30 days from last completion)
@@ -4201,13 +4201,13 @@ export function registerPartnerRoutes(app: Express) {
         const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
         const individualB2CPrice = BASE_FEE + assessmentPrice;
         const individualPppPrice = getPPPAdjustedPriceInPence(individualB2CPrice, countryCode || 'GB');
-        const individualDiscountedPrice = Math.round(individualPppPrice * 0.75);
+        const individualDiscountedPrice = individualPppPrice; // Full price, no individual discount
         
         sumOfIndividualDiscountedPrices += individualDiscountedPrice;
         sessionIds.push(session.id);
       }
       
-      const bundleDiscountPercent = filteredSessions.length >= 4 ? 40 : 25;
+      const bundleDiscountPercent = 25;
       const bundleDiscountedPrice = Math.round(sumOfIndividualDiscountedPrices * ((100 - bundleDiscountPercent) / 100));
       
       // Get Stripe currency code

@@ -2458,13 +2458,9 @@ export async function sendB2BCongratulatoryEmail(details: B2BCongratulatoryEmail
     year: 'numeric' 
   });
   
-  // Build price display with original price crossed out if available
-  const priceDisplay = details.originalPaymentAmount 
-    ? `<span style="text-decoration: line-through; color: #6b7280; font-size: 18px;">${details.originalPaymentAmount}</span> <span class="price">${details.paymentAmount}</span> <span style="color: #059669; font-size: 14px; font-weight: 600;">25% off</span>`
-    : `<span class="price">${details.paymentAmount}</span>`;
-  const textPriceDisplay = details.originalPaymentAmount
-    ? `${details.originalPaymentAmount} → ${details.paymentAmount} (25% off)`
-    : details.paymentAmount;
+  // Build price display (no discount for individual results)
+  const priceDisplay = `<span class="price">${details.paymentAmount}</span>`;
+  const textPriceDisplay = details.paymentAmount;
   
   const msg = {
     to: details.email,

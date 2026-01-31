@@ -319,13 +319,11 @@ export default function B2BResults() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Immediate Access</CardTitle>
-              <Badge className="bg-primary text-white">25% Off</Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
               Get your detailed results right now for just{" "}
-              <span className="line-through text-sm">{data.pricing?.single.originalDisplay}</span>{" "}
               <span className="font-bold text-primary text-lg">{data.pricing?.single.discountedDisplay}</span>
             </p>
             <ul className="space-y-2 text-sm">

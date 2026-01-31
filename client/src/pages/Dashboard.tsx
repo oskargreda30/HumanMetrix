@@ -1390,9 +1390,6 @@ export default function Dashboard() {
                     <div className="flex-1">
                       <Label htmlFor="individual" className="cursor-pointer font-medium flex items-center gap-2">
                         {pricingData.hasBulkDiscount ? 'Select Individual Assessments' : 'Unlock Assessment'}
-                        <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                          25% off
-                        </Badge>
                       </Label>
                       <p className="text-sm text-muted-foreground mt-1">
                         {pricingData.hasBulkDiscount ? 'Select specific assessments to unlock' : 'Unlock your assessment result'}
