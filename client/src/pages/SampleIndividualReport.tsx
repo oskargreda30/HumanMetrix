@@ -497,7 +497,7 @@ export default function SampleIndividualReport() {
 
             <Card className="p-6 mb-6">
               <h3 className="text-lg font-semibold mb-4" data-testid="heading-prompt-dimensions">Dimension Scores</h3>
-              <div className="grid md:grid-cols-5 gap-4" data-testid="container-prompt-dimensions">
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 md:gap-4" data-testid="container-prompt-dimensions">
                 {[
                   { name: "Clarity", score: MOCK_PROMPT_SCORES.clarity },
                   { name: "Structure", score: MOCK_PROMPT_SCORES.structure },
@@ -505,9 +505,9 @@ export default function SampleIndividualReport() {
                   { name: "Creativity", score: MOCK_PROMPT_SCORES.creativity },
                   { name: "Iteration", score: MOCK_PROMPT_SCORES.iterativeImprovement },
                 ].map((dim) => (
-                  <div key={dim.name} className="text-center p-4 bg-violet-50 dark:bg-violet-900/20 rounded-lg" data-testid={`dimension-${dim.name.toLowerCase()}`}>
-                    <div className="text-2xl font-bold text-violet-600 dark:text-violet-400" data-testid={`score-${dim.name.toLowerCase()}`}>{dim.score}%</div>
-                    <div className="text-sm text-muted-foreground">{dim.name}</div>
+                  <div key={dim.name} className="text-center p-2 md:p-4 bg-violet-50 dark:bg-violet-900/20 rounded-lg" data-testid={`dimension-${dim.name.toLowerCase()}`}>
+                    <div className="text-lg md:text-2xl font-bold text-violet-600 dark:text-violet-400" data-testid={`score-${dim.name.toLowerCase()}`}>{dim.score}%</div>
+                    <div className="text-xs md:text-sm text-muted-foreground">{dim.name}</div>
                   </div>
                 ))}
               </div>
