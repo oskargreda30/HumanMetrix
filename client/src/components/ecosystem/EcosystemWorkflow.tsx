@@ -1066,20 +1066,37 @@ export function EcosystemWorkflow({
                   <div>
                     <p className="text-sm font-medium">Want to update your analysis?</p>
                     <p className="text-xs text-muted-foreground">
-                      Click "Make Changes" to edit your data. Regenerating costs 20 credits.
+                      Edit your data or regenerate with current data (20 credits).
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button 
-                    onClick={() => setIsEditingForm(true)}
+                    onClick={() => {
+                      setIsEditingForm(true);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
                     variant="outline"
                     size="sm"
-                    disabled={generateAnalysis.isPending}
+                    disabled={generateAnalysis.isPending || isGenerating}
                     data-testid="button-make-changes"
                   >
                     <FileText className="mr-2 h-4 w-4" />
-                    Make Changes
+                    Edit Data
+                  </Button>
+                  <Button 
+                    onClick={handleRegenerateWithCredits}
+                    variant="default"
+                    size="sm"
+                    disabled={generateAnalysis.isPending || isGenerating}
+                    data-testid="button-regenerate-header"
+                  >
+                    {(generateAnalysis.isPending || isGenerating) ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                    )}
+                    Regenerate
                     <Badge variant="secondary" className="ml-2 text-xs">20 credits</Badge>
                   </Button>
                 </div>
@@ -1091,7 +1108,10 @@ export function EcosystemWorkflow({
               companyName={project.companyName || "Your Team"}
               project={project}
               teamMembers={teamMembers}
-              onMakeChanges={() => setIsEditingForm(true)}
+              onMakeChanges={() => {
+                setIsEditingForm(true);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
               onRegenerate={handleRegenerateWithCredits}
               generateAnalysis={generateAnalysis}
               isRegenerating={isGenerating || generateAnalysis.isPending}
