@@ -1692,42 +1692,6 @@ export function EcosystemWorkflow({
         </>
       )}
 
-      {/* RESULTS VIEW: If analysis exists, show the results */}
-      {teamAnalysis && (
-        <Card data-testid="section-results">
-          <div className="p-6 space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-green-500 text-white flex items-center justify-center">
-                  <CheckCircle className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold">Team Diagnostic Results</h3>
-                  <p className="text-sm text-muted-foreground">Your AI-powered analysis is ready</p>
-                </div>
-              </div>
-              <Button 
-                onClick={handleGenerateAnalysis}
-                variant="outline"
-                size="sm"
-                disabled={generateAnalysis.isPending}
-                data-testid="button-regenerate-analysis"
-              >
-                <RefreshCw className={`mr-2 h-4 w-4 ${generateAnalysis.isPending ? 'animate-spin' : ''}`} />
-                {generateAnalysis.isPending ? 'Regenerating...' : 'Regenerate Analysis'}
-              </Button>
-            </div>
-
-            <TeamAnalysisResults 
-              analysis={teamAnalysis} 
-              companyName={project.companyName || "Your Team"}
-              project={project}
-              teamMembers={teamMembers}
-            />
-          </div>
-        </Card>
-      )}
-
       {/* Add Team Member Dialog */}
       <Dialog open={showAddMemberDialog} onOpenChange={setShowAddMemberDialog}>
         <DialogContent className="max-w-lg">
@@ -2272,23 +2236,23 @@ function TeamAnalysisResults({
         )}
       </div>
 
-      {/* SECTION 2.5: Candidates Assessed Summary */}
-      {teamMembers.length > 0 && (
-        <div className="bg-muted/30 rounded-lg p-6 border">
-          <h4 className="font-semibold mb-4 flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Candidates Assessed
-          </h4>
-          <p className="text-sm text-muted-foreground mb-4">
-            This analysis is based on FIT assessment scores from {teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores).length > 0).length} of {teamMembers.length} team members.
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {teamMembers.map((member) => {
-              const hasScores = member.fitScores && Object.keys(member.fitScores).length > 0;
-              return (
+      {/* SECTION 2.5: Candidates Assessed Summary - Only show assessed candidates */}
+      {(() => {
+        const assessedMembers = teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores).length > 0);
+        return assessedMembers.length > 0 && (
+          <div className="bg-muted/30 rounded-lg p-6 border">
+            <h4 className="font-semibold mb-4 flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Candidates Assessed
+            </h4>
+            <p className="text-sm text-muted-foreground mb-4">
+              This analysis is based on FIT assessment scores from {assessedMembers.length} team member{assessedMembers.length !== 1 ? 's' : ''}.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {assessedMembers.map((member) => (
                 <div 
                   key={member.id} 
-                  className={`flex items-center gap-3 p-3 rounded-lg border ${hasScores ? 'bg-background' : 'bg-muted/50 opacity-60'}`}
+                  className="flex items-center gap-3 p-3 rounded-lg border bg-background"
                 >
                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary">
                     {(member.name || 'TM').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
@@ -2297,21 +2261,15 @@ function TeamAnalysisResults({
                     <p className="text-sm font-medium break-words">{member.name || 'Team Member'}</p>
                     <p className="text-xs text-muted-foreground break-words">{member.role || 'Team Member'}</p>
                   </div>
-                  {hasScores ? (
-                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
-                      Assessed
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-xs">
-                      Pending
-                    </Badge>
-                  )}
+                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
+                    Assessed
+                  </Badge>
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* SECTION 3: Strategic Assessment - AI-Generated Strategic Narrative */}
       {analysis.executiveSummary && (
@@ -2989,182 +2947,6 @@ function TeamAnalysisResults({
             ))}
           </div>
           
-          {/* Candidate Search Section - Only for partner projects */}
-          {project.partnerId && (
-            <div className="mt-6 pt-6 border-t">
-              <div className="flex items-center justify-between mb-4">
-                <h5 className="font-medium flex items-center gap-2">
-                  <Search className="h-4 w-4" />
-                  Search Your Candidates
-                </h5>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowCandidateSearch(!showCandidateSearch)}
-                  data-testid="button-toggle-candidate-search"
-                >
-                  {showCandidateSearch ? "Hide" : "Show"} Candidates
-                </Button>
-              </div>
-              
-              {showCandidateSearch && (
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    Search through candidates who have completed assessments to find potential matches for your ideal hire profiles.
-                  </p>
-                  
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search by name or email..."
-                      value={candidateSearch}
-                      onChange={(e) => setCandidateSearch(e.target.value)}
-                      className="pl-10"
-                      data-testid="input-candidate-search"
-                    />
-                  </div>
-                  
-                  {candidatesLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                      <span className="ml-2 text-sm text-muted-foreground">Loading candidates...</span>
-                    </div>
-                  ) : filteredCandidates.length === 0 ? (
-                    <div className="text-center py-8 text-sm text-muted-foreground">
-                      {candidateSearch 
-                        ? "No candidates match your search" 
-                        : "No candidates available (all have been added to your team or none have completed assessments)"}
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-xs text-muted-foreground mb-2">
-                        Click on a candidate to see how they would complement your team
-                      </p>
-                      <div className="grid gap-3 md:grid-cols-2">
-                        {filteredCandidates.slice(0, 10).map((candidate) => (
-                          <div 
-                            key={candidate.id} 
-                            className={`p-4 rounded-lg border cursor-pointer transition-all hover-elevate ${
-                              selectedCandidateId === candidate.id 
-                                ? 'bg-primary/10 border-primary ring-2 ring-primary/20' 
-                                : 'bg-muted/30'
-                            }`}
-                            onClick={() => setSelectedCandidateId(
-                              selectedCandidateId === candidate.id ? null : candidate.id
-                            )}
-                            data-testid={`card-candidate-${candidate.id}`}
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <div>
-                                <p className="font-medium">{candidate.name}</p>
-                                <p className="text-xs text-muted-foreground">{candidate.email}</p>
-                              </div>
-                              {selectedCandidateId === candidate.id && (
-                                <Badge variant="default" className="text-xs">Selected</Badge>
-                              )}
-                            </div>
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {FIT_CAPABILITIES.map(cap => {
-                                const score = candidate.fitScores[cap.code];
-                                if (!score) return null;
-                                return (
-                                  <Badge 
-                                    key={cap.code} 
-                                    variant="outline" 
-                                    className="text-xs"
-                                    data-testid={`badge-score-${candidate.id}-${cap.code}`}
-                                  >
-                                    {cap.code}: {score}%
-                                  </Badge>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                  
-                  {filteredCandidates.length > 10 && (
-                    <p className="text-sm text-muted-foreground text-center">
-                      Showing 10 of {filteredCandidates.length} candidates. Refine your search to see more.
-                    </p>
-                  )}
-                  
-                  {/* Team Complement Visualization */}
-                  {selectedCandidate && projectedScoresWithCandidate.length > 0 && (
-                    <div className="mt-6 p-5 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                      <h6 className="font-semibold mb-3 flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-green-600" />
-                        Team Impact: Adding {selectedCandidate.name}
-                      </h6>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        See how this candidate's scores would improve your team's overall capabilities
-                      </p>
-                      
-                      <div className="space-y-3">
-                        {projectedScoresWithCandidate.map((item) => {
-                          const capInfo = FIT_CAPABILITIES.find(c => c.code === item.code);
-                          const hasImprovement = item.improvement > 0;
-                          const hasDecline = item.improvement < 0;
-                          return (
-                            <div key={item.code} className="space-y-1">
-                              <div className="flex items-center justify-between text-sm">
-                                <div className="flex items-center gap-2">
-                                  <div className={`h-5 w-5 rounded ${capInfo?.color || "bg-gray-500"} flex items-center justify-center`}>
-                                    <span className="text-white text-[10px] font-bold">{item.code}</span>
-                                  </div>
-                                  <span className="font-medium">{item.capability}</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                  <span className="text-muted-foreground">{item.currentAverage}%</span>
-                                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                                  <span className="font-semibold">{item.projectedAverage}%</span>
-                                  {hasImprovement && (
-                                    <Badge variant="outline" className="text-xs text-green-600 border-green-300 bg-green-50 dark:bg-green-900/30">
-                                      +{item.improvement}%
-                                    </Badge>
-                                  )}
-                                  {hasDecline && (
-                                    <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-900/30">
-                                      {item.improvement}%
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="relative h-2 bg-muted rounded-full overflow-hidden">
-                                <div 
-                                  className="absolute inset-y-0 left-0 bg-muted-foreground/30 rounded-full"
-                                  style={{ width: `${item.currentAverage}%` }}
-                                />
-                                <div 
-                                  className={`absolute inset-y-0 left-0 rounded-full ${hasImprovement ? 'bg-green-500' : hasDecline ? 'bg-amber-500' : 'bg-muted-foreground/50'}`}
-                                  style={{ width: `${item.projectedAverage}%` }}
-                                />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      
-                      <div className="mt-4 pt-4 border-t border-green-200 dark:border-green-800">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium">Overall Team Improvement</span>
-                          <Badge 
-                            variant={projectedScoresWithCandidate.reduce((sum, item) => sum + item.improvement, 0) > 0 ? "default" : "secondary"}
-                            className="text-sm"
-                          >
-                            {projectedScoresWithCandidate.reduce((sum, item) => sum + item.improvement, 0) > 0 ? '+' : ''}
-                            {Math.round(projectedScoresWithCandidate.reduce((sum, item) => sum + item.improvement, 0) / projectedScoresWithCandidate.length)}% avg
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       )}
 
