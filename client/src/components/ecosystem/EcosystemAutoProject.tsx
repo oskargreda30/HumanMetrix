@@ -256,16 +256,13 @@ export function EcosystemAutoProject({
 
   return (
     <div className="space-y-4">
-      {/* Current Analysis and Credit Info - side by side layout */}
-      <div className="flex flex-col md:flex-row items-stretch gap-3">
-        {/* Current Analysis Selector */}
-        {projects.length > 0 && (
-          <div className="flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4 flex-shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              </div>
-              <span className="text-sm font-medium text-blue-800 dark:text-blue-200">Current Analysis:</span>
+      {/* Compact Header Row: Analysis Selector + New Analysis + Credit Info */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            {/* Left: Analysis Selector */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-sm font-medium text-muted-foreground">Analysis:</span>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
@@ -410,38 +407,28 @@ export function EcosystemAutoProject({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              
+              {/* Credit Badge with Tooltip */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="outline" className="gap-1 cursor-help">
+                    <Sparkles className="h-3 w-3" />
+                    {ECOSYSTEM_CREDITS_REQUIRED} credits per analysis
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="text-sm">Credits are consumed when you generate or regenerate an AI-powered team analysis.</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
-          </div>
-        )}
-
-        {/* Credit Usage Info */}
-        <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-3 flex-1">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-blue-500 flex-shrink-0" />
-            <p className="text-sm text-blue-800 dark:text-blue-200">
-              <span className="font-medium">Credit Usage:</span>{" "}
-              <span className="text-xs text-blue-700 dark:text-blue-300">
-                This feature uses <strong>{ECOSYSTEM_CREDITS_REQUIRED} credits</strong> for AI-powered team analysis. Credits are consumed when you click "Use Credits".
-              </span>
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Saved Reports Section - below Current Analysis and Credit Usage */}
-      {completedProjects.length > 0 && (
-        <div className="rounded-lg border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
-              <span className="text-sm font-medium text-green-800 dark:text-green-200">Saved Reports ({completedProjects.length})</span>
-            </div>
+            
+            {/* Right: New Analysis Button */}
             <Button
               variant="default"
               size="sm"
               onClick={handleStartNewAnalysis}
               disabled={createProject.isPending}
-              data-testid="button-new-analysis-saved-reports"
+              data-testid="button-new-analysis-header"
             >
               {createProject.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -451,64 +438,44 @@ export function EcosystemAutoProject({
               New Analysis
             </Button>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {completedProjects.map((proj) => (
-              <Tooltip key={proj.id}>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={proj.id === projectId ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setProjectId(proj.id)}
-                    data-testid={`saved-report-${proj.id}`}
-                  >
-                    <FileText className="h-3 w-3 mr-1" />
-                    {truncateName(proj.name, 25)}
-                    {proj.id === projectId && <Check className="h-3 w-3 ml-1" />}
-                  </Button>
-                </TooltipTrigger>
-                {proj.name.length > 25 && (
-                  <TooltipContent>
-                    <p>{proj.name}</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Show New Analysis button prominently when no completed projects */}
-      {completedProjects.length === 0 && (
-        <div className="flex justify-end">
-          <Button
-            variant="default"
-            onClick={handleStartNewAnalysis}
-            disabled={createProject.isPending}
-            data-testid="button-new-analysis-empty-state"
-          >
-            {createProject.isPending ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Plus className="h-4 w-4 mr-2" />
-            )}
-            Start New Analysis
-          </Button>
-        </div>
-      )}
-      
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                The Ecosystem Index
-                <Badge variant="secondary" className="bg-cyan-500 text-white border-0">New</Badge>
-              </CardTitle>
-              <CardDescription>AI-powered team diagnostic and hiring recommendations</CardDescription>
+          
+          {/* Saved Reports Row - compact horizontal pills */}
+          {completedProjects.length > 0 && (
+            <div className="mt-4 pt-4 border-t">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-xs font-medium text-muted-foreground">Saved Reports:</span>
+                <div className="flex flex-wrap gap-2">
+                  {completedProjects.map((proj) => (
+                    <Tooltip key={proj.id}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant={proj.id === projectId ? "default" : "ghost"}
+                          size="sm"
+                          onClick={() => setProjectId(proj.id)}
+                          data-testid={`saved-report-${proj.id}`}
+                        >
+                          <FileText className="h-3 w-3 mr-1" />
+                          {truncateName(proj.name, 20)}
+                          {proj.id === projectId && <Check className="h-3 w-3 ml-1" />}
+                        </Button>
+                      </TooltipTrigger>
+                      {proj.name.length > 20 && (
+                        <TooltipContent>
+                          <p>{proj.name}</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Main Workflow Card */}
+      <Card>
+        <CardContent className="pt-6">
           <EcosystemWorkflow 
             projectId={projectId}
             isPartnerDashboard={true}

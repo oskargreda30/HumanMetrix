@@ -346,26 +346,60 @@ export default function PartnerResultsTab() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <Card>
-        <CardHeader className="p-3 md:p-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4">
-            <div>
-              <CardTitle className="text-base md:text-lg">Candidate Results</CardTitle>
-              <CardDescription className="text-xs md:text-sm">View completed assessment results for your candidates</CardDescription>
+      {/* Quick Action Summary Cards */}
+      <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-3">
+        <Card className="hover-elevate" data-testid="card-summary-candidates">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <ClipboardList className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-lg md:text-2xl font-bold">{candidates?.filter((c: any) => c.results?.some((r: any) => r.status === 'completed')).length || 0}</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Candidates with Results</p>
+              </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowPdfImportModal(true)}
-              data-testid="button-import-pdf-results"
-              className="text-xs md:text-sm self-start md:self-auto"
-            >
-              <Upload className="h-3 w-3 md:h-4 md:w-4 mr-1.5 md:mr-2" />
-              Import PDF Report
-            </Button>
-          </div>
+          </CardContent>
+        </Card>
+        <Card className="hover-elevate" data-testid="card-summary-reports">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <BarChart3 className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-lg md:text-2xl font-bold">{savedReports?.length || 0}</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Saved Analysis Reports</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card 
+          className="cursor-pointer hover-elevate"
+          onClick={() => setShowPdfImportModal(true)}
+          data-testid="card-import-pdf"
+        >
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Upload className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm md:text-base font-semibold">Import PDF</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Upload external reports</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search Card */}
+      <Card>
+        <CardHeader className="p-3 md:p-6 pb-0 md:pb-0">
+          <CardTitle className="text-base md:text-lg">Search Candidates</CardTitle>
+          <CardDescription className="text-xs md:text-sm">Find and view detailed assessment results</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3 md:space-y-4 p-3 pt-0 md:p-6 md:pt-0">
+        <CardContent className="p-3 md:p-6">
           <div className="relative">
             <Search className="absolute left-2.5 md:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             <Input
