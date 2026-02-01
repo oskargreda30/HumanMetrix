@@ -19,13 +19,13 @@ const partnerConfig: SharedRoleFitConfig = {
 export default function PartnerRoleFitTab() {
   return (
     <Tabs defaultValue="single" className="w-full">
-      <TabsList className="grid w-full max-w-md grid-cols-2">
-        <TabsTrigger value="single" className="flex items-center gap-2" data-testid="tab-single-candidate">
-          <User className="h-4 w-4" />
+      <TabsList className="grid w-full max-w-lg mx-auto grid-cols-2">
+        <TabsTrigger value="single" className="flex items-center gap-2 py-3 text-base" data-testid="tab-single-candidate">
+          <User className="h-5 w-5" />
           Single Candidate
         </TabsTrigger>
-        <TabsTrigger value="multi" className="flex items-center gap-2" data-testid="tab-multi-candidate">
-          <Users className="h-4 w-4" />
+        <TabsTrigger value="multi" className="flex items-center gap-2 py-3 text-base" data-testid="tab-multi-candidate">
+          <Users className="h-5 w-5" />
           Multiple Candidates
         </TabsTrigger>
       </TabsList>
