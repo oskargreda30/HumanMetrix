@@ -800,10 +800,41 @@ export function EcosystemWorkflow({
   // Calendly URL for consultation
   const CALENDLY_URL = "https://calendly.com/hello-humanmetrix/30min";
 
-  if (projectLoading) {
+  // Show loading skeleton when switching projects, during refetch, or when stale data exists
+  // This ensures smooth transitions when quickly switching between projects
+  // Consolidated check - avoid duplicate early returns that bypass stale data guard
+  const isProjectStale = project && project.id !== projectId;
+  if (projectLoading || isProjectStale || (projectFetching && !project)) {
     return (
-      <div className="flex items-center justify-center p-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-4" data-testid="ecosystem-loading-skeleton">
+        {/* Skeleton for intro banner */}
+        <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10">
+          <div className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="h-12 w-12 rounded-full bg-primary/20 animate-pulse" />
+              <div className="flex-1 space-y-3">
+                <div className="h-6 w-48 bg-muted animate-pulse rounded" />
+                <div className="h-4 w-full bg-muted/70 animate-pulse rounded" />
+                <div className="h-4 w-3/4 bg-muted/70 animate-pulse rounded" />
+              </div>
+            </div>
+          </div>
+        </Card>
+        
+        {/* Skeleton for step cards */}
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="overflow-hidden">
+            <div className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-5 w-32 bg-muted animate-pulse rounded" />
+                  <div className="h-4 w-48 bg-muted/70 animate-pulse rounded" />
+                </div>
+              </div>
+            </div>
+          </Card>
+        ))}
       </div>
     );
   }
@@ -878,44 +909,6 @@ export function EcosystemWorkflow({
       )}
     </div>
   );
-
-  // Show loading skeleton when switching projects, during refetch, or when stale data exists
-  // This ensures smooth transitions when quickly switching between projects
-  const isProjectStale = project && project.id !== projectId;
-  if (projectLoading || isProjectStale || (projectFetching && !project)) {
-    return (
-      <div className="space-y-4" data-testid="ecosystem-loading-skeleton">
-        {/* Skeleton for intro banner */}
-        <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10">
-          <div className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="h-12 w-12 rounded-full bg-primary/20 animate-pulse" />
-              <div className="flex-1 space-y-3">
-                <div className="h-6 w-48 bg-muted animate-pulse rounded" />
-                <div className="h-4 w-full bg-muted/70 animate-pulse rounded" />
-                <div className="h-4 w-3/4 bg-muted/70 animate-pulse rounded" />
-              </div>
-            </div>
-          </div>
-        </Card>
-        
-        {/* Skeleton for step cards */}
-        {[1, 2, 3].map((i) => (
-          <Card key={i} className="overflow-hidden">
-            <div className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-5 w-32 bg-muted animate-pulse rounded" />
-                  <div className="h-3 w-48 bg-muted/70 animate-pulse rounded" />
-                </div>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-4">
