@@ -63,6 +63,23 @@ export function EcosystemAutoProject({
   
   // Search filter for project dropdown
   const [projectSearchQuery, setProjectSearchQuery] = useState("");
+  
+  // Get completed and in-progress analyses (must be before early returns for hooks rules)
+  const completedProjects = useMemo(() => projects.filter(p => p.teamAnalysis), [projects]);
+  const inProgressProjects = useMemo(() => projects.filter(p => !p.teamAnalysis), [projects]);
+  
+  // Filter projects by search query (must be before early returns for hooks rules)
+  const filteredCompletedProjects = useMemo(() => {
+    if (!projectSearchQuery.trim()) return completedProjects;
+    const query = projectSearchQuery.toLowerCase();
+    return completedProjects.filter(p => p.name.toLowerCase().includes(query));
+  }, [completedProjects, projectSearchQuery]);
+  
+  const filteredInProgressProjects = useMemo(() => {
+    if (!projectSearchQuery.trim()) return inProgressProjects;
+    const query = projectSearchQuery.toLowerCase();
+    return inProgressProjects.filter(p => p.name.toLowerCase().includes(query));
+  }, [inProgressProjects, projectSearchQuery]);
 
   useEffect(() => {
     if (projectsLoading) return;
@@ -166,23 +183,8 @@ export function EcosystemAutoProject({
   // Get current project for display
   const currentProject = projects.find(p => p.id === projectId);
   
-  // Get completed analyses (projects with teamAnalysis)
-  const completedProjects = projects.filter(p => p.teamAnalysis);
-  const inProgressProjects = projects.filter(p => !p.teamAnalysis);
+  // Derived values (the useMemo hooks are defined above before early returns)
   const hasMultipleAnalyses = completedProjects.length > 1 || (completedProjects.length === 1 && !currentProject?.teamAnalysis);
-  
-  // Filter projects by search query
-  const filteredCompletedProjects = useMemo(() => {
-    if (!projectSearchQuery.trim()) return completedProjects;
-    const query = projectSearchQuery.toLowerCase();
-    return completedProjects.filter(p => p.name.toLowerCase().includes(query));
-  }, [completedProjects, projectSearchQuery]);
-  
-  const filteredInProgressProjects = useMemo(() => {
-    if (!projectSearchQuery.trim()) return inProgressProjects;
-    const query = projectSearchQuery.toLowerCase();
-    return inProgressProjects.filter(p => p.name.toLowerCase().includes(query));
-  }, [inProgressProjects, projectSearchQuery]);
   
   // Show search box if there are many projects
   const showProjectSearch = projects.length > 5;
