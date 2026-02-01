@@ -1674,7 +1674,7 @@ export function EcosystemWorkflow({
                 {isGenerating || isProcessingPayment || generateAnalysis.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {isProcessingPayment ? 'Processing Credits...' : 'Generating Report...'}
+                    {isProcessingPayment ? 'Processing Credits...' : 'Generating Report... (this may take a few minutes)'}
                   </>
                 ) : (
                   <>

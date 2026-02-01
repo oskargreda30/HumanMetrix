@@ -83,6 +83,41 @@ const FIT_CAPABILITIES = {
   IA: { name: "Interpersonal Agility", description: "Building relationships and navigating social dynamics effectively" },
 };
 
+// Mapping from full names (as stored in DB) to short codes (as used in frontend)
+const FIT_NAME_TO_CODE: Record<string, string> = {
+  "high agency": "HA",
+  "intellectual curiosity": "IC",
+  "resilience": "RA",
+  "resilience & adaptability": "RA",
+  "empathy & ethics": "EE",
+  "growth mindset": "GM",
+  "interpersonal agility": "IA",
+};
+
+// Helper function to normalize FIT scores from database format (full names) to frontend format (codes)
+function normalizeFitScores(scores: Record<string, any>): Record<string, number> {
+  const normalized: Record<string, number> = {};
+  
+  for (const [key, value] of Object.entries(scores)) {
+    if (typeof value !== 'number') continue;
+    
+    // Check if key is already a short code
+    if (['HA', 'IC', 'RA', 'EE', 'GM', 'IA'].includes(key)) {
+      normalized[key] = value;
+      continue;
+    }
+    
+    // Try to map full name to short code
+    const lowerKey = key.toLowerCase();
+    const code = FIT_NAME_TO_CODE[lowerKey];
+    if (code) {
+      normalized[code] = value;
+    }
+  }
+  
+  return normalized;
+}
+
 // Validation schemas
 const createProjectSchema = z.object({
   name: z.string().optional(),
@@ -1628,15 +1663,8 @@ export function registerEcosystemRoutes(app: Express): void {
         // Skip if already in team
         if (existingEmails.has(emailLower)) continue;
         
-        // Extract FIT scores from session
-        const fitScores: Record<string, number> = {};
-        if (session.scores) {
-          Object.entries(session.scores).forEach(([key, value]) => {
-            if (typeof value === 'number') {
-              fitScores[key] = value;
-            }
-          });
-        }
+        // Extract and normalize FIT scores from session (convert full names to short codes)
+        const fitScores = session.scores ? normalizeFitScores(session.scores as Record<string, any>) : {};
         
         if (Object.keys(fitScores).length === 0) continue;
         
@@ -1720,15 +1748,8 @@ export function registerEcosystemRoutes(app: Express): void {
             // Skip if already in team
             if (existingEmails.has(emailLower)) continue;
             
-            // Extract FIT scores
-            const fitScores: Record<string, number> = {};
-            if (result.scores) {
-              Object.entries(result.scores).forEach(([key, value]) => {
-                if (typeof value === 'number') {
-                  fitScores[key] = value;
-                }
-              });
-            }
+            // Extract and normalize FIT scores (convert full names to short codes)
+            const fitScores = result.scores ? normalizeFitScores(result.scores as Record<string, any>) : {};
             
             if (Object.keys(fitScores).length === 0) continue;
             
