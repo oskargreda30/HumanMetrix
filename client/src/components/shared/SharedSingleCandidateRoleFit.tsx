@@ -282,8 +282,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                 Credit Usage for Analysis
               </p>
               <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                This feature uses your credits for AI analysis. Generating required skill scores uses 1 credit per role. 
-                Analyzing a candidate's role fit uses 1 credit per analysis. Credits are only consumed when you click the action buttons.
+                Credits are only consumed when generating new analysis – saved results are always free. Role fit analysis: 1 credit per action.
               </p>
             </div>
           </div>

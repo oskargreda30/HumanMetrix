@@ -1072,8 +1072,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                 Credit Usage for Analysis
               </p>
               <p className="text-[11px] md:text-xs text-blue-700 dark:text-blue-300 mt-0.5 md:mt-1">
-                Comparing candidates uses your credits. Each candidate compared costs 1 credit. 
-                Credits are only consumed when you click the "Compare Selected" button.
+                Credits are only consumed when generating new analysis – saved results are always free. Comparison: 1 credit per candidate.
               </p>
             </div>
           </div>

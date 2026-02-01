@@ -369,7 +369,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                 Credit Usage for Analysis
               </p>
               <p className="text-[11px] md:text-xs text-gray-600 dark:text-gray-300 mt-0.5 md:mt-1">
-                Profile Insights generation costs 1 credit. Credits are only consumed when generating new insights. Cached insights are free.
+                Credits are only consumed when generating new analysis – saved results are always free. Profile insights: 1 credit.
               </p>
             </div>
           </div>
