@@ -161,34 +161,9 @@ export function EcosystemAutoProject({
 
   return (
     <div className="space-y-4">
-      {/* Saved Reports Section - show completed analyses */}
-      {completedProjects.length > 0 && (
-        <div className="rounded-lg border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
-            <span className="text-sm font-medium text-green-800 dark:text-green-200">Saved Reports ({completedProjects.length})</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {completedProjects.map((proj) => (
-              <Button
-                key={proj.id}
-                variant={proj.id === projectId ? "default" : "outline"}
-                size="sm"
-                onClick={() => setProjectId(proj.id)}
-                data-testid={`saved-report-${proj.id}`}
-              >
-                <FileText className="h-3 w-3 mr-1" />
-                {proj.name}
-                {proj.id === projectId && <Check className="h-3 w-3 ml-1" />}
-              </Button>
-            ))}
-          </div>
-        </div>
-      )}
-      
-      {/* Project Selector and Credit Info - side by side layout */}
+      {/* Current Analysis and Credit Info - side by side layout */}
       <div className="flex flex-col md:flex-row items-stretch gap-3">
-        {/* Project Selector - Matching Credit Usage box style */}
+        {/* Current Analysis Selector */}
         {projects.length > 0 && (
           <div className="flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4 flex-shrink-0">
             <div className="flex items-center gap-3">
@@ -274,28 +249,10 @@ export function EcosystemAutoProject({
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            
-            {!currentProject?.teamAnalysis && (
-              <Button
-                variant="outline"
-                size="default"
-                onClick={handleStartNewAnalysis}
-                disabled={createProject.isPending}
-                className="ml-3 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50"
-                data-testid="button-new-analysis"
-              >
-                {createProject.isPending ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Plus className="h-4 w-4 mr-2" />
-                )}
-                New Analysis
-              </Button>
-            )}
           </div>
         )}
 
-        {/* Credit Usage Info - side by side with project selector */}
+        {/* Credit Usage Info */}
         <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-3 flex-1">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-blue-500 flex-shrink-0" />
@@ -308,6 +265,66 @@ export function EcosystemAutoProject({
           </div>
         </div>
       </div>
+
+      {/* Saved Reports Section - below Current Analysis and Credit Usage */}
+      {completedProjects.length > 0 && (
+        <div className="rounded-lg border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <span className="text-sm font-medium text-green-800 dark:text-green-200">Saved Reports ({completedProjects.length})</span>
+            </div>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleStartNewAnalysis}
+              disabled={createProject.isPending}
+              data-testid="button-new-analysis-saved-reports"
+            >
+              {createProject.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4 mr-2" />
+              )}
+              New Analysis
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {completedProjects.map((proj) => (
+              <Button
+                key={proj.id}
+                variant={proj.id === projectId ? "default" : "outline"}
+                size="sm"
+                onClick={() => setProjectId(proj.id)}
+                data-testid={`saved-report-${proj.id}`}
+              >
+                <FileText className="h-3 w-3 mr-1" />
+                {proj.name}
+                {proj.id === projectId && <Check className="h-3 w-3 ml-1" />}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Show New Analysis button prominently when no completed projects */}
+      {completedProjects.length === 0 && (
+        <div className="flex justify-end">
+          <Button
+            variant="default"
+            onClick={handleStartNewAnalysis}
+            disabled={createProject.isPending}
+            data-testid="button-new-analysis-empty-state"
+          >
+            {createProject.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4 mr-2" />
+            )}
+            Start New Analysis
+          </Button>
+        </div>
+      )}
       
       <Card>
         <CardHeader>
