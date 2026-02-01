@@ -66,6 +66,7 @@ import {
   TrendingUp,
   Lock,
   Download,
+  ArrowUp,
 } from "lucide-react";
 import {
   useEcosystemProject,
@@ -1046,6 +1047,8 @@ export function EcosystemWorkflow({
               companyName={project.companyName || "Your Team"}
               project={project}
               teamMembers={teamMembers}
+              onMakeChanges={() => setIsEditingForm(true)}
+              generateAnalysis={generateAnalysis}
             />
           </div>
         </Card>
@@ -1912,12 +1915,16 @@ function TeamAnalysisResults({
   analysis, 
   companyName,
   project,
-  teamMembers
+  teamMembers,
+  onMakeChanges,
+  generateAnalysis,
 }: { 
   analysis: EcosystemTeamAnalysis; 
   companyName: string;
   project: any;
   teamMembers: EcosystemTeamMember[];
+  onMakeChanges: () => void;
+  generateAnalysis: { isPending: boolean };
 }) {
   const missionAnalysis = project.missionAnalysis as EcosystemMissionAnalysis | null;
   const CALENDLY_URL = "https://calendly.com/hello-humanmetrix/30min";
@@ -3081,6 +3088,51 @@ function TeamAnalysisResults({
             </Button>
           </div>
         </div>
+      </div>
+
+      {/* SECTION 13: Report Action Buttons */}
+      <div className="border-t pt-6 mt-8">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <Button 
+            variant="outline" 
+            size="lg"
+            onClick={handleExportPDF}
+            disabled={isExportingPDF}
+            data-testid="button-export-pdf-bottom"
+          >
+            {isExportingPDF ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4 mr-2" />
+            )}
+            Export PDF
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            size="lg"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            data-testid="button-back-to-top"
+          >
+            <ArrowUp className="h-4 w-4 mr-2" />
+            Back to Top
+          </Button>
+          
+          <Button 
+            variant="default" 
+            size="lg"
+            onClick={onMakeChanges}
+            disabled={generateAnalysis.isPending}
+            data-testid="button-make-changes-bottom"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Make Changes
+            <Badge variant="secondary" className="ml-2 text-xs">20 credits</Badge>
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground text-center mt-3">
+          Regenerating the analysis will consume 20 credits from your account balance.
+        </p>
       </div>
 
     </div>
