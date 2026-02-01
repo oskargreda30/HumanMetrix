@@ -4340,16 +4340,85 @@ export function registerPartnerRoutes(app: Express) {
       
       const pdfFilename = `HumanMetrix_${assessmentName}_Results.pdf`;
       
-      // Send email with PDF attachment
-      const { sendB2BResultsEmail } = await import("./email");
-      const emailResult = await sendB2BResultsEmail({
-        email: targetEmail,
-        candidateName: (session as any).metadata?.candidateName,
-        assessmentType: session.assessmentType,
-        partnerCompanyName,
-        pdfBuffer,
-        pdfFilename,
-      });
+      // Check PDF size - if over 20MB, use object storage with download link
+      const PDF_SIZE_LIMIT = 20 * 1024 * 1024; // 20MB
+      const pdfSizeMB = (pdfBuffer.length / (1024 * 1024)).toFixed(2);
+      console.log(`[B2B PDF Email] PDF size: ${pdfSizeMB}MB for session ${sessionId}`);
+      
+      let emailResult;
+      
+      if (pdfBuffer.length > PDF_SIZE_LIMIT) {
+        // Large PDF - upload to object storage and send download link
+        console.log(`[B2B PDF Email] PDF exceeds ${PDF_SIZE_LIMIT / (1024 * 1024)}MB limit, using object storage`);
+        
+        try {
+          const { objectStorageClient } = await import("./replit_integrations/object_storage/objectStorage");
+          const privateDir = process.env.PRIVATE_OBJECT_DIR;
+          
+          if (!privateDir) {
+            throw new Error("Object storage not configured");
+          }
+          
+          // Generate unique filename with expiry info
+          const expiryDays = 7;
+          const expiryDate = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
+          const objectPath = `${privateDir}/pdfs/${sessionId}/${Date.now()}_${pdfFilename}`;
+          
+          // Parse bucket and object name from path
+          const pathParts = objectPath.split("/").filter(Boolean);
+          const bucketName = pathParts[0];
+          const objectName = pathParts.slice(1).join("/");
+          
+          // Upload PDF to object storage
+          const bucket = objectStorageClient.bucket(bucketName);
+          const file = bucket.file(objectName);
+          
+          await file.save(pdfBuffer, {
+            contentType: 'application/pdf',
+            metadata: {
+              sessionId,
+              email: targetEmail,
+              uploadedAt: new Date().toISOString(),
+              expiresAt: expiryDate.toISOString(),
+            },
+          });
+          
+          // Generate signed download URL (7 days expiry)
+          const [signedUrl] = await file.getSignedUrl({
+            action: 'read',
+            expires: expiryDate,
+          });
+          
+          console.log(`[B2B PDF Email] Uploaded PDF to object storage, sending download link`);
+          
+          // Send email with download link instead of attachment
+          const { sendB2BResultsEmailWithDownloadLink } = await import("./email");
+          emailResult = await sendB2BResultsEmailWithDownloadLink({
+            email: targetEmail,
+            candidateName: (session as any).metadata?.candidateName,
+            assessmentType: session.assessmentType,
+            partnerCompanyName,
+            downloadUrl: signedUrl,
+            expiryDays,
+          });
+        } catch (storageError: any) {
+          console.error(`[B2B PDF Email] Object storage failed:`, storageError.message);
+          return res.status(500).json({ 
+            error: "Failed to process large PDF. Please try downloading directly instead." 
+          });
+        }
+      } else {
+        // Small PDF - send as attachment
+        const { sendB2BResultsEmail } = await import("./email");
+        emailResult = await sendB2BResultsEmail({
+          email: targetEmail,
+          candidateName: (session as any).metadata?.candidateName,
+          assessmentType: session.assessmentType,
+          partnerCompanyName,
+          pdfBuffer,
+          pdfFilename,
+        });
+      }
       
       if (!emailResult.success) {
         console.error(`[B2B PDF Email] Failed to send PDF email to ${targetEmail}`);
