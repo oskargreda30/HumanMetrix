@@ -136,8 +136,11 @@ export function EcosystemAutoProject({
   const completedProjects = projects.filter(p => p.teamAnalysis);
   const hasMultipleAnalyses = completedProjects.length > 1 || (completedProjects.length === 1 && !currentProject?.teamAnalysis);
 
-  // Handle creating a new analysis
+  // Handle creating a new analysis with guard against concurrent creation
   const handleStartNewAnalysis = () => {
+    // Guard against concurrent creation
+    if (createProject.isPending) return;
+    
     const timestamp = new Date().toLocaleDateString('en-US', { 
       month: 'short', 
       day: 'numeric', 
@@ -180,24 +183,55 @@ export function EcosystemAutoProject({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-64">
-                {projects.map((project) => (
-                  <DropdownMenuItem
-                    key={project.id}
-                    onClick={() => setProjectId(project.id)}
-                    className="flex items-center justify-between"
-                    data-testid={`menu-item-project-${project.id}`}
-                  >
-                    <span className="truncate flex-1">{project.name}</span>
-                    <div className="flex items-center gap-2">
-                      {project.teamAnalysis && (
-                        <Badge variant="secondary" className="text-xs">Complete</Badge>
-                      )}
-                      {project.id === projectId && (
-                        <Check className="h-4 w-4 text-primary" />
-                      )}
+                {/* Show completed analyses first */}
+                {completedProjects.length > 0 && (
+                  <>
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground font-medium">
+                      Completed Analyses
                     </div>
-                  </DropdownMenuItem>
-                ))}
+                    {completedProjects.map((project) => (
+                      <DropdownMenuItem
+                        key={project.id}
+                        onClick={() => setProjectId(project.id)}
+                        className="flex items-center justify-between"
+                        data-testid={`menu-item-project-${project.id}`}
+                      >
+                        <span className="truncate flex-1">{project.name}</span>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">Complete</Badge>
+                          {project.id === projectId && (
+                            <Check className="h-4 w-4 text-primary" />
+                          )}
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                  </>
+                )}
+                {/* Show in-progress analyses */}
+                {projects.filter(p => !p.teamAnalysis).length > 0 && (
+                  <>
+                    {completedProjects.length > 0 && <DropdownMenuSeparator />}
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground font-medium">
+                      In Progress
+                    </div>
+                    {projects.filter(p => !p.teamAnalysis).map((project) => (
+                      <DropdownMenuItem
+                        key={project.id}
+                        onClick={() => setProjectId(project.id)}
+                        className="flex items-center justify-between"
+                        data-testid={`menu-item-project-${project.id}`}
+                      >
+                        <span className="truncate flex-1">{project.name}</span>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">Draft</Badge>
+                          {project.id === projectId && (
+                            <Check className="h-4 w-4 text-primary" />
+                          )}
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                  </>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleStartNewAnalysis}
