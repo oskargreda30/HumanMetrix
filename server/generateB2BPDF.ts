@@ -267,7 +267,7 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(34, 197, 94);
+  pdf.setTextColor(59, 130, 246);
   pdf.text('AI Readiness - Technical Competencies', 20, yPos);
   yPos += 6;
   
@@ -287,7 +287,7 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(234, 179, 8);
+  pdf.setTextColor(59, 130, 246);
   pdf.text('Prompt Architecture - Evaluation Dimensions', 20, yPos);
   yPos += 6;
   
@@ -312,7 +312,7 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(147, 51, 234);
+  pdf.setTextColor(59, 130, 246);
   pdf.text('AIQ - Algorithmic Integrity Quotient Bands', 20, yPos);
   yPos += 6;
   
@@ -538,13 +538,15 @@ export function generateB2BResultsPDF(data: B2BAssessmentData): Buffer {
     
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(34, 197, 94);
+    pdf.setTextColor(59, 130, 246);
     pdf.text('What It Measures:', 20, yPos);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
-    pdf.text('Nine AI-related capabilities including AI Literacy, Technical Fundamentals, Data Fluency,', 52, yPos);
+    pdf.text('Nine AI-specific competencies: AI Literacy & Prompt Engineering, Technical Fundamentals,', 52, yPos);
     yPos += 4;
-    pdf.text('Critical Thinking, Adaptability, Collaboration, Responsible AI, Creativity, and Domain Expertise.', 20, yPos);
+    pdf.text('Data Fluency, Critical Thinking & Problem-Solving, Adaptability & Continuous Learning,', 20, yPos);
+    yPos += 4;
+    pdf.text('Collaboration & Communication, Responsible AI & Ethical Awareness, Creativity & Innovation, Domain Expertise.', 20, yPos);
     yPos += 10;
     
     pdf.setFontSize(9);
@@ -562,7 +564,7 @@ export function generateB2BResultsPDF(data: B2BAssessmentData): Buffer {
     yPos += 6;
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(34, 197, 94);
+    pdf.setTextColor(59, 130, 246);
     pdf.text('Workplace Impact:', 20, yPos);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
@@ -581,7 +583,7 @@ export function generateB2BResultsPDF(data: B2BAssessmentData): Buffer {
     
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(245, 158, 11);
+    pdf.setTextColor(59, 130, 246);
     pdf.text('What It Measures:', 20, yPos);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
@@ -670,7 +672,7 @@ export function generateB2BResultsPDF(data: B2BAssessmentData): Buffer {
     
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(245, 158, 11);
+    pdf.setTextColor(59, 130, 246);
     pdf.text('Workplace Impact:', 20, yPos);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
@@ -689,7 +691,7 @@ export function generateB2BResultsPDF(data: B2BAssessmentData): Buffer {
     
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(34, 197, 94);
+    pdf.setTextColor(59, 130, 246);
     pdf.text('What It Measures:', 20, yPos);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
@@ -737,7 +739,7 @@ export function generateB2BResultsPDF(data: B2BAssessmentData): Buffer {
     
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(34, 197, 94);
+    pdf.setTextColor(59, 130, 246);
     pdf.text('Workplace Impact:', 20, yPos);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);

@@ -250,7 +250,7 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   // AI Readiness Skills
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(34, 197, 94);
+  pdf.setTextColor(59, 130, 246);
   pdf.text('AI Readiness - Technical Competencies', 20, yPos);
   yPos += 6;
   
@@ -271,7 +271,7 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   // Prompt Architecture Dimensions
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(234, 179, 8); // Yellow to match pdfExport.ts
+  pdf.setTextColor(59, 130, 246);
   pdf.text('Prompt Architecture - Evaluation Dimensions', 20, yPos);
   yPos += 6;
   
@@ -298,7 +298,7 @@ function addSkillsLegendPage(pdf: jsPDF, pageWidth: number, pageHeight: number):
   // AIQ Scoring Bands
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(147, 51, 234);
+  pdf.setTextColor(59, 130, 246);
   pdf.text('AIQ - Algorithmic Integrity Quotient Bands', 20, yPos);
   yPos += 6;
   
@@ -361,6 +361,38 @@ function getAIQBandColor(score: number): [number, number, number] {
   if (score >= 40) return [245, 158, 11];  // Amber - Developing
   if (score >= 20) return [249, 115, 22];  // Orange - Significant Gaps
   return [239, 68, 68];                     // Red - Critical Concerns
+}
+
+// Helper to draw skill bar with progress indicator (fallback when charts unavailable)
+function drawSkillBar(pdf: jsPDF, skillName: string, score: number, yPos: number, pageWidth: number): number {
+  const blueColor = getBlueShadeColor(score);
+  
+  pdf.setFillColor(249, 250, 251);
+  pdf.rect(20, yPos - 3, pageWidth - 40, 12, 'F');
+  
+  pdf.setFontSize(8);
+  pdf.setTextColor(55, 65, 81);
+  pdf.setFont('helvetica', 'normal');
+  
+  const displayName = skillName.length > 30 ? skillName.substring(0, 27) + '...' : skillName;
+  pdf.text(displayName, 25, yPos + 4);
+  
+  const barWidth = 55;
+  const barX = pageWidth - 95;
+  const barHeight = 6;
+  
+  pdf.setFillColor(229, 231, 235);
+  pdf.roundedRect(barX, yPos, barWidth, barHeight, 2, 2, 'F');
+  
+  pdf.setFillColor(blueColor[0], blueColor[1], blueColor[2]);
+  const filledWidth = Math.max(4, (barWidth * score) / 100);
+  pdf.roundedRect(barX, yPos, filledWidth, barHeight, 2, 2, 'F');
+  
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(blueColor[0], blueColor[1], blueColor[2]);
+  pdf.text(`${score}`, pageWidth - 28, yPos + 4, { align: 'right' });
+  
+  return yPos + 14;
 }
 
 // Helper to generate role-based recommendations based on assessment profile
@@ -785,7 +817,7 @@ export async function exportEnhancedCandidatePDF(
     
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(245, 158, 11);
+    pdf.setTextColor(59, 130, 246);
     pdf.text('Prompt Architecture', 25, yPos);
     
     pdf.setTextColor(promptPerf.color[0], promptPerf.color[1], promptPerf.color[2]);
@@ -869,7 +901,7 @@ export async function exportEnhancedCandidatePDF(
   
   // FIT Assessment Radar Chart
   const fitSkills = skills.filter(s => s.assessment === 'FIT Assessment');
-  if (radarChartImages?.fit && fitSkills.length > 0) {
+  if (fitSkills.length > 0) {
     pdf.setFontSize(11);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(59, 130, 246);
@@ -888,74 +920,34 @@ export async function exportEnhancedCandidatePDF(
     pdf.text('Growth Mindset, and Interpersonal Agility.', 20, yPos);
     yPos += 8;
     
-    try {
-      const startY = yPos;
-      
-      // LEFT SIDE: Individual Skill Scores
-      const leftColumnX = 20;
-      const leftColumnWidth = 70;
-      
-      let scoresY = startY + 10; // Push down to align better with radar chart center
-      pdf.setFontSize(9);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(75, 85, 99);
-      pdf.text('Individual Skill Scores:', leftColumnX, scoresY);
-      scoresY += 7;
-      
-      fitSkills.forEach((skill, index) => {
-        pdf.setFontSize(8);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(55, 65, 81);
-        pdf.text(`${skill.name}:`, leftColumnX, scoresY);
-        
-        // Use blue shades instead of multicolor
-        const blueColor = getBlueShadeColor(skill.score);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(blueColor[0], blueColor[1], blueColor[2]);
-        pdf.text(`${skill.score}`, leftColumnX + leftColumnWidth - 10, scoresY, { align: 'right' });
-        
-        scoresY += 6;
-      });
-      
-      // RIGHT SIDE: Radar Chart (scaled to 90%)
-      const imgProps = pdf.getImageProperties(radarChartImages.fit);
-      const chartMaxWidth = (pageWidth - leftColumnX - leftColumnWidth - 25) * 0.9;
-      const chartMaxHeight = 80 * 0.9;
-      
-      let chartWidth = chartMaxWidth;
-      let chartHeight = (imgProps.height / imgProps.width) * chartWidth;
-      
-      if (chartHeight > chartMaxHeight) {
-        chartHeight = chartMaxHeight;
-        chartWidth = (imgProps.width / imgProps.height) * chartHeight;
-      }
-      
-      // Position chart closer to left column (reduced right margin from 15 to 35 from left column)
-      const chartX = leftColumnX + leftColumnWidth + 10;
-      pdf.addImage(radarChartImages.fit, 'PNG', chartX, startY, chartWidth, chartHeight);
-      
-      yPos = Math.max(scoresY, startY + chartHeight) + 5;
-      
-      // Workplace Impact at bottom of FIT section
-      pdf.setFontSize(8);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(59, 130, 246);
-      pdf.text('Workplace Impact:', 20, yPos);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(75, 85, 99);
-      pdf.text('Predicts adaptability, initiative, collaboration quality, and resilience under pressure.', 52, yPos);
-      yPos += 4;
-      pdf.text('High scorers drive innovation and navigate ambiguity effectively.', 20, yPos);
-      yPos += 10;
-    } catch (error) {
-      console.error('Error adding FIT chart:', error);
-      yPos += 10;
-    }
+    // Always use skill bars for consistency with B2B PDF (identical output)
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Individual Skill Scores:', 20, yPos);
+    yPos += 8;
+    
+    fitSkills.forEach((skill) => {
+      yPos = drawSkillBar(pdf, skill.name, skill.score, yPos, pageWidth);
+    });
+    yPos += 6;
+    
+    // Workplace Impact at bottom of FIT section
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(59, 130, 246);
+    pdf.text('Workplace Impact:', 20, yPos);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Predicts adaptability, initiative, collaboration quality, and resilience under pressure.', 52, yPos);
+    yPos += 4;
+    pdf.text('High scorers drive innovation and navigate ambiguity effectively.', 20, yPos);
+    yPos += 10;
   }
   
   // AI Readiness Radar Chart (on same page)
   const aiReadinessSkills = skills.filter(s => s.assessment === 'AI Readiness');
-  if (radarChartImages?.aiReadiness && aiReadinessSkills.length > 0) {
+  if (aiReadinessSkills.length > 0) {
     // Check if we need a new page for AI Readiness section
     if (yPos > pageHeight - 100) {
       pdf.addPage();
@@ -984,69 +976,29 @@ export async function exportEnhancedCandidatePDF(
     pdf.text('Collaboration & Communication, Responsible AI & Ethical Awareness, Creativity & Innovation, Domain Expertise.', 20, yPos);
     yPos += 8;
     
-    try {
-      const startY = yPos;
-      
-      // LEFT SIDE: Individual Skill Scores
-      const leftColumnX = 20;
-      const leftColumnWidth = 70;
-      
-      let scoresY = startY + 10; // Push down to align better with radar chart center
-      pdf.setFontSize(9);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(75, 85, 99);
-      pdf.text('Individual Skill Scores:', leftColumnX, scoresY);
-      scoresY += 7;
-      
-      aiReadinessSkills.forEach((skill, index) => {
-        pdf.setFontSize(8);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(55, 65, 81);
-        pdf.text(`${skill.name}:`, leftColumnX, scoresY);
-        
-        // Use blue shades instead of multicolor
-        const blueColor = getBlueShadeColor(skill.score);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(blueColor[0], blueColor[1], blueColor[2]);
-        pdf.text(`${skill.score}`, leftColumnX + leftColumnWidth - 10, scoresY, { align: 'right' });
-        
-        scoresY += 6;
-      });
-      
-      // RIGHT SIDE: Radar Chart (scaled to 90%)
-      const imgProps = pdf.getImageProperties(radarChartImages.aiReadiness);
-      const chartMaxWidth = (pageWidth - leftColumnX - leftColumnWidth - 25) * 0.9;
-      const chartMaxHeight = 80 * 0.9;
-      
-      let chartWidth = chartMaxWidth;
-      let chartHeight = (imgProps.height / imgProps.width) * chartWidth;
-      
-      if (chartHeight > chartMaxHeight) {
-        chartHeight = chartMaxHeight;
-        chartWidth = (imgProps.width / imgProps.height) * chartHeight;
-      }
-      
-      // Position chart closer to left column (reduced right margin from 15 to 35 from left column)
-      const chartX = leftColumnX + leftColumnWidth + 10;
-      pdf.addImage(radarChartImages.aiReadiness, 'PNG', chartX, startY, chartWidth, chartHeight);
-      
-      yPos = Math.max(scoresY, startY + chartHeight) + 5;
-      
-      // Workplace Impact at bottom of AI Readiness section
-      pdf.setFontSize(8);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(59, 130, 246);
-      pdf.text('Workplace Impact:', 20, yPos);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(75, 85, 99);
-      pdf.text('Determines ability to leverage AI tools for productivity gains, make sound AI-assisted decisions,', 52, yPos);
-      yPos += 4;
-      pdf.text('and integrate AI responsibly into workflows. High scorers multiply their output through effective AI collaboration.', 20, yPos);
-      yPos += 10;
-    } catch (error) {
-      console.error('Error adding AI Readiness chart:', error);
-      yPos += 10;
-    }
+    // Always use skill bars for consistency with B2B PDF (identical output)
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Individual Skill Scores:', 20, yPos);
+    yPos += 8;
+    
+    aiReadinessSkills.forEach((skill) => {
+      yPos = drawSkillBar(pdf, skill.name, skill.score, yPos, pageWidth);
+    });
+    yPos += 6;
+    
+    // Workplace Impact at bottom of AI Readiness section
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(59, 130, 246);
+    pdf.text('Workplace Impact:', 20, yPos);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Determines ability to leverage AI tools for productivity gains, make sound AI-assisted decisions,', 52, yPos);
+    yPos += 4;
+    pdf.text('and integrate AI responsibly into workflows. High scorers multiply their output through effective AI collaboration.', 20, yPos);
+    yPos += 10;
   }
   
   pdf.setTextColor(0, 0, 0);
@@ -1067,7 +1019,7 @@ export async function exportEnhancedCandidatePDF(
     // What It Measures description
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(245, 158, 11);
+    pdf.setTextColor(59, 130, 246);
     pdf.text('What It Measures:', 20, yPos);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
@@ -1190,7 +1142,7 @@ export async function exportEnhancedCandidatePDF(
     // Workplace Impact at bottom of Prompt Architecture section
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(245, 158, 11);
+    pdf.setTextColor(59, 130, 246);
     pdf.text('Workplace Impact:', 20, yPos);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
@@ -1224,7 +1176,7 @@ export async function exportEnhancedCandidatePDF(
     // What It Measures description
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(34, 197, 94); // Green for AIQ
+    pdf.setTextColor(59, 130, 246);
     pdf.text('What It Measures:', 20, yPos);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
@@ -1279,7 +1231,7 @@ export async function exportEnhancedCandidatePDF(
     // Workplace Impact at bottom of AIQ section
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(34, 197, 94); // Green for AIQ
+    pdf.setTextColor(59, 130, 246);
     pdf.text('Workplace Impact:', 20, yPos);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
