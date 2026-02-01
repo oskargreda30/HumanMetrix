@@ -163,25 +163,27 @@ export function EcosystemAutoProject({
     <div className="space-y-4">
       {/* Project Selector and Credit Info - side by side layout */}
       <div className="flex flex-col md:flex-row items-stretch gap-3">
-        {/* Project Selector */}
+        {/* Project Selector - More prominent styling */}
         {projects.length > 0 && (
-          <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3 border flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Current Analysis:</span>
+          <div className="flex items-center justify-between bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 border-2 border-primary/20 shadow-sm flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
+                <FileText className="h-4 w-4 text-primary" />
+              </div>
+              <span className="text-sm font-medium">Current Analysis:</span>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-8 gap-1"
+                    variant="default" 
+                    size="default" 
+                    className="gap-2 font-semibold"
                     data-testid="button-project-selector"
                   >
                     {currentProject?.name || "Team Diagnostic"}
                     {currentProject?.teamAnalysis && (
-                      <Badge variant="secondary" className="ml-1 text-xs">Complete</Badge>
+                      <Badge variant="secondary" className="ml-1 text-xs bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">Complete</Badge>
                     )}
-                    <ChevronDown className="h-3 w-3 ml-1" />
+                    <ChevronDown className="h-4 w-4 ml-1" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-64">
@@ -250,17 +252,17 @@ export function EcosystemAutoProject({
             
             {!currentProject?.teamAnalysis && (
               <Button
-                variant="ghost"
-                size="sm"
+                variant="outline"
+                size="default"
                 onClick={handleStartNewAnalysis}
                 disabled={createProject.isPending}
-                className="text-xs ml-2"
+                className="ml-3 border-primary/30 hover:bg-primary/10"
                 data-testid="button-new-analysis"
               >
                 {createProject.isPending ? (
-                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
-                  <Plus className="h-3 w-3 mr-1" />
+                  <Plus className="h-4 w-4 mr-2" />
                 )}
                 New Analysis
               </Button>
