@@ -163,14 +163,14 @@ export function EcosystemAutoProject({
     <div className="space-y-4">
       {/* Project Selector and Credit Info - side by side layout */}
       <div className="flex flex-col md:flex-row items-stretch gap-3">
-        {/* Project Selector - More prominent styling */}
+        {/* Project Selector - Matching Credit Usage box style */}
         {projects.length > 0 && (
-          <div className="flex items-center justify-between bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 border-2 border-primary/20 shadow-sm flex-shrink-0">
+          <div className="flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4 flex-shrink-0">
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
-                <FileText className="h-4 w-4 text-primary" />
+              <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
-              <span className="text-sm font-medium">Current Analysis:</span>
+              <span className="text-sm font-medium text-blue-800 dark:text-blue-200">Current Analysis:</span>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
@@ -256,7 +256,7 @@ export function EcosystemAutoProject({
                 size="default"
                 onClick={handleStartNewAnalysis}
                 disabled={createProject.isPending}
-                className="ml-3 border-primary/30 hover:bg-primary/10"
+                className="ml-3 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50"
                 data-testid="button-new-analysis"
               >
                 {createProject.isPending ? (
