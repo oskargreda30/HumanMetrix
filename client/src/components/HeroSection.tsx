@@ -16,9 +16,10 @@ import resultsImage2 from "@assets/image_1765687714401.png";
 
 interface HeroSectionProps {
   variant?: 'b2c' | 'b2b';
+  showCandidatesLink?: boolean;
 }
 
-export default function HeroSection({ variant = 'b2c' }: HeroSectionProps) {
+export default function HeroSection({ variant = 'b2c', showCandidatesLink = false }: HeroSectionProps) {
   const { formatLocalPrice } = useCurrency();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogIntent, setDialogIntent] = useState<'demo' | 'sales'>('demo');
@@ -142,6 +143,16 @@ export default function HeroSection({ variant = 'b2c' }: HeroSectionProps) {
         className="absolute inset-0 bg-gradient-to-br from-[#0a1628]/95 via-[#1a2744]/90 to-[#0a1628]/95 transition-transform duration-100"
         style={{ transform: prefersReducedMotion ? 'none' : `translateY(${scrollY * 0.3}px)` }}
       />
+      
+      {/* For Candidates link - shown on B2B variant */}
+      {showCandidatesLink && (
+        <div className="relative z-10 flex justify-start px-4 md:px-6 lg:px-8 pt-1.5 md:pt-2">
+          <Link href="/for-candidates" data-testid="link-for-candidates" className="inline-flex items-center gap-1 text-[10px] md:text-xs bg-white/10 hover:bg-white/20 backdrop-blur-sm px-2 py-1 md:px-3 md:py-1.5 rounded-full border border-white/20 text-blue-100/80 hover:text-white transition-all">
+            <span className="hidden sm:inline">Looking for a job?</span>
+            <span className="font-semibold text-cyan-300">For Candidates →</span>
+          </Link>
+        </div>
+      )}
       
       <div className="relative mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-12 md:py-20">
         {/* Two-column layout: Text left, Image right */}

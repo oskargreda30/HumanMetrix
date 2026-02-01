@@ -211,18 +211,11 @@ export default function Home() {
         intent={dialogIntent}
       />
       
-      {/* Dark blue hero section */}
-      <div className="bg-[#0a1628]">
-        <Navigation />
-        {/* For Candidates link - left aligned, compact */}
-        <div className="flex justify-start px-4 md:px-6 lg:px-8 pt-1.5 md:pt-2">
-          <Link href="/for-candidates" data-testid="link-for-candidates" className="inline-flex items-center gap-1 text-[10px] md:text-xs bg-white/10 hover:bg-white/20 backdrop-blur-sm px-2 py-1 md:px-3 md:py-1.5 rounded-full border border-white/20 text-blue-100/80 hover:text-white transition-all">
-            <span className="hidden sm:inline">Looking for a job?</span>
-            <span className="font-semibold text-cyan-300">For Candidates →</span>
-          </Link>
-        </div>
-        <HeroSection variant="b2b" />
-      </div>
+      {/* Navigation with dark background */}
+      <Navigation />
+      
+      {/* Hero section with network background */}
+      <HeroSection variant="b2b" showCandidatesLink={true} />
       
       {/* Light grey background for remaining sections */}
       <main className="flex-grow bg-slate-50">
