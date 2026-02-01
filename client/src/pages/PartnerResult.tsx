@@ -500,6 +500,26 @@ export default function PartnerResult() {
           </div>
         </Card>
 
+        {/* Overall Score - Prominent Display */}
+        {data.overallScore !== undefined && !isAIQ && (
+          <Card className="p-8 mb-8" data-pdf-section>
+            <div className="text-center">
+              <h2 className="text-lg font-medium text-muted-foreground mb-2">
+                Overall Score
+              </h2>
+              <div className={`text-4xl md:text-6xl font-bold mb-2 ${getScoreColor(data.overallScore)}`}>
+                {data.overallScore}
+              </div>
+              <p className="text-muted-foreground">out of 100</p>
+              {data.percentile && (
+                <Badge variant="secondary" className="mt-3">
+                  Top {100 - data.percentile}% of all candidates
+                </Badge>
+              )}
+            </div>
+          </Card>
+        )}
+
         {/* AIQ Graded Score Visualization */}
         {isAIQ && data.overallScore !== undefined && aiqBand && (() => {
           const getBarColor = (score: number) => {
@@ -570,110 +590,105 @@ export default function PartnerResult() {
           );
         })()}
 
-        {/* Visualizations - For FIT and AI Readiness */}
+        {/* Visualizations - Radar and Bar Charts Side by Side (matching B2C layout) */}
         {hasDetailedScores && !isAIQ && (
-          <div className="grid md:grid-cols-2 gap-6 mb-8" data-pdf-section>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Skill Breakdown
-                </CardTitle>
-                <CardDescription>Detailed scores for each assessed skill</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {Object.entries(normalizedScores)
-                    .filter(([_, score]) => typeof score === 'number')
-                    .map(([skill, score]) => (
-                    <div key={skill} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-foreground">{skill}</span>
-                        <Badge variant={getScoreBadgeVariant(score)}>{score}%</Badge>
-                      </div>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full transition-all ${
-                            score >= 80 ? 'bg-green-500' : 
-                            score >= 60 ? 'bg-primary' : 
-                            score >= 40 ? 'bg-yellow-500' : 'bg-red-500'
-                          }`}
-                          style={{ width: `${score}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
+          <div className="grid md:grid-cols-2 gap-8 mb-8" data-pdf-section>
+            {/* Radar Chart */}
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-6 text-center">Skills Radar</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <RadarChart data={radarData}>
+                  <PolarGrid stroke="hsl(var(--border))" />
+                  <PolarAngleAxis 
+                    dataKey="skill" 
+                    tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
+                  />
+                  <PolarRadiusAxis 
+                    angle={90} 
+                    domain={[0, 100]}
+                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                  />
+                  <Radar
+                    name="Score"
+                    dataKey="score"
+                    stroke="hsl(var(--primary))"
+                    fill="hsl(var(--primary))"
+                    fillOpacity={0.6}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
             </Card>
 
-            {radarData.length >= 3 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className="h-5 w-5" />
-                    Competency Profile
-                  </CardTitle>
-                  <CardDescription>Visual representation of skill distribution</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart data={radarData}>
-                        <PolarGrid stroke="hsl(var(--muted))" />
-                        <PolarAngleAxis 
-                          dataKey="skill" 
-                          tick={{ fill: 'hsl(var(--foreground))', fontSize: 11 }}
-                        />
-                        <Radar
-                          name="Score"
-                          dataKey="score"
-                          stroke="hsl(var(--primary))"
-                          fill="hsl(var(--primary))"
-                          fillOpacity={0.3}
-                        />
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            {/* Bar Chart */}
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-6 text-center">Skills Comparison</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={barData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="skill" 
+                    tick={{ fill: 'hsl(var(--foreground))', fontSize: 11 }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis 
+                    domain={[0, 100]}
+                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                    }}
+                    labelStyle={{ color: 'hsl(var(--foreground))' }}
+                  />
+                  <Bar 
+                    dataKey="score" 
+                    fill="hsl(var(--primary))"
+                    radius={[8, 8, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
           </div>
         )}
 
-        {/* Bar Chart */}
-        {hasDetailedScores && !isAIQ && barData.length > 0 && (
-          <Card className="p-6 mb-8" data-pdf-section>
-            <h2 className="text-xl font-semibold mb-6 text-center">Skills Comparison</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={barData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="skill" 
-                  tick={{ fill: 'hsl(var(--foreground))', fontSize: 11 }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                />
-                <YAxis 
-                  domain={[0, 100]}
-                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                  }}
-                  labelStyle={{ color: 'hsl(var(--foreground))' }}
-                />
-                <Bar 
-                  dataKey="score" 
-                  fill="hsl(var(--primary))"
-                  radius={[8, 8, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+        {/* Detailed Skill Breakdown with Progress Bars */}
+        {hasDetailedScores && !isAIQ && (
+          <Card className="mb-8" data-pdf-section>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Detailed Skill Breakdown
+              </CardTitle>
+              <CardDescription>Individual scores for each assessed competency</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {Object.entries(normalizedScores)
+                  .filter(([_, score]) => typeof score === 'number')
+                  .map(([skill, score]) => (
+                  <div key={skill} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-foreground">{skill}</span>
+                      <Badge variant={getScoreBadgeVariant(score)}>{score}%</Badge>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all ${
+                          score >= 80 ? 'bg-green-500' : 
+                          score >= 60 ? 'bg-primary' : 
+                          score >= 40 ? 'bg-yellow-500' : 'bg-red-500'
+                        }`}
+                        style={{ width: `${score}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
           </Card>
         )}
 
