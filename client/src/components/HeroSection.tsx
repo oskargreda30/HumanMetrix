@@ -146,7 +146,7 @@ export default function HeroSection({ variant = 'b2c', showCandidatesLink = fals
       
       {/* For Candidates link - shown on B2B variant */}
       {showCandidatesLink && (
-        <div className="relative z-10 flex justify-start px-4 md:px-6 lg:px-8 pt-1.5 md:pt-2">
+        <div className="absolute top-2 left-0 z-10 flex justify-start px-4 md:px-6 lg:px-8">
           <Link href="/for-candidates" data-testid="link-for-candidates" className="inline-flex items-center gap-1 text-[10px] md:text-xs bg-white/10 hover:bg-white/20 backdrop-blur-sm px-2 py-1 md:px-3 md:py-1.5 rounded-full border border-white/20 text-blue-100/80 hover:text-white transition-all">
             <span className="hidden sm:inline">Looking for a job?</span>
             <span className="font-semibold text-cyan-300">For Candidates →</span>
