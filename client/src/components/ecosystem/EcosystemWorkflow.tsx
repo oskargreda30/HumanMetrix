@@ -134,11 +134,15 @@ export function EcosystemWorkflow({
   const deleteTeamMember = useDeleteTeamMember();
   const generateAnalysis = useGenerateTeamAnalysis();
   
-  // Helper: Check if a team member has valid FIT scores (at least one score > 0)
-  const hasValidScores = (member: typeof teamMembers[0]) => {
-    if (!member.fitScores || typeof member.fitScores !== 'object') return false;
-    const scores = member.fitScores as Record<string, number>;
+  // Helper: Check if raw scores object has valid FIT scores (at least one score > 0)
+  const hasValidScoresFromRaw = (scores: Record<string, number> | null | undefined): boolean => {
+    if (!scores || typeof scores !== 'object') return false;
     return Object.values(scores).some(score => typeof score === 'number' && score > 0);
+  };
+  
+  // Helper: Check if a team member or candidate has valid FIT scores
+  const hasValidScores = (entity: { fitScores?: Record<string, number> | null }): boolean => {
+    return hasValidScoresFromRaw(entity.fitScores);
   };
   
   // Derived: Team members with valid FIT scores
@@ -1797,12 +1801,12 @@ export function EcosystemWorkflow({
 
             {parsedPdfData && (
               <div className={`p-4 rounded-lg border ${
-                parsedPdfData.scores && hasValidScores(parsedPdfData.scores)
+                parsedPdfData.scores && hasValidScoresFromRaw(parsedPdfData.scores)
                   ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
                   : "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800"
               }`}>
                 <div className="flex items-center gap-2 mb-3">
-                  {parsedPdfData.scores && hasValidScores(parsedPdfData.scores) ? (
+                  {parsedPdfData.scores && hasValidScoresFromRaw(parsedPdfData.scores) ? (
                     <>
                       <CheckCircle className="h-5 w-5 text-green-600" />
                       <span className="font-medium text-green-700 dark:text-green-400">Scores Extracted</span>
@@ -1817,7 +1821,7 @@ export function EcosystemWorkflow({
                 {parsedPdfData.name && (
                   <p className="text-sm mb-2">Name: <span className="font-medium">{parsedPdfData.name}</span></p>
                 )}
-                {parsedPdfData.scores && hasValidScores(parsedPdfData.scores) ? (
+                {parsedPdfData.scores && hasValidScoresFromRaw(parsedPdfData.scores) ? (
                   <div className="flex flex-wrap gap-2">
                     {FIT_CAPABILITIES.map((cap) => {
                       const score = parsedPdfData.scores?.[cap.code];
@@ -1853,7 +1857,7 @@ export function EcosystemWorkflow({
             </Button>
             <Button 
               onClick={handleAddFromPdf}
-              disabled={!parsedPdfData || !parsedPdfData.scores || !hasValidScores(parsedPdfData.scores) || addTeamMember.isPending}
+              disabled={!parsedPdfData || !parsedPdfData.scores || !hasValidScoresFromRaw(parsedPdfData.scores) || addTeamMember.isPending}
               data-testid="button-add-from-pdf"
             >
               {addTeamMember.isPending ? (
