@@ -1686,10 +1686,11 @@ export function EcosystemWorkflow({
                   onClick={handleGenerateAnalysis}
                   variant="outline"
                   size="sm"
+                  disabled={generateAnalysis.isPending}
                   data-testid="button-regenerate-analysis"
                 >
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Regenerate Analysis
+                  <RefreshCw className={`mr-2 h-4 w-4 ${generateAnalysis.isPending ? 'animate-spin' : ''}`} />
+                  {generateAnalysis.isPending ? 'Regenerating...' : 'Regenerate Analysis'}
                 </Button>
               </div>
             )}
