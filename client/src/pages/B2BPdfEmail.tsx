@@ -339,65 +339,67 @@ export default function B2BPdfEmail() {
       </div>
 
       <div id="b2b-pdf-results-content" className="max-w-4xl mx-auto p-6 pt-20 space-y-6">
-        <div className="flex items-center justify-between mb-6" data-pdf-section="header">
-          <div>
-            <h1 className="text-2xl font-bold">{getAssessmentLabel(data.assessmentType)} Results</h1>
-            <p className="text-muted-foreground">Completed with {data.partnerName}</p>
-          </div>
-          <Badge variant="outline" className="text-lg px-4 py-2">
-            Score: {Math.round(data.overallScore)}%
-          </Badge>
-        </div>
-
-        <Card data-pdf-section="how-to-read">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              📖 How to Read This Report
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground text-sm">
-              This comprehensive assessment provides insights into your {data.assessmentType === 'aiq' ? 'ethical reasoning capabilities' : 'skills and competencies'}. 
-              Scores above 70% indicate strong performance, while areas below 60% represent development opportunities.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card data-pdf-section="overall-score" className="border-2 border-primary/20">
-          <CardContent className="py-8">
-            <div className="text-center">
-              <p className="text-muted-foreground mb-2">Overall Score</p>
-              <div className="flex items-center justify-center gap-2">
-                <span className={`text-6xl font-bold ${getScoreColor(data.overallScore)}`}>
-                  {Math.round(data.overallScore)}
-                </span>
-                <span className="text-2xl text-muted-foreground">/ 100</span>
-              </div>
-              {data.percentile && (
-                <Badge variant="secondary" className="mt-4 text-base">
-                  {data.percentile}th Percentile
-                </Badge>
-              )}
+        <div data-pdf-section="summary" className="space-y-6 bg-white p-6 rounded-lg">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-2xl font-bold">{getAssessmentLabel(data.assessmentType)} Results</h1>
+              <p className="text-muted-foreground">Completed with {data.partnerName}</p>
             </div>
-          </CardContent>
-        </Card>
+            <Badge variant="outline" className="text-lg px-4 py-2">
+              Score: {Math.round(data.overallScore)}%
+            </Badge>
+          </div>
 
-        {isAIQ && aiqBand && (
-          <Card data-pdf-section="aiq-band">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                AIQ Band: {aiqBand.title}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                How to Read This Report
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">{aiqBand.description}</p>
+              <p className="text-muted-foreground text-sm">
+                This comprehensive assessment provides insights into your {data.assessmentType === 'aiq' ? 'ethical reasoning capabilities' : 'skills and competencies'}. 
+                Scores above 70% indicate strong performance, while areas below 60% represent development opportunities.
+              </p>
             </CardContent>
           </Card>
-        )}
+
+          <Card className="border-2 border-primary/20">
+            <CardContent className="py-8">
+              <div className="text-center">
+                <p className="text-muted-foreground mb-2">Overall Score</p>
+                <div className="flex items-center justify-center gap-2">
+                  <span className={`text-6xl font-bold ${getScoreColor(data.overallScore)}`}>
+                    {Math.round(data.overallScore)}
+                  </span>
+                  <span className="text-2xl text-muted-foreground">/ 100</span>
+                </div>
+                {data.percentile && (
+                  <Badge variant="secondary" className="mt-4 text-base">
+                    {data.percentile}th Percentile
+                  </Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {isAIQ && aiqBand && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5" />
+                  AIQ Band: {aiqBand.title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">{aiqBand.description}</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         {hasDetailedScores && (
-          <div className="grid md:grid-cols-2 gap-6" data-pdf-section="visualizations">
+          <div data-pdf-section="visualizations" className="bg-white p-6 rounded-lg grid md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Skills Radar</CardTitle>
@@ -452,49 +454,53 @@ export default function B2BPdfEmail() {
           </div>
         )}
 
-        <Card data-pdf-section="analysis">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Comprehensive Analysis
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <p className="text-muted-foreground">{analysis.overall}</p>
-            
-            {analysis.strengths.length > 0 && (
-              <div>
-                <h4 className="font-semibold text-green-600 mb-2">Key Strengths</h4>
-                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                  {analysis.strengths.map((strength, i) => (
-                    <li key={i}>{strength}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            
-            {analysis.improvements.length > 0 && (
-              <div>
-                <h4 className="font-semibold text-amber-600 mb-2">Development Opportunities</h4>
-                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                  {analysis.improvements.map((improvement, i) => (
-                    <li key={i}>{improvement}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {hasDetailedScores && (
-          <Card data-pdf-section="legend">
+        <div data-pdf-section="analysis" className="bg-white p-6 rounded-lg">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Skills Legend</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Comprehensive Analysis
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <SkillsLegend />
+            <CardContent className="space-y-6">
+              <p className="text-muted-foreground">{analysis.overall}</p>
+              
+              {analysis.strengths.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-green-600 mb-2">Key Strengths</h4>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                    {analysis.strengths.map((strength, i) => (
+                      <li key={i}>{strength}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {analysis.improvements.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-amber-600 mb-2">Development Opportunities</h4>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                    {analysis.improvements.map((improvement, i) => (
+                      <li key={i}>{improvement}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </CardContent>
           </Card>
+        </div>
+
+        {hasDetailedScores && (
+          <div data-pdf-section="legend" className="bg-white p-6 rounded-lg">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Skills Legend</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SkillsLegend />
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
     </div>

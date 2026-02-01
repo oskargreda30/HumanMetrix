@@ -105,34 +105,25 @@ export async function exportResultsPDF(options: UnifiedPDFOptions): Promise<Unif
   const margin = 10;
   const contentWidth = pageWidth - (margin * 2);
 
-  let currentY = margin;
-  let isFirstPage = true;
-
   for (let i = 0; i < sectionImages.length; i++) {
+    if (i > 0) {
+      pdf.addPage();
+    }
+
     const section = sectionImages[i];
     const aspectRatio = section.height / section.width;
-    const imageWidth = contentWidth;
-    const imageHeight = imageWidth * aspectRatio;
+    const availableHeight = pageHeight - (margin * 2);
+    
+    let imageWidth = contentWidth;
+    let imageHeight = imageWidth * aspectRatio;
 
-    if (!isFirstPage || currentY + imageHeight > pageHeight - margin) {
-      if (currentY > margin) {
-        pdf.addPage();
-        currentY = margin;
-      }
+    if (imageHeight > availableHeight) {
+      imageHeight = availableHeight;
+      imageWidth = imageHeight / aspectRatio;
     }
 
-    if (imageHeight > pageHeight - (margin * 2)) {
-      const maxHeight = pageHeight - (margin * 2);
-      const scaledWidth = maxHeight / aspectRatio;
-      const xOffset = margin + (contentWidth - scaledWidth) / 2;
-      pdf.addImage(section.image, 'PNG', xOffset, currentY, scaledWidth, maxHeight);
-      currentY = pageHeight;
-    } else {
-      pdf.addImage(section.image, 'PNG', margin, currentY, imageWidth, imageHeight);
-      currentY += imageHeight + 5;
-    }
-
-    isFirstPage = false;
+    const xOffset = margin + (contentWidth - imageWidth) / 2;
+    pdf.addImage(section.image, 'PNG', xOffset, margin, imageWidth, imageHeight);
   }
 
   if (returnBlob) {
@@ -219,34 +210,25 @@ export async function exportScreenCapturePDF(options: ScreenCapturePDFOptions): 
   const margin = 10;
   const contentWidth = pageWidth - (margin * 2);
 
-  let currentY = margin;
-  let isFirstPage = true;
-
   for (let i = 0; i < sectionImages.length; i++) {
+    if (i > 0) {
+      pdf.addPage();
+    }
+
     const section = sectionImages[i];
     const aspectRatio = section.height / section.width;
-    const imageWidth = contentWidth;
-    const imageHeight = imageWidth * aspectRatio;
+    const availableHeight = pageHeight - (margin * 2);
+    
+    let imageWidth = contentWidth;
+    let imageHeight = imageWidth * aspectRatio;
 
-    if (!isFirstPage || currentY + imageHeight > pageHeight - margin) {
-      if (currentY > margin) {
-        pdf.addPage();
-        currentY = margin;
-      }
+    if (imageHeight > availableHeight) {
+      imageHeight = availableHeight;
+      imageWidth = imageHeight / aspectRatio;
     }
 
-    if (imageHeight > pageHeight - (margin * 2)) {
-      const maxHeight = pageHeight - (margin * 2);
-      const scaledWidth = maxHeight / aspectRatio;
-      const xOffset = margin + (contentWidth - scaledWidth) / 2;
-      pdf.addImage(section.image, 'PNG', xOffset, currentY, scaledWidth, maxHeight);
-      currentY = pageHeight;
-    } else {
-      pdf.addImage(section.image, 'PNG', margin, currentY, imageWidth, imageHeight);
-      currentY += imageHeight + 5;
-    }
-
-    isFirstPage = false;
+    const xOffset = margin + (contentWidth - imageWidth) / 2;
+    pdf.addImage(section.image, 'PNG', xOffset, margin, imageWidth, imageHeight);
   }
 
   onProgress?.('Saving PDF...');
@@ -336,34 +318,25 @@ export async function getBase64FromPDF(options: Base64PDFOptions): Promise<strin
   const margin = 10;
   const contentWidth = pageWidth - (margin * 2);
 
-  let currentY = margin;
-  let isFirstPage = true;
-
   for (let i = 0; i < sectionImages.length; i++) {
+    if (i > 0) {
+      pdf.addPage();
+    }
+
     const section = sectionImages[i];
     const aspectRatio = section.height / section.width;
-    const imageWidth = contentWidth;
-    const imageHeight = imageWidth * aspectRatio;
+    const availableHeight = pageHeight - (margin * 2);
+    
+    let imageWidth = contentWidth;
+    let imageHeight = imageWidth * aspectRatio;
 
-    if (!isFirstPage || currentY + imageHeight > pageHeight - margin) {
-      if (currentY > margin) {
-        pdf.addPage();
-        currentY = margin;
-      }
+    if (imageHeight > availableHeight) {
+      imageHeight = availableHeight;
+      imageWidth = imageHeight / aspectRatio;
     }
 
-    if (imageHeight > pageHeight - (margin * 2)) {
-      const maxHeight = pageHeight - (margin * 2);
-      const scaledWidth = maxHeight / aspectRatio;
-      const xOffset = margin + (contentWidth - scaledWidth) / 2;
-      pdf.addImage(section.image, 'PNG', xOffset, currentY, scaledWidth, maxHeight);
-      currentY = pageHeight;
-    } else {
-      pdf.addImage(section.image, 'PNG', margin, currentY, imageWidth, imageHeight);
-      currentY += imageHeight + 5;
-    }
-
-    isFirstPage = false;
+    const xOffset = margin + (contentWidth - imageWidth) / 2;
+    pdf.addImage(section.image, 'PNG', xOffset, margin, imageWidth, imageHeight);
   }
 
   const base64 = pdf.output('datauristring').split(',')[1];
