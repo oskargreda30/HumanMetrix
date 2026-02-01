@@ -260,22 +260,27 @@ export function EcosystemAutoProject({
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            {/* Left: Analysis Selector */}
+            {/* Left: Analysis Title */}
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-sm font-medium text-muted-foreground">Analysis:</span>
+              <span className="font-bold text-foreground" data-testid="text-current-analysis">
+                {currentProject?.name || "Team Diagnostic"}
+              </span>
+              {currentProject?.teamAnalysis && (
+                <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">Complete</Badge>
+              )}
+              
+              {/* Hidden dropdown for selecting/switching analyses */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
-                    variant="default" 
-                    size="default" 
-                    className="gap-2 font-semibold"
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-7 px-2 text-muted-foreground hover:text-foreground"
                     data-testid="button-project-selector"
                   >
-                    {currentProject?.name || "Team Diagnostic"}
-                    {currentProject?.teamAnalysis && (
-                      <Badge variant="secondary" className="ml-1 text-xs bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">Complete</Badge>
-                    )}
-                    <ChevronDown className="h-4 w-4 ml-1" />
+                    <ChevronDown className="h-4 w-4" />
+                    <span className="sr-only">Switch analysis</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent 

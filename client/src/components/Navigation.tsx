@@ -100,7 +100,7 @@ export default function Navigation({ assessmentMode = false }: NavigationProps) 
   });
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-cyan-400/20 bg-[#0a1628] backdrop-blur supports-[backdrop-filter]:bg-[#0a1628]">
+    <header className="sticky top-0 z-50 w-full border-b border-cyan-400/20 bg-[#0a1628]/80 backdrop-blur-md">
       <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo - Non-clickable during assessment mode */}
@@ -228,7 +228,7 @@ export default function Navigation({ assessmentMode = false }: NavigationProps) 
 
       {/* Mobile Menu - Hidden in assessment mode */}
       {mobileMenuOpen && !assessmentMode && (
-        <div className="md:hidden border-t border-cyan-400/20 bg-[#0a1628]">
+        <div className="md:hidden border-t border-cyan-400/20 bg-[#0a1628]/90 backdrop-blur-sm">
           <nav className="flex flex-col gap-4 p-4">
             {/* Show nav links for all users except candidates */}
             {(!isAuthenticated || user?.role === 'super_admin' || user?.role === 'organization_admin' || user?.role === 'partner_admin') && navLinks.map((link) => (
