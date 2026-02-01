@@ -85,13 +85,24 @@ const FIT_CAPABILITIES = {
 
 // Mapping from full names (as stored in DB) to short codes (as used in frontend)
 const FIT_NAME_TO_CODE: Record<string, string> = {
+  // High Agency
   "high agency": "HA",
+  // Intellectual Curiosity
   "intellectual curiosity": "IC",
+  // Resilience & Adaptability
   "resilience": "RA",
   "resilience & adaptability": "RA",
+  "adaptability": "RA",
+  // Empathy & Ethics (also called Emotional Empathy in some contexts)
   "empathy & ethics": "EE",
+  "emotional empathy": "EE",
+  "empathy": "EE",
+  "ethics": "EE",
+  // Growth Mindset
   "growth mindset": "GM",
+  // Interpersonal Agility (also called Impact Ambition in some contexts)
   "interpersonal agility": "IA",
+  "impact ambition": "IA",
 };
 
 // Helper function to normalize FIT scores from database format (full names) to frontend format (codes)
@@ -1277,7 +1288,14 @@ export function registerEcosystemRoutes(app: Express): void {
       }
 
       const teamMembers = await storage.getEcosystemTeamMembers(req.params.id);
-      res.json(teamMembers);
+      
+      // Normalize fitScores for each team member (convert full names to short codes if needed)
+      const normalizedMembers = teamMembers.map(member => ({
+        ...member,
+        fitScores: member.fitScores ? normalizeFitScores(member.fitScores as Record<string, any>) : null,
+      }));
+      
+      res.json(normalizedMembers);
     } catch (error: any) {
       console.error("[Ecosystem] Error fetching team members:", error);
       res.status(500).json({ error: "Failed to fetch team members" });
@@ -1652,8 +1670,9 @@ export function registerEcosystemRoutes(app: Express): void {
       const candidatesMap = new Map<string, any>();
       
       for (const session of sessions) {
-        // Skip test sessions and non-FIT assessments
-        if (session.isTestSession || session.assessmentType !== "fit") continue;
+        // Skip test sessions and non-FIT assessments (case-insensitive check)
+        const sessionType = session.assessmentType?.toLowerCase().replace(/-/g, '_');
+        if (session.isTestSession || (sessionType !== "fit" && sessionType !== "fit_assessment")) continue;
         
         // Must have email and be completed with scores
         if (!session.externalEmail || session.status !== "completed" || !session.scores) continue;
