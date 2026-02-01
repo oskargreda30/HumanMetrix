@@ -545,7 +545,8 @@ export function EcosystemWorkflow({
         title: "Analysis generated",
         description: "Your comprehensive Team Diagnostic Report is ready.",
       });
-      navigateToStep(7); // Go to results step
+      // Refetch project to show results
+      refetchProject();
     } catch (error: any) {
       toast({
         title: "Analysis failed",
@@ -553,6 +554,103 @@ export function EcosystemWorkflow({
         variant: "destructive",
       });
     }
+  };
+
+  // Combined handler: charge credits AND generate analysis in one click
+  const handleGenerateReport = async () => {
+    // Validation
+    if (!missionStatement.trim()) {
+      toast({
+        title: "Mission statement required",
+        description: "Please enter your company's mission statement before generating the report.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const membersWithScores = teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores).length > 0);
+    if (membersWithScores.length === 0) {
+      toast({
+        title: "No team members with scores",
+        description: "Add at least one team member with FIT scores to generate the report.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Save current form data first
+    try {
+      await saveMission.mutateAsync({
+        projectId,
+        missionStatement,
+        companyEthos,
+      });
+      
+      await updateOrgContext.mutateAsync({
+        projectId,
+        industry,
+        teamFunction,
+        teamSize: teamSize ? parseInt(teamSize, 10) : undefined,
+        workMode,
+        teamStage,
+        hiringPlans,
+        currentChallenges,
+        delayedTasks,
+        conflictTopics,
+        avoidedWork,
+        overloadedMember,
+        wishedSkills,
+        idealInteractionStyle,
+        personalityGap,
+        upcomingInitiative,
+        cloneableSkills,
+        transformativeFix,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Save failed",
+        description: "Could not save your data. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // If not already paid, charge credits first
+    if (!project?.isPaid) {
+      setIsProcessingPayment(true);
+      try {
+        const response = await apiRequest("POST", `/api/ecosystem/projects/${projectId}/consume-credits`);
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.error || "Failed to consume credits");
+        }
+        
+        // Invalidate partner data to refresh credit count
+        queryClient.invalidateQueries({ queryKey: ['/api/partner/me'] });
+        
+        toast({
+          title: "Credits consumed",
+          description: `${data.creditsConsumed || ECOSYSTEM_CREDITS_REQUIRED} credits used.`,
+        });
+        
+        // Refresh project to get isPaid = true
+        await refetchProject();
+      } catch (error: any) {
+        const errorData = await error?.json?.().catch(() => null);
+        toast({
+          title: "Insufficient credits",
+          description: errorData?.error || error.message || "Could not consume credits. Please ensure you have enough credits.",
+          variant: "destructive",
+        });
+        setIsProcessingPayment(false);
+        return;
+      }
+      setIsProcessingPayment(false);
+    }
+
+    // Now generate the analysis
+    await handleGenerateAnalysis();
   };
 
   // Credits required for ecosystem analysis
@@ -764,241 +862,147 @@ export function EcosystemWorkflow({
         </Card>
       )}
 
-      {/* Step 1: Book Consultation (Optional) - considered complete when user has moved to step 2+ */}
-      <Card data-testid="step-1-consultation">
-        <div 
-          className="flex items-center gap-3 p-4 cursor-pointer hover-elevate rounded-lg"
-          onClick={() => {
-            const isExpanding = expandedStep !== 1;
-            setExpandedStep(isExpanding ? 1 : -1);
-            if (isExpanding) {
-              scrollToStep(1);
-            }
-          }}
-          data-testid="step-header-1"
-        >
-          <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold ${
-            (project.currentStep || 1) > 1 || !!missionAnalysis
-              ? 'bg-green-500 text-white' 
-              : 'bg-primary text-primary-foreground'
-          }`}>
-            {(project.currentStep || 1) > 1 || !!missionAnalysis ? <CheckCircle className="h-5 w-5" /> : 1}
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-semibold">Book a Consultation Call</h3>
-              <Badge variant="outline" className="text-xs">Optional</Badge>
-            </div>
-            <p className="text-sm text-muted-foreground">Discuss your team's needs with our experts</p>
-          </div>
-          {expandedStep === 1 ? (
-            <ChevronDown className="h-5 w-5 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
-          )}
-        </div>
-        {expandedStep === 1 && (
-          <div className="p-6 pt-0 space-y-4">
-            <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
-              <Calendar className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium mb-1">Free 30-Minute Consultation</p>
-                <p className="text-sm text-muted-foreground">
-                  Not sure where to start? Book a call with our team diagnostic experts to discuss 
-                  your organization's needs and how the Ecosystem Index can help.
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-3">
-              <a 
-                href={CALENDLY_URL} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="inline-flex"
-              >
-                <Button data-testid="button-book-consultation">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Book Consultation
-                  <ExternalLink className="ml-2 h-3 w-3" />
-                </Button>
-              </a>
-              <Button 
-                variant="outline" 
-                onClick={() => navigateToStep(2)}
-                data-testid="button-skip-consultation"
-              >
-                <ArrowRight className="mr-2 h-4 w-4" />
-                Save and Continue
-              </Button>
-            </div>
-          </div>
-        )}
-      </Card>
-
-      {/* Step 2: Mission Analysis */}
-      <Card data-testid="step-2-mission">
-        <StepHeader 
-          step={2} 
-          title="Define Your Mission & Ethos" 
-          description="AI-powered analysis of your organizational priorities"
-          completed={!!missionAnalysis}
-        />
-        {expandedStep === 2 && (
-          <div className="p-6 pt-0 space-y-4">
-            <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
-              <Brain className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium mb-1">AI-Powered Analysis</p>
-                <p className="text-sm text-muted-foreground">
-                  Our AI will analyze your mission to identify which FIT capabilities are most critical for your organization's success.
-                </p>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="mission">Mission Statement</Label>
-              <Textarea
-                id="mission"
-                value={missionStatement}
-                onChange={(e) => setMissionStatement(e.target.value)}
-                placeholder="Enter your company's mission statement..."
-                className="min-h-[120px]"
-                data-testid="textarea-mission"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="ethos">Company Ethos / Values (Optional)</Label>
-              <Textarea
-                id="ethos"
-                value={companyEthos}
-                onChange={(e) => setCompanyEthos(e.target.value)}
-                placeholder="Additional context about your culture and values..."
-                className="min-h-[80px]"
-                data-testid="textarea-ethos"
-              />
-            </div>
-
-            <Button 
-              onClick={() => {
-                handleSaveMission();
-              }}
-              disabled={saveMission.isPending}
-              data-testid="button-save-mission"
-            >
-              {saveMission.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <ArrowRight className="mr-2 h-4 w-4" />
-                  Save and Continue
-                </>
-              )}
-            </Button>
-
-            {missionAnalysis && (
-              <div className="mt-4 p-4 bg-muted/50 rounded-lg space-y-4">
-                <div>
-                  <h4 className="font-semibold mb-2">Analysis Summary</h4>
-                  <p className="text-sm text-muted-foreground">{missionAnalysis.summary}</p>
-                </div>
-                
-                <div>
-                  <h4 className="font-semibold mb-2">Capability Priorities</h4>
-                  <div className="space-y-2">
-                    {missionAnalysis.capabilityPriorities.map((cap) => {
-                      const fitCap = FIT_CAPABILITIES.find(c => c.code === cap.code);
-                      return (
-                        <div key={cap.code} className="flex items-start gap-3 p-3 bg-background rounded-lg">
-                          <div className={`h-8 w-8 rounded-full ${fitCap?.color || 'bg-gray-500'} flex items-center justify-center flex-shrink-0`}>
-                            <span className="text-white text-xs font-bold">{cap.code}</span>
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{cap.name}</span>
-                              <Badge variant={
-                                cap.priority === "critical" ? "destructive" :
-                                cap.priority === "high" ? "default" :
-                                cap.priority === "medium" ? "secondary" : "outline"
-                              }>
-                                {cap.priority}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-1">{cap.reasoning}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {missionAnalysis.keyThemes.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold mb-2">Key Themes</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {missionAnalysis.keyThemes.map((theme, i) => (
-                        <Badge key={i} variant="outline">{theme}</Badge>
-                      ))}
+      {/* RESULTS VIEW: If analysis is complete, show results */}
+      {teamAnalysis && (
+        <Card data-testid="results-view">
+          <div className="p-6 space-y-6">
+            {/* Regenerate Analysis Option */}
+            {generateAnalysis.isPending ? (
+              <div className="space-y-4" data-testid="regenerate-analysis-progress">
+                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="relative">
+                      <Brain className="h-6 w-6 text-primary" />
+                      <div className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full animate-pulse" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">Regenerating AI Analysis</p>
+                      <p className="text-xs text-muted-foreground">{analysisStage || "Initializing..."}</p>
                     </div>
                   </div>
-                )}
+                  <Progress value={analysisProgress} className="h-2" />
+                  <div className="flex justify-between mt-2">
+                    <span className="text-xs text-muted-foreground">{analysisProgress}% complete</span>
+                    <span className="text-xs text-muted-foreground">~60-90 seconds</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between p-4 bg-muted/50 border border-border rounded-lg">
+                <div className="flex items-center gap-3">
+                  <RefreshCw className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">Made changes?</p>
+                    <p className="text-xs text-muted-foreground">
+                      Update your data and regenerate the analysis
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={handleGenerateAnalysis}
+                  variant="outline"
+                  size="sm"
+                  disabled={generateAnalysis.isPending}
+                  data-testid="button-regenerate-analysis"
+                >
+                  <RefreshCw className={`mr-2 h-4 w-4 ${generateAnalysis.isPending ? 'animate-spin' : ''}`} />
+                  {generateAnalysis.isPending ? 'Regenerating...' : 'Regenerate'}
+                </Button>
               </div>
             )}
-          </div>
-        )}
-      </Card>
 
-      {/* Step 3: Team Context */}
-      <Card data-testid="step-3-org-context">
-        <StepHeader 
-          step={3} 
-          title="Team Context" 
-          description="Help us understand your team's situation and needs"
-          completed={!!industry && !!teamStage}
-        />
-        {expandedStep === 3 && (
-          <div className="p-6 pt-0 space-y-6">
-            <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
-              <Target className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium mb-1">Context Matters</p>
-                <p className="text-sm text-muted-foreground">
-                  The more context you provide, the more strategic and relevant our hiring recommendations will be.
-                </p>
+            <TeamAnalysisResults 
+              analysis={teamAnalysis} 
+              companyName={project.companyName || "Your Team"}
+              project={project}
+              teamMembers={teamMembers}
+            />
+          </div>
+        </Card>
+      )}
+
+      {/* FORM VIEW: If no analysis yet, show the form */}
+      {!teamAnalysis && (
+        <>
+          {/* Section 1: Mission & Ethos */}
+          <Card data-testid="section-mission">
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                  <Building2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">Mission & Ethos</h3>
+                  <p className="text-sm text-muted-foreground">Define your organizational priorities</p>
+                </div>
+              </div>
+            
+              <div className="space-y-2">
+                <Label htmlFor="mission">Mission Statement *</Label>
+                <Textarea
+                  id="mission"
+                  value={missionStatement}
+                  onChange={(e) => setMissionStatement(e.target.value)}
+                  placeholder="Enter your company's mission statement..."
+                  className="min-h-[120px]"
+                  data-testid="textarea-mission"
+                />
+              </div>
+            
+              <div className="space-y-2">
+                <Label htmlFor="ethos">Company Ethos / Values (Optional)</Label>
+                <Textarea
+                  id="ethos"
+                  value={companyEthos}
+                  onChange={(e) => setCompanyEthos(e.target.value)}
+                  placeholder="Additional context about your culture and values..."
+                  className="min-h-[80px]"
+                  data-testid="textarea-ethos"
+                />
               </div>
             </div>
+          </Card>
 
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="industry">Industry</Label>
-                <Select value={industry} onValueChange={setIndustry}>
-                  <SelectTrigger data-testid="select-industry">
-                    <SelectValue placeholder="Select industry" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="technology">Technology</SelectItem>
-                    <SelectItem value="finance">Finance & Banking</SelectItem>
-                    <SelectItem value="healthcare">Healthcare</SelectItem>
-                    <SelectItem value="manufacturing">Manufacturing</SelectItem>
-                    <SelectItem value="retail">Retail & E-commerce</SelectItem>
-                    <SelectItem value="consulting">Consulting</SelectItem>
-                    <SelectItem value="education">Education</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+          {/* Section 2: Team Context */}
+          <Card data-testid="section-team-context">
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                  <Target className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">Team Context</h3>
+                  <p className="text-sm text-muted-foreground">Help us understand your team's situation</p>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="team-stage">Team Stage</Label>
-                <Select value={teamStage} onValueChange={setTeamStage}>
-                  <SelectTrigger data-testid="select-team-stage">
-                    <SelectValue placeholder="Select stage" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="new">New Team (0-6 months)</SelectItem>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="industry">Industry</Label>
+                  <Select value={industry} onValueChange={setIndustry}>
+                    <SelectTrigger data-testid="select-industry">
+                      <SelectValue placeholder="Select industry" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="technology">Technology</SelectItem>
+                      <SelectItem value="finance">Finance & Banking</SelectItem>
+                      <SelectItem value="healthcare">Healthcare</SelectItem>
+                      <SelectItem value="manufacturing">Manufacturing</SelectItem>
+                      <SelectItem value="retail">Retail & E-commerce</SelectItem>
+                      <SelectItem value="consulting">Consulting</SelectItem>
+                      <SelectItem value="education">Education</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="team-stage">Team Stage</Label>
+                  <Select value={teamStage} onValueChange={setTeamStage}>
+                    <SelectTrigger data-testid="select-team-stage">
+                      <SelectValue placeholder="Select stage" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">New Team (0-6 months)</SelectItem>
                     <SelectItem value="growing">Growing (scaling up)</SelectItem>
                     <SelectItem value="mature">Mature (established)</SelectItem>
                     <SelectItem value="restructuring">Restructuring</SelectItem>
@@ -1260,59 +1264,44 @@ export function EcosystemWorkflow({
               )}
             </div>
 
-            <Button 
-              onClick={handleSaveOrgContext}
-              disabled={updateOrgContext.isPending}
-              data-testid="button-save-org-context"
-            >
-              {updateOrgContext.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Save & Continue
-                </>
-              )}
-            </Button>
-          </div>
-        )}
-      </Card>
+            </div>
+          </Card>
 
-      {/* Step 4: Team Members */}
-      <Card data-testid="step-4-team-members">
-        <StepHeader 
-          step={4} 
-          title="Add Team Members" 
-          description={`${teamMembers.length} members added`}
-          completed={teamMembers.length > 0}
-        />
-        {expandedStep === 4 && (
-          <div className="p-6 pt-0 space-y-4">
-            <div className="flex flex-wrap gap-3">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowAddMemberDialog(true)}
-                data-testid="button-add-member"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Member Manually
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setShowPdfUploadDialog(true)}
-                data-testid="button-upload-pdf"
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                Upload FIT Report PDF
-              </Button>
-              {isPartnerDashboard && partnerId && (
+          {/* Section 3: Team Members */}
+          <Card data-testid="section-team-members">
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                  <Users className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">Team Members</h3>
+                  <p className="text-sm text-muted-foreground">{teamMembers.length} members added</p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
                 <Button 
-                  variant={showCandidatePool ? "default" : "outline"}
-                  onClick={() => setShowCandidatePool(!showCandidatePool)}
-                  data-testid="button-invite-from-candidates"
+                  variant="outline" 
+                  onClick={() => setShowAddMemberDialog(true)}
+                  data-testid="button-add-member"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Member Manually
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowPdfUploadDialog(true)}
+                  data-testid="button-upload-pdf"
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload FIT Report PDF
+                </Button>
+                {isPartnerDashboard && partnerId && (
+                  <Button 
+                    variant={showCandidatePool ? "default" : "outline"}
+                    onClick={() => setShowCandidatePool(!showCandidatePool)}
+                    data-testid="button-invite-from-candidates"
                 >
                   <UserPlus className="mr-2 h-4 w-4" />
                   {showCandidatePool ? "Hide Candidates" : "Add from Candidates"}
@@ -1469,253 +1458,111 @@ export function EcosystemWorkflow({
               </div>
             )}
 
-            {/* Show Save and Continue button when team members exist */}
-            {teamMembers.length > 0 && !project.isPaid && (
-              <Button 
-                onClick={() => navigateToStep(5)}
-                data-testid="button-save-continue-step4"
-              >
-                <ArrowRight className="mr-2 h-4 w-4" />
-                Save and Continue
-              </Button>
-            )}
-            {/* Show Save and Continue when already paid */}
-            {teamMembers.length > 0 && project.isPaid && !teamAnalysis && (
-              <Button 
-                onClick={() => navigateToStep(6)}
-                data-testid="button-save-continue-step4-paid"
-              >
-                <ArrowRight className="mr-2 h-4 w-4" />
-                Save and Continue
-              </Button>
-            )}
-          </div>
-        )}
-      </Card>
-
-      {/* Step 5: Use Credits - Always visible, shows paid status or credit consumption option */}
-      <Card data-testid="step-5-credits" className={project.isPaid ? "" : "border-primary/30"}>
-        <StepHeader 
-          step={5} 
-          title="Use Credits" 
-          description={project.isPaid ? "Credits applied" : "Use credits to unlock your diagnostic report"}
-          completed={project.isPaid}
-        />
-        {expandedStep === 5 && !project.isPaid && (
-          <div className="p-6 pt-0 space-y-4">
-            <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
-              <Sparkles className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium mb-1">Unlock Your Team Diagnostic Report</p>
-                <p className="text-sm text-muted-foreground">
-                  Use {ECOSYSTEM_CREDITS_REQUIRED} credits to generate your comprehensive team capability report, 
-                  including AI-powered gap analysis, ideal candidate profiles, and actionable recommendations.
-                </p>
-              </div>
             </div>
+          </Card>
 
-            <div className="p-4 bg-muted/50 rounded-lg space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="font-medium">Team Diagnostic Report</span>
-                <Badge variant="secondary" className="text-sm font-semibold">{ECOSYSTEM_CREDITS_REQUIRED} credits</Badge>
-              </div>
-              <div className="text-sm text-muted-foreground space-y-1">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span>AI-powered mission analysis</span>
+          {/* Generate Report Section */}
+          <Card data-testid="section-generate-report" className="border-primary/30">
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                  <Sparkles className="h-5 w-5" />
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span>Complete capability gap analysis</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span>Ideal candidate profile with FIT targets</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span>Risk alerts and recommendations</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span>Exportable PDF report</span>
+                <div>
+                  <h3 className="text-lg font-semibold">Generate Report</h3>
+                  <p className="text-sm text-muted-foreground">Generate your AI-powered team diagnostic</p>
                 </div>
               </div>
-            </div>
 
-            <Button 
-              onClick={handleConsumeCredits}
-              disabled={isProcessingPayment || isPaygRestricted}
-              size="lg"
-              className="w-full"
-              data-testid="button-use-credits"
-            >
-              {isProcessingPayment ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <ArrowRight className="mr-2 h-4 w-4" />
-                  Save and Continue
-                </>
+              <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">Team Diagnostic Report</span>
+                  <Badge variant="secondary" className="text-sm font-semibold">{ECOSYSTEM_CREDITS_REQUIRED} credits</Badge>
+                </div>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>AI-powered mission analysis</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>Complete capability gap analysis</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>Ideal candidate profile with FIT targets</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>Risk alerts and recommendations</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>Exportable PDF report</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Validation Messages */}
+              {(!missionStatement || teamMembers.length === 0) && (
+                <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  <p className="text-sm font-medium text-amber-700 dark:text-amber-300">Please complete the following before generating:</p>
+                  <ul className="text-sm text-amber-600 dark:text-amber-400 mt-2 space-y-1">
+                    {!missionStatement && <li>• Enter your mission statement</li>}
+                    {teamMembers.length === 0 && <li>• Add at least one team member</li>}
+                  </ul>
+                </div>
               )}
-            </Button>
-          </div>
-        )}
-        {/* Show Save and Continue when step 5 is already completed */}
-        {expandedStep === 5 && project.isPaid && !teamAnalysis && (
-          <div className="p-6 pt-0">
-            <div className="p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg mb-4">
-              <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
-                <CheckCircle className="h-5 w-5" />
-                <span className="font-medium">Credits applied successfully! You can now generate your team analysis.</span>
-              </div>
-            </div>
-            <Button 
-              onClick={() => navigateToStep(6)}
-              data-testid="button-continue-to-generate"
-            >
-              <ArrowRight className="mr-2 h-4 w-4" />
-              Save and Continue
-            </Button>
-          </div>
-        )}
-      </Card>
 
-      {/* Step 6: Generate Analysis - Always visible, locked when not paid */}
-      <Card data-testid="step-6-generate-analysis">
-        <StepHeader 
-          step={6} 
-          title="Generate Team Analysis" 
-          description={teamAnalysis ? "Analysis complete" : "AI-powered diagnostic report"}
-          completed={!!teamAnalysis}
-          locked={!project.isPaid}
-          lockedMessage="Unlocks after credits applied"
-        />
-        {expandedStep === 6 && project.isPaid && !teamAnalysis && (
-          <div className="p-6 pt-0 space-y-4">
-            <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
-              <BarChart3 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium mb-1">Comprehensive Analysis</p>
-                <p className="text-sm text-muted-foreground">
-                  Generate a detailed report including capability distribution, gap analysis, 
-                  hire recommendations, and risk alerts.
-                </p>
-              </div>
+              <Button 
+                onClick={handleGenerateReport}
+                disabled={isProcessingPayment || generateAnalysis.isPending || !missionStatement || teamMembers.length === 0 || isPaygRestricted}
+                size="lg"
+                className="w-full"
+                data-testid="button-generate-report"
+              >
+                {isProcessingPayment || generateAnalysis.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {isProcessingPayment ? 'Processing Credits...' : 'Generating Report...'}
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Generate Report ({ECOSYSTEM_CREDITS_REQUIRED} credits)
+                  </>
+                )}
+              </Button>
             </div>
+          </Card>
+        </>
+      )}
 
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <div className="flex items-center gap-2 text-sm">
-                <Users className="h-4 w-4" />
-                <span>{teamMembers.length} team members</span>
-                <span className="text-muted-foreground">•</span>
-                <span>{teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores).length > 0).length} with FIT scores</span>
-              </div>
-            </div>
-
-            {generateAnalysis.isPending ? (
-              <div className="space-y-4" data-testid="analysis-progress">
-                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="relative">
-                      <Brain className="h-6 w-6 text-primary" />
-                      <div className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full animate-pulse" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">AI Analysis in Progress</p>
-                      <p className="text-xs text-muted-foreground">{analysisStage || "Initializing..."}</p>
-                    </div>
-                  </div>
-                  <Progress value={analysisProgress} className="h-2" />
-                  <div className="flex justify-between mt-2">
-                    <span className="text-xs text-muted-foreground">{analysisProgress}% complete</span>
-                    <span className="text-xs text-muted-foreground">~60-90 seconds</span>
-                  </div>
+      {/* RESULTS VIEW: If analysis exists, show the results */}
+      {teamAnalysis && (
+        <Card data-testid="section-results">
+          <div className="p-6 space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-green-500 text-white flex items-center justify-center">
+                  <CheckCircle className="h-5 w-5" />
                 </div>
-                <Button 
-                  disabled
-                  size="lg"
-                  className="w-full"
-                  data-testid="button-generate-analysis"
-                >
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating Analysis...
-                </Button>
+                <div>
+                  <h3 className="text-lg font-semibold">Team Diagnostic Results</h3>
+                  <p className="text-sm text-muted-foreground">Your AI-powered analysis is ready</p>
+                </div>
               </div>
-            ) : (
               <Button 
                 onClick={handleGenerateAnalysis}
-                disabled={teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores).length > 0).length === 0}
-                size="lg"
-                data-testid="button-generate-analysis"
+                variant="outline"
+                size="sm"
+                disabled={generateAnalysis.isPending}
+                data-testid="button-regenerate-analysis"
               >
-                <Sparkles className="mr-2 h-4 w-4" />
-                Generate Team Analysis
+                <RefreshCw className={`mr-2 h-4 w-4 ${generateAnalysis.isPending ? 'animate-spin' : ''}`} />
+                {generateAnalysis.isPending ? 'Regenerating...' : 'Regenerate Analysis'}
               </Button>
-            )}
-          </div>
-        )}
-      </Card>
-
-      {/* Step 7: Results - Always visible, locked until payment AND Step 6 analysis completed */}
-      <Card data-testid="step-7-results">
-        <StepHeader 
-          step={7} 
-          title="Team Diagnostic Report" 
-          description={teamAnalysis ? "Your comprehensive analysis" : "View your results"}
-          completed={!!teamAnalysis}
-          locked={!project.isPaid || !teamAnalysis}
-          lockedMessage={!project.isPaid ? "Unlocks after credits applied" : "Unlocks after generating analysis"}
-        />
-        {expandedStep === 7 && project.isPaid && teamAnalysis && (
-          <div className="p-6 pt-0 space-y-6">
-            {/* Regenerate Analysis Option */}
-            {generateAnalysis.isPending ? (
-              <div className="space-y-4" data-testid="regenerate-analysis-progress">
-                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="relative">
-                      <Brain className="h-6 w-6 text-primary" />
-                      <div className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full animate-pulse" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">Regenerating AI Analysis</p>
-                      <p className="text-xs text-muted-foreground">{analysisStage || "Initializing..."}</p>
-                    </div>
-                  </div>
-                  <Progress value={analysisProgress} className="h-2" />
-                  <div className="flex justify-between mt-2">
-                    <span className="text-xs text-muted-foreground">{analysisProgress}% complete</span>
-                    <span className="text-xs text-muted-foreground">~60-90 seconds</span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between p-4 bg-muted/50 border border-border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <RefreshCw className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Made changes?</p>
-                    <p className="text-xs text-muted-foreground">
-                      Update mission, team members, or context and regenerate your analysis
-                    </p>
-                  </div>
-                </div>
-                <Button 
-                  onClick={handleGenerateAnalysis}
-                  variant="outline"
-                  size="sm"
-                  disabled={generateAnalysis.isPending}
-                  data-testid="button-regenerate-analysis"
-                >
-                  <RefreshCw className={`mr-2 h-4 w-4 ${generateAnalysis.isPending ? 'animate-spin' : ''}`} />
-                  {generateAnalysis.isPending ? 'Regenerating...' : 'Regenerate Analysis'}
-                </Button>
-              </div>
-            )}
+            </div>
 
             <TeamAnalysisResults 
               analysis={teamAnalysis} 
@@ -1724,8 +1571,8 @@ export function EcosystemWorkflow({
               teamMembers={teamMembers}
             />
           </div>
-        )}
-      </Card>
+        </Card>
+      )}
 
       {/* Add Team Member Dialog */}
       <Dialog open={showAddMemberDialog} onOpenChange={setShowAddMemberDialog}>
