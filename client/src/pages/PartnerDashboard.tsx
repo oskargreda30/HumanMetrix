@@ -1114,6 +1114,55 @@ export default function PartnerDashboard() {
   // Settings tab expanded section state
   const [settingsExpandedSection, setSettingsExpandedSection] = useState<string | null>(null);
   
+  // FAB (Floating Action Button) state
+  const [fabOpen, setFabOpen] = useState(false);
+  
+  // Helper to get current tab display name
+  const getTabLabel = (tab: string): string => {
+    const tabLabels: Record<string, string> = {
+      home: 'Overview',
+      pipeline: 'Candidates',
+      analysis: 'Analysis',
+      results: 'Results',
+      invitations: 'Invitations',
+      ecosystem: 'Ecosystem Index',
+      team: 'Team',
+      billing: 'Billing',
+      settings: 'Settings',
+      developer: 'Developer',
+      usage: 'Usage',
+      analytics: 'Analytics',
+      notifications: 'Notifications',
+      activity: 'Activity',
+    };
+    return tabLabels[tab] || tab;
+  };
+  
+  // Helper to get current section display name
+  const getSectionLabel = (tab: string, section: string | null): string | null => {
+    if (!section) return null;
+    if (tab === 'billing') {
+      const billingLabels: Record<string, string> = {
+        credits: 'Credit Balance',
+        purchase: 'Buy Credits',
+        options: 'Billing Options',
+        history: 'Payment History',
+      };
+      return billingLabels[section] || null;
+    }
+    if (tab === 'settings') {
+      const settingsLabels: Record<string, string> = {
+        contract: 'Contract & Terms',
+        account: 'Account Details',
+        alerts: 'Quota Alerts',
+        autotopup: 'Auto Top-Up',
+        branding: 'White-Label Branding',
+      };
+      return settingsLabels[section] || null;
+    }
+    return null;
+  };
+  
   // PDF Import modal state
   const [showPdfImportModal, setShowPdfImportModal] = useState(false);
   
@@ -2104,6 +2153,33 @@ export default function PartnerDashboard() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
+            {/* Breadcrumb Navigation */}
+            <nav className="flex items-center gap-2 text-sm text-white/70 mb-2" data-testid="breadcrumb-nav">
+              <Button 
+                variant="ghost"
+                size="sm"
+                onClick={() => { setActiveTab('home'); window.scrollTo(0, 0); }}
+                className="h-auto p-0 text-white/70"
+                data-testid="breadcrumb-dashboard"
+              >
+                Dashboard
+              </Button>
+              <ChevronRight className="h-4 w-4" />
+              <span className="text-white font-medium">{getTabLabel(activeTab)}</span>
+              {activeTab === 'billing' && billingExpandedSection && (
+                <>
+                  <ChevronRight className="h-4 w-4" />
+                  <span className="text-cyan-300">{getSectionLabel('billing', billingExpandedSection)}</span>
+                </>
+              )}
+              {activeTab === 'settings' && settingsExpandedSection && (
+                <>
+                  <ChevronRight className="h-4 w-4" />
+                  <span className="text-cyan-300">{getSectionLabel('settings', settingsExpandedSection)}</span>
+                </>
+              )}
+            </nav>
+            
             <TabsList className="flex flex-wrap justify-start gap-1 h-auto p-1 bg-white/10 border border-white/20 w-auto">
               <TabsTrigger value="home" data-testid="tab-home" className="text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 min-w-[70px] data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Overview
@@ -2381,6 +2457,16 @@ export default function PartnerDashboard() {
               <div className="text-center py-4 md:py-6">
                 <h2 className="text-xl md:text-2xl font-semibold mb-1 md:mb-2 text-white">Assessment Results</h2>
                 <p className="text-white/90 text-sm md:text-base">Access detailed assessment results and download reports.</p>
+                {/* Cross-Tab Quick Link */}
+                <Button 
+                  variant="link" 
+                  className="mt-2 text-cyan-300" 
+                  onClick={() => { setActiveTab('ecosystem'); window.scrollTo(0, 0); }}
+                  data-testid="link-results-to-ecosystem"
+                >
+                  <Sparkles className="h-4 w-4 mr-1" />
+                  View Team Analysis →
+                </Button>
               </div>
               <PartnerResultsTab />
             </TabsContent>
@@ -4562,6 +4648,16 @@ export default function PartnerDashboard() {
               <div className="text-center py-4 md:py-6">
                 <h2 className="text-xl md:text-2xl font-semibold mb-1 md:mb-2 text-white">Candidate Analysis</h2>
                 <p className="text-white/90 text-sm md:text-base">Compare candidates side-by-side with AI-powered insights.</p>
+                {/* Cross-Tab Quick Link */}
+                <Button 
+                  variant="link" 
+                  className="mt-2 text-cyan-300" 
+                  onClick={() => { setActiveTab('invitations'); window.scrollTo(0, 0); }}
+                  data-testid="link-analysis-to-invitations"
+                >
+                  <Send className="h-4 w-4 mr-1" />
+                  Invite More Candidates →
+                </Button>
               </div>
               <PartnerAnalysisTab 
                 creditsRemaining={partner.remaining} 
@@ -5401,6 +5497,57 @@ export default function PartnerDashboard() {
             </TabsContent>
 
           </Tabs>
+          
+          {/* Floating Action Button (FAB) */}
+          <div className="fixed bottom-6 right-6 z-50" data-testid="fab-container">
+            {/* FAB Menu - appears when expanded */}
+            {fabOpen && (
+              <div className="absolute bottom-16 right-0 flex flex-col gap-3 items-end mb-2">
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  className="shadow-lg flex items-center gap-2"
+                  onClick={() => { setActiveTab('invitations'); setFabOpen(false); window.scrollTo(0, 0); }}
+                  data-testid="fab-invite-candidate"
+                >
+                  <Send className="h-4 w-4" />
+                  Invite Candidate
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  className="shadow-lg flex items-center gap-2"
+                  onClick={() => { setActiveTab('billing'); setBillingExpandedSection('purchase'); setFabOpen(false); window.scrollTo(0, 0); }}
+                  data-testid="fab-buy-credits"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  Buy Credits
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  className="shadow-lg flex items-center gap-2"
+                  onClick={() => { setActiveTab('ecosystem'); setFabOpen(false); window.scrollTo(0, 0); }}
+                  data-testid="fab-run-analysis"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Run Analysis
+                </Button>
+              </div>
+            )}
+            
+            {/* FAB Main Button - using wrapper div for custom sizing */}
+            <div className="h-14 w-14">
+              <Button 
+                variant="default"
+                className={`h-full w-full rounded-full shadow-lg transition-all duration-200 ${fabOpen ? 'rotate-45' : ''}`}
+                onClick={() => setFabOpen(!fabOpen)}
+                data-testid="fab-main-button"
+              >
+                <Plus className="h-6 w-6" />
+              </Button>
+            </div>
+          </div>
         </div>
       </main>
 
