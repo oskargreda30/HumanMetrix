@@ -9,7 +9,7 @@ function getCsrfToken(): string | null {
   return match ? decodeURIComponent(match[2]) : null;
 }
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Users, Target, TrendingUp, Trophy, AlertTriangle, Download, CheckCircle2, AlertCircle, FileText, BarChart2, Sparkles, MessageSquare, Clock, ShieldAlert, DollarSign, ArrowUp, Brain, Send, ExternalLink } from "lucide-react";
+import { Loader2, Users, Target, TrendingUp, Trophy, AlertTriangle, Download, CheckCircle2, AlertCircle, FileText, Sparkles, MessageSquare, Clock, ShieldAlert, DollarSign, ArrowUp, Brain, Send, ExternalLink } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -996,153 +996,6 @@ export default function PartnerMultiCandidateRoleFitTab() {
             );
           })()}
 
-          {/* Hiring Decision Matrix */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Hiring Decision Matrix
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Quick reference for hiring band classification and decision drivers
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {(() => {
-                  // Get critical skill required scores from role snapshot
-                  const roleSkills = comparison.roleSnapshot.requiredSkillScores;
-                  const skillCriticality = roleSkills?.skillCriticality || {};
-                  
-                  // Build list of critical skill names with their required scores
-                  const criticalSkillRequirements = new Map<string, number>();
-                  if (roleSkills?.fitSkills) {
-                    Object.entries(roleSkills.fitSkills).forEach(([skillName, requiredScore]) => {
-                      if (skillCriticality[skillName] === 'critical') {
-                        criticalSkillRequirements.set(skillName, requiredScore as number);
-                      }
-                    });
-                  }
-                  if (roleSkills?.aiReadinessSkills) {
-                    Object.entries(roleSkills.aiReadinessSkills).forEach(([skillName, requiredScore]) => {
-                      if (skillCriticality[skillName] === 'critical') {
-                        criticalSkillRequirements.set(skillName, requiredScore as number);
-                      }
-                    });
-                  }
-                  
-                  // Sort: ranked candidates first (by rank), then insufficient data
-                  const sortedCandidates = [...comparison.candidateEntries].sort((a, b) => {
-                    // Use hasSufficientData to determine if candidate should be at end
-                    const aHasData = a.hasSufficientData !== false && a.dataCoverage?.hasSufficientData !== false && a.overallFit != null;
-                    const bHasData = b.hasSufficientData !== false && b.dataCoverage?.hasSufficientData !== false && b.overallFit != null;
-                    
-                    if (!aHasData && !bHasData) return 0;
-                    if (!aHasData) return 1;
-                    if (!bHasData) return -1;
-                    
-                    // Both have data, sort by rank
-                    if (a.rank === null && b.rank === null) return 0;
-                    if (a.rank === null) return 1;
-                    if (b.rank === null) return -1;
-                    return a.rank - b.rank;
-                  });
-                  
-                  return sortedCandidates.map((candidate, idx) => {
-                    // Use hasSufficientData and dataCoverage for more accurate assessment
-                    const hasInsufficientData = candidate.hasSufficientData === false || 
-                      candidate.dataCoverage?.hasSufficientData === false || 
-                      candidate.fitTier === 'insufficient-data' || 
-                      candidate.overallFit == null;
-                    
-                    // Calculate critical gaps using role snapshot requirements
-                    const criticalGaps = Array.from(criticalSkillRequirements.entries()).filter(([skillName, requiredScore]) => {
-                      const skill = findSkillInScores(candidate.skillScores, skillName);
-                      return skill?.dataAvailable !== false && skill?.score != null && (skill.score || 0) < requiredScore;
-                    }).length;
-                    
-                    let hiringBand: { label: string; color: string; bgColor: string };
-                    
-                    if (hasInsufficientData) {
-                      hiringBand = { label: 'INSUFFICIENT DATA', color: 'text-gray-600', bgColor: 'bg-gray-100 dark:bg-gray-800 border-gray-300' };
-                    } else if (candidate.overallFit! >= 80 && criticalGaps === 0) {
-                      hiringBand = { label: 'STRONG HIRE', color: 'text-green-700', bgColor: 'bg-green-100 dark:bg-green-900/30 border-green-300' };
-                    } else if (candidate.overallFit! >= 70 && criticalGaps <= 1) {
-                      hiringBand = { label: 'HIRE', color: 'text-blue-700', bgColor: 'bg-blue-100 dark:bg-blue-900/30 border-blue-300' };
-                    } else if (candidate.overallFit! >= 60 && criticalGaps <= 2) {
-                      hiringBand = { label: 'MAYBE', color: 'text-amber-700', bgColor: 'bg-amber-100 dark:bg-amber-900/30 border-amber-300' };
-                    } else {
-                      hiringBand = { label: 'NO HIRE', color: 'text-red-700', bgColor: 'bg-red-100 dark:bg-red-900/30 border-red-300' };
-                    }
-                    
-                    // Key decision drivers
-                    const topStrengths = candidate.strengths.slice(0, 2);
-                    const topGaps = candidate.gaps.slice(0, 2);
-                    
-                    return (
-                      <Card key={candidate.userId} className={`border-2 ${hiringBand.bgColor}`}>
-                        <CardContent className="pt-4">
-                          <div className="flex items-start justify-between mb-3">
-                            <div>
-                              <div className="font-bold text-lg">{candidate.userName}</div>
-                              {hasInsufficientData ? (
-                                <div className="text-xl text-muted-foreground">N/A</div>
-                              ) : (
-                                <div className="text-2xl font-bold">{candidate.overallFit}%</div>
-                              )}
-                            </div>
-                            <div className="text-right">
-                              <Badge className={`text-sm font-bold ${hiringBand.color} bg-white dark:bg-gray-800`}>
-                                {hiringBand.label}
-                              </Badge>
-                              {idx === 0 && !hasInsufficientData && (
-                                <div className="mt-1">
-                                  <Badge className="bg-amber-500 text-white">Top Pick</Badge>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-2 text-sm">
-                            {hasInsufficientData ? (
-                              <div className="flex items-center gap-2 text-muted-foreground">
-                                <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                                <span>Complete assessments required for evaluation</span>
-                              </div>
-                            ) : (
-                              <>
-                                {criticalGaps > 0 && (
-                                  <div className="flex items-center gap-2 text-red-600">
-                                    <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-                                    <span>{criticalGaps} critical skill gap{criticalGaps > 1 ? 's' : ''}</span>
-                                  </div>
-                                )}
-                                
-                                {topStrengths.length > 0 && (
-                                  <div className="flex items-start gap-2 text-green-600">
-                                    <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                                    <span>{topStrengths.map(s => typeof s === 'string' ? s : s.skill).join(', ')}</span>
-                                  </div>
-                                )}
-                                
-                                {topGaps.length > 0 && (
-                                  <div className="flex items-start gap-2 text-amber-600">
-                                    <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                                    <span>{topGaps.map(g => typeof g === 'string' ? g : g.skill).join(', ')}</span>
-                                  </div>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  });
-                })()}
-              </div>
-            </CardContent>
-          </Card>
-
           {/* AI-Powered Strategic Insights */}
           <Card className="bg-gradient-to-r from-purple-500/10 via-purple-500/5 to-transparent border-purple-500/20" data-testid="card-ai-insights">
             <CardHeader>
@@ -1184,124 +1037,6 @@ export default function PartnerMultiCandidateRoleFitTab() {
                   <p className="text-sm">AI insights will appear here once the analysis completes.</p>
                 </div>
               )}
-            </CardContent>
-          </Card>
-
-          {/* Advanced Analytics Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart2 className="h-5 w-5" />
-                Advanced Analytics
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Deep-dive metrics to help you understand candidate differences beyond overall fit scores
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-6 lg:grid-cols-2">
-                {/* Skill Dominance */}
-                {(comparison.summaryInsights.skillDominance?.length || 0) > 0 && (
-                  <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
-                    <h4 className="font-semibold flex items-center gap-2">
-                      <Trophy className="h-4 w-4 text-amber-500" />
-                      Skill Dominance Count
-                    </h4>
-                    <div className="text-sm text-muted-foreground space-y-1 pb-2 border-b">
-                      <p>Shows how many individual skills each candidate leads in compared to others.</p>
-                      <p className="text-xs italic">Why it matters: A candidate who leads in more skills may be more versatile, while one who dominates fewer but critical skills might still be the better choice for specific roles.</p>
-                    </div>
-                    <div className="space-y-2">
-                      {comparison.summaryInsights.skillDominance?.map((sd: any, i: number) => (
-                        <div key={i} className="flex items-center justify-between p-2 rounded bg-background">
-                          <span className="font-medium">{sd.candidateName}</span>
-                          <div className="flex items-center gap-2">
-                            <Badge variant={i === 0 ? "default" : "outline"}>
-                              {sd.winsCount}/{sd.totalSkills} skills
-                            </Badge>
-                            <span className="text-sm text-muted-foreground">
-                              ({sd.dominancePercent}%)
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Consistency Scores */}
-                {(comparison.summaryInsights.consistencyScores?.length || 0) > 0 && (
-                  <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
-                    <h4 className="font-semibold flex items-center gap-2">
-                      <Target className="h-4 w-4 text-blue-500" />
-                      Consistency Score
-                    </h4>
-                    <div className="text-sm text-muted-foreground space-y-1 pb-2 border-b">
-                      <p>Measures how evenly a candidate performs across all required skills (higher = more balanced performance).</p>
-                      <p className="text-xs italic">Why it matters: Highly consistent candidates are predictable performers with no major gaps. Variable candidates may excel in some areas but struggle in others, which could be fine depending on team composition.</p>
-                    </div>
-                    <div className="space-y-2">
-                      {comparison.summaryInsights.consistencyScores?.map((cs: any, i: number) => (
-                        <div key={i} className="flex items-center justify-between p-2 rounded bg-background">
-                          <span className="font-medium">{cs.candidateName}</span>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold">{cs.consistencyScore}%</span>
-                            <Badge 
-                              variant="outline"
-                              className={
-                                cs.interpretation === 'Very Consistent' ? 'border-green-500 text-green-600' :
-                                cs.interpretation === 'Consistent' ? 'border-blue-500 text-blue-600' :
-                                cs.interpretation === 'Variable' ? 'border-amber-500 text-amber-600' :
-                                ''
-                              }
-                            >
-                              {cs.interpretation}
-                            </Badge>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Critical Gap Ratio */}
-                {(comparison.summaryInsights.criticalGapRatios?.length || 0) > 0 && (
-                  <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
-                    <h4 className="font-semibold flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-red-500" />
-                      Critical Gap Ratio
-                    </h4>
-                    <div className="text-sm text-muted-foreground space-y-1 pb-2 border-b">
-                      <p>Identifies how many critical skills fall below the 60% threshold - the minimum acceptable level for role success.</p>
-                      <p className="text-xs italic">Why it matters: Critical skills are non-negotiable for the role. Gaps here represent significant hiring risks that may require additional training, support, or could lead to performance issues.</p>
-                    </div>
-                    <div className="space-y-2">
-                      {comparison.summaryInsights.criticalGapRatios?.map((cgr: any, i: number) => (
-                        <div key={i} className="flex items-center justify-between p-2 rounded bg-background">
-                          <span className="font-medium">{cgr.candidateName}</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm">
-                              {cgr.criticalGaps}/{cgr.totalCritical} gaps
-                            </span>
-                            <Badge 
-                              variant="outline"
-                              className={
-                                cgr.riskLevel === 'No Risk' ? 'border-green-500 text-green-600' :
-                                cgr.riskLevel === 'Low Risk' ? 'border-blue-500 text-blue-600' :
-                                cgr.riskLevel === 'Moderate Risk' ? 'border-amber-500 text-amber-600' :
-                                'border-red-500 text-red-600'
-                              }
-                            >
-                              {cgr.riskLevel}
-                            </Badge>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-              </div>
             </CardContent>
           </Card>
 
@@ -1556,7 +1291,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
           <SkillsLegend />
 
           {/* Export PDF and Back to Top Buttons - Bottom of Dashboard */}
-          <div className="flex justify-center gap-4 pt-6 pb-4">
+          <div className="flex justify-end gap-4 pt-6 pb-4">
             <Button
               onClick={handleExportPDF}
               disabled={isExporting}
@@ -1576,7 +1311,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
               )}
             </Button>
             <Button
-              variant="outline"
+              variant="default"
               size="lg"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               data-testid="button-back-to-top-bottom"
