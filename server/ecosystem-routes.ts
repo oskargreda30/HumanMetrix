@@ -5,7 +5,9 @@ import OpenAI from "openai";
 import Stripe from "stripe";
 import { z } from "zod";
 import multer from "multer";
-import * as pdfParse from "pdf-parse";
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { PDFParse } = require("pdf-parse");
 import type { 
   EcosystemMissionAnalysis,
   EcosystemTeamAnalysis,
@@ -1358,9 +1360,11 @@ export function registerEcosystemRoutes(app: Express): void {
         return res.status(400).json({ error: "No PDF file uploaded" });
       }
 
-      // Parse the PDF
-      const pdfData = await (pdfParse as any).default(file.buffer);
-      const text = pdfData.text;
+      // Parse the PDF using pdf-parse v2 API
+      const parser = new PDFParse({ data: file.buffer });
+      await parser.load();
+      const textResult = await parser.getText();
+      const text = typeof textResult === 'string' ? textResult : (textResult?.text || '');
 
       // Extract name from PDF (look for common patterns in HumanMetrix FIT reports)
       let name = "";

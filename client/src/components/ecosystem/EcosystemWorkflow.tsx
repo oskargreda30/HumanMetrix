@@ -613,23 +613,23 @@ export function EcosystemWorkflow({
       
       await updateOrgContext.mutateAsync({
         projectId,
-        industry,
-        teamFunction,
+        industry: industry || undefined,
+        teamFunction: teamFunction || undefined,
         teamSize: teamSize ? parseInt(teamSize, 10) : undefined,
-        workMode,
-        teamStage,
-        hiringPlans,
-        currentChallenges,
-        delayedTasks,
-        conflictTopics,
-        avoidedWork,
-        overloadedMember,
-        wishedSkills,
-        idealInteractionStyle,
-        personalityGap,
-        upcomingInitiative,
-        cloneableSkills,
-        transformativeFix,
+        workMode: workMode || undefined,
+        teamStage: teamStage || undefined,
+        hiringPlans: hiringPlans || undefined,
+        currentChallenges: currentChallenges || undefined,
+        delayedTasks: delayedTasks || undefined,
+        conflictTopics: conflictTopics || undefined,
+        avoidedWork: avoidedWork || undefined,
+        overloadedMember: overloadedMember || undefined,
+        wishedSkills: wishedSkills || undefined,
+        idealInteractionStyle: idealInteractionStyle || undefined,
+        personalityGap: personalityGap || undefined,
+        upcomingInitiative: upcomingInitiative || undefined,
+        cloneableSkills: cloneableSkills || undefined,
+        transformativeFix: transformativeFix || undefined,
       });
     } catch (error: any) {
       toast({
@@ -1371,43 +1371,65 @@ export function EcosystemWorkflow({
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="flex gap-1 flex-wrap">
-                            {['HA', 'IC', 'RA', 'EE', 'GM', 'IA'].map((key) => {
-                              const value = (candidate.fitScores as Record<string, number>)?.[key];
-                              return value !== undefined ? (
-                                <span 
-                                  key={key} 
-                                  className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded"
-                                  title={`${key}: ${value}%`}
+                          {(() => {
+                            const candidateHasValidScores = candidate.fitScores && hasValidScores(candidate.fitScores);
+                            return (
+                              <>
+                                <div className="flex gap-1 flex-wrap">
+                                  {candidateHasValidScores ? (
+                                    ['HA', 'IC', 'RA', 'EE', 'GM', 'IA'].map((key) => {
+                                      const value = (candidate.fitScores as Record<string, number>)?.[key];
+                                      return value !== undefined && value > 0 ? (
+                                        <span 
+                                          key={key} 
+                                          className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded"
+                                          title={`${key}: ${value}%`}
+                                        >
+                                          {key}:{value}
+                                        </span>
+                                      ) : null;
+                                    })
+                                  ) : (
+                                    <Badge variant="outline" className="text-amber-600 border-amber-400">
+                                      No FIT scores
+                                    </Badge>
+                                  )}
+                                </div>
+                                <Button
+                                  size="sm"
+                                  disabled={!candidateHasValidScores}
+                                  onClick={async () => {
+                                    if (!candidateHasValidScores) {
+                                      toast({ 
+                                        title: "Cannot add candidate", 
+                                        description: "This candidate has not completed a FIT assessment with valid scores.", 
+                                        variant: "destructive" 
+                                      });
+                                      return;
+                                    }
+                                    try {
+                                      await apiRequest('POST', `/api/ecosystem/projects/${project.id}/team-members`, {
+                                        name: candidate.name || candidate.email.split('@')[0],
+                                        email: candidate.email,
+                                        sourceType: 'linked_result',
+                                        sourceId: candidate.id,
+                                        fitScores: candidate.fitScores,
+                                      });
+                                      queryClient.invalidateQueries({ queryKey: [`/api/ecosystem/projects/${project.id}/team-members`] });
+                                      queryClient.invalidateQueries({ queryKey: [`/api/ecosystem/projects/${project.id}/searchable-candidates`] });
+                                      toast({ title: "Added", description: `${candidate.name || candidate.email} added to team` });
+                                    } catch (e) {
+                                      toast({ title: "Error", description: "Failed to add candidate", variant: "destructive" });
+                                    }
+                                  }}
+                                  data-testid={`button-add-candidate-${candidate.id}`}
                                 >
-                                  {key}:{value}
-                                </span>
-                              ) : null;
-                            })}
-                          </div>
-                          <Button
-                            size="sm"
-                            onClick={async () => {
-                              try {
-                                await apiRequest('POST', `/api/ecosystem/projects/${project.id}/team-members`, {
-                                  name: candidate.name || candidate.email.split('@')[0],
-                                  email: candidate.email,
-                                  sourceType: 'linked_result',
-                                  sourceId: candidate.id,
-                                  fitScores: candidate.fitScores,
-                                });
-                                queryClient.invalidateQueries({ queryKey: [`/api/ecosystem/projects/${project.id}/team-members`] });
-                                queryClient.invalidateQueries({ queryKey: [`/api/ecosystem/projects/${project.id}/searchable-candidates`] });
-                                toast({ title: "Added", description: `${candidate.name || candidate.email} added to team` });
-                              } catch (e) {
-                                toast({ title: "Error", description: "Failed to add candidate", variant: "destructive" });
-                              }
-                            }}
-                            data-testid={`button-add-candidate-${candidate.id}`}
-                          >
-                            <Plus className="h-3 w-3 mr-1" />
-                            Add
-                          </Button>
+                                  <Plus className="h-3 w-3 mr-1" />
+                                  Add
+                                </Button>
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     ))}
@@ -1441,11 +1463,11 @@ export function EcosystemWorkflow({
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      {member.fitScores && Object.keys(member.fitScores).length > 0 ? (
+                      {member.fitScores && hasValidScores(member.fitScores) ? (
                         <div className="flex gap-1">
                           {FIT_CAPABILITIES.map((cap) => {
                             const score = member.fitScores?.[cap.code as keyof typeof member.fitScores];
-                            return score !== undefined ? (
+                            return score !== undefined && score > 0 ? (
                               <div 
                                 key={cap.code}
                                 className={`${cap.color} text-white text-xs px-1.5 py-0.5 rounded font-medium`}
@@ -1457,7 +1479,9 @@ export function EcosystemWorkflow({
                           })}
                         </div>
                       ) : (
-                        <Badge variant="outline">No scores</Badge>
+                        <Badge variant="outline" className="text-amber-600 border-amber-400" title="This member won't be included in analysis - no valid FIT scores">
+                          No scores
+                        </Badge>
                       )}
                       <Button
                         variant="ghost"
@@ -1740,19 +1764,32 @@ export function EcosystemWorkflow({
             )}
 
             {parsedPdfData && (
-              <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <div className={`p-4 rounded-lg border ${
+                parsedPdfData.scores && hasValidScores(parsedPdfData.scores)
+                  ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                  : "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800"
+              }`}>
                 <div className="flex items-center gap-2 mb-3">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <span className="font-medium text-green-700 dark:text-green-400">Scores Extracted</span>
+                  {parsedPdfData.scores && hasValidScores(parsedPdfData.scores) ? (
+                    <>
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                      <span className="font-medium text-green-700 dark:text-green-400">Scores Extracted</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertTriangle className="h-5 w-5 text-amber-600" />
+                      <span className="font-medium text-amber-700 dark:text-amber-400">No Valid Scores Found</span>
+                    </>
+                  )}
                 </div>
                 {parsedPdfData.name && (
                   <p className="text-sm mb-2">Name: <span className="font-medium">{parsedPdfData.name}</span></p>
                 )}
-                {parsedPdfData.scores && (
+                {parsedPdfData.scores && hasValidScores(parsedPdfData.scores) ? (
                   <div className="flex flex-wrap gap-2">
                     {FIT_CAPABILITIES.map((cap) => {
                       const score = parsedPdfData.scores?.[cap.code];
-                      return score !== undefined ? (
+                      return score !== undefined && score > 0 ? (
                         <div 
                           key={cap.code}
                           className={`${cap.color} text-white text-xs px-2 py-1 rounded font-medium`}
@@ -1762,6 +1799,10 @@ export function EcosystemWorkflow({
                       ) : null;
                     })}
                   </div>
+                ) : (
+                  <p className="text-sm text-amber-600 dark:text-amber-400">
+                    Could not extract FIT scores from this PDF. Please ensure it's a valid HumanMetrix FIT assessment report.
+                  </p>
                 )}
               </div>
             )}
@@ -1780,7 +1821,7 @@ export function EcosystemWorkflow({
             </Button>
             <Button 
               onClick={handleAddFromPdf}
-              disabled={!parsedPdfData || addTeamMember.isPending}
+              disabled={!parsedPdfData || !parsedPdfData.scores || !hasValidScores(parsedPdfData.scores) || addTeamMember.isPending}
               data-testid="button-add-from-pdf"
             >
               {addTeamMember.isPending ? (
