@@ -42,6 +42,15 @@ export function EcosystemAutoProject({
   useEffect(() => {
     if (projectsLoading) return;
     
+    // Only auto-select a project if none is currently selected (initial load)
+    // Don't override user's selection when they click on saved reports
+    if (projectId !== null) {
+      // Verify the selected project still exists in the list
+      const projectExists = projects.some(p => p.id === projectId);
+      if (projectExists) return; // Keep current selection
+      // If project no longer exists, fall through to select a new one
+    }
+    
     const defaultProject = projects.find(p => p.name === DEFAULT_PROJECT_NAME);
     
     if (defaultProject) {
@@ -68,7 +77,7 @@ export function EcosystemAutoProject({
       setError("Unable to set up team diagnostic. Please try again.");
       creationAttemptedRef.current = false;
     });
-  }, [projects, projectsLoading, createProject, partnerId, refetch]);
+  }, [projects, projectsLoading, createProject, partnerId, refetch, projectId]);
 
   const handleRetry = () => {
     setError(null);
