@@ -1361,7 +1361,7 @@ export default function PartnersTab() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white/5 rounded-lg p-4">
-                      <div className="text-white/60 text-sm mb-1">Price Per Assessment</div>
+                      <div className="text-white/60 text-sm mb-1">Price Per Credit</div>
                       <div className="text-xl font-bold text-white">{formatCurrency(detailPartner.pricePerAssessment, detailPartner.currency)}</div>
                     </div>
                     <div className="bg-white/5 rounded-lg p-4">
@@ -2448,7 +2448,7 @@ export default function PartnersTab() {
                 <h4 className="text-sm font-medium text-cyan-400 mb-3">Pricing & Billing</h4>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="edit-price-detail">Price Per Assessment (minor units)</Label>
+                  <Label htmlFor="edit-price-detail">Price Per Credit (minor units)</Label>
                   <Input 
                     id="edit-price-detail" 
                     type="number"
@@ -3030,7 +3030,7 @@ export default function PartnersTab() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="pricePerAssessment">
-                    Price Per Assessment ({selectedCurrency && CURRENCIES[selectedCurrency] 
+                    Price Per Credit ({selectedCurrency && CURRENCIES[selectedCurrency] 
                       ? `${CURRENCIES[selectedCurrency].code} minor units` 
                       : 'minor units'})
                   </Label>
