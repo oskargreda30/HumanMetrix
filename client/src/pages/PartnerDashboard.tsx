@@ -2141,7 +2141,7 @@ export default function PartnerDashboard() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
-            <TabsList className="flex flex-wrap gap-1 h-auto p-1 bg-white/10 border border-white/20 w-full md:w-auto">
+            <TabsList className="flex flex-wrap justify-start gap-1 h-auto p-1 bg-white/10 border border-white/20 w-auto">
               <TabsTrigger value="home" data-testid="tab-home" className="text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 min-w-[70px] data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Overview
               </TabsTrigger>
