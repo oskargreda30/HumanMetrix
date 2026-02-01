@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle, Mail, ArrowRight, TrendingUp, Target, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { getBase64FromPDF } from "@/lib/pdfScreenCapture";
 import SkillsLegend from "@/components/SkillsLegend";
 import { normalizeAIReadinessScores } from "@/lib/assessmentSkills";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
@@ -103,7 +102,7 @@ export default function B2BPdfEmail() {
   const email = params.get("email");
   const { toast } = useToast();
   
-  const [pdfStatus, setPdfStatus] = useState<'loading' | 'rendering' | 'capturing' | 'uploading' | 'success' | 'error'>('loading');
+  const [pdfStatus, setPdfStatus] = useState<'loading' | 'generating' | 'sending' | 'success' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const hasTriggeredPdf = useRef(false);
 
@@ -126,31 +125,22 @@ export default function B2BPdfEmail() {
   useEffect(() => {
     if (data && !hasTriggeredPdf.current && pdfStatus === 'loading') {
       hasTriggeredPdf.current = true;
-      setPdfStatus('rendering');
+      setPdfStatus('generating');
       
-      setTimeout(async () => {
+      // Use server-side PDF generation for exact styling match
+      const generateAndSendPdf = async () => {
         try {
-          setPdfStatus('capturing');
+          setPdfStatus('sending');
           
-          const pdfBase64 = await getBase64FromPDF({
-            elementId: 'b2b-pdf-results-content',
-            candidateName: data.email,
-            assessmentType: data.assessmentType,
-            onProgress: (progressMsg: string) => {
-              console.log('PDF Progress:', progressMsg);
-            },
-          });
-          
-          setPdfStatus('uploading');
-          
-          const res = await apiRequest("POST", `/api/b2b/results/${sessionId}/send-pdf-email`, {
-            pdfBase64,
+          // Call server-side PDF generation endpoint
+          const res = await apiRequest("POST", `/api/b2b/results/${sessionId}/generate-pdf`, {
             email: data.email,
+            sendEmail: true,
           });
           
           if (!res.ok) {
             const errorData = await res.json();
-            throw new Error(errorData.error || 'Failed to send email');
+            throw new Error(errorData.error || 'Failed to generate and send PDF');
           }
           
           setPdfStatus('success');
@@ -160,11 +150,14 @@ export default function B2BPdfEmail() {
             description: `Your results PDF has been sent to ${data.email}`,
           });
         } catch (err: any) {
-          console.error('PDF generation/upload error:', err);
+          console.error('Server-side PDF generation error:', err);
           setErrorMessage(err.message || 'Failed to generate or send PDF');
           setPdfStatus('error');
         }
-      }, 2000);
+      };
+      
+      // Small delay to show loading state
+      setTimeout(generateAndSendPdf, 500);
     }
   }, [data, pdfStatus, sessionId, toast]);
 
@@ -330,15 +323,14 @@ export default function B2BPdfEmail() {
         <div className="max-w-4xl mx-auto flex items-center justify-center gap-3">
           <Loader2 className="h-5 w-5 animate-spin" />
           <span className="font-medium">
-            {pdfStatus === 'rendering' && 'Preparing your results...'}
-            {pdfStatus === 'capturing' && 'Generating PDF...'}
-            {pdfStatus === 'uploading' && 'Sending to your email...'}
-            {pdfStatus === 'loading' && 'Loading...'}
+            {pdfStatus === 'loading' && 'Loading your results...'}
+            {pdfStatus === 'generating' && 'Generating your PDF report (this may take a moment)...'}
+            {pdfStatus === 'sending' && 'Sending to your email...'}
           </span>
         </div>
       </div>
 
-      <div id="b2b-pdf-results-content" className="max-w-4xl mx-auto p-6 pt-20 space-y-6">
+      <div id="b2b-pdf-results-content" data-testid="results-content" className="max-w-4xl mx-auto p-6 pt-20 space-y-6">
         <div data-pdf-section="summary" className="space-y-6 bg-white p-6 rounded-lg">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -502,6 +494,9 @@ export default function B2BPdfEmail() {
             </Card>
           </div>
         )}
+        
+        {/* Hidden marker for Puppeteer to detect page is fully rendered */}
+        <div data-testid="pdf-ready" style={{ display: 'none' }} />
       </div>
     </div>
   );

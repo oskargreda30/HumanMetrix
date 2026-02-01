@@ -140,7 +140,7 @@ export default function B2BResultsBundle() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-12 px-4" data-testid="bundle-results-content">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-2xl md:text-3xl font-bold mb-2">Unlock All Your Results</h1>
@@ -246,6 +246,9 @@ export default function B2BResultsBundle() {
         <p className="text-center text-sm text-muted-foreground mt-6">
           Assessment completed with {data.partnerName}
         </p>
+        
+        {/* Hidden marker for Puppeteer to detect page is fully rendered */}
+        <div data-testid="pdf-ready" style={{ display: 'none' }} />
       </div>
     </div>
   );

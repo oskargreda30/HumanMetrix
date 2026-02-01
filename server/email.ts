@@ -2951,6 +2951,115 @@ Questions about your results? Contact us at ${baseUrl}/contact
   return { success: result.success, messageId: result.messageId };
 }
 
+// B2B Results Email with Download Link - for large PDFs stored in object storage
+interface B2BResultsDownloadLinkDetails {
+  email: string;
+  candidateName?: string;
+  assessmentType: string;
+  partnerCompanyName: string;
+  downloadUrl: string;
+  expiryDays: number;
+}
+
+export async function sendB2BResultsEmailWithDownloadLink(details: B2BResultsDownloadLinkDetails) {
+  const assessmentName = formatAssessmentName(details.assessmentType);
+  const candidateName = details.candidateName || 'there';
+  const baseUrl = getBaseUrl();
+  
+  const msg = {
+    to: details.email,
+    subject: `Your ${assessmentName} Results Are Ready - Download Your Report`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
+            .success-badge { background: #10b981; color: white; padding: 8px 16px; border-radius: 20px; display: inline-block; font-weight: 600; margin: 10px 0; }
+            .download-box { background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); padding: 25px; border-radius: 12px; margin: 20px 0; text-align: center; }
+            .download-btn { display: inline-block; background: white; color: #0891b2; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; }
+            .expiry-note { background: #fef3c7; border: 1px solid #fcd34d; padding: 12px; border-radius: 6px; margin: 15px 0; font-size: 14px; color: #92400e; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0;">HumanMetrix</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
+            </div>
+            <div class="content">
+              <div style="text-align: center;">
+                <span class="success-badge">Results Ready</span>
+              </div>
+              
+              <h2 style="text-align: center;">Hello ${candidateName},</h2>
+              
+              <p style="text-align: center;">Thank you for your payment! Your <strong>${assessmentName}</strong> results are now available for download.</p>
+              
+              <div class="download-box">
+                <p style="margin: 0 0 15px 0; color: white; font-size: 16px;">Your detailed PDF report is ready</p>
+                <a href="${details.downloadUrl}" class="download-btn">Download Your Report</a>
+              </div>
+              
+              <div class="expiry-note">
+                <strong>⏰ Important:</strong> This download link will expire in ${details.expiryDays} days. Please download your report soon.
+              </div>
+              
+              <h3>What's in your report?</h3>
+              <ul>
+                <li>Your overall assessment score and percentile ranking</li>
+                <li>Detailed breakdown of your performance across key areas</li>
+                <li>Personalized insights and recommendations</li>
+                <li>Industry benchmarking data</li>
+              </ul>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 30px; text-align: center;">
+                Your results have also been shared with ${details.partnerCompanyName} as part of your application process.
+              </p>
+            </div>
+            <div class="footer">
+              <p>Questions about your results? <a href="${baseUrl}/contact" style="color: #0891b2;">Contact us</a></p>
+              <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+Hello ${candidateName},
+
+Thank you for your payment! Your ${assessmentName} results are now available for download.
+
+DOWNLOAD YOUR REPORT:
+${details.downloadUrl}
+
+IMPORTANT: This download link will expire in ${details.expiryDays} days. Please download your report soon.
+
+WHAT'S IN YOUR REPORT?
+- Your overall assessment score and percentile ranking
+- Detailed breakdown of your performance across key areas
+- Personalized insights and recommendations
+- Industry benchmarking data
+
+Your results have also been shared with ${details.partnerCompanyName} as part of your application process.
+
+---
+Questions about your results? Contact us at ${baseUrl}/contact
+© ${new Date().getFullYear()} HumanMetrix. All rights reserved.
+    `.trim(),
+  };
+
+  const result = await sendEmail(msg);
+  if (result.success) {
+    console.log(`[Email] B2B results email with download link sent to ${details.email} (ID: ${result.messageId})`);
+  }
+  return { success: result.success, messageId: result.messageId };
+}
+
 // B2B Results Email with Multiple PDF Attachments - for users with multiple assessments
 interface B2BMultiplePDFEmailDetails {
   email: string;

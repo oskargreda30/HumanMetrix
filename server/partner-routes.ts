@@ -4261,7 +4261,169 @@ export function registerPartnerRoutes(app: Express) {
     }
   });
 
-  // POST /api/b2b/results/:sessionId/send-pdf-email - Receive client-generated PDF and send email
+  // POST /api/b2b/results/:sessionId/generate-pdf - Server-side PDF generation using headless browser
+  // This endpoint generates PDF with exact styling by rendering the actual results page
+  // Security: Requires email in body that must match session email
+  app.post("/api/b2b/results/:sessionId/generate-pdf", async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      const { email, sendEmail: shouldSendEmail = true } = req.body;
+      
+      if (!sessionId) {
+        return res.status(400).json({ error: "Session ID is required" });
+      }
+      
+      if (!email) {
+        return res.status(400).json({ error: "Email is required for verification" });
+      }
+      
+      // Get the session
+      const session = await storage.getAssessmentSession(sessionId);
+      if (!session) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+      
+      // Check if the session has been paid for / results released
+      if ((session as any).resultsPaymentStatus !== 'paid' && (session as any).resultsReleaseStatus !== 'released') {
+        return res.status(403).json({ error: "Results have not been unlocked yet" });
+      }
+      
+      // Security: Validate ownership - email must match session email
+      if (!session.externalEmail || email.toLowerCase() !== session.externalEmail.toLowerCase()) {
+        return res.status(403).json({ error: "Unauthorized access to session" });
+      }
+      
+      const targetEmail = session.externalEmail;
+      
+      // Get partner info
+      const partner = session.partnerId ? await storage.getPartnerAccount(session.partnerId) : null;
+      const partnerCompanyName = partner?.companyName || partner?.name || 'HumanMetrix Partner';
+      
+      // Generate PDF using headless browser
+      const { generateResultsPDF } = await import("./pdfGenerator");
+      const baseUrl = getBaseUrl(req);
+      
+      console.log(`[Server PDF] Generating PDF for session ${sessionId}`);
+      
+      const pdfBuffer = await generateResultsPDF({
+        sessionId,
+        email: targetEmail,
+        baseUrl,
+      });
+      
+      const pdfSizeMB = (pdfBuffer.length / (1024 * 1024)).toFixed(2);
+      console.log(`[Server PDF] Generated PDF: ${pdfSizeMB}MB`);
+      
+      // Format assessment name for filename
+      const assessmentName = {
+        'fit': 'FIT',
+        'ai_readiness': 'AI_Readiness',
+        'prompt_architecture': 'Prompt_Architecture',
+        'aiq': 'AIQ',
+      }[session.assessmentType.toLowerCase()] || session.assessmentType;
+      
+      const pdfFilename = `HumanMetrix_${assessmentName}_Results.pdf`;
+      
+      if (shouldSendEmail) {
+        // Check PDF size - if over 20MB, use object storage with download link
+        const PDF_SIZE_LIMIT = 20 * 1024 * 1024; // 20MB
+        
+        let emailResult;
+        
+        if (pdfBuffer.length > PDF_SIZE_LIMIT) {
+          // Large PDF - upload to object storage and send download link
+          console.log(`[Server PDF] PDF exceeds ${PDF_SIZE_LIMIT / (1024 * 1024)}MB limit, using object storage`);
+          
+          const { objectStorageClient } = await import("./replit_integrations/object_storage/objectStorage");
+          const privateDir = process.env.PRIVATE_OBJECT_DIR;
+          
+          if (!privateDir) {
+            throw new Error("Object storage not configured");
+          }
+          
+          const expiryDays = 7;
+          const expiryDate = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
+          const objectPath = `${privateDir}/pdfs/${sessionId}/${Date.now()}_${pdfFilename}`;
+          
+          const pathParts = objectPath.split("/").filter(Boolean);
+          const bucketName = pathParts[0];
+          const objectName = pathParts.slice(1).join("/");
+          
+          const bucket = objectStorageClient.bucket(bucketName);
+          const file = bucket.file(objectName);
+          
+          await file.save(pdfBuffer, {
+            contentType: 'application/pdf',
+            metadata: {
+              sessionId,
+              email: targetEmail,
+              uploadedAt: new Date().toISOString(),
+              expiresAt: expiryDate.toISOString(),
+            },
+          });
+          
+          const [signedUrl] = await file.getSignedUrl({
+            action: 'read',
+            expires: expiryDate,
+          });
+          
+          console.log(`[Server PDF] Uploaded to object storage, sending download link`);
+          
+          const { sendB2BResultsEmailWithDownloadLink } = await import("./email");
+          emailResult = await sendB2BResultsEmailWithDownloadLink({
+            email: targetEmail,
+            candidateName: (session as any).metadata?.candidateName,
+            assessmentType: session.assessmentType,
+            partnerCompanyName,
+            downloadUrl: signedUrl,
+            expiryDays,
+          });
+        } else {
+          // Small PDF - send as attachment
+          const { sendB2BResultsEmail } = await import("./email");
+          emailResult = await sendB2BResultsEmail({
+            email: targetEmail,
+            candidateName: (session as any).metadata?.candidateName,
+            assessmentType: session.assessmentType,
+            partnerCompanyName,
+            pdfBuffer,
+            pdfFilename,
+          });
+        }
+        
+        if (!emailResult.success) {
+          console.error(`[Server PDF] Failed to send email to ${targetEmail}`);
+          return res.status(500).json({ error: "Failed to send email. Please try again." });
+        }
+        
+        // Update session status
+        await storage.updateAssessmentSession(sessionId, {
+          resultsDeliveryStatus: 'sent',
+          resultsEmailSentAt: new Date(),
+        } as any);
+        
+        console.log(`[Server PDF] Successfully sent PDF email to ${targetEmail}`);
+        
+        res.json({
+          success: true,
+          message: "Results email has been sent with your PDF report",
+          email: targetEmail,
+          pdfSizeKB: Math.round(pdfBuffer.length / 1024),
+        });
+      } else {
+        // Just return PDF for download without sending email
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${pdfFilename}"`);
+        res.setHeader('Content-Length', pdfBuffer.length);
+        res.send(pdfBuffer);
+      }
+    } catch (error: any) {
+      console.error("[Server PDF] Error:", error.message);
+      res.status(500).json({ error: "Failed to generate PDF. Please try again." });
+    }
+  });
+
+  // POST /api/b2b/results/:sessionId/send-pdf-email - Receive client-generated PDF and send email (LEGACY)
   // This endpoint is called from the client after generating a screen-capture PDF
   // Security: Requires email in body that must match session email, and only works for pending_client_pdf status
   app.post("/api/b2b/results/:sessionId/send-pdf-email", async (req: Request, res: Response) => {
