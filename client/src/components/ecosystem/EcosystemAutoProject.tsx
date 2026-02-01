@@ -2,10 +2,17 @@ import { useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertCircle, Sparkles } from "lucide-react";
+import { Loader2, AlertCircle, Sparkles, Plus, ChevronDown, Check, FileText } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EcosystemWorkflow } from "./EcosystemWorkflow";
 import { useEcosystemProjects, useCreateEcosystemProject } from "@/hooks/useEcosystemProject";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const ECOSYSTEM_CREDITS_REQUIRED = 20;
 
@@ -122,8 +129,109 @@ export function EcosystemAutoProject({
     );
   }
 
+  // Get current project for display
+  const currentProject = projects.find(p => p.id === projectId);
+  
+  // Get completed analyses (projects with teamAnalysis)
+  const completedProjects = projects.filter(p => p.teamAnalysis);
+  const hasMultipleAnalyses = completedProjects.length > 1 || (completedProjects.length === 1 && !currentProject?.teamAnalysis);
+
+  // Handle creating a new analysis
+  const handleStartNewAnalysis = () => {
+    const timestamp = new Date().toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+    const newName = `Team Diagnostic - ${timestamp}`;
+    
+    createProject.mutateAsync({
+      name: newName,
+      partnerId,
+    }).then((project) => {
+      setProjectId(project.id);
+      refetch();
+    }).catch((err) => {
+      setError("Unable to create new analysis. Please try again.");
+    });
+  };
+
   return (
     <div className="space-y-4">
+      {/* Project Selector - only show if there are completed analyses */}
+      {(completedProjects.length > 0 || projects.length > 1) && (
+        <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3 border">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Current Analysis:</span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8 gap-1"
+                  data-testid="button-project-selector"
+                >
+                  {currentProject?.name || "Team Diagnostic"}
+                  {currentProject?.teamAnalysis && (
+                    <Badge variant="secondary" className="ml-1 text-xs">Complete</Badge>
+                  )}
+                  <ChevronDown className="h-3 w-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-64">
+                {projects.map((project) => (
+                  <DropdownMenuItem
+                    key={project.id}
+                    onClick={() => setProjectId(project.id)}
+                    className="flex items-center justify-between"
+                    data-testid={`menu-item-project-${project.id}`}
+                  >
+                    <span className="truncate flex-1">{project.name}</span>
+                    <div className="flex items-center gap-2">
+                      {project.teamAnalysis && (
+                        <Badge variant="secondary" className="text-xs">Complete</Badge>
+                      )}
+                      {project.id === projectId && (
+                        <Check className="h-4 w-4 text-primary" />
+                      )}
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleStartNewAnalysis}
+                  className="text-primary"
+                  data-testid="menu-item-new-analysis"
+                  disabled={createProject.isPending}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Start New Analysis
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          
+          {!currentProject?.teamAnalysis && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleStartNewAnalysis}
+              disabled={createProject.isPending}
+              className="text-xs"
+              data-testid="button-new-analysis"
+            >
+              {createProject.isPending ? (
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+              ) : (
+                <Plus className="h-3 w-3 mr-1" />
+              )}
+              New Analysis
+            </Button>
+          )}
+        </div>
+      )}
+
       <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4">
         <div className="flex items-start gap-3">
           <Sparkles className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
