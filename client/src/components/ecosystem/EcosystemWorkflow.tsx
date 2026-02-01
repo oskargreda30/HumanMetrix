@@ -175,9 +175,15 @@ export function EcosystemWorkflow({
   // Deep dive section visibility
   const [showDeepDive, setShowDeepDive] = useState(false);
   
+  // Editing mode - allows returning to form from results view
+  const [isEditingForm, setIsEditingForm] = useState(false);
+  
   // Analysis progress tracking
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisStage, setAnalysisStage] = useState("");
+  
+  // Button click protection to prevent double-clicking
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Team member dialog
   const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
@@ -245,6 +251,12 @@ export function EcosystemWorkflow({
     scrollToStep(stepNumber);
   }, [scrollToStep]);
 
+  // Reset editing mode when projectId changes (switching projects)
+  useEffect(() => {
+    setIsEditingForm(false);
+    setIsGenerating(false);
+  }, [projectId]);
+  
   // Initialize form from project data
   useEffect(() => {
     if (project) {
@@ -567,12 +579,17 @@ export function EcosystemWorkflow({
 
     try {
       await generateAnalysis.mutateAsync({ projectId });
-      toast({
-        title: "Analysis generated",
-        description: "Your comprehensive Team Diagnostic Report is ready.",
-      });
       // Refetch project to show results
-      refetchProject();
+      await refetchProject();
+      // Exit editing mode to show results
+      setIsEditingForm(false);
+      // Auto-scroll to the report section after a brief delay for render
+      setTimeout(() => {
+        const reportSection = document.querySelector('[data-testid="section-team-diagnostic-report"]');
+        if (reportSection) {
+          reportSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
     } catch (error: any) {
       toast({
         title: "Analysis failed",
@@ -584,98 +601,101 @@ export function EcosystemWorkflow({
 
   // Combined handler: charge credits AND generate analysis in one click
   const handleGenerateReport = async () => {
-    // Validation
-    if (!missionStatement.trim()) {
-      toast({
-        title: "Mission statement required",
-        description: "Please enter your company's mission statement before generating the report.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!hasMembersWithValidScores) {
-      toast({
-        title: "No team members with valid scores",
-        description: "Add at least one team member with FIT scores (scores must be greater than 0) to generate the report.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Save current form data first
+    // Prevent double-clicking
+    if (isGenerating) return;
+    setIsGenerating(true);
+    
     try {
-      await saveMission.mutateAsync({
-        projectId,
-        missionStatement,
-        companyEthos,
-      });
-      
-      await updateOrgContext.mutateAsync({
-        projectId,
-        industry: industry || undefined,
-        teamFunction: teamFunction || undefined,
-        teamSize: teamSize ? parseInt(teamSize, 10) : undefined,
-        workMode: workMode || undefined,
-        teamStage: teamStage || undefined,
-        hiringPlans: hiringPlans || undefined,
-        currentChallenges: currentChallenges || undefined,
-        delayedTasks: delayedTasks || undefined,
-        conflictTopics: conflictTopics || undefined,
-        avoidedWork: avoidedWork || undefined,
-        overloadedMember: overloadedMember || undefined,
-        wishedSkills: wishedSkills || undefined,
-        idealInteractionStyle: idealInteractionStyle || undefined,
-        personalityGap: personalityGap || undefined,
-        upcomingInitiative: upcomingInitiative || undefined,
-        cloneableSkills: cloneableSkills || undefined,
-        transformativeFix: transformativeFix || undefined,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Save failed",
-        description: "Could not save your data. Please try again.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // If not already paid, charge credits first
-    if (!project?.isPaid) {
-      setIsProcessingPayment(true);
-      try {
-        const response = await apiRequest("POST", `/api/ecosystem/projects/${projectId}/consume-credits`);
-        const data = await response.json();
-        
-        if (!data.success) {
-          throw new Error(data.error || "Failed to consume credits");
-        }
-        
-        // Invalidate partner data to refresh credit count
-        queryClient.invalidateQueries({ queryKey: ['/api/partner/me'] });
-        
+      // Validation
+      if (!missionStatement.trim()) {
         toast({
-          title: "Credits consumed",
-          description: `${data.creditsConsumed || ECOSYSTEM_CREDITS_REQUIRED} credits used.`,
-        });
-        
-        // Refresh project to get isPaid = true
-        await refetchProject();
-      } catch (error: any) {
-        const errorData = await error?.json?.().catch(() => null);
-        toast({
-          title: "Insufficient credits",
-          description: errorData?.error || error.message || "Could not consume credits. Please ensure you have enough credits.",
+          title: "Mission statement required",
+          description: "Please enter your company's mission statement before generating the report.",
           variant: "destructive",
         });
-        setIsProcessingPayment(false);
         return;
       }
-      setIsProcessingPayment(false);
-    }
 
-    // Now generate the analysis
-    await handleGenerateAnalysis();
+      if (!hasMembersWithValidScores) {
+        toast({
+          title: "No team members with valid scores",
+          description: "Add at least one team member with FIT scores (scores must be greater than 0) to generate the report.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Save current form data first
+      try {
+        await saveMission.mutateAsync({
+          projectId,
+          missionStatement,
+          companyEthos,
+        });
+        
+        await updateOrgContext.mutateAsync({
+          projectId,
+          industry: industry || undefined,
+          teamFunction: teamFunction || undefined,
+          teamSize: teamSize ? parseInt(teamSize, 10) : undefined,
+          workMode: workMode || undefined,
+          teamStage: teamStage || undefined,
+          hiringPlans: hiringPlans || undefined,
+          currentChallenges: currentChallenges || undefined,
+          delayedTasks: delayedTasks || undefined,
+          conflictTopics: conflictTopics || undefined,
+          avoidedWork: avoidedWork || undefined,
+          overloadedMember: overloadedMember || undefined,
+          wishedSkills: wishedSkills || undefined,
+          idealInteractionStyle: idealInteractionStyle || undefined,
+          personalityGap: personalityGap || undefined,
+          upcomingInitiative: upcomingInitiative || undefined,
+          cloneableSkills: cloneableSkills || undefined,
+          transformativeFix: transformativeFix || undefined,
+        });
+      } catch (error: any) {
+        toast({
+          title: "Save failed",
+          description: "Could not save your data. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // If not already paid, charge credits first
+      if (!project?.isPaid) {
+        setIsProcessingPayment(true);
+        try {
+          const response = await apiRequest("POST", `/api/ecosystem/projects/${projectId}/consume-credits`);
+          const data = await response.json();
+          
+          if (!data.success) {
+            throw new Error(data.error || "Failed to consume credits");
+          }
+          
+          // Invalidate partner data to refresh credit count
+          queryClient.invalidateQueries({ queryKey: ['/api/partner/me'] });
+          
+          // Refresh project to get isPaid = true
+          await refetchProject();
+        } catch (error: any) {
+          const errorData = await error?.json?.().catch(() => null);
+          toast({
+            title: "Insufficient credits",
+            description: errorData?.error || error.message || "Could not consume credits. Please ensure you have enough credits.",
+            variant: "destructive",
+          });
+          return;
+        } finally {
+          setIsProcessingPayment(false);
+        }
+      }
+
+      // Now generate the analysis
+      await handleGenerateAnalysis();
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   // Credits required for ecosystem analysis
@@ -887,9 +907,9 @@ export function EcosystemWorkflow({
         </Card>
       )}
 
-      {/* RESULTS VIEW: If analysis is complete, show results */}
-      {teamAnalysis && (
-        <Card data-testid="results-view">
+      {/* RESULTS VIEW: If analysis is complete and not editing, show results */}
+      {teamAnalysis && !isEditingForm && (
+        <Card data-testid="section-team-diagnostic-report">
           <div className="p-6 space-y-6">
             {/* Regenerate Analysis Option */}
             {generateAnalysis.isPending ? (
@@ -923,16 +943,28 @@ export function EcosystemWorkflow({
                     </p>
                   </div>
                 </div>
-                <Button 
-                  onClick={handleGenerateAnalysis}
-                  variant="outline"
-                  size="sm"
-                  disabled={generateAnalysis.isPending}
-                  data-testid="button-regenerate-analysis"
-                >
-                  <RefreshCw className={`mr-2 h-4 w-4 ${generateAnalysis.isPending ? 'animate-spin' : ''}`} />
-                  {generateAnalysis.isPending ? 'Regenerating...' : 'Regenerate'}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    onClick={() => setIsEditingForm(true)}
+                    variant="outline"
+                    size="sm"
+                    disabled={generateAnalysis.isPending}
+                    data-testid="button-make-changes"
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Make Changes
+                  </Button>
+                  <Button 
+                    onClick={handleGenerateAnalysis}
+                    variant="outline"
+                    size="sm"
+                    disabled={generateAnalysis.isPending}
+                    data-testid="button-regenerate-analysis"
+                  >
+                    <RefreshCw className={`mr-2 h-4 w-4 ${generateAnalysis.isPending ? 'animate-spin' : ''}`} />
+                    {generateAnalysis.isPending ? 'Regenerating...' : 'Regenerate'}
+                  </Button>
+                </div>
               </div>
             )}
 
@@ -946,8 +978,8 @@ export function EcosystemWorkflow({
         </Card>
       )}
 
-      {/* FORM VIEW: If no analysis yet, show the form */}
-      {!teamAnalysis && (
+      {/* FORM VIEW: If no analysis yet OR if editing, show the form */}
+      {(!teamAnalysis || isEditingForm) && (
         <>
           {/* Section 1: Mission & Ethos */}
           <Card data-testid="section-mission">
@@ -1372,7 +1404,7 @@ export function EcosystemWorkflow({
                         </div>
                         <div className="flex items-center gap-2">
                           {(() => {
-                            const candidateHasValidScores = candidate.fitScores && hasValidScores(candidate.fitScores);
+                            const candidateHasValidScores = candidate.fitScores && hasValidScores(candidate);
                             return (
                               <>
                                 <div className="flex gap-1 flex-wrap">
@@ -1463,7 +1495,7 @@ export function EcosystemWorkflow({
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      {member.fitScores && hasValidScores(member.fitScores) ? (
+                      {member.fitScores && hasValidScores(member) ? (
                         <div className="flex gap-1">
                           {FIT_CAPABILITIES.map((cap) => {
                             const score = member.fitScores?.[cap.code as keyof typeof member.fitScores];
@@ -1565,12 +1597,12 @@ export function EcosystemWorkflow({
 
               <Button 
                 onClick={handleGenerateReport}
-                disabled={isProcessingPayment || generateAnalysis.isPending || membersLoading || !missionStatement || !hasMembersWithValidScores || isPaygRestricted}
+                disabled={isGenerating || isProcessingPayment || generateAnalysis.isPending || membersLoading || !missionStatement || !hasMembersWithValidScores || isPaygRestricted}
                 size="lg"
                 className="w-full"
                 data-testid="button-generate-report"
               >
-                {isProcessingPayment || generateAnalysis.isPending ? (
+                {isGenerating || isProcessingPayment || generateAnalysis.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     {isProcessingPayment ? 'Processing Credits...' : 'Generating Report...'}

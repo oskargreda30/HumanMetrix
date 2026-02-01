@@ -1610,7 +1610,7 @@ export function registerEcosystemRoutes(app: Express): void {
       const existingMembers = await storage.getEcosystemTeamMembers(req.params.id);
       const existingEmails = new Set(existingMembers.map(m => m.email?.toLowerCase()).filter(Boolean));
 
-      // Get all completed FIT sessions for this partner
+      // Get all completed FIT sessions for this partner (B2B assessment_sessions)
       const sessions = await storage.getSessionsByPartner(project.partnerId, 10000);
       
       // Filter to completed FIT assessments with scores, excluding already added members
@@ -1649,8 +1649,107 @@ export function registerEcosystemRoutes(app: Express): void {
             name: session.externalEmail.split('@')[0],
             fitScores,
             completedAt: session.completedAt,
+            source: 'session',
           });
         }
+      }
+      
+      // Also get assessment_results linked through partnerCandidateInvitations (B2C flow)
+      // Optimized: batch load invitations, then batch load results
+      try {
+        const partnerInvitations = await storage.getPartnerCandidateInvitations(project.partnerId, { limit: 10000 });
+        
+        if (partnerInvitations.length > 0) {
+          // Batch load all results for these invitations
+          const allResults = await Promise.all(
+            partnerInvitations.map(inv => storage.getResultsByPartnerInvitation(inv.id))
+          );
+          
+          // Flatten and collect userIds that need lookup
+          const userIdsToLookup = new Set<string>();
+          const flatResults: { result: any; invitation: any }[] = [];
+          
+          for (let i = 0; i < partnerInvitations.length; i++) {
+            const invitation = partnerInvitations[i];
+            const results = allResults[i];
+            
+            for (const result of results) {
+              // Normalize assessmentType - accept 'fit', 'fit-assessment', or 'fit_assessment'
+              const normalizedType = result.assessmentType?.toLowerCase().replace(/-/g, '_');
+              if (normalizedType !== 'fit' && normalizedType !== 'fit_assessment') continue;
+              if (result.status !== 'completed' || !result.scores) continue;
+              
+              flatResults.push({ result, invitation });
+              
+              // Collect userIds if email not on invitation
+              if (!invitation.email && result.userId) {
+                userIdsToLookup.add(result.userId);
+              }
+            }
+          }
+          
+          // Batch load users if needed
+          const userMap = new Map<string, any>();
+          if (userIdsToLookup.size > 0) {
+            const users = await Promise.all(
+              Array.from(userIdsToLookup).map(id => storage.getUser(id))
+            );
+            users.forEach(user => {
+              if (user) userMap.set(user.id, user);
+            });
+          }
+          
+          // Process results
+          for (const { result, invitation } of flatResults) {
+            let email = invitation.email;
+            let name = invitation.name;
+            
+            // If no email on invitation, get from user
+            if (!email && result.userId) {
+              const user = userMap.get(result.userId);
+              if (user) {
+                email = user.email;
+                name = name || user.firstName || user.email.split('@')[0];
+              }
+            }
+            
+            if (!email) continue;
+            
+            const emailLower = email.toLowerCase();
+            
+            // Skip if already in team
+            if (existingEmails.has(emailLower)) continue;
+            
+            // Extract FIT scores
+            const fitScores: Record<string, number> = {};
+            if (result.scores) {
+              Object.entries(result.scores).forEach(([key, value]) => {
+                if (typeof value === 'number') {
+                  fitScores[key] = value;
+                }
+              });
+            }
+            
+            if (Object.keys(fitScores).length === 0) continue;
+            
+            // Add to candidates map (deduplicate by email, keep most recent)
+            const existing = candidatesMap.get(emailLower);
+            const resultDate = result.completedAt ? new Date(result.completedAt) : new Date(result.startedAt);
+            if (!existing || (resultDate > new Date(existing.completedAt || 0))) {
+              candidatesMap.set(emailLower, {
+                id: result.id,
+                email,
+                name: name || email.split('@')[0],
+                fitScores,
+                completedAt: result.completedAt,
+                source: 'result',
+              });
+            }
+          }
+        }
+      } catch (err) {
+        // Log but don't fail the request if partner invitations lookup fails
+        console.error("[Ecosystem] Error fetching partner invitation results:", err);
       }
       
       res.json(Array.from(candidatesMap.values()));

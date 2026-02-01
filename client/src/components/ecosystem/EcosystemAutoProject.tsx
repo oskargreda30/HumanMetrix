@@ -161,6 +161,31 @@ export function EcosystemAutoProject({
 
   return (
     <div className="space-y-4">
+      {/* Saved Reports Section - show completed analyses */}
+      {completedProjects.length > 0 && (
+        <div className="rounded-lg border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+            <span className="text-sm font-medium text-green-800 dark:text-green-200">Saved Reports ({completedProjects.length})</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {completedProjects.map((proj) => (
+              <Button
+                key={proj.id}
+                variant={proj.id === projectId ? "default" : "outline"}
+                size="sm"
+                onClick={() => setProjectId(proj.id)}
+                data-testid={`saved-report-${proj.id}`}
+              >
+                <FileText className="h-3 w-3 mr-1" />
+                {proj.name}
+                {proj.id === projectId && <Check className="h-3 w-3 ml-1" />}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+      
       {/* Project Selector and Credit Info - side by side layout */}
       <div className="flex flex-col md:flex-row items-stretch gap-3">
         {/* Project Selector - Matching Credit Usage box style */}
