@@ -741,6 +741,59 @@ export function EcosystemWorkflow({
     }
   };
 
+  // Handler for regenerating analysis (always charges 20 credits)
+  const handleRegenerateWithCredits = async () => {
+    if (isGenerating || generateAnalysis.isPending) return;
+    setIsGenerating(true);
+    
+    try {
+      if (!hasMembersWithValidScores) {
+        toast({
+          title: "No team members with valid scores",
+          description: "Add at least one team member with FIT scores (scores must be greater than 0) to regenerate the report.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Always charge credits for regeneration (forceCharge=true)
+      setIsProcessingPayment(true);
+      try {
+        const response = await apiRequest("POST", `/api/ecosystem/projects/${projectId}/consume-credits`, { 
+          forceCharge: true 
+        });
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.error || "Failed to consume credits");
+        }
+        
+        // Invalidate partner data to refresh credit count
+        queryClient.invalidateQueries({ queryKey: ['/api/partner/me'] });
+        
+        toast({
+          title: "Credits consumed",
+          description: `${data.creditsConsumed || ECOSYSTEM_CREDITS_REQUIRED} credits used for regeneration.`,
+        });
+      } catch (error: any) {
+        const errorData = await error?.json?.().catch(() => null);
+        toast({
+          title: "Insufficient credits",
+          description: errorData?.error || error.message || "Could not consume credits. Please ensure you have enough credits.",
+          variant: "destructive",
+        });
+        return;
+      } finally {
+        setIsProcessingPayment(false);
+      }
+
+      // Now generate the analysis
+      await handleGenerateAnalysis();
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   // Credits required for ecosystem analysis
   const ECOSYSTEM_CREDITS_REQUIRED = 20;
   
@@ -1011,9 +1064,9 @@ export function EcosystemWorkflow({
                 <div className="flex items-center gap-3">
                   <RefreshCw className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="text-sm font-medium">Made changes?</p>
+                    <p className="text-sm font-medium">Want to update your analysis?</p>
                     <p className="text-xs text-muted-foreground">
-                      Update your data and regenerate the analysis
+                      Click "Make Changes" to edit your data. Regenerating costs 20 credits.
                     </p>
                   </div>
                 </div>
@@ -1027,16 +1080,7 @@ export function EcosystemWorkflow({
                   >
                     <FileText className="mr-2 h-4 w-4" />
                     Make Changes
-                  </Button>
-                  <Button 
-                    onClick={handleGenerateAnalysis}
-                    variant="outline"
-                    size="sm"
-                    disabled={generateAnalysis.isPending}
-                    data-testid="button-regenerate-analysis"
-                  >
-                    <RefreshCw className={`mr-2 h-4 w-4 ${generateAnalysis.isPending ? 'animate-spin' : ''}`} />
-                    {generateAnalysis.isPending ? 'Regenerating...' : 'Regenerate'}
+                    <Badge variant="secondary" className="ml-2 text-xs">20 credits</Badge>
                   </Button>
                 </div>
               </div>
@@ -1048,7 +1092,9 @@ export function EcosystemWorkflow({
               project={project}
               teamMembers={teamMembers}
               onMakeChanges={() => setIsEditingForm(true)}
+              onRegenerate={handleRegenerateWithCredits}
               generateAnalysis={generateAnalysis}
+              isRegenerating={isGenerating || generateAnalysis.isPending}
             />
           </div>
         </Card>
@@ -1917,14 +1963,18 @@ function TeamAnalysisResults({
   project,
   teamMembers,
   onMakeChanges,
+  onRegenerate,
   generateAnalysis,
+  isRegenerating,
 }: { 
   analysis: EcosystemTeamAnalysis; 
   companyName: string;
   project: any;
   teamMembers: EcosystemTeamMember[];
   onMakeChanges: () => void;
+  onRegenerate: () => void;
   generateAnalysis: { isPending: boolean };
+  isRegenerating: boolean;
 }) {
   const missionAnalysis = project.missionAnalysis as EcosystemMissionAnalysis | null;
   const CALENDLY_URL = "https://calendly.com/hello-humanmetrix/30min";
@@ -3119,14 +3169,29 @@ function TeamAnalysisResults({
           </Button>
           
           <Button 
-            variant="default" 
+            variant="outline" 
             size="lg"
             onClick={onMakeChanges}
-            disabled={generateAnalysis.isPending}
+            disabled={isRegenerating}
             data-testid="button-make-changes-bottom"
           >
             <FileText className="h-4 w-4 mr-2" />
-            Make Changes
+            Edit Data
+          </Button>
+
+          <Button 
+            variant="default" 
+            size="lg"
+            onClick={onRegenerate}
+            disabled={isRegenerating}
+            data-testid="button-regenerate-bottom"
+          >
+            {isRegenerating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
+            {isRegenerating ? 'Regenerating...' : 'Regenerate'}
             <Badge variant="secondary" className="ml-2 text-xs">20 credits</Badge>
           </Button>
         </div>

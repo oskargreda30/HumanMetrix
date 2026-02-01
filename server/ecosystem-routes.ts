@@ -1993,9 +1993,11 @@ export function registerEcosystemRoutes(app: Express): void {
   });
 
   // Consume partner credits for ecosystem analysis (replaces Stripe payment)
+  // Set forceCharge=true in body to charge for regeneration even if already paid
   app.post("/api/ecosystem/projects/:id/consume-credits", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
+      const { forceCharge } = req.body || {};
       const user = (req as any).user;
       const userId = user?.id;
       
@@ -2012,8 +2014,8 @@ export function registerEcosystemRoutes(app: Express): void {
         return res.status(403).json({ error: "Access denied" });
       }
       
-      // If already paid, return success
-      if (project.isPaid) {
+      // If already paid and not forcing charge (for regeneration), return success
+      if (project.isPaid && !forceCharge) {
         return res.json({ success: true, alreadyPaid: true });
       }
       
