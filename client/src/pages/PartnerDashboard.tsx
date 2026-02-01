@@ -2160,11 +2160,11 @@ export default function PartnerDashboard() {
                 </TabsTrigger>
               )}
               <TabsTrigger value="ecosystem" data-testid="tab-ecosystem" className="text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 min-w-[70px] relative data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Ecosystem
+                Ecosystem Index
                 <Badge variant="secondary" className="ml-1 px-1 py-0 text-[8px] md:text-[10px] bg-cyan-500 text-white border-0">New</Badge>
               </TabsTrigger>
               <TabsTrigger value="cohort-benchmarking" data-testid="tab-cohort-benchmarking" className="text-xs md:text-sm px-2 md:px-3 py-1.5 md:py-2 min-w-[70px] relative data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                Cohort
+                Cohort Benchmarking
                 <Badge variant="secondary" className="ml-1 px-1 py-0 text-[8px] md:text-[10px] bg-amber-500 text-white border-0">Soon</Badge>
               </TabsTrigger>
               {/* Organizations tab hidden for now - feature preserved in code */}

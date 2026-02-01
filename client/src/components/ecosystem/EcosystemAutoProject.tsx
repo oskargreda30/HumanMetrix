@@ -161,121 +161,122 @@ export function EcosystemAutoProject({
 
   return (
     <div className="space-y-4">
-      {/* Project Selector - always show to allow starting new analyses */}
-      {projects.length > 0 && (
-        <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3 border">
-          <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Current Analysis:</span>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-8 gap-1"
-                  data-testid="button-project-selector"
-                >
-                  {currentProject?.name || "Team Diagnostic"}
-                  {currentProject?.teamAnalysis && (
-                    <Badge variant="secondary" className="ml-1 text-xs">Complete</Badge>
+      {/* Project Selector and Credit Info - side by side layout */}
+      <div className="flex flex-col md:flex-row items-stretch gap-3">
+        {/* Project Selector */}
+        {projects.length > 0 && (
+          <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3 border flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Current Analysis:</span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 gap-1"
+                    data-testid="button-project-selector"
+                  >
+                    {currentProject?.name || "Team Diagnostic"}
+                    {currentProject?.teamAnalysis && (
+                      <Badge variant="secondary" className="ml-1 text-xs">Complete</Badge>
+                    )}
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-64">
+                  {/* Show completed analyses first */}
+                  {completedProjects.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs text-muted-foreground font-medium">
+                        Completed Analyses
+                      </div>
+                      {completedProjects.map((project) => (
+                        <DropdownMenuItem
+                          key={project.id}
+                          onClick={() => setProjectId(project.id)}
+                          className="flex items-center justify-between"
+                          data-testid={`menu-item-project-${project.id}`}
+                        >
+                          <span className="truncate flex-1">{project.name}</span>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">Complete</Badge>
+                            {project.id === projectId && (
+                              <Check className="h-4 w-4 text-primary" />
+                            )}
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                    </>
                   )}
-                  <ChevronDown className="h-3 w-3 ml-1" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-64">
-                {/* Show completed analyses first */}
-                {completedProjects.length > 0 && (
-                  <>
-                    <div className="px-2 py-1.5 text-xs text-muted-foreground font-medium">
-                      Completed Analyses
-                    </div>
-                    {completedProjects.map((project) => (
-                      <DropdownMenuItem
-                        key={project.id}
-                        onClick={() => setProjectId(project.id)}
-                        className="flex items-center justify-between"
-                        data-testid={`menu-item-project-${project.id}`}
-                      >
-                        <span className="truncate flex-1">{project.name}</span>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">Complete</Badge>
-                          {project.id === projectId && (
-                            <Check className="h-4 w-4 text-primary" />
-                          )}
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
-                  </>
+                  {/* Show in-progress analyses */}
+                  {projects.filter(p => !p.teamAnalysis).length > 0 && (
+                    <>
+                      {completedProjects.length > 0 && <DropdownMenuSeparator />}
+                      <div className="px-2 py-1.5 text-xs text-muted-foreground font-medium">
+                        In Progress
+                      </div>
+                      {projects.filter(p => !p.teamAnalysis).map((project) => (
+                        <DropdownMenuItem
+                          key={project.id}
+                          onClick={() => setProjectId(project.id)}
+                          className="flex items-center justify-between"
+                          data-testid={`menu-item-project-${project.id}`}
+                        >
+                          <span className="truncate flex-1">{project.name}</span>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">Draft</Badge>
+                            {project.id === projectId && (
+                              <Check className="h-4 w-4 text-primary" />
+                            )}
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                    </>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleStartNewAnalysis}
+                    className="text-primary"
+                    data-testid="menu-item-new-analysis"
+                    disabled={createProject.isPending}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Start New Analysis
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            
+            {!currentProject?.teamAnalysis && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleStartNewAnalysis}
+                disabled={createProject.isPending}
+                className="text-xs ml-2"
+                data-testid="button-new-analysis"
+              >
+                {createProject.isPending ? (
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                ) : (
+                  <Plus className="h-3 w-3 mr-1" />
                 )}
-                {/* Show in-progress analyses */}
-                {projects.filter(p => !p.teamAnalysis).length > 0 && (
-                  <>
-                    {completedProjects.length > 0 && <DropdownMenuSeparator />}
-                    <div className="px-2 py-1.5 text-xs text-muted-foreground font-medium">
-                      In Progress
-                    </div>
-                    {projects.filter(p => !p.teamAnalysis).map((project) => (
-                      <DropdownMenuItem
-                        key={project.id}
-                        onClick={() => setProjectId(project.id)}
-                        className="flex items-center justify-between"
-                        data-testid={`menu-item-project-${project.id}`}
-                      >
-                        <span className="truncate flex-1">{project.name}</span>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs">Draft</Badge>
-                          {project.id === projectId && (
-                            <Check className="h-4 w-4 text-primary" />
-                          )}
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
-                  </>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={handleStartNewAnalysis}
-                  className="text-primary"
-                  data-testid="menu-item-new-analysis"
-                  disabled={createProject.isPending}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Start New Analysis
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                New Analysis
+              </Button>
+            )}
           </div>
-          
-          {!currentProject?.teamAnalysis && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleStartNewAnalysis}
-              disabled={createProject.isPending}
-              className="text-xs"
-              data-testid="button-new-analysis"
-            >
-              {createProject.isPending ? (
-                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-              ) : (
-                <Plus className="h-3 w-3 mr-1" />
-              )}
-              New Analysis
-            </Button>
-          )}
-        </div>
-      )}
+        )}
 
-      <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4">
-        <div className="flex items-start gap-3">
-          <Sparkles className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-              Credit Usage for Team Diagnostic
-            </p>
-            <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-              This feature uses <strong>{ECOSYSTEM_CREDITS_REQUIRED} credits</strong> for AI-powered team analysis. 
-              Credits are consumed when you click "Use Credits" to generate your comprehensive team capability report.
+        {/* Credit Usage Info - side by side with project selector */}
+        <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-3 flex-1">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-blue-500 flex-shrink-0" />
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              <span className="font-medium">Credit Usage:</span>{" "}
+              <span className="text-xs text-blue-700 dark:text-blue-300">
+                This feature uses <strong>{ECOSYSTEM_CREDITS_REQUIRED} credits</strong> for AI-powered team analysis. Credits are consumed when you click "Use Credits".
+              </span>
             </p>
           </div>
         </div>
