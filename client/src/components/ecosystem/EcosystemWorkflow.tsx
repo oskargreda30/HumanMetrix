@@ -571,15 +571,36 @@ export function EcosystemWorkflow({
       const data = await response.json();
       
       if (data.success) {
-        // Await refetch to ensure project data is updated before navigation
-        await refetchProject();
         // Invalidate partner data to refresh credit count
         queryClient.invalidateQueries({ queryKey: ['/api/partner/me'] });
         toast({
           title: "Credits consumed",
           description: `${data.creditsConsumed || ECOSYSTEM_CREDITS_REQUIRED} credits used. You can now generate your Team Diagnostic Report.`,
         });
-        navigateToStep(6); // Go to generate analysis step
+        
+        // Poll for updated project data with isPaid = true (max 3 retries)
+        let isPaidConfirmed = false;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const refetchResult = await refetchProject();
+          const updatedProject = refetchResult.data;
+          
+          if (updatedProject?.isPaid) {
+            isPaidConfirmed = true;
+            break;
+          }
+          // Wait before next retry
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+        
+        if (isPaidConfirmed) {
+          navigateToStep(6); // Go to generate analysis step
+        } else {
+          // If still not confirmed, stay on step 5 which shows "Credits applied" state
+          toast({
+            title: "Credits applied",
+            description: "Click 'Save and Continue' to proceed to analysis generation.",
+          });
+        }
       } else {
         throw new Error(data.error || "Failed to consume credits");
       }
@@ -2255,8 +2276,8 @@ function TeamAnalysisResults({
                     {(member.name || 'TM').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{member.name || 'Team Member'}</p>
-                    <p className="text-xs text-muted-foreground truncate">{member.role || 'Team Member'}</p>
+                    <p className="text-sm font-medium break-words">{member.name || 'Team Member'}</p>
+                    <p className="text-xs text-muted-foreground break-words">{member.role || 'Team Member'}</p>
                   </div>
                   {hasScores ? (
                     <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">

@@ -161,8 +161,8 @@ export function EcosystemAutoProject({
 
   return (
     <div className="space-y-4">
-      {/* Project Selector - only show if there are completed analyses */}
-      {(completedProjects.length > 0 || projects.length > 1) && (
+      {/* Project Selector - always show to allow starting new analyses */}
+      {projects.length > 0 && (
         <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3 border">
           <div className="flex items-center gap-2">
             <FileText className="h-4 w-4 text-muted-foreground" />
