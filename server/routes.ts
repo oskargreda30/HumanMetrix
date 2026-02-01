@@ -5918,10 +5918,9 @@ ${pdfText.substring(0, 15000)}`;
         
         candidateUser = await storage.createUser({
           email: parsedData.candidateEmail?.toLowerCase().trim() || `imported_${Date.now()}@temp.humanmetrix.com`,
-          password: hashedPassword,
-          name: parsedData.candidateName,
-          role: 'user',
-          emailVerified: false, // Not verified since imported
+          passwordHash: hashedPassword,
+          firstName: parsedData.candidateName,
+          role: 'candidate',
         });
         console.log(`[PDF Import] Created new user: ${candidateUser.id}`);
       }
@@ -5982,7 +5981,7 @@ ${pdfText.substring(0, 15000)}`;
         message: `Successfully imported ${createdSessions.length} assessment(s) for ${parsedData.candidateName}`,
         candidate: {
           id: candidateUser.id,
-          name: parsedData.candidateName,
+          firstName: parsedData.candidateName,
           email: candidateUser.email,
         },
         sessions: createdSessions.map(s => ({
@@ -6178,10 +6177,9 @@ ${pdfText.substring(0, 15000)}`;
         
         candidateUser = await storage.createUser({
           email: parsedData.candidateEmail?.toLowerCase().trim() || `imported_${Date.now()}@temp.humanmetrix.com`,
-          password: hashedPassword,
-          name: parsedData.candidateName,
-          role: 'user',
-          emailVerified: false,
+          passwordHash: hashedPassword,
+          firstName: parsedData.candidateName,
+          role: 'candidate',
         });
         console.log(`[PDF Import] Created new user: ${candidateUser.id}`);
       }
@@ -6237,7 +6235,7 @@ ${pdfText.substring(0, 15000)}`;
         message: `Successfully imported ${createdSessions.length} assessment(s) for ${parsedData.candidateName}`,
         candidate: {
           id: candidateUser.id,
-          name: parsedData.candidateName,
+          firstName: parsedData.candidateName,
           email: candidateUser.email,
         },
         sessions: createdSessions.map(s => ({
@@ -6408,10 +6406,9 @@ ${pdfText.substring(0, 15000)}`;
         
         candidateUser = await storage.createUser({
           email: parsedData.candidateEmail?.toLowerCase().trim() || `imported_${Date.now()}@temp.humanmetrix.com`,
-          password: hashedPassword,
-          name: parsedData.candidateName,
-          role: 'user',
-          emailVerified: false,
+          passwordHash: hashedPassword,
+          firstName: parsedData.candidateName,
+          role: 'candidate',
         });
       }
 
@@ -6466,7 +6463,7 @@ ${pdfText.substring(0, 15000)}`;
         message: `Successfully imported ${createdSessions.length} assessment(s) for ${parsedData.candidateName}`,
         candidate: {
           id: candidateUser.id,
-          name: parsedData.candidateName,
+          firstName: parsedData.candidateName,
           email: candidateUser.email,
         },
         sessions: createdSessions.map(s => ({
@@ -6744,8 +6741,7 @@ ${truncatedText}`;
           passwordHash: hashedPassword,
           firstName,
           lastName,
-          role: 'user',
-          emailVerified: false,
+          role: 'candidate',
         });
       }
 
@@ -6811,7 +6807,7 @@ ${truncatedText}`;
         message: `Successfully imported ${createdSessions.length} assessment(s) for ${parsedData.candidateName}`,
         candidate: {
           id: candidateUser.id,
-          name: parsedData.candidateName,
+          firstName: parsedData.candidateName,
           email: candidateUser.email,
         },
         sessions: createdSessions.map(s => ({

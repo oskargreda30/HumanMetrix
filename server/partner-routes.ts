@@ -3919,28 +3919,25 @@ export function registerPartnerRoutes(app: Express) {
           // Create new user with email confirmation already verified (they paid)
           user = await storage.createUser({
             email: email.toLowerCase(),
-            password: hashedPassword,
-            isEmailConfirmed: true,
+            passwordHash: hashedPassword,
           });
           
           console.log(`[B2B Create Account] Created new user: ${user.id} for ${email}`);
           
-          // Send welcome email with password reset link
+          // Send welcome email with the generated password
           try {
-            const { sendPasswordResetEmail } = await import('./email');
-            const resetToken = Math.random().toString(36).slice(-20) + Date.now().toString(36);
+            const { sendWelcomeEmailWithPassword } = await import('./email');
             
-            // Store reset token
-            await storage.updateUser(user.id, { 
-              passwordResetToken: resetToken,
-              passwordResetExpires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-            });
-            
-            // Send password reset email so user can set their password
-            await sendPasswordResetEmail(user.email, email.split('@')[0], resetToken);
-            console.log(`[B2B Create Account] Password reset email sent to ${email}`);
+            // Send email with the temporary password
+            await sendWelcomeEmailWithPassword(
+              user.email, 
+              email.split('@')[0], 
+              randomPassword,
+              "Thank you for completing your assessment! You can use these credentials to log in and view your results anytime."
+            );
+            console.log(`[B2B Create Account] Welcome email with credentials sent to ${email}`);
           } catch (emailError: any) {
-            console.error('[B2B Create Account] Failed to send password reset email:', emailError.message);
+            console.error('[B2B Create Account] Failed to send welcome email:', emailError.message);
             // Continue even if email fails - user can use forgot password later
           }
         } catch (createError: any) {
