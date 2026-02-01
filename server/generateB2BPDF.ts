@@ -554,17 +554,21 @@ function addComprehensiveAnalysisSection(
   yPos = addSectionHeader(pdf, 'COMPREHENSIVE ANALYSIS', yPos, pageWidth);
   yPos += 3;
   
-  pdf.setFillColor(249, 250, 251);
-  pdf.roundedRect(20, yPos, pageWidth - 40, 18, 2, 2, 'F');
-  
   pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(55, 65, 81);
   const overallLines = pdf.splitTextToSize(analysis.overall, pageWidth - 50);
+  const boxHeight = Math.max(18, overallLines.length * 4 + 8);
+  
+  yPos = ensurePageSpace(pdf, yPos, boxHeight + 10, pageHeight, pageWidth);
+  
+  pdf.setFillColor(249, 250, 251);
+  pdf.roundedRect(20, yPos, pageWidth - 40, boxHeight, 2, 2, 'F');
+  
+  pdf.setTextColor(55, 65, 81);
   overallLines.forEach((line: string, idx: number) => {
     pdf.text(line, 25, yPos + 5 + (idx * 4));
   });
-  yPos += Math.max(18, overallLines.length * 4 + 8);
+  yPos += boxHeight;
   yPos += 6;
   
   if (analysis.strengths.length > 0) {
@@ -577,25 +581,29 @@ function addComprehensiveAnalysisSection(
     yPos += 6;
     
     analysis.strengths.forEach((strength, idx) => {
-      yPos = ensurePageSpace(pdf, yPos, 12, pageHeight, pageWidth);
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'normal');
+      const strengthLines = pdf.splitTextToSize(strength, pageWidth - 52);
+      const itemHeight = Math.max(10, strengthLines.length * 4 + 4);
+      
+      yPos = ensurePageSpace(pdf, yPos, itemHeight + 4, pageHeight, pageWidth);
       
       pdf.setFillColor(239, 246, 255);
       pdf.setDrawColor(59, 130, 246);
       pdf.setLineWidth(0.5);
-      pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 1, 1, 'FD');
+      pdf.roundedRect(20, yPos - 2, pageWidth - 40, itemHeight, 1, 1, 'FD');
       pdf.setLineWidth(0.2);
       
       pdf.setDrawColor(59, 130, 246);
       pdf.setFillColor(59, 130, 246);
-      pdf.rect(20, yPos - 2, 2, 10, 'F');
+      pdf.rect(20, yPos - 2, 2, itemHeight, 'F');
       
-      pdf.setFontSize(7);
-      pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(55, 65, 81);
-      const strengthText = strength.length > 110 ? strength.substring(0, 107) + '...' : strength;
-      pdf.text(strengthText, 26, yPos + 4);
+      strengthLines.forEach((line: string, lineIdx: number) => {
+        pdf.text(line, 26, yPos + 3 + (lineIdx * 4));
+      });
       
-      yPos += 12;
+      yPos += itemHeight + 2;
     });
     yPos += 4;
   }
@@ -610,25 +618,29 @@ function addComprehensiveAnalysisSection(
     yPos += 6;
     
     analysis.improvements.forEach((improvement, idx) => {
-      yPos = ensurePageSpace(pdf, yPos, 12, pageHeight, pageWidth);
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'normal');
+      const improvementLines = pdf.splitTextToSize(improvement, pageWidth - 52);
+      const itemHeight = Math.max(10, improvementLines.length * 4 + 4);
+      
+      yPos = ensurePageSpace(pdf, yPos, itemHeight + 4, pageHeight, pageWidth);
       
       pdf.setFillColor(255, 251, 235);
       pdf.setDrawColor(245, 158, 11);
       pdf.setLineWidth(0.5);
-      pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 1, 1, 'FD');
+      pdf.roundedRect(20, yPos - 2, pageWidth - 40, itemHeight, 1, 1, 'FD');
       pdf.setLineWidth(0.2);
       
       pdf.setDrawColor(245, 158, 11);
       pdf.setFillColor(245, 158, 11);
-      pdf.rect(20, yPos - 2, 2, 10, 'F');
+      pdf.rect(20, yPos - 2, 2, itemHeight, 'F');
       
-      pdf.setFontSize(7);
-      pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(55, 65, 81);
-      const improvementText = improvement.length > 110 ? improvement.substring(0, 107) + '...' : improvement;
-      pdf.text(improvementText, 26, yPos + 4);
+      improvementLines.forEach((line: string, lineIdx: number) => {
+        pdf.text(line, 26, yPos + 3 + (lineIdx * 4));
+      });
       
-      yPos += 12;
+      yPos += itemHeight + 2;
     });
     yPos += 4;
   }
