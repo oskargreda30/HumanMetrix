@@ -3881,69 +3881,94 @@ export function registerPartnerRoutes(app: Express) {
     try {
       const { email, sessionId } = req.body;
       
+      console.log(`[B2B Create Account] Request received for email: ${email}, sessionId: ${sessionId}`);
+      
       if (!email || !sessionId) {
+        console.log('[B2B Create Account] Missing parameters');
         return res.status(400).json({ error: "Missing required parameters" });
       }
       
       // Verify the session exists and belongs to this email
       const session = await storage.getAssessmentSession(sessionId);
       if (!session) {
+        console.log(`[B2B Create Account] Session not found: ${sessionId}`);
         return res.status(404).json({ error: "Session not found" });
       }
       
-      if (session.externalEmail?.toLowerCase() !== email.toLowerCase()) {
+      // Allow if session email matches OR if session has no email (for some B2B flows)
+      const sessionEmail = session.externalEmail?.toLowerCase();
+      const requestEmail = email.toLowerCase();
+      
+      if (sessionEmail && sessionEmail !== requestEmail) {
+        console.log(`[B2B Create Account] Email mismatch. Session: ${sessionEmail}, Request: ${requestEmail}`);
         return res.status(403).json({ error: "Email does not match session" });
       }
       
       // Check if user already exists
       let user = await storage.getUserByEmail(email);
+      let isNewUser = false;
       
       if (!user) {
-        // Generate random password
-        const bcrypt = await import('bcryptjs');
-        const randomPassword = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12);
-        const hashedPassword = await bcrypt.hash(randomPassword, 10);
-        
-        // Create new user with email confirmation already verified (they paid)
-        user = await storage.createUser({
-          email: email.toLowerCase(),
-          password: hashedPassword,
-          isEmailConfirmed: true,
-        });
-        
-        // Send welcome email with password reset link
-        const { sendPasswordResetEmail } = await import('./email');
-        const resetToken = Math.random().toString(36).slice(-20) + Date.now().toString(36);
-        
-        // Store reset token
-        await storage.updateUser(user.id, { 
-          passwordResetToken: resetToken,
-          passwordResetExpires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-        });
-        
-        // Send password reset email so user can set their password
-        await sendPasswordResetEmail(user.email, email.split('@')[0], resetToken);
-        
-        console.log(`[B2B Create Account] Created new user account for ${email}`);
+        isNewUser = true;
+        try {
+          // Generate random password
+          const bcrypt = await import('bcryptjs');
+          const randomPassword = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12);
+          const hashedPassword = await bcrypt.hash(randomPassword, 10);
+          
+          // Create new user with email confirmation already verified (they paid)
+          user = await storage.createUser({
+            email: email.toLowerCase(),
+            password: hashedPassword,
+            isEmailConfirmed: true,
+          });
+          
+          console.log(`[B2B Create Account] Created new user: ${user.id} for ${email}`);
+          
+          // Send welcome email with password reset link
+          try {
+            const { sendPasswordResetEmail } = await import('./email');
+            const resetToken = Math.random().toString(36).slice(-20) + Date.now().toString(36);
+            
+            // Store reset token
+            await storage.updateUser(user.id, { 
+              passwordResetToken: resetToken,
+              passwordResetExpires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+            });
+            
+            // Send password reset email so user can set their password
+            await sendPasswordResetEmail(user.email, email.split('@')[0], resetToken);
+            console.log(`[B2B Create Account] Password reset email sent to ${email}`);
+          } catch (emailError: any) {
+            console.error('[B2B Create Account] Failed to send password reset email:', emailError.message);
+            // Continue even if email fails - user can use forgot password later
+          }
+        } catch (createError: any) {
+          console.error('[B2B Create Account] Failed to create user:', createError.message);
+          return res.status(500).json({ error: `Failed to create user account: ${createError.message}` });
+        }
+      } else {
+        console.log(`[B2B Create Account] User already exists: ${user.id} for ${email}`);
       }
       
       // Log the user in by setting session
       (req as any).login(user, (err: any) => {
         if (err) {
           console.error('[B2B Create Account] Login error:', err);
-          return res.status(500).json({ error: "Failed to log in" });
+          return res.status(500).json({ error: `Failed to log in: ${err.message || 'Session error'}` });
         }
         
         console.log(`[B2B Create Account] User ${email} logged in successfully`);
         res.json({
           success: true,
           redirectTo: "/dashboard",
-          userId: user.id,
+          userId: user!.id,
+          isNewUser,
         });
       });
     } catch (error: any) {
       console.error("[B2B Create Account] Error:", error);
-      res.status(500).json({ error: "Failed to create account" });
+      res.status(500).json({ error: `Failed to create account: ${error.message || 'Unknown error'}` });
     }
   });
 
