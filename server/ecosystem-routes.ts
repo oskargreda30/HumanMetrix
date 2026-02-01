@@ -1518,10 +1518,27 @@ export function registerEcosystemRoutes(app: Express): void {
       }
 
       if (Object.keys(scores).length === 0) {
+        // Provide more helpful error message based on what we found
+        const hasAnyText = text.trim().length > 50;
+        const looksLikeFitReport = /FIT|HumanMetrix|Assessment|capability/i.test(text);
+        
+        let errorMessage = "Could not extract FIT scores from this PDF.";
+        let hint = "Please upload a valid HumanMetrix FIT assessment report.";
+        
+        if (!hasAnyText) {
+          errorMessage = "The PDF appears to be empty or contains only images.";
+          hint = "Please upload a text-based PDF report, not a scanned image.";
+        } else if (!looksLikeFitReport) {
+          errorMessage = "This doesn't appear to be a HumanMetrix FIT assessment report.";
+          hint = "Please upload the PDF report that was generated after completing a FIT assessment.";
+        } else {
+          hint = "The PDF may be in an unsupported format. Try downloading a fresh copy from your results page.";
+        }
+        
         return res.status(400).json({ 
-          error: "Could not extract FIT scores from PDF", 
-          hint: "Please ensure this is a valid HumanMetrix FIT assessment report.",
-          debug: { extractedTextPreview: text.substring(0, 500) }
+          error: errorMessage, 
+          hint,
+          isInvalidFormat: true
         });
       }
 
@@ -1534,7 +1551,31 @@ export function registerEcosystemRoutes(app: Express): void {
       });
     } catch (error: any) {
       console.error("[Ecosystem] Error parsing PDF:", error);
-      res.status(500).json({ error: "Failed to parse PDF", details: error.message });
+      
+      // Categorize error type
+      const isPasswordError = error.message?.toLowerCase().includes('decrypt') || error.message?.toLowerCase().includes('password');
+      const isCorruptError = error.message?.toLowerCase().includes('invalid') || error.message?.toLowerCase().includes('corrupt');
+      
+      if (isPasswordError) {
+        return res.status(400).json({ 
+          error: "This PDF is password-protected.", 
+          hint: "Please upload an unprotected PDF file.",
+          errorType: "password_protected"
+        });
+      } else if (isCorruptError) {
+        return res.status(400).json({ 
+          error: "The PDF file appears to be corrupted.", 
+          hint: "Please try downloading the report again and re-uploading.",
+          errorType: "corrupted"
+        });
+      }
+      
+      // Unexpected server error - use 500
+      res.status(500).json({ 
+        error: "Failed to process the PDF file.", 
+        hint: "Please try again or contact support if the issue persists.",
+        errorType: "server_error"
+      });
     }
   });
 
@@ -1570,10 +1611,19 @@ export function registerEcosystemRoutes(app: Express): void {
         return res.status(400).json({ error: "No team members added. Please add at least one team member before generating analysis." });
       }
 
-      // Check if any team members have FIT scores
-      const membersWithScores = teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores).length > 0);
+      // Check if any team members have valid FIT scores (at least one score > 0)
+      const membersWithScores = teamMembers.filter(m => {
+        if (!m.fitScores || typeof m.fitScores !== 'object') return false;
+        const scores = m.fitScores as Record<string, number>;
+        // Must have at least one score with value > 0
+        return Object.values(scores).some(val => typeof val === 'number' && val > 0);
+      });
       if (membersWithScores.length === 0) {
-        return res.status(400).json({ error: "No team members have FIT scores. Please add assessment data for at least one team member." });
+        return res.status(400).json({ 
+          error: "No team members have valid FIT scores", 
+          message: "Please add at least one team member with completed FIT assessment scores before generating analysis.",
+          hint: "Team members showing 'No scores' will not be included in the analysis."
+        });
       }
 
       // Run mission analysis if not already done (deferred from Step 2)

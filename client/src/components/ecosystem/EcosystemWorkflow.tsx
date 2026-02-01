@@ -539,7 +539,11 @@ export function EcosystemWorkflow({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to parse PDF");
+        // Include hint in error message if available
+        const errorMessage = errorData.hint 
+          ? `${errorData.error} ${errorData.hint}`
+          : errorData.error || "Failed to parse PDF";
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
