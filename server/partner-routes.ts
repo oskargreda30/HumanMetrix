@@ -3142,6 +3142,127 @@ export function registerPartnerRoutes(app: Express) {
     }
   });
 
+  // POST /api/unlock-results/process-payment - Process unlock results payment after Stripe callback
+  app.post("/api/unlock-results/process-payment", async (req: Request, res: Response) => {
+    try {
+      const { stripeSessionId } = req.body;
+      
+      if (!stripeSessionId) {
+        return res.status(400).json({ error: "Missing Stripe session ID" });
+      }
+      
+      // Retrieve and verify Stripe session
+      let checkoutSession;
+      try {
+        checkoutSession = await stripe.checkout.sessions.retrieve(stripeSessionId);
+      } catch (stripeError: any) {
+        console.error('[Unlock Results] Stripe session retrieval failed:', stripeError.message);
+        return res.status(400).json({ error: "Failed to verify payment" });
+      }
+      
+      // Verify payment was successful
+      if (checkoutSession.payment_status !== 'paid') {
+        return res.status(400).json({ error: "Payment not completed" });
+      }
+      
+      // Verify this is a b2b_unlock type payment
+      if (checkoutSession.metadata?.type !== 'b2b_unlock') {
+        return res.status(400).json({ error: "Invalid payment type" });
+      }
+      
+      const { inviteToken, sessionIds: sessionIdsJson, isBundle } = checkoutSession.metadata;
+      if (!inviteToken || !sessionIdsJson) {
+        return res.status(400).json({ error: "Missing payment metadata" });
+      }
+      
+      const sessionIds = JSON.parse(sessionIdsJson);
+      const email = checkoutSession.customer_email;
+      
+      // Get the invitation
+      const invitation = await storage.getPartnerCandidateInvitationByToken(inviteToken);
+      if (!invitation) {
+        return res.status(404).json({ error: "Invitation not found" });
+      }
+      
+      // Get partner info
+      const partner = await storage.getPartnerAccount(invitation.partnerId);
+      const partnerName = partner?.companyName || partner?.name || "Partner";
+      
+      // Update all sessions to mark payment as complete
+      const now = new Date();
+      for (const sessionId of sessionIds) {
+        await db.update(assessmentSessions)
+          .set({
+            resultsPaymentStatus: 'paid',
+            resultsUnlockAt: now,
+            stripePaymentIntentId: checkoutSession.payment_intent as string,
+          })
+          .where(eq(assessmentSessions.id, sessionId));
+      }
+      
+      // Check if user has an existing account
+      const existingUser = await storage.getUserByEmail(email || '');
+      const hasExistingAccount = !!existingUser;
+      
+      // Create or update partner_result_purchases record if user exists
+      if (existingUser) {
+        // Check for existing purchase record
+        const existingPurchase = await storage.getPartnerResultPurchaseByInvitation(existingUser.id, invitation.id);
+        
+        if (existingPurchase) {
+          await storage.updatePartnerResultPurchase(existingPurchase.id, {
+            status: 'completed',
+            stripeSessionId,
+            stripePaymentIntentId: checkoutSession.payment_intent as string,
+            purchasedAt: now,
+          });
+        } else {
+          await storage.createPartnerResultPurchase({
+            userId: existingUser.id,
+            partnerInvitationId: invitation.id,
+            stripeSessionId,
+            amount: checkoutSession.amount_total || 0,
+            currency: (checkoutSession.currency || 'gbp').toUpperCase(),
+            assessmentCount: sessionIds.length,
+            status: 'completed',
+          });
+        }
+      }
+      
+      // Send confirmation email with results
+      if (email) {
+        try {
+          const { sendB2BResultsUnlockedEmail } = await import('./email');
+          const baseUrl = getBaseUrl(req);
+          const resultsUrl = hasExistingAccount ? `${baseUrl}/dashboard` : baseUrl;
+          
+          await sendB2BResultsUnlockedEmail(
+            email,
+            isBundle === 'true' ? `${sessionIds.length} Assessments` : 'Assessment Results',
+            partnerName,
+            resultsUrl
+          );
+          console.log(`[Unlock Results] Sent unlock confirmation email to ${email}`);
+        } catch (emailError) {
+          console.error('[Unlock Results] Failed to send email:', emailError);
+        }
+      }
+      
+      console.log(`[Unlock Results] Successfully processed payment for ${sessionIds.length} session(s), invite: ${inviteToken}`);
+      
+      res.json({
+        success: true,
+        email,
+        hasExistingAccount,
+        resultsUrl: hasExistingAccount ? '/dashboard' : null,
+        sessionId: sessionIds[0], // For account creation flow
+      });
+    } catch (error: any) {
+      console.error("Error processing unlock payment:", error);
+      res.status(500).json({ error: "Failed to process payment" });
+    }
+  });
+
   // ========== Card Management Endpoints (for Prepaid Partners) ==========
   
   // Create Stripe Setup Intent for saving card

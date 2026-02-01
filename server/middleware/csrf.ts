@@ -51,6 +51,7 @@ export function csrfProtection() {
       // Payment/checkout flows (public)
       "/api/process-results-payment",
       "/api/unlock-results/checkout",
+      "/api/unlock-results/process-payment",
       "/api/b2b/results/",
       "/api/b2b/results-bundle/checkout",
       "/api/b2b/process-payment",
