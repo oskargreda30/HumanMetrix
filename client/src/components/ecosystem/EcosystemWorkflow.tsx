@@ -255,12 +255,42 @@ export function EcosystemWorkflow({
     scrollToStep(stepNumber);
   }, [scrollToStep]);
 
-  // Reset editing mode when projectId changes (switching projects)
+  // Reset all state when projectId changes (switching projects)
+  // This ensures new projects start with completely empty form fields
   useEffect(() => {
+    // Reset UI state
     setIsEditingForm(false);
     setIsGenerating(false);
     isInitialLoadRef.current = true;
     lastProjectStepRef.current = null;
+    
+    // Explicitly reset all form fields to empty strings
+    // This handles back-to-back creations and ensures clean state
+    setMissionStatement("");
+    setCompanyEthos("");
+    setIndustry("");
+    setTeamFunction("");
+    setTeamSize("");
+    setWorkMode("");
+    setTeamStage("");
+    setHiringPlans("");
+    setCurrentChallenges("");
+    
+    // Reset deep dive fields
+    setDelayedTasks("");
+    setConflictTopics("");
+    setAvoidedWork("");
+    setOverloadedMember("");
+    setWishedSkills("");
+    setIdealInteractionStyle("");
+    setPersonalityGap("");
+    setUpcomingInitiative("");
+    setCloneableSkills("");
+    setTransformativeFix("");
+    setShowDeepDive(false);
+    
+    // Reset expanded step to 1 for new projects
+    setExpandedStep(1);
   }, [projectId]);
   
   // Initialize form from project data
@@ -847,6 +877,42 @@ export function EcosystemWorkflow({
       )}
     </div>
   );
+
+  // Show loading skeleton when switching projects
+  if (projectLoading) {
+    return (
+      <div className="space-y-4" data-testid="ecosystem-loading-skeleton">
+        {/* Skeleton for intro banner */}
+        <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10">
+          <div className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="h-12 w-12 rounded-full bg-primary/20 animate-pulse" />
+              <div className="flex-1 space-y-3">
+                <div className="h-6 w-48 bg-muted animate-pulse rounded" />
+                <div className="h-4 w-full bg-muted/70 animate-pulse rounded" />
+                <div className="h-4 w-3/4 bg-muted/70 animate-pulse rounded" />
+              </div>
+            </div>
+          </div>
+        </Card>
+        
+        {/* Skeleton for step cards */}
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="overflow-hidden">
+            <div className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-5 w-32 bg-muted animate-pulse rounded" />
+                  <div className="h-3 w-48 bg-muted/70 animate-pulse rounded" />
+                </div>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

@@ -1,10 +1,10 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, AlertCircle, Sparkles, Plus, ChevronDown, Check, FileText } from "lucide-react";
+import { Loader2, AlertCircle, Sparkles, Plus, ChevronDown, Check, FileText, Search } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EcosystemWorkflow } from "./EcosystemWorkflow";
 import { useEcosystemProjects, useCreateEcosystemProject } from "@/hooks/useEcosystemProject";
@@ -23,10 +23,15 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 
 const ECOSYSTEM_CREDITS_REQUIRED = 20;
-
+const MAX_ANALYSIS_NAME_LENGTH = 100;
 const DEFAULT_PROJECT_NAME = "Team Diagnostic";
 
 interface EcosystemAutoProjectProps {
@@ -54,6 +59,10 @@ export function EcosystemAutoProject({
   // New analysis naming dialog state
   const [showNewAnalysisDialog, setShowNewAnalysisDialog] = useState(false);
   const [newAnalysisName, setNewAnalysisName] = useState("");
+  const [dialogError, setDialogError] = useState<string | null>(null);
+  
+  // Search filter for project dropdown
+  const [projectSearchQuery, setProjectSearchQuery] = useState("");
 
   useEffect(() => {
     if (projectsLoading) return;
@@ -159,7 +168,30 @@ export function EcosystemAutoProject({
   
   // Get completed analyses (projects with teamAnalysis)
   const completedProjects = projects.filter(p => p.teamAnalysis);
+  const inProgressProjects = projects.filter(p => !p.teamAnalysis);
   const hasMultipleAnalyses = completedProjects.length > 1 || (completedProjects.length === 1 && !currentProject?.teamAnalysis);
+  
+  // Filter projects by search query
+  const filteredCompletedProjects = useMemo(() => {
+    if (!projectSearchQuery.trim()) return completedProjects;
+    const query = projectSearchQuery.toLowerCase();
+    return completedProjects.filter(p => p.name.toLowerCase().includes(query));
+  }, [completedProjects, projectSearchQuery]);
+  
+  const filteredInProgressProjects = useMemo(() => {
+    if (!projectSearchQuery.trim()) return inProgressProjects;
+    const query = projectSearchQuery.toLowerCase();
+    return inProgressProjects.filter(p => p.name.toLowerCase().includes(query));
+  }, [inProgressProjects, projectSearchQuery]);
+  
+  // Show search box if there are many projects
+  const showProjectSearch = projects.length > 5;
+  
+  // Truncate long names with ellipsis
+  const truncateName = (name: string, maxLength: number = 30) => {
+    if (name.length <= maxLength) return name;
+    return name.slice(0, maxLength - 3) + "...";
+  };
 
   // Open the new analysis naming dialog
   const handleStartNewAnalysis = () => {
@@ -173,36 +205,47 @@ export function EcosystemAutoProject({
     setShowNewAnalysisDialog(true);
   };
   
+  // Sanitize analysis name - escape HTML and limit length
+  const sanitizeAnalysisName = (name: string): string => {
+    // Remove HTML tags and limit length
+    const sanitized = name
+      .replace(/<[^>]*>/g, '') // Remove HTML tags
+      .trim()
+      .slice(0, MAX_ANALYSIS_NAME_LENGTH);
+    return sanitized;
+  };
+  
   // Create the new analysis with the custom name
   const handleConfirmNewAnalysis = async () => {
-    if (!newAnalysisName.trim()) {
-      toast({
-        title: "Name required",
-        description: "Please enter a name for your analysis.",
-        variant: "destructive",
-      });
+    const sanitizedName = sanitizeAnalysisName(newAnalysisName);
+    
+    if (!sanitizedName) {
+      setDialogError("Please enter a name for your analysis.");
       return;
     }
     
     // Guard against concurrent creation
     if (createProject.isPending) return;
     
+    setDialogError(null);
+    
     try {
       const project = await createProject.mutateAsync({
-        name: newAnalysisName.trim(),
+        name: sanitizedName,
         partnerId,
       });
       setProjectId(project.id);
       setShowNewAnalysisDialog(false);
       setNewAnalysisName("");
+      setDialogError(null);
       refetch();
       toast({
         title: "Analysis created",
-        description: `"${newAnalysisName.trim()}" is ready to start.`,
+        description: `"${sanitizedName}" is ready to start.`,
       });
     } catch (err) {
-      setError("Unable to create new analysis. Please try again.");
-      setShowNewAnalysisDialog(false);
+      // Keep dialog open on error so user can retry
+      setDialogError("Unable to create analysis. Please try again.");
     }
   };
 
@@ -233,56 +276,103 @@ export function EcosystemAutoProject({
                     <ChevronDown className="h-4 w-4 ml-1" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-64">
+                <DropdownMenuContent 
+                  align="start" 
+                  className="w-72 max-h-80 overflow-y-auto"
+                  onCloseAutoFocus={() => setProjectSearchQuery("")}
+                >
+                  {/* Search box for many projects */}
+                  {showProjectSearch && (
+                    <div className="p-2 border-b">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search analyses..."
+                          value={projectSearchQuery}
+                          onChange={(e) => setProjectSearchQuery(e.target.value)}
+                          className="pl-8 h-8 text-sm"
+                          data-testid="input-project-search"
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Show completed analyses first */}
-                  {completedProjects.length > 0 && (
+                  {filteredCompletedProjects.length > 0 && (
                     <>
                       <div className="px-2 py-1.5 text-xs text-muted-foreground font-medium">
                         Completed Analyses
                       </div>
-                      {completedProjects.map((project) => (
-                        <DropdownMenuItem
-                          key={project.id}
-                          onClick={() => setProjectId(project.id)}
-                          className="flex items-center justify-between"
-                          data-testid={`menu-item-project-${project.id}`}
-                        >
-                          <span className="truncate flex-1">{project.name}</span>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">Complete</Badge>
-                            {project.id === projectId && (
-                              <Check className="h-4 w-4 text-primary" />
-                            )}
-                          </div>
-                        </DropdownMenuItem>
+                      {filteredCompletedProjects.map((project) => (
+                        <Tooltip key={project.id}>
+                          <TooltipTrigger asChild>
+                            <DropdownMenuItem
+                              onClick={() => setProjectId(project.id)}
+                              className="flex items-center justify-between"
+                              data-testid={`menu-item-project-${project.id}`}
+                            >
+                              <span className="truncate flex-1 max-w-[140px]">{truncateName(project.name)}</span>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">Complete</Badge>
+                                {project.id === projectId && (
+                                  <Check className="h-4 w-4 text-primary" />
+                                )}
+                              </div>
+                            </DropdownMenuItem>
+                          </TooltipTrigger>
+                          {project.name.length > 30 && (
+                            <TooltipContent side="right">
+                              <p>{project.name}</p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
                       ))}
                     </>
                   )}
+                  
                   {/* Show in-progress analyses */}
-                  {projects.filter(p => !p.teamAnalysis).length > 0 && (
+                  {filteredInProgressProjects.length > 0 && (
                     <>
-                      {completedProjects.length > 0 && <DropdownMenuSeparator />}
+                      {filteredCompletedProjects.length > 0 && <DropdownMenuSeparator />}
                       <div className="px-2 py-1.5 text-xs text-muted-foreground font-medium">
                         In Progress
                       </div>
-                      {projects.filter(p => !p.teamAnalysis).map((project) => (
-                        <DropdownMenuItem
-                          key={project.id}
-                          onClick={() => setProjectId(project.id)}
-                          className="flex items-center justify-between"
-                          data-testid={`menu-item-project-${project.id}`}
-                        >
-                          <span className="truncate flex-1">{project.name}</span>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs">Draft</Badge>
-                            {project.id === projectId && (
-                              <Check className="h-4 w-4 text-primary" />
-                            )}
-                          </div>
-                        </DropdownMenuItem>
+                      {filteredInProgressProjects.map((project) => (
+                        <Tooltip key={project.id}>
+                          <TooltipTrigger asChild>
+                            <DropdownMenuItem
+                              onClick={() => setProjectId(project.id)}
+                              className="flex items-center justify-between"
+                              data-testid={`menu-item-project-${project.id}`}
+                            >
+                              <span className="truncate flex-1 max-w-[140px]">{truncateName(project.name)}</span>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <Badge variant="outline" className="text-xs">Draft</Badge>
+                                {project.id === projectId && (
+                                  <Check className="h-4 w-4 text-primary" />
+                                )}
+                              </div>
+                            </DropdownMenuItem>
+                          </TooltipTrigger>
+                          {project.name.length > 30 && (
+                            <TooltipContent side="right">
+                              <p>{project.name}</p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
                       ))}
                     </>
                   )}
+                  
+                  {/* No results message */}
+                  {projectSearchQuery && filteredCompletedProjects.length === 0 && filteredInProgressProjects.length === 0 && (
+                    <div className="px-2 py-4 text-sm text-muted-foreground text-center">
+                      No analyses found
+                    </div>
+                  )}
+                  
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={handleStartNewAnalysis}
@@ -338,17 +428,25 @@ export function EcosystemAutoProject({
           </div>
           <div className="flex flex-wrap gap-2">
             {completedProjects.map((proj) => (
-              <Button
-                key={proj.id}
-                variant={proj.id === projectId ? "default" : "outline"}
-                size="sm"
-                onClick={() => setProjectId(proj.id)}
-                data-testid={`saved-report-${proj.id}`}
-              >
-                <FileText className="h-3 w-3 mr-1" />
-                {proj.name}
-                {proj.id === projectId && <Check className="h-3 w-3 ml-1" />}
-              </Button>
+              <Tooltip key={proj.id}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={proj.id === projectId ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setProjectId(proj.id)}
+                    data-testid={`saved-report-${proj.id}`}
+                  >
+                    <FileText className="h-3 w-3 mr-1" />
+                    {truncateName(proj.name, 25)}
+                    {proj.id === projectId && <Check className="h-3 w-3 ml-1" />}
+                  </Button>
+                </TooltipTrigger>
+                {proj.name.length > 25 && (
+                  <TooltipContent>
+                    <p>{proj.name}</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
             ))}
           </div>
         </div>
@@ -402,6 +500,9 @@ export function EcosystemAutoProject({
       <Dialog 
         open={showNewAnalysisDialog} 
         onOpenChange={(open) => {
+          // Prevent closing while mutation is pending
+          if (!open && createProject.isPending) return;
+          
           if (open && !newAnalysisName) {
             // Ensure prefill with suggested name when dialog opens without a name
             const timestamp = new Date().toLocaleDateString('en-US', { 
@@ -413,33 +514,57 @@ export function EcosystemAutoProject({
           }
           setShowNewAnalysisDialog(open);
           if (!open) {
-            // Clear name when dialog closes (via overlay or escape)
+            // Clear state when dialog closes
             setNewAnalysisName("");
+            setDialogError(null);
           }
         }}
       >
-        <DialogContent>
+        <DialogContent 
+          onEscapeKeyDown={(e) => {
+            // Prevent closing with Escape while mutation is pending
+            if (createProject.isPending) e.preventDefault();
+          }}
+          onPointerDownOutside={(e) => {
+            // Prevent closing by clicking outside while mutation is pending
+            if (createProject.isPending) e.preventDefault();
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Name Your Analysis</DialogTitle>
             <DialogDescription>
               Give your new team analysis a descriptive name to help you identify it later.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-4 space-y-2">
             <Label htmlFor="analysis-name">Analysis Name</Label>
             <Input
               id="analysis-name"
               value={newAnalysisName}
-              onChange={(e) => setNewAnalysisName(e.target.value)}
+              onChange={(e) => {
+                // Limit to max length
+                const value = e.target.value.slice(0, MAX_ANALYSIS_NAME_LENGTH);
+                setNewAnalysisName(value);
+                if (dialogError) setDialogError(null);
+              }}
               placeholder="e.g., Q1 2026 Engineering Team"
-              className="mt-2"
+              className={dialogError ? "border-destructive" : ""}
               data-testid="input-analysis-name"
+              disabled={createProject.isPending}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === 'Enter' && !createProject.isPending) {
                   handleConfirmNewAnalysis();
                 }
               }}
             />
+            <div className="flex items-center justify-between text-xs">
+              <span className={dialogError ? "text-destructive" : "text-transparent"}>
+                {dialogError || " "}
+              </span>
+              <span className={`text-muted-foreground ${newAnalysisName.length >= MAX_ANALYSIS_NAME_LENGTH ? "text-destructive" : ""}`}>
+                {newAnalysisName.length}/{MAX_ANALYSIS_NAME_LENGTH}
+              </span>
+            </div>
           </div>
           <DialogFooter>
             <Button
@@ -447,7 +572,9 @@ export function EcosystemAutoProject({
               onClick={() => {
                 setShowNewAnalysisDialog(false);
                 setNewAnalysisName("");
+                setDialogError(null);
               }}
+              disabled={createProject.isPending}
               data-testid="button-cancel-new-analysis"
             >
               Cancel
