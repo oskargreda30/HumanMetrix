@@ -99,11 +99,12 @@ declare module 'http' {
   }
 }
 app.use(express.json({
+  limit: '50mb', // Increased for PDF screen capture uploads
   verify: (req, _res, buf) => {
     req.rawBody = buf;
   }
 }));
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 app.use(cookieParser());
 app.use(csrfProtection());
 devLog('✅ CSRF protection enabled');
