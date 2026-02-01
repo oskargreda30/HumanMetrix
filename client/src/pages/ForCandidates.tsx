@@ -172,9 +172,9 @@ export default function ForCandidates() {
       
       <Navigation />
       
-      {/* For Employers link - top right, smaller on mobile */}
-      <div className="relative z-20 flex justify-end px-4 md:px-6 lg:px-8 pt-2 md:pt-3">
-        <Link href="/" data-testid="link-for-employers" className="inline-flex items-center gap-1 md:gap-2 text-xs md:text-sm bg-primary/10 hover:bg-primary/20 px-2.5 py-1.5 md:px-4 md:py-2 rounded-full border border-primary/20 text-muted-foreground hover:text-foreground transition-all">
+      {/* For Employers link - left aligned, compact */}
+      <div className="relative z-20 flex justify-start px-4 md:px-6 lg:px-8 pt-1.5 md:pt-2">
+        <Link href="/" data-testid="link-for-employers" className="inline-flex items-center gap-1 text-[10px] md:text-xs bg-primary/10 hover:bg-primary/20 px-2 py-1 md:px-3 md:py-1.5 rounded-full border border-primary/20 text-muted-foreground hover:text-foreground transition-all">
           <span className="hidden sm:inline">Hiring for your organization?</span>
           <span className="font-semibold text-primary">For Employers →</span>
         </Link>

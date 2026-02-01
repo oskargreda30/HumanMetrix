@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Users, User, Target } from "lucide-react";
+import { Users, User, Target, Sparkles, CreditCard } from "lucide-react";
 import { SharedIndividualReport, SharedIndividualReportConfig } from "@/components/shared/SharedIndividualReport";
 import PartnerCompareTab from "@/components/partner/PartnerCompareTab";
 import PartnerRoleFitTab from "@/components/partner/PartnerRoleFitTab";
+import { Badge } from "@/components/ui/badge";
 
 const partnerIndividualReportConfig: SharedIndividualReportConfig = {
   candidatesEndpoint: '/api/partner/me/candidates',
@@ -12,13 +13,18 @@ const partnerIndividualReportConfig: SharedIndividualReportConfig = {
   contextType: 'partner',
 };
 
-export default function PartnerAnalysisTab() {
-  const [subTab, setSubTab] = useState("individual");
+interface PartnerAnalysisTabProps {
+  creditsRemaining?: number;
+  onNavigateToEcosystem?: () => void;
+}
+
+export default function PartnerAnalysisTab({ creditsRemaining, onNavigateToEcosystem }: PartnerAnalysisTabProps) {
+  const [subTab, setSubTab] = useState<string | null>(null);
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {/* Quick Action Cards */}
-      <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-3">
+      {/* Quick Action Cards - 4 columns on desktop */}
+      <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-4">
         <Card 
           className={`cursor-pointer hover-elevate ${subTab === 'individual' ? 'border-primary ring-1 ring-primary' : ''}`}
           onClick={() => setSubTab('individual')}
@@ -52,7 +58,35 @@ export default function PartnerAnalysisTab() {
             <p className="text-xs md:text-sm text-muted-foreground">AI-powered job-candidate matching</p>
           </CardContent>
         </Card>
+        {/* Jump to Team Analysis - different color */}
+        <Card 
+          className="cursor-pointer hover-elevate bg-gradient-to-br from-violet-500/10 to-purple-500/10 border-violet-500/30"
+          onClick={() => onNavigateToEcosystem?.()}
+          data-testid="card-team-analysis"
+        >
+          <CardContent className="p-4 md:p-6 text-center">
+            <Sparkles className="h-6 w-6 md:h-8 md:w-8 mx-auto mb-2 text-violet-600" />
+            <h3 className="font-semibold text-sm md:text-base text-violet-700 dark:text-violet-400">Jump to Team Analysis</h3>
+            <p className="text-xs md:text-sm text-muted-foreground">AI-powered team diagnostics</p>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Credit Usage & Instructions - shown when no subtab selected */}
+      {!subTab && (
+        <div className="flex flex-col items-center justify-center py-8 md:py-12 text-center">
+          <div className="flex items-center gap-2 mb-4">
+            <CreditCard className="h-5 w-5 text-primary" />
+            <span className="text-sm text-muted-foreground">Credits Available:</span>
+            <Badge variant="secondary" className="text-sm font-semibold">
+              {creditsRemaining?.toLocaleString() ?? 0}
+            </Badge>
+          </div>
+          <p className="text-muted-foreground max-w-md">
+            Select an analysis type above to get started. Each AI-powered analysis uses credits based on complexity.
+          </p>
+        </div>
+      )}
 
       {/* Content based on selected card */}
       {subTab === 'individual' && (

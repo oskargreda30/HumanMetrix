@@ -338,9 +338,9 @@ export function HiringPipelineTab() {
                       <CardContent className="p-2">
                         <div className="flex items-start justify-between gap-1">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1 mb-1">
-                              <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0 cursor-grab" />
-                              <span className="font-medium text-xs truncate" title={session.externalEmail || session.externalUserId || "Unknown"} data-testid={`text-candidate-${session.sessionId}`}>
+                            <div className="flex items-start gap-1 mb-1">
+                              <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0 cursor-grab mt-0.5" />
+                              <span className="font-medium text-xs break-all leading-tight" title={session.externalEmail || session.externalUserId || "Unknown"} data-testid={`text-candidate-${session.sessionId}`}>
                                 {session.externalEmail || session.externalUserId || "Unknown"}
                               </span>
                             </div>

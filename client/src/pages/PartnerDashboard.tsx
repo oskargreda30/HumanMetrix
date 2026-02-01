@@ -1108,6 +1108,12 @@ export default function PartnerDashboard() {
   const [cardError, setCardError] = useState<string | null>(null);
   const [cardComplete, setCardComplete] = useState(false);
   
+  // Billing tab expanded section state
+  const [billingExpandedSection, setBillingExpandedSection] = useState<string | null>(null);
+  
+  // Settings tab expanded section state
+  const [settingsExpandedSection, setSettingsExpandedSection] = useState<string | null>(null);
+  
   // PDF Import modal state
   const [showPdfImportModal, setShowPdfImportModal] = useState(false);
   
@@ -2906,6 +2912,51 @@ export default function PartnerDashboard() {
                 <h2 className="text-xl md:text-2xl font-semibold mb-1 md:mb-2 text-white">Billing & Credits</h2>
                 <p className="text-white/90 text-sm md:text-base">View usage, purchase credits, and manage payment methods.</p>
               </div>
+              
+              {/* Quick Link Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+                <Card 
+                  className={`cursor-pointer hover-elevate transition-all ${billingExpandedSection === 'credits' ? 'ring-2 ring-primary' : ''}`}
+                  onClick={() => setBillingExpandedSection(billingExpandedSection === 'credits' ? null : 'credits')}
+                  data-testid="card-billing-credits"
+                >
+                  <CardContent className="p-3 md:p-4 flex flex-col items-center text-center gap-1.5 md:gap-2">
+                    <Package className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+                    <span className="text-xs md:text-sm font-medium">Credit Balance</span>
+                  </CardContent>
+                </Card>
+                <Card 
+                  className={`cursor-pointer hover-elevate transition-all ${billingExpandedSection === 'purchase' ? 'ring-2 ring-primary' : ''}`}
+                  onClick={() => setBillingExpandedSection(billingExpandedSection === 'purchase' ? null : 'purchase')}
+                  data-testid="card-billing-purchase"
+                >
+                  <CardContent className="p-3 md:p-4 flex flex-col items-center text-center gap-1.5 md:gap-2">
+                    <ShoppingCart className="h-5 w-5 md:h-6 md:w-6 text-green-500" />
+                    <span className="text-xs md:text-sm font-medium">Buy Credits</span>
+                  </CardContent>
+                </Card>
+                <Card 
+                  className={`cursor-pointer hover-elevate transition-all ${billingExpandedSection === 'options' ? 'ring-2 ring-primary' : ''}`}
+                  onClick={() => setBillingExpandedSection(billingExpandedSection === 'options' ? null : 'options')}
+                  data-testid="card-billing-options"
+                >
+                  <CardContent className="p-3 md:p-4 flex flex-col items-center text-center gap-1.5 md:gap-2">
+                    <Settings className="h-5 w-5 md:h-6 md:w-6 text-orange-500" />
+                    <span className="text-xs md:text-sm font-medium">Billing Options</span>
+                  </CardContent>
+                </Card>
+                <Card 
+                  className={`cursor-pointer hover-elevate transition-all ${billingExpandedSection === 'history' ? 'ring-2 ring-primary' : ''}`}
+                  onClick={() => setBillingExpandedSection(billingExpandedSection === 'history' ? null : 'history')}
+                  data-testid="card-billing-history"
+                >
+                  <CardContent className="p-3 md:p-4 flex flex-col items-center text-center gap-1.5 md:gap-2">
+                    <Receipt className="h-5 w-5 md:h-6 md:w-6 text-blue-500" />
+                    <span className="text-xs md:text-sm font-medium">Payment History</span>
+                  </CardContent>
+                </Card>
+              </div>
+              
               {billingLoading ? (
                 <Card>
                   <CardContent className="py-6 md:py-8 flex justify-center">
@@ -2914,29 +2965,34 @@ export default function PartnerDashboard() {
                 </Card>
               ) : billing ? (
                 <>
-                  {/* Billing Model Header */}
-                  <Card>
-                    <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4 space-y-0 p-3 md:p-6">
-                      <div>
-                        <CardTitle className="text-sm md:text-lg flex items-center gap-1.5 md:gap-2">
-                          <CreditCard className="h-4 w-4 md:h-5 md:w-5" />
-                          {(!account?.partner?.billingType || account?.partner?.billingType === 'payg') && 'Pay As You Go (PAYG)'}
-                          {account?.partner?.billingType === 'subscription' && 'Subscription + Auto-Bill'}
-                          {account?.partner?.billingType === 'enterprise' && 'Enterprise Prepayment'}
-                        </CardTitle>
-                        <CardDescription className="text-[10px] md:text-sm">
-                          {(!account?.partner?.billingType || account?.partner?.billingType === 'payg') && 'No card on file. Bulk discounts via upfront purchase. API suspended at zero credits.'}
-                          {account?.partner?.billingType === 'subscription' && 'Card on file. Min monthly charge + auto-bill for additional usage.'}
-                          {account?.partner?.billingType === 'enterprise' && 'For high-volume BPOs. Pro-forma invoicing for bulk credit blocks.'}
-                        </CardDescription>
-                      </div>
-                      <Badge variant="outline" className="text-[10px] md:text-sm self-start md:self-auto" data-testid="badge-billing-type">
-                        {(!account?.partner?.billingType || account?.partner?.billingType === 'payg') && 'PAYG'}
-                        {account?.partner?.billingType === 'subscription' && 'Subscription'}
-                        {account?.partner?.billingType === 'enterprise' && 'Enterprise'}
-                      </Badge>
-                    </CardHeader>
-                  </Card>
+                  {/* Credit Balance Section */}
+                  {billingExpandedSection === 'credits' && (
+                    <>
+                      {/* Billing Model Header */}
+                      <Card>
+                        <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4 space-y-0 p-3 md:p-6">
+                          <div>
+                            <CardTitle className="text-sm md:text-lg flex items-center gap-1.5 md:gap-2">
+                              <CreditCard className="h-4 w-4 md:h-5 md:w-5" />
+                              {(!account?.partner?.billingType || account?.partner?.billingType === 'payg') && 'Pay As You Go (PAYG)'}
+                              {account?.partner?.billingType === 'subscription' && 'Subscription + Auto-Bill'}
+                              {account?.partner?.billingType === 'enterprise' && 'Enterprise Prepayment'}
+                            </CardTitle>
+                            <CardDescription className="text-[10px] md:text-sm">
+                              {(!account?.partner?.billingType || account?.partner?.billingType === 'payg') && 'No card on file. Bulk discounts via upfront purchase. API suspended at zero credits.'}
+                              {account?.partner?.billingType === 'subscription' && 'Card on file. Min monthly charge + auto-bill for additional usage.'}
+                              {account?.partner?.billingType === 'enterprise' && 'For high-volume BPOs. Pro-forma invoicing for bulk credit blocks.'}
+                            </CardDescription>
+                          </div>
+                          <Badge variant="outline" className="text-[10px] md:text-sm self-start md:self-auto" data-testid="badge-billing-type">
+                            {(!account?.partner?.billingType || account?.partner?.billingType === 'payg') && 'PAYG'}
+                            {account?.partner?.billingType === 'subscription' && 'Subscription'}
+                            {account?.partner?.billingType === 'enterprise' && 'Enterprise'}
+                          </Badge>
+                        </CardHeader>
+                      </Card>
+                    </>
+                  )}
 
                   {/* Pending Billing Change Request Alert */}
                   {billingChangeData?.pendingRequest && (
@@ -2981,7 +3037,7 @@ export default function PartnerDashboard() {
                   )}
 
                   {/* Credit Balance Stats - shown for PAYG or when no billing type set */}
-                  {(!account?.partner?.billingType || account?.partner?.billingType === 'payg') && (
+                  {billingExpandedSection === 'credits' && (!account?.partner?.billingType || account?.partner?.billingType === 'payg') && (
                     <div className="grid gap-2 md:gap-4 md:grid-cols-3">
                       <Card>
                         <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-1 md:pb-2 p-3 md:p-6">
@@ -3031,6 +3087,7 @@ export default function PartnerDashboard() {
                   )}
 
                   {/* Buy Credits - Available for all partners */}
+                  {billingExpandedSection === 'purchase' && (
                   <Card>
                       <CardHeader className="pb-1.5 md:pb-2 p-3 md:p-6">
                         <CardTitle className="text-sm md:text-lg font-semibold" data-testid="text-buy-credits-title">Buy Credits</CardTitle>
@@ -3160,9 +3217,10 @@ export default function PartnerDashboard() {
                         )}
                       </CardContent>
                     </Card>
+                  )}
 
                   {/* Auto-Bill Billing Stats */}
-                  {account?.partner?.billingType === 'subscription' && (
+                  {billingExpandedSection === 'credits' && account?.partner?.billingType === 'subscription' && (
                     <div className="grid gap-4 md:grid-cols-3">
                       <Card>
                         <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
@@ -3212,7 +3270,7 @@ export default function PartnerDashboard() {
                   )}
 
                   {/* Invoice Billing Stats */}
-                  {account?.partner?.billingType === 'enterprise' && (
+                  {billingExpandedSection === 'credits' && account?.partner?.billingType === 'enterprise' && (
                     <div className="grid gap-4 md:grid-cols-3">
                       <Card>
                         <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
@@ -3262,6 +3320,7 @@ export default function PartnerDashboard() {
                   )}
 
                   {/* Billing Options */}
+                  {billingExpandedSection === 'options' && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-lg flex items-center gap-2">
@@ -3467,9 +3526,10 @@ export default function PartnerDashboard() {
                       )}
                     </CardContent>
                   </Card>
+                  )}
 
                   {/* Payment Methods Section - for Subscription and PAYG billing types */}
-                  {(account?.partner?.billingType === 'subscription' || account?.partner?.billingType === 'payg') && (
+                  {billingExpandedSection === 'options' && (account?.partner?.billingType === 'subscription' || account?.partner?.billingType === 'payg') && (
                     <div data-testid="section-payment-methods">
                       <PrepaidCardManagement 
                         partnerId={account?.partner?.id || ''} 
@@ -3479,6 +3539,7 @@ export default function PartnerDashboard() {
                     </div>
                   )}
 
+                  {billingExpandedSection === 'history' && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-lg">Billing History</CardTitle>
@@ -3585,6 +3646,17 @@ export default function PartnerDashboard() {
                       )}
                     </CardContent>
                   </Card>
+                  )}
+                  
+                  {/* Placeholder when no section selected */}
+                  {!billingExpandedSection && (
+                    <Card>
+                      <CardContent className="py-8 text-center text-muted-foreground">
+                        <CreditCard className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                        <p className="text-sm">Click a card above to view billing details</p>
+                      </CardContent>
+                    </Card>
+                  )}
                 </>
               ) : (
                 <Card>
@@ -3600,6 +3672,63 @@ export default function PartnerDashboard() {
                 <h2 className="text-xl md:text-2xl font-semibold mb-1 md:mb-2 text-white">Settings</h2>
                 <p className="text-white/90 text-sm md:text-base">Configure your organization profile and preferences.</p>
               </div>
+              
+              {/* Quick Link Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+                <Card 
+                  className={`cursor-pointer hover-elevate transition-all ${settingsExpandedSection === 'contract' ? 'ring-2 ring-primary' : ''}`}
+                  onClick={() => setSettingsExpandedSection(settingsExpandedSection === 'contract' ? null : 'contract')}
+                  data-testid="card-settings-contract"
+                >
+                  <CardContent className="p-3 md:p-4 flex flex-col items-center text-center gap-1.5 md:gap-2">
+                    <FileText className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+                    <span className="text-xs md:text-sm font-medium">Contract & Terms</span>
+                  </CardContent>
+                </Card>
+                <Card 
+                  className={`cursor-pointer hover-elevate transition-all ${settingsExpandedSection === 'account' ? 'ring-2 ring-primary' : ''}`}
+                  onClick={() => setSettingsExpandedSection(settingsExpandedSection === 'account' ? null : 'account')}
+                  data-testid="card-settings-account"
+                >
+                  <CardContent className="p-3 md:p-4 flex flex-col items-center text-center gap-1.5 md:gap-2">
+                    <Users className="h-5 w-5 md:h-6 md:w-6 text-green-500" />
+                    <span className="text-xs md:text-sm font-medium">Account Details</span>
+                  </CardContent>
+                </Card>
+                <Card 
+                  className={`cursor-pointer hover-elevate transition-all ${settingsExpandedSection === 'alerts' ? 'ring-2 ring-primary' : ''}`}
+                  onClick={() => setSettingsExpandedSection(settingsExpandedSection === 'alerts' ? null : 'alerts')}
+                  data-testid="card-settings-alerts"
+                >
+                  <CardContent className="p-3 md:p-4 flex flex-col items-center text-center gap-1.5 md:gap-2">
+                    <Bell className="h-5 w-5 md:h-6 md:w-6 text-orange-500" />
+                    <span className="text-xs md:text-sm font-medium">Quota Alerts</span>
+                  </CardContent>
+                </Card>
+                {settings?.settings?.billingType === 'payg' && (
+                <Card 
+                  className={`cursor-pointer hover-elevate transition-all ${settingsExpandedSection === 'autotopup' ? 'ring-2 ring-primary' : ''}`}
+                  onClick={() => setSettingsExpandedSection(settingsExpandedSection === 'autotopup' ? null : 'autotopup')}
+                  data-testid="card-settings-autotopup"
+                >
+                  <CardContent className="p-3 md:p-4 flex flex-col items-center text-center gap-1.5 md:gap-2">
+                    <RefreshCw className="h-5 w-5 md:h-6 md:w-6 text-blue-500" />
+                    <span className="text-xs md:text-sm font-medium">Auto Top-Up</span>
+                  </CardContent>
+                </Card>
+                )}
+                <Card 
+                  className={`cursor-pointer hover-elevate transition-all ${settingsExpandedSection === 'branding' ? 'ring-2 ring-primary' : ''}`}
+                  onClick={() => setSettingsExpandedSection(settingsExpandedSection === 'branding' ? null : 'branding')}
+                  data-testid="card-settings-branding"
+                >
+                  <CardContent className="p-3 md:p-4 flex flex-col items-center text-center gap-1.5 md:gap-2">
+                    <Palette className="h-5 w-5 md:h-6 md:w-6 text-purple-500" />
+                    <span className="text-xs md:text-sm font-medium">White-Label</span>
+                  </CardContent>
+                </Card>
+              </div>
+              
               {settingsLoading ? (
                 <Card>
                   <CardContent className="py-6 md:py-8 flex justify-center">
@@ -3609,6 +3738,7 @@ export default function PartnerDashboard() {
               ) : (
                 <>
                   {/* Contract & Terms */}
+                  {settingsExpandedSection === 'contract' && (
                   <Card data-testid="card-contract-terms">
                     <CardHeader className="pb-2 md:pb-3 p-3 md:p-6">
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-3">
@@ -3670,8 +3800,10 @@ export default function PartnerDashboard() {
                       </div>
                     </CardContent>
                   </Card>
+                  )}
 
                   {/* Account Details */}
+                  {settingsExpandedSection === 'account' && (
                   <Card data-testid="card-account-details">
                     <CardHeader className="p-3 md:p-6">
                       <CardTitle className="text-sm md:text-lg flex items-center gap-1.5 md:gap-2">
@@ -3695,7 +3827,10 @@ export default function PartnerDashboard() {
                       </div>
                     </CardContent>
                   </Card>
+                  )}
 
+                  {/* Quota Alerts */}
+                  {settingsExpandedSection === 'alerts' && (
                   <Card>
                     <CardHeader className="p-3 md:p-6">
                       <CardTitle className="text-sm md:text-lg flex items-center gap-1.5 md:gap-2">
@@ -3758,8 +3893,10 @@ export default function PartnerDashboard() {
                       )}
                     </CardContent>
                   </Card>
+                  )}
 
-                  {settings?.settings?.billingType === 'payg' && (
+                  {/* Auto Top-Up */}
+                  {settingsExpandedSection === 'autotopup' && settings?.settings?.billingType === 'payg' && (
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-lg flex items-center gap-2">
@@ -3827,6 +3964,7 @@ export default function PartnerDashboard() {
                   )}
 
                   {/* White-Label Branding Settings */}
+                  {settingsExpandedSection === 'branding' && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-lg flex items-center gap-2">
@@ -4082,8 +4220,10 @@ export default function PartnerDashboard() {
                       )}
                     </CardContent>
                   </Card>
+                  )}
 
                   {/* Change Password Section */}
+                  {settingsExpandedSection === 'account' && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-lg flex items-center gap-2">
@@ -4179,6 +4319,17 @@ export default function PartnerDashboard() {
                       </Button>
                     </CardContent>
                   </Card>
+                  )}
+
+                  {/* Placeholder when no section selected */}
+                  {!settingsExpandedSection && (
+                    <Card>
+                      <CardContent className="py-8 text-center text-muted-foreground">
+                        <Settings className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                        <p className="text-sm">Click a card above to view settings</p>
+                      </CardContent>
+                    </Card>
+                  )}
 
                   <div className="flex justify-end">
                     <Button
@@ -4412,7 +4563,10 @@ export default function PartnerDashboard() {
                 <h2 className="text-xl md:text-2xl font-semibold mb-1 md:mb-2 text-white">Candidate Analysis</h2>
                 <p className="text-white/90 text-sm md:text-base">Compare candidates side-by-side with AI-powered insights.</p>
               </div>
-              <PartnerAnalysisTab />
+              <PartnerAnalysisTab 
+                creditsRemaining={partner.remaining} 
+                onNavigateToEcosystem={() => { setActiveTab('ecosystem'); window.scrollTo(0, 0); }}
+              />
             </TabsContent>
 
             {/* Pipeline Tab */}

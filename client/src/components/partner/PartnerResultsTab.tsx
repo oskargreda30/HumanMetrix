@@ -347,7 +347,7 @@ export default function PartnerResultsTab() {
   return (
     <div className="space-y-3 md:space-y-4">
       {/* Quick Action Summary Cards */}
-      <div className="grid gap-2 md:gap-3 grid-cols-1 md:grid-cols-3">
+      <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-3">
         <Card 
           className="cursor-pointer hover-elevate" 
           onClick={() => {
@@ -356,14 +356,14 @@ export default function PartnerResultsTab() {
           }}
           data-testid="card-summary-candidates"
         >
-          <CardContent className="p-3 md:p-4">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-primary/10">
-                <ClipboardList className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <ClipboardList className="h-5 w-5 md:h-6 md:w-6 text-primary" />
               </div>
               <div>
-                <p className="text-base md:text-lg font-bold">{candidates?.filter((c: any) => c.results?.some((r: any) => r.status === 'completed')).length || 0}</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground">Candidates with Results</p>
+                <p className="text-lg md:text-2xl font-bold">{candidates?.filter((c: any) => c.results?.some((r: any) => r.status === 'completed')).length || 0}</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Candidates with Results</p>
               </div>
             </div>
           </CardContent>
@@ -377,14 +377,14 @@ export default function PartnerResultsTab() {
           }}
           data-testid="card-summary-reports"
         >
-          <CardContent className="p-3 md:p-4">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-primary/10">
-                <BarChart3 className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <BarChart3 className="h-5 w-5 md:h-6 md:w-6 text-primary" />
               </div>
               <div>
-                <p className="text-base md:text-lg font-bold">{savedReports?.length || 0}</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground">Saved Analysis Reports</p>
+                <p className="text-lg md:text-2xl font-bold">{savedReports?.length || 0}</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Saved Analysis Reports</p>
               </div>
             </div>
           </CardContent>
@@ -394,14 +394,14 @@ export default function PartnerResultsTab() {
           onClick={() => setShowPdfImportModal(true)}
           data-testid="card-import-pdf"
         >
-          <CardContent className="p-3 md:p-4">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-primary/10">
-                <Upload className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Upload className="h-5 w-5 md:h-6 md:w-6 text-primary" />
               </div>
               <div>
-                <p className="text-xs md:text-sm font-semibold">Import PDF</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground">Upload external reports</p>
+                <p className="text-sm md:text-base font-semibold">Import PDF</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Upload external reports</p>
               </div>
             </div>
           </CardContent>
