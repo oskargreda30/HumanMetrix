@@ -297,7 +297,7 @@ export function HiringPipelineTab() {
       </div>
 
       {/* Desktop: Horizontal kanban grid */}
-      <div className="hidden md:grid md:grid-cols-7 gap-3 overflow-x-auto pb-4">
+      <div className="hidden md:flex gap-2 overflow-x-auto pb-4">
         {stages.map((stage) => {
           const config = stageConfig[stage.id];
           const Icon = config?.icon || User;
@@ -307,7 +307,7 @@ export function HiringPipelineTab() {
           return (
             <div
               key={stage.id}
-              className={`min-w-[180px] rounded-lg border ${
+              className={`flex-1 min-w-[160px] max-w-[200px] rounded-lg border ${
                 isDropTarget ? "border-primary border-2 bg-primary/5" : "border-border"
               } transition-all`}
               onDragOver={(e) => handleDragOver(e, stage.id)}
@@ -335,35 +335,35 @@ export function HiringPipelineTab() {
                       onClick={() => openDetailsDialog(session)}
                       data-testid={`pipeline-card-${session.sessionId}`}
                     >
-                      <CardContent className="p-3">
-                        <div className="flex items-start justify-between gap-2">
+                      <CardContent className="p-2">
+                        <div className="flex items-start justify-between gap-1">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1 mb-1">
                               <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0 cursor-grab" />
-                              <span className="font-medium text-sm truncate" data-testid={`text-candidate-${session.sessionId}`}>
+                              <span className="font-medium text-xs truncate" title={session.externalEmail || session.externalUserId || "Unknown"} data-testid={`text-candidate-${session.sessionId}`}>
                                 {session.externalEmail || session.externalUserId || "Unknown"}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge variant="outline" className="text-xs">
+                            <div className="flex items-center gap-1 flex-wrap mb-1">
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                                 {assessmentLabels[session.assessmentType] || session.assessmentType}
                               </Badge>
                               {session.status === "completed" && session.totalScore !== null && (
-                                <Badge variant="secondary" className="text-xs">
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                                   {session.totalScore}%
                                 </Badge>
                               )}
                             </div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-[10px] text-muted-foreground">
                               {session.completedAt
                                 ? format(new Date(session.completedAt), "MMM d, yyyy")
                                 : format(new Date(session.createdAt), "MMM d, yyyy")
                               }
                             </div>
                             {session.pipelineNotes && (
-                              <div className="mt-2 text-xs text-muted-foreground truncate flex items-center gap-1">
-                                <FileText className="h-3 w-3" />
-                                {session.pipelineNotes.substring(0, 30)}...
+                              <div className="mt-1 text-[10px] text-muted-foreground truncate flex items-center gap-1">
+                                <FileText className="h-2.5 w-2.5" />
+                                {session.pipelineNotes.substring(0, 20)}...
                               </div>
                             )}
                           </div>

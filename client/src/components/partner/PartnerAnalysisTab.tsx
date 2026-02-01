@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, User, Target } from "lucide-react";
 import { SharedIndividualReport, SharedIndividualReportConfig } from "@/components/shared/SharedIndividualReport";
@@ -55,34 +54,24 @@ export default function PartnerAnalysisTab() {
         </Card>
       </div>
 
-      <Tabs value={subTab} onValueChange={setSubTab}>
-        <TabsList className="bg-white/10 border border-white/20 h-auto flex-wrap">
-          <TabsTrigger value="individual" className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
-            <User className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-            Individual Report
-          </TabsTrigger>
-          <TabsTrigger value="compare" className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
-            <Users className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-            Compare Candidates
-          </TabsTrigger>
-          <TabsTrigger value="role-fit" className="text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
-            <Target className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-            Role Fit
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="individual" className="space-y-6">
+      {/* Content based on selected card */}
+      {subTab === 'individual' && (
+        <div className="space-y-6">
           <SharedIndividualReport config={partnerIndividualReportConfig} />
-        </TabsContent>
+        </div>
+      )}
 
-        <TabsContent value="compare" className="space-y-6">
+      {subTab === 'compare' && (
+        <div className="space-y-6">
           <PartnerCompareTab />
-        </TabsContent>
+        </div>
+      )}
 
-        <TabsContent value="role-fit" className="space-y-6">
+      {subTab === 'role-fit' && (
+        <div className="space-y-6">
           <PartnerRoleFitTab />
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
     </div>
   );
 }
