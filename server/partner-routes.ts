@@ -3963,8 +3963,9 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(404).json({ error: "Session not found" });
       }
       
-      // Check if the session has been paid for
-      if (!(session as any).paidAt && !(session as any).paidForResultsAt) {
+      // Check if the session has been paid for / results released
+      // Use the same conditions as the session info endpoint
+      if ((session as any).resultsPaymentStatus !== 'paid' && (session as any).resultsReleaseStatus !== 'released') {
         return res.status(403).json({ error: "Results have not been unlocked yet" });
       }
       
