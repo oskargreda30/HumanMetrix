@@ -41,7 +41,6 @@ import {
   XCircle,
   Eye,
   Loader2,
-  RefreshCw,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -272,17 +271,11 @@ export function HiringPipelineTab() {
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-white">Hiring Pipeline</h2>
-            <p className="text-sm text-white/70 mt-1">
-              Track candidates through your hiring process with drag-and-drop
-            </p>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="border-white/30 text-white hover:bg-white/10" data-testid="button-refresh-pipeline">
-            <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+        <div>
+          <h2 className="text-2xl font-bold text-white">Hiring Pipeline</h2>
+          <p className="text-sm text-white/70 mt-1">
+            Track candidates through your hiring process with drag-and-drop
+          </p>
         </div>
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />

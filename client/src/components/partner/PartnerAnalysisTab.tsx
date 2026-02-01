@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Users, User, Target, Sparkles, CreditCard } from "lucide-react";
+import { Users, User, Target, Sparkles } from "lucide-react";
 import { SharedIndividualReport, SharedIndividualReportConfig } from "@/components/shared/SharedIndividualReport";
 import PartnerCompareTab from "@/components/partner/PartnerCompareTab";
 import PartnerRoleFitTab from "@/components/partner/PartnerRoleFitTab";
-import { Badge } from "@/components/ui/badge";
 
 const partnerIndividualReportConfig: SharedIndividualReportConfig = {
   candidatesEndpoint: '/api/partner/me/candidates',
@@ -71,22 +70,6 @@ export default function PartnerAnalysisTab({ creditsRemaining, onNavigateToEcosy
           </CardContent>
         </Card>
       </div>
-
-      {/* Credit Usage & Instructions - shown when no subtab selected */}
-      {!subTab && (
-        <div className="flex flex-col items-center justify-center py-8 md:py-12 text-center">
-          <div className="flex items-center gap-2 mb-4">
-            <CreditCard className="h-5 w-5 text-primary" />
-            <span className="text-sm text-muted-foreground">Credits Available:</span>
-            <Badge variant="secondary" className="text-sm font-semibold">
-              {creditsRemaining?.toLocaleString() ?? 0}
-            </Badge>
-          </div>
-          <p className="text-muted-foreground max-w-md">
-            Select an analysis type above to get started. Each AI-powered analysis uses credits based on complexity.
-          </p>
-        </div>
-      )}
 
       {/* Content based on selected card */}
       {subTab === 'individual' && (
