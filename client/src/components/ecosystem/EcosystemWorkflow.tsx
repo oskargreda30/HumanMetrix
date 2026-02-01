@@ -259,9 +259,12 @@ export function EcosystemWorkflow({
   useEffect(() => {
     setIsEditingForm(false);
     setIsGenerating(false);
+    isInitialLoadRef.current = true;
+    lastProjectStepRef.current = null;
   }, [projectId]);
   
   // Initialize form from project data
+  // For new/empty projects, fields will be empty strings since project has no saved data
   useEffect(() => {
     if (project) {
       setMissionStatement(project.missionStatement || "");

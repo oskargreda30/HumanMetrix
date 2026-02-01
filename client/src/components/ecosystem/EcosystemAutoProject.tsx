@@ -2,6 +2,8 @@ import { useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Loader2, AlertCircle, Sparkles, Plus, ChevronDown, Check, FileText } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EcosystemWorkflow } from "./EcosystemWorkflow";
@@ -13,6 +15,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 
 const ECOSYSTEM_CREDITS_REQUIRED = 20;
 
@@ -33,11 +44,16 @@ export function EcosystemAutoProject({
   creditsRemaining, 
   onNavigateToBilling 
 }: EcosystemAutoProjectProps) {
+  const { toast } = useToast();
   const { data: projects = [], isLoading: projectsLoading, refetch } = useEcosystemProjects(partnerId);
   const createProject = useCreateEcosystemProject();
   const [projectId, setProjectId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const creationAttemptedRef = useRef(false);
+  
+  // New analysis naming dialog state
+  const [showNewAnalysisDialog, setShowNewAnalysisDialog] = useState(false);
+  const [newAnalysisName, setNewAnalysisName] = useState("");
 
   useEffect(() => {
     if (projectsLoading) return;
@@ -145,27 +161,49 @@ export function EcosystemAutoProject({
   const completedProjects = projects.filter(p => p.teamAnalysis);
   const hasMultipleAnalyses = completedProjects.length > 1 || (completedProjects.length === 1 && !currentProject?.teamAnalysis);
 
-  // Handle creating a new analysis with guard against concurrent creation
+  // Open the new analysis naming dialog
   const handleStartNewAnalysis = () => {
-    // Guard against concurrent creation
-    if (createProject.isPending) return;
-    
+    // Generate default name with timestamp
     const timestamp = new Date().toLocaleDateString('en-US', { 
       month: 'short', 
       day: 'numeric', 
       year: 'numeric' 
     });
-    const newName = `Team Diagnostic - ${timestamp}`;
+    setNewAnalysisName(`Team Diagnostic - ${timestamp}`);
+    setShowNewAnalysisDialog(true);
+  };
+  
+  // Create the new analysis with the custom name
+  const handleConfirmNewAnalysis = async () => {
+    if (!newAnalysisName.trim()) {
+      toast({
+        title: "Name required",
+        description: "Please enter a name for your analysis.",
+        variant: "destructive",
+      });
+      return;
+    }
     
-    createProject.mutateAsync({
-      name: newName,
-      partnerId,
-    }).then((project) => {
+    // Guard against concurrent creation
+    if (createProject.isPending) return;
+    
+    try {
+      const project = await createProject.mutateAsync({
+        name: newAnalysisName.trim(),
+        partnerId,
+      });
       setProjectId(project.id);
+      setShowNewAnalysisDialog(false);
+      setNewAnalysisName("");
       refetch();
-    }).catch((err) => {
+      toast({
+        title: "Analysis created",
+        description: `"${newAnalysisName.trim()}" is ready to start.`,
+      });
+    } catch (err) {
       setError("Unable to create new analysis. Please try again.");
-    });
+      setShowNewAnalysisDialog(false);
+    }
   };
 
   return (
@@ -359,6 +397,78 @@ export function EcosystemAutoProject({
           />
         </CardContent>
       </Card>
+      
+      {/* New Analysis Naming Dialog */}
+      <Dialog 
+        open={showNewAnalysisDialog} 
+        onOpenChange={(open) => {
+          if (open && !newAnalysisName) {
+            // Ensure prefill with suggested name when dialog opens without a name
+            const timestamp = new Date().toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric', 
+              year: 'numeric' 
+            });
+            setNewAnalysisName(`Team Diagnostic - ${timestamp}`);
+          }
+          setShowNewAnalysisDialog(open);
+          if (!open) {
+            // Clear name when dialog closes (via overlay or escape)
+            setNewAnalysisName("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Name Your Analysis</DialogTitle>
+            <DialogDescription>
+              Give your new team analysis a descriptive name to help you identify it later.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="analysis-name">Analysis Name</Label>
+            <Input
+              id="analysis-name"
+              value={newAnalysisName}
+              onChange={(e) => setNewAnalysisName(e.target.value)}
+              placeholder="e.g., Q1 2026 Engineering Team"
+              className="mt-2"
+              data-testid="input-analysis-name"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleConfirmNewAnalysis();
+                }
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowNewAnalysisDialog(false);
+                setNewAnalysisName("");
+              }}
+              data-testid="button-cancel-new-analysis"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmNewAnalysis}
+              disabled={createProject.isPending || !newAnalysisName.trim()}
+              data-testid="button-confirm-new-analysis"
+            >
+              {createProject.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Analysis"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
