@@ -345,31 +345,46 @@ export default function PartnerResultsTab() {
   });
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-3 md:space-y-4">
       {/* Quick Action Summary Cards */}
-      <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-3">
-        <Card className="hover-elevate" data-testid="card-summary-candidates">
-          <CardContent className="p-4 md:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <ClipboardList className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+      <div className="grid gap-2 md:gap-3 grid-cols-1 md:grid-cols-3">
+        <Card 
+          className="cursor-pointer hover-elevate" 
+          onClick={() => {
+            const section = document.getElementById('candidates-list-section');
+            section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+          data-testid="card-summary-candidates"
+        >
+          <CardContent className="p-3 md:p-4">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-primary/10">
+                <ClipboardList className="h-4 w-4 md:h-5 md:w-5 text-primary" />
               </div>
               <div>
-                <p className="text-lg md:text-2xl font-bold">{candidates?.filter((c: any) => c.results?.some((r: any) => r.status === 'completed')).length || 0}</p>
-                <p className="text-xs md:text-sm text-muted-foreground">Candidates with Results</p>
+                <p className="text-base md:text-lg font-bold">{candidates?.filter((c: any) => c.results?.some((r: any) => r.status === 'completed')).length || 0}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground">Candidates with Results</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="hover-elevate" data-testid="card-summary-reports">
-          <CardContent className="p-4 md:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <BarChart3 className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+        <Card 
+          className="cursor-pointer hover-elevate" 
+          onClick={() => {
+            const section = document.getElementById('saved-reports-section');
+            section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (!showSavedReports) setShowSavedReports(true);
+          }}
+          data-testid="card-summary-reports"
+        >
+          <CardContent className="p-3 md:p-4">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-primary/10">
+                <BarChart3 className="h-4 w-4 md:h-5 md:w-5 text-primary" />
               </div>
               <div>
-                <p className="text-lg md:text-2xl font-bold">{savedReports?.length || 0}</p>
-                <p className="text-xs md:text-sm text-muted-foreground">Saved Analysis Reports</p>
+                <p className="text-base md:text-lg font-bold">{savedReports?.length || 0}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground">Saved Analysis Reports</p>
               </div>
             </div>
           </CardContent>
@@ -379,34 +394,30 @@ export default function PartnerResultsTab() {
           onClick={() => setShowPdfImportModal(true)}
           data-testid="card-import-pdf"
         >
-          <CardContent className="p-4 md:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Upload className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+          <CardContent className="p-3 md:p-4">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-primary/10">
+                <Upload className="h-4 w-4 md:h-5 md:w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm md:text-base font-semibold">Import PDF</p>
-                <p className="text-xs md:text-sm text-muted-foreground">Upload external reports</p>
+                <p className="text-xs md:text-sm font-semibold">Import PDF</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground">Upload external reports</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Search Card */}
+      {/* Search Card - Compact */}
       <Card>
-        <CardHeader className="p-3 md:p-6 pb-0 md:pb-0">
-          <CardTitle className="text-base md:text-lg">Search Candidates</CardTitle>
-          <CardDescription className="text-xs md:text-sm">Find and view detailed assessment results</CardDescription>
-        </CardHeader>
-        <CardContent className="p-3 md:p-6">
+        <CardContent className="p-2 md:p-3">
           <div className="relative">
-            <Search className="absolute left-2.5 md:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             <Input
               placeholder="Search candidates by name or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 md:pl-10 text-xs md:text-sm"
+              className="pl-8 md:pl-9 text-xs md:text-sm h-8 md:h-9"
               data-testid="input-search-candidates"
             />
           </div>
@@ -420,119 +431,120 @@ export default function PartnerResultsTab() {
       />
 
       {savedReports && savedReports.length > 0 && (
-        <Card>
-          <CardHeader className="pb-1.5 md:pb-2 p-3 md:p-6">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-1.5 md:gap-2">
-                <BarChart3 className="h-4 w-4 md:h-5 md:w-5 text-primary" />
-                <CardTitle className="text-sm md:text-lg">Saved Analysis Reports</CardTitle>
-                <Badge variant="secondary" className="text-[10px] md:text-xs">{savedReports.length}</Badge>
+        <Card id="saved-reports-section">
+          <CardHeader className="pb-1 md:pb-1.5 p-2 md:p-3">
+            <div className="flex items-center justify-between flex-wrap gap-1">
+              <div className="flex items-center gap-1 md:gap-1.5">
+                <BarChart3 className="h-3 w-3 md:h-4 md:w-4 text-primary" />
+                <CardTitle className="text-xs md:text-sm">Saved Analysis Reports</CardTitle>
+                <Badge variant="secondary" className="text-[9px] md:text-[10px]">{savedReports.length}</Badge>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowSavedReports(!showSavedReports)}
                 data-testid="button-toggle-saved-reports"
-                className="h-7 w-7 md:h-8 md:w-8 p-0"
+                className="h-6 w-6 md:h-7 md:w-7 p-0"
               >
-                {showSavedReports ? <ChevronUp className="h-3 w-3 md:h-4 md:w-4" /> : <ChevronDown className="h-3 w-3 md:h-4 md:w-4" />}
+                {showSavedReports ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               </Button>
             </div>
-            <CardDescription className="text-[10px] md:text-sm">Previously generated reports are cached and can be accessed without additional credits</CardDescription>
+            <CardDescription className="text-[9px] md:text-xs">Cached reports accessible without credits</CardDescription>
           </CardHeader>
           {showSavedReports && (
-            <CardContent>
-              <div className="space-y-3">
+            <CardContent className="p-2 md:p-3 pt-0">
+              <div className="space-y-1.5 md:space-y-2">
                 {savedReports.map((report) => {
                   const getReportIcon = () => {
                     switch (report.reportType) {
-                      case 'individual': return <User className="h-4 w-4" />;
-                      case 'role_fit_single': return <Target className="h-4 w-4" />;
-                      case 'role_fit_multi': return <Users className="h-4 w-4" />;
-                      case 'comparison': return <BarChart3 className="h-4 w-4" />;
-                      case 'profile_insights': return <FileText className="h-4 w-4" />;
-                      case 'assessment': return <ClipboardList className="h-4 w-4" />;
-                      default: return <FileText className="h-4 w-4" />;
+                      case 'individual': return <User className="h-3 w-3" />;
+                      case 'role_fit_single': return <Target className="h-3 w-3" />;
+                      case 'role_fit_multi': return <Users className="h-3 w-3" />;
+                      case 'comparison': return <BarChart3 className="h-3 w-3" />;
+                      case 'profile_insights': return <FileText className="h-3 w-3" />;
+                      case 'assessment': return <ClipboardList className="h-3 w-3" />;
+                      default: return <FileText className="h-3 w-3" />;
                     }
                   };
                   
                   const getReportTypeBadge = () => {
                     switch (report.reportType) {
                       case 'individual':
-                        return <Badge variant="outline" className="text-xs bg-indigo-500/10 text-indigo-600 border-indigo-500/30">Individual Report</Badge>;
+                        return <Badge variant="outline" className="text-[9px] md:text-[10px] bg-indigo-500/10 text-indigo-600 border-indigo-500/30">Individual</Badge>;
                       case 'role_fit_single': 
-                        return <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-600 border-blue-500/30">Role Fit</Badge>;
+                        return <Badge variant="outline" className="text-[9px] md:text-[10px] bg-blue-500/10 text-blue-600 border-blue-500/30">Role Fit</Badge>;
                       case 'role_fit_multi': 
-                        return <Badge variant="outline" className="text-xs bg-purple-500/10 text-purple-600 border-purple-500/30">Multi-Candidate</Badge>;
+                        return <Badge variant="outline" className="text-[9px] md:text-[10px] bg-purple-500/10 text-purple-600 border-purple-500/30">Multi</Badge>;
                       case 'comparison': 
-                        return <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30">Comparison</Badge>;
+                        return <Badge variant="outline" className="text-[9px] md:text-[10px] bg-green-500/10 text-green-600 border-green-500/30">Compare</Badge>;
                       case 'profile_insights': 
-                        return <Badge variant="outline" className="text-xs bg-cyan-500/10 text-cyan-600 border-cyan-500/30">Insights</Badge>;
+                        return <Badge variant="outline" className="text-[9px] md:text-[10px] bg-cyan-500/10 text-cyan-600 border-cyan-500/30">Insights</Badge>;
                       case 'assessment': 
-                        return <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-600 border-amber-500/30">Assessment</Badge>;
+                        return <Badge variant="outline" className="text-[9px] md:text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/30">Assessment</Badge>;
                       default: 
-                        return <Badge variant="outline" className="text-xs">{report.reportType.replace(/_/g, ' ')}</Badge>;
+                        return <Badge variant="outline" className="text-[9px] md:text-[10px]">{report.reportType.replace(/_/g, ' ')}</Badge>;
                     }
                   };
 
                   return (
                     <div 
                       key={report.id} 
-                      className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover-elevate"
+                      className="flex items-center justify-between p-2 bg-muted/30 rounded-md hover-elevate"
                       data-testid={`report-item-${report.id}`}
                     >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="p-2 bg-primary/10 rounded-lg">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <div className="p-1.5 bg-primary/10 rounded-md">
                           {getReportIcon()}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium text-sm truncate">{report.title}</span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-medium text-xs truncate">{report.title}</span>
                             {getReportTypeBadge()}
                           </div>
-                          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                             <span>{new Date(report.createdAt).toLocaleDateString()}</span>
-                            <span>-</span>
-                            <span>{report.summary.candidateCount} candidate{report.summary.candidateCount !== 1 ? 's' : ''}</span>
+                            <span>·</span>
+                            <span>{report.summary.candidateCount}</span>
                             {report.summary.overallFit !== undefined && (
                               <>
-                                <span>-</span>
+                                <span>·</span>
                                 <span className={
                                   report.summary.overallFit >= 70 ? 'text-green-600' : 
                                   report.summary.overallFit >= 50 ? 'text-amber-600' : 'text-red-600'
                                 }>
-                                  {report.summary.overallFit}% fit
+                                  {report.summary.overallFit}%
                                 </span>
                               </>
                             )}
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">{report.creditsUsed} credit{report.creditsUsed !== 1 ? 's' : ''}</Badge>
+                      <div className="flex items-center gap-1">
                         <Button
                           variant="outline"
                           size="sm"
+                          className="h-6 md:h-7 text-[10px] md:text-xs px-2"
                           onClick={() => {
                             setSelectedReportId(report.id);
                             setReportViewerOpen(true);
                           }}
                           data-testid={`button-view-report-${report.id}`}
                         >
-                          <Eye className="h-4 w-4 mr-1" />
+                          <Eye className="h-3 w-3 mr-1" />
                           View
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="h-6 w-6 md:h-7 md:w-7"
                           onClick={() => deleteReportMutation.mutate(report.id)}
                           disabled={deleteReportMutation.isPending}
                           data-testid={`button-delete-report-${report.id}`}
                         >
                           {deleteReportMutation.isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loader2 className="h-3 w-3 animate-spin" />
                           ) : (
-                            <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                            <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
                           )}
                         </Button>
                       </div>
@@ -546,36 +558,36 @@ export default function PartnerResultsTab() {
       )}
 
       {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       ) : filteredCandidates && filteredCandidates.length > 0 ? (
-        <div className="grid gap-4">
+        <div id="candidates-list-section" className="grid gap-3">
           {filteredCandidates.map((candidate: any) => (
             <Card key={candidate.user.id} className="hover-elevate" data-testid={`card-candidate-${candidate.user.id}`}>
-              <CardHeader>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">
+              <CardHeader className="p-3 md:p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-sm md:text-base truncate">
                       {candidate.user.firstName || candidate.user.lastName
                         ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
                         : candidate.user.email || 'No Name'}
                     </CardTitle>
-                    <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      <p className="text-sm text-muted-foreground">{candidate.user.email}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="text-[10px] md:text-xs text-muted-foreground truncate">{candidate.user.email}</p>
                       {candidate.user.resultsRetentionConsent === true ? (
-                        <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30" data-testid={`badge-consent-opted-in-${candidate.user.id}`}>
-                          <UserCheck className="h-3 w-3 mr-1" />
+                        <Badge variant="outline" className="text-[9px] md:text-[10px] bg-green-500/10 text-green-600 border-green-500/30" data-testid={`badge-consent-opted-in-${candidate.user.id}`}>
+                          <UserCheck className="h-2.5 w-2.5 mr-0.5" />
                           Shared
                         </Badge>
                       ) : candidate.user.resultsRetentionConsent === false ? (
-                        <Badge variant="outline" className="text-xs bg-red-500/10 text-red-600 border-red-500/30" data-testid={`badge-consent-opted-out-${candidate.user.id}`}>
-                          <UserX className="h-3 w-3 mr-1" />
+                        <Badge variant="outline" className="text-[9px] md:text-[10px] bg-red-500/10 text-red-600 border-red-500/30" data-testid={`badge-consent-opted-out-${candidate.user.id}`}>
+                          <UserX className="h-2.5 w-2.5 mr-0.5" />
                           Private
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-xs bg-gray-500/10 text-gray-500 border-gray-500/30" data-testid={`badge-consent-pending-${candidate.user.id}`}>
-                          <HelpCircle className="h-3 w-3 mr-1" />
+                        <Badge variant="outline" className="text-[9px] md:text-[10px] bg-gray-500/10 text-gray-500 border-gray-500/30" data-testid={`badge-consent-pending-${candidate.user.id}`}>
+                          <HelpCircle className="h-2.5 w-2.5 mr-0.5" />
                           Pending
                         </Badge>
                       )}
@@ -587,13 +599,14 @@ export default function PartnerResultsTab() {
                       <Button
                         variant="outline"
                         size="sm"
+                        className="h-7 text-xs"
                         onClick={() => {
                           setSelectedCandidate(candidate);
                           setDialogOpen(true);
                         }}
                         data-testid={`button-view-details-${candidate.user.id}`}
                       >
-                        View Details
+                        Details
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
