@@ -26,7 +26,6 @@ export default function B2BPaymentCallback() {
         const params = new URLSearchParams(window.location.search);
         const stripeSessionId = params.get("session_id");
         const b2bSessionId = params.get("b2b_session");
-        const isUnlockFlow = params.get("success") === "true" && !b2bSessionId;
 
         if (!stripeSessionId) {
           throw new Error("Missing session information");
@@ -34,15 +33,8 @@ export default function B2BPaymentCallback() {
 
         let res;
         
-        if (isUnlockFlow) {
-          // Unlock flow - uses metadata from Stripe session
-          res = await fetch("/api/unlock-results/process-payment", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ stripeSessionId }),
-          });
-        } else if (b2bSessionId) {
-          // Standard B2B flow - requires b2b_session param
+        if (b2bSessionId) {
+          // Standard B2B flow - requires b2b_session param (from bundle checkout)
           res = await fetch("/api/b2b/process-payment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -52,7 +44,13 @@ export default function B2BPaymentCallback() {
             }),
           });
         } else {
-          throw new Error("Invalid payment callback parameters");
+          // Unlock flow (from email payment link) - uses metadata from Stripe session
+          // This handles cases with or without success=true param
+          res = await fetch("/api/unlock-results/process-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ stripeSessionId }),
+          });
         }
 
         const data = await res.json();
