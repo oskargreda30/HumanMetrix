@@ -514,10 +514,7 @@ export async function sendInvitationEmail(invitation: Invitation, inviterName: s
         <body>
           <div class="container">
             <div class="header">
-              <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
-                <img src="${getBaseUrl()}/assets/humanmetrix-logo.png" alt="HumanMetrix" style="height: 40px; width: auto;" />
-                <h1 style="margin: 0;">HumanMetrix</h1>
-              </div>
+              <h1 style="margin: 0;">HumanMetrix</h1>
               <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
             </div>
             <div class="content">
@@ -610,10 +607,7 @@ export async function sendPasswordResetEmail(email: string, name: string, resetT
         <body>
           <div class="container">
             <div class="header">
-              <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
-                <img src="${getBaseUrl()}/assets/humanmetrix-logo.png" alt="HumanMetrix" style="height: 40px; width: auto;" />
-                <h1 style="margin: 0;">HumanMetrix</h1>
-              </div>
+              <h1 style="margin: 0;">HumanMetrix</h1>
               <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
             </div>
             <div class="content">
@@ -695,10 +689,7 @@ export async function sendWelcomeEmailWithPassword(email: string, name: string, 
         <body>
           <div class="container">
             <div class="header">
-              <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
-                <img src="${getBaseUrl()}/assets/humanmetrix-logo.png" alt="HumanMetrix" style="height: 40px; width: auto;" />
-                <h1 style="margin: 0;">Welcome to HumanMetrix</h1>
-              </div>
+              <h1 style="margin: 0;">Welcome to HumanMetrix</h1>
               <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
             </div>
             <div class="content">
@@ -2453,15 +2444,9 @@ export async function sendPartnerBulkInvitationEmail(details: PartnerBulkInvitat
     ? `background: ${details.partnerPrimaryColor};`
     : 'background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%);';
   
-  // HumanMetrix brain logo URL
-  const humanMetrixLogoUrl = `${getBaseUrl()}/assets/humanmetrix-logo.png`;
-  
   const logoHtml = details.partnerLogoUrl 
     ? `<img src="${details.partnerLogoUrl}" alt="${details.partnerCompanyName}" style="max-height: 50px; max-width: 200px;" />`
-    : `<div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
-        <img src="${humanMetrixLogoUrl}" alt="HumanMetrix" style="height: 40px; width: auto;" />
-        <h1 style="margin: 0; font-size: 24px;">${details.partnerCompanyName}</h1>
-      </div>`;
+    : `<h1 style="margin: 0; font-size: 24px;">${details.partnerCompanyName}</h1>`;
   
   const msg = {
     from: { email: fromEmail, name: `${details.partnerCompanyName} via HumanMetrix` },
@@ -2532,7 +2517,10 @@ export async function sendPartnerBulkInvitationEmail(details: PartnerBulkInvitat
             </div>
             <div class="footer">
               <p>Sent on behalf of ${details.partnerCompanyName}</p>
-              <p class="powered-by">Powered by HumanMetrix - AI Assessment Platform</p>
+              <p class="powered-by" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <img src="${getBaseUrl()}/assets/humanmetrix-logo.png" alt="HumanMetrix" style="height: 24px; width: auto;" />
+                <span>Powered by HumanMetrix - AI Assessment Platform</span>
+              </p>
               <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
             </div>
           </div>
@@ -2896,10 +2884,7 @@ export async function sendB2BResultsEmail(details: B2BResultsEmailDetails) {
         <body>
           <div class="container">
             <div class="header">
-              <div style="display: inline-flex; align-items: center; justify-content: center; gap: 12px;">
-                <img src="${baseUrl}/assets/humanmetrix-logo.png" alt="HumanMetrix" style="height: 40px; width: auto;" />
-                <h1 style="margin: 0;">HumanMetrix</h1>
-              </div>
+              <h1 style="margin: 0;">HumanMetrix</h1>
               <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
             </div>
             <div class="content">
@@ -3036,10 +3021,7 @@ export async function sendB2BResultsEmailWithMultiplePDFs(details: B2BMultiplePD
         <body>
           <div class="container">
             <div class="header">
-              <div style="display: inline-flex; align-items: center; justify-content: center; gap: 12px;">
-                <img src="${baseUrl}/assets/humanmetrix-logo.png" alt="HumanMetrix" style="height: 40px; width: auto;" />
-                <h1 style="margin: 0;">HumanMetrix</h1>
-              </div>
+              <h1 style="margin: 0;">HumanMetrix</h1>
               <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
             </div>
             <div class="content">
@@ -3540,10 +3522,7 @@ export async function sendEmailVerificationCode(
         <body>
           <div class="container">
             <div class="header">
-              <div style="display: inline-flex; align-items: center; justify-content: center; gap: 12px;">
-                <img src="${getBaseUrl()}/assets/humanmetrix-logo.png" alt="HumanMetrix" style="height: 40px; width: auto;" />
-                <h1 style="margin: 0; font-size: 28px;">HumanMetrix</h1>
-              </div>
+              <h1 style="margin: 0; font-size: 28px;">HumanMetrix</h1>
               <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
             </div>
             <div class="content">
@@ -3648,10 +3627,7 @@ export async function sendBillingFailureNotification(details: BillingFailureDeta
         <body>
           <div class="container">
             <div class="header">
-              <div style="display: inline-flex; align-items: center; justify-content: center; gap: 12px;">
-                <img src="${getBaseUrl()}/assets/humanmetrix-logo.png" alt="HumanMetrix" style="height: 40px; width: auto;" />
-                <h1 style="margin: 0; font-size: 28px;">HumanMetrix</h1>
-              </div>
+              <h1 style="margin: 0; font-size: 28px;">HumanMetrix</h1>
               <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
             </div>
             <div class="content">
@@ -3748,10 +3724,7 @@ export async function sendCardExpiryWarning(details: CardExpiryWarningDetails): 
         <body>
           <div class="container">
             <div class="header">
-              <div style="display: inline-flex; align-items: center; justify-content: center; gap: 12px;">
-                <img src="${getBaseUrl()}/assets/humanmetrix-logo.png" alt="HumanMetrix" style="height: 40px; width: auto;" />
-                <h1 style="margin: 0; font-size: 28px;">HumanMetrix</h1>
-              </div>
+              <h1 style="margin: 0; font-size: 28px;">HumanMetrix</h1>
               <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
             </div>
             <div class="content">
