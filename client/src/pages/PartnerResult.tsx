@@ -9,8 +9,8 @@ import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import SkillsLegend from "@/components/SkillsLegend";
-import { normalizeAIReadinessScores, isSkillBasedAssessment, transformToRadarData, formatAssessmentType, getSkillAcronym } from "@/lib/assessmentSkills";
-import { exportEnhancedCandidatePDF, captureRadarChart } from "@/lib/enhancedPdfExport";
+import { normalizeAIReadinessScores } from "@/lib/assessmentSkills";
+import { exportResultsPDF } from "@/lib/pdfScreenCapture";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import {
   ResponsiveContainer,
@@ -253,92 +253,21 @@ export default function PartnerResult() {
     try {
       toast({
         title: "Generating PDF",
-        description: "Please wait while we prepare the report...",
+        description: "Please wait while we capture the results...",
       });
 
-      const candidateData = {
-        user: {
-          firstName: data.externalUserId || undefined,
-          lastName: undefined,
-          email: data.externalEmail || 'Unknown',
+      const candidateName = data.externalEmail || data.externalUserId || 'Candidate';
+      const filename = `${candidateName.replace(/[^a-zA-Z0-9]/g, '_')}_${getAssessmentLabel(data.assessmentType).replace(/\s+/g, '_')}_Results.pdf`;
+
+      await exportResultsPDF({
+        elementId: 'partner-results-content',
+        filename,
+        candidateName,
+        assessmentType: data.assessmentType,
+        onProgress: (message) => {
+          console.log('PDF Progress:', message);
         },
-        results: [{
-          assessmentType: data.assessmentType,
-          scores: data.scores,
-          totalScore: data.overallScore,
-          completedAt: data.completedAt,
-          status: 'completed',
-        }],
-      };
-
-      const skillData: any[] = [];
-      if (isSkillBasedAssessment(data.assessmentType) && data.scores) {
-        const radarDataForPdf = transformToRadarData(data.scores, data.assessmentType);
-        radarDataForPdf.forEach((skill: any) => {
-          skillData.push({
-            name: skill.skill,
-            score: skill.score,
-            assessment: formatAssessmentType(data.assessmentType),
-          });
-        });
-      }
-
-      // Wait for chart to render with retry mechanism (matching MyResults logic)
-      const waitForElement = async (id: string, maxRetries = 10): Promise<boolean> => {
-        for (let i = 0; i < maxRetries; i++) {
-          const element = document.getElementById(id);
-          if (element && element.querySelector('svg')) {
-            return true;
-          }
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
-        return false;
-      };
-
-      let radarChartImages: { fit?: string; aiReadiness?: string } = {};
-
-      if (data.assessmentType === 'fit') {
-        const fitReady = await waitForElement('partner-pdf-fit-chart');
-        if (fitReady) {
-          for (let i = 0; i < 3; i++) {
-            const fitChart = await captureRadarChart('partner-pdf-fit-chart');
-            if (fitChart) {
-              radarChartImages.fit = fitChart;
-              break;
-            }
-            await new Promise(resolve => setTimeout(resolve, 300));
-          }
-        }
-      }
-
-      if (data.assessmentType === 'ai_readiness') {
-        const aiReady = await waitForElement('partner-pdf-ai-readiness-chart');
-        if (aiReady) {
-          for (let i = 0; i < 3; i++) {
-            const aiChart = await captureRadarChart('partner-pdf-ai-readiness-chart');
-            if (aiChart) {
-              radarChartImages.aiReadiness = aiChart;
-              break;
-            }
-            await new Promise(resolve => setTimeout(resolve, 300));
-          }
-        }
-      }
-
-      const platformAverages = {
-        totalCandidates: 1,
-        avgScoreAcrossCandidates: 0,
-        skillAverages: {},
-      };
-
-      await exportEnhancedCandidatePDF(
-        candidateData,
-        skillData,
-        platformAverages,
-        radarChartImages,
-        undefined,
-        []
-      );
+      });
 
       toast({
         title: "Success",
@@ -413,16 +342,6 @@ export default function PartnerResult() {
         }))
     : [];
 
-  const pdfRadarData = hasDetailedScores
-    ? Object.entries(normalizedScores)
-        .filter(([_, score]) => typeof score === 'number')
-        .map(([skill, score]) => ({
-          skill: getSkillAcronym(skill),
-          score,
-          fullMark: 100,
-        }))
-    : [];
-
   const analysis = generateAnalysis(data.assessmentType, normalizedScores, data.overallScore);
   const isAIQ = data.assessmentType === 'aiq';
   const aiqBand = isAIQ ? getAIQBandInterpretation(data.overallScore || 0) : null;
@@ -430,7 +349,7 @@ export default function PartnerResult() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-5xl">
-        <div className="mb-6">
+        <div className="mb-6 print:hidden">
           <Link href="/partner">
             <Button variant="ghost" className="gap-2 mb-4" data-testid="button-back">
               <ArrowLeft className="h-4 w-4" />
@@ -487,64 +406,49 @@ export default function PartnerResult() {
           </div>
         </div>
 
-        {/* Hidden charts for PDF export */}
-        <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
-          {data.assessmentType === 'fit' && pdfRadarData.length > 0 && (
-            <div id="partner-pdf-fit-chart" style={{ width: '600px', height: '400px', backgroundColor: '#ffffff' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={pdfRadarData}>
-                  <PolarGrid stroke="#e5e7eb" strokeWidth={1} />
-                  <PolarAngleAxis 
-                    dataKey="skill" 
-                    tick={{ fill: '#374151', fontSize: 12, fontWeight: 'bold' }}
-                  />
-                  <PolarRadiusAxis 
-                    angle={90} 
-                    domain={[0, 100]}
-                    tick={false}
-                  />
-                  <Radar
-                    name="Score"
-                    dataKey="score"
-                    stroke="#2563eb"
-                    fill="#3b82f6"
-                    fillOpacity={0.2}
-                    strokeWidth={2}
-                  />
-                </RadarChart>
-              </ResponsiveContainer>
+        {/* PDF Capture Container - contains all content to be captured */}
+        <div id="partner-results-content" className="bg-background">
+          {/* Header Section for PDF */}
+          <div data-pdf-section className="mb-6 p-4 bg-card rounded-lg border">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-bold mb-2">
+                  {getAssessmentLabel(data.assessmentType)} Results
+                </h1>
+                <div className="flex items-center gap-4 text-muted-foreground flex-wrap">
+                  <div className="flex items-center gap-1.5">
+                    <User className="h-4 w-4" />
+                    <span>{data.externalEmail || data.externalUserId || 'Anonymous'}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="h-4 w-4" />
+                    <span>{data.completedAt ? format(new Date(data.completedAt), 'PPP') : 'N/A'}</span>
+                  </div>
+                  {data.organization && (
+                    <div className="flex items-center gap-1.5">
+                      <Building2 className="h-4 w-4" />
+                      <span>{data.organization.name}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="text-right">
+                <div className={`text-2xl md:text-4xl font-bold ${getScoreColor(data.overallScore || 0)}`}>
+                  {data.overallScore || 0}%
+                </div>
+                <div className="text-sm text-muted-foreground">Overall Score</div>
+                {data.percentile && (
+                  <Badge variant="outline" className="mt-1">
+                    Top {100 - data.percentile}%
+                  </Badge>
+                )}
+              </div>
             </div>
-          )}
-          {data.assessmentType === 'ai_readiness' && pdfRadarData.length > 0 && (
-            <div id="partner-pdf-ai-readiness-chart" style={{ width: '600px', height: '400px', backgroundColor: '#ffffff' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={pdfRadarData}>
-                  <PolarGrid stroke="#e5e7eb" strokeWidth={1} />
-                  <PolarAngleAxis 
-                    dataKey="skill" 
-                    tick={{ fill: '#374151', fontSize: 12, fontWeight: 'bold' }}
-                  />
-                  <PolarRadiusAxis 
-                    angle={90} 
-                    domain={[0, 100]}
-                    tick={false}
-                  />
-                  <Radar
-                    name="Score"
-                    dataKey="score"
-                    stroke="#2563eb"
-                    fill="#3b82f6"
-                    fillOpacity={0.2}
-                    strokeWidth={2}
-                  />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
+          </div>
 
         {/* How to Read This Report */}
-        <Card className="mb-8" data-testid="section-how-to-read">
+        <Card className="mb-8" data-testid="section-how-to-read" data-pdf-section>
           <div className="p-6">
             <div className="flex items-center gap-2 mb-2">
               <FileText className="h-5 w-5 text-primary" />
@@ -606,7 +510,7 @@ export default function PartnerResult() {
             return 'bg-red-500';
           };
           return (
-            <Card className="p-8 mb-8">
+            <Card className="p-8 mb-8" data-pdf-section>
               <h2 className="text-xl md:text-2xl font-semibold mb-6 text-center">Algorithmic Integrity Score</h2>
               <div className="space-y-6">
                 <div className="flex justify-between text-xs text-muted-foreground">
@@ -668,7 +572,7 @@ export default function PartnerResult() {
 
         {/* Visualizations - For FIT and AI Readiness */}
         {hasDetailedScores && !isAIQ && (
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <div className="grid md:grid-cols-2 gap-6 mb-8" data-pdf-section>
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -739,7 +643,7 @@ export default function PartnerResult() {
 
         {/* Bar Chart */}
         {hasDetailedScores && !isAIQ && barData.length > 0 && (
-          <Card className="p-6 mb-8">
+          <Card className="p-6 mb-8" data-pdf-section>
             <h2 className="text-xl font-semibold mb-6 text-center">Skills Comparison</h2>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={barData}>
@@ -774,7 +678,7 @@ export default function PartnerResult() {
         )}
 
         {/* Comprehensive Analysis */}
-        <Card className="p-8 mb-8">
+        <Card className="p-8 mb-8" data-pdf-section>
           <h2 className="text-xl md:text-2xl font-semibold mb-6">Comprehensive Analysis</h2>
           
           <div className="mb-6 p-4 bg-muted/50 rounded-lg">
@@ -825,7 +729,7 @@ export default function PartnerResult() {
         </Card>
 
         {/* Session Details */}
-        <Card className="mb-8">
+        <Card className="mb-8" data-pdf-section>
           <CardHeader>
             <CardTitle>Session Details</CardTitle>
           </CardHeader>
@@ -868,7 +772,9 @@ export default function PartnerResult() {
         {/* Skills Legend */}
         <SkillsLegend className="mb-8" compact data-testid="section-skills-legend" />
 
-        {/* Additional Services Section */}
+        </div>{/* End of PDF Capture Container */}
+
+        {/* Additional Services Section - Hidden from PDF */}
         <Card className="mb-8" data-testid="section-additional-services">
           <div className="p-6">
             <div className="flex items-center gap-2 mb-4">
