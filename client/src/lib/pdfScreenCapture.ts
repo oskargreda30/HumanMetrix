@@ -253,6 +253,123 @@ export async function exportScreenCapturePDF(options: ScreenCapturePDFOptions): 
   savePdfMobile(pdf, filename);
 }
 
+export interface Base64PDFOptions {
+  elementId: string;
+  candidateName?: string;
+  assessmentType?: string;
+  onProgress?: (message: string) => void;
+}
+
+export async function getBase64FromPDF(options: Base64PDFOptions): Promise<string> {
+  const { elementId, onProgress } = options;
+
+  onProgress?.('Preparing results view...');
+
+  const reportElement = document.getElementById(elementId);
+  if (!reportElement) {
+    throw new Error('Results element not found');
+  }
+
+  await document.fonts.ready;
+  await new Promise(resolve => setTimeout(resolve, 300));
+
+  onProgress?.('Capturing results...');
+
+  const sections = reportElement.querySelectorAll('[data-pdf-section]');
+  const sectionImages: { image: string; width: number; height: number }[] = [];
+
+  if (sections.length > 0) {
+    for (const section of Array.from(sections)) {
+      try {
+        const canvas = await html2canvas(section as HTMLElement, {
+          backgroundColor: '#ffffff',
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          allowTaint: true,
+          removeContainer: true,
+        });
+
+        sectionImages.push({
+          image: canvas.toDataURL('image/png'),
+          width: canvas.width,
+          height: canvas.height,
+        });
+      } catch (err) {
+        console.error('Error capturing section:', err);
+      }
+    }
+  }
+
+  if (sectionImages.length === 0) {
+    try {
+      const canvas = await html2canvas(reportElement, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        allowTaint: true,
+        removeContainer: true,
+      });
+
+      sectionImages.push({
+        image: canvas.toDataURL('image/png'),
+        width: canvas.width,
+        height: canvas.height,
+      });
+    } catch (err) {
+      console.error('Error capturing full results:', err);
+      throw new Error('Failed to capture results');
+    }
+  }
+
+  onProgress?.('Generating PDF...');
+
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  });
+
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const margin = 10;
+  const contentWidth = pageWidth - (margin * 2);
+
+  let currentY = margin;
+  let isFirstPage = true;
+
+  for (let i = 0; i < sectionImages.length; i++) {
+    const section = sectionImages[i];
+    const aspectRatio = section.height / section.width;
+    const imageWidth = contentWidth;
+    const imageHeight = imageWidth * aspectRatio;
+
+    if (!isFirstPage || currentY + imageHeight > pageHeight - margin) {
+      if (currentY > margin) {
+        pdf.addPage();
+        currentY = margin;
+      }
+    }
+
+    if (imageHeight > pageHeight - (margin * 2)) {
+      const maxHeight = pageHeight - (margin * 2);
+      const scaledWidth = maxHeight / aspectRatio;
+      const xOffset = margin + (contentWidth - scaledWidth) / 2;
+      pdf.addImage(section.image, 'PNG', xOffset, currentY, scaledWidth, maxHeight);
+      currentY = pageHeight;
+    } else {
+      pdf.addImage(section.image, 'PNG', margin, currentY, imageWidth, imageHeight);
+      currentY += imageHeight + 5;
+    }
+
+    isFirstPage = false;
+  }
+
+  const base64 = pdf.output('datauristring').split(',')[1];
+  return base64;
+}
+
 export function enableReportMode(rootElement: HTMLElement): void {
   rootElement.classList.add('report-mode');
 }

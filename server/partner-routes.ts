@@ -3483,6 +3483,62 @@ export function registerPartnerRoutes(app: Express) {
   });
 
   // ===== B2B Results Payment Flow =====
+  
+  // GET /api/b2b/session-results/:sessionId - Get full session data with scores for PDF generation
+  // Security: Requires email query param that must match session email
+  app.get("/api/b2b/session-results/:sessionId", async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      const email = req.query.email as string;
+      
+      // Get session with all data
+      const session = await storage.getAssessmentSession(sessionId);
+      if (!session) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+      
+      // Security: Validate ownership - email must match session email
+      // This prevents IDOR attacks where anyone with a sessionId could fetch results
+      if (!session.externalEmail) {
+        return res.status(403).json({ error: "Session has no associated email" });
+      }
+      
+      if (!email || email.toLowerCase() !== session.externalEmail.toLowerCase()) {
+        return res.status(403).json({ error: "Unauthorized access to session" });
+      }
+      
+      // Validate session is completed
+      if (session.status !== 'completed') {
+        return res.status(400).json({ error: "Assessment not completed" });
+      }
+      
+      // Check if results are released (paid or free release)
+      const isReleased = (session as any).resultsPaymentStatus === 'paid' || 
+                         (session as any).resultsReleaseStatus === 'released';
+      if (!isReleased) {
+        return res.status(403).json({ error: "Results not yet unlocked" });
+      }
+      
+      // Get partner info
+      const partner = session.partnerId ? await storage.getPartnerAccount(session.partnerId) : null;
+      
+      res.json({
+        sessionId: session.id,
+        assessmentType: session.assessmentType,
+        email: session.externalEmail,
+        partnerName: partner?.companyName || partner?.name || 'Partner',
+        scores: (session as any).scores || {},
+        overallScore: (session as any).totalScore || 0,
+        percentile: (session as any).percentile || null,
+        completedAt: session.completedAt,
+        resultsDeliveryStatus: (session as any).resultsDeliveryStatus || 'pending',
+      });
+    } catch (error) {
+      console.error("Error getting B2B session results:", error);
+      res.status(500).json({ error: "Failed to get session results" });
+    }
+  });
+
   // GET /api/b2b/results/:sessionId - Get session info and pricing for unlock page
   app.get("/api/b2b/results/:sessionId", async (req: Request, res: Response) => {
     try {
@@ -3509,6 +3565,9 @@ export function registerPartnerRoutes(app: Express) {
         const existingUser = await storage.getUserByEmail(session.externalEmail);
         const hasExistingAccount = !!existingUser;
         
+        // Include delivery status so client knows if PDF email needs to be sent
+        const resultsDeliveryStatus = (session as any).resultsDeliveryStatus || 'pending';
+        
         return res.status(200).json({ 
           alreadyPaid: true,
           sessionId,
@@ -3517,6 +3576,7 @@ export function registerPartnerRoutes(app: Express) {
           partnerName: partner?.companyName || partner?.name || 'Partner',
           hasExistingAccount,
           userId: existingUser?.id,
+          resultsDeliveryStatus,
         });
       }
       
@@ -3775,79 +3835,27 @@ export function registerPartnerRoutes(app: Express) {
       
       console.log(`[B2B Payment] Successfully processed payment for session ${b2bSessionId}, isBundle: ${isBundle}`);
       
-      // Send immediate results notification email
-      // Skip email for test sessions (developer testing purposes)
-      const partner = await storage.getPartnerAccount(session.partnerId);
-      let emailSent = false;
-      
-      // Check if this is a test session
+      // Mark delivery as pending - PDF will be generated client-side when user views results
+      // This ensures the email PDF matches exactly what the user sees on screen
       const sessionIsTest = (session as any).isTestSession === true;
+      
       if (sessionIsTest) {
-        console.log(`[Test Session] Skipping payment success email for test session ${b2bSessionId}`);
-        emailSent = true; // Mark as "sent" to avoid retry attempts
+        console.log(`[Test Session] Marking as sent for test session ${b2bSessionId}`);
+        // For test sessions, mark as sent to avoid any email attempts
+        await storage.updateAssessmentSession(b2bSessionId, {
+          resultsDeliveryStatus: 'sent',
+          resultsEmailSentAt: now,
+        } as any);
+      } else {
+        // Mark as pending_client_pdf - client will generate screen-capture PDF and upload
+        await storage.updateAssessmentSession(b2bSessionId, {
+          resultsDeliveryStatus: 'pending_client_pdf',
+        } as any);
+        console.log(`[B2B Payment] Marked session ${b2bSessionId} for client-side PDF generation`);
       }
       
-      if (session.externalEmail && !sessionIsTest) {
-        try {
-          const partnerCompanyName = partner?.companyName || partner?.name || 'HumanMetrix Partner';
-          
-          // Get the assessment scores from the session
-          const scores = (session as any).scores || {};
-          const totalScore = (session as any).totalScore || 0;
-          const percentile = (session as any).percentile;
-          const evaluations = (session as any).evaluations || [];
-          
-          // Generate PDF with results
-          const { generateB2BResultsPDF } = await import("./generateB2BPDF");
-          const pdfBuffer = generateB2BResultsPDF({
-            candidateName: (session as any).metadata?.candidateName || session.externalEmail.split('@')[0],
-            candidateEmail: session.externalEmail,
-            assessmentType: session.assessmentType,
-            scores,
-            totalScore,
-            percentile,
-            evaluations,
-            completedAt: session.completedAt || now,
-            partnerCompanyName,
-          });
-          
-          // Format assessment name for filename
-          const assessmentName = {
-            'fit': 'FIT',
-            'ai_readiness': 'AI_Readiness',
-            'prompt_architecture': 'Prompt_Architecture',
-            'aiq': 'AIQ',
-          }[session.assessmentType.toLowerCase()] || session.assessmentType;
-          
-          const pdfFilename = `HumanMetrix_${assessmentName}_Results.pdf`;
-          
-          // Send email with PDF attachment
-          const { sendB2BResultsEmail } = await import("./email");
-          const emailResult = await sendB2BResultsEmail({
-            email: session.externalEmail,
-            candidateName: (session as any).metadata?.candidateName,
-            assessmentType: session.assessmentType,
-            partnerCompanyName,
-            pdfBuffer,
-            pdfFilename,
-          });
-          
-          if (emailResult.success) {
-            emailSent = true;
-            console.log(`[B2B Payment] Sent results email with PDF to ${session.externalEmail}`);
-          } else {
-            throw new Error('Email send failed');
-          }
-        } catch (emailError) {
-          console.error(`[B2B Payment] Failed to send results email:`, emailError);
-          // Track failed attempt for scheduler retry
-          await storage.updateAssessmentSession(b2bSessionId, {
-            resultsDeliveryStatus: 'pending',
-            resultsDeliveryAttemptCount: ((session as any).resultsDeliveryAttemptCount || 0) + 1,
-            lastResultsDeliveryAttemptAt: now,
-          } as any);
-        }
-      }
+      // Skip the old email sending flow - now handled by client upload
+      const emailSent = sessionIsTest;
       
       // Only update delivery status to 'sent' after successful email
       if (emailSent) {
@@ -4129,6 +4137,120 @@ export function registerPartnerRoutes(app: Express) {
     } catch (error: any) {
       console.error("[B2B Resend Email] Error:", error);
       res.status(500).json({ error: "Failed to resend email" });
+    }
+  });
+
+  // POST /api/b2b/results/:sessionId/send-pdf-email - Receive client-generated PDF and send email
+  // This endpoint is called from the client after generating a screen-capture PDF
+  // Security: Requires email in body that must match session email, and only works for pending_client_pdf status
+  app.post("/api/b2b/results/:sessionId/send-pdf-email", async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      const { pdfBase64, email } = req.body;
+      
+      if (!sessionId) {
+        return res.status(400).json({ error: "Session ID is required" });
+      }
+      
+      if (!pdfBase64) {
+        return res.status(400).json({ error: "PDF data is required" });
+      }
+      
+      // Security: Email is required in request body to verify ownership
+      if (!email) {
+        return res.status(400).json({ error: "Email is required for verification" });
+      }
+      
+      // Get the session
+      const session = await storage.getAssessmentSession(sessionId);
+      if (!session) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+      
+      // Check if the session has been paid for / results released
+      if ((session as any).resultsPaymentStatus !== 'paid' && (session as any).resultsReleaseStatus !== 'released') {
+        return res.status(403).json({ error: "Results have not been unlocked yet" });
+      }
+      
+      // Security: Validate ownership - email must match session email
+      if (!session.externalEmail || email.toLowerCase() !== session.externalEmail.toLowerCase()) {
+        return res.status(403).json({ error: "Unauthorized access to session" });
+      }
+      
+      const targetEmail = session.externalEmail;
+      
+      // Strict state gating: Only allow sending when status is 'pending_client_pdf' or 'pending'
+      // This prevents duplicate sends and spam
+      const currentStatus = (session as any).resultsDeliveryStatus;
+      if (currentStatus === 'sent') {
+        // Already sent - return success without sending again
+        console.log(`[B2B PDF Email] Email already sent for session ${sessionId}`);
+        return res.json({
+          success: true,
+          message: "Results email has already been sent",
+          email: targetEmail,
+          alreadySent: true,
+        });
+      }
+      
+      // Only allow sending when in pending states
+      if (currentStatus !== 'pending_client_pdf' && currentStatus !== 'pending') {
+        console.log(`[B2B PDF Email] Rejected: unexpected status ${currentStatus} for session ${sessionId}`);
+        return res.status(409).json({ 
+          error: "Cannot send email in current state",
+          currentStatus 
+        });
+      }
+      
+      // Get partner info
+      const partner = session.partnerId ? await storage.getPartnerAccount(session.partnerId) : null;
+      const partnerCompanyName = partner?.companyName || partner?.name || 'HumanMetrix Partner';
+      
+      // Convert base64 to Buffer
+      const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+      
+      // Format assessment name for filename
+      const assessmentName = {
+        'fit': 'FIT',
+        'ai_readiness': 'AI_Readiness',
+        'prompt_architecture': 'Prompt_Architecture',
+        'aiq': 'AIQ',
+      }[session.assessmentType.toLowerCase()] || session.assessmentType;
+      
+      const pdfFilename = `HumanMetrix_${assessmentName}_Results.pdf`;
+      
+      // Send email with PDF attachment
+      const { sendB2BResultsEmail } = await import("./email");
+      const emailResult = await sendB2BResultsEmail({
+        email: targetEmail,
+        candidateName: (session as any).metadata?.candidateName,
+        assessmentType: session.assessmentType,
+        partnerCompanyName,
+        pdfBuffer,
+        pdfFilename,
+      });
+      
+      if (!emailResult.success) {
+        console.error(`[B2B PDF Email] Failed to send PDF email to ${targetEmail}`);
+        return res.status(500).json({ error: "Failed to send email. Please try again." });
+      }
+      
+      // Update session to track the email was sent
+      await storage.updateAssessmentSession(sessionId, {
+        resultsDeliveryStatus: 'sent',
+        resultsEmailSentAt: new Date(),
+      } as any);
+      
+      console.log(`[B2B PDF Email] Successfully sent screen-capture PDF email to ${targetEmail}`);
+      
+      res.json({
+        success: true,
+        message: "Results email has been sent with your PDF report",
+        email: targetEmail,
+      });
+    } catch (error: any) {
+      console.error("[B2B PDF Email] Error:", error);
+      res.status(500).json({ error: "Failed to send PDF email" });
     }
   });
 

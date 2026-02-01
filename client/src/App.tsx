@@ -59,6 +59,7 @@ const Team = lazy(() => import("@/pages/Team"));
 const B2BResults = lazy(() => import("@/pages/B2BResults"));
 const B2BResultsBundle = lazy(() => import("@/pages/B2BResultsBundle"));
 const B2BPaymentCallback = lazy(() => import("@/pages/B2BPaymentCallback"));
+const B2BPdfEmail = lazy(() => import("@/pages/B2BPdfEmail"));
 const PartnerResult = lazy(() => import("@/pages/PartnerResult"));
 const SampleIndividualReport = lazy(() => import("@/pages/SampleIndividualReport"));
 const SampleComparisonReport = lazy(() => import("@/pages/SampleComparisonReport"));
@@ -162,6 +163,7 @@ function Router() {
         <Route path="/b2b-results/:sessionId" component={B2BResults} />
         <Route path="/b2b-results-bundle" component={B2BResultsBundle} />
         <Route path="/b2b-payment-callback" component={B2BPaymentCallback} />
+        <Route path="/b2b-pdf-email/:sessionId" component={B2BPdfEmail} />
         <Route path="/admin">
           {() => <Redirect to="/admin/dashboard" />}
         </Route>

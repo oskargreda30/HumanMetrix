@@ -37,6 +37,7 @@ interface B2BResultsData {
   alreadyPaid?: boolean;
   hasExistingAccount?: boolean;
   userId?: number;
+  resultsDeliveryStatus?: string;
 }
 
 const ASSESSMENT_NAMES: Record<string, string> = {
@@ -52,6 +53,7 @@ export default function B2BResults() {
   const [checkoutType, setCheckoutType] = useState<'single' | 'bundle' | null>(null);
   const [isProcessingAccount, setIsProcessingAccount] = useState(false);
   const [isResendingEmail, setIsResendingEmail] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const { toast } = useToast();
 
   const [, routeParams] = useRoute("/b2b-results/:sessionId");
@@ -217,7 +219,48 @@ export default function B2BResults() {
 
   if (!data) return null;
 
+  // Check if we need to generate and email the PDF (pending_client_pdf status)
+  const needsPdfEmail = data.alreadyPaid && data.resultsDeliveryStatus === 'pending_client_pdf';
+
   if (data.alreadyPaid) {
+    // If PDF hasn't been sent yet, redirect to PDF generation page
+    if (needsPdfEmail) {
+      return (
+        <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+          <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10" />
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
+          
+          <Card className="relative max-w-lg w-full p-8 space-y-6 bg-white/95 backdrop-blur-sm shadow-2xl border-0">
+            <div className="text-center space-y-4">
+              <div className="mx-auto w-16 h-16 bg-cyan-100 rounded-full flex items-center justify-center">
+                <Loader2 className="h-8 w-8 text-cyan-600 animate-spin" />
+              </div>
+              <h1 className="text-2xl font-bold text-slate-900">Payment Successful!</h1>
+              <p className="text-slate-600">
+                We're preparing your {ASSESSMENT_NAMES[data.assessmentType] || data.assessmentType} results PDF.
+              </p>
+              <p className="text-sm text-slate-500">
+                Click below to view your results and receive your PDF report via email.
+              </p>
+              
+              <div className="pt-4">
+                <Button
+                  onClick={() => setLocation(`/b2b-pdf-email/${data.sessionId}?email=${encodeURIComponent(data.email)}`)}
+                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-600"
+                  data-testid="button-generate-pdf"
+                >
+                  View Results & Send PDF
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      );
+    }
+
+    // PDF already sent - show success view
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10" />
