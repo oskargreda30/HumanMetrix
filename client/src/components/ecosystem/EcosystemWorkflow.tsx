@@ -65,6 +65,7 @@ import {
   Search,
   TrendingUp,
   Lock,
+  Download,
 } from "lucide-react";
 import {
   useEcosystemProject,
@@ -1447,8 +1448,8 @@ export function EcosystemWorkflow({
               </div>
             )}
 
-            {/* Show Save and Continue button when team members have FIT scores */}
-            {teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores).length > 0).length > 0 && !project.isPaid && (
+            {/* Show Save and Continue button when team members exist */}
+            {teamMembers.length > 0 && !project.isPaid && (
               <Button 
                 onClick={() => navigateToStep(5)}
                 data-testid="button-save-continue-step4"
@@ -1458,7 +1459,7 @@ export function EcosystemWorkflow({
               </Button>
             )}
             {/* Show Save and Continue when already paid */}
-            {teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores).length > 0).length > 0 && project.isPaid && !teamAnalysis && (
+            {teamMembers.length > 0 && project.isPaid && !teamAnalysis && (
               <Button 
                 onClick={() => navigateToStep(6)}
                 data-testid="button-save-continue-step4-paid"
@@ -1917,6 +1918,70 @@ function TeamAnalysisResults({
 }) {
   const missionAnalysis = project.missionAnalysis as EcosystemMissionAnalysis | null;
   const CALENDLY_URL = "https://calendly.com/hello-humanmetrix/30min";
+  const { toast } = useToast();
+  
+  // State for PDF export
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
+  
+  // PDF Export handler
+  const handleExportPDF = async () => {
+    if (!reportRef.current) return;
+    
+    setIsExportingPDF(true);
+    try {
+      const { jsPDF } = await import('jspdf');
+      const html2canvas = (await import('html2canvas')).default;
+      
+      const element = reportRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      
+      // Handle multi-page if content is longer than one page
+      const pageHeight = pdfHeight;
+      let heightLeft = imgHeight * ratio;
+      let position = 0;
+      
+      pdf.addImage(imgData, 'PNG', imgX, position, imgWidth * ratio, imgHeight * ratio);
+      heightLeft -= pageHeight;
+      
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight * ratio;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', imgX, position, imgWidth * ratio, imgHeight * ratio);
+        heightLeft -= pageHeight;
+      }
+      
+      pdf.save(`Team-Diagnostic-Report-${companyName.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`);
+      
+      toast({
+        title: "PDF exported",
+        description: "Your Team Diagnostic Report has been downloaded.",
+      });
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toast({
+        title: "Export failed",
+        description: "Could not generate PDF. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
   
   // State for candidate search and selection
   const [candidateSearch, setCandidateSearch] = useState("");
@@ -1973,7 +2038,7 @@ function TeamAnalysisResults({
   
   return (
     <div className="space-y-8">
-      {/* Header with Scores */}
+      {/* Header with Scores and Export Button */}
       <div className="flex items-center justify-between pb-4 border-b flex-wrap gap-2">
         <div>
           <h3 className="text-xl font-semibold">Team Diagnostic Report</h3>
@@ -1981,15 +2046,32 @@ function TeamAnalysisResults({
             {analysis.teamSize} team members • Generated {new Date(analysis.generatedAt).toLocaleDateString()}
           </p>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
           <Badge variant={analysis.overallHealthScore >= 70 ? "default" : analysis.overallHealthScore >= 50 ? "secondary" : "destructive"}>
             Health: {analysis.overallHealthScore}%
           </Badge>
           <Badge variant={analysis.missionAlignmentScore >= 70 ? "default" : analysis.missionAlignmentScore >= 50 ? "secondary" : "destructive"}>
             Mission Fit: {analysis.missionAlignmentScore}%
           </Badge>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleExportPDF}
+            disabled={isExportingPDF}
+            data-testid="button-export-pdf"
+          >
+            {isExportingPDF ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4 mr-2" />
+            )}
+            Export PDF
+          </Button>
         </div>
       </div>
+      
+      {/* Report content wrapped in ref for PDF export */}
+      <div ref={reportRef} className="space-y-8 bg-background p-4 -mx-4">
       
       {/* SECTION 1: How to Read This Report */}
       <div className="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900/30 dark:to-gray-900/30 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
@@ -3150,6 +3232,7 @@ function TeamAnalysisResults({
           </div>
         </div>
       </Card>
+      </div> {/* End of reportRef wrapper */}
 
       {/* SECTION 12: Schedule Consultation */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg p-6 text-white">
