@@ -408,117 +408,120 @@ export default function PartnerResult() {
 
         {/* PDF Capture Container - contains all content to be captured */}
         <div id="partner-results-content" className="bg-background">
-          {/* Header Section for PDF */}
-          <div data-pdf-section className="mb-6 p-4 bg-card rounded-lg border">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-bold mb-2">
-                  {getAssessmentLabel(data.assessmentType)} Results
-                </h1>
-                <div className="flex items-center gap-4 text-muted-foreground flex-wrap">
-                  <div className="flex items-center gap-1.5">
-                    <User className="h-4 w-4" />
-                    <span>{data.externalEmail || data.externalUserId || 'Anonymous'}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="h-4 w-4" />
-                    <span>{data.completedAt ? format(new Date(data.completedAt), 'PPP') : 'N/A'}</span>
-                  </div>
-                  {data.organization && (
+          {/* Summary Section - Page 1 of PDF */}
+          <div data-pdf-section className="space-y-6 bg-background mb-8">
+            {/* Header Section for PDF */}
+            <div className="p-4 bg-card rounded-lg border">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h1 className="text-2xl font-bold mb-2">
+                    {getAssessmentLabel(data.assessmentType)} Results
+                  </h1>
+                  <div className="flex items-center gap-4 text-muted-foreground flex-wrap">
                     <div className="flex items-center gap-1.5">
-                      <Building2 className="h-4 w-4" />
-                      <span>{data.organization.name}</span>
+                      <User className="h-4 w-4" />
+                      <span>{data.externalEmail || data.externalUserId || 'Anonymous'}</span>
                     </div>
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="h-4 w-4" />
+                      <span>{data.completedAt ? format(new Date(data.completedAt), 'PPP') : 'N/A'}</span>
+                    </div>
+                    {data.organization && (
+                      <div className="flex items-center gap-1.5">
+                        <Building2 className="h-4 w-4" />
+                        <span>{data.organization.name}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="text-right">
+                  <div className={`text-2xl md:text-4xl font-bold ${getScoreColor(data.overallScore || 0)}`}>
+                    {data.overallScore || 0}%
+                  </div>
+                  <div className="text-sm text-muted-foreground">Overall Score</div>
+                  {data.percentile && (
+                    <Badge variant="outline" className="mt-1">
+                      Top {100 - data.percentile}%
+                    </Badge>
                   )}
                 </div>
               </div>
-              
-              <div className="text-right">
-                <div className={`text-2xl md:text-4xl font-bold ${getScoreColor(data.overallScore || 0)}`}>
-                  {data.overallScore || 0}%
-                </div>
-                <div className="text-sm text-muted-foreground">Overall Score</div>
-                {data.percentile && (
-                  <Badge variant="outline" className="mt-1">
-                    Top {100 - data.percentile}%
-                  </Badge>
-                )}
-              </div>
             </div>
-          </div>
 
-        {/* How to Read This Report */}
-        <Card className="mb-8" data-testid="section-how-to-read" data-pdf-section>
-          <div className="p-6">
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-bold" data-testid="heading-how-to-read">How to Read This Report</h3>
-            </div>
-            <p className="text-sm text-muted-foreground mb-4" data-testid="text-guide-intro">
-              A guide to interpreting candidate assessment data for informed hiring decisions
-            </p>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
-                <div>
-                  <span className="font-medium text-sm">Score Interpretation</span>
-                  <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1 mt-1">
-                    <Badge className="bg-green-500 text-white text-[10px] px-1 py-0">75%+</Badge> <span>Strong performer,</span>
-                    <Badge className="bg-amber-500 text-white text-[10px] px-1 py-0">50-74%</Badge> <span>Developing,</span>
-                    <Badge className="bg-red-500 text-white text-[10px] px-1 py-0">&lt;50%</Badge> <span>Needs attention</span>
+            {/* How to Read This Report */}
+            <Card data-testid="section-how-to-read">
+              <div className="p-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  <h3 className="text-lg font-bold" data-testid="heading-how-to-read">How to Read This Report</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4" data-testid="text-guide-intro">
+                  A guide to interpreting candidate assessment data for informed hiring decisions
+                </p>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
+                    <div>
+                      <span className="font-medium text-sm">Score Interpretation</span>
+                      <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1 mt-1">
+                        <Badge className="bg-green-500 text-white text-[10px] px-1 py-0">75%+</Badge> <span>Strong performer,</span>
+                        <Badge className="bg-amber-500 text-white text-[10px] px-1 py-0">50-74%</Badge> <span>Developing,</span>
+                        <Badge className="bg-red-500 text-white text-[10px] px-1 py-0">&lt;50%</Badge> <span>Needs attention</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
+                    <div>
+                      <p className="font-medium text-sm">Radar Charts</p>
+                      <p className="text-xs text-muted-foreground">
+                        Visual overlays show how candidates compare across each capability dimension at a glance.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
+                    <div>
+                      <p className="font-medium text-sm">Rankings & Percentiles</p>
+                      <p className="text-xs text-muted-foreground">
+                        See how each candidate ranks relative to others in the cohort and against broader benchmarks.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
+                    <div>
+                      <p className="font-medium text-sm">Strengths & Development Areas</p>
+                      <p className="text-xs text-muted-foreground">
+                        Each candidate's key strengths and growth areas help you understand their unique value proposition.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
-                <div>
-                  <p className="font-medium text-sm">Radar Charts</p>
-                  <p className="text-xs text-muted-foreground">
-                    Visual overlays show how candidates compare across each capability dimension at a glance.
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
-                <div>
-                  <p className="font-medium text-sm">Rankings & Percentiles</p>
-                  <p className="text-xs text-muted-foreground">
-                    See how each candidate ranks relative to others in the cohort and against broader benchmarks.
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
-                <div>
-                  <p className="font-medium text-sm">Strengths & Development Areas</p>
-                  <p className="text-xs text-muted-foreground">
-                    Each candidate's key strengths and growth areas help you understand their unique value proposition.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
+            </Card>
 
-        {/* Overall Score - Prominent Display */}
-        {data.overallScore !== undefined && !isAIQ && (
-          <Card className="p-8 mb-8" data-pdf-section>
-            <div className="text-center">
-              <h2 className="text-lg font-medium text-muted-foreground mb-2">
-                Overall Score
-              </h2>
-              <div className={`text-4xl md:text-6xl font-bold mb-2 ${getScoreColor(data.overallScore)}`}>
-                {data.overallScore}
-              </div>
-              <p className="text-muted-foreground">out of 100</p>
-              {data.percentile && (
-                <Badge variant="secondary" className="mt-3">
-                  Top {100 - data.percentile}% of all candidates
-                </Badge>
-              )}
-            </div>
-          </Card>
-        )}
+            {/* Overall Score - Prominent Display */}
+            {data.overallScore !== undefined && !isAIQ && (
+              <Card className="p-8">
+                <div className="text-center">
+                  <h2 className="text-lg font-medium text-muted-foreground mb-2">
+                    Overall Score
+                  </h2>
+                  <div className={`text-4xl md:text-6xl font-bold mb-2 ${getScoreColor(data.overallScore)}`}>
+                    {data.overallScore}
+                  </div>
+                  <p className="text-muted-foreground">out of 100</p>
+                  {data.percentile && (
+                    <Badge variant="secondary" className="mt-3">
+                      Top {100 - data.percentile}% of all candidates
+                    </Badge>
+                  )}
+                </div>
+              </Card>
+            )}
+          </div>
 
         {/* AIQ Graded Score Visualization */}
         {isAIQ && data.overallScore !== undefined && aiqBand && (() => {
