@@ -123,7 +123,7 @@ export function EcosystemWorkflow({
   onNavigateToBilling,
 }: EcosystemWorkflowProps) {
   const { toast } = useToast();
-  const { data: project, isLoading: projectLoading, refetch: refetchProject } = useEcosystemProject(projectId);
+  const { data: project, isLoading: projectLoading, isFetching: projectFetching, refetch: refetchProject } = useEcosystemProject(projectId);
   const { data: teamMembers = [], isLoading: membersLoading } = useEcosystemTeamMembers(projectId);
   const { formatLocalPrice, countryCode, getAdjustedPriceInPence } = useCurrency();
   
@@ -295,8 +295,9 @@ export function EcosystemWorkflow({
   
   // Initialize form from project data
   // For new/empty projects, fields will be empty strings since project has no saved data
+  // Guard: only populate form if project.id matches the current projectId to avoid stale data
   useEffect(() => {
-    if (project) {
+    if (project && project.id === projectId) {
       setMissionStatement(project.missionStatement || "");
       setCompanyEthos(project.companyEthos || "");
       setIndustry(project.industry || "");
@@ -878,8 +879,10 @@ export function EcosystemWorkflow({
     </div>
   );
 
-  // Show loading skeleton when switching projects
-  if (projectLoading) {
+  // Show loading skeleton when switching projects, during refetch, or when stale data exists
+  // This ensures smooth transitions when quickly switching between projects
+  const isProjectStale = project && project.id !== projectId;
+  if (projectLoading || isProjectStale || (projectFetching && !project)) {
     return (
       <div className="space-y-4" data-testid="ecosystem-loading-skeleton">
         {/* Skeleton for intro banner */}

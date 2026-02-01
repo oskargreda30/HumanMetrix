@@ -205,11 +205,14 @@ export function EcosystemAutoProject({
     setShowNewAnalysisDialog(true);
   };
   
-  // Sanitize analysis name - escape HTML and limit length
+  // Sanitize analysis name - remove XSS vectors and limit length
+  // Note: Quotes and other punctuation are allowed since React JSX automatically
+  // escapes them on render. We only need to remove HTML tags and angle brackets
+  // which could be used for script injection if the name were ever rendered as raw HTML.
   const sanitizeAnalysisName = (name: string): string => {
-    // Remove HTML tags and limit length
     const sanitized = name
       .replace(/<[^>]*>/g, '') // Remove HTML tags
+      .replace(/[<>]/g, '')    // Remove stray angle brackets
       .trim()
       .slice(0, MAX_ANALYSIS_NAME_LENGTH);
     return sanitized;
@@ -280,20 +283,40 @@ export function EcosystemAutoProject({
                   align="start" 
                   className="w-72 max-h-80 overflow-y-auto"
                   onCloseAutoFocus={() => setProjectSearchQuery("")}
+                  onInteractOutside={(e) => {
+                    // Prevent closing when interacting with any element in the search container
+                    const target = e.target as HTMLElement;
+                    if (target.closest('[data-search-container="true"]')) {
+                      e.preventDefault();
+                    }
+                  }}
                 >
                   {/* Search box for many projects */}
                   {showProjectSearch && (
-                    <div className="p-2 border-b">
+                    <div 
+                      className="p-2 border-b"
+                      data-search-container="true"
+                      onClick={(e) => e.stopPropagation()}
+                      onPointerDown={(e) => e.stopPropagation()}
+                    >
                       <div className="relative">
                         <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                           placeholder="Search analyses..."
                           value={projectSearchQuery}
                           onChange={(e) => setProjectSearchQuery(e.target.value)}
-                          className="pl-8 h-8 text-sm"
+                          className="pl-8 text-sm"
                           data-testid="input-project-search"
                           onClick={(e) => e.stopPropagation()}
-                          onKeyDown={(e) => e.stopPropagation()}
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onFocus={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => {
+                            e.stopPropagation();
+                            // Prevent Enter from closing dropdown
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                            }
+                          }}
                         />
                       </div>
                     </div>
