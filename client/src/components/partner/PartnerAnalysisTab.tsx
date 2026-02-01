@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, User, Target, Sparkles } from "lucide-react";
 import { SharedIndividualReport, SharedIndividualReportConfig } from "@/components/shared/SharedIndividualReport";
@@ -15,10 +15,18 @@ const partnerIndividualReportConfig: SharedIndividualReportConfig = {
 interface PartnerAnalysisTabProps {
   creditsRemaining?: number;
   onNavigateToEcosystem?: () => void;
+  initialSubTab?: string | null;
 }
 
-export default function PartnerAnalysisTab({ creditsRemaining, onNavigateToEcosystem }: PartnerAnalysisTabProps) {
-  const [subTab, setSubTab] = useState<string | null>(null);
+export default function PartnerAnalysisTab({ creditsRemaining, onNavigateToEcosystem, initialSubTab = null }: PartnerAnalysisTabProps) {
+  const [subTab, setSubTab] = useState<string | null>(initialSubTab);
+
+  // Update subtab when initialSubTab prop changes
+  useEffect(() => {
+    if (initialSubTab) {
+      setSubTab(initialSubTab);
+    }
+  }, [initialSubTab]);
 
   return (
     <div className="space-y-4 md:space-y-6">

@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, BellOff, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, EyeOff, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info, Upload, Lock, ChevronDown, Pencil, Download, ShoppingCart, Send } from "lucide-react";
+import { Loader2, Package, TrendingUp, AlertTriangle, CheckCircle, CreditCard, Activity, BarChart2, BarChart3, FileText, Receipt, Building2, ArrowLeft, ExternalLink, Settings, Key, Bell, BellOff, RefreshCw, Copy, Check, Shield, Webhook, Link2, FileSpreadsheet, Home, Users, ClipboardList, Clock, Plus, Trash2, Eye, EyeOff, Mail, Calendar, ChevronRight, ChevronLeft, X, Sparkles, HelpCircle, Palette, Info, Upload, Lock, ChevronDown, Pencil, Download, ShoppingCart, Send, Kanban, Target, UserCog } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DeveloperSubTabs } from "@/components/DeveloperSubTabs";
 import { PartnerTour } from "@/components/PartnerTour";
@@ -1008,6 +1008,7 @@ const PACKAGE_OPTIONS = [
 export default function PartnerDashboard() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("home");
+  const [analysisSubTab, setAnalysisSubTab] = useState<string | null>(null);
   const { toast } = useToast();
   const { currency, formatLocalPrice, getAdjustedPriceInPence, countryCode, pricingTier, isLoading: currencyLoading } = useCurrency();
   
@@ -2404,6 +2405,34 @@ export default function PartnerDashboard() {
                     <Sparkles className="h-8 w-8 mx-auto mb-2 text-primary" />
                     <h3 className="font-semibold">Team Analysis</h3>
                     <p className="text-sm text-muted-foreground">AI-powered diagnostics</p>
+                  </CardContent>
+                </Card>
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("pipeline"); window.scrollTo(0, 0); }} data-testid="card-quick-pipeline">
+                  <CardContent className="pt-6 text-center">
+                    <Kanban className="h-8 w-8 mx-auto mb-2 text-primary" />
+                    <h3 className="font-semibold">View Pipeline</h3>
+                    <p className="text-sm text-muted-foreground">Track hiring progress</p>
+                  </CardContent>
+                </Card>
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("analysis"); setAnalysisSubTab("compare"); window.scrollTo(0, 0); }} data-testid="card-quick-compare">
+                  <CardContent className="pt-6 text-center">
+                    <Users className="h-8 w-8 mx-auto mb-2 text-primary" />
+                    <h3 className="font-semibold">Compare Candidates</h3>
+                    <p className="text-sm text-muted-foreground">Side-by-side analysis</p>
+                  </CardContent>
+                </Card>
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("analysis"); setAnalysisSubTab("role-fit"); window.scrollTo(0, 0); }} data-testid="card-quick-rolefit">
+                  <CardContent className="pt-6 text-center">
+                    <Target className="h-8 w-8 mx-auto mb-2 text-primary" />
+                    <h3 className="font-semibold">Role Fit Analysis</h3>
+                    <p className="text-sm text-muted-foreground">AI-powered matching</p>
+                  </CardContent>
+                </Card>
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("team"); window.scrollTo(0, 0); }} data-testid="card-quick-team">
+                  <CardContent className="pt-6 text-center">
+                    <UserCog className="h-8 w-8 mx-auto mb-2 text-primary" />
+                    <h3 className="font-semibold">Manage Team</h3>
+                    <p className="text-sm text-muted-foreground">Add team members</p>
                   </CardContent>
                 </Card>
               </div>
@@ -4662,6 +4691,7 @@ export default function PartnerDashboard() {
               <PartnerAnalysisTab 
                 creditsRemaining={partner.remaining} 
                 onNavigateToEcosystem={() => { setActiveTab('ecosystem'); window.scrollTo(0, 0); }}
+                initialSubTab={analysisSubTab}
               />
             </TabsContent>
 
