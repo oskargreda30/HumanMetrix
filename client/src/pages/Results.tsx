@@ -385,7 +385,7 @@ export default function Results() {
           </div>
 
           {/* How to Read This Report */}
-          <Card className="mb-8" data-testid="section-how-to-read">
+          <Card className="mb-8" data-testid="section-how-to-read" data-pdf-section>
             <div className="p-6">
               <div className="flex items-center gap-2 mb-2">
                 <FileText className="h-5 w-5 text-primary" />
@@ -439,7 +439,7 @@ export default function Results() {
 
           {/* Overall Score - only show for assessments with total scores */}
           {hasTotalScore && (
-            <Card className="p-8 mb-8">
+            <Card className="p-8 mb-8" data-pdf-section>
               <div className="text-center">
                 <h2 className="text-lg font-medium text-muted-foreground mb-2">
                   Overall Score
@@ -530,7 +530,7 @@ export default function Results() {
 
           {/* Visualizations - For FIT and AI Readiness */}
           {Object.keys(scores).length > 0 && assessmentType !== 'aiq' && (
-            <div className="grid md:grid-cols-2 gap-8 mb-8">
+            <div className="grid md:grid-cols-2 gap-8 mb-8" data-pdf-section>
               {/* Radar Chart */}
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-6 text-center">Skills Radar</h2>
@@ -595,7 +595,7 @@ export default function Results() {
 
 
           {/* Comprehensive Analysis for Employers */}
-          <Card className="p-8 mb-8">
+          <Card className="p-8 mb-8" data-pdf-section>
             <h2 className="text-xl md:text-2xl font-semibold mb-6">Comprehensive Analysis</h2>
             
             {/* Overall Summary */}
