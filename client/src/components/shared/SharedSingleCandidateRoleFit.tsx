@@ -425,7 +425,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
                   <div>
                     <p className="font-medium text-sm">Skill Alignments (FIT & AI Readiness)</p>
-                    <p className="text-xs text-muted-foreground">Compare candidate scores vs. role requirements. Look for <Badge className="text-[10px] px-1 py-0 h-4 bg-blue-600">C</Badge> marked skills - these are <span className="font-medium">critical</span> for success.</p>
+                    <span className="text-xs text-muted-foreground">Compare candidate scores vs. role requirements. Look for <Badge className="text-[10px] px-1 py-0 h-4 bg-blue-600">C</Badge> marked skills - these are <span className="font-medium">critical</span> for success.</span>
                   </div>
                 </div>
                 <div className="flex gap-3">
@@ -594,7 +594,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                 <div className="space-y-4">
                   {alignment.fitSkillAlignments.map((skill, index) => {
                     const hasData = skill.dataAvailable !== false && skill.candidateScore !== null;
-                    const meetsThreshold = hasData && skill.candidateScore >= skill.requiredScore;
+                    const meetsThreshold = hasData && (skill.candidateScore ?? 0) >= skill.requiredScore;
                     return (
                       <div key={index} className="space-y-2">
                         <div className="flex items-center justify-between">
@@ -643,7 +643,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                 <div className="space-y-4">
                   {alignment.aiReadinessSkillAlignments.map((skill, index) => {
                     const hasData = skill.dataAvailable !== false && skill.candidateScore !== null;
-                    const meetsThreshold = hasData && skill.candidateScore >= skill.requiredScore;
+                    const meetsThreshold = hasData && (skill.candidateScore ?? 0) >= skill.requiredScore;
                     return (
                       <div key={index} className="space-y-2">
                         <div className="flex items-center justify-between">

@@ -2,6 +2,12 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+
+// Helper to get CSRF token from cookies
+function getCsrfToken(): string | null {
+  const match = document.cookie.match(/(^|;)\s*csrf_token=([^;]+)/);
+  return match ? decodeURIComponent(match[2]) : null;
+}
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Users, Target, TrendingUp, Trophy, AlertTriangle, Download, CheckCircle2, AlertCircle, FileText, BarChart2, Sparkles, MessageSquare, Clock, ShieldAlert, DollarSign, ArrowUp, Brain, Send, ExternalLink } from "lucide-react";
 import {
@@ -250,9 +256,14 @@ export default function PartnerMultiCandidateRoleFitTab() {
   const compareMutation = useMutation({
     mutationFn: async () => {
       // Use fetch directly to handle error responses with custom data
+      const csrfToken = getCsrfToken();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (csrfToken) {
+        headers['x-csrf-token'] = csrfToken;
+      }
       const res = await fetch('/api/partner/me/multi-candidate-comparison', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           jobRoleId: selectedRole,
           candidateIds: selectedCandidates,
