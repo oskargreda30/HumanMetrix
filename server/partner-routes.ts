@@ -3949,9 +3949,10 @@ export function registerPartnerRoutes(app: Express) {
       }
       
       // Log the user in by setting session
-      (req as any).login(user, (err: any) => {
+      req.session.userId = user!.id;
+      req.session.save((err: any) => {
         if (err) {
-          console.error('[B2B Create Account] Login error:', err);
+          console.error('[B2B Create Account] Session save error:', err);
           return res.status(500).json({ error: `Failed to log in: ${err.message || 'Session error'}` });
         }
         
