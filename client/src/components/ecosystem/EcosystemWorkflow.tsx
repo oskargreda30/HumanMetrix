@@ -134,6 +134,17 @@ export function EcosystemWorkflow({
   const deleteTeamMember = useDeleteTeamMember();
   const generateAnalysis = useGenerateTeamAnalysis();
   
+  // Helper: Check if a team member has valid FIT scores (at least one score > 0)
+  const hasValidScores = (member: typeof teamMembers[0]) => {
+    if (!member.fitScores || typeof member.fitScores !== 'object') return false;
+    const scores = member.fitScores as Record<string, number>;
+    return Object.values(scores).some(score => typeof score === 'number' && score > 0);
+  };
+  
+  // Derived: Team members with valid FIT scores
+  const membersWithValidScores = teamMembers.filter(hasValidScores);
+  const hasMembersWithValidScores = membersWithValidScores.length > 0;
+  
   // Payment state
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const ECOSYSTEM_BASE_PRICE_PENCE = 1500; // £15 base price
@@ -397,13 +408,21 @@ export function EcosystemWorkflow({
       return;
     }
 
+    // Only persist scores that are > 0 (filter out empty/zero scores)
+    const validScores: Record<string, number> = {};
+    for (const [key, value] of Object.entries(memberScores)) {
+      if (typeof value === 'number' && value > 0) {
+        validScores[key] = value;
+      }
+    }
+
     try {
       await addTeamMember.mutateAsync({
         projectId,
         name: memberName,
         role: memberRole || undefined,
         sourceType: "manual",
-        fitScores: Object.keys(memberScores).length > 0 ? memberScores : undefined,
+        fitScores: Object.keys(validScores).length > 0 ? validScores : undefined,
       });
       toast({
         title: "Team member added",
@@ -505,12 +524,20 @@ export function EcosystemWorkflow({
       return;
     }
 
+    // Only persist scores > 0 (filter out empty/zero scores)
+    const validScores: Record<string, number> = {};
+    for (const [key, value] of Object.entries(parsedPdfData.scores)) {
+      if (typeof value === 'number' && value > 0) {
+        validScores[key] = value;
+      }
+    }
+
     try {
       await addTeamMember.mutateAsync({
         projectId,
         name: parsedPdfData.name,
         sourceType: "pdf_upload",
-        fitScores: parsedPdfData.scores,
+        fitScores: Object.keys(validScores).length > 0 ? validScores : undefined,
       });
       toast({
         title: "Team member added",
@@ -529,11 +556,10 @@ export function EcosystemWorkflow({
   };
 
   const handleGenerateAnalysis = async () => {
-    const membersWithScores = teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores).length > 0);
-    if (membersWithScores.length === 0) {
+    if (!hasMembersWithValidScores) {
       toast({
-        title: "No scored members",
-        description: "Add at least one team member with FIT scores to generate analysis.",
+        title: "No team members with valid scores",
+        description: "Add at least one team member with FIT scores (scores must be greater than 0) to generate analysis.",
         variant: "destructive",
       });
       return;
@@ -568,11 +594,10 @@ export function EcosystemWorkflow({
       return;
     }
 
-    const membersWithScores = teamMembers.filter(m => m.fitScores && Object.keys(m.fitScores).length > 0);
-    if (membersWithScores.length === 0) {
+    if (!hasMembersWithValidScores) {
       toast({
-        title: "No team members with scores",
-        description: "Add at least one team member with FIT scores to generate the report.",
+        title: "No team members with valid scores",
+        description: "Add at least one team member with FIT scores (scores must be greater than 0) to generate the report.",
         variant: "destructive",
       });
       return;
@@ -1504,19 +1529,19 @@ export function EcosystemWorkflow({
               </div>
 
               {/* Validation Messages */}
-              {(!missionStatement || teamMembers.length === 0) && (
+              {(!missionStatement || !hasMembersWithValidScores) && (
                 <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
                   <p className="text-sm font-medium text-amber-700 dark:text-amber-300">Please complete the following before generating:</p>
                   <ul className="text-sm text-amber-600 dark:text-amber-400 mt-2 space-y-1">
                     {!missionStatement && <li>• Enter your mission statement</li>}
-                    {teamMembers.length === 0 && <li>• Add at least one team member</li>}
+                    {!hasMembersWithValidScores && <li>• Add at least one team member with FIT scores (scores must be greater than 0)</li>}
                   </ul>
                 </div>
               )}
 
               <Button 
                 onClick={handleGenerateReport}
-                disabled={isProcessingPayment || generateAnalysis.isPending || !missionStatement || teamMembers.length === 0 || isPaygRestricted}
+                disabled={isProcessingPayment || generateAnalysis.isPending || membersLoading || !missionStatement || !hasMembersWithValidScores || isPaygRestricted}
                 size="lg"
                 className="w-full"
                 data-testid="button-generate-report"
