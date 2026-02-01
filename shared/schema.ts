@@ -171,6 +171,11 @@ export const assessmentResults = pgTable("assessment_results", {
   status: text("status").notNull().default("in_progress"),
   startedAt: timestamp("started_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
+  // Timer pause/resume fields
+  pausedAt: timestamp("paused_at"), // When the assessment was paused
+  pausedTimeRemainingMs: integer("paused_time_remaining_ms"), // Remaining time in milliseconds when paused
+  pauseGraceExpiresAt: timestamp("pause_grace_expires_at"), // When the 30-min grace period expires
+  resumeCount: integer("resume_count").default(0), // Number of times assessment has been resumed
 }, (table) => [
   index("idx_results_user").on(table.userId),
   index("idx_results_type").on(table.assessmentType),
@@ -183,6 +188,10 @@ export const assessmentResults = pgTable("assessment_results", {
 export const insertAssessmentResultSchema = createInsertSchema(assessmentResults).omit({
   id: true,
   startedAt: true,
+  pausedAt: true,
+  pausedTimeRemainingMs: true,
+  pauseGraceExpiresAt: true,
+  resumeCount: true,
 });
 
 export type InsertAssessmentResult = z.infer<typeof insertAssessmentResultSchema>;
@@ -913,6 +922,11 @@ export const assessmentSessions = pgTable("assessment_sessions", {
   pipelineStageUpdatedAt: timestamp("pipeline_stage_updated_at"),
   pipelineStageUpdatedBy: varchar("pipeline_stage_updated_by"), // User ID who updated the stage
   pipelineNotes: text("pipeline_notes"), // Notes about the candidate
+  // Timer pause/resume fields
+  pausedAt: timestamp("paused_at"), // When the assessment was paused
+  pausedTimeRemainingMs: integer("paused_time_remaining_ms"), // Remaining time in milliseconds when paused
+  pauseGraceExpiresAt: timestamp("pause_grace_expires_at"), // When the 30-min grace period expires
+  resumeCount: integer("resume_count").default(0), // Number of times assessment has been resumed
 }, (table) => [
   index("idx_assessment_sessions_partner").on(table.partnerId),
   index("idx_assessment_sessions_status").on(table.status),
@@ -927,6 +941,10 @@ export const insertAssessmentSessionSchema = createInsertSchema(assessmentSessio
   createdAt: true,
   startedAt: true,
   completedAt: true,
+  pausedAt: true,
+  pausedTimeRemainingMs: true,
+  pauseGraceExpiresAt: true,
+  resumeCount: true,
 });
 
 export type InsertAssessmentSession = z.infer<typeof insertAssessmentSessionSchema>;
