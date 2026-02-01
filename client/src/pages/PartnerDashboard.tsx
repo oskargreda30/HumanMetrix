@@ -2618,11 +2618,19 @@ export default function PartnerDashboard() {
 
             {/* Results Tab */}
             <TabsContent value="results" className="space-y-4" data-testid="panel-results">
+              <div className="text-center py-4 md:py-6">
+                <h2 className="text-xl md:text-2xl font-semibold mb-1 md:mb-2 text-white">Assessment Results</h2>
+                <p className="text-white/90 text-sm md:text-base">Access detailed assessment results and download reports.</p>
+              </div>
               <PartnerResultsTab />
             </TabsContent>
 
             {/* Invitations Tab */}
             <TabsContent value="invitations" className="space-y-4" data-testid="panel-invitations">
+              <div className="text-center py-4 md:py-6">
+                <h2 className="text-xl md:text-2xl font-semibold mb-1 md:mb-2 text-white">Candidate Invitations</h2>
+                <p className="text-white/90 text-sm md:text-base">Send assessment invitations and track their status.</p>
+              </div>
               {partner?.id && partner?.billingType ? (
                 <BulkInvitationsTab 
                   partnerId={partner.id} 
@@ -3140,6 +3148,10 @@ export default function PartnerDashboard() {
             </TabsContent>
 
             <TabsContent value="billing" className="space-y-3 md:space-y-4" data-testid="panel-billing">
+              <div className="text-center py-4 md:py-6">
+                <h2 className="text-xl md:text-2xl font-semibold mb-1 md:mb-2 text-white">Billing & Credits</h2>
+                <p className="text-white/90 text-sm md:text-base">View usage, purchase credits, and manage payment methods.</p>
+              </div>
               {billingLoading ? (
                 <Card>
                   <CardContent className="py-6 md:py-8 flex justify-center">
@@ -3830,6 +3842,10 @@ export default function PartnerDashboard() {
             </TabsContent>
 
             <TabsContent value="settings" className="space-y-3 md:space-y-4" data-testid="panel-settings">
+              <div className="text-center py-4 md:py-6">
+                <h2 className="text-xl md:text-2xl font-semibold mb-1 md:mb-2 text-white">Settings</h2>
+                <p className="text-white/90 text-sm md:text-base">Configure your organization profile and preferences.</p>
+              </div>
               {settingsLoading ? (
                 <Card>
                   <CardContent className="py-6 md:py-8 flex justify-center">
@@ -4638,16 +4654,28 @@ export default function PartnerDashboard() {
 
             {/* Analysis Tab - includes Individual Report, Compare Candidates, and Role Fit sub-tabs */}
             <TabsContent value="analysis" className="space-y-6" data-testid="panel-analysis">
+              <div className="text-center py-4 md:py-6">
+                <h2 className="text-xl md:text-2xl font-semibold mb-1 md:mb-2 text-white">Candidate Analysis</h2>
+                <p className="text-white/90 text-sm md:text-base">Compare candidates side-by-side with AI-powered insights.</p>
+              </div>
               <PartnerAnalysisTab />
             </TabsContent>
 
             {/* Pipeline Tab */}
             <TabsContent value="pipeline" className="space-y-6" data-testid="panel-pipeline">
+              <div className="text-center py-4 md:py-6">
+                <h2 className="text-xl md:text-2xl font-semibold mb-1 md:mb-2 text-white">Candidate Pipeline</h2>
+                <p className="text-white/90 text-sm md:text-base">View, search, and manage your candidate assessments.</p>
+              </div>
               <HiringPipelineTab />
             </TabsContent>
 
             {/* Ecosystem Index Tab */}
             <TabsContent value="ecosystem" className="space-y-6" data-testid="panel-ecosystem">
+              <div className="text-center py-4 md:py-6">
+                <h2 className="text-xl md:text-2xl font-semibold mb-1 md:mb-2 text-white">Ecosystem Index</h2>
+                <p className="text-white/90 text-sm md:text-base">AI-powered team diagnostics to assess capabilities and identify gaps.</p>
+              </div>
               <EcosystemAutoProject 
                 partnerId={partner?.id}
                 billingType={partner?.billingType}
@@ -5189,6 +5217,10 @@ export default function PartnerDashboard() {
 
             {/* Team Tab */}
             <TabsContent value="team" className="space-y-4 md:space-y-6" data-testid="panel-team">
+              <div className="text-center py-4 md:py-6">
+                <h2 className="text-xl md:text-2xl font-semibold mb-1 md:mb-2 text-white">Team Management</h2>
+                <p className="text-white/90 text-sm md:text-base">Manage team members and control access permissions.</p>
+              </div>
               <Card>
                 <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4 space-y-0 p-3 md:p-6">
                   <div>
