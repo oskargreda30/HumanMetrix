@@ -3948,8 +3948,69 @@ export function registerPartnerRoutes(app: Express) {
         console.log(`[B2B Create Account] User already exists: ${user.id} for ${email}`);
       }
       
+      // Convert B2B session results into proper assessmentResults so they show in dashboard
+      try {
+        // Get the B2B session details
+        const sessionDetails = await storage.getAssessmentSession(sessionId);
+        
+        if (sessionDetails && sessionDetails.status === 'completed' && sessionDetails.scores) {
+          // Check if we already created an assessmentResult for this session
+          const existingResults = await storage.getResultsByUser(user!.id);
+          const alreadyHasResult = existingResults.some(
+            r => r.assessmentType === sessionDetails.assessmentType &&
+                 r.scores && JSON.stringify(r.scores) === JSON.stringify(sessionDetails.scores)
+          );
+          
+          if (!alreadyHasResult) {
+            // Create a proper assessmentResult entry from the B2B session data
+            const newResult = await storage.createAssessmentResult({
+              userId: user!.id,
+              assessmentType: sessionDetails.assessmentType,
+              questionLocale: sessionDetails.questionLocale || 'default',
+              answers: sessionDetails.answers || {},
+              scores: sessionDetails.scores,
+              totalScore: sessionDetails.totalScore || undefined,
+              percentile: sessionDetails.percentile || undefined,
+              evaluations: sessionDetails.evaluations || undefined,
+              status: 'completed',
+              completedAt: sessionDetails.completedAt || new Date(),
+            });
+            console.log(`[B2B Create Account] Created assessmentResult ${newResult.id} for ${sessionDetails.assessmentType} from B2B session ${sessionId}`);
+          } else {
+            console.log(`[B2B Create Account] Result for ${sessionDetails.assessmentType} already exists for user ${user!.id}`);
+          }
+        }
+        
+        // Also check for partner invitation results
+        if (sessionDetails?.metadata) {
+          const invitationId = (sessionDetails.metadata as any)?.invitationId;
+          if (invitationId) {
+            const invitationResults = await storage.getResultsByPartnerInvitation(invitationId);
+            for (const result of invitationResults) {
+              if (result.userId !== user!.id) {
+                await storage.updateAssessmentResult(result.id, { userId: user!.id });
+                console.log(`[B2B Create Account] Linked invitation result ${result.id} (${result.assessmentType}) to user ${user!.id}`);
+              }
+            }
+          }
+        }
+        
+        // Update session metadata to include userId for reference
+        await storage.updateAssessmentSession(sessionId, { 
+          externalUserId: user!.id,
+          metadata: { 
+            ...(session.metadata || {}),
+            linkedUserId: user!.id 
+          }
+        });
+        console.log(`[B2B Create Account] Updated session ${sessionId} with user reference`);
+      } catch (linkError: any) {
+        console.error('[B2B Create Account] Failed to link/convert results:', linkError.message);
+        // Continue anyway - user can still view results via session
+      }
+      
       // Log the user in by setting session
-      req.session.userId = user!.id;
+      (req.session as any).userId = user!.id;
       req.session.save((err: any) => {
         if (err) {
           console.error('[B2B Create Account] Session save error:', err);
