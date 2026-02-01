@@ -373,6 +373,269 @@ export interface B2BAssessmentData {
   partnerCompanyName: string;
 }
 
+interface AnalysisResult {
+  overall: string;
+  strengths: string[];
+  improvements: string[];
+}
+
+function generateAnalysis(assessmentType: string, scores: Record<string, number>, totalScore?: number): AnalysisResult {
+  const sortedSkills = Object.entries(scores).sort((a, b) => (b[1] as number) - (a[1] as number));
+  const strengths = sortedSkills.filter(([_, score]) => (score as number) >= 70);
+  const improvements = sortedSkills.filter(([_, score]) => (score as number) < 70);
+  
+  const analysis: AnalysisResult = {
+    strengths: [],
+    improvements: [],
+    overall: "",
+  };
+
+  const assessmentLower = assessmentType.toLowerCase().replace('-', '_');
+
+  switch (assessmentLower) {
+    case "fit":
+      analysis.overall = "This FIT assessment evaluates core behavioral competencies essential for workplace success and team collaboration.";
+      
+      if (strengths.length > 0) {
+        strengths.forEach(([skill, score]) => {
+          if (skill === "High Agency" || skill === "highAgency") {
+            analysis.strengths.push(`High Agency (${score}/100): Takes initiative and ownership of outcomes, drives results independently.`);
+          } else if (skill === "Intellectual Curiosity" || skill === "intellectualCuriosity") {
+            analysis.strengths.push(`Intellectual Curiosity (${score}/100): Shows eagerness to learn and seeks to understand complex concepts.`);
+          } else if (skill === "Resilience" || skill === "resilience") {
+            analysis.strengths.push(`Resilience (${score}/100): Adapts well to challenges and maintains composure under pressure.`);
+          } else if (skill === "Empathy & Ethics" || skill === "empathyEthics") {
+            analysis.strengths.push(`Empathy & Ethics (${score}/100): Considers impact on others and makes ethical decisions.`);
+          } else if (skill === "Growth Mindset" || skill === "growthMindset") {
+            analysis.strengths.push(`Growth Mindset (${score}/100): Views challenges as learning opportunities and embraces feedback.`);
+          } else if (skill === "Interpersonal Agility" || skill === "interpersonalAgility") {
+            analysis.strengths.push(`Interpersonal Agility (${score}/100): Builds relationships effectively and adapts communication style.`);
+          }
+        });
+      }
+      
+      if (improvements.length > 0) {
+        improvements.forEach(([skill, score]) => {
+          if (skill === "High Agency" || skill === "highAgency") {
+            analysis.improvements.push(`High Agency (${score}/100): Could benefit from developing greater ownership and initiative.`);
+          } else if (skill === "Intellectual Curiosity" || skill === "intellectualCuriosity") {
+            analysis.improvements.push(`Intellectual Curiosity (${score}/100): Encourage deeper exploration and proactive learning.`);
+          } else if (skill === "Resilience" || skill === "resilience") {
+            analysis.improvements.push(`Resilience (${score}/100): Focus on stress management and reframing setbacks as learning.`);
+          } else if (skill === "Empathy & Ethics" || skill === "empathyEthics") {
+            analysis.improvements.push(`Empathy & Ethics (${score}/100): Develop stronger perspective-taking and ethical reasoning.`);
+          } else if (skill === "Growth Mindset" || skill === "growthMindset") {
+            analysis.improvements.push(`Growth Mindset (${score}/100): Work on viewing challenges positively and seeking feedback.`);
+          } else if (skill === "Interpersonal Agility" || skill === "interpersonalAgility") {
+            analysis.improvements.push(`Interpersonal Agility (${score}/100): Practice adapting communication to diverse audiences.`);
+          }
+        });
+      }
+      break;
+
+    case "ai_readiness":
+    case "aireadiness":
+      analysis.overall = "This AI Readiness assessment measures capabilities critical for effective collaboration with AI systems and thriving in AI-augmented environments.";
+      
+      if (strengths.length > 0) {
+        strengths.forEach(([skill, score]) => {
+          const skillLower = skill.toLowerCase();
+          if (skillLower.includes("literacy") || skillLower.includes("prompting") || skillLower.includes("prompt")) {
+            analysis.strengths.push(`AI Literacy & Prompt Engineering (${score}/100): Understands AI capabilities and crafts effective prompts.`);
+          } else if (skillLower.includes("technical")) {
+            analysis.strengths.push(`Technical Fundamentals (${score}/100): Comfortable with technical concepts and AI tools.`);
+          } else if (skillLower.includes("data")) {
+            analysis.strengths.push(`Data Fluency (${score}/100): Strong ability to work with and interpret data effectively.`);
+          } else if (skillLower.includes("critical")) {
+            analysis.strengths.push(`Critical Thinking (${score}/100): Evaluates AI outputs critically and identifies limitations.`);
+          } else if (skillLower.includes("adaptive") || skillLower.includes("continuous") || skillLower.includes("adaptability")) {
+            analysis.strengths.push(`Adaptability & Continuous Learning (${score}/100): Quickly adapts to new AI tools.`);
+          } else if (skillLower.includes("responsible") || skillLower.includes("ethical")) {
+            analysis.strengths.push(`Responsible AI (${score}/100): Uses AI ethically and understands implications.`);
+          } else if (skillLower.includes("creative") || skillLower.includes("innovation")) {
+            analysis.strengths.push(`Creativity & Innovation (${score}/100): Leverages AI for creative problem-solving.`);
+          } else if (skillLower.includes("collaboration") || skillLower.includes("communication")) {
+            analysis.strengths.push(`Collaboration & Communication (${score}/100): Collaborates effectively in AI projects.`);
+          } else if (skillLower.includes("domain")) {
+            analysis.strengths.push(`Domain Expertise (${score}/100): Deep specialized knowledge in specific field.`);
+          }
+        });
+      }
+      
+      if (improvements.length > 0) {
+        improvements.forEach(([skill, score]) => {
+          const skillLower = skill.toLowerCase();
+          if (skillLower.includes("literacy") || skillLower.includes("prompting") || skillLower.includes("prompt")) {
+            analysis.improvements.push(`AI Literacy & Prompt Engineering (${score}/100): Focus on AI fundamentals and prompt training.`);
+          } else if (skillLower.includes("technical")) {
+            analysis.improvements.push(`Technical Fundamentals (${score}/100): Build technical foundation with hands-on practice.`);
+          } else if (skillLower.includes("data")) {
+            analysis.improvements.push(`Data Fluency (${score}/100): Develop skills in data interpretation and analysis.`);
+          } else if (skillLower.includes("critical")) {
+            analysis.improvements.push(`Critical Thinking (${score}/100): Practice evaluating AI outputs and recognizing biases.`);
+          } else if (skillLower.includes("responsible") || skillLower.includes("ethical")) {
+            analysis.improvements.push(`Responsible AI (${score}/100): Focus on AI ethics training and responsible practices.`);
+          } else {
+            analysis.improvements.push(`${skill} (${score}/100): This area would benefit from targeted development.`);
+          }
+        });
+      }
+      break;
+
+    case "prompt_architecture":
+      analysis.overall = `This Prompt Architecture assessment evaluates prompt design skills across progressive difficulty levels. Overall score: ${totalScore}/100. Prompts are evaluated on five equal dimensions (20% each): Clarity, Structure, Context Relevance, Creativity, and Iterative Improvement.`;
+      
+      if (totalScore !== undefined) {
+        if (totalScore >= 80) {
+          analysis.strengths.push(`Exceptional prompt design skills: Demonstrates mastery in crafting clear, well-structured prompts.`);
+          analysis.strengths.push(`Advanced understanding: Handles complex scenarios and guides AI systems effectively.`);
+        } else if (totalScore >= 65) {
+          analysis.strengths.push(`Solid prompt engineering foundation: Creates effective prompts with good structure and clarity.`);
+          analysis.strengths.push(`Good contextual awareness: Understands how to provide relevant context to AI systems.`);
+        } else if (totalScore >= 50) {
+          analysis.strengths.push(`Basic prompt design capabilities: Shows fundamental understanding of AI communication.`);
+        }
+        
+        if (totalScore < 80) {
+          if (totalScore < 50) {
+            analysis.improvements.push(`Prompt structure and clarity: Focus on writing more specific, clear prompts.`);
+            analysis.improvements.push(`Context provision: Practice including relevant background information.`);
+          } else if (totalScore < 65) {
+            analysis.improvements.push(`Advanced techniques: Explore iterative refinement strategies.`);
+            analysis.improvements.push(`Creativity: Experiment with creative problem-solving approaches.`);
+          } else {
+            analysis.improvements.push(`Fine-tuning: Continue refining techniques for edge cases.`);
+          }
+        }
+      }
+      break;
+
+    case "aiq":
+      const aiqScore = totalScore || Object.values(scores)[0] || 0;
+      const bandInterpretation = getAIQBandInterpretation(aiqScore);
+      
+      analysis.overall = `This Algorithmic Integrity Quotient (AIQ) assessment evaluates ethical reasoning in AI scenarios. Score: ${aiqScore}/100 - ${bandInterpretation.title} (${bandInterpretation.band}). ${bandInterpretation.description}`;
+      
+      if (aiqScore >= 80) {
+        analysis.strengths.push(`Exceptional ethical alignment: Consistently prioritizes optimal ethical outcomes.`);
+        analysis.strengths.push(`Strategic ethical leadership: Navigates complex situations while maintaining principles.`);
+        analysis.strengths.push(`AI governance ready: Well-prepared for ethical oversight roles.`);
+      } else if (aiqScore >= 60) {
+        analysis.strengths.push(`Strong ethical foundation: Shows sound judgment balancing ethics with operations.`);
+        analysis.strengths.push(`Practical ethics awareness: Understands responsible AI deployment.`);
+        if (aiqScore < 80) {
+          analysis.improvements.push(`Advanced ethical reasoning: Explore more complex ethical frameworks.`);
+        }
+      } else if (aiqScore >= 40) {
+        analysis.strengths.push(`Basic ethical awareness: Shows foundational understanding of AI ethics.`);
+        analysis.improvements.push(`Ethical prioritization: Practice weighing ethical considerations more heavily.`);
+        analysis.improvements.push(`Bias recognition: Develop skills in identifying algorithmic bias.`);
+      } else {
+        analysis.improvements.push(`AI ethics fundamentals: Recommend training on fairness and accountability.`);
+        analysis.improvements.push(`Consent and privacy: Study best practices for sensitive data handling.`);
+        analysis.improvements.push(`Responsible deployment: Learn risk assessment for AI systems.`);
+        analysis.improvements.push(`Regulatory awareness: Familiarize with AI governance frameworks.`);
+      }
+      break;
+  }
+  
+  return analysis;
+}
+
+function addComprehensiveAnalysisSection(
+  pdf: jsPDF, 
+  analysis: AnalysisResult, 
+  yPos: number, 
+  pageWidth: number, 
+  pageHeight: number
+): number {
+  yPos = ensurePageSpace(pdf, yPos, 80, pageHeight, pageWidth);
+  
+  yPos = addSectionHeader(pdf, 'COMPREHENSIVE ANALYSIS', yPos, pageWidth);
+  yPos += 3;
+  
+  pdf.setFillColor(249, 250, 251);
+  pdf.roundedRect(20, yPos, pageWidth - 40, 18, 2, 2, 'F');
+  
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(55, 65, 81);
+  const overallLines = pdf.splitTextToSize(analysis.overall, pageWidth - 50);
+  overallLines.forEach((line: string, idx: number) => {
+    pdf.text(line, 25, yPos + 5 + (idx * 4));
+  });
+  yPos += Math.max(18, overallLines.length * 4 + 8);
+  yPos += 6;
+  
+  if (analysis.strengths.length > 0) {
+    yPos = ensurePageSpace(pdf, yPos, 40, pageHeight, pageWidth);
+    
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(59, 130, 246);
+    pdf.text('Key Strengths', 20, yPos);
+    yPos += 6;
+    
+    analysis.strengths.forEach((strength, idx) => {
+      yPos = ensurePageSpace(pdf, yPos, 12, pageHeight, pageWidth);
+      
+      pdf.setFillColor(239, 246, 255);
+      pdf.setDrawColor(59, 130, 246);
+      pdf.setLineWidth(0.5);
+      pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 1, 1, 'FD');
+      pdf.setLineWidth(0.2);
+      
+      pdf.setDrawColor(59, 130, 246);
+      pdf.setFillColor(59, 130, 246);
+      pdf.rect(20, yPos - 2, 2, 10, 'F');
+      
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(55, 65, 81);
+      const strengthText = strength.length > 110 ? strength.substring(0, 107) + '...' : strength;
+      pdf.text(strengthText, 26, yPos + 4);
+      
+      yPos += 12;
+    });
+    yPos += 4;
+  }
+  
+  if (analysis.improvements.length > 0) {
+    yPos = ensurePageSpace(pdf, yPos, 40, pageHeight, pageWidth);
+    
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(245, 158, 11);
+    pdf.text('Development Opportunities', 20, yPos);
+    yPos += 6;
+    
+    analysis.improvements.forEach((improvement, idx) => {
+      yPos = ensurePageSpace(pdf, yPos, 12, pageHeight, pageWidth);
+      
+      pdf.setFillColor(255, 251, 235);
+      pdf.setDrawColor(245, 158, 11);
+      pdf.setLineWidth(0.5);
+      pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 1, 1, 'FD');
+      pdf.setLineWidth(0.2);
+      
+      pdf.setDrawColor(245, 158, 11);
+      pdf.setFillColor(245, 158, 11);
+      pdf.rect(20, yPos - 2, 2, 10, 'F');
+      
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(55, 65, 81);
+      const improvementText = improvement.length > 110 ? improvement.substring(0, 107) + '...' : improvement;
+      pdf.text(improvementText, 26, yPos + 4);
+      
+      yPos += 12;
+    });
+    yPos += 4;
+  }
+  
+  return yPos;
+}
+
 function formatAssessmentType(type: string): string {
   const mapping: Record<string, string> = {
     'fit': 'FIT Assessment',
@@ -527,6 +790,9 @@ export function generateB2BResultsPDF(data: B2BAssessmentData): Buffer {
     yPos += 4;
     pdf.text('interpersonal skills. Resilient individuals navigate challenges effectively while maintaining relationships.', 20, yPos);
     
+    const fitAnalysis = generateAnalysis('fit', data.scores, overallScore);
+    yPos = addComprehensiveAnalysisSection(pdf, fitAnalysis, yPos + 10, pageWidth, pageHeight);
+    
   } else if (assessmentLower === 'ai_readiness' || assessmentLower === 'aireadiness') {
     pdf.addPage();
     addBackgroundPattern(pdf, pageWidth, pageHeight);
@@ -571,6 +837,9 @@ export function generateB2BResultsPDF(data: B2BAssessmentData): Buffer {
     pdf.text('Determines ability to leverage AI tools for productivity gains, make sound AI-assisted decisions,', 52, yPos);
     yPos += 4;
     pdf.text('and integrate AI responsibly into workflows. High scorers multiply their output through effective AI collaboration.', 20, yPos);
+    
+    const aiAnalysis = generateAnalysis('ai_readiness', data.scores, overallScore);
+    yPos = addComprehensiveAnalysisSection(pdf, aiAnalysis, yPos + 10, pageWidth, pageHeight);
     
   } else if (assessmentLower === 'prompt_architecture') {
     pdf.addPage();
@@ -680,6 +949,9 @@ export function generateB2BResultsPDF(data: B2BAssessmentData): Buffer {
     yPos += 4;
     pdf.text('solve complex problems faster, and produce higher-quality AI-assisted outputs.', 20, yPos);
     
+    const promptAnalysis = generateAnalysis('prompt_architecture', data.scores, overallScore);
+    yPos = addComprehensiveAnalysisSection(pdf, promptAnalysis, yPos + 10, pageWidth, pageHeight);
+    
   } else if (assessmentLower === 'aiq') {
     pdf.addPage();
     addBackgroundPattern(pdf, pageWidth, pageHeight);
@@ -746,6 +1018,9 @@ export function generateB2BResultsPDF(data: B2BAssessmentData): Buffer {
     pdf.text('Graded scoring captures nuanced ethical judgment. Identifies candidates who balance ethical imperatives', 52, yPos);
     yPos += 4;
     pdf.text('with operational realities, making them valuable for AI governance and deployment oversight roles.', 20, yPos);
+    
+    const aiqAnalysis = generateAnalysis('aiq', data.scores, overallScore);
+    yPos = addComprehensiveAnalysisSection(pdf, aiqAnalysis, yPos + 10, pageWidth, pageHeight);
   }
   
   addSkillsLegendPage(pdf, pageWidth, pageHeight);
