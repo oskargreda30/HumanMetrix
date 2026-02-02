@@ -23,7 +23,6 @@ import {
   Lightbulb,
   Network,
   Puzzle,
-  Eye,
   Zap,
   RefreshCw,
   Calendar,
@@ -402,27 +401,6 @@ export default function EcosystemIndex() {
           </div>
         </section>
 
-        {/* Final CTA */}
-        <section className="py-16 md:py-24" data-testid="section-final-cta">
-          <div className="mx-auto max-w-3xl px-4 md:px-6 lg:px-8 text-center">
-            <Eye className="h-12 w-12 text-primary mx-auto mb-6" />
-            <h2 className="text-2xl md:text-3xl font-semibold mb-4" data-testid="text-cta-title">
-              See the Hidden Gaps in Your Team
-            </h2>
-            <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto" data-testid="text-cta-description">
-              Stop guessing why talented teams underperform. Get clear visibility into 
-              capability distribution and actionable recommendations.
-            </p>
-            <Link href="/ecosystem/start">
-              <Button size="lg" className="px-8" data-testid="button-final-cta">
-                Start Team Diagnostic
-              </Button>
-            </Link>
-            <p className="text-xs text-muted-foreground mt-4" data-testid="text-cta-disclaimer">
-              Early access • No commitment required
-            </p>
-          </div>
-        </section>
       </main>
 
       <Footer />
