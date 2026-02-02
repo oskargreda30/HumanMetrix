@@ -285,6 +285,7 @@ export default function EmbedAssessment() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const hasSubmittedRef = useRef<boolean>(false);
   const hasCalledCompletionRef = useRef<boolean>(false);
+  const startCallInProgressRef = useRef<boolean>(false); // Prevent concurrent /start calls
   
   // Multi-assessment state - use urlTypes for both demo and real sessions
   const [assessmentQueue, setAssessmentQueue] = useState<string[]>(urlTypes);
@@ -491,13 +492,15 @@ export default function EmbedAssessment() {
         
         // Call /start to execute the resume handshake (clears pausedTimeRemainingMs, adjusts startedAt)
         // This ensures the data model is consistent for future timer calculations
-        if (!isDemo) {
+        // Use ref guard to prevent duplicate calls
+        if (!isDemo && !startCallInProgressRef.current) {
+          startCallInProgressRef.current = true;
           fetch(`/api/embed/session/${sessionId}/start`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ resumeFromSaved: true }),
-          }).catch(() => {
-            // Non-blocking - timer state is already set from GET response
+          }).finally(() => {
+            startCallInProgressRef.current = false;
             console.log(`[EmbedAssessment] Resume handshake completed`);
           });
         }
@@ -669,7 +672,14 @@ export default function EmbedAssessment() {
       ? (candidateEmail.trim() || `test-${Date.now()}@test.example.com`)
       : candidateEmail.trim();
 
+    // Prevent concurrent /start calls to avoid timer race conditions
+    if (startCallInProgressRef.current) {
+      console.log('[EmbedAssessment] Start call already in progress, skipping duplicate');
+      return;
+    }
+
     try {
+      startCallInProgressRef.current = true;
       const res = await fetch(`/api/embed/session/${sessionId}/start`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -705,6 +715,8 @@ export default function EmbedAssessment() {
     } catch (err) {
       setStatus("error");
       setErrorMessage("Failed to start assessment");
+    } finally {
+      startCallInProgressRef.current = false;
     }
   };
 

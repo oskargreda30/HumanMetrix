@@ -1205,6 +1205,7 @@ export function registerPartnerRoutes(app: Express) {
           
           if (session.pausedTimeRemainingMs != null) {
             timeRemaining = Math.floor(session.pausedTimeRemainingMs / 1000);
+            console.log(`[Session Resume] Session ${sessionId} resuming with pausedTimeRemainingMs=${session.pausedTimeRemainingMs}ms (${timeRemaining}s)`);
             // Clear the stored time and update startedAt to reflect the resume point
             // This way subsequent time calculations will be based on the new startedAt
             const newStartedAt = new Date(Date.now() - (timeLimitSeconds - timeRemaining) * 1000);
@@ -1214,9 +1215,12 @@ export function registerPartnerRoutes(app: Express) {
               lastActivityAt: new Date(),
             } as any);
           } else if (session.startedAt) {
+            // pausedTimeRemainingMs is null - calculate from startedAt
+            // This happens when resume handshake was already performed
             const elapsedMs = Date.now() - new Date(session.startedAt).getTime();
             const elapsedSeconds = Math.floor(elapsedMs / 1000);
             timeRemaining = Math.max(0, timeLimitSeconds - elapsedSeconds);
+            console.log(`[Session Resume] Session ${sessionId} already resumed, calculating from startedAt: elapsed=${elapsedSeconds}s, remaining=${timeRemaining}s`);
           }
           
           return res.json({
@@ -1382,6 +1386,7 @@ export function registerPartnerRoutes(app: Express) {
           // Clamp to valid range: 0 <= value <= maxAllowedMs
           const clampedTimeMs = Math.min(Math.max(0, Math.floor(timeRemainingMs)), maxAllowedMs);
           updateData.pausedTimeRemainingMs = clampedTimeMs;
+          console.log(`[Session Progress] Session ${sessionId} saving pausedTimeRemainingMs=${clampedTimeMs}ms (${Math.floor(clampedTimeMs/1000)}s), client sent ${timeRemainingMs}ms`);
         }
         
         await storage.updateAssessmentSession(sessionId, updateData);
