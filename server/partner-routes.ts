@@ -1330,9 +1330,8 @@ export function registerPartnerRoutes(app: Express) {
   );
 
   // Save progress endpoint - allows incremental answer saving
-  app.patch(
-    "/api/embed/session/:sessionId/progress",
-    async (req: Request, res: Response) => {
+  // Support both PATCH (normal saves) and POST (sendBeacon on tab close)
+  const handleProgressSave = async (req: Request, res: Response) => {
       try {
         const { sessionId } = req.params;
         const { answers, lastAnsweredIndex, timeRemainingMs } = req.body;
@@ -1400,8 +1399,11 @@ export function registerPartnerRoutes(app: Express) {
         console.error("Error saving session progress:", error);
         res.status(500).json({ error: "Failed to save progress" });
       }
-    }
-  );
+  };
+
+  // Register progress handler for both PATCH and POST (sendBeacon uses POST)
+  app.patch("/api/embed/session/:sessionId/progress", handleProgressSave);
+  app.post("/api/embed/session/:sessionId/progress", handleProgressSave);
 
   app.post(
     "/api/embed/session/:sessionId/submit",
