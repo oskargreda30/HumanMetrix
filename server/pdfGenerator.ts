@@ -152,7 +152,35 @@ export async function generatePDFFromUrl(options: GeneratePDFFromUrlOptions): Pr
     await new Promise(resolve => setTimeout(resolve, 3000));
     console.log('[PDF Generator] Page ready for capture');
 
+    // Remove Replit development banner before PDF capture
     await page.evaluate(() => {
+      // Remove the Replit development preview banner
+      const replitBanners = document.querySelectorAll('[class*="replit"], [id*="replit"]');
+      replitBanners.forEach(el => el.remove());
+      
+      // Also look for the banner by its content
+      const allElements = document.querySelectorAll('div, span, p, a');
+      allElements.forEach(el => {
+        const text = el.textContent || '';
+        if (text.includes('temporary development preview') || 
+            text.includes('Deploy your app for secure sharing')) {
+          // Find the parent banner container and remove it
+          let parent = el.parentElement;
+          while (parent && parent !== document.body) {
+            // Check if this is a fixed/sticky positioned element (banner container)
+            const style = window.getComputedStyle(parent);
+            if (style.position === 'fixed' || style.position === 'sticky') {
+              parent.remove();
+              return;
+            }
+            parent = parent.parentElement;
+          }
+          // If no fixed parent found, just hide the element
+          (el as HTMLElement).style.display = 'none';
+        }
+      });
+      
+      // Add print styles
       const style = document.createElement('style');
       style.textContent = `
         @media print {
@@ -175,6 +203,17 @@ export async function generatePDFFromUrl(options: GeneratePDFFromUrlOptions): Pr
           [data-testid="footer"],
           .sticky {
             display: none !important;
+          }
+          
+          /* Page breaks for each section */
+          [data-pdf-section] {
+            page-break-before: always;
+            page-break-inside: avoid;
+          }
+          
+          /* First section should not have page break before */
+          [data-pdf-section="summary"] {
+            page-break-before: auto;
           }
           
           .page-break {

@@ -398,7 +398,7 @@ export default function B2BPdfEmail() {
         </div>
 
         {hasDetailedScores && (
-          <div data-pdf-section="visualizations" className="bg-white p-6 rounded-lg grid md:grid-cols-2 gap-6">
+          <div data-pdf-section="visualizations" className="bg-white p-6 rounded-lg grid md:grid-cols-2 gap-6 page-break">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Skills Radar</CardTitle>
@@ -453,7 +453,7 @@ export default function B2BPdfEmail() {
           </div>
         )}
 
-        <div data-pdf-section="analysis" className="bg-white p-6 rounded-lg">
+        <div data-pdf-section="analysis" className="bg-white p-6 rounded-lg page-break">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -490,7 +490,7 @@ export default function B2BPdfEmail() {
         </div>
 
         {hasDetailedScores && (
-          <div data-pdf-section="legend" className="bg-white p-6 rounded-lg">
+          <div data-pdf-section="legend" className="bg-white p-6 rounded-lg page-break">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Skills Legend</CardTitle>

@@ -1,5 +1,5 @@
 import { Switch, Route, Redirect } from "wouter";
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { HelmetProvider } from "react-helmet-async";
@@ -239,6 +239,43 @@ function Router() {
 }
 
 function App() {
+  // Remove Replit development preview banner on all pages
+  useEffect(() => {
+    const removeDevelopmentBanner = () => {
+      // Look for Replit development banners
+      const allElements = document.querySelectorAll('div, span, p, a');
+      allElements.forEach(el => {
+        const text = el.textContent || '';
+        if (text.includes('temporary development preview') || 
+            text.includes('Deploy your app for secure sharing')) {
+          let parent = el.parentElement;
+          while (parent && parent !== document.body) {
+            const style = window.getComputedStyle(parent);
+            if (style.position === 'fixed' || style.position === 'sticky') {
+              parent.remove();
+              return;
+            }
+            parent = parent.parentElement;
+          }
+          (el as HTMLElement).style.display = 'none';
+        }
+      });
+    };
+
+    // Run immediately and also after a short delay for dynamically injected banners
+    removeDevelopmentBanner();
+    const timeoutId = setTimeout(removeDevelopmentBanner, 1000);
+    
+    // Also set up a MutationObserver to catch dynamically added banners
+    const observer = new MutationObserver(removeDevelopmentBanner);
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    return () => {
+      clearTimeout(timeoutId);
+      observer.disconnect();
+    };
+  }, []);
+
   return (
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
