@@ -2248,7 +2248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`[Airwallex Webhook] Credited ${packageSize} tests to partner ${partnerId}`);
               
               // Create notification
-              await storage.createPartnerNotification({
+              await storage.dispatchPartnerNotification({
                 partnerId,
                 type: 'credits_purchased',
                 title: 'Credits Purchased',
@@ -2285,7 +2285,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   console.log(`[Airwallex Webhook] Restored API access for partner ${invoice.partnerId} after invoice payment`);
                   
                   // Notify partner
-                  await storage.createPartnerNotification({
+                  await storage.dispatchPartnerNotification({
                     partnerId: invoice.partnerId,
                     type: 'api_access_restored',
                     title: 'API Access Restored',
@@ -2296,7 +2296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
               
               // Send payment confirmation notification
-              await storage.createPartnerNotification({
+              await storage.dispatchPartnerNotification({
                 partnerId: invoice.partnerId,
                 type: 'invoice_paid',
                 title: 'Invoice Paid',
@@ -10788,7 +10788,7 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
       });
       
       // Create notification for the partner
-      await storage.createPartnerNotification({
+      await storage.dispatchPartnerNotification({
         partnerId: matchingPartner.id,
         type: 'billing_change_requested',
         title: 'Billing Change Requested',
@@ -10932,7 +10932,7 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
       }
       
       // Create notification for the partner
-      await storage.createPartnerNotification({
+      await storage.dispatchPartnerNotification({
         partnerId: request.partnerId,
         type: action === 'approve' ? 'billing_change_approved' : 'billing_change_rejected',
         title: action === 'approve' ? 'Billing Change Approved' : 'Billing Change Rejected',
@@ -11295,7 +11295,7 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
       await storage.revokePartnerApiKey(keyId);
       
       // Create notification for API key revocation
-      await storage.createPartnerNotification({
+      await storage.dispatchPartnerNotification({
         partnerId: matchingPartner.id,
         type: 'api_key_revoked',
         title: 'API Key Revoked',
@@ -11366,7 +11366,7 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
       console.log(`[CREATE API KEY] Key created successfully: id=${newKey.id}, prefix=${prefix}, hint=${hint}`);
       
       // Create notification for API key creation
-      await storage.createPartnerNotification({
+      await storage.dispatchPartnerNotification({
         partnerId: matchingPartner.id,
         type: 'api_key_created',
         title: 'API Key Created',
@@ -18640,7 +18640,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       console.log(`[Partner Package] Successfully credited ${packageSize} tests to partner ${partnerId}`);
       
       // Create notification for credits purchased
-      await storage.createPartnerNotification({
+      await storage.dispatchPartnerNotification({
         partnerId,
         type: 'credits_purchased',
         title: 'Credits Purchased',
@@ -18790,7 +18790,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       console.log(`[Partner Package] Successfully credited ${packageSize} tests to partner ${partnerId} via Airwallex`);
       
       // Create notification for credits purchased
-      await storage.createPartnerNotification({
+      await storage.dispatchPartnerNotification({
         partnerId,
         type: 'credits_purchased',
         title: 'Credits Purchased',

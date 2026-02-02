@@ -1601,31 +1601,23 @@ export function registerPartnerRoutes(app: Express) {
         } // End of else block for non-test sessions
         
         // Create notification for assessment completion (skip for test API key sessions)
-        // Also check if partner has disabled individual_assessment_completed notifications
+        // dispatchPartnerNotification automatically checks notification preferences
         if (!isTestSession) {
-          const prefs = (partner?.notificationPreferences as Record<string, boolean>) || {};
-          const individualNotificationsEnabled = prefs.individual_assessment_completed !== false;
-          
-          if (individualNotificationsEnabled) {
-            // Include email prominently in the message for easy identification
-            const candidateIdentifier = session.externalEmail || session.externalUserId || 'Unknown';
-            await storage.createPartnerNotification({
-              partnerId: session.partnerId,
-              type: 'assessment_completed',
-              title: 'Assessment Completed',
-              message: `A ${session.assessmentType.toUpperCase()} assessment has been completed by ${candidateIdentifier}.`,
-              metadata: { 
-                sessionId: session.id, 
-                assessmentType: session.assessmentType,
-                externalUserId: session.externalUserId,
-                externalEmail: session.externalEmail,
-                totalScore,
-                percentile,
-              },
-            });
-          } else {
-            console.log(`[Partner Notification] Skipping individual_assessment_completed notification (disabled by partner ${session.partnerId})`);
-          }
+          const candidateIdentifier = session.externalEmail || session.externalUserId || 'Unknown';
+          await storage.dispatchPartnerNotification({
+            partnerId: session.partnerId,
+            type: 'assessment_completed',
+            title: 'Assessment Completed',
+            message: `A ${session.assessmentType.toUpperCase()} assessment has been completed by ${candidateIdentifier}.`,
+            metadata: { 
+              sessionId: session.id, 
+              assessmentType: session.assessmentType,
+              externalUserId: session.externalUserId,
+              externalEmail: session.externalEmail,
+              totalScore,
+              percentile,
+            },
+          });
         }
         
         if (session.webhookUrl) {
@@ -3607,8 +3599,8 @@ export function registerPartnerRoutes(app: Express) {
               (billedByPartner.get(partner.id) || 0) + charge.overageAmount
             );
             
-            // Create success notification
-            await storage.createPartnerNotification({
+            // Create success notification (uses dispatchPartnerNotification for preference checking)
+            await storage.dispatchPartnerNotification({
               partnerId: partner.id,
               type: 'billing_success',
               title: 'Overage Billing Processed',
