@@ -944,6 +944,25 @@ export function registerPartnerRoutes(app: Express) {
         
         console.log(`[Embed Session] Returning session ${session.id}, externalEmail: ${session.externalEmail}, isTestSession: ${isTestSession}, isFromInvitation: ${isFromInvitation}, invitationContext: ${JSON.stringify(invitationContext)}`);
         
+        // Calculate time remaining for in-progress assessments
+        // Timer "pauses" when tab is closed - resume from saved value
+        let timeRemaining: number | null = null;
+        if (session.status === 'started' && session.startedAt) {
+          const normalizedType = session.assessmentType.replace(/-/g, '_');
+          const timeLimitSeconds = normalizedType === 'prompt_architecture' ? 120 : 1200; // 2 min or 20 min
+          
+          // Use saved remaining time if available (from when user closed tab)
+          // This implements "pause on close" - timer freezes when tab is closed
+          if (session.pausedTimeRemainingMs != null) {
+            timeRemaining = Math.floor(session.pausedTimeRemainingMs / 1000);
+          } else {
+            // No saved value, calculate from start time
+            const elapsedMs = Date.now() - new Date(session.startedAt).getTime();
+            const elapsedSeconds = Math.floor(elapsedMs / 1000);
+            timeRemaining = Math.max(0, timeLimitSeconds - elapsedSeconds);
+          }
+        }
+        
         const response: any = {
           sessionId: session.id,
           assessmentType: session.assessmentType,
@@ -957,6 +976,8 @@ export function registerPartnerRoutes(app: Express) {
           savedAnswers: session.answers || null,
           lastAnsweredIndex: session.lastAnsweredIndex ?? null,
           lastActivityAt: session.lastActivityAt || null,
+          // Timer remaining time (in seconds) for in-progress assessments
+          timeRemaining,
           // Test mode flag - skip email verification for developer testing
           isTestSession,
           // Skip email verification for partner invitations (magic link pattern - clicking email link = verified)
@@ -1175,12 +1196,34 @@ export function registerPartnerRoutes(app: Express) {
           });
         }
         
-        // If already started, just return success without updating
+        // If already started, calculate remaining time and clear the stored pausedTimeRemainingMs
+        // so subsequent fetches use the resumed timer position
         if (session.status === "started") {
+          const normalizedType = session.assessmentType.replace(/-/g, '_');
+          const timeLimitSeconds = normalizedType === 'prompt_architecture' ? 120 : 1200;
+          let timeRemaining = timeLimitSeconds;
+          
+          if (session.pausedTimeRemainingMs != null) {
+            timeRemaining = Math.floor(session.pausedTimeRemainingMs / 1000);
+            // Clear the stored time and update startedAt to reflect the resume point
+            // This way subsequent time calculations will be based on the new startedAt
+            const newStartedAt = new Date(Date.now() - (timeLimitSeconds - timeRemaining) * 1000);
+            await storage.updateAssessmentSession(sessionId, {
+              pausedTimeRemainingMs: null,
+              startedAt: newStartedAt,
+              lastActivityAt: new Date(),
+            } as any);
+          } else if (session.startedAt) {
+            const elapsedMs = Date.now() - new Date(session.startedAt).getTime();
+            const elapsedSeconds = Math.floor(elapsedMs / 1000);
+            timeRemaining = Math.max(0, timeLimitSeconds - elapsedSeconds);
+          }
+          
           return res.json({
             sessionId: session.id,
             assessmentType: session.assessmentType,
             status: "started",
+            timeRemaining,
           });
         }
         
@@ -1265,10 +1308,15 @@ export function registerPartnerRoutes(app: Express) {
           false
         );
         
+        // Return full time limit for freshly started assessment
+        const normalizedType = session.assessmentType.replace(/-/g, '_');
+        const timeRemaining = normalizedType === 'prompt_architecture' ? 120 : 1200;
+        
         res.json({
           sessionId: session.id,
           assessmentType: session.assessmentType,
           status: "started",
+          timeRemaining,
         });
       } catch (error) {
         console.error("Error starting session:", error);
@@ -1283,7 +1331,7 @@ export function registerPartnerRoutes(app: Express) {
     async (req: Request, res: Response) => {
       try {
         const { sessionId } = req.params;
-        const { answers, lastAnsweredIndex } = req.body;
+        const { answers, lastAnsweredIndex, timeRemainingMs } = req.body;
         
         const session = await storage.getAssessmentSession(sessionId);
         
@@ -1309,12 +1357,34 @@ export function registerPartnerRoutes(app: Express) {
         const existingAnswers = session.answers || {};
         const mergedAnswers = { ...existingAnswers, ...answers };
         
-        await storage.updateAssessmentSession(sessionId, {
+        const updateData: any = {
           answers: mergedAnswers,
           lastAnsweredIndex: lastAnsweredIndex ?? session.lastAnsweredIndex,
           lastActivityAt: new Date(),
           status: session.status === "created" ? "started" : session.status,
-        } as any);
+        };
+        
+        // Save timer remaining time if provided (for resuming after tab close)
+        // Validate to prevent client manipulation: time can only decrease, not increase
+        if (typeof timeRemainingMs === 'number' && timeRemainingMs >= 0) {
+          const normalizedType = session.assessmentType.replace(/-/g, '_');
+          const maxTimeMs = (normalizedType === 'prompt_architecture' ? 120 : 1200) * 1000;
+          
+          // Determine the maximum allowed remaining time:
+          // 1. If pausedTimeRemainingMs is set, new value must be <= that (time can only decrease)
+          // 2. Otherwise, use max time limit
+          let maxAllowedMs = maxTimeMs;
+          if (session.pausedTimeRemainingMs != null) {
+            // Time can only decrease from last saved value
+            maxAllowedMs = session.pausedTimeRemainingMs;
+          }
+          
+          // Clamp to valid range: 0 <= value <= maxAllowedMs
+          const clampedTimeMs = Math.min(Math.max(0, Math.floor(timeRemainingMs)), maxAllowedMs);
+          updateData.pausedTimeRemainingMs = clampedTimeMs;
+        }
+        
+        await storage.updateAssessmentSession(sessionId, updateData);
         
         res.json({
           success: true,

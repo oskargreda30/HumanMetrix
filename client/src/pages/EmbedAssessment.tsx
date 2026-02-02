@@ -48,6 +48,7 @@ interface SessionData {
   savedAnswers?: Record<string, any> | null;
   lastAnsweredIndex?: number | null;
   lastActivityAt?: string | null;
+  timeRemaining?: number | null;
   isTestSession?: boolean;
   resultsPaymentStatus?: string;
   resultsReleaseStatus?: string;
@@ -368,6 +369,28 @@ export default function EmbedAssessment() {
     };
   }, [sessionId, isDemo, status]);
 
+  // Periodically save timer state to server while assessment is active
+  // This ensures timer state is preserved even if the browser crashes
+  useEffect(() => {
+    if (status !== 'started' || isDemo || !sessionId) return;
+    
+    // Save timer state every 30 seconds as a backup
+    const saveInterval = setInterval(() => {
+      const payload = {
+        answers: answersRef.current,
+        lastAnsweredIndex: currentIndex,
+        timeRemainingMs: timeRemainingRef.current * 1000,
+      };
+      fetch(`/api/embed/session/${sessionId}/progress`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }).catch(() => {});
+    }, 30000);
+    
+    return () => clearInterval(saveInterval);
+  }, [status, isDemo, sessionId, currentIndex]);
+
   // Track loading retry attempts
   const loadingRetryCountRef = useRef<number>(0);
   const MAX_LOADING_RETRIES = 3;
@@ -458,6 +481,25 @@ export default function EmbedAssessment() {
           setCurrentIndex(loadedQuestions.length - 1);
         } else if (firstUnansweredIndex > 0) {
           setCurrentIndex(firstUnansweredIndex);
+        }
+      }
+
+      // Set timer from server-provided remaining time for resumed assessments
+      if (data.status === "started" && data.timeRemaining != null) {
+        console.log(`[EmbedAssessment] Resuming with ${data.timeRemaining}s remaining`);
+        setTimeRemaining(data.timeRemaining);
+        
+        // Call /start to execute the resume handshake (clears pausedTimeRemainingMs, adjusts startedAt)
+        // This ensures the data model is consistent for future timer calculations
+        if (!isDemo) {
+          fetch(`/api/embed/session/${sessionId}/start`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ resumeFromSaved: true }),
+          }).catch(() => {
+            // Non-blocking - timer state is already set from GET response
+            console.log(`[EmbedAssessment] Resume handshake completed`);
+          });
         }
       }
 
@@ -646,10 +688,19 @@ export default function EmbedAssessment() {
         return;
       }
 
+      const startData = await res.json();
+      
       // Ensure questions are (re)hydrated with correct locale when starting
       if (session) {
         setQuestions(getQuestions(session.assessmentType, session.questionLocale || 'default'));
       }
+      
+      // Use server-provided timeRemaining (either full time for fresh start or remaining time for resume)
+      if (startData.timeRemaining != null) {
+        console.log(`[EmbedAssessment] Starting with ${startData.timeRemaining}s remaining`);
+        setTimeRemaining(startData.timeRemaining);
+      }
+      
       setStatus("started");
     } catch (err) {
       setStatus("error");
@@ -657,17 +708,22 @@ export default function EmbedAssessment() {
     }
   };
 
-  // Track the latest answers for debounced saves
+  // Track the latest answers and timer for debounced saves
   const answersRef = useRef<Record<string, string>>({});
+  const timeRemainingRef = useRef<number>(1200);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Update ref whenever answers change
+  // Update refs whenever state changes
   useEffect(() => {
     answersRef.current = answers;
   }, [answers]);
   
-  // Save progress to server (called on navigation)
-  const saveProgressImmediately = useCallback(async (index: number) => {
+  useEffect(() => {
+    timeRemainingRef.current = timeRemaining;
+  }, [timeRemaining]);
+  
+  // Save progress to server (called on navigation and beforeunload)
+  const saveProgressImmediately = useCallback(async (index: number, includeTimer: boolean = false) => {
     // Skip API call in demo mode
     if (isDemo) return;
     if (!sessionId || status !== "started") return;
@@ -678,14 +734,21 @@ export default function EmbedAssessment() {
       saveTimeoutRef.current = null;
     }
     
+    const payload: any = {
+      answers: answersRef.current,
+      lastAnsweredIndex: index,
+    };
+    
+    // Include timer state when saving on page leave to enable resume
+    if (includeTimer) {
+      payload.timeRemainingMs = timeRemainingRef.current * 1000;
+    }
+    
     try {
       await fetch(`/api/embed/session/${sessionId}/progress`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          answers: answersRef.current,
-          lastAnsweredIndex: index,
-        }),
+        body: JSON.stringify(payload),
       });
     } catch (err) {
       console.error("Failed to save progress:", err);
@@ -751,13 +814,8 @@ export default function EmbedAssessment() {
     return 1200; // 20 minutes for other assessments
   };
 
-  // Initialize timer when assessment starts
-  useEffect(() => {
-    if (status === 'started' && session) {
-      const isPromptArch = session.assessmentType.replace(/-/g, '_') === 'prompt_architecture';
-      setTimeRemaining(isPromptArch ? 120 : 1200);
-    }
-  }, [status, session]);
+  // Timer is now initialized from server response in fetchSession and startAssessment
+  // This ensures correct remaining time is used when resuming after tab close
 
   // Timer countdown effect
   useEffect(() => {
@@ -853,6 +911,19 @@ export default function EmbedAssessment() {
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (!isSubmitting && !allowNavigationRef.current) {
+        // Save progress with timer state using sendBeacon for reliable delivery during page unload
+        if (sessionId && !isDemo) {
+          const payload = {
+            answers: answersRef.current,
+            lastAnsweredIndex: currentIndex,
+            timeRemainingMs: timeRemainingRef.current * 1000,
+          };
+          navigator.sendBeacon(
+            `/api/embed/session/${sessionId}/progress`,
+            new Blob([JSON.stringify(payload)], { type: 'application/json' })
+          );
+        }
+        
         e.preventDefault();
         e.returnValue = 'You have an assessment in progress. Are you sure you want to leave?';
         return e.returnValue;
@@ -886,7 +957,7 @@ export default function EmbedAssessment() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [status, isSubmitting, sessionId, currentIndex, saveProgressImmediately]);
+  }, [status, isSubmitting, sessionId, currentIndex, isDemo]);
 
   const handleAnswerChange = (value: string) => {
     const currentQ = questions[currentIndex];

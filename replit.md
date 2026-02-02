@@ -26,6 +26,7 @@ The platform uses a React, TypeScript, and Express stack with PostgreSQL and Dri
 
 Key features include:
 - **Assessment Types**: FIT, AI Readiness, Prompt Architecture, and AIQ, with SEA-localized content.
+- **Assessment Timer Persistence**: Implements "pause on close" semantics - timer pauses when tab is closed and resumes from saved value when user returns. Uses periodic saves (30s), beforeunload sendBeacon saves, and a resume handshake (POST /start) to maintain data consistency. Server validates timer updates can only decrease (prevents time inflation).
 - **Payment Flow**: Pay-deferred model, discount codes, multi-currency, and Purchasing Power Parity (PPP) pricing.
 - **User Management**: Self-service and admin-invited user flows, B2C email confirmation, and partner invitation system.
 - **Admin & Partner Dashboards**: Comprehensive tools for candidate management, multi-candidate comparison, AI-powered role fit analysis, scoring QA, billing oversight, subscription management, API key management, and detailed analytics.
