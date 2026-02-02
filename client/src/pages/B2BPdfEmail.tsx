@@ -100,11 +100,12 @@ export default function B2BPdfEmail() {
   const sessionId = routeParams?.sessionId;
   const params = new URLSearchParams(window.location.search);
   const email = params.get("email");
+  const isPdfRender = params.get("pdf") === "true"; // When Puppeteer renders, skip PDF generation
   const { toast } = useToast();
   
-  const [pdfStatus, setPdfStatus] = useState<'loading' | 'generating' | 'sending' | 'success' | 'error'>('loading');
+  const [pdfStatus, setPdfStatus] = useState<'loading' | 'generating' | 'sending' | 'success' | 'error'>(isPdfRender ? 'success' : 'loading');
   const [errorMessage, setErrorMessage] = useState<string>('');
-  const hasTriggeredPdf = useRef(false);
+  const hasTriggeredPdf = useRef(isPdfRender); // If rendering for PDF, don't trigger generation
 
   const { data, isLoading, error } = useQuery<B2BSessionData>({
     queryKey: ['/api/b2b/session-results', sessionId, email],
