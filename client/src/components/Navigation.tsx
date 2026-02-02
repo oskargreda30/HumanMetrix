@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Menu, X, LogOut, User, Mail, Calendar, ArrowRight } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import BasketSheet from "@/components/BasketSheet";
 import { useAuth } from "@/hooks/useAuth";
 import { useMutation } from "@tanstack/react-query";
@@ -24,6 +24,22 @@ export default function Navigation({ assessmentMode = false }: NavigationProps) 
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const { clearBasket } = useBasket();
+  const navRef = useRef<HTMLElement>(null);
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (mobileMenuOpen && navRef.current && !navRef.current.contains(event.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside as EventListener);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside as EventListener);
+    };
+  }, [mobileMenuOpen]);
 
   // Check if user is invitation-only (from backend auth response)
   const isInvitationOnly = (user as any)?.isInvitationOnly;
@@ -100,7 +116,7 @@ export default function Navigation({ assessmentMode = false }: NavigationProps) 
   });
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-cyan-400/20 bg-[#0a1628]">
+    <header ref={navRef} className="sticky top-0 z-50 w-full border-b border-cyan-400/20 bg-[#0a1628]">
       <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo - Non-clickable during assessment mode */}
