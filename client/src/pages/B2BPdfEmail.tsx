@@ -100,10 +100,11 @@ export default function B2BPdfEmail() {
   const sessionId = routeParams?.sessionId;
   const params = new URLSearchParams(window.location.search);
   const email = params.get("email");
-  const isPdfRender = params.get("pdf") === "true"; // When Puppeteer renders, skip PDF generation
+  const isPdfRender = params.get("pdf") === "true"; // When Puppeteer renders, show results content only
   const { toast } = useToast();
   
-  const [pdfStatus, setPdfStatus] = useState<'loading' | 'generating' | 'sending' | 'success' | 'error'>(isPdfRender ? 'success' : 'loading');
+  // When rendering for Puppeteer (pdf=true), we skip all status screens and render content directly
+  const [pdfStatus, setPdfStatus] = useState<'loading' | 'generating' | 'sending' | 'success' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const hasTriggeredPdf = useRef(isPdfRender); // If rendering for PDF, don't trigger generation
 
@@ -235,7 +236,9 @@ export default function B2BPdfEmail() {
   const isAIQ = data.assessmentType === 'aiq';
   const aiqBand = isAIQ ? getAIQBandInterpretation(data.overallScore || 0) : null;
 
-  if (pdfStatus === 'success') {
+  // When rendering for Puppeteer PDF capture, skip all status screens and show results content directly
+  // Otherwise, show success screen after PDF is sent
+  if (pdfStatus === 'success' && !isPdfRender) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10" />
@@ -277,7 +280,7 @@ export default function B2BPdfEmail() {
     );
   }
 
-  if (pdfStatus === 'error') {
+  if (pdfStatus === 'error' && !isPdfRender) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10" />
@@ -320,18 +323,21 @@ export default function B2BPdfEmail() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-cyan-500 to-blue-600 text-white p-4 shadow-lg">
-        <div className="max-w-4xl mx-auto flex items-center justify-center gap-3">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          <span className="font-medium">
-            {pdfStatus === 'loading' && 'Loading your results...'}
-            {pdfStatus === 'generating' && 'Generating your PDF report (this may take a moment)...'}
-            {pdfStatus === 'sending' && 'Sending to your email...'}
-          </span>
+      {/* Hide loading banner when rendering for Puppeteer PDF capture */}
+      {!isPdfRender && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-cyan-500 to-blue-600 text-white p-4 shadow-lg">
+          <div className="max-w-4xl mx-auto flex items-center justify-center gap-3">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span className="font-medium">
+              {pdfStatus === 'loading' && 'Loading your results...'}
+              {pdfStatus === 'generating' && 'Generating your PDF report (this may take a moment)...'}
+              {pdfStatus === 'sending' && 'Sending to your email...'}
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div id="b2b-pdf-results-content" data-testid="results-content" className="max-w-4xl mx-auto p-6 pt-20 space-y-6">
+      <div id="b2b-pdf-results-content" data-testid="results-content" className={`max-w-4xl mx-auto p-6 space-y-6 ${isPdfRender ? 'pt-6' : 'pt-20'}`}>
         <div data-pdf-section="summary" className="space-y-6 bg-white p-6 rounded-lg">
           <div className="flex items-center justify-between mb-6">
             <div>
