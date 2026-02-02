@@ -4716,6 +4716,7 @@ export default function PartnerDashboard() {
                 hasCardOnFile={dashboardCardStatus?.hasCard}
                 creditsRemaining={partner?.remaining}
                 onNavigateToBilling={() => setActiveTab('billing')}
+                onNavigateToAnalysis={() => { setActiveTab('analysis'); window.scrollTo(0, 0); }}
               />
             </TabsContent>
 

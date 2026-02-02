@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, AlertCircle, Sparkles, Plus, ChevronDown, Check, FileText, Search } from "lucide-react";
+import { Loader2, AlertCircle, Sparkles, Plus, ChevronDown, Check, FileText, Search, User } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EcosystemWorkflow } from "./EcosystemWorkflow";
 import { useEcosystemProjects, useCreateEcosystemProject } from "@/hooks/useEcosystemProject";
@@ -40,6 +40,7 @@ interface EcosystemAutoProjectProps {
   hasCardOnFile?: boolean;
   creditsRemaining?: number;
   onNavigateToBilling?: () => void;
+  onNavigateToAnalysis?: () => void;
 }
 
 export function EcosystemAutoProject({ 
@@ -47,7 +48,8 @@ export function EcosystemAutoProject({
   billingType, 
   hasCardOnFile, 
   creditsRemaining, 
-  onNavigateToBilling 
+  onNavigateToBilling,
+  onNavigateToAnalysis 
 }: EcosystemAutoProjectProps) {
   const { toast } = useToast();
   const { data: projects = [], isLoading: projectsLoading, refetch } = useEcosystemProjects(partnerId);
@@ -55,6 +57,9 @@ export function EcosystemAutoProject({
   const [projectId, setProjectId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const creationAttemptedRef = useRef(false);
+  
+  // View state for quick action cards
+  const [activeView, setActiveView] = useState<'new' | 'saved' | null>('new');
   
   // New analysis naming dialog state
   const [showNewAnalysisDialog, setShowNewAnalysisDialog] = useState(false);
@@ -255,9 +260,50 @@ export function EcosystemAutoProject({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Compact Header Row: Analysis Selector + New Analysis + Credit Info */}
-      <Card>
+    <div className="space-y-4 md:space-y-6">
+      {/* Quick Action Cards - 3 columns on desktop */}
+      <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-3">
+        <Card 
+          className={`cursor-pointer hover-elevate ${activeView === 'new' ? 'border-primary ring-1 ring-primary' : ''}`}
+          onClick={() => setActiveView('new')}
+          data-testid="card-new-analysis"
+        >
+          <CardContent className="p-4 md:p-6 text-center">
+            <Plus className="h-6 w-6 md:h-8 md:w-8 mx-auto mb-2 text-primary" />
+            <h3 className="font-semibold text-sm md:text-base">New Analysis</h3>
+            <p className="text-xs md:text-sm text-muted-foreground">Start a fresh team diagnostic workflow</p>
+          </CardContent>
+        </Card>
+        <Card 
+          className={`cursor-pointer hover-elevate ${activeView === 'saved' ? 'border-primary ring-1 ring-primary' : ''}`}
+          onClick={() => setActiveView('saved')}
+          data-testid="card-saved-reports"
+        >
+          <CardContent className="p-4 md:p-6 text-center">
+            <FileText className="h-6 w-6 md:h-8 md:w-8 mx-auto mb-2 text-primary" />
+            <h3 className="font-semibold text-sm md:text-base">Saved Reports</h3>
+            <p className="text-xs md:text-sm text-muted-foreground">View completed team analyses</p>
+          </CardContent>
+        </Card>
+        {/* Back to Individual Analysis - different color (matching the pattern from PartnerAnalysisTab) */}
+        <Card 
+          className="cursor-pointer hover-elevate bg-gradient-to-br from-violet-500/10 to-purple-500/10 border-violet-500/30"
+          onClick={() => onNavigateToAnalysis?.()}
+          data-testid="card-back-to-analysis"
+        >
+          <CardContent className="p-4 md:p-6 text-center">
+            <User className="h-6 w-6 md:h-8 md:w-8 mx-auto mb-2 text-violet-600" />
+            <h3 className="font-semibold text-sm md:text-base text-violet-700 dark:text-violet-400">Individual Analysis</h3>
+            <p className="text-xs md:text-sm text-muted-foreground">Back to candidate-level insights</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Content based on selected card */}
+      {activeView === 'new' && (
+        <>
+          {/* Compact Header Row: Analysis Selector + New Analysis + Credit Info */}
+          <Card>
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             {/* Left: Analysis Title */}
@@ -593,6 +639,65 @@ export function EcosystemAutoProject({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+        </>
+      )}
+
+      {/* Saved Reports View */}
+      {activeView === 'saved' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Saved Team Analyses
+            </CardTitle>
+            <CardDescription>View and access your completed team diagnostic reports</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {completedProjects.length > 0 ? (
+              <div className="space-y-3">
+                {completedProjects.map((proj) => (
+                  <div 
+                    key={proj.id}
+                    className="flex items-center justify-between p-4 border rounded-lg hover-elevate cursor-pointer"
+                    onClick={() => {
+                      setProjectId(proj.id);
+                      setActiveView('new');
+                    }}
+                    data-testid={`saved-report-card-${proj.id}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-5 w-5 text-primary" />
+                      <div>
+                        <p className="font-medium">{proj.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {proj.createdAt ? new Date(proj.createdAt).toLocaleDateString() : 'Completed'}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                      Complete
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No completed analyses yet</p>
+                <p className="text-sm mt-1">Complete a team diagnostic to see it here</p>
+                <Button 
+                  variant="outline" 
+                  className="mt-4"
+                  onClick={() => setActiveView('new')}
+                  data-testid="button-start-new-analysis-empty"
+                >
+                  Start New Analysis
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
