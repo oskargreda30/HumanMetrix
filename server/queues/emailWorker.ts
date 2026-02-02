@@ -106,15 +106,20 @@ async function sendPasswordResetEmailSync(emailTransporter: any, payload: { emai
   return { messageId: info.messageId };
 }
 
-async function sendWelcomeEmailSync(emailTransporter: any, payload: { email: string; name: string; temporaryPassword: string; note?: string }) {
-  const { email, name, temporaryPassword, note } = payload;
+async function sendWelcomeEmailSync(emailTransporter: any, payload: { email: string; name: string; temporaryPassword: string; note?: string; context?: 'invitation' | 'post_payment' }) {
+  const { email, name, temporaryPassword, note, context = 'invitation' } = payload;
   const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0] || 'http://localhost:5000';
   const loginUrl = `https://${baseUrl}/login`;
+  
+  // Use different subject line based on context
+  const subject = context === 'post_payment' 
+    ? 'Your Account Credentials - HumanMetrix'
+    : 'Your Assessment Invitation - HumanMetrix';
   
   const mailOptions = {
     from: `"HumanMetrix" <${process.env.GMAIL_USER}>`,
     to: email,
-    subject: 'Your Assessment Invitation - HumanMetrix',
+    subject,
     html: buildWelcomeHtml(name, email, temporaryPassword, loginUrl, note),
     text: buildWelcomeText(name, email, temporaryPassword, loginUrl, note),
   };

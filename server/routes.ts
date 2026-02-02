@@ -1022,12 +1022,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error(`✗ Failed to send PDF receipt to ${customerEmail}:`, emailError);
       }
       
-      // Send welcome email with credentials
+      // Send welcome email with credentials (post-payment context)
       try {
         await sendWelcomeEmailWithPassword(
           customerEmail,
           `${firstName} ${lastName}`,
-          temporaryPassword
+          temporaryPassword,
+          undefined,
+          'post_payment'
         );
         console.log(`✓ Welcome email sent successfully to ${customerEmail}`);
       } catch (emailError: any) {
@@ -2714,7 +2716,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send welcome email with login credentials
       try {
-        await sendWelcomeEmailWithPassword(customerEmail, `${firstName} ${lastName}`, temporaryPassword);
+        await sendWelcomeEmailWithPassword(customerEmail, `${firstName} ${lastName}`, temporaryPassword, undefined, 'post_payment');
       } catch (emailError) {
         console.error("✗ Failed to send welcome email:", emailError);
         // Don't fail the whole checkout if email fails

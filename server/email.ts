@@ -663,13 +663,24 @@ If you didn't request a password reset, please ignore this email.
   }
 }
 
-export async function sendWelcomeEmailWithPassword(email: string, name: string, temporaryPassword: string, note?: string) {
+export async function sendWelcomeEmailWithPassword(
+  email: string, 
+  name: string, 
+  temporaryPassword: string, 
+  note?: string,
+  context: 'invitation' | 'post_payment' = 'invitation'
+) {
   const baseUrl = getBaseUrl();
   const loginUrl = `${baseUrl}/login`;
   
+  // Use different subject line based on context
+  const subject = context === 'post_payment' 
+    ? 'Your Account Credentials - HumanMetrix'
+    : 'Your Assessment Invitation - HumanMetrix';
+  
   const msg = {
     to: email,
-    subject: 'Your Assessment Invitation - HumanMetrix',
+    subject,
     html: `
       <!DOCTYPE html>
       <html>

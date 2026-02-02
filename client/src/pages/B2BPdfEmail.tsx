@@ -398,30 +398,48 @@ export default function B2BPdfEmail() {
         </div>
 
         {hasDetailedScores && (
-          <div data-pdf-section="visualizations" className="bg-white p-6 rounded-lg grid md:grid-cols-2 gap-6 page-break">
+          <div data-pdf-section="visualizations" className={`bg-white p-6 rounded-lg gap-6 page-break ${isPdfRender ? 'flex flex-col' : 'grid md:grid-cols-2'}`}>
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Skills Radar</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <RadarChart data={radarData}>
+                {isPdfRender ? (
+                  <RadarChart width={500} height={350} data={radarData}>
                     <PolarGrid />
                     <PolarAngleAxis 
                       dataKey="skill" 
-                      tick={{ fontSize: 10, fill: 'currentColor' }}
+                      tick={{ fontSize: 10, fill: '#333' }}
                     />
                     <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10 }} />
                     <Radar
                       name="Score"
                       dataKey="score"
-                      stroke="hsl(var(--primary))"
-                      fill="hsl(var(--primary))"
+                      stroke="#3b82f6"
+                      fill="#3b82f6"
                       fillOpacity={0.5}
                     />
-                    <Tooltip />
                   </RadarChart>
-                </ResponsiveContainer>
+                ) : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <RadarChart data={radarData}>
+                      <PolarGrid />
+                      <PolarAngleAxis 
+                        dataKey="skill" 
+                        tick={{ fontSize: 10, fill: 'currentColor' }}
+                      />
+                      <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10 }} />
+                      <Radar
+                        name="Score"
+                        dataKey="score"
+                        stroke="hsl(var(--primary))"
+                        fill="hsl(var(--primary))"
+                        fillOpacity={0.5}
+                      />
+                      <Tooltip />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                )}
               </CardContent>
             </Card>
 
@@ -430,8 +448,8 @@ export default function B2BPdfEmail() {
                 <CardTitle className="text-lg">Skills Comparison</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={barData} layout="vertical">
+                {isPdfRender ? (
+                  <BarChart width={500} height={350} data={barData} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10 }} />
                     <YAxis 
@@ -440,14 +458,32 @@ export default function B2BPdfEmail() {
                       width={100}
                       tick={{ fontSize: 10 }}
                     />
-                    <Tooltip />
                     <Bar 
                       dataKey="score" 
-                      fill="hsl(var(--primary))" 
+                      fill="#3b82f6" 
                       radius={[0, 4, 4, 0]}
                     />
                   </BarChart>
-                </ResponsiveContainer>
+                ) : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={barData} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10 }} />
+                      <YAxis 
+                        dataKey="skill" 
+                        type="category" 
+                        width={100}
+                        tick={{ fontSize: 10 }}
+                      />
+                      <Tooltip />
+                      <Bar 
+                        dataKey="score" 
+                        fill="hsl(var(--primary))" 
+                        radius={[0, 4, 4, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </CardContent>
             </Card>
           </div>

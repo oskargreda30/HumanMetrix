@@ -4248,7 +4248,8 @@ export function registerPartnerRoutes(app: Express) {
               user.email, 
               email.split('@')[0], 
               randomPassword,
-              "Thank you for completing your assessment! You can use these credentials to log in and view your results anytime."
+              "Thank you for completing your assessment! You can use these credentials to log in and view your results anytime.",
+              'post_payment'
             );
             console.log(`[B2B Create Account] Welcome email with credentials sent to ${email}`);
           } catch (emailError: any) {
@@ -4268,6 +4269,10 @@ export function registerPartnerRoutes(app: Express) {
         // Get the B2B session details
         const sessionDetails = await storage.getAssessmentSession(sessionId);
         
+        // Extract invitationId from session metadata (links to partnerCandidateInvitation)
+        const partnerInvitationId = (sessionDetails?.metadata as any)?.invitationId || null;
+        console.log(`[B2B Create Account] Session ${sessionId} has invitationId: ${partnerInvitationId}`);
+        
         if (sessionDetails && sessionDetails.status === 'completed' && sessionDetails.scores) {
           // Check if we already created an assessmentResult for this session
           const existingResults = await storage.getResultsByUser(user!.id);
@@ -4278,6 +4283,7 @@ export function registerPartnerRoutes(app: Express) {
           
           if (!alreadyHasResult) {
             // Create a proper assessmentResult entry from the B2B session data
+            // IMPORTANT: Include partnerInvitationId so it appears in partner testing series
             const newResult = await storage.createAssessmentResult({
               userId: user!.id,
               assessmentType: sessionDetails.assessmentType,
@@ -4289,10 +4295,25 @@ export function registerPartnerRoutes(app: Express) {
               evaluations: sessionDetails.evaluations || undefined,
               status: 'completed',
               completedAt: sessionDetails.completedAt || new Date(),
+              partnerInvitationId: partnerInvitationId || undefined, // Link to partner invitation for series tracking
             });
-            console.log(`[B2B Create Account] Created assessmentResult ${newResult.id} for ${sessionDetails.assessmentType} from B2B session ${sessionId}`);
+            console.log(`[B2B Create Account] Created assessmentResult ${newResult.id} for ${sessionDetails.assessmentType} from B2B session ${sessionId}, partnerInvitationId: ${partnerInvitationId}`);
           } else {
-            console.log(`[B2B Create Account] Result for ${sessionDetails.assessmentType} already exists for user ${user!.id}`);
+            // Result already exists - ensure it has partnerInvitationId set for proper series tracking
+            if (partnerInvitationId) {
+              const existingResult = existingResults.find(
+                r => r.assessmentType === sessionDetails.assessmentType &&
+                     r.scores && JSON.stringify(r.scores) === JSON.stringify(sessionDetails.scores)
+              );
+              if (existingResult && !existingResult.partnerInvitationId) {
+                await storage.updateAssessmentResult(existingResult.id, { partnerInvitationId });
+                console.log(`[B2B Create Account] Updated existing result ${existingResult.id} with partnerInvitationId: ${partnerInvitationId}`);
+              } else {
+                console.log(`[B2B Create Account] Result for ${sessionDetails.assessmentType} already exists for user ${user!.id} with partnerInvitationId`);
+              }
+            } else {
+              console.log(`[B2B Create Account] Result for ${sessionDetails.assessmentType} already exists for user ${user!.id}`);
+            }
           }
         }
         
@@ -5400,13 +5421,14 @@ export function registerGuestAssessmentRoutes(app: Express) {
         role: 'user',
       });
       
-      // Send welcome email with password
+      // Send welcome email with password (post-assessment context)
       const { sendWelcomeEmailWithPassword } = await import('./email');
       await sendWelcomeEmailWithPassword(
         invitation.email,
         firstName,
         temporaryPassword,
-        "You've completed your assessments and can now access your results anytime."
+        "You've completed your assessments and can now access your results anytime.",
+        'post_payment'
       );
       
       // Auto-login the new user
