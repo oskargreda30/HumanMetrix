@@ -490,37 +490,6 @@ export function EcosystemAutoProject({
             </Button>
           </div>
           
-          {/* Saved Reports Row - compact horizontal pills */}
-          {completedProjects.length > 0 && (
-            <div className="mt-4 pt-4 border-t">
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-xs font-medium text-muted-foreground">Saved Reports:</span>
-                <div className="flex flex-wrap gap-2">
-                  {completedProjects.map((proj) => (
-                    <Tooltip key={proj.id}>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant={proj.id === projectId ? "default" : "ghost"}
-                          size="sm"
-                          onClick={() => setProjectId(proj.id)}
-                          data-testid={`saved-report-${proj.id}`}
-                        >
-                          <FileText className="h-3 w-3 mr-1" />
-                          {truncateName(proj.name, 20)}
-                          {proj.id === projectId && <Check className="h-3 w-3 ml-1" />}
-                        </Button>
-                      </TooltipTrigger>
-                      {proj.name.length > 20 && (
-                        <TooltipContent>
-                          <p>{proj.name}</p>
-                        </TooltipContent>
-                      )}
-                    </Tooltip>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
 
