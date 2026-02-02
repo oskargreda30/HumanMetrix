@@ -173,21 +173,6 @@ export default function EcosystemIndex() {
             <p className="text-sm text-muted-foreground mt-6" data-testid="text-hero-features">
               Team Gap Analysis • Hiring Recommendations • AI-Powered Insights
             </p>
-            
-            {/* Book Consultation with Recommended Banner */}
-            <div className="mt-8 inline-flex flex-col items-center">
-              <div className="relative">
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-amber-500 text-white text-xs font-semibold rounded-full whitespace-nowrap">
-                  Recommended
-                </span>
-                <a href={CALENDLY_URL} target="_blank" rel="noopener noreferrer">
-                  <Button size="lg" variant="default" className="mt-2 bg-primary hover:bg-primary/90" data-testid="button-book-consultation-hero">
-                    <Calendar className="mr-2 h-4 w-4" />
-                    Book a Consultation
-                  </Button>
-                </a>
-              </div>
-            </div>
           </div>
         </section>
 
