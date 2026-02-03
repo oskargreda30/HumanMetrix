@@ -3042,43 +3042,51 @@ export default function PartnerDashboard() {
               {/* Quick Link Cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
                 <Card 
-                  className={`cursor-pointer hover-elevate transition-all ${billingExpandedSection === 'credits' ? 'ring-2 ring-primary bg-primary/10' : ''}`}
+                  className={`cursor-pointer transition-all border-2 ${billingExpandedSection === 'credits' ? 'border-primary bg-primary/5 shadow-md' : 'border-transparent hover:border-muted-foreground/20'}`}
                   onClick={() => setBillingExpandedSection('credits')}
                   data-testid="card-billing-credits"
                 >
                   <CardContent className="p-3 md:p-4 flex flex-col items-center text-center gap-1.5 md:gap-2">
-                    <Package className="h-5 w-5 md:h-6 md:w-6 text-primary" />
-                    <span className="text-xs md:text-sm font-medium">Credit Balance</span>
+                    <div className={`p-2 rounded-full ${billingExpandedSection === 'credits' ? 'bg-primary/20' : 'bg-muted'}`}>
+                      <Package className={`h-5 w-5 md:h-6 md:w-6 ${billingExpandedSection === 'credits' ? 'text-primary' : 'text-muted-foreground'}`} />
+                    </div>
+                    <span className={`text-xs md:text-sm font-medium ${billingExpandedSection === 'credits' ? 'text-primary' : ''}`}>Credit Balance</span>
                   </CardContent>
                 </Card>
                 <Card 
-                  className={`cursor-pointer hover-elevate transition-all ${billingExpandedSection === 'purchase' ? 'ring-2 ring-primary bg-primary/10' : ''}`}
+                  className={`cursor-pointer transition-all border-2 ${billingExpandedSection === 'purchase' ? 'border-green-500 bg-green-500/5 shadow-md' : 'border-transparent hover:border-muted-foreground/20'}`}
                   onClick={() => setBillingExpandedSection('purchase')}
                   data-testid="card-billing-purchase"
                 >
                   <CardContent className="p-3 md:p-4 flex flex-col items-center text-center gap-1.5 md:gap-2">
-                    <ShoppingCart className="h-5 w-5 md:h-6 md:w-6 text-green-500" />
-                    <span className="text-xs md:text-sm font-medium">Buy Credits</span>
+                    <div className={`p-2 rounded-full ${billingExpandedSection === 'purchase' ? 'bg-green-500/20' : 'bg-muted'}`}>
+                      <ShoppingCart className={`h-5 w-5 md:h-6 md:w-6 ${billingExpandedSection === 'purchase' ? 'text-green-500' : 'text-muted-foreground'}`} />
+                    </div>
+                    <span className={`text-xs md:text-sm font-medium ${billingExpandedSection === 'purchase' ? 'text-green-600 dark:text-green-400' : ''}`}>Buy Credits</span>
                   </CardContent>
                 </Card>
                 <Card 
-                  className={`cursor-pointer hover-elevate transition-all ${billingExpandedSection === 'options' ? 'ring-2 ring-primary bg-primary/10' : ''}`}
+                  className={`cursor-pointer transition-all border-2 ${billingExpandedSection === 'options' ? 'border-orange-500 bg-orange-500/5 shadow-md' : 'border-transparent hover:border-muted-foreground/20'}`}
                   onClick={() => setBillingExpandedSection('options')}
                   data-testid="card-billing-options"
                 >
                   <CardContent className="p-3 md:p-4 flex flex-col items-center text-center gap-1.5 md:gap-2">
-                    <Settings className="h-5 w-5 md:h-6 md:w-6 text-orange-500" />
-                    <span className="text-xs md:text-sm font-medium">Billing Options</span>
+                    <div className={`p-2 rounded-full ${billingExpandedSection === 'options' ? 'bg-orange-500/20' : 'bg-muted'}`}>
+                      <Settings className={`h-5 w-5 md:h-6 md:w-6 ${billingExpandedSection === 'options' ? 'text-orange-500' : 'text-muted-foreground'}`} />
+                    </div>
+                    <span className={`text-xs md:text-sm font-medium ${billingExpandedSection === 'options' ? 'text-orange-600 dark:text-orange-400' : ''}`}>Billing Options</span>
                   </CardContent>
                 </Card>
                 <Card 
-                  className={`cursor-pointer hover-elevate transition-all ${billingExpandedSection === 'history' ? 'ring-2 ring-primary bg-primary/10' : ''}`}
+                  className={`cursor-pointer transition-all border-2 ${billingExpandedSection === 'history' ? 'border-blue-500 bg-blue-500/5 shadow-md' : 'border-transparent hover:border-muted-foreground/20'}`}
                   onClick={() => setBillingExpandedSection('history')}
                   data-testid="card-billing-history"
                 >
                   <CardContent className="p-3 md:p-4 flex flex-col items-center text-center gap-1.5 md:gap-2">
-                    <Receipt className="h-5 w-5 md:h-6 md:w-6 text-blue-500" />
-                    <span className="text-xs md:text-sm font-medium">Payment History</span>
+                    <div className={`p-2 rounded-full ${billingExpandedSection === 'history' ? 'bg-blue-500/20' : 'bg-muted'}`}>
+                      <Receipt className={`h-5 w-5 md:h-6 md:w-6 ${billingExpandedSection === 'history' ? 'text-blue-500' : 'text-muted-foreground'}`} />
+                    </div>
+                    <span className={`text-xs md:text-sm font-medium ${billingExpandedSection === 'history' ? 'text-blue-600 dark:text-blue-400' : ''}`}>Payment History</span>
                   </CardContent>
                 </Card>
               </div>
