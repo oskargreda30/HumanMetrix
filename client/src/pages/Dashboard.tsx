@@ -1040,11 +1040,36 @@ export default function Dashboard() {
                                 <Badge className="bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-500/20">
                                   {series.partnerName}
                                 </Badge>
-                                {isAllComplete && (
-                                  <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">
-                                    All Complete
-                                  </Badge>
-                                )}
+                                {/* Series Status Badge */}
+                                {(() => {
+                                  const hasAnyResult = (series.results || []).length > 0;
+                                  const hasInProgress = (series.results || []).some(
+                                    (r: any) => r.status === 'in_progress' || r.status === 'started'
+                                  );
+                                  
+                                  if (isAllComplete) {
+                                    return (
+                                      <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20 gap-1">
+                                        <CheckCircle2 className="h-3 w-3" />
+                                        Completed
+                                      </Badge>
+                                    );
+                                  } else if (hasInProgress || (hasAnyResult && series.completedCount > 0)) {
+                                    return (
+                                      <Badge className="bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20 gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        In Progress
+                                      </Badge>
+                                    );
+                                  } else {
+                                    return (
+                                      <Badge className="bg-muted text-muted-foreground border-muted-foreground/20 gap-1">
+                                        <PlayCircle className="h-3 w-3" />
+                                        Not Started
+                                      </Badge>
+                                    );
+                                  }
+                                })()}
                                 {/* Unlock status badge */}
                                 {isAllComplete && (() => {
                                   // Check for partial unlock (some results unlocked, some not)
