@@ -119,16 +119,16 @@ export default function MyResults() {
     
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="w-20 h-20 mx-auto mb-4 loader-pulse">
             <img src="/favicon.png" alt="HumanMetrix" className="w-full h-full object-contain" />
           </div>
           <p className="font-semibold text-lg">
-            <span className="text-white">Human</span>
+            <span className="text-foreground">Human</span>
             <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Metrix</span>
           </p>
-          <p className="text-slate-400 text-sm mt-2">Loading results...</p>
+          <p className="text-muted-foreground text-sm mt-2">Loading results...</p>
         </div>
       </div>
     );
