@@ -276,7 +276,13 @@ function addReceiptDetails(pdf: jsPDF, data: ReceiptData, pageWidth: number, yPo
     }
     
     if (data.transactionId) {
-      details.push({ label: 'Transaction ID:', value: data.transactionId });
+      // Clean and truncate transaction ID for display
+      let cleanTxId = data.transactionId;
+      if (cleanTxId.startsWith('cs_live_')) cleanTxId = cleanTxId.slice(8);
+      else if (cleanTxId.startsWith('cs_test_')) cleanTxId = cleanTxId.slice(8);
+      else if (cleanTxId.startsWith('pi_')) cleanTxId = cleanTxId.slice(3);
+      const shortTxId = cleanTxId.length > 18 ? cleanTxId.slice(0, 18) + '...' : cleanTxId;
+      details.push({ label: 'TXN ID:', value: shortTxId });
     }
   }
   
@@ -530,10 +536,16 @@ export function generateReceiptPDF(data: ReceiptData): Buffer {
   if (data.transactionId) {
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(100, 100, 100);
-    pdf.text('TRANSACTION ID', receiptDetailsX, y);
+    pdf.text('TXN ID', receiptDetailsX, y);
     pdf.setTextColor(30, 41, 59);
     pdf.setFont('helvetica', 'normal');
-    const shortTxId = data.transactionId.length > 20 ? data.transactionId.slice(0, 20) + '...' : data.transactionId;
+    // Truncate long transaction IDs and remove prefixes for cleaner display
+    let cleanTxId = data.transactionId;
+    // Remove common Stripe prefixes for cleaner display
+    if (cleanTxId.startsWith('cs_live_')) cleanTxId = cleanTxId.slice(8);
+    else if (cleanTxId.startsWith('cs_test_')) cleanTxId = cleanTxId.slice(8);
+    else if (cleanTxId.startsWith('pi_')) cleanTxId = cleanTxId.slice(3);
+    const shortTxId = cleanTxId.length > 18 ? cleanTxId.slice(0, 18) + '...' : cleanTxId;
     pdf.text(shortTxId, receiptValuesX, y, { align: 'right' });
   }
   
