@@ -3054,39 +3054,39 @@ export default function PartnerDashboard() {
                   </CardContent>
                 </Card>
                 <Card 
-                  className={`cursor-pointer transition-all border-2 ${billingExpandedSection === 'purchase' ? 'border-green-500 shadow-md' : 'border-transparent hover:border-muted-foreground/20'}`}
+                  className={`cursor-pointer transition-all border-2 ${billingExpandedSection === 'purchase' ? 'border-primary shadow-md' : 'border-transparent hover:border-muted-foreground/20'}`}
                   onClick={() => setBillingExpandedSection('purchase')}
                   data-testid="card-billing-purchase"
                 >
                   <CardContent className="p-3 md:p-4 flex flex-col items-center text-center gap-1.5 md:gap-2">
-                    <div className={`p-2 rounded-full ${billingExpandedSection === 'purchase' ? 'bg-green-500/20' : 'bg-muted'}`}>
-                      <ShoppingCart className={`h-5 w-5 md:h-6 md:w-6 ${billingExpandedSection === 'purchase' ? 'text-green-500' : 'text-muted-foreground'}`} />
+                    <div className={`p-2 rounded-full ${billingExpandedSection === 'purchase' ? 'bg-primary/20' : 'bg-muted'}`}>
+                      <ShoppingCart className={`h-5 w-5 md:h-6 md:w-6 ${billingExpandedSection === 'purchase' ? 'text-primary' : 'text-muted-foreground'}`} />
                     </div>
-                    <span className={`text-xs md:text-sm font-medium ${billingExpandedSection === 'purchase' ? 'text-green-600 dark:text-green-400' : ''}`}>Buy Credits</span>
+                    <span className={`text-xs md:text-sm font-medium ${billingExpandedSection === 'purchase' ? 'text-primary' : ''}`}>Buy Credits</span>
                   </CardContent>
                 </Card>
                 <Card 
-                  className={`cursor-pointer transition-all border-2 ${billingExpandedSection === 'options' ? 'border-orange-500 shadow-md' : 'border-transparent hover:border-muted-foreground/20'}`}
+                  className={`cursor-pointer transition-all border-2 ${billingExpandedSection === 'options' ? 'border-primary shadow-md' : 'border-transparent hover:border-muted-foreground/20'}`}
                   onClick={() => setBillingExpandedSection('options')}
                   data-testid="card-billing-options"
                 >
                   <CardContent className="p-3 md:p-4 flex flex-col items-center text-center gap-1.5 md:gap-2">
-                    <div className={`p-2 rounded-full ${billingExpandedSection === 'options' ? 'bg-orange-500/20' : 'bg-muted'}`}>
-                      <Settings className={`h-5 w-5 md:h-6 md:w-6 ${billingExpandedSection === 'options' ? 'text-orange-500' : 'text-muted-foreground'}`} />
+                    <div className={`p-2 rounded-full ${billingExpandedSection === 'options' ? 'bg-primary/20' : 'bg-muted'}`}>
+                      <Settings className={`h-5 w-5 md:h-6 md:w-6 ${billingExpandedSection === 'options' ? 'text-primary' : 'text-muted-foreground'}`} />
                     </div>
-                    <span className={`text-xs md:text-sm font-medium ${billingExpandedSection === 'options' ? 'text-orange-600 dark:text-orange-400' : ''}`}>Billing Options</span>
+                    <span className={`text-xs md:text-sm font-medium ${billingExpandedSection === 'options' ? 'text-primary' : ''}`}>Billing Options</span>
                   </CardContent>
                 </Card>
                 <Card 
-                  className={`cursor-pointer transition-all border-2 ${billingExpandedSection === 'history' ? 'border-blue-500 shadow-md' : 'border-transparent hover:border-muted-foreground/20'}`}
+                  className={`cursor-pointer transition-all border-2 ${billingExpandedSection === 'history' ? 'border-primary shadow-md' : 'border-transparent hover:border-muted-foreground/20'}`}
                   onClick={() => setBillingExpandedSection('history')}
                   data-testid="card-billing-history"
                 >
                   <CardContent className="p-3 md:p-4 flex flex-col items-center text-center gap-1.5 md:gap-2">
-                    <div className={`p-2 rounded-full ${billingExpandedSection === 'history' ? 'bg-blue-500/20' : 'bg-muted'}`}>
-                      <Receipt className={`h-5 w-5 md:h-6 md:w-6 ${billingExpandedSection === 'history' ? 'text-blue-500' : 'text-muted-foreground'}`} />
+                    <div className={`p-2 rounded-full ${billingExpandedSection === 'history' ? 'bg-primary/20' : 'bg-muted'}`}>
+                      <Receipt className={`h-5 w-5 md:h-6 md:w-6 ${billingExpandedSection === 'history' ? 'text-primary' : 'text-muted-foreground'}`} />
                     </div>
-                    <span className={`text-xs md:text-sm font-medium ${billingExpandedSection === 'history' ? 'text-blue-600 dark:text-blue-400' : ''}`}>Payment History</span>
+                    <span className={`text-xs md:text-sm font-medium ${billingExpandedSection === 'history' ? 'text-primary' : ''}`}>Payment History</span>
                   </CardContent>
                 </Card>
               </div>
