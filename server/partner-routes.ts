@@ -3954,6 +3954,8 @@ export function registerPartnerRoutes(app: Express) {
           is_bundle: isBundle.toString(),
           country_code: countryCode,
           payment_type: 'b2b_results_unlock',
+          original_amount: stripeAmount.toString(),
+          currency: stripeCurrency,
         },
         customer_email: session.externalEmail || undefined,
       });
@@ -4080,18 +4082,40 @@ export function registerPartnerRoutes(app: Express) {
           'aiq': 'AIQ'
         }[session.assessmentType] || session.assessmentType;
         
+        // Use original amount from metadata if available (before discount), fallback to amount_total
+        const originalAmount = checkoutSession.metadata?.original_amount 
+          ? parseInt(checkoutSession.metadata.original_amount, 10) 
+          : null;
         const amountTotal = checkoutSession.amount_total || 0;
         const currency = checkoutSession.currency?.toUpperCase() || 'GBP';
+        
+        // Show the original price as the item price
+        const itemPrice = originalAmount !== null ? originalAmount : amountTotal;
+        
+        // Calculate discount if original amount differs from total
+        const discountAmount = originalAmount !== null && originalAmount > amountTotal 
+          ? originalAmount - amountTotal 
+          : 0;
+        
+        const receiptItems: Array<{ description: string; quantity?: number; amount: number }> = [{
+          description: `${assessmentName} Assessment Results`,
+          quantity: 1,
+          amount: itemPrice,
+        }];
+        
+        // Add discount line if there was a discount
+        if (discountAmount > 0) {
+          receiptItems.push({
+            description: 'Discount Applied',
+            amount: -discountAmount,
+          });
+        }
         
         const receiptDetails = {
           email: session.externalEmail || '',
           name: session.externalUserId || session.externalEmail?.split('@')[0] || 'Candidate',
-          items: [{
-            description: `${assessmentName} Assessment Results`,
-            quantity: 1,
-            amount: amountTotal,
-          }],
-          subtotal: amountTotal,
+          items: receiptItems,
+          subtotal: itemPrice,
           total: amountTotal,
           currency: currency,
           transactionId: (checkoutSession.payment_intent as string) || checkoutSession.id,
@@ -4099,7 +4123,7 @@ export function registerPartnerRoutes(app: Express) {
         
         if (receiptDetails.email) {
           await sendPaymentReceiptWithPdf(receiptDetails);
-          console.log(`[B2B Payment] Receipt email sent to ${receiptDetails.email}`);
+          console.log(`[B2B Payment] Receipt email sent to ${receiptDetails.email} (Original: ${itemPrice}, Discount: ${discountAmount}, Total: ${amountTotal})`);
         }
       } catch (receiptError: any) {
         console.error(`[B2B Payment] Failed to send receipt email:`, receiptError.message);
