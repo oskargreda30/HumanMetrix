@@ -151,14 +151,14 @@ export async function generatePDFFromUrl(options: GeneratePDFFromUrlOptions): Pr
     
     // Wait for specific chart elements to render
     try {
-      await page.waitForSelector('.recharts-bar-rectangle, .recharts-radar-polygon', { timeout: 5000 });
+      await page.waitForSelector('.recharts-bar-rectangle, .recharts-radar-polygon', { timeout: 2000 });
       console.log('[PDF Generator] Chart elements rendered');
     } catch (chartElError) {
       console.log('[PDF Generator] Chart elements not found, continuing...');
     }
     
     // Additional wait for any animations/transitions to complete
-    await new Promise(resolve => setTimeout(resolve, 4000));
+    await new Promise(resolve => setTimeout(resolve, 1500));
     console.log('[PDF Generator] Page ready for capture');
 
     // Remove Replit development banner before PDF capture
