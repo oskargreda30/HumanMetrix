@@ -1708,16 +1708,31 @@ export function registerPartnerRoutes(app: Express) {
             let bundleAssessmentTypes: string[] = [];
             const bundleDiscountPercent = 25; // Always 25% off for bundle pricing
             
-            if (isMultiAssessmentSeries && isLastInMultiAssessmentSeries && multiAssessmentTypes.length > 1) {
-              // Multi-assessment series completed - send bundle for series assessments
-              shouldSendBundleEmail = true;
-              bundleAssessmentTypes = multiAssessmentTypes;
-              console.log(`[B2B Email] Multi-assessment series complete (${multiAssessmentTypes.length} tests) for ${candidateEmail} - sending bundle offer with 25% off`);
-            } else if (allComplete && !isMultiAssessmentSeries) {
-              // All 4 assessments complete (non-multi-assessment flow)
-              shouldSendBundleEmail = true;
-              bundleAssessmentTypes = allAssessmentTypes;
-              console.log(`[B2B Email] All 4 assessments complete for ${candidateEmail} - sending bundle offer with 25% off`);
+            // Count how many assessments are NOT yet paid for (locked results)
+            const lockedSessions = completedSessions.filter((s: any) => {
+              return (s as any).resultsPaymentStatus !== 'paid' && (s as any).resultsReleaseStatus !== 'released';
+            });
+            const lockedAssessmentTypes = [...new Set(lockedSessions.map(s => normalizeAssessmentId(s.assessmentType)))];
+            
+            // Only send bundle email if there are MORE than 1 unpaid assessment results
+            if (lockedAssessmentTypes.length > 1) {
+              if (isMultiAssessmentSeries && isLastInMultiAssessmentSeries) {
+                // Multi-assessment series completed - send bundle for locked series assessments only
+                bundleAssessmentTypes = multiAssessmentTypes.filter(t => lockedAssessmentTypes.includes(normalizeAssessmentId(t)));
+                if (bundleAssessmentTypes.length > 1) {
+                  shouldSendBundleEmail = true;
+                  console.log(`[B2B Email] Multi-assessment series complete (${bundleAssessmentTypes.length} locked tests) for ${candidateEmail} - sending bundle offer with 25% off`);
+                } else {
+                  console.log(`[B2B Email] Multi-assessment series complete but only ${bundleAssessmentTypes.length} locked result(s) - skipping bundle email`);
+                }
+              } else if (allComplete && !isMultiAssessmentSeries) {
+                // All 4 assessments complete (non-multi-assessment flow) - send bundle for locked assessments only
+                bundleAssessmentTypes = lockedAssessmentTypes;
+                shouldSendBundleEmail = true;
+                console.log(`[B2B Email] All 4 assessments complete, ${bundleAssessmentTypes.length} locked for ${candidateEmail} - sending bundle offer with 25% off`);
+              }
+            } else {
+              console.log(`[B2B Email] Only ${lockedAssessmentTypes.length} locked result(s) for ${candidateEmail} - skipping bundle email (need >1)`);
             }
             
             if (shouldSendBundleEmail) {
@@ -4957,13 +4972,22 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(404).json({ error: "No completed assessments found" });
       }
       
+      // Filter out already-paid/unlocked sessions - only show locked results
+      const lockedSessions = completedSessions.filter((s: any) => {
+        return (s as any).resultsPaymentStatus !== 'paid' && (s as any).resultsReleaseStatus !== 'released';
+      });
+      
+      if (lockedSessions.length === 0) {
+        return res.status(404).json({ error: "All assessments have already been unlocked" });
+      }
+      
       // Filter to requested types if specified
       const filteredSessions = assessmentTypes.length > 0
-        ? completedSessions.filter((s: any) => {
+        ? lockedSessions.filter((s: any) => {
             const normalizedType = normalizeAssessmentId(s.assessmentType);
             return assessmentTypes.some(t => normalizeAssessmentId(t) === normalizedType);
           })
-        : completedSessions;
+        : lockedSessions;
       
       if (filteredSessions.length === 0) {
         return res.status(404).json({ error: "No matching assessments found" });
@@ -5060,13 +5084,22 @@ export function registerPartnerRoutes(app: Express) {
       // Get completed sessions for this email and partner
       const completedSessions = await storage.getCompletedB2BSessionsByEmail(email, partnerIdStr);
       
+      // Filter out already-paid/unlocked sessions - only process locked results
+      const lockedSessions = completedSessions.filter((s: any) => {
+        return (s as any).resultsPaymentStatus !== 'paid' && (s as any).resultsReleaseStatus !== 'released';
+      });
+      
+      if (lockedSessions.length === 0) {
+        return res.status(400).json({ error: "All assessments have already been unlocked" });
+      }
+      
       // Filter to requested types if specified
       const filteredSessions = assessmentTypes.length > 0
-        ? completedSessions.filter((s: any) => {
+        ? lockedSessions.filter((s: any) => {
             const normalizedType = normalizeAssessmentId(s.assessmentType);
             return assessmentTypes.some((t: string) => normalizeAssessmentId(t) === normalizedType);
           })
-        : completedSessions;
+        : lockedSessions;
       
       if (filteredSessions.length === 0) {
         return res.status(404).json({ error: "No matching assessments found" });
