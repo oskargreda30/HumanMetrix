@@ -112,10 +112,12 @@ export default function MyResults() {
     }
   }, [needsConsentResponseForEffect, consentHandled, needsPaymentForEffect, allAssessmentsCompletedForEffect]);
 
-  // Loading state - includes partner series loading for partner view
+  // Loading state - only block on essential data, not everything
+  // For partner view: only need the partner series data
+  // For B2C view: only need results, don't block on assessments/batches
   const isLoading = isPartnerView 
-    ? (partnerSeriesLoading || !partnerTestingSeries)
-    : (resultsLoading || assessmentsLoading || batchesLoading || purchasesLoading || !allResults);
+    ? partnerSeriesLoading
+    : resultsLoading;
     
   if (isLoading) {
     return (
