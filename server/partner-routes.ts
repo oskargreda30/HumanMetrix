@@ -4,7 +4,7 @@ import { partnerAuth, PartnerRequest, trackUsage, generateApiKey, consumeTestCre
 import { isAuthenticated } from "./auth";
 import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation, sendPartnerBulkInvitationEmail, sendB2BCongratulatoryEmail, sendB2BAllCompleteEmail } from "./email";
 import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount, B2C_RETAIL_PRICE_PER_ASSESSMENT, BASE_FEE, ASSESSMENT_PRICES, assessmentResults, assessmentSessions } from "@shared/schema";
-import { getQuestionLocale, getPPPAdjustedPriceInPence, getCurrencyForCountry, formatPrice, COUNTRY_CURRENCY_MAP } from "@shared/currencies";
+import { getQuestionLocale, getPPPAdjustedPriceInPence, getCurrencyForCountry, formatPrice, COUNTRY_CURRENCY_MAP, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal } from "@shared/currencies";
 import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { generateTemporaryPassword } from "./passwordUtils";
 import bcrypt from "bcryptjs";
@@ -5122,10 +5122,16 @@ export function registerPartnerRoutes(app: Express) {
       }
       
       const bundleDiscountPercent = 25;
-      const bundleDiscountedPrice = Math.round(sumOfIndividualDiscountedPrices * ((100 - bundleDiscountPercent) / 100));
+      const bundleDiscountedPriceInPence = Math.round(sumOfIndividualDiscountedPrices * ((100 - bundleDiscountPercent) / 100));
       
       // Get Stripe currency code
       const currencyCode = COUNTRY_CURRENCY_MAP[(countryCode || 'GB').toUpperCase()] || 'GBP';
+      
+      // Convert pence to local currency, then to Stripe amount (handles zero-decimal currencies)
+      const localCurrencyTotal = convertPenceToRoundedLocalCurrency(bundleDiscountedPriceInPence, currencyCode);
+      const stripeAmount = calculateStripeAmountFromRoundedTotal(localCurrencyTotal, currencyCode);
+      
+      console.log(`[Bundle Checkout] Pence: ${bundleDiscountedPriceInPence}, Local: ${localCurrencyTotal} ${currencyCode}, Stripe: ${stripeAmount}`);
       
       // Create Stripe checkout session
       const baseUrl = getBaseUrl(req);
@@ -5145,7 +5151,7 @@ export function registerPartnerRoutes(app: Express) {
                 name: `HumanMetrix Assessment Bundle (${uniqueAssessmentCount} Assessments)`,
                 description: `Unlock all ${uniqueAssessmentCount} completed assessment results`,
               },
-              unit_amount: bundleDiscountedPrice,
+              unit_amount: stripeAmount,
             },
             quantity: 1,
           },
