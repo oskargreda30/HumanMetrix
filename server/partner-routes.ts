@@ -4033,6 +4033,42 @@ export function registerPartnerRoutes(app: Express) {
       
       console.log(`[B2B Payment] Successfully processed payment for session ${b2bSessionId}, isBundle: ${isBundle}`);
       
+      // Send payment receipt email (non-PDF, just confirmation)
+      try {
+        const { sendPaymentReceiptWithPdf } = await import('./email');
+        const assessmentName = {
+          'fit': 'FIT',
+          'ai_readiness': 'AI Readiness',
+          'prompt_architecture': 'Prompt Architecture',
+          'aiq': 'AIQ'
+        }[session.assessmentType] || session.assessmentType;
+        
+        const amountTotal = checkoutSession.amount_total || 0;
+        const currency = checkoutSession.currency?.toUpperCase() || 'GBP';
+        
+        const receiptDetails = {
+          email: session.externalEmail || '',
+          name: session.externalUserId || session.externalEmail?.split('@')[0] || 'Candidate',
+          items: [{
+            description: `${assessmentName} Assessment Results`,
+            quantity: 1,
+            amount: amountTotal,
+          }],
+          subtotal: amountTotal,
+          total: amountTotal,
+          currency: currency,
+          transactionId: (checkoutSession.payment_intent as string) || checkoutSession.id,
+        };
+        
+        if (receiptDetails.email) {
+          await sendPaymentReceiptWithPdf(receiptDetails);
+          console.log(`[B2B Payment] Receipt email sent to ${receiptDetails.email}`);
+        }
+      } catch (receiptError: any) {
+        console.error(`[B2B Payment] Failed to send receipt email:`, receiptError.message);
+        // Don't fail the whole flow for receipt email failure
+      }
+      
       const sessionIsTest = (session as any).isTestSession === true;
       
       if (sessionIsTest) {
