@@ -709,6 +709,10 @@ export default function EmbedAssessment() {
       if (startData.timeRemaining != null) {
         console.log(`[EmbedAssessment] Starting with ${startData.timeRemaining}s remaining`);
         setTimeRemaining(startData.timeRemaining);
+        // Track if server says timer already expired
+        if (startData.timeRemaining <= 0) {
+          timerExpiredFromServerRef.current = true;
+        }
       }
       
       setStatus("started");
@@ -898,11 +902,18 @@ export default function EmbedAssessment() {
     };
   }, [status, isSubmitting, showTimeWarning, sessionId, session]);
 
+  // Track if timer has expired from server (prevents client-side reset from overriding)
+  const timerExpiredFromServerRef = useRef<boolean>(false);
+  
   // Reset timer for prompt architecture when moving to next question
+  // But only if the timer hasn't already expired from server
   useEffect(() => {
     if (status === 'started' && session?.assessmentType.replace(/-/g, '_') === 'prompt_architecture') {
-      setTimeRemaining(120); // Reset to 2 minutes per question
-      setShowTimeWarning(false);
+      // Don't reset if server already indicated timer expired
+      if (!timerExpiredFromServerRef.current) {
+        setTimeRemaining(120); // Reset to 2 minutes per question
+        setShowTimeWarning(false);
+      }
     }
   }, [currentIndex]);
 
@@ -1049,6 +1060,7 @@ export default function EmbedAssessment() {
     // Reset timer for next assessment (20 min for regular, 7 min for prompt architecture)
     setTimeRemaining(nextType === "prompt_architecture" ? 420 : 1200);
     setShowTimeWarning(false);
+    timerExpiredFromServerRef.current = false; // Reset expired flag for new assessment
     
     // Load new questions for the next assessment type
     if (isDemo) {
