@@ -54,6 +54,7 @@ export function csrfProtection() {
       "/api/unlock-results/process-payment",
       "/api/b2b/results/",
       "/api/b2b/results-bundle/checkout",
+      "/api/b2b/results-bundle/process-payment",
       "/api/b2b/process-payment",
       
       // Webhooks and callbacks (external services)

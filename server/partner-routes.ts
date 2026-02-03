@@ -5135,7 +5135,7 @@ export function registerPartnerRoutes(app: Express) {
       
       // Create Stripe checkout session
       const baseUrl = getBaseUrl(req);
-      const successUrl = `${baseUrl}/b2b-payment-callback?success=true&bundle=true&email=${encodeURIComponent(email)}&partner=${partnerId}&sessions=${sessionIds.join(',')}`;
+      const successUrl = `${baseUrl}/b2b-payment-callback?success=true&bundle=true&session_id={CHECKOUT_SESSION_ID}&email=${encodeURIComponent(email)}&partner=${partnerId}&sessions=${sessionIds.join(',')}`;
       const cancelUrl = `${baseUrl}/b2b-results-bundle?email=${encodeURIComponent(email)}&partner=${partnerId}&country=${countryCode}&types=${assessmentTypes.join(',')}`;
       
       // Use unique assessment count for description
@@ -5174,6 +5174,109 @@ export function registerPartnerRoutes(app: Express) {
     } catch (error) {
       console.error("Error creating bundle checkout:", error);
       res.status(500).json({ error: "Failed to create checkout" });
+    }
+  });
+  
+  // POST /api/b2b/results-bundle/process-payment - Process bundle payment after Stripe callback
+  app.post("/api/b2b/results-bundle/process-payment", async (req: Request, res: Response) => {
+    try {
+      const { stripeSessionId } = req.body;
+      
+      if (!stripeSessionId) {
+        return res.status(400).json({ error: "Missing Stripe session ID" });
+      }
+      
+      // Retrieve and verify Stripe session
+      let checkoutSession;
+      try {
+        checkoutSession = await stripe.checkout.sessions.retrieve(stripeSessionId);
+      } catch (stripeError: any) {
+        console.error('[Bundle Payment] Stripe session retrieval failed:', stripeError.message);
+        return res.status(400).json({ error: "Failed to verify payment" });
+      }
+      
+      // Verify payment was successful
+      if (checkoutSession.payment_status !== 'paid') {
+        return res.status(400).json({ error: "Payment not completed" });
+      }
+      
+      // Verify this is a b2b_bundle type payment
+      if (checkoutSession.metadata?.type !== 'b2b_bundle') {
+        return res.status(400).json({ error: "Invalid payment type" });
+      }
+      
+      const { email, partnerId, sessionIds: sessionIdsStr, countryCode } = checkoutSession.metadata;
+      if (!email || !partnerId || !sessionIdsStr) {
+        return res.status(400).json({ error: "Missing payment metadata" });
+      }
+      
+      const sessionIds = sessionIdsStr.split(',');
+      
+      // Get partner info
+      const partner = await storage.getPartnerAccount(partnerId);
+      const partnerName = partner?.companyName || partner?.name || "Partner";
+      
+      // Update all sessions to mark payment as complete
+      const now = new Date();
+      for (const sessionId of sessionIds) {
+        await db.update(assessmentSessions)
+          .set({
+            resultsPaymentStatus: 'paid',
+            resultsUnlockAt: now,
+            stripePaymentIntentId: checkoutSession.payment_intent as string,
+          })
+          .where(eq(assessmentSessions.id, sessionId));
+      }
+      
+      console.log(`[Bundle Payment] Marked ${sessionIds.length} sessions as paid for ${email}`);
+      
+      // Check if user has an existing account
+      const existingUser = await storage.getUserByEmail(email);
+      const hasExistingAccount = !!existingUser;
+      
+      // Get first session for redirect
+      const firstSession = sessionIds[0];
+      
+      res.json({
+        success: true,
+        email,
+        sessionId: firstSession,
+        hasExistingAccount,
+        resultsUrl: hasExistingAccount ? `/dashboard?session=${firstSession}` : null,
+      });
+      
+      // Send results email asynchronously (like unlock flow does)
+      (async () => {
+        try {
+          // Get all completed sessions for email
+          const sessions = await Promise.all(
+            sessionIds.map(id => storage.getAssessmentSession(id))
+          );
+          const validSessions = sessions.filter(s => s && s.completedAt);
+          
+          if (validSessions.length > 0) {
+            // Use the first session for PDF generation
+            const primarySession = validSessions[0];
+            if (primarySession) {
+              const { sendB2BResultsEmail } = await import('./email');
+              await sendB2BResultsEmail({
+                to: email,
+                candidateName: primarySession.externalName || email.split('@')[0],
+                partnerName,
+                assessmentType: primarySession.assessmentType,
+                sessionId: primarySession.id,
+                isPdfEmail: true,
+              });
+              console.log(`[Bundle Payment] Results email sent to ${email}`);
+            }
+          }
+        } catch (emailError) {
+          console.error('[Bundle Payment] Failed to send results email:', emailError);
+        }
+      })();
+    } catch (error) {
+      console.error("Error processing bundle payment:", error);
+      res.status(500).json({ error: "Failed to process payment" });
     }
   });
 }
