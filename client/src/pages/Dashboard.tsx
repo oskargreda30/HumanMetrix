@@ -1343,13 +1343,9 @@ export default function Dashboard() {
                 data-testid={`button-select-result-${result.assessmentType}`}
                 onClick={() => {
                   const seriesId = resultSelectionDialog?.seriesId;
-                  const assessmentType = result.assessmentType;
-                  setResultSelectionDialog(null);
                   if (seriesId) {
-                    // Small delay to allow dialog to close before navigation
-                    requestAnimationFrame(() => {
-                      setLocation(`/my-results?partnerInvitationId=${seriesId}&assessmentType=${assessmentType}`);
-                    });
+                    // Navigate directly to avoid dialog persistence issues
+                    window.location.href = `/my-results?partnerInvitationId=${seriesId}&assessmentType=${result.assessmentType}`;
                   }
                 }}
               >
@@ -1372,12 +1368,9 @@ export default function Dashboard() {
               data-testid="button-view-all-results"
               onClick={() => {
                 const seriesId = resultSelectionDialog?.seriesId;
-                setResultSelectionDialog(null);
                 if (seriesId) {
-                  // Small delay to allow dialog to close before navigation
-                  requestAnimationFrame(() => {
-                    setLocation(`/my-results?partnerInvitationId=${seriesId}`);
-                  });
+                  // Navigate directly to avoid dialog persistence issues
+                  window.location.href = `/my-results?partnerInvitationId=${seriesId}`;
                 }
               }}
             >
