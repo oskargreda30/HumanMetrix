@@ -4052,10 +4052,20 @@ export function registerPartnerRoutes(app: Express) {
       
       // Check if already processed
       if ((session as any).resultsPaymentStatus === 'paid') {
+        // Still need to check for existing account to support account creation flow
+        const existingUser = await storage.getUserByEmail(session.externalEmail);
+        const hasExistingAccount = !!existingUser;
+        
+        console.log(`[B2B Payment] Already processed, returning: email=${session.externalEmail}, sessionId=${b2bSessionId}`);
+        
         return res.json({ 
           success: true, 
           message: "Already processed",
-          resultsUrl: `/embed/assessment?session=${b2bSessionId}&showResults=true`
+          email: session.externalEmail,
+          sessionId: b2bSessionId,
+          hasExistingAccount,
+          userId: existingUser?.id,
+          resultsUrl: hasExistingAccount ? "/dashboard" : `/embed/assessment?session=${b2bSessionId}&showResults=true`
         });
       }
       
@@ -4278,6 +4288,8 @@ export function registerPartnerRoutes(app: Express) {
       // Check if user has an existing account
       const existingUser = await storage.getUserByEmail(session.externalEmail);
       const hasExistingAccount = !!existingUser;
+      
+      console.log(`[B2B Payment] Returning response: email=${session.externalEmail}, sessionId=${b2bSessionId}, hasExistingAccount=${hasExistingAccount}`);
       
       res.json({
         success: true,
