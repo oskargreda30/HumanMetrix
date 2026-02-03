@@ -1092,29 +1092,63 @@ export default function Dashboard() {
                             )}
                           </p>
 
-                          {/* Completed Assessments */}
+                          {/* All Assessments with Status */}
                           <div className="flex flex-wrap gap-2 mb-4">
-                            {(series.results || [])
-                              .filter((r: any) => r.status === 'completed')
-                              .map((result: any) => {
-                                const metadata = getAssessmentMetadata(result.assessmentType);
-                                const ResultIcon = metadata.icon;
-                                // Use per-result unlock status (supports partial purchases)
-                                const isUnlocked = result.isUnlocked || series.resultsUnlocked;
-                                return (
-                                  <Badge key={result.id} variant="outline" className="gap-1.5 py-1">
-                                    <ResultIcon className="h-3 w-3" />
-                                    {formatAssessmentName(result.assessmentType)}
-                                    {isUnlocked && result.totalScore ? (
+                            {(series.assessmentTypes || []).map((assessmentType: string) => {
+                              // Normalize type for consistent matching (handle both - and _ variants)
+                              const normalizedType = assessmentType.toLowerCase().replace(/-/g, '_');
+                              const metadata = getAssessmentMetadata(normalizedType);
+                              const ResultIcon = metadata.icon;
+                              
+                              // Find the result for this assessment type (normalize both sides)
+                              const result = (series.results || []).find(
+                                (r: any) => r.assessmentType.toLowerCase().replace(/-/g, '_') === normalizedType
+                              );
+                              
+                              const isCompleted = result?.status === 'completed';
+                              const isInProgress = result?.status === 'in_progress' || result?.status === 'started';
+                              const isAbandoned = result?.status === 'abandoned';
+                              const isUnlocked = result?.isUnlocked || series.resultsUnlocked;
+                              
+                              // Determine badge styling based on status
+                              let badgeClassName = "gap-1.5 py-1 ";
+                              if (isCompleted) {
+                                badgeClassName += "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800";
+                              } else if (isInProgress) {
+                                badgeClassName += "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800";
+                              } else if (isAbandoned) {
+                                badgeClassName += "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800";
+                              } else {
+                                badgeClassName += "bg-muted/50 border-muted-foreground/20";
+                              }
+                              
+                              return (
+                                <Badge 
+                                  key={assessmentType} 
+                                  variant="outline" 
+                                  className={badgeClassName}
+                                  data-testid={`badge-assessment-${normalizedType}`}
+                                >
+                                  <ResultIcon className="h-3 w-3" />
+                                  {formatAssessmentName(normalizedType)}
+                                  {isCompleted ? (
+                                    isUnlocked && result?.totalScore ? (
                                       <span className="text-cyan-600 dark:text-cyan-400 ml-1">
                                         {result.totalScore}%
                                       </span>
-                                    ) : result.status === 'completed' && !isUnlocked ? (
+                                    ) : (
                                       <Lock className="h-3 w-3 text-amber-500 ml-1" />
-                                    ) : null}
-                                  </Badge>
-                                );
-                              })}
+                                    )
+                                  ) : isInProgress ? (
+                                    <Clock className="h-3 w-3 text-blue-500 ml-1" />
+                                  ) : isAbandoned ? (
+                                    <span className="text-orange-600 dark:text-orange-400 text-xs ml-1">Incomplete</span>
+                                  ) : (
+                                    <span className="text-muted-foreground text-xs ml-1">Not started</span>
+                                  )}
+                                </Badge>
+                              );
+                            })}
                           </div>
                         </div>
 
