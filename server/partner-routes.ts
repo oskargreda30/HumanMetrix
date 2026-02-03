@@ -3306,6 +3306,34 @@ export function registerPartnerRoutes(app: Express) {
         }
       }
       
+      // Send payment receipt email
+      if (email) {
+        try {
+          const { sendPaymentReceiptWithPdf } = await import('./email');
+          const amountTotal = checkoutSession.amount_total || 0;
+          const currency = checkoutSession.currency?.toUpperCase() || 'GBP';
+          
+          const receiptDetails = {
+            email: email,
+            name: email.split('@')[0] || 'Candidate',
+            items: [{
+              description: isBundle === 'true' ? `${sessionIds.length} Assessment Results Bundle` : 'Assessment Results',
+              quantity: sessionIds.length,
+              amount: amountTotal,
+            }],
+            subtotal: amountTotal,
+            total: amountTotal,
+            currency: currency,
+            transactionId: (checkoutSession.payment_intent as string) || checkoutSession.id,
+          };
+          
+          await sendPaymentReceiptWithPdf(receiptDetails);
+          console.log(`[Unlock Results] Receipt email sent to ${email}`);
+        } catch (receiptError: any) {
+          console.error('[Unlock Results] Failed to send receipt email:', receiptError.message);
+        }
+      }
+      
       // Send confirmation email with results
       if (email) {
         try {
