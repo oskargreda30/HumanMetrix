@@ -3042,7 +3042,7 @@ export default function PartnerDashboard() {
               {/* Quick Link Cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
                 <Card 
-                  className={`cursor-pointer transition-all border-2 ${billingExpandedSection === 'credits' ? 'border-primary bg-primary/5 shadow-md' : 'border-transparent hover:border-muted-foreground/20'}`}
+                  className={`cursor-pointer transition-all border-2 ${billingExpandedSection === 'credits' ? 'border-primary shadow-md' : 'border-transparent hover:border-muted-foreground/20'}`}
                   onClick={() => setBillingExpandedSection('credits')}
                   data-testid="card-billing-credits"
                 >
@@ -3054,7 +3054,7 @@ export default function PartnerDashboard() {
                   </CardContent>
                 </Card>
                 <Card 
-                  className={`cursor-pointer transition-all border-2 ${billingExpandedSection === 'purchase' ? 'border-green-500 bg-green-500/5 shadow-md' : 'border-transparent hover:border-muted-foreground/20'}`}
+                  className={`cursor-pointer transition-all border-2 ${billingExpandedSection === 'purchase' ? 'border-green-500 shadow-md' : 'border-transparent hover:border-muted-foreground/20'}`}
                   onClick={() => setBillingExpandedSection('purchase')}
                   data-testid="card-billing-purchase"
                 >
@@ -3066,7 +3066,7 @@ export default function PartnerDashboard() {
                   </CardContent>
                 </Card>
                 <Card 
-                  className={`cursor-pointer transition-all border-2 ${billingExpandedSection === 'options' ? 'border-orange-500 bg-orange-500/5 shadow-md' : 'border-transparent hover:border-muted-foreground/20'}`}
+                  className={`cursor-pointer transition-all border-2 ${billingExpandedSection === 'options' ? 'border-orange-500 shadow-md' : 'border-transparent hover:border-muted-foreground/20'}`}
                   onClick={() => setBillingExpandedSection('options')}
                   data-testid="card-billing-options"
                 >
@@ -3078,7 +3078,7 @@ export default function PartnerDashboard() {
                   </CardContent>
                 </Card>
                 <Card 
-                  className={`cursor-pointer transition-all border-2 ${billingExpandedSection === 'history' ? 'border-blue-500 bg-blue-500/5 shadow-md' : 'border-transparent hover:border-muted-foreground/20'}`}
+                  className={`cursor-pointer transition-all border-2 ${billingExpandedSection === 'history' ? 'border-blue-500 shadow-md' : 'border-transparent hover:border-muted-foreground/20'}`}
                   onClick={() => setBillingExpandedSection('history')}
                   data-testid="card-billing-history"
                 >
