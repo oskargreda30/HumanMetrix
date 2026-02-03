@@ -488,7 +488,15 @@ export default function EmbedAssessment() {
       // Set timer from server-provided remaining time for resumed assessments
       if (data.status === "started" && data.timeRemaining != null) {
         console.log(`[EmbedAssessment] Resuming with ${data.timeRemaining}s remaining`);
-        setTimeRemaining(data.timeRemaining);
+        // For Prompt Architecture, always use per-question timer (2 min) since the server tracks total time
+        // but the client uses per-question timing
+        const assessmentType = data.assessmentType?.replace(/-/g, '_');
+        if (assessmentType === 'prompt_architecture') {
+          console.log(`[EmbedAssessment] Prompt Architecture: using per-question timer (120s)`);
+          setTimeRemaining(120); // 2 minutes per question
+        } else {
+          setTimeRemaining(data.timeRemaining);
+        }
         
         // Call /start to execute the resume handshake (clears pausedTimeRemainingMs, adjusts startedAt)
         // This ensures the data model is consistent for future timer calculations
@@ -708,10 +716,17 @@ export default function EmbedAssessment() {
       // Use server-provided timeRemaining (either full time for fresh start or remaining time for resume)
       if (startData.timeRemaining != null) {
         console.log(`[EmbedAssessment] Starting with ${startData.timeRemaining}s remaining`);
-        setTimeRemaining(startData.timeRemaining);
-        // Track if server says timer already expired
-        if (startData.timeRemaining <= 0) {
-          timerExpiredFromServerRef.current = true;
+        // For Prompt Architecture, always use per-question timer (2 min) since the client uses per-question timing
+        const assessmentType = session?.assessmentType?.replace(/-/g, '_');
+        if (assessmentType === 'prompt_architecture') {
+          console.log(`[EmbedAssessment] Prompt Architecture: using per-question timer (120s)`);
+          setTimeRemaining(120); // 2 minutes per question
+        } else {
+          setTimeRemaining(startData.timeRemaining);
+          // Track if server says timer already expired (not applicable for per-question timing)
+          if (startData.timeRemaining <= 0) {
+            timerExpiredFromServerRef.current = true;
+          }
         }
       }
       
