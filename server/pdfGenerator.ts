@@ -149,8 +149,16 @@ export async function generatePDFFromUrl(options: GeneratePDFFromUrlOptions): Pr
       console.log('[PDF Generator] No charts detected, continuing...');
     }
     
+    // Wait for specific chart elements to render
+    try {
+      await page.waitForSelector('.recharts-bar-rectangle, .recharts-radar-polygon', { timeout: 5000 });
+      console.log('[PDF Generator] Chart elements rendered');
+    } catch (chartElError) {
+      console.log('[PDF Generator] Chart elements not found, continuing...');
+    }
+    
     // Additional wait for any animations/transitions to complete
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise(resolve => setTimeout(resolve, 4000));
     console.log('[PDF Generator] Page ready for capture');
 
     // Remove Replit development banner before PDF capture
@@ -191,9 +199,11 @@ export async function generatePDFFromUrl(options: GeneratePDFFromUrlOptions): Pr
             color-adjust: exact !important;
           }
           
-          body {
+          html, body {
             margin: 0;
             padding: 0;
+            width: 100%;
+            height: auto;
           }
           
           .no-print, 
@@ -206,27 +216,73 @@ export async function generatePDFFromUrl(options: GeneratePDFFromUrlOptions): Pr
             display: none !important;
           }
           
-          /* Page breaks for each section */
+          /* Page break controls */
+          .page-break-before {
+            page-break-before: always !important;
+            break-before: page !important;
+          }
+          
+          .page-break-after {
+            page-break-after: always !important;
+            break-after: page !important;
+          }
+          
+          .avoid-page-break {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          
+          /* Legacy class support */
+          .page-break {
+            page-break-before: always !important;
+            break-before: page !important;
+          }
+          
+          .avoid-break {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          
+          /* Section-specific page breaks */
           [data-pdf-section] {
-            page-break-before: always;
-            page-break-inside: avoid;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
           
           /* First section should not have page break before */
           [data-pdf-section="summary"] {
-            page-break-before: auto;
+            page-break-before: auto !important;
+            break-before: auto !important;
           }
           
-          .page-break {
-            page-break-before: always;
-          }
-          
-          .avoid-break {
-            page-break-inside: avoid;
+          /* Force page breaks for specific sections */
+          [data-pdf-section="comparison"],
+          [data-pdf-section="analysis"],
+          [data-pdf-section="legend"] {
+            page-break-before: always !important;
+            break-before: page !important;
           }
           
           .print-only {
             display: block !important;
+          }
+          
+          /* Ensure cards don't break */
+          .card, [class*="Card"] {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          
+          /* SVG charts should not break */
+          svg {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          
+          /* Recharts wrapper */
+          .recharts-wrapper {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
         }
       `;

@@ -398,99 +398,113 @@ export default function B2BPdfEmail() {
         </div>
 
         {hasDetailedScores && (
-          <div data-pdf-section="visualizations" className={`bg-white p-6 rounded-lg gap-6 page-break ${isPdfRender ? 'flex flex-col' : 'grid md:grid-cols-2'}`}>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Skills Radar</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isPdfRender ? (
-                  <RadarChart width={500} height={350} data={radarData}>
-                    <PolarGrid />
-                    <PolarAngleAxis 
-                      dataKey="skill" 
-                      tick={{ fontSize: 10, fill: '#333' }}
-                    />
-                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10 }} />
-                    <Radar
-                      name="Score"
-                      dataKey="score"
-                      stroke="#3b82f6"
-                      fill="#3b82f6"
-                      fillOpacity={0.5}
-                    />
-                  </RadarChart>
-                ) : (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <RadarChart data={radarData}>
-                      <PolarGrid />
-                      <PolarAngleAxis 
-                        dataKey="skill" 
-                        tick={{ fontSize: 10, fill: 'currentColor' }}
-                      />
-                      <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10 }} />
-                      <Radar
-                        name="Score"
-                        dataKey="score"
-                        stroke="hsl(var(--primary))"
-                        fill="hsl(var(--primary))"
-                        fillOpacity={0.5}
-                      />
-                      <Tooltip />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                )}
-              </CardContent>
-            </Card>
+          <>
+            <div data-pdf-section="radar" className="bg-white p-6 rounded-lg avoid-page-break">
+              <Card className="avoid-page-break">
+                <CardHeader>
+                  <CardTitle className="text-lg">Skills Radar</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {isPdfRender ? (
+                    <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                      <RadarChart width={450} height={320} data={radarData}>
+                        <PolarGrid stroke="#e5e7eb" />
+                        <PolarAngleAxis 
+                          dataKey="skill" 
+                          tick={{ fontSize: 9, fill: '#374151' }}
+                        />
+                        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 9 }} />
+                        <Radar
+                          name="Score"
+                          dataKey="score"
+                          stroke="#3b82f6"
+                          fill="#3b82f6"
+                          fillOpacity={0.5}
+                        />
+                      </RadarChart>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <RadarChart data={radarData}>
+                        <PolarGrid />
+                        <PolarAngleAxis 
+                          dataKey="skill" 
+                          tick={{ fontSize: 10, fill: 'currentColor' }}
+                        />
+                        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10 }} />
+                        <Radar
+                          name="Score"
+                          dataKey="score"
+                          stroke="hsl(var(--primary))"
+                          fill="hsl(var(--primary))"
+                          fillOpacity={0.5}
+                        />
+                        <Tooltip />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Skills Comparison</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isPdfRender ? (
-                  <BarChart width={500} height={350} data={barData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10 }} />
-                    <YAxis 
-                      dataKey="skill" 
-                      type="category" 
-                      width={100}
-                      tick={{ fontSize: 10 }}
-                    />
-                    <Bar 
-                      dataKey="score" 
-                      fill="#3b82f6" 
-                      radius={[0, 4, 4, 0]}
-                    />
-                  </BarChart>
-                ) : (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={barData} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10 }} />
-                      <YAxis 
-                        dataKey="skill" 
-                        type="category" 
-                        width={100}
-                        tick={{ fontSize: 10 }}
-                      />
-                      <Tooltip />
-                      <Bar 
-                        dataKey="score" 
-                        fill="hsl(var(--primary))" 
-                        radius={[0, 4, 4, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+            <div data-pdf-section="comparison" className="bg-white p-6 rounded-lg page-break-before avoid-page-break">
+              <Card className="avoid-page-break">
+                <CardHeader>
+                  <CardTitle className="text-lg">Skills Comparison</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {isPdfRender ? (
+                    <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                      <BarChart 
+                        width={550} 
+                        height={Math.max(300, barData.length * 40)} 
+                        data={barData} 
+                        layout="vertical"
+                        margin={{ left: 20, right: 20, top: 10, bottom: 10 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10 }} />
+                        <YAxis 
+                          dataKey="skill" 
+                          type="category" 
+                          width={130}
+                          tick={{ fontSize: 10, fill: '#374151' }}
+                        />
+                        <Bar 
+                          dataKey="score" 
+                          fill="#3b82f6" 
+                          radius={[0, 4, 4, 0]}
+                        />
+                      </BarChart>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={barData} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10 }} />
+                        <YAxis 
+                          dataKey="skill" 
+                          type="category" 
+                          width={100}
+                          tick={{ fontSize: 10 }}
+                        />
+                        <Tooltip />
+                        <Bar 
+                          dataKey="score" 
+                          fill="hsl(var(--primary))" 
+                          radius={[0, 4, 4, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </>
         )}
 
-        <div data-pdf-section="analysis" className="bg-white p-6 rounded-lg page-break">
-          <Card>
+        <div data-pdf-section="analysis" className="bg-white p-6 rounded-lg page-break-before avoid-page-break">
+          <Card className="avoid-page-break">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
@@ -501,7 +515,7 @@ export default function B2BPdfEmail() {
               <p className="text-muted-foreground">{analysis.overall}</p>
               
               {analysis.strengths.length > 0 && (
-                <div>
+                <div className="avoid-page-break">
                   <h4 className="font-semibold text-green-600 mb-2">Key Strengths</h4>
                   <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                     {analysis.strengths.map((strength, i) => (
@@ -512,7 +526,7 @@ export default function B2BPdfEmail() {
               )}
               
               {analysis.improvements.length > 0 && (
-                <div>
+                <div className="avoid-page-break">
                   <h4 className="font-semibold text-amber-600 mb-2">Development Opportunities</h4>
                   <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                     {analysis.improvements.map((improvement, i) => (
@@ -526,13 +540,13 @@ export default function B2BPdfEmail() {
         </div>
 
         {hasDetailedScores && (
-          <div data-pdf-section="legend" className="bg-white p-6 rounded-lg page-break">
+          <div data-pdf-section="legend" className="bg-white p-6 rounded-lg page-break-before">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Skills Legend</CardTitle>
               </CardHeader>
               <CardContent>
-                <SkillsLegend />
+                <SkillsLegend forPdf={isPdfRender} />
               </CardContent>
             </Card>
           </div>

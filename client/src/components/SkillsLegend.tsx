@@ -22,9 +22,10 @@ export const AIQ_BANDS = [
 interface SkillsLegendProps {
   className?: string;
   compact?: boolean;
+  forPdf?: boolean;
 }
 
-export default function SkillsLegend({ className = '', compact = false }: SkillsLegendProps) {
+export default function SkillsLegend({ className = '', compact = false, forPdf = false }: SkillsLegendProps) {
   const getAcronym = (skillName: string): string => {
     return SKILL_ACRONYMS[skillName] || '';
   };
@@ -42,12 +43,12 @@ export default function SkillsLegend({ className = '', compact = false }: Skills
       </CardHeader>
       <CardContent className="space-y-6">
         {/* FIT Assessment Skills */}
-        <div>
+        <div className={forPdf ? 'avoid-page-break' : ''}>
           <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
             <Brain className="h-4 w-4 text-blue-600" />
             FIT Assessment - Behavioral Skills
           </h4>
-          <div className={`grid gap-2 ${compact ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+          <div className={`grid gap-2 ${forPdf ? 'grid-cols-1' : compact ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
             {FIT_SKILLS.map((skill) => (
               <div key={skill.key} className="p-2 rounded-lg bg-muted/30 border">
                 <div className="flex items-center gap-2">
@@ -63,12 +64,12 @@ export default function SkillsLegend({ className = '', compact = false }: Skills
         </div>
 
         {/* AI Readiness Skills */}
-        <div>
+        <div className={forPdf ? 'page-break-before avoid-page-break' : ''}>
           <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
             <Lightbulb className="h-4 w-4 text-green-600" />
             AI Readiness - Technical Competencies
           </h4>
-          <div className={`grid gap-2 ${compact ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+          <div className={`grid gap-2 ${forPdf ? 'grid-cols-1' : compact ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
             {AI_READINESS_SKILLS.map((skill) => (
               <div key={skill.key} className="p-2 rounded-lg bg-muted/30 border">
                 <div className="flex items-center gap-2">
@@ -84,12 +85,12 @@ export default function SkillsLegend({ className = '', compact = false }: Skills
         </div>
 
         {/* Prompt Architecture Dimensions */}
-        <div>
+        <div className={forPdf ? 'avoid-page-break' : ''}>
           <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
             <Target className="h-4 w-4 text-amber-600" />
             Prompt Architecture - Evaluation Dimensions
           </h4>
-          <div className={`grid gap-2 ${compact ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+          <div className={`grid gap-2 ${forPdf ? 'grid-cols-1' : compact ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
             {PROMPT_ARCHITECTURE_DIMENSIONS.map((dim) => (
               <div key={dim.key} className="p-2 rounded-lg bg-muted/30 border">
                 <span className="font-medium text-sm">{dim.displayName}</span>
@@ -100,12 +101,12 @@ export default function SkillsLegend({ className = '', compact = false }: Skills
         </div>
 
         {/* AIQ Scoring Bands */}
-        <div>
+        <div className={forPdf ? 'avoid-page-break' : ''}>
           <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
             <Shield className="h-4 w-4 text-purple-600" />
             AIQ - Algorithmic Integrity Quotient Bands
           </h4>
-          <div className="grid gap-2 grid-cols-1 md:grid-cols-2">
+          <div className={`grid gap-2 ${forPdf ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
             {AIQ_BANDS.map((band) => (
               <div key={band.range} className="p-2 rounded-lg bg-muted/30 border">
                 <div className="flex items-center gap-2">
