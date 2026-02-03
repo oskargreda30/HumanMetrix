@@ -5245,29 +5245,68 @@ export function registerPartnerRoutes(app: Express) {
         resultsUrl: hasExistingAccount ? `/dashboard?session=${firstSession}` : null,
       });
       
-      // Send results email asynchronously (like unlock flow does)
+      // Send ONE email with all PDFs attached asynchronously
       (async () => {
         try {
+          const { generateResultsPDF } = await import("./pdfGenerator");
+          const { sendBundleResultsEmail } = await import("./email");
+          const baseUrl = getBaseUrl(req);
+          
           // Get all completed sessions for email
           const sessions = await Promise.all(
             sessionIds.map(id => storage.getAssessmentSession(id))
           );
           const validSessions = sessions.filter(s => s && s.completedAt);
           
-          if (validSessions.length > 0) {
-            // Use the first session for PDF generation
-            const primarySession = validSessions[0];
-            if (primarySession) {
-              const { sendB2BResultsEmail } = await import('./email');
-              await sendB2BResultsEmail({
-                to: email,
-                candidateName: primarySession.externalName || email.split('@')[0],
-                partnerName,
-                assessmentType: primarySession.assessmentType,
-                sessionId: primarySession.id,
-                isPdfEmail: true,
+          console.log(`[Bundle Payment] Generating PDFs for ${validSessions.length} sessions`);
+          
+          // Generate all PDFs
+          const pdfAttachments: Array<{ filename: string; buffer: Buffer; assessmentType: string }> = [];
+          
+          for (const session of validSessions) {
+            if (!session) continue;
+            
+            try {
+              const assessmentName = {
+                'fit': 'FIT',
+                'ai_readiness': 'AI_Readiness',
+                'prompt_architecture': 'Prompt_Architecture',
+                'aiq': 'AIQ',
+              }[session.assessmentType.toLowerCase()] || session.assessmentType;
+              
+              const pdfFilename = `HumanMetrix_${assessmentName}_Results.pdf`;
+              
+              console.log(`[Bundle Payment] Generating PDF for ${session.assessmentType}`);
+              
+              const pdfBuffer = await generateResultsPDF({
+                sessionId: session.id,
+                email,
+                baseUrl,
               });
-              console.log(`[Bundle Payment] Results email sent to ${email}`);
+              
+              pdfAttachments.push({
+                filename: pdfFilename,
+                buffer: pdfBuffer,
+                assessmentType: session.assessmentType,
+              });
+              
+              console.log(`[Bundle Payment] Generated ${session.assessmentType} PDF (${Math.round(pdfBuffer.length / 1024)}KB)`);
+            } catch (sessionError) {
+              console.error(`[Bundle Payment] Error generating PDF for session ${session.id}:`, sessionError);
+            }
+          }
+          
+          if (pdfAttachments.length > 0) {
+            const emailResult = await sendBundleResultsEmail({
+              email,
+              partnerCompanyName: partnerName,
+              attachments: pdfAttachments,
+            });
+            
+            if (emailResult.success) {
+              console.log(`[Bundle Payment] Sent bundle email with ${pdfAttachments.length} PDFs to ${email}`);
+            } else {
+              console.error(`[Bundle Payment] Failed to send bundle email`);
             }
           }
         } catch (emailError) {

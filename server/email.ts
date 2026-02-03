@@ -3205,6 +3205,115 @@ Your results have also been shared with ${details.partnerCompanyName} as part of
   return { success: result.success, messageId: result.messageId };
 }
 
+// Bundle Results Email - One email with all assessment PDFs attached
+interface BundleResultsEmailDetails {
+  email: string;
+  partnerCompanyName: string;
+  attachments: Array<{ filename: string; buffer: Buffer; assessmentType: string }>;
+}
+
+export async function sendBundleResultsEmail(details: BundleResultsEmailDetails) {
+  const baseUrl = getBaseUrl();
+  const assessmentCount = details.attachments.length;
+  const assessmentNames = details.attachments.map(a => formatAssessmentName(a.assessmentType)).join(', ');
+  
+  const attachmentsListHtml = details.attachments.map(att => 
+    `<li style="margin: 8px 0; padding: 8px; background: #f0f9ff; border-radius: 4px;">
+      <span style="font-size: 20px; margin-right: 8px;">📄</span>
+      ${att.filename}
+    </li>`
+  ).join('');
+  
+  const msg = {
+    to: details.email,
+    subject: `Your ${assessmentCount} Assessment Results Are Ready`,
+    attachments: details.attachments.map(att => ({
+      filename: att.filename,
+      content: att.buffer.toString('base64'),
+      type: 'application/pdf',
+      disposition: 'attachment',
+    })),
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
+            .success-badge { background: #10b981; color: white; padding: 8px 16px; border-radius: 20px; display: inline-block; font-weight: 600; margin: 10px 0; }
+            .attachment-box { background: #f0f9ff; border: 2px dashed #0891b2; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0;">HumanMetrix</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">Professional AI Assessments</p>
+            </div>
+            <div class="content">
+              <p style="margin-top: 0;">Hello,</p>
+              
+              <p>Your payment has been processed and your assessment results are now available.</p>
+              
+              <div class="attachment-box">
+                <h3 style="margin-top: 0; color: #0891b2;">📎 Your Reports (${assessmentCount} attached)</h3>
+                <p style="margin-bottom: 10px;">The following PDF reports are attached to this email:</p>
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                  ${attachmentsListHtml}
+                </ul>
+              </div>
+              
+              <h3>What's In Your Reports?</h3>
+              <ul>
+                <li>Your overall assessment scores and percentile rankings</li>
+                <li>Detailed breakdown of your performance across key areas</li>
+                <li>Personalized insights and recommendations</li>
+                <li>Industry benchmarking data</li>
+              </ul>
+              
+              <p style="color: #6b7280; font-size: 14px;">Your results have also been shared with ${details.partnerCompanyName} as part of your application process.</p>
+            </div>
+            <div class="footer">
+              <p>Questions about your results? <a href="${baseUrl}/contact" style="color: #0891b2;">Contact us</a></p>
+              <p>© ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+Hello,
+
+Your payment has been processed and your assessment results are now available.
+
+ATTACHED REPORTS:
+${details.attachments.map(att => `- ${att.filename}`).join('\n')}
+
+Your detailed assessment reports are attached to this email.
+
+WHAT'S IN YOUR REPORTS?
+- Your overall assessment scores and percentile rankings
+- Detailed breakdown of your performance across key areas
+- Personalized insights and recommendations
+- Industry benchmarking data
+
+Your results have also been shared with ${details.partnerCompanyName} as part of your application process.
+
+---
+© ${new Date().getFullYear()} HumanMetrix. All rights reserved.
+    `.trim(),
+  };
+
+  const result = await sendEmail(msg);
+  if (result.success) {
+    console.log(`[Email] Bundle results email with ${assessmentCount} PDF(s) sent to ${details.email} (ID: ${result.messageId})`);
+  }
+  return { success: result.success, messageId: result.messageId };
+}
+
 // Send partner team invitation email
 export interface PartnerTeamInvitationDetails {
   email: string;
