@@ -59,9 +59,15 @@ export default function B2BPaymentCallback() {
           throw new Error(data.error || "Payment processing failed");
         }
 
+        console.log("[B2B Callback] Payment processed successfully:", {
+          email: data.email,
+          sessionId: data.sessionId,
+          hasExistingAccount: data.hasExistingAccount,
+        });
+
         setStatus("success");
-        setEmail(data.email);
-        setSessionId(data.sessionId);
+        setEmail(data.email || null);
+        setSessionId(data.sessionId || null);
         setHasExistingAccount(data.hasExistingAccount);
 
         if (data.hasExistingAccount && data.resultsUrl) {
@@ -84,7 +90,15 @@ export default function B2BPaymentCallback() {
   }, [setLocation]);
 
   const handleCreateAccount = async () => {
-    if (!email || !sessionId) return;
+    if (!email || !sessionId) {
+      console.error("[B2B Callback] Missing email or sessionId for account creation", { email, sessionId });
+      toast({
+        title: "Unable to create account",
+        description: "Missing required information. Please contact support or check your email for your results.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsCreatingAccount(true);
     

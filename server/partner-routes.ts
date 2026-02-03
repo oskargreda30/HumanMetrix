@@ -3262,7 +3262,13 @@ export function registerPartnerRoutes(app: Express) {
       }
       
       const sessionIds = JSON.parse(sessionIdsJson);
-      const email = checkoutSession.customer_email;
+      
+      // Get email from checkout session or from first assessment session
+      let email = checkoutSession.customer_email;
+      if (!email && sessionIds.length > 0) {
+        const firstSession = await storage.getAssessmentSession(sessionIds[0]);
+        email = firstSession?.externalEmail || null;
+      }
       
       // Get the invitation
       const invitation = await storage.getPartnerCandidateInvitationByToken(inviteToken);
