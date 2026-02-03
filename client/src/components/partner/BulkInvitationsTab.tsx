@@ -122,6 +122,12 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   const [revokeConfirmId, setRevokeConfirmId] = useState<string | null>(null);
   const [revokeConfirmEmail, setRevokeConfirmEmail] = useState<string>('');
+  const [insufficientCreditsInfo, setInsufficientCreditsInfo] = useState<{
+    required: number;
+    remaining: number;
+    maxCandidates: number;
+    maxAssessments: number;
+  } | null>(null);
 
   const { data: quota, isLoading: quotaLoading } = useQuery<QuotaData>({
     queryKey: ['/api/partner/me/quota'],
@@ -221,6 +227,17 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
       setValidationErrors([]);
     },
     onError: (error: any) => {
+      // Check for insufficient credits error
+      if (error.code === 'INSUFFICIENT_CREDITS') {
+        setInsufficientCreditsInfo({
+          required: error.tokensRequired,
+          remaining: error.tokensRemaining,
+          maxCandidates: error.maxCandidates,
+          maxAssessments: error.maxAssessments,
+        });
+        return;
+      }
+      
       // Try to parse structured error response from server
       if (error.errors && Array.isArray(error.errors)) {
         // Check for duplicate candidate errors
@@ -1181,6 +1198,52 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
             >
               Close
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!insufficientCreditsInfo} onOpenChange={(open) => !open && setInsufficientCreditsInfo(null)}>
+        <DialogContent className="max-w-md" data-testid="dialog-insufficient-credits">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              Insufficient Credits
+            </DialogTitle>
+            <DialogDescription className="pt-2 text-left">
+              You need <strong>{insufficientCreditsInfo?.required}</strong> credits to send these invitations, 
+              but you only have <strong>{insufficientCreditsInfo?.remaining}</strong> credits remaining.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mt-2">
+            <p className="text-sm text-amber-800 dark:text-amber-200">
+              <strong>With your current balance, you can:</strong>
+            </p>
+            <ul className="text-sm text-amber-700 dark:text-amber-300 list-disc pl-5 mt-2 space-y-1">
+              <li>Invite up to <strong>{insufficientCreditsInfo?.maxCandidates}</strong> candidate{insufficientCreditsInfo?.maxCandidates !== 1 ? 's' : ''} with {selectedAssessments.length} assessment{selectedAssessments.length !== 1 ? 's' : ''} each</li>
+              <li>Or use up to <strong>{insufficientCreditsInfo?.maxAssessments}</strong> total assessment{insufficientCreditsInfo?.maxAssessments !== 1 ? 's' : ''}</li>
+            </ul>
+          </div>
+
+          <DialogFooter className="mt-4 flex flex-col sm:flex-row gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setInsufficientCreditsInfo(null)}
+              data-testid="button-close-credits-dialog"
+            >
+              Adjust Invitations
+            </Button>
+            {onNavigateToBilling && (
+              <Button 
+                onClick={() => {
+                  setInsufficientCreditsInfo(null);
+                  onNavigateToBilling();
+                }}
+                data-testid="button-purchase-credits"
+              >
+                Purchase Credits
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

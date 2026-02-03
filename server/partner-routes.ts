@@ -2133,22 +2133,31 @@ export function registerPartnerRoutes(app: Express) {
       // Calculate tokens required (only after validation passes)
       const tokensRequired = candidates.length * assessmentTypes.length;
       
-      // Check prepaid balance if prepaid billing type
+      // Check prepaid balance for prepaid and payg partners
       const partnerAccount = await storage.getPartnerAccount(partner.id);
-      if (partnerAccount?.billingType === 'prepaid') {
+      if (partnerAccount?.billingType === 'prepaid' || partnerAccount?.billingType === 'payg') {
         const balance = await storage.getPartnerQuotaBalance(partner.id);
         if (balance.remaining < tokensRequired) {
           return res.status(400).json({ 
-            error: "Insufficient tokens",
+            error: "Insufficient credits",
+            code: "INSUFFICIENT_CREDITS",
             tokensRequired,
             tokensRemaining: balance.remaining,
-            errors: [{ row: 0, externalUserId: '', field: 'tokens', error: `Need ${tokensRequired} tokens, only ${balance.remaining} available` }],
+            maxCandidates: Math.floor(balance.remaining / assessmentTypes.length),
+            maxAssessments: balance.remaining,
+            errors: [{ 
+              row: 0, 
+              externalUserId: '', 
+              field: 'credits', 
+              error: `You need ${tokensRequired} credits but only have ${balance.remaining} available. You can invite up to ${Math.floor(balance.remaining / assessmentTypes.length)} candidate(s) with ${assessmentTypes.length} assessment(s) each, or reduce the number of assessments per candidate.`
+            }],
             summary: {
               totalCandidates: candidates.length,
               successCount: 0,
               failedCount: candidates.length,
               tokensUsed: 0,
             },
+            purchaseUrl: '/partner-dashboard?tab=billing',
           });
         }
       }
