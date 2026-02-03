@@ -1426,7 +1426,7 @@ export default function Dashboard() {
                         <Label htmlFor="bulk" className="cursor-pointer font-medium flex items-center gap-2">
                           Unlock All ({pricingData.assessments.length} assessments)
                           <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                            50% off
+                            25% off
                           </Badge>
                         </Label>
                         <p className="text-sm text-muted-foreground mt-1">
@@ -1491,9 +1491,6 @@ export default function Dashboard() {
                             <span className="text-sm font-medium">
                               {assessment.priceDisplay}
                             </span>
-                            <span className="text-xs text-muted-foreground line-through">
-                              {assessment.originalPriceDisplay}
-                            </span>
                           </div>
                         </div>
                       ))}
@@ -1510,7 +1507,7 @@ export default function Dashboard() {
                                 Total ({selectedAssessments.size} selected)
                                 {isBulkEligible && (
                                   <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                                    50% off applied
+                                    25% off applied
                                   </Badge>
                                 )}
                               </span>
