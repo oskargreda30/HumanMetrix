@@ -1020,6 +1020,10 @@ export default function PartnerDashboard() {
     
     if (tab && ['home', 'billing', 'results', 'invitations', 'team', 'api-keys', 'settings', 'ecosystem', 'usage', 'developer', 'analytics', 'notifications', 'activity', 'pipeline'].includes(tab)) {
       setActiveTab(tab);
+      // Auto-select Credit Balance when navigating to billing tab
+      if (tab === 'billing') {
+        setBillingExpandedSection('credits');
+      }
     }
     
     if (purchaseCancelled === 'true') {
@@ -1111,6 +1115,13 @@ export default function PartnerDashboard() {
   
   // Billing tab expanded section state
   const [billingExpandedSection, setBillingExpandedSection] = useState<string | null>(null);
+  
+  // Auto-select Credit Balance when billing tab is activated
+  useEffect(() => {
+    if (activeTab === 'billing' && billingExpandedSection === null) {
+      setBillingExpandedSection('credits');
+    }
+  }, [activeTab, billingExpandedSection]);
   
   // Settings tab expanded section state
   const [settingsExpandedSection, setSettingsExpandedSection] = useState<string | null>(null);
@@ -3031,8 +3042,8 @@ export default function PartnerDashboard() {
               {/* Quick Link Cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
                 <Card 
-                  className={`cursor-pointer hover-elevate transition-all ${billingExpandedSection === 'credits' ? 'ring-2 ring-primary' : ''}`}
-                  onClick={() => setBillingExpandedSection(billingExpandedSection === 'credits' ? null : 'credits')}
+                  className={`cursor-pointer hover-elevate transition-all ${billingExpandedSection === 'credits' ? 'ring-2 ring-primary bg-primary/10' : ''}`}
+                  onClick={() => setBillingExpandedSection('credits')}
                   data-testid="card-billing-credits"
                 >
                   <CardContent className="p-3 md:p-4 flex flex-col items-center text-center gap-1.5 md:gap-2">
@@ -3041,8 +3052,8 @@ export default function PartnerDashboard() {
                   </CardContent>
                 </Card>
                 <Card 
-                  className={`cursor-pointer hover-elevate transition-all ${billingExpandedSection === 'purchase' ? 'ring-2 ring-primary' : ''}`}
-                  onClick={() => setBillingExpandedSection(billingExpandedSection === 'purchase' ? null : 'purchase')}
+                  className={`cursor-pointer hover-elevate transition-all ${billingExpandedSection === 'purchase' ? 'ring-2 ring-primary bg-primary/10' : ''}`}
+                  onClick={() => setBillingExpandedSection('purchase')}
                   data-testid="card-billing-purchase"
                 >
                   <CardContent className="p-3 md:p-4 flex flex-col items-center text-center gap-1.5 md:gap-2">
@@ -3051,8 +3062,8 @@ export default function PartnerDashboard() {
                   </CardContent>
                 </Card>
                 <Card 
-                  className={`cursor-pointer hover-elevate transition-all ${billingExpandedSection === 'options' ? 'ring-2 ring-primary' : ''}`}
-                  onClick={() => setBillingExpandedSection(billingExpandedSection === 'options' ? null : 'options')}
+                  className={`cursor-pointer hover-elevate transition-all ${billingExpandedSection === 'options' ? 'ring-2 ring-primary bg-primary/10' : ''}`}
+                  onClick={() => setBillingExpandedSection('options')}
                   data-testid="card-billing-options"
                 >
                   <CardContent className="p-3 md:p-4 flex flex-col items-center text-center gap-1.5 md:gap-2">
@@ -3061,8 +3072,8 @@ export default function PartnerDashboard() {
                   </CardContent>
                 </Card>
                 <Card 
-                  className={`cursor-pointer hover-elevate transition-all ${billingExpandedSection === 'history' ? 'ring-2 ring-primary' : ''}`}
-                  onClick={() => setBillingExpandedSection(billingExpandedSection === 'history' ? null : 'history')}
+                  className={`cursor-pointer hover-elevate transition-all ${billingExpandedSection === 'history' ? 'ring-2 ring-primary bg-primary/10' : ''}`}
+                  onClick={() => setBillingExpandedSection('history')}
                   data-testid="card-billing-history"
                 >
                   <CardContent className="p-3 md:p-4 flex flex-col items-center text-center gap-1.5 md:gap-2">
