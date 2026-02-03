@@ -1339,7 +1339,7 @@ export async function sendPartnerQuotaWarning70(
 ) {
   const usagePercentage = Math.round((testsUsed / testsTotal) * 100);
   const baseUrl = getBaseUrl();
-  const topUpUrl = `${baseUrl}/developers?tab=billing&action=purchase`;
+  const topUpUrl = `${baseUrl}/partner-dashboard?tab=billing`;
   
   const msg = {
     to: partnerEmail,
@@ -1438,7 +1438,7 @@ export async function sendPartnerQuotaWarning90(
 ) {
   const usagePercentage = Math.round((testsUsed / testsTotal) * 100);
   const baseUrl = getBaseUrl();
-  const topUpUrl = `${baseUrl}/developers?tab=billing&action=purchase`;
+  const topUpUrl = `${baseUrl}/partner-dashboard?tab=billing`;
   
   const msg = {
     to: partnerEmail,
@@ -1537,7 +1537,7 @@ export async function sendPartnerAccessSuspendedEmail(
   companyName: string
 ) {
   const baseUrl = getBaseUrl();
-  const topUpUrl = `${baseUrl}/developers?tab=billing&action=purchase`;
+  const topUpUrl = `${baseUrl}/partner-dashboard?tab=billing`;
   
   const msg = {
     to: partnerEmail,
