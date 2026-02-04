@@ -11669,6 +11669,7 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
       
       const session = await stripeClient.checkout.sessions.create({
         mode: 'payment',
+        adaptive_pricing: { enabled: false }, // Disable currency selection - partners pay in their assigned currency only
         customer: customerId,
         allow_promotion_codes: !promoCodeId, // Allow manual entry only if we don't have a pre-applied code
         ...(promoCodeId ? { discounts: [{ promotion_code: promoCodeId }] } : {}),
@@ -18631,6 +18632,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         
         const session = await stripeClient.checkout.sessions.create({
           mode: 'payment',
+          adaptive_pricing: { enabled: false }, // Disable currency selection
           customer: partner.stripeCustomerId || undefined,
           customer_email: partner.stripeCustomerId ? undefined : partner.billingEmail || partner.email,
           allow_promotion_codes: true,
@@ -19586,6 +19588,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         
         const session = await stripeClient.checkout.sessions.create({
           mode: 'payment',
+          adaptive_pricing: { enabled: false }, // Disable currency selection
           customer: partner.stripeCustomerId || undefined,
           customer_email: partner.stripeCustomerId ? undefined : partner.billingEmail || partner.email,
           allow_promotion_codes: true,

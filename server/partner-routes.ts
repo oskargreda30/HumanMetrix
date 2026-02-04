@@ -3213,6 +3213,7 @@ export function registerPartnerRoutes(app: Express) {
       
       const stripeSession = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
+        adaptive_pricing: { enabled: false }, // Disable currency selection for partners
         line_items: [{
           price_data: {
             currency: 'gbp',
@@ -3952,6 +3953,7 @@ export function registerPartnerRoutes(app: Express) {
       
       // Create Stripe Checkout Session
       const checkoutSession = await stripe.checkout.sessions.create({
+        adaptive_pricing: { enabled: false }, // Disable currency selection for partners
         mode: 'payment',
         payment_method_types: ['card'],
         allow_promotion_codes: true,
@@ -5142,6 +5144,7 @@ export function registerPartnerRoutes(app: Express) {
       const uniqueAssessmentCount = new Set(filteredSessions.map((s: any) => normalizeAssessmentId(s.assessmentType))).size;
       
       const session = await stripe.checkout.sessions.create({
+        adaptive_pricing: { enabled: false }, // Disable currency selection for partners
         payment_method_types: ['card'],
         line_items: [
           {

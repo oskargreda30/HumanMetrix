@@ -1903,6 +1903,7 @@ export function registerEcosystemRoutes(app: Express): void {
       // Create Stripe checkout session
       const session = await stripe.checkout.sessions.create({
         customer_email: user.email,
+        adaptive_pricing: { enabled: false }, // Disable currency selection
         line_items: [{
           price_data: {
             currency: stripeCurrency,
