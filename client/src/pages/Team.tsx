@@ -17,6 +17,7 @@ interface TeamMember {
   bio: string;
   photoPosition: string;
   photoScale?: number;
+  photoRotation?: number;
 }
 
 const teamMembers: TeamMember[] = [
@@ -54,6 +55,7 @@ const teamMembers: TeamMember[] = [
     photo: marianaPhoto,
     photoPosition: "50% 22%",
     photoScale: 2.8,
+    photoRotation: 5,
     bio: "Dr Mariana Costa e Silva-Pickett is a behavioural science researcher specialising in psychometrics. Her academic journey spans applied psychology training and research at the Federal University of Mato Grosso (Brazil) and doctoral/postdoctoral work at City, St George's, University of London (United Kingdom), where she developed and evaluated behavioural and self-efficacy measures and contributed to digital mental health research. She brings deep expertise in test construction, construct validation, reliability and measurement quality, and translating complex outputs into clear recommendations. She is passionate about creating assessments that are scientifically robust, fair, and genuinely useful in practice."
   }
 ];
@@ -77,7 +79,8 @@ function TeamMemberCard({ member }: { member: TeamMember }) {
             backgroundImage: `url(${member.photo})`,
             backgroundSize: member.photoScale ? `${member.photoScale * 100}%` : 'cover',
             backgroundPosition: member.photoPosition || 'center center',
-            backgroundRepeat: 'no-repeat'
+            backgroundRepeat: 'no-repeat',
+            transform: member.photoRotation ? `rotate(${member.photoRotation}deg)` : undefined
           }}
           role="img"
           aria-label={member.name}
