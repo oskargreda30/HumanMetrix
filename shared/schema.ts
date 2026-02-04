@@ -766,14 +766,26 @@ export const partnerAccounts = pgTable("partner_accounts", {
   // Payment provider configuration
   paymentProvider: varchar("payment_provider").notNull().default("stripe"), // 'stripe' or 'airwallex'
   // Notification preferences (JSON object with notification type keys and boolean values)
+  // Partners can toggle these on/off in Settings > Notifications
   notificationPreferences: jsonb("notification_preferences").$type<{
+    // Assessment notifications
     assessment_completed?: boolean;        // Individual assessment completion notifications
     assessment_all_completed?: boolean;    // All assessments completed notifications
     assessment_link_expired?: boolean;     // Link expiration notifications
-    quota_alerts?: boolean;                // Quota/usage alerts
-    billing_alerts?: boolean;              // Billing and payment notifications
-    team_changes?: boolean;                // Team member role changes
-    security_alerts?: boolean;             // API key regeneration, suspicious activity
+    high_incomplete_rate?: boolean;        // High incomplete rate alerts
+    // Team notifications
+    team_member_role_changed?: boolean;    // Team member role changes
+    team_member_joined?: boolean;          // New team member joined
+    team_member_removed?: boolean;         // Team member removed
+    // Usage & reports
+    monthly_summary?: boolean;             // Monthly usage summary reports
+    new_ip_access?: boolean;               // New IP address detected accessing API
+    // Billing notifications
+    billing_success?: boolean;             // Successful billing notifications
+    credits_purchased?: boolean;           // Credits purchased notifications
+    invoice_generated?: boolean;           // Invoice generated notifications
+    // Note: Security alerts (API key regeneration, auth failures) and quota warnings 
+    // are always sent regardless of preferences as they are critical notifications
   }>().default({}),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
