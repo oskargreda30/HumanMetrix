@@ -4729,6 +4729,12 @@ export default function PartnerDashboard() {
               <div className="text-center py-4 md:py-6">
                 <h2 className="text-xl md:text-2xl font-semibold mb-1 md:mb-2 text-white">Candidate Pipeline</h2>
                 <p className="text-white/90 text-sm md:text-base">View, search, and manage your candidate assessments.</p>
+                <p className="text-cyan-300/80 text-xs md:text-sm mt-2 flex items-center justify-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 md:h-4 md:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                  </svg>
+                  Drag candidates between stages to update their status
+                </p>
               </div>
               <HiringPipelineTab />
             </TabsContent>
