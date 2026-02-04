@@ -52,8 +52,8 @@ const teamMembers: TeamMember[] = [
     name: "Dr Mariana Costa e Silva-Pickett",
     role: "Psychometrics Advisor",
     photo: marianaPhoto,
-    photoPosition: "center 20%",
-    photoScale: 1.4,
+    photoPosition: "center 25%",
+    photoScale: 1.15,
     bio: "Dr Mariana Costa e Silva-Pickett is a behavioural science researcher specialising in psychometrics. Her academic journey spans applied psychology training and research at the Federal University of Mato Grosso (Brazil) and doctoral/postdoctoral work at City, St George's, University of London (United Kingdom), where she developed and evaluated behavioural and self-efficacy measures and contributed to digital mental health research. She brings deep expertise in test construction, construct validation, reliability and measurement quality, and translating complex outputs into clear recommendations. She is passionate about creating assessments that are scientifically robust, fair, and genuinely useful in practice."
   }
 ];
@@ -87,13 +87,15 @@ function TeamMemberCard({ member }: { member: TeamMember }) {
         />
       </div>
       
-      {/* Name and role */}
-      <h3 className="text-lg font-semibold text-foreground" data-testid={`text-name-${member.name.toLowerCase().replace(/\s+/g, '-')}`}>
-        {member.name}
-      </h3>
-      <p className="text-sm text-muted-foreground mb-2" data-testid={`text-role-${member.name.toLowerCase().replace(/\s+/g, '-')}`}>
-        {member.role}
-      </p>
+      {/* Name and role - fixed height container for alignment */}
+      <div className="h-[4.5rem] md:h-[5rem] flex flex-col justify-start overflow-hidden">
+        <h3 className="text-xs md:text-sm font-semibold text-foreground leading-tight line-clamp-2" data-testid={`text-name-${member.name.toLowerCase().replace(/\s+/g, '-')}`}>
+          {member.name}
+        </h3>
+        <p className="text-xs text-muted-foreground mt-1 line-clamp-2" data-testid={`text-role-${member.name.toLowerCase().replace(/\s+/g, '-')}`}>
+          {member.role}
+        </p>
+      </div>
       
       {/* Bio link with hover tooltip */}
       <div className="relative">
