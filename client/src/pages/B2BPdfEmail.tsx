@@ -407,8 +407,69 @@ export default function B2BPdfEmail() {
           </CardContent>
         </Card>
 
+        {/* How to Read This Report - on first page after Key Metrics */}
+        <Card className="avoid-page-break" data-pdf-section="guide" style={isPdfRender ? { backgroundColor: 'white', border: '1px solid #e2e8f0' } : undefined}>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="h-5 w-5" style={{ color: '#3b82f6' }} />
+              <h3 className="text-lg font-bold" style={isPdfRender ? { color: '#1e293b' } : undefined}>How to Read This Report</h3>
+            </div>
+            <p className="text-sm mb-4" style={isPdfRender ? { color: '#64748b' } : undefined}>
+              A step-by-step guide to understanding your assessment results and how to use them for career growth
+            </p>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#3b82f6' }}>1</div>
+                <div>
+                  <p className="font-medium text-sm" style={isPdfRender ? { color: '#1e293b' } : undefined}>Score Interpretation</p>
+                  <div className="text-xs flex flex-wrap items-center gap-1 mt-1" style={isPdfRender ? { color: '#64748b' } : undefined}>
+                    <span className="px-1 py-0.5 rounded text-white text-[10px]" style={{ backgroundColor: '#22c55e' }}>75%+</span> Strong capability,
+                    <span className="px-1 py-0.5 rounded text-white text-[10px]" style={{ backgroundColor: '#f59e0b' }}>50-74%</span> Developing,
+                    <span className="px-1 py-0.5 rounded text-white text-[10px]" style={{ backgroundColor: '#ef4444' }}>&lt;50%</span> Growth opportunity
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#3b82f6' }}>2</div>
+                <div>
+                  <p className="font-medium text-sm" style={isPdfRender ? { color: '#1e293b' } : undefined}>Four Assessment Areas</p>
+                  <p className="text-xs" style={isPdfRender ? { color: '#64748b' } : undefined}>Your report covers FIT (behavioral traits), AI Readiness, Prompt Architecture, and AI Ethics (AIQ) - together providing a complete picture of your capabilities.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#3b82f6' }}>3</div>
+                <div>
+                  <p className="font-medium text-sm" style={isPdfRender ? { color: '#1e293b' } : undefined}>Strengths & Development Areas</p>
+                  <p className="text-xs" style={isPdfRender ? { color: '#64748b' } : undefined}>Each section highlights your strengths to leverage in interviews and development areas to focus on for career growth.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#3b82f6' }}>4</div>
+                <div>
+                  <p className="font-medium text-sm" style={isPdfRender ? { color: '#1e293b' } : undefined}>Using Your Results</p>
+                  <p className="text-xs" style={isPdfRender ? { color: '#64748b' } : undefined}>Share your report with potential employers to demonstrate your capabilities, or use insights to guide your professional development plan.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#3b82f6' }}>5</div>
+                <div>
+                  <p className="font-medium text-sm" style={isPdfRender ? { color: '#1e293b' } : undefined}>Radar Chart Visualization</p>
+                  <p className="text-xs" style={isPdfRender ? { color: '#64748b' } : undefined}>The radar chart provides a visual overview of your skills profile, making it easy to identify patterns across dimensions.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#3b82f6' }}>6</div>
+                <div>
+                  <p className="font-medium text-sm" style={isPdfRender ? { color: '#1e293b' } : undefined}>Individual Skill Scores</p>
+                  <p className="text-xs" style={isPdfRender ? { color: '#64748b' } : undefined}>Review detailed scores for each skill to understand your specific competencies and target areas for improvement.</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Assessment Results Card */}
-        <Card className="avoid-page-break" data-pdf-section="assessment" style={isPdfRender ? { backgroundColor: 'white', border: '1px solid #e2e8f0' } : undefined}>
+        <Card className="page-break-before avoid-page-break" data-pdf-section="assessment" style={isPdfRender ? { backgroundColor: 'white', border: '1px solid #e2e8f0' } : undefined}>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-3">
@@ -525,67 +586,6 @@ export default function B2BPdfEmail() {
             </CardContent>
           </Card>
         )}
-
-        {/* How to Read This Report */}
-        <Card className="page-break-before avoid-page-break" data-pdf-section="guide" style={isPdfRender ? { backgroundColor: 'white', border: '1px solid #e2e8f0' } : undefined}>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="h-5 w-5" style={{ color: '#3b82f6' }} />
-              <h3 className="text-lg font-bold" style={isPdfRender ? { color: '#1e293b' } : undefined}>How to Read This Report</h3>
-            </div>
-            <p className="text-sm mb-4" style={isPdfRender ? { color: '#64748b' } : undefined}>
-              A step-by-step guide to understanding your assessment results and how to use them for career growth
-            </p>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#3b82f6' }}>1</div>
-                <div>
-                  <p className="font-medium text-sm" style={isPdfRender ? { color: '#1e293b' } : undefined}>Score Interpretation</p>
-                  <div className="text-xs flex flex-wrap items-center gap-1 mt-1" style={isPdfRender ? { color: '#64748b' } : undefined}>
-                    <span className="px-1 py-0.5 rounded text-white text-[10px]" style={{ backgroundColor: '#22c55e' }}>75%+</span> Strong capability,
-                    <span className="px-1 py-0.5 rounded text-white text-[10px]" style={{ backgroundColor: '#f59e0b' }}>50-74%</span> Developing,
-                    <span className="px-1 py-0.5 rounded text-white text-[10px]" style={{ backgroundColor: '#ef4444' }}>&lt;50%</span> Growth opportunity
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#3b82f6' }}>2</div>
-                <div>
-                  <p className="font-medium text-sm" style={isPdfRender ? { color: '#1e293b' } : undefined}>Four Assessment Areas</p>
-                  <p className="text-xs" style={isPdfRender ? { color: '#64748b' } : undefined}>Your report covers FIT (behavioral traits), AI Readiness, Prompt Architecture, and AI Ethics (AIQ) - together providing a complete picture of your capabilities.</p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#3b82f6' }}>3</div>
-                <div>
-                  <p className="font-medium text-sm" style={isPdfRender ? { color: '#1e293b' } : undefined}>Strengths & Development Areas</p>
-                  <p className="text-xs" style={isPdfRender ? { color: '#64748b' } : undefined}>Each section highlights your strengths to leverage in interviews and development areas to focus on for career growth.</p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#3b82f6' }}>4</div>
-                <div>
-                  <p className="font-medium text-sm" style={isPdfRender ? { color: '#1e293b' } : undefined}>Using Your Results</p>
-                  <p className="text-xs" style={isPdfRender ? { color: '#64748b' } : undefined}>Share your report with potential employers to demonstrate your capabilities, or use insights to guide your professional development plan.</p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#3b82f6' }}>5</div>
-                <div>
-                  <p className="font-medium text-sm" style={isPdfRender ? { color: '#1e293b' } : undefined}>Radar Chart Visualization</p>
-                  <p className="text-xs" style={isPdfRender ? { color: '#64748b' } : undefined}>The radar chart provides a visual overview of your skills profile, making it easy to identify patterns across dimensions.</p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#3b82f6' }}>6</div>
-                <div>
-                  <p className="font-medium text-sm" style={isPdfRender ? { color: '#1e293b' } : undefined}>Individual Skill Scores</p>
-                  <p className="text-xs" style={isPdfRender ? { color: '#64748b' } : undefined}>Review detailed scores for each skill to understand your specific competencies and target areas for improvement.</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Skills Legend */}
         <div data-pdf-section="legend" className="page-break-before">
