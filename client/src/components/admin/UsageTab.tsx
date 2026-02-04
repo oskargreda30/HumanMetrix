@@ -389,7 +389,7 @@ function OrgAdminUsageView({ stats }: { stats?: OrgUsageStats }) {
     },
     onSuccess: (data: { success: boolean; sessionUrl: string }) => {
       if (data.sessionUrl) {
-        window.location.href = data.sessionUrl;
+        window.location.replace(data.sessionUrl);
       }
     },
     onError: (error: Error) => {

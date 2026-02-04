@@ -1548,7 +1548,7 @@ export default function PartnerDashboard() {
     },
     onSuccess: (data) => {
       if (data.sessionUrl) {
-        window.location.href = data.sessionUrl;
+        window.location.replace(data.sessionUrl);
       }
       setPurchasingPackageSize(null);
     },

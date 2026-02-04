@@ -389,7 +389,7 @@ export default function Dashboard() {
     },
     onSuccess: (data) => {
       if (data.url) {
-        window.location.href = data.url;
+        window.location.replace(data.url);
       }
     },
     onError: (error: any) => {

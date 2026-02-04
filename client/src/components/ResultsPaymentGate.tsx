@@ -83,8 +83,8 @@ export function ResultsPaymentGate() {
     },
     onSuccess: async (data: any) => {
       if (data.sessionUrl) {
-        // Redirect to Stripe checkout
-        window.location.href = data.sessionUrl;
+        // Redirect to Stripe checkout - use replace to prevent back button issues
+        window.location.replace(data.sessionUrl);
       }
     },
     onError: (error: any) => {

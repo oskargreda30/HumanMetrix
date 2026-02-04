@@ -13,8 +13,8 @@ export default function Checkout() {
     const url = params.get("url");
     
     if (url) {
-      // Redirect to Stripe checkout
-      window.location.href = url;
+      // Redirect to Stripe checkout - use replace to prevent back button issues
+      window.location.replace(url);
     } else {
       setLocation("/assessments");
     }
