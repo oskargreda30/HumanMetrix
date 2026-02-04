@@ -7,6 +7,7 @@ import oskarPhoto from "@assets/image_1767042160343.png";
 import daenaPhoto from "@assets/image_1767042182791.png";
 import quinPhoto from "@assets/image_1767042222400.png";
 import reynalynPhoto from "@assets/image_1767042236125.png";
+import marianaPhoto from "@assets/ChatGPT_Image_Feb_4,_2026,_03_45_33_AM_1770176770524.png";
 import dashboardBg from "@assets/image_1763608498774.png";
 
 interface TeamMember {
@@ -45,6 +46,13 @@ const teamMembers: TeamMember[] = [
     photo: reynalynPhoto,
     photoPosition: "center",
     bio: "Reynalyn Rodriguez built her career in social media marketing, bringing over two years of experience supporting brands in establishing a strong and consistent digital presence. She specializes in content creation, social media management, and audience engagement for business and professional service brands, with a focus on clear and strategic brand communication. Her work centers on translating brand messaging into engaging content that builds credibility and trust. Reynalyn holds a degree in Mass Communication from the University of Muntinlupa and pursued undergraduate studies in Marketing Management at the Polytechnic University of the Philippines (PUP)."
+  },
+  {
+    name: "Dr Mariana Costa e Silva-Pickett",
+    role: "Psychometrics Advisor",
+    photo: marianaPhoto,
+    photoPosition: "center",
+    bio: "Dr Mariana Costa e Silva-Pickett is a behavioural science researcher specialising in psychometrics. Her academic journey spans applied psychology training and research at the Federal University of Mato Grosso (Brazil) and doctoral/postdoctoral work at City, St George's, University of London (United Kingdom), where she developed and evaluated behavioural and self-efficacy measures and contributed to digital mental health research. She brings deep expertise in test construction, construct validation, reliability and measurement quality, and translating complex outputs into clear recommendations. She is passionate about creating assessments that are scientifically robust, fair, and genuinely useful in practice."
   }
 ];
 
