@@ -57,6 +57,7 @@ export default function PartnerPackageSuccess() {
   const [previousBalance, setPreviousBalance] = useState<number | null>(null);
   const [creditsAdded, setCreditsAdded] = useState<number | null>(null);
   const [animationStarted, setAnimationStarted] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   const displayCount = useCountUp(
     newBalance || 0, 
@@ -112,7 +113,7 @@ export default function PartnerPackageSuccess() {
     };
 
     processPayment();
-  }, []);
+  }, [retryCount]);
 
   return (
     <div className="min-h-screen flex flex-col relative">
@@ -165,10 +166,26 @@ export default function PartnerPackageSuccess() {
                 <CardDescription>
                   {message}
                 </CardDescription>
+                <p className="text-xs text-muted-foreground mt-2">
+                  If the payment was successful, your credits may still be processing. Try refreshing or return to the dashboard.
+                </p>
               </>
             )}
           </CardHeader>
           <CardContent className="space-y-4">
+            {status === "error" && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setStatus("processing");
+                  setRetryCount(c => c + 1);
+                }}
+                data-testid="button-retry-payment"
+              >
+                Retry
+              </Button>
+            )}
             {status === "success" && newBalance !== null && (
               <div className="p-4 rounded-lg bg-muted/50 text-center space-y-3">
                 {creditsAdded && (

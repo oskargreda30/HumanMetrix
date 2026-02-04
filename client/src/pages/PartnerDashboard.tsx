@@ -1207,6 +1207,10 @@ export default function PartnerDashboard() {
 
   const { data: account, isLoading: accountLoading } = useQuery<PartnerAccount>({
     queryKey: ["/api/partner/account"],
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const { data: dashboardCardStatus } = useQuery<CardStatus>({
