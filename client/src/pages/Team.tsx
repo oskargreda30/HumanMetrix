@@ -7,7 +7,7 @@ import oskarPhoto from "@assets/image_1767042160343.png";
 import daenaPhoto from "@assets/image_1767042182791.png";
 import quinPhoto from "@assets/image_1767042222400.png";
 import reynalynPhoto from "@assets/image_1767042236125.png";
-import marianaPhoto from "@assets/ChatGPT_Image_Feb_4,_2026,_03_45_33_AM_1770176770524.png";
+import marianaPhoto from "@assets/ChatGPT_Image_Feb_4,_2026,_04_05_01_AM_1770177910667.png";
 import dashboardBg from "@assets/image_1763608498774.png";
 
 interface TeamMember {
