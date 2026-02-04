@@ -342,8 +342,8 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP', billingType =
               <p className="text-sm text-muted-foreground">
                 <Info className="h-4 w-4 inline mr-1" />
                 To update or remove your payment method, please contact us at{' '}
-                <a href="mailto:hello@humanmetrix.com" className="text-primary hover:underline font-medium">
-                  hello@humanmetrix.com
+                <a href="mailto:hello@humanmetrix.co.uk" className="text-primary hover:underline font-medium">
+                  hello@humanmetrix.co.uk
                 </a>
               </p>
             </div>

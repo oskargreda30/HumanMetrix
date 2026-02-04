@@ -5270,7 +5270,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'italic');
   pdf.setTextColor(107, 114, 128);
-  pdf.text('Contact us at assessments@humanmetrix.co.uk for more information about these services.', 20, yPos);
+  pdf.text('Contact us at hello@humanmetrix.co.uk for more information about these services.', 20, yPos);
   
   // ========== SKILLS LEGEND PAGE ==========
   addSkillsLegendPage(pdf, pageWidth, pageHeight);

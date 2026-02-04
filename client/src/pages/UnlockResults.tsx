@@ -319,7 +319,7 @@ export default function UnlockResults() {
         </Card>
 
         <div className="text-center text-sm text-muted-foreground">
-          <p>Need help? Contact us at support@humanmetrix.com</p>
+          <p>Need help? Contact us at hello@humanmetrix.co.uk</p>
         </div>
       </div>
     </div>
