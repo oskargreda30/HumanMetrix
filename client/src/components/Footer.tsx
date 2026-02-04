@@ -111,7 +111,7 @@ export default function Footer() {
 
   return (
     <>
-      <footer className="border-t border-cyan-400/20 bg-[#0a1628]">
+      <footer className="relative z-20 border-t border-cyan-400/20 bg-[#0a1628]">
         <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-8 md:py-12 lg:py-16">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 lg:gap-12">
             {/* Brand Column */}
