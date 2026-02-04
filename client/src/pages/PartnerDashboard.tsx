@@ -1010,6 +1010,16 @@ export default function PartnerDashboard() {
   const [activeTab, setActiveTab] = useState("home");
   const [analysisSubTab, setAnalysisSubTab] = useState<string | null>(null);
   const { toast } = useToast();
+  
+  // Helper function to scroll to the dashboard tabs area after tab navigation
+  const scrollToContent = () => {
+    setTimeout(() => {
+      const tabsElement = document.getElementById('dashboard-tabs');
+      if (tabsElement) {
+        tabsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 50);
+  };
   const { currency, formatLocalPrice, getAdjustedPriceInPence, countryCode, pricingTier, isLoading: currencyLoading } = useCurrency();
   
   // Handle URL query parameters for tab navigation and purchase cancellation
@@ -2164,13 +2174,13 @@ export default function PartnerDashboard() {
             </div>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6" id="dashboard-tabs">
             {/* Breadcrumb Navigation */}
             <nav className="flex items-center gap-2 text-sm text-white/70 mb-2" data-testid="breadcrumb-nav">
               <Button 
                 variant="ghost"
                 size="sm"
-                onClick={() => { setActiveTab('home'); window.scrollTo(0, 0); }}
+                onClick={() => { setActiveTab('home'); scrollToContent(); }}
                 className="h-auto p-0 text-white/70"
                 data-testid="breadcrumb-dashboard"
               >
@@ -2390,56 +2400,56 @@ export default function PartnerDashboard() {
 
               {/* Quick Actions */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("invitations"); window.scrollTo(0, 0); }} data-testid="card-quick-invite">
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("invitations"); scrollToContent(); }} data-testid="card-quick-invite">
                   <CardContent className="pt-6 text-center">
                     <Send className="h-8 w-8 mx-auto mb-2 text-primary" />
                     <h3 className="font-semibold">Quick Invite</h3>
                     <p className="text-sm text-muted-foreground">Send assessment invitations</p>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("billing"); window.scrollTo(0, 0); }} data-testid="card-quick-billing">
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("billing"); scrollToContent(); }} data-testid="card-quick-billing">
                   <CardContent className="pt-6 text-center">
                     <CreditCard className="h-8 w-8 mx-auto mb-2 text-primary" />
                     <h3 className="font-semibold">Purchase Credits</h3>
                     <p className="text-sm text-muted-foreground">Top up your balance</p>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("results"); window.scrollTo(0, 0); }} data-testid="card-quick-results">
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("results"); scrollToContent(); }} data-testid="card-quick-results">
                   <CardContent className="pt-6 text-center">
                     <ClipboardList className="h-8 w-8 mx-auto mb-2 text-primary" />
                     <h3 className="font-semibold">View Results</h3>
                     <p className="text-sm text-muted-foreground">See assessment results</p>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("ecosystem"); window.scrollTo(0, 0); }} data-testid="card-quick-team-analysis">
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("ecosystem"); scrollToContent(); }} data-testid="card-quick-team-analysis">
                   <CardContent className="pt-6 text-center">
                     <Sparkles className="h-8 w-8 mx-auto mb-2 text-primary" />
                     <h3 className="font-semibold">Team Analysis</h3>
                     <p className="text-sm text-muted-foreground">AI-powered diagnostics</p>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("pipeline"); window.scrollTo(0, 0); }} data-testid="card-quick-pipeline">
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("pipeline"); scrollToContent(); }} data-testid="card-quick-pipeline">
                   <CardContent className="pt-6 text-center">
                     <Kanban className="h-8 w-8 mx-auto mb-2 text-primary" />
                     <h3 className="font-semibold">View Pipeline</h3>
                     <p className="text-sm text-muted-foreground">Track hiring progress</p>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("analysis"); setAnalysisSubTab("compare"); window.scrollTo(0, 0); }} data-testid="card-quick-compare">
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("analysis"); setAnalysisSubTab("compare"); scrollToContent(); }} data-testid="card-quick-compare">
                   <CardContent className="pt-6 text-center">
                     <Users className="h-8 w-8 mx-auto mb-2 text-primary" />
                     <h3 className="font-semibold">Compare Candidates</h3>
                     <p className="text-sm text-muted-foreground">Side-by-side analysis</p>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("analysis"); setAnalysisSubTab("role-fit"); window.scrollTo(0, 0); }} data-testid="card-quick-rolefit">
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("analysis"); setAnalysisSubTab("role-fit"); scrollToContent(); }} data-testid="card-quick-rolefit">
                   <CardContent className="pt-6 text-center">
                     <Target className="h-8 w-8 mx-auto mb-2 text-primary" />
                     <h3 className="font-semibold">Role Fit Analysis</h3>
                     <p className="text-sm text-muted-foreground">AI-powered matching</p>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("team"); window.scrollTo(0, 0); }} data-testid="card-quick-team">
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("team"); scrollToContent(); }} data-testid="card-quick-team">
                   <CardContent className="pt-6 text-center">
                     <UserCog className="h-8 w-8 mx-auto mb-2 text-primary" />
                     <h3 className="font-semibold">Manage Team</h3>
@@ -2481,7 +2491,7 @@ export default function PartnerDashboard() {
                       <Button 
                         variant="ghost" 
                         className="h-auto p-0 text-[10px] md:text-xs text-primary underline hover:underline" 
-                        onClick={() => { setActiveTab("billing"); window.scrollTo(0, 0); }}
+                        onClick={() => { setActiveTab("billing"); scrollToContent(); }}
                         data-testid="link-purchase-more"
                       >
                         Purchase more
@@ -2499,9 +2509,9 @@ export default function PartnerDashboard() {
                 <p className="text-white/90 text-sm md:text-base">Access detailed assessment results and download reports.</p>
                 {/* Cross-Tab Quick Link */}
                 <Button 
-                  variant="link" 
-                  className="mt-2 text-cyan-300" 
-                  onClick={() => { setActiveTab('ecosystem'); window.scrollTo(0, 0); }}
+                  variant="ghost" 
+                  className="mt-2 text-cyan-300 hover:text-cyan-200 hover:bg-white/10" 
+                  onClick={() => { setActiveTab('ecosystem'); scrollToContent(); }}
                   data-testid="link-results-to-ecosystem"
                 >
                   <Sparkles className="h-4 w-4 mr-1" />
@@ -4698,9 +4708,9 @@ export default function PartnerDashboard() {
                 <p className="text-white/90 text-sm md:text-base">Compare candidates side-by-side with AI-powered insights.</p>
                 {/* Cross-Tab Quick Link */}
                 <Button 
-                  variant="link" 
-                  className="mt-2 text-cyan-300" 
-                  onClick={() => { setActiveTab('invitations'); window.scrollTo(0, 0); }}
+                  variant="ghost" 
+                  className="mt-2 text-cyan-300 hover:text-cyan-200 hover:bg-white/10" 
+                  onClick={() => { setActiveTab('invitations'); scrollToContent(); }}
                   data-testid="link-analysis-to-invitations"
                 >
                   <Send className="h-4 w-4 mr-1" />
@@ -4709,7 +4719,7 @@ export default function PartnerDashboard() {
               </div>
               <PartnerAnalysisTab 
                 creditsRemaining={partner.remaining} 
-                onNavigateToEcosystem={() => { setActiveTab('ecosystem'); window.scrollTo(0, 0); }}
+                onNavigateToEcosystem={() => { setActiveTab('ecosystem'); scrollToContent(); }}
                 initialSubTab={analysisSubTab}
               />
             </TabsContent>
@@ -4735,7 +4745,7 @@ export default function PartnerDashboard() {
                 hasCardOnFile={dashboardCardStatus?.hasCard}
                 creditsRemaining={partner?.remaining}
                 onNavigateToBilling={() => setActiveTab('billing')}
-                onNavigateToAnalysis={() => { setActiveTab('analysis'); window.scrollTo(0, 0); }}
+                onNavigateToAnalysis={() => { setActiveTab('analysis'); scrollToContent(); }}
               />
             </TabsContent>
 
@@ -5557,7 +5567,7 @@ export default function PartnerDashboard() {
                   variant="secondary" 
                   size="sm" 
                   className="shadow-lg flex items-center gap-2"
-                  onClick={() => { setActiveTab('invitations'); setFabOpen(false); window.scrollTo(0, 0); }}
+                  onClick={() => { setActiveTab('invitations'); setFabOpen(false); scrollToContent(); }}
                   data-testid="fab-invite-candidate"
                 >
                   <Send className="h-4 w-4" />
@@ -5567,7 +5577,7 @@ export default function PartnerDashboard() {
                   variant="secondary" 
                   size="sm" 
                   className="shadow-lg flex items-center gap-2"
-                  onClick={() => { setActiveTab('billing'); setBillingExpandedSection('purchase'); setFabOpen(false); window.scrollTo(0, 0); }}
+                  onClick={() => { setActiveTab('billing'); setBillingExpandedSection('purchase'); setFabOpen(false); scrollToContent(); }}
                   data-testid="fab-buy-credits"
                 >
                   <CreditCard className="h-4 w-4" />
@@ -5577,7 +5587,7 @@ export default function PartnerDashboard() {
                   variant="secondary" 
                   size="sm" 
                   className="shadow-lg flex items-center gap-2"
-                  onClick={() => { setActiveTab('ecosystem'); setFabOpen(false); window.scrollTo(0, 0); }}
+                  onClick={() => { setActiveTab('ecosystem'); setFabOpen(false); scrollToContent(); }}
                   data-testid="fab-run-analysis"
                 >
                   <Sparkles className="h-4 w-4" />

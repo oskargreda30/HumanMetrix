@@ -58,8 +58,8 @@ export function EcosystemAutoProject({
   const [error, setError] = useState<string | null>(null);
   const creationAttemptedRef = useRef(false);
   
-  // View state for quick action cards
-  const [activeView, setActiveView] = useState<'new' | 'saved' | null>('new');
+  // View state for quick action cards - null initially so content only shows when user clicks
+  const [activeView, setActiveView] = useState<'new' | 'saved' | null>(null);
   
   // New analysis naming dialog state
   const [showNewAnalysisDialog, setShowNewAnalysisDialog] = useState(false);
@@ -265,7 +265,11 @@ export function EcosystemAutoProject({
       <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-3">
         <Card 
           className={`cursor-pointer hover-elevate ${activeView === 'new' ? 'border-primary ring-1 ring-primary' : ''}`}
-          onClick={() => setActiveView('new')}
+          onClick={() => {
+            setActiveView('new');
+            // Also open the new analysis naming dialog for a fresh start
+            handleStartNewAnalysis();
+          }}
           data-testid="card-new-analysis"
         >
           <CardContent className="p-4 md:p-6 text-center">
@@ -298,6 +302,19 @@ export function EcosystemAutoProject({
           </CardContent>
         </Card>
       </div>
+
+      {/* Landing state when no view is selected */}
+      {activeView === null && (
+        <Card className="border-dashed">
+          <CardContent className="py-12 text-center">
+            <Sparkles className="h-12 w-12 mx-auto mb-4 text-primary opacity-50" />
+            <h3 className="text-lg font-semibold mb-2">Team Ecosystem Analysis</h3>
+            <p className="text-muted-foreground max-w-md mx-auto">
+              Select an option above to start a new team diagnostic or view your saved analyses.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Content based on selected card */}
       {activeView === 'new' && (

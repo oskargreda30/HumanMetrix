@@ -19,16 +19,26 @@ const partnerConfig: SharedRoleFitConfig = {
 export default function PartnerRoleFitTab() {
   return (
     <Tabs defaultValue="single" className="w-full">
-      <TabsList className="grid w-full max-w-lg mx-auto grid-cols-2">
-        <TabsTrigger value="single" className="flex items-center gap-2 py-3 text-base" data-testid="tab-single-candidate">
-          <User className="h-5 w-5" />
-          Single Candidate
-        </TabsTrigger>
-        <TabsTrigger value="multi" className="flex items-center gap-2 py-3 text-base" data-testid="tab-multi-candidate">
-          <Users className="h-5 w-5" />
-          Multiple Candidates
-        </TabsTrigger>
-      </TabsList>
+      <div className="flex justify-center mb-6">
+        <TabsList className="inline-flex h-12 items-center justify-center rounded-full bg-slate-800/90 p-1.5 shadow-lg border border-slate-700/50 backdrop-blur-sm">
+          <TabsTrigger 
+            value="single" 
+            className="inline-flex items-center justify-center gap-2.5 whitespace-nowrap rounded-full px-6 py-2.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-slate-300 data-[state=inactive]:hover:text-white data-[state=inactive]:hover:bg-slate-700/50" 
+            data-testid="tab-single-candidate"
+          >
+            <User className="h-4 w-4" />
+            Single Candidate
+          </TabsTrigger>
+          <TabsTrigger 
+            value="multi" 
+            className="inline-flex items-center justify-center gap-2.5 whitespace-nowrap rounded-full px-6 py-2.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-slate-300 data-[state=inactive]:hover:text-white data-[state=inactive]:hover:bg-slate-700/50" 
+            data-testid="tab-multi-candidate"
+          >
+            <Users className="h-4 w-4" />
+            Multiple Candidates
+          </TabsTrigger>
+        </TabsList>
+      </div>
       <TabsContent value="single" className="mt-6 data-[state=inactive]:hidden" forceMount>
         <SharedSingleCandidateRoleFit config={partnerConfig} />
       </TabsContent>
