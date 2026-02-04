@@ -16,6 +16,7 @@ interface TeamMember {
   photo: string;
   bio: string;
   photoPosition: string;
+  photoScale?: number;
 }
 
 const teamMembers: TeamMember[] = [
@@ -51,7 +52,8 @@ const teamMembers: TeamMember[] = [
     name: "Dr Mariana Costa e Silva-Pickett",
     role: "Psychometrics Advisor",
     photo: marianaPhoto,
-    photoPosition: "center",
+    photoPosition: "center 20%",
+    photoScale: 1.4,
     bio: "Dr Mariana Costa e Silva-Pickett is a behavioural science researcher specialising in psychometrics. Her academic journey spans applied psychology training and research at the Federal University of Mato Grosso (Brazil) and doctoral/postdoctoral work at City, St George's, University of London (United Kingdom), where she developed and evaluated behavioural and self-efficacy measures and contributed to digital mental health research. She brings deep expertise in test construction, construct validation, reliability and measurement quality, and translating complex outputs into clear recommendations. She is passionate about creating assessments that are scientifically robust, fair, and genuinely useful in practice."
   }
 ];
@@ -77,7 +79,10 @@ function TeamMemberCard({ member }: { member: TeamMember }) {
           onLoad={() => setImageLoaded(true)}
           onError={() => setImageLoaded(true)}
           className={`w-full h-full object-cover transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-          style={{ objectPosition: member.photoPosition }}
+          style={{ 
+            objectPosition: member.photoPosition,
+            transform: member.photoScale ? `scale(${member.photoScale})` : undefined
+          }}
           data-testid={`img-team-${member.name.toLowerCase().replace(/\s+/g, '-')}`}
         />
       </div>
@@ -175,8 +180,8 @@ export default function Team() {
           </p>
         </div>
 
-        {/* Team grid - 4 columns on larger screens */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-6 max-w-5xl mx-auto">
+        {/* Team grid - 5 columns on larger screens */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 md:gap-4 max-w-6xl mx-auto">
           {teamMembers.map((member) => (
             <TeamMemberCard key={member.name} member={member} />
           ))}
