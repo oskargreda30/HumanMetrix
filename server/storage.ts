@@ -1638,6 +1638,34 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
 
+  async updateUserNotificationPreferences(userId: string, preferences: { assessmentReminders: boolean; resultNotifications: boolean; marketingEmails: boolean }): Promise<void> {
+    await db
+      .update(users)
+      .set({ 
+        notificationPreferences: preferences,
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async deleteUserAccount(userId: string): Promise<void> {
+    const now = new Date();
+    const anonymizedEmail = `deleted_${userId}@deleted.local`;
+    
+    await db
+      .update(users)
+      .set({ 
+        email: anonymizedEmail,
+        firstName: 'Deleted',
+        lastName: 'User',
+        password: null,
+        isActive: false,
+        
+        updatedAt: now 
+      })
+      .where(eq(users.id, userId));
+  }
+
   async getUsersByOrganization(organizationId: string): Promise<User[]> {
     return await db
       .select()

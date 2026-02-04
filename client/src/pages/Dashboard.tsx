@@ -30,7 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, CheckCircle2, Clock, FileText, Brain, Sparkles, Code, Scale, Timer, Key, X, Eye, EyeOff, Plus, Lock, Unlock, CreditCard, PlayCircle } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, FileText, Brain, Sparkles, Code, Scale, Timer, Key, X, Eye, EyeOff, Plus, Lock, Unlock, CreditCard, PlayCircle, LogOut, Bell, Trash2, Mail } from "lucide-react";
 import { format } from "date-fns";
 import { formatAssessmentName } from "@/lib/assessmentHelpers";
 import { useEffect, useState } from "react";
@@ -127,6 +127,18 @@ export default function Dashboard() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
+  // Notification preferences state
+  const [notificationsDialogOpen, setNotificationsDialogOpen] = useState(false);
+  const [notificationPrefs, setNotificationPrefs] = useState({
+    assessmentReminders: true,
+    resultNotifications: true,
+    marketingEmails: false,
+  });
+  
+  // Delete account state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  
   const changePasswordMutation = useMutation({
     mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
       const res = await apiRequest("POST", "/api/change-password", data);
@@ -170,6 +182,75 @@ export default function Dashboard() {
     }
     changePasswordMutation.mutate({ currentPassword, newPassword });
   };
+  
+  // Logout mutation
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/logout");
+      return res;
+    },
+    onSuccess: async () => {
+      queryClient.setQueryData(["/api/auth/user"], null);
+      await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out of your account.",
+      });
+      window.location.href = "/";
+    },
+    onError: () => {
+      toast({
+        title: "Logout failed",
+        description: "There was an error logging out. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Update notification preferences mutation
+  const updateNotificationsMutation = useMutation({
+    mutationFn: async (prefs: typeof notificationPrefs) => {
+      const res = await apiRequest("PATCH", "/api/user/notification-preferences", prefs);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Preferences Updated",
+        description: "Your notification preferences have been saved.",
+      });
+      setNotificationsDialogOpen(false);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update notification preferences",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Delete account mutation
+  const deleteAccountMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("DELETE", "/api/user/account");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.setQueryData(["/api/auth/user"], null);
+      toast({
+        title: "Account Deleted",
+        description: "Your account has been permanently deleted.",
+      });
+      window.location.href = "/";
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete account",
+        variant: "destructive",
+      });
+    },
+  });
   
   // Remove assessment state and mutation
   const [assessmentToRemove, setAssessmentToRemove] = useState<{ id: string; name: string } | null>(null);
@@ -464,20 +545,31 @@ export default function Dashboard() {
       <Navigation />
       <main className="flex-grow py-16 relative z-10">
         <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
-          <div className="mb-8 flex items-start justify-between">
+          <div className="mb-8 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold mb-2 text-white">My Dashboard</h1>
               <p className="text-white/80">
                 Welcome back, {user?.firstName || 'there'}!
               </p>
+              {user?.email && (
+                <p className="text-white/60 text-sm flex items-center gap-1 mt-1" data-testid="text-user-email">
+                  <Mail className="h-3 w-3" />
+                  {user.email}
+                </p>
+              )}
             </div>
-            <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="gap-2 text-white border-white/50 hover:bg-white/10" data-testid="button-change-password">
-                  <Key className="h-4 w-4" />
-                  Change Password
-                </Button>
-              </DialogTrigger>
+            
+            {/* Account action buttons */}
+            <div className="flex flex-wrap gap-2">
+              {/* Change Password */}
+              <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 text-white border-white/50 hover:bg-white/10" data-testid="button-change-password">
+                    <Key className="h-4 w-4" />
+                    <span className="hidden sm:inline">Change Password</span>
+                    <span className="sm:hidden">Password</span>
+                  </Button>
+                </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Change Password</DialogTitle>
@@ -570,6 +662,148 @@ export default function Dashboard() {
                 </div>
               </DialogContent>
             </Dialog>
+              
+              {/* Notification Preferences */}
+              <Dialog open={notificationsDialogOpen} onOpenChange={setNotificationsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 text-white border-white/50 hover:bg-white/10" data-testid="button-notifications">
+                    <Bell className="h-4 w-4" />
+                    <span className="hidden sm:inline">Notifications</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Notification Preferences</DialogTitle>
+                    <DialogDescription>
+                      Choose which email notifications you'd like to receive.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="assessment-reminders">Assessment Reminders</Label>
+                        <p className="text-sm text-muted-foreground">Reminders for incomplete assessments</p>
+                      </div>
+                      <Checkbox
+                        id="assessment-reminders"
+                        checked={notificationPrefs.assessmentReminders}
+                        onCheckedChange={(checked) => 
+                          setNotificationPrefs(prev => ({ ...prev, assessmentReminders: !!checked }))
+                        }
+                        data-testid="checkbox-assessment-reminders"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="result-notifications">Result Notifications</Label>
+                        <p className="text-sm text-muted-foreground">Emails when your results are ready</p>
+                      </div>
+                      <Checkbox
+                        id="result-notifications"
+                        checked={notificationPrefs.resultNotifications}
+                        onCheckedChange={(checked) => 
+                          setNotificationPrefs(prev => ({ ...prev, resultNotifications: !!checked }))
+                        }
+                        data-testid="checkbox-result-notifications"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label htmlFor="marketing-emails">Marketing Emails</Label>
+                        <p className="text-sm text-muted-foreground">Updates about new features and offers</p>
+                      </div>
+                      <Checkbox
+                        id="marketing-emails"
+                        checked={notificationPrefs.marketingEmails}
+                        onCheckedChange={(checked) => 
+                          setNotificationPrefs(prev => ({ ...prev, marketingEmails: !!checked }))
+                        }
+                        data-testid="checkbox-marketing-emails"
+                      />
+                    </div>
+                    <Button 
+                      onClick={() => updateNotificationsMutation.mutate(notificationPrefs)}
+                      disabled={updateNotificationsMutation.isPending}
+                      className="w-full"
+                      data-testid="button-save-notifications"
+                    >
+                      {updateNotificationsMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save Preferences"
+                      )}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+              
+              {/* Logout Button */}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2 text-white border-white/50 hover:bg-white/10" 
+                onClick={() => logoutMutation.mutate()}
+                disabled={logoutMutation.isPending}
+                data-testid="button-logout"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Logout</span>
+              </Button>
+              
+              {/* Delete Account */}
+              <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2 text-red-400 border-red-400/50 hover:bg-red-400/10" 
+                  onClick={() => setDeleteDialogOpen(true)}
+                  data-testid="button-delete-account"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Delete Account</span>
+                </Button>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Account</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <div className="py-4">
+                    <Label htmlFor="delete-confirm">Type "DELETE" to confirm:</Label>
+                    <Input
+                      id="delete-confirm"
+                      value={deleteConfirmText}
+                      onChange={(e) => setDeleteConfirmText(e.target.value)}
+                      placeholder="Type DELETE"
+                      className="mt-2"
+                      data-testid="input-delete-confirm"
+                    />
+                  </div>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setDeleteConfirmText("")}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => deleteAccountMutation.mutate()}
+                      disabled={deleteConfirmText !== "DELETE" || deleteAccountMutation.isPending}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      data-testid="button-confirm-delete"
+                    >
+                      {deleteAccountMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Deleting...
+                        </>
+                      ) : (
+                        "Delete Account"
+                      )}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
 
           {/* Available Assessments - Only show if user has no active partner testing series */}

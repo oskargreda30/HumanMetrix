@@ -2510,6 +2510,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // B2C User notification preferences - GET
+  app.get('/api/user/notification-preferences', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Return default preferences if none set
+      const defaultPrefs = {
+        assessmentReminders: true,
+        resultNotifications: true,
+        marketingEmails: false,
+      };
+      
+      res.json({ 
+        preferences: user.notificationPreferences || defaultPrefs 
+      });
+    } catch (error) {
+      console.error("Error fetching notification preferences:", error);
+      res.status(500).json({ message: "Failed to fetch notification preferences" });
+    }
+  });
+
+  // B2C User notification preferences - PATCH
+  app.patch('/api/user/notification-preferences', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { assessmentReminders, resultNotifications, marketingEmails } = req.body;
+      
+      const preferences = {
+        assessmentReminders: assessmentReminders !== false,
+        resultNotifications: resultNotifications !== false,
+        marketingEmails: marketingEmails === true,
+      };
+      
+      await storage.updateUserNotificationPreferences(userId, preferences);
+      
+      res.json({ success: true, preferences });
+    } catch (error) {
+      console.error("Error updating notification preferences:", error);
+      res.status(500).json({ message: "Failed to update notification preferences" });
+    }
+  });
+
+  // B2C User account deletion
+  app.delete('/api/user/account', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Don't allow admins to delete themselves via this endpoint
+      if (user.role === 'admin') {
+        return res.status(403).json({ message: "Admin accounts cannot be deleted via this endpoint" });
+      }
+      
+      // Soft delete: anonymize user data instead of hard delete
+      await storage.deleteUserAccount(userId);
+      
+      // Destroy the session
+      req.session.destroy((err: any) => {
+        if (err) {
+          console.error("Error destroying session:", err);
+        }
+      });
+      
+      res.json({ success: true, message: "Account deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting user account:", error);
+      res.status(500).json({ message: "Failed to delete account" });
+    }
+  });
+
   // Stripe checkout session for guest (before signup)
   app.post("/api/create-checkout-session-guest", async (req, res) => {
     try {
