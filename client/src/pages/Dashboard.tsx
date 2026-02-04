@@ -30,7 +30,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, CheckCircle2, Clock, FileText, Brain, Sparkles, Code, Scale, Timer, Key, X, Eye, EyeOff, Plus, Lock, Unlock, CreditCard, PlayCircle, LogOut, Bell, Trash2, Mail } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, FileText, Brain, Sparkles, Code, Scale, Timer, Key, X, Eye, EyeOff, Plus, Lock, Unlock, CreditCard, PlayCircle, Bell, Trash2, Mail, Settings } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import { formatAssessmentName } from "@/lib/assessmentHelpers";
 import { useEffect, useState } from "react";
@@ -183,30 +189,6 @@ export default function Dashboard() {
     changePasswordMutation.mutate({ currentPassword, newPassword });
   };
   
-  // Logout mutation
-  const logoutMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/logout");
-      return res;
-    },
-    onSuccess: async () => {
-      queryClient.setQueryData(["/api/auth/user"], null);
-      await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
-      toast({
-        title: "Logged out successfully",
-        description: "You have been logged out of your account.",
-      });
-      window.location.href = "/";
-    },
-    onError: () => {
-      toast({
-        title: "Logout failed",
-        description: "There was an error logging out. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-  
   // Update notification preferences mutation
   const updateNotificationsMutation = useMutation({
     mutationFn: async (prefs: typeof notificationPrefs) => {
@@ -232,21 +214,21 @@ export default function Dashboard() {
   // Delete account mutation
   const deleteAccountMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("DELETE", "/api/user/account");
+      const res = await apiRequest("POST", "/api/user/request-account-deletion");
       return res.json();
     },
     onSuccess: () => {
-      queryClient.setQueryData(["/api/auth/user"], null);
+      setDeleteDialogOpen(false);
+      setDeleteConfirmText("");
       toast({
-        title: "Account Deleted",
-        description: "Your account has been permanently deleted.",
+        title: "Request Submitted",
+        description: "Your account deletion request has been sent to our team for review. You'll receive a confirmation email once processed.",
       });
-      window.location.href = "/";
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to delete account",
+        description: error.message || "Failed to submit deletion request",
         variant: "destructive",
       });
     },
@@ -663,14 +645,35 @@ export default function Dashboard() {
               </DialogContent>
             </Dialog>
               
-              {/* Notification Preferences */}
-              <Dialog open={notificationsDialogOpen} onOpenChange={setNotificationsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2 text-white border-white/50 hover:bg-white/10" data-testid="button-notifications">
-                    <Bell className="h-4 w-4" />
-                    <span className="hidden sm:inline">Notifications</span>
+              {/* Settings Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 text-white border-white/50 hover:bg-white/10" data-testid="button-settings">
+                    <Settings className="h-4 w-4" />
+                    <span className="hidden sm:inline">Settings</span>
                   </Button>
-                </DialogTrigger>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem 
+                    onClick={() => setNotificationsDialogOpen(true)}
+                    data-testid="menu-notifications"
+                  >
+                    <Bell className="h-4 w-4 mr-2" />
+                    Notifications
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setDeleteDialogOpen(true)}
+                    className="text-red-600 focus:text-red-600"
+                    data-testid="menu-delete-account"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Account
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              {/* Notification Preferences Dialog */}
+              <Dialog open={notificationsDialogOpen} onOpenChange={setNotificationsDialogOpen}>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Notification Preferences</DialogTitle>
@@ -740,40 +743,17 @@ export default function Dashboard() {
                 </DialogContent>
               </Dialog>
               
-              {/* Logout Button */}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="gap-2 text-white border-white/50 hover:bg-white/10" 
-                onClick={() => logoutMutation.mutate()}
-                disabled={logoutMutation.isPending}
-                data-testid="button-logout"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Logout</span>
-              </Button>
-              
-              {/* Delete Account */}
+              {/* Delete Account Request Dialog */}
               <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="gap-2 text-red-400 border-red-400/50 hover:bg-red-400/10" 
-                  onClick={() => setDeleteDialogOpen(true)}
-                  data-testid="button-delete-account"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Delete Account</span>
-                </Button>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Account</AlertDialogTitle>
+                    <AlertDialogTitle>Request Account Deletion</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
+                      Your account deletion request will be sent to our team for review. A super admin will process your request and you'll receive a confirmation email once completed.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <div className="py-4">
-                    <Label htmlFor="delete-confirm">Type "DELETE" to confirm:</Label>
+                    <Label htmlFor="delete-confirm">Type "DELETE" to confirm your request:</Label>
                     <Input
                       id="delete-confirm"
                       value={deleteConfirmText}
@@ -794,10 +774,10 @@ export default function Dashboard() {
                       {deleteAccountMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Deleting...
+                          Submitting...
                         </>
                       ) : (
-                        "Delete Account"
+                        "Submit Request"
                       )}
                     </AlertDialogAction>
                   </AlertDialogFooter>

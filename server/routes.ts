@@ -2589,6 +2589,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
+  // Request account deletion (sends email to super admin for approval)
+  app.post('/api/user/request-account-deletion', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Send email to hello@humanmetrix.co.uk for super admin review
+      await sendGeneralEnquiryEmail({
+        name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown User',
+        email: user.email || 'No email',
+        subject: `Account Deletion Request - User ID: ${userId}`,
+        message: `A user has requested to delete their account.
+
+User Details:
+- User ID: ${userId}
+- Name: ${user.firstName || ''} ${user.lastName || ''}
+- Email: ${user.email}
+- Role: ${user.role}
+- Account Created: ${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}
+
+Please review this request and process the account deletion if appropriate.
+
+To delete this account, a super admin should go to the Admin Dashboard > Users section and process the deletion.`,
+        recipientOverride: 'hello@humanmetrix.co.uk',
+      });
+      
+      console.log(`[Account Deletion Request] User ${userId} (${user.email}) requested account deletion`);
+      
+      res.json({ success: true, message: "Account deletion request submitted successfully" });
+    } catch (error) {
+      console.error("Error submitting account deletion request:", error);
+      res.status(500).json({ message: "Failed to submit deletion request" });
+    }
+  });
   // Stripe checkout session for guest (before signup)
   app.post("/api/create-checkout-session-guest", async (req, res) => {
     try {
