@@ -1,4 +1,8 @@
 import { useState } from "react";
+import { Link, useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -7,14 +11,55 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Users, CheckCircle, Bell, Clock, Building2, MessageSquare, Shield, Mail, ArrowRight, Calendar } from "lucide-react";
-import { Link } from "wouter";
+import { ArrowLeft, Users, CheckCircle, Bell, Clock, Building2, MessageSquare, Shield, Mail, ArrowRight, Calendar, Loader2 } from "lucide-react";
 import { SEO } from "@/lib/seo";
 
 export default function CohortBenchmarking() {
   const CALENDLY_URL = "https://calendly.com/hello-humanmetrix/30min";
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const [showContactDialog, setShowContactDialog] = useState(false);
   const contactEnquiryMessage = encodeURIComponent("Hi, I'm interested in learning more about HumanMetrix Cohort Benchmarking. Please send me details when it becomes available.");
+  
+  // Login form state
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  
+  // Login mutation
+  const loginMutation = useMutation({
+    mutationFn: async (data: { email: string; password: string }) => {
+      const response = await apiRequest("POST", "/api/login", data);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      toast({ title: "Login successful", description: "Redirecting to dashboard..." });
+      // Redirect based on user role
+      if (data.user?.role === 'partner') {
+        setLocation("/partner-dashboard");
+      } else if (data.user?.role === 'admin') {
+        setLocation("/admin");
+      } else {
+        setLocation("/dashboard");
+      }
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Login failed", 
+        description: error.message || "Invalid email or password",
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginEmail || !loginPassword) {
+      toast({ title: "Please enter email and password", variant: "destructive" });
+      return;
+    }
+    loginMutation.mutate({ email: loginEmail, password: loginPassword });
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -109,19 +154,45 @@ export default function CohortBenchmarking() {
                   <Building2 className="h-4 w-4 md:h-5 md:w-5 text-primary" />
                   <h4 className="font-semibold text-sm md:text-base">Already have an account?</h4>
                 </div>
-                <div className="space-y-2 md:space-y-3">
+                <form onSubmit={handleLogin} className="space-y-2 md:space-y-3">
                   <div className="space-y-1.5 md:space-y-2">
                     <Label htmlFor="login-email" className="text-sm">Email</Label>
-                    <Input id="login-email" type="email" placeholder="your@company.com" data-testid="input-login-email" />
+                    <Input 
+                      id="login-email" 
+                      type="email" 
+                      placeholder="your@company.com" 
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      data-testid="input-login-email" 
+                    />
                   </div>
                   <div className="space-y-1.5 md:space-y-2">
                     <Label htmlFor="login-password" className="text-sm">Password</Label>
-                    <Input id="login-password" type="password" placeholder="••••••••" data-testid="input-login-password" />
+                    <Input 
+                      id="login-password" 
+                      type="password" 
+                      placeholder="••••••••" 
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      data-testid="input-login-password" 
+                    />
                   </div>
-                  <Button className="w-full" data-testid="button-login">
-                    Sign In
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={loginMutation.isPending}
+                    data-testid="button-login"
+                  >
+                    {loginMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Signing in...
+                      </>
+                    ) : (
+                      "Sign In"
+                    )}
                   </Button>
-                </div>
+                </form>
                 <p className="text-xs text-muted-foreground text-center">
                   Access your partner dashboard to manage team diagnostics
                 </p>

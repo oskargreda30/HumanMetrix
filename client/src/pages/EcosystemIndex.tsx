@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -32,7 +35,8 @@ import {
   MessageSquare,
   FileText,
   AlertTriangle,
-  BarChart3
+  BarChart3,
+  Loader2
 } from "lucide-react";
 import dashboardBg from "@assets/image_1763608498774.png";
 import { SEO, ServiceSchema, HowToSchema } from "@/lib/seo";
@@ -88,9 +92,51 @@ const differentiators = [
 export default function EcosystemIndex() {
   // Calendly URL for booking consultations
   const CALENDLY_URL = "https://calendly.com/hello-humanmetrix/30min";
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
   
   // State for contact options dialog
   const [showContactDialog, setShowContactDialog] = useState(false);
+  
+  // Login form state
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  
+  // Login mutation
+  const loginMutation = useMutation({
+    mutationFn: async (data: { email: string; password: string }) => {
+      const response = await apiRequest("POST", "/api/login", data);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      toast({ title: "Login successful", description: "Redirecting to dashboard..." });
+      // Redirect based on user role
+      if (data.user?.role === 'partner') {
+        setLocation("/partner-dashboard");
+      } else if (data.user?.role === 'admin') {
+        setLocation("/admin");
+      } else {
+        setLocation("/dashboard");
+      }
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Login failed", 
+        description: error.message || "Invalid email or password",
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginEmail || !loginPassword) {
+      toast({ title: "Please enter email and password", variant: "destructive" });
+      return;
+    }
+    loginMutation.mutate({ email: loginEmail, password: loginPassword });
+  };
   
   // Pre-filled enquiry message for email option
   const contactEnquiryMessage = encodeURIComponent("Hi, I'm interested in learning more about The Ecosystem Index team diagnostic service. Please send me pricing information and details about how the assessment works for my team.");
@@ -215,19 +261,45 @@ export default function EcosystemIndex() {
                     <Building2 className="h-5 w-5 text-primary" />
                     <h4 className="font-semibold">Already have an account?</h4>
                   </div>
-                  <div className="space-y-3">
+                  <form onSubmit={handleLogin} className="space-y-3">
                     <div className="space-y-2">
                       <Label htmlFor="login-email">Email</Label>
-                      <Input id="login-email" type="email" placeholder="your@company.com" data-testid="input-login-email" />
+                      <Input 
+                        id="login-email" 
+                        type="email" 
+                        placeholder="your@company.com" 
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                        data-testid="input-login-email" 
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="login-password">Password</Label>
-                      <Input id="login-password" type="password" placeholder="••••••••" data-testid="input-login-password" />
+                      <Input 
+                        id="login-password" 
+                        type="password" 
+                        placeholder="••••••••" 
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        data-testid="input-login-password" 
+                      />
                     </div>
-                    <Button className="w-full" data-testid="button-login">
-                      Sign In
+                    <Button 
+                      type="submit" 
+                      className="w-full" 
+                      disabled={loginMutation.isPending}
+                      data-testid="button-login"
+                    >
+                      {loginMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Signing in...
+                        </>
+                      ) : (
+                        "Sign In"
+                      )}
                     </Button>
-                  </div>
+                  </form>
                   <p className="text-xs text-muted-foreground text-center">
                     Access your partner dashboard to manage team diagnostics
                   </p>
