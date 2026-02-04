@@ -861,7 +861,7 @@ export default function MyResults() {
               <p className="text-sm text-muted-foreground mb-4" data-testid="text-guide-intro">
                 A step-by-step guide to understanding your assessment results and how to use them for career growth
               </p>
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <div className="flex gap-3">
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
                   <div>
@@ -897,6 +897,24 @@ export default function MyResults() {
                     <p className="font-medium text-sm">Using Your Results</p>
                     <p className="text-xs text-muted-foreground">
                       Share your report with potential employers to demonstrate your capabilities, or use insights to guide your professional development plan.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
+                  <div>
+                    <p className="font-medium text-sm">Radar Chart Visualization</p>
+                    <p className="text-xs text-muted-foreground">
+                      The radar chart provides a visual overview of your skills profile, making it easy to identify patterns across dimensions.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">6</div>
+                  <div>
+                    <p className="font-medium text-sm">Individual Skill Scores</p>
+                    <p className="text-xs text-muted-foreground">
+                      Review detailed scores for each skill to understand your specific competencies and target areas for improvement.
                     </p>
                   </div>
                 </div>

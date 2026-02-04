@@ -459,7 +459,7 @@ export default function PartnerResult() {
                 <p className="text-sm text-muted-foreground mb-4" data-testid="text-guide-intro">
                   A guide to interpreting candidate assessment data for informed hiring decisions
                 </p>
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   <div className="flex gap-3">
                     <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
                     <div>
@@ -474,27 +474,45 @@ export default function PartnerResult() {
                   <div className="flex gap-3">
                     <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
                     <div>
-                      <p className="font-medium text-sm">Radar Charts</p>
+                      <p className="font-medium text-sm">Four Assessment Areas</p>
                       <p className="text-xs text-muted-foreground">
-                        Visual overlays show how candidates compare across each capability dimension at a glance.
+                        Covers FIT (behavioral traits), AI Readiness, Prompt Architecture, and AI Ethics (AIQ) - together providing a complete picture of capabilities.
                       </p>
                     </div>
                   </div>
                   <div className="flex gap-3">
                     <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
                     <div>
-                      <p className="font-medium text-sm">Rankings & Percentiles</p>
+                      <p className="font-medium text-sm">Strengths & Development Areas</p>
                       <p className="text-xs text-muted-foreground">
-                        See how each candidate ranks relative to others in the cohort and against broader benchmarks.
+                        Each candidate's key strengths and growth areas help you understand their unique value proposition.
                       </p>
                     </div>
                   </div>
                   <div className="flex gap-3">
                     <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
                     <div>
-                      <p className="font-medium text-sm">Strengths & Development Areas</p>
+                      <p className="font-medium text-sm">Using These Results</p>
                       <p className="text-xs text-muted-foreground">
-                        Each candidate's key strengths and growth areas help you understand their unique value proposition.
+                        Compare candidates against role requirements and use insights to guide hiring decisions.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
+                    <div>
+                      <p className="font-medium text-sm">Radar Chart Visualization</p>
+                      <p className="text-xs text-muted-foreground">
+                        Visual overlays show how candidates compare across each capability dimension at a glance.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">6</div>
+                    <div>
+                      <p className="font-medium text-sm">Individual Skill Scores</p>
+                      <p className="text-xs text-muted-foreground">
+                        Review detailed scores for each skill to understand specific competencies and development areas.
                       </p>
                     </div>
                   </div>

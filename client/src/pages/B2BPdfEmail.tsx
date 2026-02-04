@@ -10,6 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import SkillsLegend from "@/components/SkillsLegend";
 import { normalizeAIReadinessScores, getSkillAcronym } from "@/lib/assessmentSkills";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
+import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from "recharts";
 
 interface B2BSessionData {
   sessionId: string;
@@ -489,6 +490,42 @@ export default function B2BPdfEmail() {
           </CardContent>
         </Card>
 
+        {/* Radar Chart Visualization */}
+        {hasDetailedScores && (
+          <Card className="page-break-before avoid-page-break" data-pdf-section="radar" style={isPdfRender ? { backgroundColor: 'white', border: '1px solid #e2e8f0' } : undefined}>
+            <CardContent className="pt-6">
+              <h3 className="text-lg font-bold mb-4 text-center" style={isPdfRender ? { color: '#1e293b' } : undefined}>Skills Radar</h3>
+              <div className="flex justify-center">
+                <ResponsiveContainer width={400} height={300}>
+                  <RadarChart data={sortedScores.map(([skill, score]) => ({
+                    skill: getSkillAcronym(skill),
+                    score: Math.round(score as number),
+                    fullMark: 100
+                  }))}>
+                    <PolarGrid stroke={isPdfRender ? '#e2e8f0' : 'hsl(var(--border))'} />
+                    <PolarAngleAxis 
+                      dataKey="skill" 
+                      tick={{ fill: isPdfRender ? '#1e293b' : 'hsl(var(--foreground))', fontSize: 11 }}
+                    />
+                    <PolarRadiusAxis 
+                      angle={90} 
+                      domain={[0, 100]}
+                      tick={{ fill: isPdfRender ? '#64748b' : 'hsl(var(--muted-foreground))' }}
+                    />
+                    <Radar
+                      name="Score"
+                      dataKey="score"
+                      stroke="#3b82f6"
+                      fill="#3b82f6"
+                      fillOpacity={0.6}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* How to Read This Report */}
         <Card className="page-break-before avoid-page-break" data-pdf-section="guide" style={isPdfRender ? { backgroundColor: 'white', border: '1px solid #e2e8f0' } : undefined}>
           <CardContent className="pt-6">
@@ -499,7 +536,7 @@ export default function B2BPdfEmail() {
             <p className="text-sm mb-4" style={isPdfRender ? { color: '#64748b' } : undefined}>
               A step-by-step guide to understanding your assessment results and how to use them for career growth
             </p>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <div className="flex gap-3">
                 <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#3b82f6' }}>1</div>
                 <div>
@@ -530,6 +567,20 @@ export default function B2BPdfEmail() {
                 <div>
                   <p className="font-medium text-sm" style={isPdfRender ? { color: '#1e293b' } : undefined}>Using Your Results</p>
                   <p className="text-xs" style={isPdfRender ? { color: '#64748b' } : undefined}>Share your report with potential employers to demonstrate your capabilities, or use insights to guide your professional development plan.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#3b82f6' }}>5</div>
+                <div>
+                  <p className="font-medium text-sm" style={isPdfRender ? { color: '#1e293b' } : undefined}>Radar Chart Visualization</p>
+                  <p className="text-xs" style={isPdfRender ? { color: '#64748b' } : undefined}>The radar chart provides a visual overview of your skills profile, making it easy to identify patterns across dimensions.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#3b82f6' }}>6</div>
+                <div>
+                  <p className="font-medium text-sm" style={isPdfRender ? { color: '#1e293b' } : undefined}>Individual Skill Scores</p>
+                  <p className="text-xs" style={isPdfRender ? { color: '#64748b' } : undefined}>Review detailed scores for each skill to understand your specific competencies and target areas for improvement.</p>
                 </div>
               </div>
             </div>
