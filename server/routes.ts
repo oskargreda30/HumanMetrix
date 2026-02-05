@@ -15378,6 +15378,7 @@ Use the candidates' actual names. Be specific and actionable.`;
       let promptArchitectureScore: number | null = null;
       let aiqScore: number | null = null;
 
+      // SOURCE 1: Check B2B sessions first
       for (const session of completedSessions) {
         if (!session.scores) continue;
         
@@ -15389,6 +15390,39 @@ Use the candidates' actual names. Be specific and actionable.`;
           promptArchitectureScore = session.totalScore;
         } else if (session.assessmentType === 'aiq') {
           aiqScore = session.totalScore;
+        }
+      }
+      
+      // SOURCE 2: For invited candidates (B2C flow), also check assessment_results table
+      // This handles cases where candidate was invited but completed assessments via B2C flow
+      if (isInvitedCandidate || (!fitScores && !aiReadinessScores)) {
+        // Try to find the candidate's B2C results
+        let candidateUser = await storage.getUserByEmail(candidateId as string);
+        if (!candidateUser) {
+          const invitations = await storage.getPartnerCandidateInvitations(partner.id);
+          const inv = invitations.find(i => i.email === candidateId || i.userId === candidateId);
+          if (inv?.userId) {
+            candidateUser = await storage.getUser(inv.userId);
+          }
+        }
+        
+        if (candidateUser) {
+          const b2cResults = await storage.getResultsByUser(candidateUser.id);
+          const completedB2cResults = b2cResults.filter(r => r.status === 'completed');
+          
+          for (const result of completedB2cResults) {
+            if (!result.scores) continue;
+            
+            if (result.assessmentType === 'fit' && !fitScores) {
+              fitScores = result.scores as Record<string, number>;
+            } else if (result.assessmentType === 'ai_readiness' && !aiReadinessScores) {
+              aiReadinessScores = result.scores as Record<string, number>;
+            } else if (result.assessmentType === 'prompt_architecture' && promptArchitectureScore === null) {
+              promptArchitectureScore = result.totalScore;
+            } else if (result.assessmentType === 'aiq' && aiqScore === null) {
+              aiqScore = result.totalScore;
+            }
+          }
         }
       }
 
