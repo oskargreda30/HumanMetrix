@@ -107,7 +107,8 @@ export default function StartAssessment() {
       const data = await response.json() as { widgetUrl?: string; sessionId?: string };
 
       if (data.widgetUrl) {
-        window.location.href = data.widgetUrl;
+        // Use replace to prevent back button returning to this loading screen
+        window.location.replace(data.widgetUrl);
       } else {
         throw new Error("No assessment URL returned");
       }

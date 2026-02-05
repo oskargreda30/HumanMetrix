@@ -1047,8 +1047,9 @@ export default function EmbedAssessment() {
     
     // For invitation flows, redirect back to the invitation landing page
     // This ensures a new session is created for the next assessment
+    // Use replace() to prevent back button returning to this page
     if (isFromInvitation && inviteToken) {
-      window.location.href = `/invite/${inviteToken}`;
+      window.location.replace(`/invite/${inviteToken}`);
       return;
     }
     
