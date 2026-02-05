@@ -159,7 +159,7 @@ This document contains all original questions, answer options, and scoring logic
 ---
 
 ### Question 11
-**Scenario**: Your close-knit group of friends has developed an inside joke or ritual that consistently leaves one specific member feeling excluded.
+**Scenario**: Your close-knit group of friends have developed an inside joke or ritual that consistently leaves one specific member feeling excluded.
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|

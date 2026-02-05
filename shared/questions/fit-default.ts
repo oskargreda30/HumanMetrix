@@ -103,7 +103,7 @@ export const FIT_QUESTIONS_DEFAULT: FITQuestion[] = [
   },
   {
     id: "11",
-    text: "Your close-knit group of friends has developed an inside joke or ritual that consistently leaves one specific member feeling excluded.",
+    text: "Your close-knit group of friends have developed an inside joke or ritual that consistently leaves one specific member feeling excluded.",
     options: [
       { value: "A", text: "Immediately confront the main instigator privately, demanding that they stop the joke/ritual for the sake of the group dynamic." },
       { value: "B", text: "Observe the group interactions closely for a week, logging exactly when the exclusion happens to determine its root cause." },

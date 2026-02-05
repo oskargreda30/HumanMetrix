@@ -2258,7 +2258,7 @@ export function registerPartnerRoutes(app: Express) {
           try {
                         const newInviteToken = crypto.randomBytes(32).toString('hex');
             const newExpiresAt = new Date();
-            newExpiresAt.setDate(newExpiresAt.getDate() + expiryDays);
+            newExpiresAt.setDate(newExpiresAt.getDate() + expiresInDays);
             const baseUrl = process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER?.toLowerCase() || 'repl'}.repl.co` : 'http://localhost:5000';
             const newInviteUrl = `${baseUrl}/invite/${newInviteToken}`;
             
@@ -2276,7 +2276,7 @@ export function registerPartnerRoutes(app: Express) {
               metadata: candidate.metadata || existingInvitation.metadata,
               assessmentTypes: assessmentTypes,
               tokensUsed: assessmentTypes.length,
-              emailSentAt: null, // Reset email tracking
+              emailSentAt: undefined, // Reset email tracking
             });
             
             reactivatedInvitations.push({
@@ -2989,7 +2989,7 @@ export function registerPartnerRoutes(app: Express) {
           and(
             sql`${assessmentSessions.metadata}->>'invitationToken' = ${token}`,
             eq(assessmentSessions.status, 'completed'),
-            eq(assessmentSessions.paymentStatus, 'paid')
+            eq(assessmentSessions.resultsPaymentStatus, 'paid')
           )
         );
       
@@ -3075,12 +3075,12 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(404).json({ error: "Invitation not found" });
       }
       
-      if (invitation.email.toLowerCase() !== (email as string).toLowerCase()) {
+      if (invitation.email?.toLowerCase() !== (email as string).toLowerCase()) {
         return res.status(400).json({ error: "Email does not match invitation" });
       }
       
       // Get partner company name
-      const partner = await storage.getPartnerAccountById(invitation.partnerId);
+      const partner = await storage.getPartnerAccount(invitation.partnerId);
       const partnerName = partner?.companyName || "Partner";
       
       // Get all completed sessions for this invitation
@@ -3089,7 +3089,7 @@ export function registerPartnerRoutes(app: Express) {
           id: assessmentSessions.id,
           assessmentType: assessmentSessions.assessmentType,
           completedAt: assessmentSessions.completedAt,
-          paymentStatus: assessmentSessions.paymentStatus,
+          resultsPaymentStatus: assessmentSessions.resultsPaymentStatus,
         })
         .from(assessmentSessions)
         .where(
@@ -3104,8 +3104,8 @@ export function registerPartnerRoutes(app: Express) {
       }
       
       // Check if all are paid
-      const allPaid = completedSessions.every(s => s.paymentStatus === 'paid');
-      const unpaidCount = completedSessions.filter(s => s.paymentStatus !== 'paid').length;
+      const allPaid = completedSessions.every(s => s.resultsPaymentStatus === 'paid');
+      const unpaidCount = completedSessions.filter(s => s.resultsPaymentStatus !== 'paid').length;
       
       // Calculate pricing
       const pricePerAssessment = 2000; // 20.00 GBP in pence
@@ -3136,7 +3136,7 @@ export function registerPartnerRoutes(app: Express) {
           sessionId: s.id,
           assessmentType: s.assessmentType,
           completedAt: s.completedAt?.toISOString() || null,
-          paymentStatus: s.paymentStatus,
+          paymentStatus: s.resultsPaymentStatus,
         })),
         pricing: {
           single: {
@@ -3178,12 +3178,12 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(404).json({ error: "Invitation not found" });
       }
       
-      if (invitation.email.toLowerCase() !== email.toLowerCase()) {
+      if (invitation.email?.toLowerCase() !== email.toLowerCase()) {
         return res.status(400).json({ error: "Email does not match invitation" });
       }
       
       // Get partner company name
-      const partner = await storage.getPartnerAccountById(invitation.partnerId);
+      const partner = await storage.getPartnerAccount(invitation.partnerId);
       const partnerName = partner?.companyName || "Partner";
       
       // Get unpaid sessions for this invitation
@@ -3195,8 +3195,8 @@ export function registerPartnerRoutes(app: Express) {
             sql`${assessmentSessions.metadata}->>'invitationToken' = ${inviteToken}`,
             eq(assessmentSessions.status, 'completed'),
             or(
-              eq(assessmentSessions.paymentStatus, 'pending'),
-              isNull(assessmentSessions.paymentStatus)
+              eq(assessmentSessions.resultsPaymentStatus, 'pending'),
+              isNull(assessmentSessions.resultsPaymentStatus)
             )
           )
         );
@@ -3315,7 +3315,6 @@ export function registerPartnerRoutes(app: Express) {
           .set({
             resultsPaymentStatus: 'paid',
             resultsUnlockAt: now,
-            stripePaymentIntentId: checkoutSession.payment_intent as string,
           })
           .where(eq(assessmentSessions.id, sessionId));
       }
@@ -3641,18 +3640,18 @@ export function registerPartnerRoutes(app: Express) {
           
           // Create payment intent for the overage amount
           const paymentIntent = await stripe.paymentIntents.create({
-            amount: charge.overageAmount,
+            amount: charge.totalAmount,
             currency: 'gbp',
             customer: partner.stripeCustomerId,
             payment_method: partner.stripePaymentMethodId,
             off_session: true,
             confirm: true,
-            description: `Overage billing for ${charge.billingMonth}: ${charge.overageTests} tests`,
+            description: `Overage billing for ${charge.billingMonth}: ${charge.testsOverLimit} tests`,
             metadata: {
               partnerId: partner.id,
               overageLedgerId: charge.id,
               billingMonth: charge.billingMonth,
-              overageTests: charge.overageTests.toString(),
+              overageTests: charge.testsOverLimit.toString(),
             },
           });
           
@@ -3661,13 +3660,12 @@ export function registerPartnerRoutes(app: Express) {
             await storage.updateOverageLedgerEntry(charge.id, {
               chargeStatus: 'paid',
               stripePaymentIntentId: paymentIntent.id,
-              chargedAt: new Date(),
             });
             
             // Track billed amount for this partner
             billedByPartner.set(
               partner.id, 
-              (billedByPartner.get(partner.id) || 0) + charge.overageAmount
+              (billedByPartner.get(partner.id) || 0) + charge.totalAmount
             );
             
             // Create success notification (uses dispatchPartnerNotification for preference checking)
@@ -3675,8 +3673,8 @@ export function registerPartnerRoutes(app: Express) {
               partnerId: partner.id,
               type: 'billing_success',
               title: 'Overage Billing Processed',
-              message: `Your overage charges for ${charge.billingMonth} (£${(charge.overageAmount / 100).toFixed(2)} for ${charge.overageTests} tests) have been successfully billed.`,
-              metadata: { billingMonth: charge.billingMonth, amount: charge.overageAmount, tests: charge.overageTests },
+              message: `Your overage charges for ${charge.billingMonth} (£${(charge.totalAmount / 100).toFixed(2)} for ${charge.testsOverLimit} tests) have been successfully billed.`,
+              metadata: { billingMonth: charge.billingMonth, amount: charge.totalAmount, tests: charge.testsOverLimit },
             });
             
             results.succeeded++;
@@ -5238,7 +5236,6 @@ export function registerPartnerRoutes(app: Express) {
           .set({
             resultsPaymentStatus: 'paid',
             resultsUnlockAt: now,
-            stripePaymentIntentId: checkoutSession.payment_intent as string,
           })
           .where(eq(assessmentSessions.id, sessionId));
       }
