@@ -2881,8 +2881,10 @@ export function registerPartnerRoutes(app: Express) {
       
       // Create new assessment session starting with the first remaining type
       const startingType = remainingTypes[0] || normalizedType;
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 24); // 24 hour session expiry
+      // Use the invitation's expiration date, or fall back to 7 days if not set
+      const expiresAt = invitation.expiresAt 
+        ? new Date(invitation.expiresAt) 
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       
       const session = await storage.createAssessmentSession({
         partnerId: invitation.partnerId,
