@@ -517,6 +517,19 @@ export default function EmbedAssessment() {
       if (data.status === "expired") {
         setStatus("expired");
       } else if (data.status === "completed") {
+        // For completed sessions loaded from server, populate completedScores if results available
+        // This ensures the completed view renders correctly after page reload
+        if (data.results) {
+          setCompletedScores({
+            scores: data.results.scores,
+            totalScore: data.results.totalScore,
+            percentile: data.results.percentile,
+          });
+        } else {
+          // Even without results, set a basic placeholder so completed view renders
+          // This prevents showing questions again for completed assessments
+          setCompletedScores({ assessmentCompleted: true });
+        }
         setStatus("completed");
       } else if (data.status === "started") {
         setStatus("started");
@@ -1831,6 +1844,80 @@ export default function EmbedAssessment() {
                 Return to Continue
               </Button>
             )}
+
+            <div className="mt-6 pt-4 border-t border-slate-700/30 flex items-center justify-center gap-2">
+              <span className={`text-xs ${textMuted}`}>Powered by</span>
+              <div className="flex items-center gap-1.5">
+                <img 
+                  src="/assets/humanmetrix-logo.png" 
+                  alt="HumanMetrix" 
+                  className="h-5 w-5 object-contain"
+                />
+                <span className={`text-xs font-medium ${textSecondary}`}>HumanMetrix</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Handle completed multi-assessment that is NOT the last one - show "continue to next" screen
+  // This catches the case where user reloads a completed assessment page mid-series
+  if (status === "completed" && completedScores !== null && isMultiAssessment && !isLastAssessment) {
+    const branding = session?.branding;
+    const primaryColor = branding?.primaryColor || '#0891b2';
+    const accentColor = branding?.accentColor || '#06b6d4';
+    const displayName = branding?.companyDisplayName || session?.partnerName || 'HumanMetrix';
+    const nextAssessmentType = assessmentQueue[currentAssessmentIndex + 1];
+    const nextAssessmentName = getAssessmentDisplayName(nextAssessmentType);
+    const currentAssessmentName = getAssessmentDisplayName(currentAssessmentType);
+    
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${bgMain} p-4`} data-testid="embed-completed-mid-series">
+        <Card className={`max-w-lg ${bgCard}`}>
+          <CardContent className="p-8 text-center">
+            {branding?.logoUrl && (
+              <img 
+                src={branding.logoUrl} 
+                alt={displayName}
+                className="h-10 max-w-[150px] object-contain mx-auto mb-4"
+              />
+            )}
+            <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+            <h2 className={`text-xl font-semibold ${textPrimary} mb-2`}>{currentAssessmentName} Complete</h2>
+            <p className={`${textSecondary} mb-6`}>
+              You've completed {currentAssessmentIndex + 1} of {assessmentQueue.length} assessments.
+            </p>
+            
+            {/* Progress indicators */}
+            <div className="flex justify-center gap-2 mb-6">
+              {assessmentQueue.map((type, index) => (
+                <div
+                  key={type}
+                  className={`w-3 h-3 rounded-full ${
+                    index <= currentAssessmentIndex
+                      ? 'bg-green-500'
+                      : 'bg-slate-600'
+                  }`}
+                  title={getAssessmentDisplayName(type)}
+                />
+              ))}
+            </div>
+            
+            <div className={`${bgCardAlt} rounded-lg p-4 mb-6`}>
+              <p className={`text-sm ${textMuted} mb-1`}>Next Assessment</p>
+              <p className={`font-medium ${textPrimary}`}>{nextAssessmentName}</p>
+            </div>
+            
+            <Button
+              className="w-full"
+              onClick={() => moveToNextAssessment()}
+              style={{ backgroundColor: primaryColor }}
+              data-testid="button-continue-next-assessment"
+            >
+              Continue to {nextAssessmentName}
+            </Button>
 
             <div className="mt-6 pt-4 border-t border-slate-700/30 flex items-center justify-center gap-2">
               <span className={`text-xs ${textMuted}`}>Powered by</span>
