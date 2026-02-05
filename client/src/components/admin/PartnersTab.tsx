@@ -3246,7 +3246,7 @@ export default function PartnersTab() {
         <CardContent>
           {/* Search, Filter, Sort Controls */}
           <div className="flex flex-wrap gap-4 mb-6">
-            <div className="relative flex-1 min-w-[200px]">
+            <div className="relative flex-1 min-w-0 md:min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
               <Input
                 placeholder="Search partners..."
@@ -3257,7 +3257,7 @@ export default function PartnersTab() {
               />
             </div>
             <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-              <SelectTrigger className="w-[140px] bg-white/5 border-white/20 text-white" data-testid="select-status-filter">
+              <SelectTrigger className="w-full md:w-[140px] bg-white/5 border-white/20 text-white" data-testid="select-status-filter">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-700">
@@ -3267,7 +3267,7 @@ export default function PartnersTab() {
               </SelectContent>
             </Select>
             <Select value={sortField} onValueChange={(v) => setSortField(v as SortField)}>
-              <SelectTrigger className="w-[180px] bg-white/5 border-white/20 text-white" data-testid="select-sort-field">
+              <SelectTrigger className="w-full md:w-[180px] bg-white/5 border-white/20 text-white" data-testid="select-sort-field">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-700">

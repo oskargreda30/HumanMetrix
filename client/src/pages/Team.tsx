@@ -110,40 +110,49 @@ function TeamMemberCard({ member }: { member: TeamMember }) {
       <div className="relative">
         <button
           className="text-sm text-primary hover:underline cursor-pointer"
+          onClick={() => setShowBio(!showBio)}
           onMouseEnter={() => setShowBio(true)}
           onMouseLeave={() => setShowBio(false)}
-          onFocus={() => setShowBio(true)}
-          onBlur={() => setShowBio(false)}
           data-testid={`link-bio-${member.name.toLowerCase().replace(/\s+/g, '-')}`}
         >
           Bio
         </button>
         
-        {/* Bio tooltip */}
-        <div
-          className={`absolute z-50 w-80 md:w-96 p-4 bg-card border rounded-lg shadow-lg text-left transition-all duration-200 ${
-            showBio ? 'opacity-100 visible' : 'opacity-0 invisible'
-          }`}
-          style={{
-            bottom: '100%',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            marginBottom: '8px'
-          }}
-        >
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {member.bio}
-          </p>
-          {/* Arrow pointing down */}
-          <div
-            className="absolute w-3 h-3 bg-card border-r border-b rotate-45"
-            style={{
-              bottom: '-6px',
-              left: '50%',
-              transform: 'translateX(-50%)'
-            }}
-          />
-        </div>
+        {/* Bio tooltip - mobile: fixed modal, desktop: tooltip */}
+        {showBio && (
+          <>
+            {/* Mobile: full-screen overlay */}
+            <div 
+              className="fixed inset-0 bg-black/50 z-40 md:hidden"
+              onClick={() => setShowBio(false)}
+            />
+            <div
+              className={`fixed md:absolute z-50 bg-card border rounded-lg shadow-lg text-left transition-all duration-200
+                left-4 right-4 bottom-4 top-auto p-4 max-h-[70vh] overflow-y-auto
+                md:left-1/2 md:right-auto md:bottom-full md:top-auto md:w-96 md:p-4 md:max-h-none md:overflow-visible md:-translate-x-1/2 md:mb-2`}
+            >
+              <button 
+                className="absolute top-2 right-2 text-muted-foreground hover:text-foreground md:hidden"
+                onClick={() => setShowBio(false)}
+              >
+                ✕
+              </button>
+              <h4 className="font-semibold text-foreground mb-2 md:hidden">{member.name}</h4>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {member.bio}
+              </p>
+              {/* Arrow pointing down - desktop only */}
+              <div
+                className="hidden md:block absolute w-3 h-3 bg-card border-r border-b rotate-45"
+                style={{
+                  bottom: '-6px',
+                  left: '50%',
+                  transform: 'translateX(-50%)'
+                }}
+              />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

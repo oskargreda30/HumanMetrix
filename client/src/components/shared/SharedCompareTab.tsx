@@ -1514,7 +1514,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                         </CardDescription>
                       </div>
                       <Select value={selectedRole} onValueChange={setSelectedRole} data-testid="select-role">
-                        <SelectTrigger className="w-[220px]">
+                        <SelectTrigger className="w-full md:w-[220px]">
                           <SelectValue placeholder="Select a role" />
                         </SelectTrigger>
                         <SelectContent>
