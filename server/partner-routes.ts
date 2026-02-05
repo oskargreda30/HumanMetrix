@@ -2116,6 +2116,7 @@ export function registerPartnerRoutes(app: Express) {
       
       // If there are validation errors, return them without creating anything
       if (validationErrors.length > 0) {
+        console.log('[Bulk Invitations] Validation failed with errors:', JSON.stringify(validationErrors, null, 2));
         return res.status(400).json({
           error: 'Validation failed',
           errors: validationErrors,
