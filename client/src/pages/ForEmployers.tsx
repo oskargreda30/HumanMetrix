@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -191,10 +192,23 @@ export default function ForEmployers() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogIntent, setDialogIntent] = useState<'demo' | 'sales'>('demo');
 
+  // Auto-open contact dialog if coming from "Speak to the Team" button
   const openDialog = (intent: 'demo' | 'sales') => {
     setDialogIntent(intent);
     setIsDialogOpen(true);
   };
+
+  // Auto-open contact dialog if coming from "Speak to the Team" button
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    if (action === 'contact') {
+      openDialog('sales');
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
 
   return (
     <div className="min-h-screen flex flex-col relative">

@@ -1319,7 +1319,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                 <Button 
                   variant="outline" 
                   className="border-white text-white hover:bg-white/20"
-                  onClick={() => window.location.href = '/for-employers'}
+                  onClick={() => window.location.href = '/for-employers?action=contact'}
                   data-testid="button-contact-team-services-multi"
                 >
                   <Sparkles className="h-4 w-4 mr-2" />
