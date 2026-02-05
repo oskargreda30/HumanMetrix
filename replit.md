@@ -21,6 +21,8 @@ The frontend leverages React + TypeScript, Shadcn UI, and Tailwind CSS for a res
 - Layouts: `flex-col md:flex-row` for stacked mobile layouts
 All tabs (Overview, Analysis, Results, Invitations, Billing, Team, Settings, Ecosystem Index) use these consistent responsive patterns.
 
+**Standalone Pages (without Navigation component)**: Pages that don't use the Navigation component (StartAssessment, EmbedAssessment, B2BResults, PartnerResult) use `pt-16 md:pt-8` or `pt-16 md:pt-12` to provide adequate top spacing on mobile devices for status bar clearance. Centered layouts (like GuestInvite loading/error states) don't need this adjustment.
+
 ### Technical Implementations
 The platform uses a React, TypeScript, and Express stack with PostgreSQL and Drizzle ORM for data persistence. Authentication is handled via email/password with bcryptjs and session-based mechanisms. Payment processing is integrated with Stripe, supporting multi-currency and PPP pricing. AI capabilities are powered by the OpenAI API (GPT-5). A dual-provider email system (Gmail via Nodemailer and SendGrid) offers automatic failover and admin-configurable preferences. PDF generation uses `jsPDF` and `html2canvas`.
 
