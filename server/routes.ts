@@ -15387,7 +15387,9 @@ Use the candidates' actual names. Be specific and actionable.`;
       let fitScores: Record<string, number> | null = null;
       let aiReadinessScores: Record<string, number> | null = null;
       let promptArchitectureScore: number | null = null;
+      let promptArchitectureScores: Record<string, number> | null = null;
       let aiqScore: number | null = null;
+      let aiqScores: Record<string, number> | null = null;
 
       // SOURCE 1: Check B2B sessions first
       for (const session of completedSessions) {
@@ -15398,8 +15400,10 @@ Use the candidates' actual names. Be specific and actionable.`;
         } else if (session.assessmentType === 'ai_readiness') {
           aiReadinessScores = session.scores as Record<string, number>;
         } else if (session.assessmentType === 'prompt_architecture') {
+          promptArchitectureScores = session.scores as Record<string, number>;
           promptArchitectureScore = session.totalScore;
         } else if (session.assessmentType === 'aiq') {
+          aiqScores = session.scores as Record<string, number>;
           aiqScore = session.totalScore;
         }
       }
@@ -15530,7 +15534,7 @@ Use the candidates' actual names. Be specific and actionable.`;
 
           // Generate Prompt Role Fit analysis
           if (promptArchitectureScore !== null || promptResult) {
-            let promptScore = promptResult ? `${promptResult.totalScore || 0}%` : 'No data available';
+            let promptScore = promptArchitectureScore !== null ? `${promptArchitectureScore}%` : (promptResult ? `${promptResult.totalScore || 0}%` : 'No data available');
             let promptLevels = '';
             if (promptResult) {
               const levels = (promptResult as any).levels || [];
@@ -15539,7 +15543,14 @@ Use the candidates' actual names. Be specific and actionable.`;
                   `Level ${l.level}: ${l.passed ? 'Passed' : 'Failed'}${l.scores ? ` (Clarity: ${l.scores.clarity}%, Structure: ${l.scores.structure}%, Context: ${l.scores.contextRelevance}%, Creativity: ${l.scores.creativity}%, Iterative: ${l.scores.iterativeImprovement}%)` : ''}`
                 ).join('\n');
               }
+            } else if (promptArchitectureScores) {
+              // Use session scores for B2B candidates
+              const scoreKeys = Object.keys(promptArchitectureScores);
+              if (scoreKeys.length > 0) {
+                promptLevels = scoreKeys.map(key => `${key}: ${(promptArchitectureScores as Record<string, number>)[key]}%`).join('\n');
+              }
             }
+
             
             const promptAnalysisPrompt = `You are an expert HR analyst evaluating how a candidate's prompt engineering skills align with a specific job role.
 
@@ -15579,10 +15590,10 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
 
           // Generate AIQ Role Fit analysis
           if (aiqScore !== null || aiqResult) {
-            let aiqScoreStr = aiqResult ? `${aiqResult.totalScore || 0}%` : 'No data available';
+            let aiqScoreStr = aiqScore !== null ? `${aiqScore}%` : (aiqResult ? `${aiqResult.totalScore || 0}%` : 'No data available');
             let aiqBand = '';
-            if (aiqResult) {
-              const score = aiqResult.totalScore || 0;
+            if (aiqScore !== null || aiqResult) {
+              const score = aiqScore !== null ? aiqScore : (aiqResult?.totalScore || 0);
               if (score >= 80) aiqBand = 'Exemplary (80-100%): Strong ethical foundation with nuanced understanding of AI implications';
               else if (score >= 60) aiqBand = 'Strong (60-79%): Solid grasp of AI ethics with some areas for deeper exploration';
               else if (score >= 40) aiqBand = 'Developing (40-59%): Foundational understanding with room for growth';
@@ -16144,6 +16155,7 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
       
       if (aiqResult) {
         aiqScore = `${aiqResult.totalScore || 0}%`;
+        // Determine band based on score
         const score = aiqResult.totalScore || 0;
         if (score >= 80) aiqBand = 'Exemplary (80-100%): Strong ethical foundation with nuanced understanding of AI implications';
         else if (score >= 60) aiqBand = 'Strong (60-79%): Solid grasp of AI ethics with some areas for deeper exploration';
@@ -17103,8 +17115,10 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
           const values = Object.values(scores).filter(v => typeof v === 'number');
           candidate.aiReadinessScore = values.length > 0 ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : null;
         } else if (session.assessmentType === 'prompt_architecture') {
+          promptArchitectureScores = session.scores as Record<string, number>;
           candidate.promptScore = session.totalScore;
         } else if (session.assessmentType === 'aiq') {
+          aiqScores = session.scores as Record<string, number>;
           candidate.aiqScore = session.totalScore;
         }
       }
