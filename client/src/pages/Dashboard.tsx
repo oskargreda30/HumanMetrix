@@ -1714,6 +1714,13 @@ export default function Dashboard() {
                         const selected = pricingData.assessments.filter(a => selectedAssessments.has(a.type));
                         const isBulkEligible = selected.length > 1;
                         
+                        // Calculate sum of selected assessments
+                        const selectedTotalPence = selected.reduce((sum, a) => sum + a.priceInPence, 0);
+                        const selectedOriginalDisplay = `${pricingData.currencySymbol}${Math.round(selectedTotalPence)}`;
+                        // Apply 25% discount if 2+ selected
+                        const discountedPence = isBulkEligible ? Math.round(selectedTotalPence * 0.75) : selectedTotalPence;
+                        const selectedDiscountedDisplay = `${pricingData.currencySymbol}${discountedPence}`;
+                        
                         return (
                           <div className="pt-3 mt-2 border-t">
                             <div className="flex justify-between items-center font-medium">
@@ -1728,14 +1735,14 @@ export default function Dashboard() {
                               <div className="text-right">
                                 {isBulkEligible ? (
                                   <>
-                                    <span className="text-lg">{pricingData.bulkTotal.priceDisplay}</span>
+                                    <span className="text-lg">{selectedDiscountedDisplay}</span>
                                     <span className="text-sm text-muted-foreground line-through ml-2">
-                                      {pricingData.bulkTotal.originalPriceDisplay}
+                                      {selectedOriginalDisplay}
                                     </span>
                                   </>
                                 ) : (
                                   <>
-                                    <span>{selected.map(a => a.priceDisplay).join(' + ')}</span>
+                                    <span>{selected.map(a => a.priceDisplay).join(" + ")}</span>
                                   </>
                                 )}
                               </div>
@@ -1801,11 +1808,19 @@ export default function Dashboard() {
                   {purchaseMode === 'bulk' 
                     ? `Unlock All - ${pricingData?.bulkTotal.priceDisplay || ''}`
                     : selectedAssessments.size > 1
-                      ? `Unlock Selected (${selectedAssessments.size}) - ${pricingData?.bulkTotal.priceDisplay || ''}`
+                      ? (() => {
+                          const selected = pricingData?.assessments.filter(a => selectedAssessments.has(a.type)) || [];
+                          const selectedTotalPence = selected.reduce((sum, a) => sum + a.priceInPence, 0);
+                          const discountedPence = Math.round(selectedTotalPence * 0.75);
+                          const priceDisplay = `${pricingData?.currencySymbol || ''}${discountedPence}`;
+                          return `Unlock Selected (${selectedAssessments.size}) - ${priceDisplay}`;
+                        })()
                       : selectedAssessments.size === 1 
-                        ? pricingData?.assessments.length === 1
-                          ? `Unlock ${formatAssessmentTypeDisplay(Array.from(selectedAssessments)[0])} - ${pricingData?.assessments[0]?.priceDisplay || ''}`
-                          : `Unlock ${formatAssessmentTypeDisplay(Array.from(selectedAssessments)[0])}`
+                        ? (() => {
+                            const selectedType = Array.from(selectedAssessments)[0];
+                            const selectedAssessment = pricingData?.assessments.find(a => a.type === selectedType);
+                            return `Unlock ${formatAssessmentTypeDisplay(selectedType)} - ${selectedAssessment?.priceDisplay || ''}`;
+                          })()
                         : 'Select Assessments'
                   }
                 </>
