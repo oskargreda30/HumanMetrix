@@ -3173,9 +3173,8 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         }[normalizedType] || normalizedType;
       }).join(", ");
       
-      // Clear previous line items and create single discounted line item
-      lineItems.length = 0;
-      lineItems.push({
+      // Create line items for Stripe checkout
+      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] =  [{
         price_data: {
           currency: stripeCurrency,
           product_data: {
@@ -3185,7 +3184,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
           unit_amount: stripeAmount,
         },
         quantity: 1,
-      });
+      }];
 
       // Create or update pending purchase record
       let purchaseRecord;
