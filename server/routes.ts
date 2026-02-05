@@ -3159,7 +3159,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       const isZeroDecimal = STRIPE_ZERO_DECIMAL.includes(localCurrencyCode.toUpperCase());
       const stripeAmount = isZeroDecimal ? Math.round(discountedLocalPrice) : Math.round(discountedLocalPrice * 100);
       
-      totalPriceInPence = Math.round(discountedLocalPrice); // Store local currency amount for records
+      let totalPriceInPence = Math.round(discountedLocalPrice); // Store local currency amount for records
       
       // Create a single line item for the total
       const discountDescription = isBulk && resultsToPurchase.length > 1 ? "25% bundle discount" : "";
