@@ -300,7 +300,9 @@ export default function EmbedAssessment() {
   const isMultiAssessment = assessmentQueue.length > 1;
   const currentAssessmentType = assessmentQueue[currentAssessmentIndex] || assessmentQueue[0];
   const isLastAssessment = currentAssessmentIndex >= assessmentQueue.length - 1;
-  const isCurrentPromptArchitecture = currentAssessmentType === "prompt_architecture";
+  // Normalize to underscore format for consistent comparison (URL may use hyphens)
+  const normalizedCurrentType = currentAssessmentType?.replace(/-/g, '_');
+  const isCurrentPromptArchitecture = normalizedCurrentType === "prompt_architecture";
 
   // Theme-aware class names
   const bgMain = isLight ? "bg-gray-50" : "bg-slate-900";
@@ -1984,7 +1986,7 @@ export default function EmbedAssessment() {
                 <li>Answer each question honestly and thoughtfully</li>
                 <li>There are no right or wrong answers</li>
                 <li>Your progress will be saved automatically</li>
-                <li>You have {currentAssessmentType === "prompt_architecture" ? "14" : "20"} minutes to complete {isMultiAssessment ? "each assessment" : "the assessment"}</li>
+                <li>You have {isCurrentPromptArchitecture ? "14" : "20"} minutes to complete {isMultiAssessment ? "each assessment" : "the assessment"}</li>
               </ul>
             </div>
 
