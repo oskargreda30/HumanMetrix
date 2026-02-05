@@ -87,14 +87,14 @@ This document contains all original questions, answer options, and scoring logic
 ---
 
 ### Question 5
-**Scenario**: You see an older person at a bus stop clearly struggling to carry several heavy grocery bags.
+**Scenario**: You see an older person on the pavement struggling to carry several heavy grocery bags.
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Step in and ask which bags are most difficult to carry so you can take on the most physically demanding ones. | EE: 4 |
-| B | Offer to help carry the bags and remain with the person until the bus arrives, ensuring they feel supported and not overwhelmed. | EE: 4 |
-| C | Offer to carry the bags all the way to their final destination, as this provides the maximum amount of support. | HA: 4, GM: 4 |
-| D | Ask two other people waiting at the stop to help, dividing the load among several individuals to make it lighter for everyone. | IA: 4 |
+| A | Step in and ask which bags are heaviest so you can take on the most physically demanding ones. | EE: 4 |
+| B | Offer to help carry the bags and walk with them, ensuring they feel supported until they reach their destination. | EE: 4 |
+| C | Take the initiative to carry all the bags yourself, offering to help them all the way home. | HA: 4, GM: 4 |
+| D | Ask a nearby passerby to help as well, dividing the load among several people to make it easier. | IA: 4 |
 
 ---
 
@@ -135,26 +135,26 @@ This document contains all original questions, answer options, and scoring logic
 ---
 
 ### Question 9
-**Scenario**: You are watching a live event (a concert) when a drunk person starts loudly heckling the person next to you.
+**Scenario**: You are at a live concert when a person nearby begins talking loudly and disrupting the experience for those around you.
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Remain quiet and adjust your attention to ignore the person, waiting patiently for the event staff to handle the issue. | RA: 4 |
-| B | Speak to the heckler in a calm, low voice, expressing concern for their behaviour's impact on everyone else's experience. | IC: 4, EE: 4 |
-| C | Discreetly alert the event staff and point out the heckler, allowing the professionals to manage the conflict. | IA: 4 |
-| D | Firmly but directly tell the heckler that their behaviour is unacceptable and is disrupting the experience for everyone nearby. | HA: 4 |
+| A | Stay focused on the performance, adjusting your position if needed, waiting for the situation to resolve itself. | RA: 4 |
+| B | Lean over and politely mention that you're finding it hard to hear, expressing understanding that they might not realise the impact. | IC: 4, EE: 4 |
+| C | Quietly get the attention of a nearby usher and let them handle the situation professionally. | IA: 4 |
+| D | Clearly but firmly ask the person to lower their voice so everyone nearby can enjoy the show. | HA: 4 |
 
 ---
 
 ### Question 10
-**Scenario**: A sudden, major repair of the roof occurs in your house, demanding immediate attention and a large expense.
+**Scenario**: During heavy rain, you discover water leaking through your ceiling, indicating roof damage that needs urgent attention.
 
 | Option | Answer | Skills Awarded |
 |--------|--------|----------------|
-| A | Start tearing out the damaged ceiling/walls yourself to stop the water and isolate the problem before calling a professional. | HA: 4, RA: 4 |
-| B | Research temporary fixes and the science of water damage and mold growth to ensure any quick repair avoids long-term damage. | IC: 4 |
-| C | Immediately seek out online courses or videos on home repair to learn the necessary skill, guaranteeing you can handle similar future problems. | GM: 4 |
-| D | Take a moment to calm down, then call three highly rated professionals to get quotes, ensuring you don't panic-hire the wrong service. | EE: 4, IA: 4 |
+| A | Immediately place containers to catch water, move valuables, and start calling emergency roofers to assess the damage. | HA: 4, RA: 4 |
+| B | Document the damage with photos and research what temporary measures prevent mould while waiting for professional help. | IC: 4 |
+| C | Use this as motivation to learn basic home maintenance skills, starting with understanding how roof repairs work for future preparedness. | GM: 4 |
+| D | Stay calm, then reach out to trusted neighbours or family members who may know reliable emergency repair services. | EE: 4, IA: 4 |
 
 ---
 

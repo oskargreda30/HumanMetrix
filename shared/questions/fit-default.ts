@@ -43,12 +43,12 @@ export const FIT_QUESTIONS_DEFAULT: FITQuestion[] = [
   },
   {
     id: "5",
-    text: "You see an older person at a bus stop clearly struggling to carry several heavy grocery bags.",
+    text: "You see an older person on the pavement struggling to carry several heavy grocery bags.",
     options: [
-      { value: "A", text: "Step in and ask which bags are most difficult to carry so you can take on the most physically demanding ones." },
-      { value: "B", text: "Offer to help carry the bags and remain with the person until the bus arrives, ensuring they feel supported and not overwhelmed." },
-      { value: "C", text: "Offer to carry the bags all the way to their final destination, as this provides the maximum amount of support." },
-      { value: "D", text: "Ask two other people waiting at the stop to help, dividing the load among several individuals to make it lighter for everyone." },
+      { value: "A", text: "Step in and ask which bags are heaviest so you can take on the most physically demanding ones." },
+      { value: "B", text: "Offer to help carry the bags and walk with them, ensuring they feel supported until they reach their destination." },
+      { value: "C", text: "Take the initiative to carry all the bags yourself, offering to help them all the way home." },
+      { value: "D", text: "Ask a nearby passerby to help as well, dividing the load among several people to make it easier." },
     ],
   },
   {
@@ -83,22 +83,22 @@ export const FIT_QUESTIONS_DEFAULT: FITQuestion[] = [
   },
   {
     id: "9",
-    text: "You are watching a live event (a concert) when a drunk person starts loudly heckling the person next to you.",
+    text: "You are at a live concert when a person nearby begins talking loudly and disrupting the experience for those around you.",
     options: [
-      { value: "A", text: "Remain quiet and adjust your attention to ignore the person, waiting patiently for the event staff to handle the issue." },
-      { value: "B", text: "Speak to the heckler in a calm, low voice, expressing concern for their behaviour's impact on everyone else's experience." },
-      { value: "C", text: "Discreetly alert the event staff and point out the heckler, allowing the professionals to manage the conflict." },
-      { value: "D", text: "Firmly but directly tell the heckler that their behaviour is unacceptable and is disrupting the experience for everyone nearby." },
+      { value: "A", text: "Stay focused on the performance, adjusting your position if needed, waiting for the situation to resolve itself." },
+      { value: "B", text: "Lean over and politely mention that you're finding it hard to hear, expressing understanding that they might not realise the impact." },
+      { value: "C", text: "Quietly get the attention of a nearby usher and let them handle the situation professionally." },
+      { value: "D", text: "Clearly but firmly ask the person to lower their voice so everyone nearby can enjoy the show." },
     ],
   },
   {
     id: "10",
-    text: "A sudden, major repair of the roof occurs in your house, demanding immediate attention and a large expense.",
+    text: "During heavy rain, you discover water leaking through your ceiling, indicating roof damage that needs urgent attention.",
     options: [
-      { value: "A", text: "Start tearing out the damaged ceiling/walls yourself to stop the water and isolate the problem before calling a professional." },
-      { value: "B", text: "Research temporary fixes and the science of water damage and mold growth to ensure any quick repair avoids long-term damage." },
-      { value: "C", text: "Immediately seek out online courses or videos on home repair to learn the necessary skill, guaranteeing you can handle similar future problems." },
-      { value: "D", text: "Take a moment to calm down, then call three highly rated professionals to get quotes, ensuring you don't panic-hire the wrong service." },
+      { value: "A", text: "Immediately place containers to catch water, move valuables, and start calling emergency roofers to assess the damage." },
+      { value: "B", text: "Document the damage with photos and research what temporary measures prevent mould while waiting for professional help." },
+      { value: "C", text: "Use this as motivation to learn basic home maintenance skills, starting with understanding how roof repairs work for future preparedness." },
+      { value: "D", text: "Stay calm, then reach out to trusted neighbours or family members who may know reliable emergency repair services." },
     ],
   },
   {
