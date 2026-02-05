@@ -115,6 +115,8 @@ type CandidateEntry = {
   };
   missingAssessments?: string[];
   hasSufficientData?: boolean;
+  promptArchitectureScore?: number | null;
+  aiqScore?: number | null;
 };
 
 type SkillComparison = {
@@ -1037,6 +1039,188 @@ export default function PartnerMultiCandidateRoleFitTab() {
               />
             );
           })()}
+
+          {/* Prompt Architecture Comparison Section */}
+          <Card data-testid="card-prompt-architecture-comparison">
+            <CardHeader className="bg-gradient-to-r from-cyan-500/10 via-cyan-500/5 to-transparent">
+              <CardTitle className="flex items-center gap-2 text-sm md:text-base">
+                <Target className="h-4 w-4 md:h-5 md:w-5 text-cyan-600" />
+                Prompt Architecture Comparison
+              </CardTitle>
+              <p className="text-xs md:text-sm text-muted-foreground">
+                AI prompt engineering ability across 7 progressive levels - candidates should score 60+ to demonstrate proficiency
+              </p>
+            </CardHeader>
+            <CardContent className="pt-4">
+              {(() => {
+                const candidatesWithPA = comparison.candidateEntries.filter(
+                  (c: CandidateEntry) => c.promptArchitectureScore != null && c.promptArchitectureScore !== undefined
+                );
+                
+                // Get role-specific required PA score from OpenAI analysis, default to 60 if not set
+                const roleSkills = comparison.roleSnapshot.requiredSkillScores || {};
+                const REQUIRED_PA_SCORE = roleSkills.promptArchitectureScore || 60;
+                
+                if (candidatesWithPA.length === 0) {
+                  return (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-yellow-500" />
+                      <p className="text-sm">No candidates have completed the Prompt Architecture assessment yet.</p>
+                      <p className="text-xs mt-1">Required score for this role: {REQUIRED_PA_SCORE}/100</p>
+                    </div>
+                  );
+                }
+                
+                return (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-xs md:text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-2 md:p-3 font-semibold">Candidate</th>
+                          <th className="text-center p-2 md:p-3 font-semibold">Score</th>
+                          <th className="text-center p-2 md:p-3 font-semibold">Required</th>
+                          <th className="text-center p-2 md:p-3 font-semibold">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {comparison.candidateEntries.map((candidate: CandidateEntry, idx: number) => {
+                          const hasScore = candidate.promptArchitectureScore != null;
+                          const score = candidate.promptArchitectureScore || 0;
+                          const meetsRequirement = hasScore && score >= REQUIRED_PA_SCORE;
+                          
+                          return (
+                            <tr key={candidate.userId} className={idx % 2 === 0 ? 'bg-muted/20' : ''}>
+                              <td className="p-2 md:p-3 font-medium">{candidate.userName}</td>
+                              <td className="text-center p-2 md:p-3">
+                                {hasScore ? (
+                                  <span className={`font-bold ${meetsRequirement ? 'text-green-600' : 'text-red-600'}`}>
+                                    {score}%
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground italic">No scores</span>
+                                )}
+                              </td>
+                              <td className="text-center p-2 md:p-3">
+                                <Badge variant="outline" className="text-cyan-600 border-cyan-300 text-[10px] md:text-xs px-1">
+                                  {REQUIRED_PA_SCORE}+
+                                </Badge>
+                              </td>
+                              <td className="text-center p-2 md:p-3">
+                                {!hasScore ? (
+                                  <Badge variant="outline" className="text-muted-foreground text-[10px] md:text-xs">N/A</Badge>
+                                ) : meetsRequirement ? (
+                                  <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 text-[10px] md:text-xs">
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                    Meets
+                                  </Badge>
+                                ) : (
+                                  <Badge className="bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 text-[10px] md:text-xs">
+                                    <AlertCircle className="h-3 w-3 mr-1" />
+                                    Below
+                                  </Badge>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
+          {/* AIQ (Algorithmic Integrity Quotient) Comparison Section */}
+          <Card data-testid="card-aiq-comparison">
+            <CardHeader className="bg-gradient-to-r from-purple-500/10 via-purple-500/5 to-transparent">
+              <CardTitle className="flex items-center gap-2 text-sm md:text-base">
+                <ShieldAlert className="h-4 w-4 md:h-5 md:w-5 text-purple-600" />
+                AIQ (Algorithmic Integrity Quotient) Comparison
+              </CardTitle>
+              <p className="text-xs md:text-sm text-muted-foreground">
+                Ethical AI decision-making - balancing efficiency, fairness, and transparency. Candidates should score 60+ to demonstrate proficiency
+              </p>
+            </CardHeader>
+            <CardContent className="pt-4">
+              {(() => {
+                const candidatesWithAIQ = comparison.candidateEntries.filter(
+                  (c: CandidateEntry) => c.aiqScore != null && c.aiqScore !== undefined
+                );
+                
+                // Get role-specific required AIQ score from OpenAI analysis, default to 60 if not set
+                const roleSkills = comparison.roleSnapshot.requiredSkillScores || {};
+                const REQUIRED_AIQ_SCORE = roleSkills.aiqScore || 60;
+                
+                if (candidatesWithAIQ.length === 0) {
+                  return (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-yellow-500" />
+                      <p className="text-sm">No candidates have completed the AIQ assessment yet.</p>
+                      <p className="text-xs mt-1">Required score for this role: {REQUIRED_AIQ_SCORE}/100</p>
+                    </div>
+                  );
+                }
+                
+                return (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-xs md:text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-2 md:p-3 font-semibold">Candidate</th>
+                          <th className="text-center p-2 md:p-3 font-semibold">Score</th>
+                          <th className="text-center p-2 md:p-3 font-semibold">Required</th>
+                          <th className="text-center p-2 md:p-3 font-semibold">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {comparison.candidateEntries.map((candidate: CandidateEntry, idx: number) => {
+                          const hasScore = candidate.aiqScore != null;
+                          const score = candidate.aiqScore || 0;
+                          const meetsRequirement = hasScore && score >= REQUIRED_AIQ_SCORE;
+                          
+                          return (
+                            <tr key={candidate.userId} className={idx % 2 === 0 ? 'bg-muted/20' : ''}>
+                              <td className="p-2 md:p-3 font-medium">{candidate.userName}</td>
+                              <td className="text-center p-2 md:p-3">
+                                {hasScore ? (
+                                  <span className={`font-bold ${meetsRequirement ? 'text-green-600' : 'text-red-600'}`}>
+                                    {score}%
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground italic">No scores</span>
+                                )}
+                              </td>
+                              <td className="text-center p-2 md:p-3">
+                                <Badge variant="outline" className="text-purple-600 border-purple-300 text-[10px] md:text-xs px-1">
+                                  {REQUIRED_AIQ_SCORE}+
+                                </Badge>
+                              </td>
+                              <td className="text-center p-2 md:p-3">
+                                {!hasScore ? (
+                                  <Badge variant="outline" className="text-muted-foreground text-[10px] md:text-xs">N/A</Badge>
+                                ) : meetsRequirement ? (
+                                  <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 text-[10px] md:text-xs">
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                    Meets
+                                  </Badge>
+                                ) : (
+                                  <Badge className="bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 text-[10px] md:text-xs">
+                                    <AlertCircle className="h-3 w-3 mr-1" />
+                                    Below
+                                  </Badge>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
 
           {/* AI-Powered Strategic Insights */}
           <Card className="bg-gradient-to-r from-purple-500/10 via-purple-500/5 to-transparent border-purple-500/20" data-testid="card-ai-insights">

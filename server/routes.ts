@@ -7357,7 +7357,9 @@ Format your response as JSON with this exact structure and skill names:
     "Critical Thinking & Problem-Solving": "critical" | "standard",
     "Technical Fundamentals": "critical" | "standard",
     "Creativity & Innovation": "critical" | "standard"
-  }
+  },
+  "promptArchitectureScore": number (0-100, required minimum score for Prompt Architecture - measures AI prompt engineering ability across 7 levels),
+  "aiqScore": number (0-100, required minimum score for AIQ - measures ethical AI decision-making)
 }`;
 
       const completion = await openai.chat.completions.create({
@@ -7399,6 +7401,32 @@ Format your response as JSON with this exact structure and skill names:
         Object.keys(requiredScores.aiReadinessSkills).forEach(skill => {
           requiredScores.aiReadinessSkills[skill] = nudgeScore(requiredScores.aiReadinessSkills[skill]);
         });
+      }
+
+      // Ensure at least 3 skills are marked as critical (fix for OpenAI sometimes not marking any)
+      if (requiredScores.skillCriticality) {
+        const criticalCount = Object.values(requiredScores.skillCriticality).filter(v => v === 'critical').length;
+        if (criticalCount < 3) {
+          // Get all skills sorted by their required score (highest first) and mark top ones as critical
+          const allSkills: Array<{skill: string; score: number}> = [];
+          if (requiredScores.fitSkills) {
+            Object.entries(requiredScores.fitSkills).forEach(([skill, score]) => {
+              allSkills.push({ skill, score: score as number });
+            });
+          }
+          if (requiredScores.aiReadinessSkills) {
+            Object.entries(requiredScores.aiReadinessSkills).forEach(([skill, score]) => {
+              allSkills.push({ skill, score: score as number });
+            });
+          }
+          // Sort by score descending and mark top 3-5 as critical
+          allSkills.sort((a, b) => b.score - a.score);
+          const toMarkCritical = allSkills.slice(0, Math.max(3, 5 - criticalCount));
+          toMarkCritical.forEach(({ skill }) => {
+            requiredScores.skillCriticality[skill] = 'critical';
+          });
+          console.log(`[Role Generation] Auto-marked ${toMarkCritical.length} skills as critical for better hiring insights`);
+        }
       }
 
       // Update the role with the generated scores
@@ -7493,7 +7521,9 @@ Format your response as JSON:
 {
   "fitSkills": { "Resilience": number, "High Agency": number, "Growth Mindset": number, "Empathy & Ethics": number, "Interpersonal Agility": number, "Intellectual Curiosity": number },
   "aiReadinessSkills": { "AI Literacy & Prompt Engineering": number, "Collaboration & Communication": number, "Data Fluency": number, "Responsible AI & Ethical Awareness": number, "Domain Expertise": number, "Adaptability & Continuous Learning": number, "Critical Thinking & Problem-Solving": number, "Technical Fundamentals": number, "Creativity & Innovation": number },
-  "skillCriticality": { ... each skill as "critical" or "standard" ... }
+  "skillCriticality": { ... each skill as "critical" or "standard" ... },
+  "promptArchitectureScore": number (0-100, required minimum for Prompt Architecture),
+  "aiqScore": number (0-100, required minimum for AIQ)
 }`;
 
             const completion = await openai.chat.completions.create({
@@ -7531,6 +7561,30 @@ Format your response as JSON:
               Object.keys(requiredScores.aiReadinessSkills).forEach(skill => {
                 requiredScores.aiReadinessSkills[skill] = nudgeScore(requiredScores.aiReadinessSkills[skill]);
               });
+            }
+
+            // Ensure at least 3 skills are marked as critical
+            if (requiredScores.skillCriticality) {
+              const criticalCount = Object.values(requiredScores.skillCriticality).filter(v => v === 'critical').length;
+              if (criticalCount < 3) {
+                const allSkills: Array<{skill: string; score: number}> = [];
+                if (requiredScores.fitSkills) {
+                  Object.entries(requiredScores.fitSkills).forEach(([skill, score]) => {
+                    allSkills.push({ skill, score: score as number });
+                  });
+                }
+                if (requiredScores.aiReadinessSkills) {
+                  Object.entries(requiredScores.aiReadinessSkills).forEach(([skill, score]) => {
+                    allSkills.push({ skill, score: score as number });
+                  });
+                }
+                allSkills.sort((a, b) => b.score - a.score);
+                const toMarkCritical = allSkills.slice(0, Math.max(3, 5 - criticalCount));
+                toMarkCritical.forEach(({ skill }) => {
+                  requiredScores.skillCriticality[skill] = 'critical';
+                });
+                console.log(`[Batch] Auto-marked ${toMarkCritical.length} skills as critical for ${role.name}`);
+              }
             }
 
             await storage.updateJobRole(role.id, {
