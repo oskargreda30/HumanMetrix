@@ -1,4 +1,5 @@
 import { Express, Request, Response } from "express";
+import { evaluatePromptWithGPT, PA_LEVEL_DESCRIPTIONS } from "./services/promptArchitecture";
 import { storage } from "./storage";
 import { partnerAuth, PartnerRequest, trackUsage, generateApiKey, consumeTestCredit } from "./partner-auth";
 import { isAuthenticated } from "./auth";
@@ -5410,58 +5411,78 @@ async function calculateScores(
     scores = calculateAIQScores(answers);
     totalScore = scores['Algorithmic Integrity'] || 0;
   } else if (normalizedType === 'prompt_architecture') {
-    // Prompt Architecture uses async GPT evaluation in B2C
-    // For B2B we use a simplified scoring as GPT evaluation is handled separately
-    const questionCount = Object.keys(answers).length || 1;
-    const answeredQuestions = Object.values(answers).filter((a) => a !== null && a !== undefined && a !== '');
+    // Prompt Architecture uses async GPT evaluation - same as B2C for consistency
+    // Uses PA_LEVEL_DESCRIPTIONS from shared service module
+
+    // Evaluate each level with GPT
+    const evaluationsWithData: Array<{
+      level: number;
+      userPrompt: string;
+      evaluation: any;
+    }> = [];
     
-    // Calculate based on prompt quality heuristics
-    let qualityScore = 0;
-    let promptCount = 0;
-    
-    for (const [key, prompt] of Object.entries(answers)) {
-      if (prompt && typeof prompt === 'string' && prompt.trim().length > 0) {
-        promptCount++;
-        const promptText = prompt.trim();
+    let clarityTotal = 0;
+    let structureTotal = 0;
+    let contextTotal = 0;
+    let creativityTotal = 0;
+    let iterativeTotal = 0;
+
+    // Process each answer with GPT evaluation
+    for (const [levelKey, userPrompt] of Object.entries(answers)) {
+      if (!userPrompt || typeof userPrompt !== 'string' || !userPrompt.trim()) continue;
+      
+      const levelMatch = levelKey.match(/level-?(\d+)/);
+      const levelNum = levelMatch ? parseInt(levelMatch[1]) : 1;
+      const taskDesc = PA_LEVEL_DESCRIPTIONS[levelNum.toString()] || `Level ${levelNum} task`;
+      
+      try {
+        const evaluation = await evaluatePromptWithGPT(userPrompt, levelNum, taskDesc);
+        evaluationsWithData.push({ level: levelNum, userPrompt, evaluation });
         
-        // Score based on prompt characteristics
-        let promptScore = 50; // Base score
-        
-        // Length bonus (up to 20 points)
-        if (promptText.length >= 100) promptScore += 10;
-        if (promptText.length >= 250) promptScore += 5;
-        if (promptText.length >= 500) promptScore += 5;
-        
-        // Structure indicators (up to 15 points)
-        if (promptText.includes('context') || promptText.includes('background')) promptScore += 5;
-        if (promptText.includes('format') || promptText.includes('output')) promptScore += 5;
-        if (promptText.includes('example') || promptText.includes('like')) promptScore += 5;
-        
-        // Clarity indicators (up to 15 points)
-        if (promptText.includes('step') || promptText.includes('first') || promptText.includes('then')) promptScore += 5;
-        if (promptText.split('.').length >= 2) promptScore += 5;
-        if (promptText.includes('please') || promptText.includes('should') || promptText.includes('must')) promptScore += 5;
-        
-        qualityScore += Math.min(100, promptScore);
+        clarityTotal += evaluation.clarity;
+        structureTotal += evaluation.structure;
+        contextTotal += evaluation.contextRelevance;
+        creativityTotal += evaluation.creativity;
+        iterativeTotal += evaluation.iterativeImprovement;
+      } catch (error: any) {
+        console.error(`[B2B PA] GPT evaluation failed for level ${levelNum}:`, error.message);
+        // Use fallback scores if GPT fails (0-20 scale per criterion, 50 total per level)
+        evaluationsWithData.push({
+          level: levelNum,
+          userPrompt,
+          evaluation: {
+            clarity: 10,
+            structure: 10,
+            contextRelevance: 10,
+            creativity: 10,
+            iterativeImprovement: 10,
+            totalScore: 50,
+            feedback: 'Evaluation unavailable - default scores applied',
+          },
+        });
+        clarityTotal += 10;
+        structureTotal += 10;
+        contextTotal += 10;
+        creativityTotal += 10;
+        iterativeTotal += 10;
       }
     }
-    
-    totalScore = promptCount > 0 ? Math.round(qualityScore / promptCount) : 50;
-    // Deterministic variation based on totalScore to ensure consistent results
-    // Each dimension gets slight variation based on score bands (matching B2C canonical)
-    const clarityBonus = totalScore >= 70 ? 3 : totalScore >= 50 ? 0 : -2;
-    const structureBonus = totalScore >= 75 ? 5 : totalScore >= 55 ? 2 : 0;
-    const contextBonus = totalScore >= 60 ? 2 : totalScore >= 40 ? -1 : -3;
-    const creativityBonus = totalScore >= 80 ? 4 : totalScore >= 65 ? 1 : -1;
-    const iterativeBonus = totalScore >= 65 ? 2 : totalScore >= 45 ? -1 : -4;
-    
+
+    const numLevels = evaluationsWithData.length || 1;
     scores = {
-      'Clarity': Math.max(0, Math.min(100, totalScore + clarityBonus)),
-      'Structure': Math.max(0, Math.min(100, totalScore + structureBonus)),
-      'Context Relevance': Math.max(0, Math.min(100, totalScore + contextBonus)),
-      'Creativity': Math.max(0, Math.min(100, totalScore + creativityBonus)),
-      'Iterative Improvement': Math.max(0, Math.min(100, totalScore + iterativeBonus)),
+      "Clarity": Math.round(clarityTotal / numLevels),
+      "Structure": Math.round(structureTotal / numLevels),
+      "Context Relevance": Math.round(contextTotal / numLevels),
+      "Creativity": Math.round(creativityTotal / numLevels),
+      "Iterative Improvement": Math.round(iterativeTotal / numLevels),
     };
+    totalScore = Math.round((clarityTotal + structureTotal + contextTotal + creativityTotal + iterativeTotal) / numLevels);
+    
+    // Build evaluations array for response (matching B2C format)
+    evaluations = evaluationsWithData.map(({ level, evaluation }) => ({
+      level,
+      ...evaluation,
+    }));
   } else {
     // Fallback for unknown assessment types
     const questionCount = Object.keys(answers).length || 1;

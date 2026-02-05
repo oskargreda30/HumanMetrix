@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import { evaluatePromptWithGPT, PA_LEVEL_DESCRIPTIONS } from "./services/promptArchitecture";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
@@ -7152,93 +7153,57 @@ ${truncatedText}`;
             })
             .sort((a, b) => a.level - b.level);
           
-          // If no level-by-level evaluations exist, create a summary from assessment_results.scores
+          // Check for evaluations stored directly on the result (B2B sessions)
           let finalLevelData = levelData;
-          if (levelData.length === 0 && promptResult.scores && typeof promptResult.scores === 'object') {
-            // Convert summary scores to a single "average" level entry
-            const summaryScores = promptResult.scores as Record<string, number>;
-            const normalizeKey = (key: string) => key.toLowerCase().replace(/\s+/g, '');
-            
-            // Detect if scores are out of 25 or already out of 100
-            const allScoreValues = Object.values(summaryScores).filter(v => typeof v === 'number');
-            const maxScore = Math.max(...allScoreValues);
-            const scoresAreOutOf100 = maxScore > 25; // If any score > 25, assume they're out of 100
-            
-            const getSummaryScore = (dimension: string): number | undefined => {
-              let rawScore: number | undefined;
-              
-              // Try direct match first
-              if (summaryScores[dimension] !== undefined) {
-                rawScore = summaryScores[dimension];
-              } else {
-                // Try normalized matching
-                const normalized = normalizeKey(dimension);
-                for (const [key, value] of Object.entries(summaryScores)) {
-                  if (normalizeKey(key) === normalized) {
-                    rawScore = value;
-                    break;
-                  }
-                }
-              }
-              
-              if (rawScore === undefined) return undefined;
-              
-              // Scale appropriately based on detected format
-              if (scoresAreOutOf100) {
-                // Scores are already out of 100, scale to 20
-                return Math.round((rawScore / 100) * 20);
-              } else {
-                // Scores are out of 25, scale to 20
-                return scaleDimensionScore(rawScore);
-              }
+          if (levelData.length === 0 && promptResult.evaluations && Array.isArray(promptResult.evaluations)) {
+            // Helper to normalize scores from 0-100 to 0-20 if needed
+            const normalizeToTwenty = (score: number | undefined): number => {
+              if (score === undefined) return 0;
+              return score > 20 ? Math.round((score / 100) * 20) : score;
             };
             
-            const clarity = getSummaryScore('clarity') || getSummaryScore('Clarity');
-            const structure = getSummaryScore('structure') || getSummaryScore('Structure');
-            const contextRelevance = getSummaryScore('contextRelevance') || getSummaryScore('Context Relevance');
-            const creativity = getSummaryScore('creativity') || getSummaryScore('Creativity');
-            const iterativeImprovement = getSummaryScore('iterativeImprovement') || getSummaryScore('Iterative Improvement');
+            // Helper to get dimension score with legacy name fallback
+            const getDimensionScore = (e: any, canonical: string, legacyNames: string[]): number => {
+              if (e[canonical] !== undefined) return normalizeToTwenty(e[canonical]);
+              for (const name of legacyNames) {
+                if (e[name] !== undefined) return normalizeToTwenty(e[name]);
+              }
+              return 0;
+            };
             
-            // Check for B2B-specific dimension names
-            const contextSetting = getSummaryScore('Context Setting');
-            const outputFormatting = getSummaryScore('Output Formatting');
-            const constraintDefinition = getSummaryScore('Constraint Definition');
-            const hasB2BDimensions = contextSetting !== undefined || outputFormatting !== undefined || constraintDefinition !== undefined;
-            
-            if (hasB2BDimensions) {
-              // B2B format: pass through B2B dimension names
-              finalLevelData = [{
-                level: 1,
+            finalLevelData = (promptResult.evaluations as any[])
+              .filter(e => e.level !== undefined && e.totalScore !== undefined)
+              .map(e => ({
+                level: e.level,
                 scores: {
-                  'Clarity': clarity || 0,
-                  'Context Setting': contextSetting || 0,
-                  'Output Formatting': outputFormatting || 0,
-                  'Constraint Definition': constraintDefinition || 0,
+                  clarity: getDimensionScore(e, 'clarity', ['Clarity']),
+                  structure: getDimensionScore(e, 'structure', ['Structure', 'Context Setting']),
+                  contextRelevance: getDimensionScore(e, 'contextRelevance', ['Context Relevance', 'Output Formatting']),
+                  creativity: getDimensionScore(e, 'creativity', ['Creativity', 'Constraint Definition']),
+                  iterativeImprovement: getDimensionScore(e, 'iterativeImprovement', ['Iterative Improvement']),
                 },
-                totalScore: promptResult.totalScore || 0,
-                feedback: 'Summary scores from overall assessment',
-              }];
-            } else if (clarity !== undefined || structure !== undefined || contextRelevance !== undefined || 
-                creativity !== undefined || iterativeImprovement !== undefined) {
-              // B2C format: use standard dimension names
-              // Create a summary level entry
-              finalLevelData = [{
-                level: 1,  // Use level 1 as summary
-                scores: {
-                  clarity: clarity || 0,
-                  structure: structure || 0,
-                  contextRelevance: contextRelevance || 0,
-                  creativity: creativity || 0,
-                  iterativeImprovement: iterativeImprovement || 0,
-                },
-                totalScore: promptResult.totalScore || 0,
-                feedback: 'Summary scores from overall assessment',
-              }];
-            }
+                totalScore: e.totalScore,
+                feedback: e.feedback || '',
+              }))
+              .sort((a, b) => a.level - b.level);
           }
           
+          // Ensure all 7 levels are present, fill missing with placeholders
+          const levelMap = new Map(finalLevelData.map((l: any) => [l.level, l]));
+          const sevenLevelData = [1, 2, 3, 4, 5, 6, 7].map(levelNum => {
+            const existingLevel = levelMap.get(levelNum);
+            if (existingLevel) return existingLevel;
+            return {
+              level: levelNum,
+              scores: { clarity: 0, structure: 0, contextRelevance: 0, creativity: 0, iterativeImprovement: 0 },
+              totalScore: 0,
+              feedback: 'Not completed',
+              isMissing: true,
+            };
+          });
+          
           return {
-            levels: finalLevelData,
+            levels: sevenLevelData,
             totalScore: promptResult.totalScore || 0,
             percentile: promptResult.percentile,
             completedAt: promptResult.completedAt,
@@ -14570,11 +14535,11 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
             return Math.round((score / 25) * 20);
           };
           
-          // Only fetch evaluations if this is from assessment_results (has real result ID)
+          // Try to get evaluations from database first, then fall back to session.evaluations
           let finalLevelData: any[] = [];
           
           if (promptResult.isFromAssessmentResults) {
-            // Fetch evaluations for this result
+            // Fetch evaluations from database for B2C assessment results
             const evaluations = await storage.getEvaluationsByResult(promptResult.id);
             
             // Organize evaluations by level and scale scores
@@ -14598,6 +14563,40 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
               .sort((a, b) => a.level - b.level);
             
             finalLevelData = levelData;
+          }
+          
+          // Fallback: Check if evaluations are stored directly on the result (B2B sessions)
+          if (finalLevelData.length === 0 && promptResult.evaluations && Array.isArray(promptResult.evaluations)) {
+            // Helper to normalize scores from 0-100 to 0-20 if needed
+            const normalizeToTwenty = (score: number | undefined): number => {
+              if (score === undefined) return 0;
+              return score > 20 ? Math.round((score / 100) * 20) : score;
+            };
+            
+            // Helper to get dimension score with legacy name fallback
+            const getDimensionScore = (e: any, canonical: string, legacyNames: string[]): number => {
+              if (e[canonical] !== undefined) return normalizeToTwenty(e[canonical]);
+              for (const name of legacyNames) {
+                if (e[name] !== undefined) return normalizeToTwenty(e[name]);
+              }
+              return 0;
+            };
+            
+            finalLevelData = (promptResult.evaluations as any[])
+              .filter(e => e.level !== undefined && e.totalScore !== undefined)
+              .map(e => ({
+                level: e.level,
+                scores: {
+                  clarity: getDimensionScore(e, 'clarity', ['Clarity']),
+                  structure: getDimensionScore(e, 'structure', ['Structure', 'Context Setting']),
+                  contextRelevance: getDimensionScore(e, 'contextRelevance', ['Context Relevance', 'Output Formatting']),
+                  creativity: getDimensionScore(e, 'creativity', ['Creativity', 'Constraint Definition']),
+                  iterativeImprovement: getDimensionScore(e, 'iterativeImprovement', ['Iterative Improvement']),
+                },
+                totalScore: e.totalScore,
+                feedback: e.feedback || '',
+              }))
+              .sort((a, b) => a.level - b.level);
           }
           
           // If no level-by-level evaluations exist, create a summary from scores
@@ -14640,45 +14639,26 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
             const creativity = getSummaryScore('creativity') || getSummaryScore('Creativity');
             const iterativeImprovement = getSummaryScore('iterativeImprovement') || getSummaryScore('Iterative Improvement');
             
-            // Check for B2B-specific dimension names
-            const contextSetting = getSummaryScore('Context Setting');
-            const outputFormatting = getSummaryScore('Output Formatting');
-            const constraintDefinition = getSummaryScore('Constraint Definition');
-            const hasB2BDimensions = contextSetting !== undefined || outputFormatting !== undefined || constraintDefinition !== undefined;
-            
-            if (hasB2BDimensions) {
-              // B2B format: pass through B2B dimension names
-              finalLevelData = [{
-                level: 1,
-                scores: {
-                  'Clarity': clarity || 0,
-                  'Context Setting': contextSetting || 0,
-                  'Output Formatting': outputFormatting || 0,
-                  'Constraint Definition': constraintDefinition || 0,
-                },
-                totalScore: promptResult.totalScore || 0,
-                feedback: 'Summary scores from overall assessment',
-              }];
-            } else if (clarity !== undefined || structure !== undefined || contextRelevance !== undefined || 
-                creativity !== undefined || iterativeImprovement !== undefined) {
-              // B2C format: use standard dimension names
-              finalLevelData = [{
-                level: 1,
-                scores: {
-                  clarity: clarity || 0,
-                  structure: structure || 0,
-                  contextRelevance: contextRelevance || 0,
-                  creativity: creativity || 0,
-                  iterativeImprovement: iterativeImprovement || 0,
-                },
-                totalScore: promptResult.totalScore || 0,
-                feedback: 'Summary scores from overall assessment',
-              }];
-            }
+            // Only use per-level evaluations - do not create fake fallback data
+            // If no evaluations exist, finalLevelData stays empty
           }
           
+          // Ensure all 7 levels are present, fill missing with placeholders
+          const levelMap2 = new Map(finalLevelData.map((l: any) => [l.level, l]));
+          const sevenLevelData2 = [1, 2, 3, 4, 5, 6, 7].map(levelNum => {
+            const existingLevel = levelMap2.get(levelNum);
+            if (existingLevel) return existingLevel;
+            return {
+              level: levelNum,
+              scores: { clarity: 0, structure: 0, contextRelevance: 0, creativity: 0, iterativeImprovement: 0 },
+              totalScore: 0,
+              feedback: 'Not completed',
+              isMissing: true,
+            };
+          });
+          
           return {
-            levels: finalLevelData,
+            levels: sevenLevelData2,
             totalScore: promptResult.totalScore || 0,
             percentile: promptResult.percentile || 0,
             completedAt: promptResult.completedAt,
@@ -24166,104 +24146,6 @@ function calculateAIQScores(answers: Record<string, string>): Record<string, num
 }
 
 // Evaluate a single prompt using OpenAI GPT-5
-async function evaluatePromptWithGPT(userPrompt: string, level: number, taskDescription: string): Promise<{
-  clarity: number;
-  structure: number;
-  contextRelevance: number;
-  creativity: number;
-  iterativeImprovement: number;
-  feedback: string;
-  totalScore: number;
-}> {
-  const evaluationPrompt = `You are an expert evaluator of AI prompts. Evaluate the following user-written prompt based on these criteria:
-
-**Level ${level} Task**: ${taskDescription}
-
-**User's Prompt**:
-${userPrompt}
-
-**Evaluation Criteria**:
-1. **Clarity (20 points)**: Is the prompt clear, unambiguous, and easy to understand?
-2. **Structure (20 points)**: Is the prompt well-organized with logical flow?
-3. **Context Relevance (20 points)**: Does the prompt provide necessary context and constraints?
-4. **Creativity (20 points)**: Does the prompt encourage thoughtful, creative responses?
-5. **Iterative Improvement (20 points)**: Does the prompt include mechanisms for refinement or building upon concepts?
-
-**Instructions**:
-- Provide scores for each criterion (out of 20 points each)
-- Be fair but rigorous in your evaluation
-- Consider the difficulty level when scoring
-- Provide constructive feedback
-
-**Response Format** (MUST follow exactly):
-{
-  "clarity": <score out of 20>,
-  "structure": <score out of 20>,
-  "contextRelevance": <score out of 20>,
-  "creativity": <score out of 20>,
-  "iterativeImprovement": <score out of 20>,
-  "feedback": "<brief constructive feedback>",
-  "totalScore": <sum of all scores>
-}`;
-
-  try {
-    console.log(`[Prompt Eval] Evaluating Level ${level} prompt (length: ${userPrompt.length} chars)`);
-    
-    // Retry OpenAI call with exponential backoff
-    const completion = await retryWithBackoff(async () => {
-      return await openai.chat.completions.create({
-        model: "gpt-5",
-        messages: [
-          {
-            role: "system",
-            content: "You are an expert prompt engineering evaluator. Respond only with valid JSON matching the requested format.",
-          },
-          {
-            role: "user",
-            content: evaluationPrompt,
-          },
-        ],
-        response_format: { type: "json_object" },
-      });
-    });
-
-    const result = JSON.parse(completion.choices[0].message.content || "{}");
-    
-    console.log(`[Prompt Eval] Level ${level} evaluated successfully - Total: ${result.totalScore || 0}`);
-    
-    // Ensure all fields exist with fallback values
-    return {
-      clarity: result.clarity || 0,
-      structure: result.structure || 0,
-      contextRelevance: result.contextRelevance || 0,
-      creativity: result.creativity || 0,
-      iterativeImprovement: result.iterativeImprovement || 0,
-      feedback: result.feedback || "Evaluation completed",
-      totalScore: result.totalScore || 0,
-    };
-  } catch (error: any) {
-    console.error(`[Prompt Eval ERROR] Level ${level} failed:`, {
-      error: error.message,
-      code: error.code,
-      type: error.type,
-      status: error.status,
-    });
-    
-    // Provide more specific error messages
-    if (error.code === 'insufficient_quota' || error.status === 429) {
-      throw new Error('OpenAI API quota exceeded');
-    }
-    if (error.code === 'invalid_api_key') {
-      throw new Error('OpenAI API key is invalid');
-    }
-    if (error.message?.includes('timeout')) {
-      throw new Error('OpenAI API request timed out');
-    }
-    
-    throw new Error(`Failed to evaluate prompt: ${error.message || 'Unknown error'}`);
-  }
-}
-
 // Calculate Prompt Architecture scores by evaluating all prompts
 // Processes 3 prompts in parallel to speed up evaluation while staying within OpenAI rate limits
 async function calculatePromptArchitectureScores(
