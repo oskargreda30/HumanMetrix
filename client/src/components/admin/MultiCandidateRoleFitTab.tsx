@@ -689,6 +689,22 @@ export default function MultiCandidateRoleFitTab() {
                 <div className="flex gap-3">
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
                   <div>
+                    <p className="font-medium text-sm">Prompt Architecture Scores</p>
+                    <p className="text-xs text-muted-foreground">Measures <strong>AI prompt engineering</strong> ability across 7 progressive levels - from basic prompts to advanced multi-agent orchestration.</p>
+                  </div>
+                </div>
+                {/* Step 5 */}
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
+                  <div>
+                    <p className="font-medium text-sm">AIQ (Algorithmic Integrity Quotient)</p>
+                    <p className="text-xs text-muted-foreground">Assesses <strong>ethical AI decision-making</strong> - how candidates balance efficiency, fairness, and transparency in AI-driven scenarios.</p>
+                  </div>
+                </div>
+                {/* Step 6 */}
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">6</div>
+                  <div>
                     <p className="font-medium text-sm">Gap Analysis</p>
                     <p className="text-xs text-muted-foreground">Gaps show difference between candidate score and role requirement, helping identify where development may be needed.</p>
                   </div>
@@ -818,7 +834,7 @@ export default function MultiCandidateRoleFitTab() {
                 const skillCriticality = roleSkills?.skillCriticality || {};
                 
                 // Build critical skill list with required scores from role definition
-                const criticalSkillsWithRequirements: Array<{ skillName: string; requiredScore: number; category: 'fit' | 'ai_readiness' }> = [];
+                const criticalSkillsWithRequirements: Array<{ skillName: string; requiredScore: number; category: 'fit' | 'ai_readiness' | 'prompt_architecture' | 'aiq' }> = [];
                 
                 // Check FIT skills
                 if (roleSkills?.fitSkills) {
@@ -841,6 +857,32 @@ export default function MultiCandidateRoleFitTab() {
                         skillName,
                         requiredScore: requiredScore as number,
                         category: 'ai_readiness'
+                      });
+                    }
+                  });
+                }
+                
+                // Check Prompt Architecture skills
+                if (roleSkills?.promptArchitectureSkills) {
+                  Object.entries(roleSkills.promptArchitectureSkills).forEach(([skillName, requiredScore]) => {
+                    if (skillCriticality[skillName] === 'critical') {
+                      criticalSkillsWithRequirements.push({
+                        skillName,
+                        requiredScore: requiredScore as number,
+                        category: 'prompt_architecture'
+                      });
+                    }
+                  });
+                }
+                
+                // Check AIQ skills
+                if (roleSkills?.aiqSkills) {
+                  Object.entries(roleSkills.aiqSkills).forEach(([skillName, requiredScore]) => {
+                    if (skillCriticality[skillName] === 'critical') {
+                      criticalSkillsWithRequirements.push({
+                        skillName,
+                        requiredScore: requiredScore as number,
+                        category: 'aiq'
                       });
                     }
                   });

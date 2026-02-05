@@ -49,6 +49,20 @@ export function HowToReadReport({ reportType }: HowToReadReportProps) {
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
               <div>
+                <p className="font-medium text-sm">Prompt Architecture Scores</p>
+                <p className="text-xs text-muted-foreground">Measures <strong>AI prompt engineering</strong> ability across 7 progressive levels.</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
+              <div>
+                <p className="font-medium text-sm">AIQ (Algorithmic Integrity Quotient)</p>
+                <p className="text-xs text-muted-foreground">Assesses <strong>ethical AI decision-making</strong> - balancing efficiency, fairness, and transparency.</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">6</div>
+              <div>
                 <p className="font-medium text-sm">Holistic View</p>
                 <p className="text-xs text-muted-foreground">Consider all 4 assessment types together for a complete picture of the candidate.</p>
               </div>
@@ -98,6 +112,20 @@ export function HowToReadReport({ reportType }: HowToReadReportProps) {
             </div>
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
+              <div>
+                <p className="font-medium text-sm">Prompt Architecture Scores</p>
+                <p className="text-xs text-muted-foreground">Measures <strong>AI prompt engineering</strong> ability across 7 progressive levels.</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
+              <div>
+                <p className="font-medium text-sm">AIQ (Algorithmic Integrity Quotient)</p>
+                <p className="text-xs text-muted-foreground">Assesses <strong>ethical AI decision-making</strong> - balancing efficiency, fairness, and transparency.</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">6</div>
               <div>
                 <p className="font-medium text-sm">Holistic Decision</p>
                 <p className="text-xs text-muted-foreground">Consider role requirements, team dynamics, and cultural fit alongside these scores.</p>
@@ -150,6 +178,20 @@ export function HowToReadReport({ reportType }: HowToReadReportProps) {
           </div>
           <div className="flex gap-3">
             <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
+            <div>
+              <p className="font-medium text-sm">Prompt Architecture Scores</p>
+              <p className="text-xs text-muted-foreground">Measures <strong>AI prompt engineering</strong> ability across 7 progressive levels.</p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
+            <div>
+              <p className="font-medium text-sm">AIQ (Algorithmic Integrity Quotient)</p>
+              <p className="text-xs text-muted-foreground">Assesses <strong>ethical AI decision-making</strong> - balancing efficiency, fairness, and transparency.</p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">6</div>
             <div>
               <p className="font-medium text-sm">Gap Analysis</p>
               <p className="text-xs text-muted-foreground">Gaps show difference between candidate score and role requirement, helping identify development needs.</p>
