@@ -765,8 +765,54 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                   {promptData.levels && promptData.levels.length > 0 ? (
                     <div className="space-y-3">
                       {(() => {
+                        // Check if this is imported data (level 0 entry indicates summary/imported data)
+                        const importedEntry = promptData.levels.find((l: any) => l.level === 0 || l.isImported);
+                        
+                        // If imported, show a banner with summary scores above the 7-level breakdown
+                        let importedBanner = null;
+                        if (importedEntry) {
+                          const importedScores = importedEntry.scores || {};
+                          const getImportedScore = (key: string): number => {
+                            if (importedScores[key] !== undefined) return importedScores[key];
+                            if (importedScores[key.charAt(0).toUpperCase() + key.slice(1)] !== undefined) {
+                              return importedScores[key.charAt(0).toUpperCase() + key.slice(1)];
+                            }
+                            return 0;
+                          };
+                          
+                          importedBanner = (
+                            <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 mb-4" data-testid="imported-assessment-banner">
+                              <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
+                                This assessment was imported from external source. Summary scores shown below.
+                              </p>
+                              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                <div className="text-center p-2 bg-white/50 dark:bg-slate-800/50 rounded" data-testid="imported-score-clarity">
+                                  <div className="text-lg font-bold text-foreground">{getImportedScore('clarity')}/20</div>
+                                  <div className="text-xs text-muted-foreground">Clarity</div>
+                                </div>
+                                <div className="text-center p-2 bg-white/50 dark:bg-slate-800/50 rounded" data-testid="imported-score-structure">
+                                  <div className="text-lg font-bold text-foreground">{getImportedScore('structure')}/20</div>
+                                  <div className="text-xs text-muted-foreground">Structure</div>
+                                </div>
+                                <div className="text-center p-2 bg-white/50 dark:bg-slate-800/50 rounded" data-testid="imported-score-context">
+                                  <div className="text-lg font-bold text-foreground">{getImportedScore('contextRelevance')}/20</div>
+                                  <div className="text-xs text-muted-foreground">Context</div>
+                                </div>
+                                <div className="text-center p-2 bg-white/50 dark:bg-slate-800/50 rounded" data-testid="imported-score-creativity">
+                                  <div className="text-lg font-bold text-foreground">{getImportedScore('creativity')}/20</div>
+                                  <div className="text-xs text-muted-foreground">Creativity</div>
+                                </div>
+                                <div className="text-center p-2 bg-white/50 dark:bg-slate-800/50 rounded" data-testid="imported-score-iterative">
+                                  <div className="text-lg font-bold text-foreground">{getImportedScore('iterativeImprovement')}/20</div>
+                                  <div className="text-xs text-muted-foreground">Iterative</div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+                        
                         // Ensure all 7 levels are shown, filling missing ones with placeholders
-                        const levelMap = new Map(promptData.levels.map((l: any) => [l.level, l]));
+                        const levelMap = new Map(promptData.levels.filter((l: any) => l.level !== 0).map((l: any) => [l.level, l]));
                         const allLevels = [1, 2, 3, 4, 5, 6, 7].map(levelNum => {
                           const existingLevel = levelMap.get(levelNum);
                           if (existingLevel) return existingLevel;
@@ -780,7 +826,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                           };
                         });
                         
-                        return allLevels.map((level: any, idx: number) => {
+                        const levelsContent = allLevels.map((level: any, idx: number) => {
                           const scores = level.scores || {};
                           
                           const getScore = (key: string): number => {
@@ -792,7 +838,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                           };
                           
                           return (
-                            <div key={level.level || idx} className={`space-y-2 ${level.isMissing ? 'opacity-50' : ''}`}>
+                            <div key={level.level || idx} className={`space-y-2 ${level.isMissing ? 'opacity-50' : ''}`} data-testid={`pa-level-${level.level}`}>
                               <div className="flex items-center justify-between">
                                 <span className="font-medium text-sm text-foreground">
                                   Level {level.level}
@@ -820,6 +866,14 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                             </div>
                           );
                         });
+                        
+                        // Return both the imported banner (if exists) and the 7 levels
+                        return (
+                          <>
+                            {importedBanner}
+                            {levelsContent}
+                          </>
+                        );
                       })()}
                     </div>
                   ) : (

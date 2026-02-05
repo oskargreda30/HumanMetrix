@@ -14633,14 +14633,33 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
               }
             };
             
-            const clarity = getSummaryScore('clarity') || getSummaryScore('Clarity');
-            const structure = getSummaryScore('structure') || getSummaryScore('Structure');
-            const contextRelevance = getSummaryScore('contextRelevance') || getSummaryScore('Context Relevance');
-            const creativity = getSummaryScore('creativity') || getSummaryScore('Creativity');
-            const iterativeImprovement = getSummaryScore('iterativeImprovement') || getSummaryScore('Iterative Improvement');
+            const clarity = getSummaryScore('clarity') || getSummaryScore('Clarity') || 0;
+            const structure = getSummaryScore('structure') || getSummaryScore('Structure') || 
+                             getSummaryScore('contextSetting') || getSummaryScore('Context Setting') || 0;
+            const contextRelevance = getSummaryScore('contextRelevance') || getSummaryScore('Context Relevance') ||
+                                    getSummaryScore('outputFormatting') || getSummaryScore('Output Formatting') || 0;
+            const creativity = getSummaryScore('creativity') || getSummaryScore('Creativity') ||
+                              getSummaryScore('constraintDefinition') || getSummaryScore('Constraint Definition') || 0;
+            const iterativeImprovement = getSummaryScore('iterativeImprovement') || getSummaryScore('Iterative Improvement') || 0;
             
-            // Only use per-level evaluations - do not create fake fallback data
-            // If no evaluations exist, finalLevelData stays empty
+            // For PDF imports with summary scores but no per-level data, create a summary entry
+            // This allows the report to show something meaningful for imported assessments
+            if (clarity || structure || contextRelevance || creativity || iterativeImprovement) {
+              const avgScore = Math.round((clarity + structure + contextRelevance + creativity + iterativeImprovement) / 5);
+              finalLevelData.push({
+                level: 0, // Use level 0 to indicate this is a summary/imported view
+                scores: { 
+                  clarity, 
+                  structure, 
+                  contextRelevance, 
+                  creativity, 
+                  iterativeImprovement 
+                },
+                totalScore: avgScore,
+                feedback: 'Imported assessment - summary scores only',
+                isImported: true,
+              });
+            }
           }
           
           // Ensure all 7 levels are present, fill missing with placeholders
