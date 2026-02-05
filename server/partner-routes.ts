@@ -1962,6 +1962,7 @@ export function registerPartnerRoutes(app: Express) {
         assessmentTypes: z.array(z.string()).min(1, "At least one assessment type required"),
         sendEmails: z.boolean().default(true),
         expiresInDays: z.number().min(1).max(30).default(7), // 7-day default expiry
+        forceReinvite: z.boolean().default(false), // Allow re-inviting existing candidates for new testing series
       });
       
       const parsed = bodySchema.safeParse(req.body);
@@ -1985,7 +1986,7 @@ export function registerPartnerRoutes(app: Express) {
         });
       }
       
-      const { candidates, assessmentTypes, sendEmails, expiresInDays } = parsed.data;
+      const { candidates, assessmentTypes, sendEmails, expiresInDays, forceReinvite } = parsed.data;
       
       // Validate assessment types
       const validTypes = ['fit', 'ai_readiness', 'prompt_architecture', 'aiq'];
@@ -2067,33 +2068,41 @@ export function registerPartnerRoutes(app: Express) {
             continue;
           }
           
-          // For active invitations (pending, sent, opened, started, completed), provide specific errors
-          let errorMessage = 'DUPLICATE_CANDIDATE';
-          let additionalInfo: any = {
-            candidateName: existingInvitation.name || candidate.email,
-            candidateEmail: candidate.email,
-            invitationId: existingInvitation.id,
-            status: existingInvitation.status,
-            hasResults: existingInvitation.status === 'completed' || existingInvitation.status === 'in_progress',
-          };
-          
-          if (existingInvitation.status === 'completed') {
-            additionalInfo.message = 'This candidate has already completed their assessment.';
-          } else if (existingInvitation.status === 'in_progress' || existingInvitation.status === 'started') {
-            additionalInfo.message = 'This candidate has an assessment in progress.';
-          } else if (existingInvitation.status === 'pending' || existingInvitation.status === 'sent') {
-            additionalInfo.message = 'An invitation is already pending for this candidate. Use the resend option if needed.';
-            additionalInfo.canResend = true;
+          // If forceReinvite is true, allow creating a new invitation for a new testing series
+          if (forceReinvite) {
+            // Don't add to reactivate list - let it proceed as a new invitation
+            // The candidate will be processed normally below
+            console.log(`[Bulk Invitations] Force re-invite for ${candidate.email} - creating new testing series invitation`);
+            // Skip the duplicate check and continue to allow this candidate
+          } else {
+            // For active invitations (pending, sent, opened, started, completed), provide specific errors
+            let errorMessage = 'DUPLICATE_CANDIDATE';
+            let additionalInfo: any = {
+              candidateName: existingInvitation.name || candidate.email,
+              candidateEmail: candidate.email,
+              invitationId: existingInvitation.id,
+              status: existingInvitation.status,
+              hasResults: existingInvitation.status === 'completed' || existingInvitation.status === 'in_progress',
+            };
+            
+            if (existingInvitation.status === 'completed') {
+              additionalInfo.message = 'This candidate has already completed their assessment.';
+            } else if (existingInvitation.status === 'in_progress' || existingInvitation.status === 'started') {
+              additionalInfo.message = 'This candidate has an assessment in progress.';
+            } else if (existingInvitation.status === 'pending' || existingInvitation.status === 'sent') {
+              additionalInfo.message = 'An invitation is already pending for this candidate. Use the resend option if needed.';
+              additionalInfo.canResend = true;
+            }
+            
+            validationErrors.push({ 
+              row, 
+              externalUserId: identifier, 
+              field: 'email', 
+              error: errorMessage,
+              ...additionalInfo
+            } as any);
+            continue;
           }
-          
-          validationErrors.push({ 
-            row, 
-            externalUserId: identifier, 
-            field: 'email', 
-            error: errorMessage,
-            ...additionalInfo
-          } as any);
-          continue;
         }
         
         // Check for duplicate emails within batch

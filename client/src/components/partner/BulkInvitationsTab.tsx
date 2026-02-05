@@ -120,6 +120,12 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const [duplicateCandidates, setDuplicateCandidates] = useState<DuplicateCandidateInfo[]>([]);
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [pendingReinvitePayload, setPendingReinvitePayload] = useState<{
+    candidates: Array<{ externalUserId: string; email?: string; name?: string }>;
+    assessmentTypes: string[];
+    sendEmails: boolean;
+  } | null>(null);
+  const [isReinviting, setIsReinviting] = useState(false);
   const [revokeConfirmId, setRevokeConfirmId] = useState<string | null>(null);
   const [revokeConfirmEmail, setRevokeConfirmEmail] = useState<string>('');
   const [insufficientCreditsInfo, setInsufficientCreditsInfo] = useState<{
@@ -199,12 +205,15 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
       candidates: Array<{ externalUserId: string; email?: string; name?: string }>;
       assessmentTypes: string[];
       sendEmails: boolean;
+      forceReinvite?: boolean;
     }) => {
       // Use longer timeout for bulk operations (2 minutes)
       const response = await apiRequest('POST', '/api/partner/me/invitations/bulk', payload, { timeoutMs: 120000 });
       return response.json();
     },
     onSuccess: (data: any) => {
+      setPendingReinvitePayload(null);
+      setIsReinviting(false);
       if (data.errors?.length > 0) {
         setLastImportErrors(data.errors);
         toast({
@@ -222,11 +231,13 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
       queryClient.invalidateQueries({ queryKey: ['/api/partner/me/invitations'] });
       queryClient.invalidateQueries({ queryKey: ['/api/partner/me/invitations/imports'] });
       queryClient.invalidateQueries({ queryKey: ['/api/partner/me/quota'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/partner/me/candidates'] });
       setCandidates([{ id: crypto.randomUUID(), externalUserId: '', email: '', name: '' }]);
       setCsvData(null);
       setValidationErrors([]);
     },
-    onError: (error: any) => {
+    onError: (error: any, variables) => {
+      setIsReinviting(false);
       // Check for insufficient credits error
       if (error.code === 'INSUFFICIENT_CREDITS') {
         setInsufficientCreditsInfo({
@@ -243,6 +254,10 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
         // Check for duplicate candidate errors
         const duplicateErrors = error.errors.filter((e: any) => e.error === 'DUPLICATE_CANDIDATE');
         if (duplicateErrors.length > 0) {
+          // Store the payload for potential re-invite (excluding forceReinvite flag)
+          const { forceReinvite, ...basePayload } = variables;
+          setPendingReinvitePayload(basePayload);
+          
           setDuplicateCandidates(duplicateErrors.map((e: any) => ({
             candidateName: e.candidateName || e.candidateEmail,
             candidateEmail: e.candidateEmail,
@@ -390,6 +405,18 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
         ? prev.filter(id => id !== assessmentId)
         : [...prev, assessmentId]
     );
+  };
+
+  const handleForceReinvite = () => {
+    if (!pendingReinvitePayload) return;
+    
+    setIsReinviting(true);
+    setShowDuplicateDialog(false);
+    
+    bulkInviteMutation.mutate({
+      ...pendingReinvitePayload,
+      forceReinvite: true,
+    });
   };
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -1154,18 +1181,18 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
       <Dialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}>
         <DialogContent className="max-w-md" data-testid="dialog-duplicate-candidate">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
+            <DialogTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-500">
               <AlertCircle className="h-5 w-5" />
               Candidate Already Exists
             </DialogTitle>
             <DialogDescription className="pt-2 text-left">
               {duplicateCandidates.length === 1 ? (
                 <>
-                  <strong>{duplicateCandidates[0]?.candidateName}</strong> ({duplicateCandidates[0]?.candidateEmail}) is already in your candidate list.
+                  <strong>{duplicateCandidates[0]?.candidateName}</strong> ({duplicateCandidates[0]?.candidateEmail}) already has an invitation in your system.
                 </>
               ) : (
                 <>
-                  The following candidates are already in your system:
+                  The following candidates already have invitations in your system:
                   <ul className="list-disc pl-5 mt-2 space-y-1">
                     {duplicateCandidates.map((c, i) => (
                       <li key={i}><strong>{c.candidateName}</strong> ({c.candidateEmail})</li>
@@ -1176,27 +1203,42 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
             </DialogDescription>
           </DialogHeader>
           
-          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mt-2">
-            <p className="text-sm text-amber-800 dark:text-amber-200">
-              <strong>To re-invite {duplicateCandidates.length === 1 ? 'this candidate' : 'these candidates'}:</strong>
+          <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mt-2">
+            <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
+              Start a new testing series?
             </p>
-            <ol className="text-sm text-amber-700 dark:text-amber-300 list-decimal pl-5 mt-2 space-y-1">
-              <li>Go to the <strong>All Candidates</strong> tab</li>
-              <li>Find and delete the existing candidate record</li>
-              <li>Return here to send a new invitation</li>
-            </ol>
-            <p className="text-sm text-amber-600 dark:text-amber-400 mt-3 italic">
-              Note: Deleting a candidate will permanently remove their current assessment results.
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              You can create a <strong>new invitation</strong> for {duplicateCandidates.length === 1 ? 'this candidate' : 'these candidates'} to take fresh assessments. Their previous results will be preserved separately.
             </p>
           </div>
 
-          <DialogFooter className="mt-4">
+          <DialogFooter className="mt-4 flex-col sm:flex-row gap-2">
             <Button 
               variant="outline" 
-              onClick={() => setShowDuplicateDialog(false)}
-              data-testid="button-close-duplicate-dialog"
+              onClick={() => {
+                setShowDuplicateDialog(false);
+                setPendingReinvitePayload(null);
+              }}
+              data-testid="button-cancel-reinvite"
             >
-              Close
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleForceReinvite}
+              disabled={!pendingReinvitePayload || isReinviting}
+              data-testid="button-reinvite-new-series"
+            >
+              {isReinviting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Create New Invitation
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
