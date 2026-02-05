@@ -532,6 +532,7 @@ export interface IStorage {
   deletePartnerTeamMember(id: string): Promise<void>;
   deleteAllPartnerTeamMembers(partnerId: string): Promise<void>;
 
+  nullifyUserReferencesForPartnerDeletion(userId: string, partnerId: string): Promise<void>;
   // Partner analytics operations
   getPartnerAnalytics(partnerId: string, period: 'daily' | 'weekly' | 'monthly', days?: number): Promise<{
     testsOverTime: Array<{ date: string; count: number }>;
@@ -3743,6 +3744,25 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAllPartnerTeamMembers(partnerId: string): Promise<void> {
     await db.delete(partnerTeamMembers).where(eq(partnerTeamMembers.partnerId, partnerId));
+  }
+
+  async nullifyUserReferencesForPartnerDeletion(userId: string, partnerId: string): Promise<void> {
+    // Nullify user references in tables that dont have cascade delete to prevent FK violations
+    // These tables reference users.id without onDelete behavior
+    
+    // 1. partnerInvoices.sentByUserId
+    await db.update(partnerInvoices)
+      .set({ sentByUserId: null })
+      .where(eq(partnerInvoices.sentByUserId, userId));
+    
+    // 2. billingChangeRequests - delete requests for this partner (theyll be orphaned anyway)
+    await db.delete(billingChangeRequests)
+      .where(eq(billingChangeRequests.partnerId, partnerId));
+    
+    // 3. partnerCandidateImports.createdByUserId
+    await db.update(partnerCandidateImports)
+      .set({ createdByUserId: null })
+      .where(eq(partnerCandidateImports.createdByUserId, userId));
   }
 
   // Partner analytics operations

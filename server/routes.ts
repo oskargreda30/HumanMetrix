@@ -18119,10 +18119,17 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       // First, delete all team members for this partner
       await storage.deleteAllPartnerTeamMembers(req.params.id);
       
-      // Find and hard-delete the associated user account (partner_admin with same email)
+      // Find the associated user account (partner_admin with same email)
       const partnerUser = await storage.getUserByEmail(partner.email);
-      if (partnerUser && partnerUser.role === 'partner_admin') {
-        await storage.deleteUser(partnerUser.id);
+      
+      // Before deleting user, nullify all FK references to prevent constraint violations
+      if (partnerUser) {
+        await storage.nullifyUserReferencesForPartnerDeletion(partnerUser.id, req.params.id);
+        
+        // Now delete the user
+        if (partnerUser.role === 'partner_admin') {
+          await storage.deleteUser(partnerUser.id);
+        }
       }
       
       // Delete the partner account (cascades to API keys, sessions, usage events, etc.)
