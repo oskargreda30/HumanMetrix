@@ -766,7 +766,10 @@ export default function Dashboard() {
                   <AlertDialogFooter>
                     <AlertDialogCancel onClick={() => setDeleteConfirmText("")}>Cancel</AlertDialogCancel>
                     <AlertDialogAction
-                      onClick={() => deleteAccountMutation.mutate()}
+                      onClick={(e) => {
+                        e.preventDefault(); // Prevent auto-close, let mutation handle it
+                        deleteAccountMutation.mutate();
+                      }}
                       disabled={deleteConfirmText !== "DELETE" || deleteAccountMutation.isPending}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       data-testid="button-confirm-delete"
