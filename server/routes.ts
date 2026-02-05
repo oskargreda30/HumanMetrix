@@ -6971,7 +6971,11 @@ ${truncatedText}`;
         userIds.map((id) => storage.getResultsByUser(id))
       );
       const candidatesResults = candidatesResultsRaw.map(results => 
-        results.map(recalculateScores)
+        results.sort((a, b) => {
+          const dateA = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+          const dateB = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+          return dateB - dateA; // Most recent first
+        }).map(recalculateScores)
       );
 
       // Filter to only multi-skill assessments (FIT has 6 skills, AI Readiness has 9 skills)
@@ -14365,7 +14369,14 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
       }
       
       // Convert map to array in candidateIds order
-      const candidatesResults = candidateIds.map(id => candidateResultsMap.get(id) || []);
+      const candidatesResults = candidateIds.map(id => {
+        const results = candidateResultsMap.get(id) || [];
+        return results.sort((a, b) => {
+          const dateA = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+          const dateB = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+          return dateB - dateA; // Most recent first
+        });
+      });
 
       // Validate all candidates belong to this partner - check if they have any data
       // Get the full set of valid partner candidate IDs

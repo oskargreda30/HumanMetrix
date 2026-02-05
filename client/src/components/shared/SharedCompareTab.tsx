@@ -86,6 +86,25 @@ const renderInsideLabel = (props: any) => {
   );
 };
 
+// Helper: Count unique assessment types (max 4: FIT, AI_READINESS, PROMPT_ARCHITECTURE, AIQ)
+const countUniqueAssessmentTypes = (results: Array<{ assessmentType?: string }> | undefined): number => {
+  if (!results || results.length === 0) return 0;
+  // Normalize assessment types to canonical form (max 4 types: fit, ai_readiness, prompt_architecture, aiq)
+  const normalizeType = (type: string): string => {
+    const normalized = type.toLowerCase().replace(/[\s-]+/g, '_');
+    if (normalized === 'fit' || normalized === 'fit_assessment') return 'fit';
+    if (normalized === 'ai_readiness' || normalized === 'ai-readiness' || normalized === 'aireadiness') return 'ai_readiness';
+    if (normalized === 'prompt_architecture' || normalized === 'prompt-architecture' || normalized === 'promptarchitecture') return 'prompt_architecture';
+    if (normalized === 'aiq' || normalized === 'ai_q' || normalized === 'ai-q') return 'aiq';
+    return normalized;
+  };
+  const uniqueTypes = new Set(
+    results.map(r => r.assessmentType).filter(Boolean).map(t => normalizeType(t!))
+  );
+  // Cap at 4 since there are only 4 assessment types
+  return Math.min(uniqueTypes.size, 4);
+};
+
 interface ComparisonData {
   radarData: Array<any>;
   skillComparison: Array<{ skillName: string; scores: Array<number | null> }>;
@@ -1123,7 +1142,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                         {candidate.user.email}
                       </p>
                       <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5 md:mt-1">
-                        {candidate.results?.length || 0} assessments
+                        {countUniqueAssessmentTypes(candidate.results)} assessment{countUniqueAssessmentTypes(candidate.results) !== 1 ? 's' : ''}
                       </p>
                     </div>
                   </div>
