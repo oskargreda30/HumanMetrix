@@ -18102,7 +18102,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
   });
 
   // Super Admin: Delete partner
-  // Super Admin: Delete partner
   app.delete("/api/admin/partners/:id", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
@@ -18117,24 +18116,13 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(404).json({ message: "Partner not found" });
       }
       
-      // First, delete all team members for this partner (to avoid FK constraint on invited_by_user_id)
-      try {
-        await storage.deleteAllPartnerTeamMembers(req.params.id);
-      } catch (teamError) {
-        console.error("Error deleting partner team members:", teamError);
-        // Continue - team members might not exist
-      }
+      // First, delete all team members for this partner
+      await storage.deleteAllPartnerTeamMembers(req.params.id);
       
-      // Soft-delete the associated user account (partner_admin with same email) 
-      // Use soft-delete to avoid FK constraint violations from related records
+      // Find and hard-delete the associated user account (partner_admin with same email)
       const partnerUser = await storage.getUserByEmail(partner.email);
       if (partnerUser && partnerUser.role === 'partner_admin') {
-        try {
-          await storage.deleteUserAccount(partnerUser.id);
-        } catch (userError) {
-          console.error("Error soft-deleting partner user:", userError);
-          // Continue - user deletion is not critical for partner deletion
-        }
+        await storage.deleteUser(partnerUser.id);
       }
       
       // Delete the partner account (cascades to API keys, sessions, usage events, etc.)
@@ -18143,9 +18131,8 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       res.json({ message: "Partner deleted successfully" });
     } catch (error: any) {
       console.error("Error deleting partner:", error);
-      // Provide more specific error message
       const errorMessage = error?.code === '23503' 
-        ? "Cannot delete partner: There are related records that must be removed first"
+        ? "Cannot delete partner: Foreign key constraint violation. Related records must be removed first."
         : error?.message || "Failed to delete partner";
       res.status(500).json({ message: errorMessage });
     }

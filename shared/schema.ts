@@ -1473,7 +1473,7 @@ export const partnerTeamMembers = pgTable("partner_team_members", {
   inviteStatus: varchar("invite_status").notNull().default("pending"), // pending, accepted, expired
   inviteToken: varchar("invite_token"),
   inviteExpiresAt: timestamp("invite_expires_at"),
-  invitedByUserId: varchar("invited_by_user_id").references(() => users.id),
+  invitedByUserId: varchar("invited_by_user_id").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   acceptedAt: timestamp("accepted_at"),
 }, (table) => [
