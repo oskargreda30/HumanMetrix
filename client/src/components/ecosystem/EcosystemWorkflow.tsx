@@ -904,6 +904,29 @@ export function EcosystemWorkflow({
       </div>
     );
   }
+  
+  // CRITICAL: Guard against stale data during project transitions
+  // If the loaded project doesn't match the requested projectId, show loading
+  // This prevents the "flash of old data" when switching between projects
+  if (project.id !== projectId) {
+    return (
+      <div className="space-y-4 md:space-y-6">
+        {[1, 2, 3].map((i) => (
+          <Card key={i}>
+            <div className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-5 w-32 bg-muted animate-pulse rounded" />
+                  <div className="h-4 w-48 bg-muted/70 animate-pulse rounded" />
+                </div>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
   const missionAnalysis = project.missionAnalysis as EcosystemMissionAnalysis | null;
   const teamAnalysis = project.teamAnalysis as EcosystemTeamAnalysis | null;

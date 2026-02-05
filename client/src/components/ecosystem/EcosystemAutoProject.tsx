@@ -8,6 +8,7 @@ import { Loader2, AlertCircle, Sparkles, Plus, ChevronDown, Check, FileText, Sea
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EcosystemWorkflow } from "./EcosystemWorkflow";
 import { useEcosystemProjects, useCreateEcosystemProject } from "@/hooks/useEcosystemProject";
+import { queryClient } from "@/lib/queryClient";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -69,6 +70,29 @@ export function EcosystemAutoProject({
   // Search filter for project dropdown
   const [projectSearchQuery, setProjectSearchQuery] = useState("");
   
+  // Flag to prevent auto-selection during new project creation
+  // This prevents race conditions where useEffect tries to auto-select an old project
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
+  
+  // Helper function to switch projects with proper cache clearing
+  // This prevents stale data from the old project being displayed during transitions
+  const switchToProject = (newProjectId: string | null) => {
+    const oldProjectId = projectId;
+    
+    // If switching to a different project, invalidate ALL ecosystem queries broadly
+    // This ensures no stale data from mission analysis, team analysis, etc. persists
+    if (oldProjectId && oldProjectId !== newProjectId) {
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.includes(`/api/ecosystem/projects/${oldProjectId}`);
+        }
+      });
+    }
+    
+    setProjectId(newProjectId);
+  };
+  
   // Get completed and in-progress analyses (must be before early returns for hooks rules)
   const completedProjects = useMemo(() => projects.filter(p => p.teamAnalysis), [projects]);
   const inProgressProjects = useMemo(() => projects.filter(p => !p.teamAnalysis), [projects]);
@@ -88,6 +112,11 @@ export function EcosystemAutoProject({
 
   useEffect(() => {
     if (projectsLoading) return;
+    
+    // CRITICAL: Don't auto-select during new project creation
+    // This prevents race conditions where we'd select an old project
+    // while the new one is being created
+    if (isCreatingProject) return;
     
     // Only auto-select a project if none is currently selected (initial load)
     // Don't override user's selection when they click on saved reports
@@ -124,7 +153,7 @@ export function EcosystemAutoProject({
       setError("Unable to set up team diagnostic. Please try again.");
       creationAttemptedRef.current = false;
     });
-  }, [projects, projectsLoading, createProject, partnerId, refetch, projectId]);
+  }, [projects, projectsLoading, createProject, partnerId, refetch, projectId, isCreatingProject]);
 
   const handleRetry = () => {
     setError(null);
@@ -235,16 +264,37 @@ export function EcosystemAutoProject({
     }
     
     // Guard against concurrent creation
-    if (createProject.isPending) return;
+    if (createProject.isPending || isCreatingProject) return;
     
     setDialogError(null);
+    
+    // CRITICAL: Set creating flag BEFORE clearing project
+    // This prevents auto-selection useEffect from selecting an old project
+    setIsCreatingProject(true);
+    
+    // Clear the current project to show loading state
+    const oldProjectId = projectId;
+    setProjectId(null);
+    
+    // Invalidate ALL old project data from React Query cache
+    if (oldProjectId) {
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.includes(`/api/ecosystem/projects/${oldProjectId}`);
+        }
+      });
+    }
     
     try {
       const project = await createProject.mutateAsync({
         name: sanitizedName,
         partnerId,
       });
+      
+      // Set the new project ID and clear the creating flag
       setProjectId(project.id);
+      setIsCreatingProject(false);
       setShowNewAnalysisDialog(false);
       setNewAnalysisName("");
       setDialogError(null);
@@ -254,7 +304,9 @@ export function EcosystemAutoProject({
         description: `"${sanitizedName}" is ready to start.`,
       });
     } catch (err) {
-      // Keep dialog open on error so user can retry
+      // Clear the creating flag and restore old project ID on error
+      setIsCreatingProject(false);
+      setProjectId(oldProjectId);
       setDialogError("Unable to create analysis. Please try again.");
     }
   };
@@ -399,7 +451,7 @@ export function EcosystemAutoProject({
                         <Tooltip key={project.id}>
                           <TooltipTrigger asChild>
                             <DropdownMenuItem
-                              onClick={() => setProjectId(project.id)}
+                              onClick={() => switchToProject(project.id)}
                               className="flex items-center justify-between"
                               data-testid={`menu-item-project-${project.id}`}
                             >
@@ -433,7 +485,7 @@ export function EcosystemAutoProject({
                         <Tooltip key={project.id}>
                           <TooltipTrigger asChild>
                             <DropdownMenuItem
-                              onClick={() => setProjectId(project.id)}
+                              onClick={() => switchToProject(project.id)}
                               className="flex items-center justify-between"
                               data-testid={`menu-item-project-${project.id}`}
                             >
@@ -513,15 +565,27 @@ export function EcosystemAutoProject({
       {/* Main Workflow Card */}
       <Card>
         <CardContent className="pt-6">
-          <EcosystemWorkflow 
-            projectId={projectId}
-            isPartnerDashboard={true}
-            partnerId={partnerId}
-            billingType={billingType}
-            hasCardOnFile={hasCardOnFile}
-            creditsRemaining={creditsRemaining}
-            onNavigateToBilling={onNavigateToBilling}
-          />
+          {/* Show loading state during new project creation */}
+          {isCreatingProject || !projectId ? (
+            <div className="space-y-4 md:space-y-6">
+              <div className="text-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+                <p className="text-muted-foreground">
+                  {isCreatingProject ? "Creating new analysis..." : "Loading..."}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <EcosystemWorkflow 
+              projectId={projectId}
+              isPartnerDashboard={true}
+              partnerId={partnerId}
+              billingType={billingType}
+              hasCardOnFile={hasCardOnFile}
+              creditsRemaining={creditsRemaining}
+              onNavigateToBilling={onNavigateToBilling}
+            />
+          )}
         </CardContent>
       </Card>
       
@@ -646,7 +710,7 @@ export function EcosystemAutoProject({
                     key={proj.id}
                     className="flex items-center justify-between p-4 border rounded-lg hover-elevate cursor-pointer"
                     onClick={() => {
-                      setProjectId(proj.id);
+                      switchToProject(proj.id);
                       setActiveView('new');
                     }}
                     data-testid={`saved-report-card-${proj.id}`}
