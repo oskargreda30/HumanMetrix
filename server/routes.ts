@@ -13874,20 +13874,26 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         if (completedResults.length > 0) {
           const email = invitation.email;
           
+          // Parse name from invitation
+          const nameParts = invitation.name?.split(' ') || [];
+          const invitationFirstName = nameParts[0] || null;
+          const invitationLastName = nameParts.slice(1).join(' ') || null;
+          
           if (!candidateMap.has(email)) {
-            // Parse name from invitation
-            const nameParts = invitation.name?.split(' ') || [];
-            const firstName = nameParts[0] || email.split('@')[0] || null;
-            const lastName = nameParts.slice(1).join(' ') || null;
-            
             candidateMap.set(email, {
               id: email,
               email: email,
-              firstName: firstName,
-              lastName: lastName,
+              firstName: invitationFirstName || email.split('@')[0] || null,
+              lastName: invitationLastName,
               externalUserId: invitation.externalUserId || null,
               results: [],
             });
+          } else if (invitation.name) {
+            // Update name from invitation if candidate was added from widget/API sessions
+            // Invitation names take priority over email-derived names
+            const existing = candidateMap.get(email)!;
+            existing.firstName = invitationFirstName || existing.firstName;
+            existing.lastName = invitationLastName || existing.lastName;
           }
           
           // Add results from this invitation
