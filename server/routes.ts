@@ -7199,8 +7199,28 @@ ${truncatedText}`;
             const creativity = getSummaryScore('creativity') || getSummaryScore('Creativity');
             const iterativeImprovement = getSummaryScore('iterativeImprovement') || getSummaryScore('Iterative Improvement');
             
-            if (clarity !== undefined || structure !== undefined || contextRelevance !== undefined || 
+            // Check for B2B-specific dimension names
+            const contextSetting = getSummaryScore('Context Setting');
+            const outputFormatting = getSummaryScore('Output Formatting');
+            const constraintDefinition = getSummaryScore('Constraint Definition');
+            const hasB2BDimensions = contextSetting !== undefined || outputFormatting !== undefined || constraintDefinition !== undefined;
+            
+            if (hasB2BDimensions) {
+              // B2B format: pass through B2B dimension names
+              finalLevelData = [{
+                level: 1,
+                scores: {
+                  'Clarity': clarity || 0,
+                  'Context Setting': contextSetting || 0,
+                  'Output Formatting': outputFormatting || 0,
+                  'Constraint Definition': constraintDefinition || 0,
+                },
+                totalScore: promptResult.totalScore || 0,
+                feedback: 'Summary scores from overall assessment',
+              }];
+            } else if (clarity !== undefined || structure !== undefined || contextRelevance !== undefined || 
                 creativity !== undefined || iterativeImprovement !== undefined) {
+              // B2C format: use standard dimension names
               // Create a summary level entry
               finalLevelData = [{
                 level: 1,  // Use level 1 as summary
@@ -14620,8 +14640,28 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
             const creativity = getSummaryScore('creativity') || getSummaryScore('Creativity');
             const iterativeImprovement = getSummaryScore('iterativeImprovement') || getSummaryScore('Iterative Improvement');
             
-            if (clarity !== undefined || structure !== undefined || contextRelevance !== undefined || 
+            // Check for B2B-specific dimension names
+            const contextSetting = getSummaryScore('Context Setting');
+            const outputFormatting = getSummaryScore('Output Formatting');
+            const constraintDefinition = getSummaryScore('Constraint Definition');
+            const hasB2BDimensions = contextSetting !== undefined || outputFormatting !== undefined || constraintDefinition !== undefined;
+            
+            if (hasB2BDimensions) {
+              // B2B format: pass through B2B dimension names
+              finalLevelData = [{
+                level: 1,
+                scores: {
+                  'Clarity': clarity || 0,
+                  'Context Setting': contextSetting || 0,
+                  'Output Formatting': outputFormatting || 0,
+                  'Constraint Definition': constraintDefinition || 0,
+                },
+                totalScore: promptResult.totalScore || 0,
+                feedback: 'Summary scores from overall assessment',
+              }];
+            } else if (clarity !== undefined || structure !== undefined || contextRelevance !== undefined || 
                 creativity !== undefined || iterativeImprovement !== undefined) {
+              // B2C format: use standard dimension names
               finalLevelData = [{
                 level: 1,
                 scores: {

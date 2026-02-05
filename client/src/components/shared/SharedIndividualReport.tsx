@@ -562,7 +562,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
                   <div>
                     <p className="font-semibold text-sm text-foreground">Prompt Architecture</p>
-                    <p className="text-xs text-muted-foreground">Evaluates AI prompt engineering skills across 4 difficulty levels. Each level tests clarity, structure, and creativity in prompt design.</p>
+                    <p className="text-xs text-muted-foreground">Evaluates AI prompt engineering skills across 7 difficulty levels. Each level tests clarity, structure, and creativity in prompt design.</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
@@ -736,7 +736,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                   Prompt Architecture Assessment
                 </CardTitle>
                 <CardDescription>
-                  AI prompt engineering capabilities across 4 difficulty levels
+                  AI prompt engineering capabilities across 7 difficulty levels
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -762,34 +762,67 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                 
                 {promptData.levels && (
                   <div className="space-y-4">
-                    <h4 className="font-semibold text-foreground">Level Breakdown</h4>
+                    <h4 className="font-semibold text-foreground">
+                      {promptData.levels.length === 1 ? 'Skill Breakdown' : 'Level Breakdown'}
+                    </h4>
                     <div className="space-y-3">
-                      {promptData.levels.map((level: any) => (
-                        <div key={level.level} className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium text-sm text-foreground">Level {level.level}</span>
-                            <Badge variant={getScoreBadgeVariant(level.totalScore)}>
-                              {level.totalScore}%
-                            </Badge>
+                      {promptData.levels.map((level: any, idx: number) => {
+                        const isSummary = promptData.levels.length === 1 && level.level === 1;
+                        const scores = level.scores || {};
+                        
+                        const getScore = (key: string, altKey?: string): number => {
+                          if (scores[key] !== undefined) return scores[key];
+                          if (altKey && scores[altKey] !== undefined) return scores[altKey];
+                          return 0;
+                        };
+                        
+                        const hasB2CScores = scores.clarity !== undefined || scores.structure !== undefined || 
+                                            scores.contextRelevance !== undefined || scores.creativity !== undefined;
+                        const hasB2BScores = scores['Clarity'] !== undefined || scores['Context Setting'] !== undefined || 
+                                            scores['Output Formatting'] !== undefined || scores['Constraint Definition'] !== undefined;
+                        
+                        return (
+                          <div key={level.level || idx} className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-sm text-foreground">
+                                {isSummary ? 'Overall Performance' : `Level ${level.level}`}
+                              </span>
+                              <Badge variant={getScoreBadgeVariant(level.totalScore)}>
+                                {level.totalScore}%
+                              </Badge>
+                            </div>
+                            <div className="h-4 bg-blue-100 dark:bg-blue-950 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full rounded-full transition-all bg-blue-500"
+                                style={{ 
+                                  width: `${level.totalScore}%`,
+                                  opacity: 0.4 + (level.totalScore / 100) * 0.6
+                                }}
+                              />
+                            </div>
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                              {hasB2BScores ? (
+                                <>
+                                  <span>Clarity: {getScore('Clarity', 'clarity')}%</span>
+                                  <span>Context Setting: {getScore('Context Setting')}%</span>
+                                  <span>Output Formatting: {getScore('Output Formatting')}%</span>
+                                  <span>Constraint Definition: {getScore('Constraint Definition')}%</span>
+                                </>
+                              ) : hasB2CScores ? (
+                                <>
+                                  <span>Clarity: {getScore('clarity')}%</span>
+                                  <span>Structure: {getScore('structure')}%</span>
+                                  <span>Context: {getScore('contextRelevance')}%</span>
+                                  <span>Creativity: {getScore('creativity')}%</span>
+                                  <span>Iterative: {getScore('iterativeImprovement')}%</span>
+                                </>
+                              ) : (
+                                <span className="italic">Detailed skill breakdown not available</span>
+                              )}
+                            </div>
                           </div>
-                          <div className="h-4 bg-blue-100 dark:bg-blue-950 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full rounded-full transition-all bg-blue-500"
-                              style={{ 
-                                width: `${level.totalScore}%`,
-                                opacity: 0.4 + (level.totalScore / 100) * 0.6
-                              }}
-                            />
-                          </div>
-                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                            <span>Clarity: {level.scores?.clarity || 0}%</span>
-                            <span>Structure: {level.scores?.structure || 0}%</span>
-                            <span>Context: {level.scores?.contextRelevance || 0}%</span>
-                            <span>Creativity: {level.scores?.creativity || 0}%</span>
-                            <span>Iterative: {level.scores?.iterativeImprovement || 0}%</span>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
