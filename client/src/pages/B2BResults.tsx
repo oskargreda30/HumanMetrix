@@ -345,7 +345,7 @@ export default function B2BResults() {
   const freeAccessDate = data.freeAccessDate ? new Date(data.freeAccessDate) : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 pt-16 md:pt-12 pb-12 px-4">
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="text-center mb-8">
           <Badge variant="outline" className="mb-4 bg-green-500/10 text-green-600 border-green-200">

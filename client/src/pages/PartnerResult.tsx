@@ -348,7 +348,7 @@ export default function PartnerResult() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-5xl">
+      <div className="container mx-auto px-4 pt-12 md:pt-8 pb-8 max-w-5xl">
         <div className="mb-6 print:hidden">
           <Link href="/partner">
             <Button variant="ghost" className="gap-2 mb-4" data-testid="button-back">
