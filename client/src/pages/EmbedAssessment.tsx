@@ -841,7 +841,7 @@ export default function EmbedAssessment() {
   const getTimeLimit = () => {
     if (!session) return 1200;
     const type = session.assessmentType.replace(/-/g, '_');
-    if (type === 'prompt_architecture') return 120; // 2 minutes per question
+    if (type === 'prompt_architecture') return 840; // 14 minutes (2 minutes per level × 7 levels)
     return 1200; // 20 minutes for other assessments
   };
 
@@ -1073,8 +1073,8 @@ export default function EmbedAssessment() {
     setAwaitingNextStart(true); // Require user to click Start for next assessment
     hasSubmittedRef.current = false;
     
-    // Reset timer for next assessment (20 min for regular, 7 min for prompt architecture)
-    setTimeRemaining(nextType === "prompt_architecture" ? 420 : 1200);
+    // Reset timer for next assessment (20 min for regular, 14 min for prompt architecture)
+    setTimeRemaining(nextType === "prompt_architecture" ? 840 : 1200);
     setShowTimeWarning(false);
     timerExpiredFromServerRef.current = false; // Reset expired flag for new assessment
     
@@ -1897,7 +1897,7 @@ export default function EmbedAssessment() {
                 <li>Answer each question honestly and thoughtfully</li>
                 <li>There are no right or wrong answers</li>
                 <li>Your progress will be saved automatically</li>
-                <li>You have {currentAssessmentType === "prompt_architecture" ? "7" : "20"} minutes to complete {isMultiAssessment ? "each assessment" : "the assessment"}</li>
+                <li>You have {currentAssessmentType === "prompt_architecture" ? "14" : "20"} minutes to complete {isMultiAssessment ? "each assessment" : "the assessment"}</li>
               </ul>
             </div>
 
