@@ -1709,15 +1709,17 @@ export default function Dashboard() {
                         </div>
                       ))}
                       
-                      {/* Individual Total - apply bulk discount if 2+ selected */}
+                      {/* Individual Total - bulk discount only when ALL tests selected and more than one */}
                       {selectedAssessments.size > 0 && (() => {
                         const selected = pricingData.assessments.filter(a => selectedAssessments.has(a.type));
-                        const isBulkEligible = selected.length > 1;
+                        // Bulk discount only applies when ALL assessments are selected AND more than 1
+                        const isAllSelected = selected.length === pricingData.assessments.length;
+                        const isBulkEligible = isAllSelected && selected.length > 1;
                         
                         // Calculate sum of selected assessments
                         const selectedTotalPence = selected.reduce((sum, a) => sum + a.priceInPence, 0);
                         const selectedOriginalDisplay = `${pricingData.currencySymbol}${Math.round(selectedTotalPence)}`;
-                        // Apply 25% discount if 2+ selected
+                        // Apply 25% discount only if ALL selected and more than 1
                         const discountedPence = isBulkEligible ? Math.round(selectedTotalPence * 0.75) : selectedTotalPence;
                         const selectedDiscountedDisplay = `${pricingData.currencySymbol}${discountedPence}`;
                         
@@ -1742,14 +1744,14 @@ export default function Dashboard() {
                                   </>
                                 ) : (
                                   <>
-                                    <span>{selected.map(a => a.priceDisplay).join(" + ")}</span>
+                                    <span className="text-lg">{selectedOriginalDisplay}</span>
                                   </>
                                 )}
                               </div>
                             </div>
                             {isBulkEligible && (
                               <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                                Bulk discount automatically applied for multiple assessments
+                                Bulk discount applied for purchasing all assessments
                               </p>
                             )}
                           </div>
@@ -1807,21 +1809,23 @@ export default function Dashboard() {
                   <CreditCard className="mr-2 h-4 w-4" />
                   {purchaseMode === 'bulk' 
                     ? `Unlock All - ${pricingData?.bulkTotal.priceDisplay || ''}`
-                    : selectedAssessments.size > 1
-                      ? (() => {
-                          const selected = pricingData?.assessments.filter(a => selectedAssessments.has(a.type)) || [];
-                          const selectedTotalPence = selected.reduce((sum, a) => sum + a.priceInPence, 0);
-                          const discountedPence = Math.round(selectedTotalPence * 0.75);
-                          const priceDisplay = `${pricingData?.currencySymbol || ''}${discountedPence}`;
-                          return `Unlock Selected (${selectedAssessments.size}) - ${priceDisplay}`;
-                        })()
-                      : selectedAssessments.size === 1 
-                        ? (() => {
-                            const selectedType = Array.from(selectedAssessments)[0];
-                            const selectedAssessment = pricingData?.assessments.find(a => a.type === selectedType);
-                            return `Unlock ${formatAssessmentTypeDisplay(selectedType)} - ${selectedAssessment?.priceDisplay || ''}`;
-                          })()
-                        : 'Select Assessments'
+                    : (() => {
+                        const selected = pricingData?.assessments.filter(a => selectedAssessments.has(a.type)) || [];
+                        const totalAssessments = pricingData?.assessments.length || 0;
+                        const isAllSelected = selected.length === totalAssessments;
+                        const isBulkEligible = isAllSelected && selected.length > 1;
+                        const selectedTotalPence = selected.reduce((sum, a) => sum + a.priceInPence, 0);
+                        const finalPrice = isBulkEligible ? Math.round(selectedTotalPence * 0.75) : selectedTotalPence;
+                        const priceDisplay = `${pricingData?.currencySymbol || ''}${Math.round(finalPrice)}`;
+                        
+                        if (selectedAssessments.size === 0) return 'Select Assessments';
+                        if (selectedAssessments.size === 1) {
+                          const selectedType = Array.from(selectedAssessments)[0];
+                          const selectedAssessment = pricingData?.assessments.find(a => a.type === selectedType);
+                          return `Unlock ${formatAssessmentTypeDisplay(selectedType)} - ${selectedAssessment?.priceDisplay || ''}`;
+                        }
+                        return `Unlock Selected (${selectedAssessments.size}) - ${priceDisplay}`;
+                      })()
                   }
                 </>
               )}
