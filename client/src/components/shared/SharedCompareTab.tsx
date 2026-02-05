@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym } from "@/lib/assessmentSkills";
 import logoUrl from "@assets/logo_HumanMetrix_big_1766783080540.png";
 import SkillsLegend from "@/components/SkillsLegend";
+import { EnquiryModal } from "@/components/EnquiryModal";
 
 const CHART_COLORS = [
   "hsl(var(--chart-1))",
@@ -150,6 +151,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
   });
   const [isCapturingPDF, setIsCapturingPDF] = useState(false);
   const [comparisonTriggered, setComparisonTriggered] = useState(false);
+  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
   const reportContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -2723,7 +2725,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                     <Button 
                       variant="outline" 
                       className="border-white text-white hover:bg-white/20"
-                      onClick={() => window.location.href = '/for-employers?action=contact'}
+                      onClick={() => setShowEnquiryModal(true)}
                       data-testid="button-contact-team-comparison"
                     >
                       <Sparkles className="h-4 w-4 mr-2" />
@@ -2910,6 +2912,12 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
           )}
         </div>
       )}
+
+      <EnquiryModal 
+        open={showEnquiryModal} 
+        onOpenChange={setShowEnquiryModal}
+        context="Comparison Report - Enterprise Services"
+      />
     </div>
   );
 }

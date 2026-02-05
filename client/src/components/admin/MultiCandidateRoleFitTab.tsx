@@ -38,6 +38,7 @@ import html2canvas from "html2canvas";
 import { exportMultiCandidateComparisonPDF } from "@/lib/pdfExport";
 import SkillsLegend from "@/components/SkillsLegend";
 import { MultiCandidateCriticalSkillsAnalysis, type CriticalSkillMultiData } from "@/components/shared/MultiCandidateCriticalSkillsAnalysis";
+import { EnquiryModal } from "@/components/EnquiryModal";
 
 // Mapping from short/legacy skill names to canonical names used in candidate data
 const SKILL_NAME_MAPPING: Record<string, string> = {
@@ -235,6 +236,7 @@ export default function MultiCandidateRoleFitTab() {
   const [isExporting, setIsExporting] = useState(false);
   const [insufficientDataDialogOpen, setInsufficientDataDialogOpen] = useState(false);
   const [insufficientDataError, setInsufficientDataError] = useState<InsufficientDataError | null>(null);
+  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -1607,7 +1609,7 @@ export default function MultiCandidateRoleFitTab() {
                 <Button 
                   variant="outline" 
                   className="border-white text-white hover:bg-white/20"
-                  onClick={() => window.location.href = '/for-employers?action=contact'}
+                  onClick={() => setShowEnquiryModal(true)}
                   data-testid="button-contact-team-services-multi"
                 >
                   <Sparkles className="h-4 w-4 mr-2" />
@@ -1731,6 +1733,12 @@ export default function MultiCandidateRoleFitTab() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <EnquiryModal 
+        open={showEnquiryModal} 
+        onOpenChange={setShowEnquiryModal}
+        context="Multi-Candidate Role Fit - Enterprise Services"
+      />
     </div>
   );
 }

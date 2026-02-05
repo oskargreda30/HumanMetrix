@@ -18,6 +18,7 @@ import { Progress } from "@/components/ui/progress";
 import { exportRoleFitPDF } from "@/lib/pdfExport";
 import SkillsLegend from "@/components/SkillsLegend";
 import { CriticalSkillsAnalysis } from "@/components/shared/CriticalSkillsAnalysis";
+import { EnquiryModal } from "@/components/EnquiryModal";
 
 // Configuration interface for shared component
 export interface SharedRoleFitConfig {
@@ -104,6 +105,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
   const [selectedRole, setSelectedRole] = useState("");
   const [analysisTriggered, setAnalysisTriggered] = useState(false);
   const [loadingTransitionComplete, setLoadingTransitionComplete] = useState(false);
+  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
   const { toast } = useToast();
 
   const { data: candidates, isLoading: isLoadingCandidates } = useQuery<any[]>({
@@ -1188,7 +1190,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                 <Button 
                   variant="outline" 
                   className="border-white text-white hover:bg-white/20"
-                  onClick={() => window.location.href = '/for-employers?action=contact'}
+                  onClick={() => setShowEnquiryModal(true)}
                   data-testid="button-contact-team-services"
                 >
                   <Sparkles className="h-4 w-4 mr-2" />
@@ -1235,6 +1237,12 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
           </div>
         </div>
       )}
+
+      <EnquiryModal 
+        open={showEnquiryModal} 
+        onOpenChange={setShowEnquiryModal}
+        context="Role Fit Analysis - Enterprise Services"
+      />
     </div>
   );
 }
