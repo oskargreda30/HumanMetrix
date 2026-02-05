@@ -155,7 +155,6 @@ async function initializeStripeCoupons() {
         }
       }
 
-      res.json({
 
       if (!couponExists) continue;
 
@@ -171,7 +170,6 @@ async function initializeStripeCoupons() {
         console.log(`[Stripe] Could not list promotion codes`);
       }
 
-      res.json({
 
       if (!codeExists) {
         // Create the promotion code using raw fetch to Stripe API
@@ -194,7 +192,6 @@ async function initializeStripeCoupons() {
         console.log(`[Stripe] Promotion code ${couponData.code} already exists`);
       }
 
-      res.json({
     } catch (error: any) {
       console.error(`[Stripe] Error setting up coupon ${couponData.code}:`, error.message);
     }
@@ -220,14 +217,12 @@ async function retryWithBackoff<T>(
         throw error;
       }
 
-      res.json({
       
       // If this was the last attempt, throw
       if (attempt === maxRetries) {
         break;
       }
 
-      res.json({
       
       // Wait with exponential backoff: 1s, 2s
       const delay = baseDelay * Math.pow(2, attempt);
@@ -368,7 +363,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json({
 
       // Check cache first
       const cached = geoCache.get(clientIP);
@@ -376,7 +370,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ ...cached.data, source: 'cache' });
       }
 
-      res.json({
 
       // Use ip-api.com (provides org/ISP data for VPN detection, 45 req/min limit)
       // We cache for 1 minute so effective rate is much lower
@@ -396,7 +389,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json({
       
       const data = await response.json();
       
@@ -436,11 +428,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json({
     } catch (error: any) {
       console.error('[Geolocation] Error:', error.message);
       // Network/timeout errors - don't assume VPN, just fallback gracefully
-      res.json({
         countryCode: 'GB',
         country: 'United Kingdom',
         detected: false,
@@ -485,7 +475,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contactFormRateLimiter.set(ip, { count: 1, resetTime: now + oneHour });
       }
 
-      res.json({
 
       // Validate request body
       const validatedData = contactFormSchema.parse(req.body);
@@ -511,7 +500,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json({
       res.status(500).json({ 
         message: "Failed to send message. Please try again later." 
       });
@@ -542,7 +530,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contactFormRateLimiter.set(ip, { count: 1, resetTime: now + oneHour });
       }
 
-      res.json({
 
       // Validate request body
       const { name, email, subject, message } = req.body;
@@ -551,19 +538,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "All fields are required" });
       }
 
-      res.json({
       
       if (typeof email !== 'string' || !isValidEmail(email)) {
         return res.status(400).json({ message: "Invalid email address" });
       }
 
-      res.json({
       
       if (typeof name !== 'string' || !isValidName(name)) {
         return res.status(400).json({ message: "Invalid name format" });
       }
 
-      res.json({
 
       // Send email
       const result = await sendGeneralEnquiryEmail({ name: name.trim(), email, subject, message });
@@ -579,7 +563,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json({
     } catch (error: any) {
       console.error("General enquiry form error:", error);
       res.status(500).json({ 
@@ -611,7 +594,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contactFormRateLimiter.set(ip, { count: 1, resetTime: now + oneHour });
       }
 
-      res.json({
 
       const { name, email, company, message, context } = req.body;
       
@@ -619,19 +601,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Valid email address is required" });
       }
 
-      res.json({
       
       if (typeof name !== 'string' || !isValidName(name)) {
         return res.status(400).json({ message: "Invalid name format" });
       }
 
-      res.json({
 
       if (!message || typeof message !== 'string' || message.trim().length < 10) {
         return res.status(400).json({ message: "Please provide a detailed message" });
       }
 
-      res.json({
 
       const subject = context ? `Enterprise Services Enquiry - ${context}` : 'Enterprise Services Enquiry';
       const result = await sendGeneralEnquiryEmail({ 
@@ -652,7 +631,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json({
     } catch (error: any) {
       console.error("Enterprise enquiry form error:", error);
       res.status(500).json({ 
@@ -670,7 +648,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Valid email address is required" });
       }
 
-      res.json({
 
       const ip = req.ip || req.socket.remoteAddress || undefined;
       const userAgent = req.headers['user-agent'] || undefined;
@@ -704,7 +681,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      res.json({
 
       const optins = await storage.getMarketingOptins();
       res.json(optins);
@@ -723,7 +699,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Session ID required" });
       }
 
-      res.json({
 
       // Retrieve the checkout session from Stripe
       let session;
@@ -747,7 +722,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Failed to verify payment" });
       }
 
-      res.json({
       
       if (!session || session.payment_status !== "paid") {
         // Notify super admins of payment failure
@@ -768,7 +742,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Payment not completed" });
       }
 
-      res.json({
 
       const metadata = session.metadata;
       
@@ -776,7 +749,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing session metadata" });
       }
 
-      res.json({
 
       // Handle logged-in user purchasing additional assessments
       if (metadata.userId && !metadata.isGuestCheckout) {
@@ -874,14 +846,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json({
 
       // Handle guest checkout (new user)
       if (metadata.isGuestCheckout !== "true") {
         return res.status(400).json({ message: "Invalid checkout session" });
       }
 
-      res.json({
 
       const { customerEmail, firstName, lastName, assessmentIds } = metadata;
       
@@ -889,7 +859,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing customer information" });
       }
 
-      res.json({
 
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(customerEmail);
@@ -979,7 +948,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json({
 
       // Generate temporary password
       const bcrypt = await import("bcryptjs");
@@ -1015,7 +983,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error("Failed to create user account");
       }
 
-      res.json({
 
       // Create purchase record and grant assessment access
       const purchase = await storage.createPurchase({
@@ -1050,7 +1017,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json({
       
       // Send PDF payment receipt email
       try {
@@ -1088,7 +1054,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error(`✗ Failed to send PDF receipt to ${customerEmail}:`, emailError);
       }
 
-      res.json({
       
       // Send welcome email with credentials (post-payment context)
       try {
@@ -1106,9 +1071,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // User can use password reset as fallback
       }
 
-      res.json({
 
-      res.json({
         success: true,
         email: customerEmail,
         message: "Account created and credentials sent",
@@ -1130,7 +1093,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Reference text is required" });
       }
 
-      res.json({
       
       const wordCount = referenceText.trim().split(/\s+/).filter((w: string) => w.length > 0).length;
       
@@ -1138,7 +1100,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Reference must be at least 50 words" });
       }
 
-      res.json({
       
       // Check if user already submitted a reference
       const existing = await storage.getUserReference(userId);
@@ -1146,7 +1107,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "You have already submitted a reference" });
       }
 
-      res.json({
       
       // Create reference
       const reference = await storage.createUserReference({
@@ -1235,7 +1195,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         unpaidPurchase = unpaidPurchases[0];
       }
 
-      res.json({
       
       // Get the user and determine required assessments (from invitation or purchase)
       const user = await storage.getUser(userId);
@@ -1243,7 +1202,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      res.json({
 
       // Determine required assessments from current unpaid purchase cycle only
       let requiredAssessmentTypes: string[] = [];
@@ -1266,7 +1224,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.json({
       
       // Validate that we have at least some assessments to unlock
       if (requiredAssessmentTypes.length === 0) {
@@ -1276,7 +1233,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json({
       
       // Get completed OR abandoned assessments and check for DISTINCT types
       // Business rule: Abandoned assessments are treated as "consumed" and SHOULD be charged
@@ -1299,7 +1255,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json({
       
       // Calculate price based ONLY on required assessments for this purchase cycle
       // Business logic: Pay per purchase cycle - don't charge for previously paid assessments
@@ -1336,7 +1291,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json({
       
       // 20OFFPRICE - 20% off
       if (normalizedCode === "20OFFPRICE") {
@@ -1359,7 +1313,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.json({
       
       // Otherwise, create Stripe checkout session for results payment
       // Charge in user's local currency (based on currencyCountry)
@@ -1385,7 +1338,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         assessmentsTotalLocal += convertPenceToRoundedLocalCurrency(adjustedPence, currencyCode, liveExchangeRate);
       }
 
-      res.json({
       
       // Apply discount ratio if applicable
       let totalLocal = platformFeeLocal + assessmentsTotalLocal;
@@ -1394,7 +1346,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalLocal = Math.round(totalLocal * discountRatio);
       }
 
-      res.json({
       
       const stripeAmount = calculateStripeAmountFromRoundedTotal(totalLocal, currencyCode);
       
@@ -1509,7 +1460,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json({
       
       if (!metadata || metadata.isResultsPayment !== 'true') {
         console.error(`[Payment Callback] Invalid session metadata - isResultsPayment: ${metadata?.isResultsPayment}`);
@@ -1519,7 +1469,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json({
       
       const purchaseId = metadata.purchaseId;
       const userId = metadata.userId;
@@ -1532,7 +1481,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json({
       
       // Check if already processed to prevent double-processing
       const purchase = await storage.getPurchase(purchaseId);
@@ -1545,7 +1493,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json({
       
       // Update purchase to grant results access
       await storage.updatePurchase(purchaseId, {
@@ -1668,7 +1615,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Don't fail the payment if email fails
       }
 
-      res.json({
       
       // Re-establish session after Stripe redirect
       // Stripe redirects often cause session cookies to be lost, especially in production
@@ -1712,7 +1658,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json({
       
       // Session is now guaranteed to be saved with Set-Cookie header
       res.json({ 
@@ -1754,7 +1699,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn('[Airwallex Webhook] No webhook secret configured - signature verification skipped');
       }
 
-      res.json({
       
       const event: AirwallexWebhookEvent = req.body;
       console.log(`[Airwallex Webhook] Received event: ${event.name}, id: ${event.id}`);
@@ -1943,7 +1887,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.json({
       
     } catch (error: any) {
       console.error('[Airwallex Webhook ERROR]', error);
@@ -1967,7 +1910,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn('[Stripe Webhook] No webhook secret configured - signature verification skipped');
       }
 
-      res.json({
     } catch (err: any) {
       console.error('[Stripe Webhook] Signature verification failed:', err.message);
       return res.status(400).json({ error: `Webhook Error: ${err.message}` });
@@ -2157,7 +2099,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
       }
 
-      res.json({
       
       // Mark event as processed for idempotency
       return res.json({ received: true });
@@ -2177,7 +2118,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('[Stripe Webhook] Failed to mark event status:', markError);
       }
 
-      res.json({
     }
   });
   // Use raw body parser for signature verification
@@ -2224,7 +2164,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.json({
       
       // Parse the raw body to get events
       // Use rawBody preserved by global JSON parser, or the Buffer from express.raw()
@@ -2239,7 +2178,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rawBody = JSON.stringify(req.body);
       }
 
-      res.json({
       const events = JSON.parse(rawBody);
       const eventList = Array.isArray(events) ? events : [events];
       
@@ -2295,7 +2233,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.json({
       
       res.json({ received: true });
     } catch (error: any) {
@@ -2326,7 +2263,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn('[Airwallex Webhook] No webhook secret configured - signature verification skipped');
       }
 
-      res.json({
       
       event = JSON.parse(payload);
     } catch (err: any) {
@@ -2514,7 +2450,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`[Airwallex Webhook] Unhandled event type: ${event.name}`);
       }
 
-      res.json({
       
       res.json({ received: true });
     } catch (error: any) {
@@ -2535,7 +2470,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const purchases = await storage.getPurchasesByUser(user.id);
       const hasCompletedPurchase = purchases.some((p: any) => p.status === 'completed');
       
-      res.json({
         id: user.id,
         email: user.email,
         firstName: user.firstName,
@@ -2563,7 +2497,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Consent must be a boolean value" });
       }
 
-      res.json({
       
       await storage.updateResultsRetentionConsent(userId, consent);
       
@@ -2584,13 +2517,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "termsAccepted must be a boolean value" });
       }
 
-      res.json({
       
       if (!termsAccepted) {
         return res.status(400).json({ message: "Terms must be accepted to continue" });
       }
 
-      res.json({
       
       await storage.acceptTerms(userId, termsAccepted, dataShareConsent === true);
       
@@ -2611,13 +2542,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "termsAccepted must be a boolean value" });
       }
 
-      res.json({
       
       if (!termsAccepted) {
         return res.status(400).json({ message: "Terms must be accepted to continue" });
       }
 
-      res.json({
       
       // Save terms acceptance and data share consent
       await storage.acceptTerms(userId, termsAccepted, dataRetentionConsent === true);
@@ -2638,7 +2567,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.json({
       
       res.json({ success: true });
     } catch (error) {
@@ -2657,7 +2585,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      res.json({
       
       // Return default preferences if none set
       const defaultPrefs = {
@@ -2706,14 +2633,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      res.json({
       
       // Don't allow admins to delete themselves via this endpoint
       if (user.role === 'admin') {
         return res.status(403).json({ message: "Admin accounts cannot be deleted via this endpoint" });
       }
 
-      res.json({
       
       // Soft delete: anonymize user data instead of hard delete
       await storage.deleteUserAccount(userId);
@@ -2743,7 +2668,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      res.json({
       
       // Send email to hello@humanmetrix.co.uk for super admin review
       await sendGeneralEnquiryEmail({
@@ -2782,13 +2706,11 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "Invalid assessment selection" });
       }
 
-      res.json({
 
       if (!customerEmail || !customerName || !firstName || !lastName) {
         return res.status(400).json({ message: "Customer details required" });
       }
 
-      res.json({
 
       // Check if user already exists - they should log in instead
       const existingUser = await storage.getUserByEmail(customerEmail);
@@ -2798,7 +2720,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      res.json({
 
       // Get pricing tier and apply PPP/SEA launch adjustment
       const userCountry = countryCode || 'GB';
@@ -2855,7 +2776,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      res.json({
 
       const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0] 
         ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
@@ -2927,7 +2847,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         res.json({ provider: 'stripe', url: session.url });
       }
 
-      res.json({
     } catch (error: any) {
       console.error("Error creating guest checkout session:", error);
       res.status(500).json({ message: "Failed to create checkout session: " + error.message });
@@ -2943,13 +2862,11 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "Invalid assessment selection" });
       }
 
-      res.json({
 
       if (!customerEmail || !customerName || !firstName || !lastName) {
         return res.status(400).json({ message: "Customer details required" });
       }
 
-      res.json({
 
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(customerEmail);
@@ -2959,7 +2876,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      res.json({
 
       // Generate temporary password
       const temporaryPassword = generateTemporaryPassword();
@@ -2993,7 +2909,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      res.json({
 
       // Send welcome email with login credentials
       try {
@@ -3003,7 +2918,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         // Don't fail the whole checkout if email fails
       }
 
-      res.json({
 
       res.json({ 
         success: true,
@@ -3026,7 +2940,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "Invalid assessment selection" });
       }
 
-      res.json({
 
       const userId = req.user.id;
       const user = await storage.getUser(userId);
@@ -3035,7 +2948,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(404).json({ message: "User not found" });
       }
 
-      res.json({
 
       // Create purchase record with resultsAccessPaid: false (payment-deferred)
       const purchase = await storage.createPurchase({
@@ -3060,9 +2972,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      res.json({
       
-      res.json({
         success: true,
         message: "Assessments added to your account! You can now take them for free.",
         purchaseId: purchase.id,
@@ -3082,7 +2992,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "Invalid assessment selection" });
       }
 
-      res.json({
 
       const userId = req.user.id;
       const user = await storage.getUser(userId);
@@ -3091,7 +3000,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(404).json({ message: "User not found" });
       }
 
-      res.json({
 
       // Get pricing tier and apply PPP/SEA launch adjustment
       const userCountry = countryCode || 'GB';
@@ -3148,7 +3056,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      res.json({
 
       // Create checkout session with local currency
       const session = await stripe.checkout.sessions.create({
@@ -3182,7 +3089,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "Partner invitation ID is required" });
       }
 
-      res.json({
 
       const userId = req.user.id;
       const user = await storage.getUser(userId);
@@ -3191,7 +3097,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(404).json({ message: "User not found" });
       }
 
-      res.json({
 
       // Verify invitation exists and belongs to this user
       const invitation = await storage.getPartnerCandidateInvitation(partnerInvitationId);
@@ -3199,7 +3104,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(404).json({ message: "Invitation not found" });
       }
 
-      res.json({
 
       // Get results for this invitation to verify user has completed assessments
       const allResults = await storage.getResultsByUser(userId);
@@ -3209,14 +3113,12 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "No assessment results found for this invitation" });
       }
 
-      res.json({
 
       const completedResults = invitationResults.filter((r: any) => r.status === 'completed');
       if (completedResults.length === 0) {
         return res.status(400).json({ message: "No completed assessments found" });
       }
 
-      res.json({
 
       // Check if already purchased all
       const existingPurchase = await storage.getPartnerResultPurchaseByInvitation(userId, partnerInvitationId);
@@ -3225,7 +3127,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "All results already purchased" });
       }
 
-      res.json({
       
       // Filter results to purchase (if specific types requested)
       let resultsToPurchase = completedResults;
@@ -3257,7 +3158,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         purchasedTypes = resultsToPurchase.map((r: any) => normalizeAssessmentId(r.assessmentType));
       }
 
-      res.json({
 
       // Check if auto-unlocked (30 days after completion)
       const mostRecentCompletion = completedResults
@@ -3273,7 +3173,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         }
       }
 
-      res.json({
 
       // Calculate price based on assessments to purchase
       const userCountry = countryCode || 'GB';
@@ -3291,7 +3190,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         console.log(`[Partner Results Checkout] Exchange rate drift detected: client=${lockedExchangeRate}, server=${serverLockedExchangeRate}`);
       }
 
-      res.json({
 
       // Calculate assessment prices with proper discounts
       // Individual: Full price (no discount)
@@ -3306,7 +3204,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      res.json({
       
       const isBulk = (isBulkPurchase || !purchasedTypes) && isBuyingAll;
       // 25% bundle discount, no individual discount (full price)
@@ -3336,7 +3233,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         sumOfDiscountedPrices += discountedRounded;
       }
 
-      res.json({
       
       const roundedSumOriginal = roundPriceUp(sumOfRoundedOriginalPrices, userCurrency);
       
@@ -3351,7 +3247,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         discountedLocalPrice = roundedSumOriginal;
       }
 
-      res.json({
       
       // Convert to Stripe amount using the correct zero-decimal currency list
       // Stripe zero-decimal currencies: JPY, KRW, VND, CLP, PYG, GNF, KMF, MGA, RWF, UGX, VUV, XAF, XOF, XPF, BIF, DJF
@@ -3410,7 +3305,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      res.json({
 
       // Create Stripe checkout session
       const session = await stripe.checkout.sessions.create({
@@ -3453,7 +3347,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "Session ID is required" });
       }
 
-      res.json({
 
       const userId = req.user.id;
 
@@ -3464,28 +3357,24 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(404).json({ message: "Session not found" });
       }
 
-      res.json({
 
       // Verify this is a partner result purchase
       if (session.metadata?.type !== 'partner_result_purchase') {
         return res.status(400).json({ message: "Invalid session type" });
       }
 
-      res.json({
 
       // Verify session belongs to this user
       if (session.metadata?.userId !== userId) {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
-      res.json({
 
       // Check if payment was successful
       if (session.payment_status !== 'paid') {
         return res.status(400).json({ message: "Payment not completed" });
       }
 
-      res.json({
 
       // Update purchase record
       const purchaseId = session.metadata?.purchaseId;
@@ -3609,7 +3498,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         }
       }
 
-      res.json({
 
       res.json({ success: true, message: "Purchase confirmed successfully" });
     } catch (error: any) {
@@ -3631,7 +3519,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(404).json({ message: "Invitation not found" });
       }
 
-      res.json({
 
       // Get completed results for this invitation
       const allResults = await storage.getResultsByUser(userId);
@@ -3643,7 +3530,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "No completed assessments found" });
       }
 
-      res.json({
 
       // Check for existing purchase to filter out already-unlocked assessments
       const existingPurchase = await storage.getPartnerResultPurchaseByInvitation(userId, invitationId);
@@ -3663,7 +3549,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         }
       }
 
-      res.json({
 
       // Check for auto-unlock (30 days after most recent completion)
       const mostRecentCompletion = completedResults
@@ -3679,7 +3564,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         }
       }
 
-      res.json({
 
       // Calculate pricing using the same logic as emails (PPP-adjusted, then formatted)
       const userCountry = (countryCode as string) || 'GB';
@@ -3731,7 +3615,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      res.json({
 
       // Calculate total B2C price with PPP adjustment - this is the FULL price before any discount
       const totalPppB2C = getPPPAdjustedPriceInPence(totalB2CPriceInPence, userCountry);
@@ -3756,7 +3639,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       const baseFeeAdjusted = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
       const baseFeeDisplay = formatPrice(baseFeeAdjusted, userCurrency, { skipPPPAdjustment: true });
 
-      res.json({
         baseFee: BASE_FEE,
         baseFeeDisplay,
         assessments: assessmentPrices,
@@ -3811,7 +3693,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(404).json({ message: "Purchase not found" });
       }
 
-      res.json({
       
       const items = await storage.getPurchaseItems(purchaseId);
       res.json(items);
@@ -3834,14 +3715,12 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(404).json({ message: "User not found" });
       }
 
-      res.json({
       
       // Employer-onboarded users cannot remove assessments
       if (user.organizationId) {
         return res.status(403).json({ message: "Cannot remove assessments assigned by your employer" });
       }
 
-      res.json({
       
       // Get the purchase item first
       const item = await storage.getPurchaseItem(itemId);
@@ -3849,7 +3728,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(404).json({ message: "Assessment not found" });
       }
 
-      res.json({
       
       // Verify purchase belongs to user
       const purchase = await storage.getPurchase(item.purchaseId);
@@ -3857,14 +3735,12 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(403).json({ message: "Not authorized to remove this assessment" });
       }
 
-      res.json({
       
       // Check if this came from an invitation - invited users cannot remove assessments
       if (purchase.invitationId) {
         return res.status(403).json({ message: "Cannot remove assessments assigned through an invitation" });
       }
 
-      res.json({
       
       // Check if assessment has been started (has results)
       const result = await storage.getResultByPurchaseItem(itemId);
@@ -3872,7 +3748,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "Cannot remove an assessment that has already been started" });
       }
 
-      res.json({
       
       // Delete the purchase item
       await storage.deletePurchaseItem(itemId);
@@ -3894,7 +3769,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "Assessment type is required" });
       }
 
-      res.json({
       
       // Validate assessment type
       const validTypes = ['fit', 'ai_readiness', 'prompt_architecture', 'aiq'];
@@ -3902,7 +3776,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "Invalid assessment type" });
       }
 
-      res.json({
       
       // Get the user to check if they're employer-onboarded or have active invitations
       const user = await storage.getUser(userId);
@@ -3910,14 +3783,12 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(404).json({ message: "User not found" });
       }
 
-      res.json({
       
       // Employer-onboarded users cannot add assessments themselves
       if (user.organizationId) {
         return res.status(403).json({ message: "Contact your employer to add assessments" });
       }
 
-      res.json({
       
       // Get user's purchases to find one to add the assessment to
       const purchases = await storage.getPurchasesByUser(userId);
@@ -3931,7 +3802,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "No valid purchase found. Please purchase a testing series first." });
       }
 
-      res.json({
       
       // Check if user already has this assessment type in their available assessments
       const existingItems = await storage.getPurchaseItems(validPurchase.id);
@@ -3941,7 +3811,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "This assessment is already in your testing suite" });
       }
 
-      res.json({
       
       // Create new purchase item
       const newItem = await storage.createPurchaseItem({
@@ -4068,7 +3937,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.json([]);
       }
 
-      res.json({
       
       // Get all partner result purchases for this user
       const userPurchases = await storage.getPartnerResultPurchasesByUser(userId);
@@ -4077,7 +3945,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         purchasesByInvitation[purchase.partnerInvitationId] = purchase;
       }
 
-      res.json({
       
       // Group results by partnerInvitationId (each invitation = one "series")
       const resultsByInvitation: Record<string, any[]> = {};
@@ -4089,7 +3956,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         resultsByInvitation[invitationId].push(result);
       }
 
-      res.json({
       
       // Get user email for matching B2B sessions
       const user = await storage.getUser(userId);
@@ -4240,7 +4106,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(404).json({ message: "User not found" });
       }
 
-      res.json({
       
       // Check if user is employer-onboarded (has organizationId)
       const isEmployerOnboarded = !!user.organizationId;
@@ -4292,7 +4157,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         }
       }
 
-      res.json({
       
       // Check for invitation-based assessments
       const invitations = await storage.getInvitationsByEmail(user.email);
@@ -4338,7 +4202,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         }
       }
 
-      res.json({
       
       // Check for partner candidate invitations (bulk invitations from Partner Dashboard)
       const partnerInvitations = await storage.getPartnerCandidateInvitationsByEmail(user.email);
@@ -4386,14 +4249,12 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         }
       }
 
-      res.json({
       
       // If no active invitation, use the assessments they actually purchased
       if (!hasActiveInvitation) {
         requiredAssessmentTypes = Array.from(purchasedAssessmentTypes);
       }
 
-      res.json({
       
       res.json({ 
         assessments: availableAssessments,
@@ -4416,7 +4277,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(404).json({ message: "User not found" });
       }
 
-      res.json({
 
       // Check if this is a partner invitation-based assessment (synthetic ID format: partner_invitation::{invitationId}::{assessmentType})
       if (purchaseItemId.startsWith('partner_invitation::')) {
@@ -4559,7 +4419,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      res.json({
 
       // Check if this is an invitation-based assessment (synthetic ID format: invitation::{invitationId}::{assessmentType})
       if (purchaseItemId.startsWith('invitation::')) {
@@ -4689,7 +4548,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      res.json({
 
       // Handle purchase-based assessment (existing logic)
       console.log(`[START ASSESSMENT] Looking for purchaseItem ${purchaseItemId} for user ${userId}`);
@@ -4700,7 +4558,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(404).json({ message: "Purchase item not found" });
       }
 
-      res.json({
       
       console.log(`[START ASSESSMENT] Found purchase item:`, {
         id: item.id,
@@ -4715,7 +4572,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "Assessment not ready to start" });
       }
 
-      res.json({
 
       // Verify purchase belongs to user
       const purchase = await storage.getPurchase(item.purchaseId);
@@ -4724,7 +4580,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(403).json({ message: "Unauthorized access to this assessment" });
       }
 
-      res.json({
 
       // Check if assessment already started
       const existing = await storage.getResultByPurchaseItem(purchaseItemId);
@@ -4807,7 +4662,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      res.json({
 
       // Create new assessment result
       const result = await storage.createAssessmentResult({
@@ -4866,7 +4720,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "Invalid timeRemainingMs" });
       }
 
-      res.json({
       
       const result = await storage.getAssessmentResult(id);
       
@@ -4874,13 +4727,11 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(404).json({ message: "Assessment not found" });
       }
 
-      res.json({
       
       if (result.userId !== userId) {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
-      res.json({
       
       // Only allow pausing in-progress assessments
       if (result.status !== "in_progress") {
@@ -4889,7 +4740,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      res.json({
       
       // Check if already used their one grace period (resumeCount >= 1)
       if ((result.resumeCount || 0) >= 1) {
@@ -4903,7 +4753,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      res.json({
       
       // Check if already paused
       if (result.pausedAt) {
@@ -4912,7 +4761,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      res.json({
       
       // Set 30-minute grace period
       const now = new Date();
@@ -4926,7 +4774,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       
       console.log(`[Assessment Pause] Assessment ${id} paused with ${Math.floor(timeRemainingMs / 1000)}s remaining. Grace expires at ${graceExpiresAt.toISOString()}`);
       
-      res.json({
         success: true,
         pausedAt: now.toISOString(),
         graceExpiresAt: graceExpiresAt.toISOString(),
@@ -4950,13 +4797,11 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(404).json({ message: "Assessment not found" });
       }
 
-      res.json({
       
       if (result.userId !== userId) {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
-      res.json({
       
       // Check if assessment is paused
       if (!result.pausedAt) {
@@ -4965,7 +4810,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      res.json({
       
       // Check if grace period has expired
       const now = new Date();
@@ -4979,7 +4823,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      res.json({
       
       // Resume the assessment - increment resume count and clear pause state
       const newResumeCount = (result.resumeCount || 0) + 1;
@@ -4991,7 +4834,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       
       console.log(`[Assessment Resume] Assessment ${id} resumed. Resume count: ${newResumeCount}. Time remaining: ${result.pausedTimeRemainingMs}ms`);
       
-      res.json({
         success: true,
         resumedAt: now.toISOString(),
         timeRemainingMs: result.pausedTimeRemainingMs || 0,
@@ -5016,13 +4858,11 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(404).json({ message: "Assessment not found" });
       }
 
-      res.json({
       
       if (result.userId !== userId) {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
-      res.json({
       
       // Only allow abandoning in-progress assessments
       if (result.status !== "in_progress") {
@@ -5031,7 +4871,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      res.json({
       
       // Mark assessment as abandoned
       await storage.updateAssessmentResult(id, {
@@ -5041,7 +4880,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       
       console.log(`[Assessment Abandon] Assessment ${id} abandoned by user ${userId}`);
       
-      res.json({
         success: true,
         message: "Assessment has been marked as incomplete",
       });
@@ -5063,13 +4901,11 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(404).json({ message: "Assessment not found" });
       }
 
-      res.json({
       
       if (result.userId !== userId) {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
-      res.json({
       
       // Check if paused session's grace period has expired
       const now = new Date();
@@ -5078,12 +4914,10 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "The 30-minute grace period has expired. The assessment has been marked as expired." });
       }
 
-      res.json({
       
       // Get evaluation progress if evaluating
       const evalProgress = result.status === 'evaluating' ? getEvaluationProgress(id) : null;
       
-      res.json({
         id: result.id,
         status: result.status,
         isPaused: !!result.pausedAt,
@@ -5120,7 +4954,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "Invalid answers format" });
       }
 
-      res.json({
       
       const answerCount = Object.keys(answers).length;
       console.log(`[SUBMIT ${timestamp}] Answers received: ${answerCount} answers`);
@@ -5138,7 +4971,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(500).json({ message: "Database error. Please try again." });
       }
 
-      res.json({
       
       console.log(`[SUBMIT ${timestamp}] Assessment result found:`, result ? {
         id: result.id,
@@ -5154,14 +4986,12 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(404).json({ message: "Assessment not found" });
       }
 
-      res.json({
       
       if (result.userId !== userId) {
         console.log(`[SUBMIT ${timestamp}] User mismatch! Result userId: ${result.userId}, Request userId: ${userId}`);
         return res.status(403).json({ message: "Access denied to this assessment" });
       }
 
-      res.json({
 
       // Prevent duplicate submission - if already completed, return success
       if (result.status === 'completed') {
@@ -5175,7 +5005,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      res.json({
 
       // Check if time limit exceeded based on assessment type
       const timeLimit = getAssessmentTimeLimit(result.assessmentType);
@@ -5188,7 +5017,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         console.log(`Assessment ${id} submitted after time limit (${elapsed}s > ${timeLimit}s)`);
       }
 
-      res.json({
 
       // Calculate scores based on assessment type
       let scores: Record<string, number> = {};
@@ -5284,7 +5112,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return; // Response already sent
       }
 
-      res.json({
 
       // For other assessment types, update assessment result
       
@@ -5313,7 +5140,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      res.json({
       
       // Consume partner credits if this is a partner-invited assessment
       if (result.partnerInvitationId) {
@@ -5334,7 +5160,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         }
       }
 
-      res.json({
       
       res.json({ success: true, scores, totalScore, evaluations });
     } catch (error: any) {
@@ -5356,7 +5181,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         userMessage = "Session expired. Please log in again and retry.";
       }
 
-      res.json({
       
       res.status(500).json({ message: userMessage, error: "submission_failed" });
     }
@@ -5388,7 +5212,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(404).json({ message: "User not found" });
       }
 
-      res.json({
 
       // Only fetch results - exclude admin-only data (tags, notes)
       const results = await storage.getResultsByUser(user.id);
@@ -5397,7 +5220,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       const recalculatedResults = results.map(recalculateScores);
 
       // Return minimal structure needed for PDF export
-      res.json({
         user,
         results: recalculatedResults,
         tags: [],        // Empty - candidates shouldn't see admin tags
@@ -5421,7 +5243,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(404).json({ message: "Result not found" });
       }
 
-      res.json({
       
       // Recalculate scores using current formula
       const recalculatedResult = recalculateScores(result);
@@ -5443,7 +5264,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(404).json({ message: "User not found" });
       }
 
-      res.json({
       
       // Check if there's an invitation record for this email
       const invitations = await storage.getAllInvitations();
@@ -5472,7 +5292,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
 
       // Determine organizationId: org admins use their own org, super admins can specify
       let organizationId: string | null = null;
@@ -5488,7 +5307,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         organizationId = req.body.organizationId;
       }
 
-      res.json({
 
       const validatedData = insertInvitationSchema.parse({
         ...req.body,
@@ -5575,9 +5393,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         }
       }
 
-      res.json({
 
-      res.json({
         ...invitation,
         // Only include temporary password in response if it was generated
         ...(temporaryPassword ? { temporaryPassword } : {})
@@ -5597,7 +5413,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "Please provide a valid email address" });
       }
 
-      res.json({
       
       const existingUser = await storage.getUserByEmail(email.toLowerCase());
       
@@ -5618,38 +5433,32 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "Please select at least one assessment" });
       }
 
-      res.json({
 
       if (!email) {
         return res.status(400).json({ message: "Please provide your email address" });
       }
 
-      res.json({
 
       if (!isValidEmail(email)) {
         return res.status(400).json({ message: "Please provide a valid email address" });
       }
 
-      res.json({
       
       // Name is only required for new users (not when password is provided for existing user login)
       if (!password && (!firstName || !lastName)) {
         return res.status(400).json({ message: "Please provide your name and email" });
       }
 
-      res.json({
       
       // Validate name format if provided
       if (firstName && !isValidName(firstName)) {
         return res.status(400).json({ message: "Invalid first name format" });
       }
 
-      res.json({
       if (lastName && !isValidName(lastName)) {
         return res.status(400).json({ message: "Invalid last name format" });
       }
 
-      res.json({
 
       // Validate assessment IDs using ASSESSMENT_PRICES as source of truth
       const validAssessmentIds = Object.keys(ASSESSMENT_PRICES);
@@ -5658,7 +5467,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: `Invalid assessment IDs: ${invalidIds.join(', ')}` });
       }
 
-      res.json({
 
       const bcrypt = await import("bcryptjs");
       const { sendWelcomeEmailWithPassword } = await import("./email");
@@ -5754,7 +5562,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         }
       }
 
-      res.json({
 
       // Check for existing unpaid purchase that still has incomplete assessments
       const existingPurchases = await storage.getPurchasesByUser(userId);
@@ -5779,7 +5586,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         }
       }
 
-      res.json({
 
       let purchaseId: string;
 
@@ -5868,10 +5674,8 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         console.log(`Created ${purchaseType} free purchase ${purchaseId} with ${assessmentIds.length} assessment(s) for ${email}`);
       }
 
-      res.json({
     
 
-      res.json({
         success: true,
         message: requiresLogin 
           ? "Account created! Check your email for login instructions." 
@@ -5900,7 +5704,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       let invitations = await storage.getAllInvitations();
       
@@ -5912,7 +5715,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         invitations = [];
       }
 
-      res.json({
       
       res.json(invitations);
     } catch (error) {
@@ -5932,7 +5734,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { id } = req.params;
       const { bounced, reason, type } = req.body;
@@ -5955,7 +5756,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
           .where(eq(schema.invitations.id, id));
       }
 
-      res.json({
       
       console.log(`[Admin] ${type || 'regular'} invitation ${id} marked as ${bounced !== false ? 'bounced' : 'not bounced'}`);
       res.json({ success: true });
@@ -5979,7 +5779,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       let results = await storage.getAllResults();
       
@@ -5996,7 +5795,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         }
       }
 
-      res.json({
       
       // Enrich results with user info
       const enrichedResults = await Promise.all(
@@ -6046,7 +5844,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       // Super admins see all candidates, org admins only see their organization's candidates
       let candidates;
@@ -6061,7 +5858,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         candidates = [];
       }
 
-      res.json({
       
       // Batch fetch partner data for enrichment (avoid N+1 queries)
       const allPartners = await storage.getAllPartnerAccounts();
@@ -6142,7 +5938,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       const candidates = await storage.getCandidatesWithResults();
       
@@ -6192,7 +5987,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         ? Math.round(totalScores.reduce((a, b) => a + b, 0) / totalScores.length)
         : 0;
       
-      res.json({
         totalCandidates: candidates.length,
         avgScoreAcrossCandidates,
         skillAverages,
@@ -6214,14 +6008,12 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       const { userId, tag } = req.body;
       if (!userId || !tag) {
         return res.status(400).json({ message: "User ID and tag are required" });
       }
 
-      res.json({
 
       const createdTag = await storage.createCandidateTag({
         userId,
@@ -6248,14 +6040,12 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       const { userId, note } = req.body;
       if (!userId || !note) {
         return res.status(400).json({ message: "User ID and note are required" });
       }
 
-      res.json({
 
       const createdNote = await storage.createCandidateNote({
         userId,
@@ -6283,14 +6073,12 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(403).json({ message: "Forbidden: Admin or partner access required" });
       }
 
-      res.json({
       
       const file = req.file;
       if (!file) {
         return res.status(400).json({ message: "No PDF file provided" });
       }
 
-      res.json({
       
       // Parse PDF to extract text
       const pdfData = await parsePdfBuffer(file.buffer);
@@ -6300,7 +6088,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "Could not extract text from PDF. Please ensure the PDF contains readable text." });
       }
 
-      res.json({
       
       console.log(`[PDF Import] Extracted ${pdfText.length} chars from PDF`);
       
@@ -6395,13 +6182,11 @@ ${pdfText.substring(0, 15000)}`;
         });
       }
 
-      res.json({
 
       if (!responseContent) {
         return res.status(500).json({ message: "Failed to parse PDF content" });
       }
 
-      res.json({
 
       let parsedData;
       try {
@@ -6411,7 +6196,6 @@ ${pdfText.substring(0, 15000)}`;
         return res.status(500).json({ message: "Failed to parse AI response" });
       }
 
-      res.json({
 
       console.log("[PDF Import] Parsed data:", JSON.stringify(parsedData, null, 2));
 
@@ -6423,7 +6207,6 @@ ${pdfText.substring(0, 15000)}`;
         });
       }
 
-      res.json({
 
       // Get partner ID if user is a partner admin
       let partnerId: string | null = null;
@@ -6434,7 +6217,6 @@ ${pdfText.substring(0, 15000)}`;
         partnerId = req.body.partnerId;
       }
 
-      res.json({
 
       // Find or create user for the candidate
       let candidateUser = null;
@@ -6442,7 +6224,6 @@ ${pdfText.substring(0, 15000)}`;
         candidateUser = await storage.getUserByEmail(parsedData.candidateEmail.toLowerCase().trim());
       }
 
-      res.json({
 
       if (!candidateUser) {
         // Create a new user for this candidate
@@ -6458,7 +6239,6 @@ ${pdfText.substring(0, 15000)}`;
         console.log(`[PDF Import] Created new user: ${candidateUser.id}`);
       }
 
-      res.json({
 
       // Create assessment sessions for each parsed assessment
       const createdSessions = [];
@@ -6504,7 +6284,6 @@ ${pdfText.substring(0, 15000)}`;
         }
       }
 
-      res.json({
 
       if (createdSessions.length === 0) {
         return res.status(400).json({ 
@@ -6513,9 +6292,7 @@ ${pdfText.substring(0, 15000)}`;
         });
       }
 
-      res.json({
 
-      res.json({
         success: true,
         message: `Successfully imported ${createdSessions.length} assessment(s) for ${parsedData.candidateName}`,
         candidate: {
@@ -6549,14 +6326,12 @@ ${pdfText.substring(0, 15000)}`;
         return res.status(403).json({ message: "Forbidden: Admin or partner access required" });
       }
 
-      res.json({
       
       const file = req.file;
       if (!file) {
         return res.status(400).json({ message: "No PDF file provided" });
       }
 
-      res.json({
       
       const pdfData = await parsePdfBuffer(file.buffer);
       const pdfText = pdfData.text;
@@ -6565,7 +6340,6 @@ ${pdfText.substring(0, 15000)}`;
         return res.status(400).json({ message: "Could not extract text from PDF. Please ensure the PDF contains readable text." });
       }
 
-      res.json({
       
       console.log(`[PDF Parse] Extracted ${pdfText.length} chars from PDF`);
       
@@ -6659,13 +6433,11 @@ ${pdfText.substring(0, 15000)}`;
         });
       }
 
-      res.json({
 
       if (!responseContent) {
         return res.status(500).json({ message: "Failed to parse PDF content" });
       }
 
-      res.json({
 
       let parsedData;
       try {
@@ -6675,7 +6447,6 @@ ${pdfText.substring(0, 15000)}`;
         return res.status(500).json({ message: "Failed to parse AI response" });
       }
 
-      res.json({
 
       if (!parsedData.candidateName || !parsedData.assessments || parsedData.assessments.length === 0) {
         return res.status(400).json({ 
@@ -6684,7 +6455,6 @@ ${pdfText.substring(0, 15000)}`;
         });
       }
 
-      res.json({
 
       console.log("[PDF Parse] Parsed data:", JSON.stringify(parsedData, null, 2));
 
@@ -6706,7 +6476,6 @@ ${pdfText.substring(0, 15000)}`;
         return res.status(403).json({ message: "Forbidden: Admin or partner access required" });
       }
 
-      res.json({
       
       const { parsedData, fileName } = req.body;
       
@@ -6714,7 +6483,6 @@ ${pdfText.substring(0, 15000)}`;
         return res.status(400).json({ message: "Invalid parsed data" });
       }
 
-      res.json({
 
       let partnerId: string | null = null;
       if (user?.role === 'partner_admin' && user.partnerId) {
@@ -6723,14 +6491,12 @@ ${pdfText.substring(0, 15000)}`;
         partnerId = req.body.partnerId;
       }
 
-      res.json({
 
       let candidateUser = null;
       if (parsedData.candidateEmail) {
         candidateUser = await storage.getUserByEmail(parsedData.candidateEmail.toLowerCase().trim());
       }
 
-      res.json({
 
       if (!candidateUser) {
         const tempPassword = generateTemporaryPassword(16);
@@ -6745,7 +6511,6 @@ ${pdfText.substring(0, 15000)}`;
         console.log(`[PDF Import] Created new user: ${candidateUser.id}`);
       }
 
-      res.json({
 
       const createdSessions = [];
       const now = new Date();
@@ -6787,7 +6552,6 @@ ${pdfText.substring(0, 15000)}`;
         }
       }
 
-      res.json({
 
       if (createdSessions.length === 0) {
         return res.status(400).json({ 
@@ -6795,9 +6559,7 @@ ${pdfText.substring(0, 15000)}`;
         });
       }
 
-      res.json({
 
-      res.json({
         success: true,
         message: `Successfully imported ${createdSessions.length} assessment(s) for ${parsedData.candidateName}`,
         candidate: {
@@ -6830,13 +6592,11 @@ ${pdfText.substring(0, 15000)}`;
         return res.status(403).json({ message: "Forbidden: Partner access required" });
       }
 
-      res.json({
       
       if (!user.partnerId) {
         return res.status(400).json({ message: "Partner account not found" });
       }
 
-      res.json({
 
       // Forward to the admin endpoint with partner context
       req.body.partnerId = user.partnerId;
@@ -6847,7 +6607,6 @@ ${pdfText.substring(0, 15000)}`;
         return res.status(400).json({ message: "No PDF file provided" });
       }
 
-      res.json({
       
       // Parse PDF to extract text
       const pdfData = await parsePdfBuffer(file.buffer);
@@ -6857,7 +6616,6 @@ ${pdfText.substring(0, 15000)}`;
         return res.status(400).json({ message: "Could not extract text from PDF. Please ensure the PDF contains readable text." });
       }
 
-      res.json({
       
       // Use OpenAI to parse the extracted text
       // the newest OpenAI model is "gpt-5" which was released August 7, 2025
@@ -6951,13 +6709,11 @@ ${pdfText.substring(0, 15000)}`;
         });
       }
 
-      res.json({
 
       if (!responseContent) {
         return res.status(500).json({ message: "Failed to parse PDF content" });
       }
 
-      res.json({
 
       let parsedData;
       try {
@@ -6966,7 +6722,6 @@ ${pdfText.substring(0, 15000)}`;
         return res.status(500).json({ message: "Failed to parse AI response" });
       }
 
-      res.json({
 
       if (!parsedData.candidateName || !parsedData.assessments || parsedData.assessments.length === 0) {
         return res.status(400).json({ 
@@ -6975,7 +6730,6 @@ ${pdfText.substring(0, 15000)}`;
         });
       }
 
-      res.json({
 
       // Find or create user for the candidate
       let candidateUser = null;
@@ -6983,7 +6737,6 @@ ${pdfText.substring(0, 15000)}`;
         candidateUser = await storage.getUserByEmail(parsedData.candidateEmail.toLowerCase().trim());
       }
 
-      res.json({
 
       if (!candidateUser) {
         const tempPassword = generateTemporaryPassword(16);
@@ -6997,7 +6750,6 @@ ${pdfText.substring(0, 15000)}`;
         });
       }
 
-      res.json({
 
       // Create assessment sessions
       const createdSessions = [];
@@ -7038,7 +6790,6 @@ ${pdfText.substring(0, 15000)}`;
         }
       }
 
-      res.json({
 
       if (createdSessions.length === 0) {
         return res.status(400).json({ 
@@ -7047,9 +6798,7 @@ ${pdfText.substring(0, 15000)}`;
         });
       }
 
-      res.json({
 
-      res.json({
         success: true,
         message: `Successfully imported ${createdSessions.length} assessment(s) for ${parsedData.candidateName}`,
         candidate: {
@@ -7082,7 +6831,6 @@ ${pdfText.substring(0, 15000)}`;
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      res.json({
       
       // Find partner account using same pattern as other partner endpoints
       let matchingPartner = null;
@@ -7090,12 +6838,10 @@ ${pdfText.substring(0, 15000)}`;
         matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
       }
 
-      res.json({
       if (!matchingPartner && user?.email) {
         matchingPartner = await storage.getPartnerAccountByEmail(user.email);
       }
 
-      res.json({
       if (!matchingPartner) {
         const teamMembership = await storage.getPartnerTeamMemberByUserId(userId);
         if (teamMembership) {
@@ -7103,13 +6849,11 @@ ${pdfText.substring(0, 15000)}`;
         }
       }
 
-      res.json({
       
       if (!matchingPartner) {
         return res.status(400).json({ message: "Partner account not found" });
       }
 
-      res.json({
       
       const partnerId = matchingPartner.id;
       
@@ -7118,7 +6862,6 @@ ${pdfText.substring(0, 15000)}`;
         return res.status(400).json({ message: "No PDF file provided" });
       }
 
-      res.json({
       
       // Check and consume 1 credit for AI-powered PDF parsing
       // Pass null for sessionId since this is a non-session credit usage
@@ -7136,7 +6879,6 @@ ${pdfText.substring(0, 15000)}`;
         });
       }
 
-      res.json({
       
       // Step 1: Parse PDF to extract text
       console.log("[Partner PDF Parse] Step 1: Parsing PDF buffer, size:", file.buffer.length);
@@ -7149,7 +6891,6 @@ ${pdfText.substring(0, 15000)}`;
         return res.status(400).json({ message: "Failed to extract text from PDF: " + pdfError.message });
       }
 
-      res.json({
       
       const pdfText = pdfData.text;
       
@@ -7158,7 +6899,6 @@ ${pdfText.substring(0, 15000)}`;
         return res.status(400).json({ message: "Could not extract text from PDF. Please ensure the PDF contains readable text." });
       }
 
-      res.json({
       
       // Step 2: Truncate text to avoid token limits (first 10k chars should contain assessment data)
       const truncatedText = pdfText.substring(0, 10000);
@@ -7259,7 +6999,6 @@ ${truncatedText}`;
         });
       }
 
-      res.json({
 
       const responseContent = completion.choices[0]?.message?.content;
       console.log("[Partner PDF Parse] Response content length:", responseContent?.length || 0);
@@ -7269,7 +7008,6 @@ ${truncatedText}`;
         return res.status(500).json({ message: "AI returned empty response. Please try again." });
       }
 
-      res.json({
 
       // Step 4: Parse the JSON response
       let parsedData;
@@ -7281,7 +7019,6 @@ ${truncatedText}`;
         return res.status(500).json({ message: "Failed to parse AI response as JSON" });
       }
 
-      res.json({
 
       if (!parsedData.candidateName || !parsedData.assessments || parsedData.assessments.length === 0) {
         console.error("[Partner PDF Parse] Missing required data:", JSON.stringify(parsedData));
@@ -7291,7 +7028,6 @@ ${truncatedText}`;
         });
       }
 
-      res.json({
 
       console.log("[Partner PDF Parse] Success! Found", parsedData.assessments.length, "assessments for", parsedData.candidateName);
       res.json(parsedData);
@@ -7312,7 +7048,6 @@ ${truncatedText}`;
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      res.json({
       
       // Find partner account using same pattern as other partner endpoints
       let matchingPartner = null;
@@ -7320,12 +7055,10 @@ ${truncatedText}`;
         matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
       }
 
-      res.json({
       if (!matchingPartner && user?.email) {
         matchingPartner = await storage.getPartnerAccountByEmail(user.email);
       }
 
-      res.json({
       if (!matchingPartner) {
         const teamMembership = await storage.getPartnerTeamMemberByUserId(userId);
         if (teamMembership) {
@@ -7333,13 +7066,11 @@ ${truncatedText}`;
         }
       }
 
-      res.json({
       
       if (!matchingPartner) {
         return res.status(400).json({ message: "Partner account not found" });
       }
 
-      res.json({
       
       const partnerId = matchingPartner.id;
       
@@ -7349,14 +7080,12 @@ ${truncatedText}`;
         return res.status(400).json({ message: "Invalid parsed data" });
       }
 
-      res.json({
 
       let candidateUser = null;
       if (parsedData.candidateEmail) {
         candidateUser = await storage.getUserByEmail(parsedData.candidateEmail.toLowerCase().trim());
       }
 
-      res.json({
 
       if (!candidateUser) {
         const tempPassword = generateTemporaryPassword(16);
@@ -7376,7 +7105,6 @@ ${truncatedText}`;
         });
       }
 
-      res.json({
 
       const createdSessions = [];
       const now = new Date();
@@ -7429,7 +7157,6 @@ ${truncatedText}`;
         }
       }
 
-      res.json({
 
       if (createdSessions.length === 0) {
         return res.status(400).json({ 
@@ -7437,9 +7164,7 @@ ${truncatedText}`;
         });
       }
 
-      res.json({
 
-      res.json({
         success: true,
         message: `Successfully imported ${createdSessions.length} assessment(s) for ${parsedData.candidateName}`,
         candidate: {
@@ -7473,7 +7198,6 @@ ${truncatedText}`;
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       const userIds = Array.isArray(req.query.userIds)
         ? req.query.userIds as string[]
@@ -7483,7 +7207,6 @@ ${truncatedText}`;
         return res.status(400).json({ message: "At least 1 user ID required" });
       }
 
-      res.json({
 
       // Get results for all selected candidates and recalculate scores
       const candidatesResultsRaw = await Promise.all(
@@ -7741,7 +7464,6 @@ ${truncatedText}`;
         })
       );
 
-      res.json({
         radarData,
         skillComparison,
         averageScores,
@@ -7768,7 +7490,6 @@ ${truncatedText}`;
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       const roles = await storage.getAllJobRoles();
       res.json(roles);
@@ -7789,7 +7510,6 @@ ${truncatedText}`;
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
 
       const { roleId } = req.params;
       const role = await storage.getJobRole(roleId);
@@ -7798,7 +7518,6 @@ ${truncatedText}`;
         return res.status(404).json({ message: "Job role not found" });
       }
 
-      res.json({
 
       // Use OpenAI to generate required skill scores
       const OpenAI = await import('openai');
@@ -7901,7 +7620,6 @@ Format your response as JSON with this exact structure and skill names:
         });
       }
 
-      res.json({
 
       const requiredScores = JSON.parse(completion.choices[0].message.content || "{}");
       requiredScores.generatedAt = new Date().toISOString();
@@ -7923,14 +7641,12 @@ Format your response as JSON with this exact structure and skill names:
         });
       }
 
-      res.json({
       if (requiredScores.aiReadinessSkills) {
         Object.keys(requiredScores.aiReadinessSkills).forEach(skill => {
           requiredScores.aiReadinessSkills[skill] = nudgeScore(requiredScores.aiReadinessSkills[skill]);
         });
       }
 
-      res.json({
 
       // Update the role with the generated scores
       await storage.updateJobRole(roleId, {
@@ -7955,7 +7671,6 @@ Format your response as JSON with this exact structure and skill names:
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
 
       const allRoles = await storage.getAllJobRoles();
       const { forceRegenerate } = req.body || {};
@@ -8098,7 +7813,6 @@ Format your response as JSON:
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       const { userId, assessmentData } = req.body;
       
@@ -8106,7 +7820,6 @@ Format your response as JSON:
         return res.status(400).json({ message: "User ID and assessment data are required" });
       }
 
-      res.json({
 
       // Get candidate info
       const candidate = await storage.getUser(userId);
@@ -8114,7 +7827,6 @@ Format your response as JSON:
         return res.status(404).json({ message: "Candidate not found" });
       }
 
-      res.json({
 
       const candidateName = assessmentData.candidateName || 
         `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim() || 
@@ -8200,7 +7912,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       const { name, description, competencies } = req.body;
       
@@ -8229,7 +7940,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const roles = await storage.getAllJobRoles();
       
@@ -8253,7 +7963,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const PREDEFINED_ROLES = [
         { name: "AI/ML Engineer", description: "Designs and implements machine learning systems", requiredSkillScores: { fitSkills: { Resilience: 70, "High Agency": 75, "Growth Mindset": 80, "Empathy & Ethics": 65, "Interpersonal Agility": 60, "Intellectual Curiosity": 85 }, aiReadinessSkills: { "AI Literacy & Prompt Engineering": 80, "Collaboration & Communication": 70, "Data Fluency": 75, "Responsible AI & Ethical Awareness": 80, "Domain Expertise": 70, "Adaptability & Continuous Learning": 85, "Critical Thinking & Problem-Solving": 80, "Technical Fundamentals": 75, "Creativity & Innovation": 80 } } },
@@ -8354,7 +8063,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         created++;
       }
 
-      res.json({
       
       res.json({ 
         message: "Roles seeded successfully", 
@@ -8379,7 +8087,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       const { userId, jobRoleId } = req.body;
       
@@ -8387,7 +8094,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         return res.status(400).json({ message: "User ID and job role ID are required" });
       }
 
-      res.json({
 
       // Get candidate results and recalculate scores
       const resultsRaw = await storage.getResultsByUser(userId);
@@ -8398,7 +8104,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         return res.status(400).json({ message: "Candidate has no completed assessments" });
       }
 
-      res.json({
 
       // Get job role
       const role = await storage.getJobRole(jobRoleId);
@@ -8406,7 +8111,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         return res.status(404).json({ message: "Job role not found" });
       }
 
-      res.json({
 
       // Aggregate candidate skills from all assessments, separated by type
       const candidateSkills = new Map<string, number>();
@@ -8437,7 +8141,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         });
       }
 
-      res.json({
 
       // Build skill alignments using stored required scores
       const fitSkillAlignments: any[] = [];
@@ -8536,7 +8239,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         }
       }
 
-      res.json({
       
       // Process AI Readiness skills
       // Mapping from short skill names (used in required scores) to full names (stored in assessment results)
@@ -8603,7 +8305,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         }
       }
 
-      res.json({
 
       // Calculate data coverage percentage (use floor to be conservative - don't round up)
       const dataCoverage = totalRequiredSkills > 0 
@@ -8665,7 +8366,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         overallFit = overallFit * (1 - Math.min(criticalPenalty, 0.5));
       }
 
-      res.json({
       
       // Round and ensure no multiples of 5 (consistent scoring policy)
       overallFit = ensureNoMultipleOf5(Math.round(overallFit));
@@ -8729,7 +8429,6 @@ Format your response as JSON with this structure:
         });
       }
 
-      res.json({
 
       const insights = JSON.parse(completion.choices[0].message.content || "{}");
 
@@ -8809,7 +8508,6 @@ Format your response as JSON with this structure:
         }
       }
 
-      res.json({
       
       // Calculate AI Readiness benchmarks
       const aiResults = resultsByType['ai_readiness'];
@@ -8833,7 +8531,6 @@ Format your response as JSON with this structure:
         }
       }
 
-      res.json({
       
       // Calculate Prompt Architecture benchmarks
       const paResults = resultsByType['prompt_architecture'];
@@ -8851,7 +8548,6 @@ Format your response as JSON with this structure:
         }
       }
 
-      res.json({
       
       // Calculate AIQ benchmarks
       const aiqResults = resultsByType['aiq'];
@@ -8874,7 +8570,6 @@ Format your response as JSON with this structure:
         }
       }
 
-      res.json({
       
       // Calculate overall percentile and position based on actual ranking
       // Group all candidates by their average scores across all assessment types
@@ -8925,7 +8620,6 @@ Format your response as JSON with this structure:
         };
       }
 
-      res.json({
 
       // Calculate Role Flexibility - find alternative roles using ROLE SIMILARITY + CANDIDATE FIT
       // This combines two factors:
@@ -9121,7 +8815,6 @@ Format your response as JSON with this structure:
         }
       }
 
-      res.json({
       
       // Sort by final combined score and take top 5 alternative roles
       roleFlexibility.sort((a, b) => b.fitScore - a.fitScore);
@@ -9148,7 +8841,6 @@ Format your response as JSON with this structure:
         finalRecommendation = `OVERALL ASSESSMENT: LIMITED FIT\n\nThis candidate shows limited alignment with the ${role.name} role at this time, with an overall fit score of ${overallFit}/100. `;
       }
 
-      res.json({
       
       // Critical skills analysis
       if (recCriticalSkills.length > 0) {
@@ -9161,7 +8853,6 @@ Format your response as JSON with this structure:
         }
       }
 
-      res.json({
       
       // Cohort context (if available)
       if (Object.keys(cohortBenchmarks).length > 0 && cohortBenchmarks.overall) {
@@ -9178,7 +8869,6 @@ Format your response as JSON with this structure:
         }
       }
 
-      res.json({
       
       // Hiring recommendation
       finalRecommendation += `\n\nHiring Recommendation:\n`;
@@ -9192,7 +8882,6 @@ Format your response as JSON with this structure:
         finalRecommendation += `Recommend exploring alternative roles or deferring this candidacy. Significant skill gaps across multiple required competencies suggest this may not be an optimal match at this time. Consider entry-level positions or roles with different skill requirements that better align with current capabilities.`;
       }
 
-      res.json({
       
       // Alternative roles insight (if better matches exist)
       if (topAlternativeRoles.length > 0) {
@@ -9203,7 +8892,6 @@ Format your response as JSON with this structure:
         }
       }
 
-      res.json({
 
       // Generate Recommended Next Steps based on overallFit score
       // Start with assessment completion recommendation if there are missing assessments
@@ -9299,7 +8987,6 @@ Format your response as JSON with this structure:
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       const { userId, jobRoleId } = req.body;
       
@@ -9307,7 +8994,6 @@ Format your response as JSON with this structure:
         return res.status(400).json({ message: "User ID and job role ID are required" });
       }
 
-      res.json({
 
       // Get candidate data
       const user = await storage.getUser(userId);
@@ -9315,7 +9001,6 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "Candidate not found" });
       }
 
-      res.json({
 
       // Get role data
       const role = await storage.getJobRole(jobRoleId);
@@ -9323,7 +9008,6 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "Job role not found" });
       }
 
-      res.json({
 
       // Get Prompt Architecture assessment results
       const results = await storage.getResultsByUser(userId);
@@ -9346,7 +9030,6 @@ Format your response as JSON with this structure:
         }
       }
 
-      res.json({
 
       // Generate AI analysis
       const prompt = `You are an expert HR analyst evaluating how a candidate's prompt engineering skills align with a specific job role.
@@ -9402,7 +9085,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       const { userId, jobRoleId } = req.body;
       
@@ -9410,7 +9092,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(400).json({ message: "User ID and job role ID are required" });
       }
 
-      res.json({
 
       // Get candidate data
       const user = await storage.getUser(userId);
@@ -9418,7 +9099,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(404).json({ message: "Candidate not found" });
       }
 
-      res.json({
 
       // Get role data
       const role = await storage.getJobRole(jobRoleId);
@@ -9426,7 +9106,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(404).json({ message: "Job role not found" });
       }
 
-      res.json({
 
       // Get AIQ assessment results
       const results = await storage.getResultsByUser(userId);
@@ -9450,7 +9129,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         else aiqBand = 'Critical Concerns (0-19%): Fundamental misalignment with ethical AI principles';
       }
 
-      res.json({
 
       // Generate AI analysis
       const prompt = `You are an expert HR analyst evaluating how a candidate's ethical AI stance (AIQ - Algorithmic Integrity Quotient) aligns with a specific job role.
@@ -9508,7 +9186,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       const { candidateIds, jobRoleId } = req.body;
       
@@ -9516,7 +9193,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(400).json({ message: "Candidate IDs array and job role ID are required" });
       }
 
-      res.json({
 
       // Get role data
       const role = await storage.getJobRole(jobRoleId);
@@ -9524,7 +9200,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(404).json({ message: "Job role not found" });
       }
 
-      res.json({
 
       // Get all candidates' Prompt Architecture data
       const candidateData: Array<{ name: string; score: string; levels: string }> = [];
@@ -9556,13 +9231,11 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         candidateData.push({ name: candidateName, score, levels });
       }
 
-      res.json({
       
       if (candidateData.length === 0) {
         return res.status(400).json({ message: "No valid candidates found" });
       }
 
-      res.json({
 
       // Build comparison summary
       const candidateSummary = candidateData.map((c, i) => 
@@ -9620,7 +9293,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       const { candidateIds, jobRoleId } = req.body;
       
@@ -9628,7 +9300,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(400).json({ message: "Candidate IDs array and job role ID are required" });
       }
 
-      res.json({
 
       // Get role data
       const role = await storage.getJobRole(jobRoleId);
@@ -9636,7 +9307,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "Job role not found" });
       }
 
-      res.json({
 
       // Get all candidates' AIQ data
       const candidateData: Array<{ name: string; score: string; band: string }> = [];
@@ -9668,13 +9338,11 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         candidateData.push({ name: candidateName, score, band });
       }
 
-      res.json({
       
       if (candidateData.length === 0) {
         return res.status(400).json({ message: "No valid candidates found" });
       }
 
-      res.json({
 
       // Build comparison summary
       const candidateSummary = candidateData.map((c, i) => 
@@ -9734,7 +9402,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       const { userId, jobRoleId } = req.query;
       
@@ -9742,7 +9409,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(400).json({ message: "User ID and job role ID are required" });
       }
 
-      res.json({
 
       const alignment = await storage.getRoleAlignment(userId as string, jobRoleId as string);
       
@@ -9750,7 +9416,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No cached alignment found" });
       }
 
-      res.json({
 
       // Check if this is an old cached alignment missing enhanced fields
       // Enhanced analyses have: criticality in skills, roleFlexibility as array (not null)
@@ -9766,7 +9431,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "Cached alignment outdated, please regenerate" });
       }
 
-      res.json({
 
       // Recalculate cohort benchmarks (should always be fresh based on current cohort)
       // Uses assessment-type-level benchmarks, not per-skill
@@ -9858,7 +9522,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         };
       }
 
-      res.json({
       
       // Calculate AI Readiness benchmarks
       const aiResults = resultsByType['ai_readiness'];
@@ -9878,7 +9541,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         };
       }
 
-      res.json({
       
       // Get candidate's results for PA and AIQ from database
       const candidateResults = await storage.getResultsByUser(userId as string);
@@ -9897,7 +9559,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         }
       }
 
-      res.json({
       
       // Calculate AIQ benchmarks
       const aiqResults = resultsByType['aiq'];
@@ -9918,7 +9579,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         }
       }
 
-      res.json({
       
       // Calculate overall percentile and position based on actual ranking
       // Group all candidates by their average scores across all assessment types
@@ -9969,7 +9629,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         };
       }
 
-      res.json({
 
       // Generate finalRecommendation and nextSteps if not in cache (backwards compatibility)
       const role = await storage.getJobRole(jobRoleId as string);
@@ -9990,7 +9649,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         }
       }
 
-      res.json({
       
       if (!nextSteps) {
         // Get missing assessments from cached data if available
@@ -10017,7 +9675,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         ];
       }
 
-      res.json({
 
       // Compute dataCoverage from skill alignments since it's not stored in DB
       // This tells the frontend whether there's sufficient data for analysis
@@ -10046,7 +9703,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
       // Return alignment with fresh cohort benchmarks and recommendations (strip dataRiskIndicators - no longer displayed)
       // Use nudged skill alignments to ensure no multiples of 5 in required scores
       const { dataRiskIndicators: _unused, fitSkillAlignments: _oldFit, aiReadinessSkillAlignments: _oldAi, ...alignmentWithoutRiskIndicators } = alignment as any;
-      res.json({
         ...alignmentWithoutRiskIndicators,
         fitSkillAlignments,
         aiReadinessSkillAlignments,
@@ -10072,7 +9728,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       const { jobRoleId, candidateIds } = req.body;
       
@@ -10080,13 +9735,11 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(400).json({ message: "Job role ID and at least 2 candidate IDs are required" });
       }
 
-      res.json({
       
       if (candidateIds.length > 10) {
         return res.status(400).json({ message: "Maximum 10 candidates can be compared at once" });
       }
 
-      res.json({
 
       // Get job role
       const role = await storage.getJobRole(jobRoleId);
@@ -10094,7 +9747,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "Job role not found" });
       }
 
-      res.json({
 
       if (!role.requiredSkillScores) {
         return res.status(400).json({ 
@@ -10103,7 +9755,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         });
       }
 
-      res.json({
 
       // Helper functions
       const ensureNoMultipleOf5 = (score: number): number => {
@@ -10408,7 +10059,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         });
       }
 
-      res.json({
 
       // Separate candidates with sufficient data from those without
       const comparableCandidates = candidateEntries.filter(e => e.hasSufficientData);
@@ -10430,7 +10080,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(400).json({ message: "At least 2 candidates with completed assessments are required" });
       }
 
-      res.json({
 
       // Sort and assign ranks - only rank candidates with sufficient data
       // Candidates without sufficient data get rank = null
@@ -10530,7 +10179,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         });
       }
 
-      res.json({
       
       // Sort by criticality first (critical > important > nice-to-have), then by advantage
       const criticalityOrder = { 'critical': 0, 'important': 1, 'nice-to-have': 2 };
@@ -10556,28 +10204,23 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         recommendationReasons.push(`${fitGap} point${fitGap !== 1 ? 's' : ''} higher overall fit score than runner-up`);
       }
 
-      res.json({
       if (topCriticalAdvantages.length > 0) {
         recommendationReasons.push(`Stronger on ${topCriticalAdvantages.length} critical skill(s): ${topCriticalAdvantages.slice(0, 2).map(a => a.skill).join(', ')}`);
       }
 
-      res.json({
       if (topAdvantages.length > runnerUpAdvantages.length) {
         recommendationReasons.push(`Outperforms on ${topAdvantages.length} skills vs ${runnerUpAdvantages.length} for runner-up`);
       }
 
-      res.json({
       if ((topEntry.riskFlags || []).length === 0 && (runnerUp?.riskFlags || []).length > 0) {
         recommendationReasons.push('No critical skill gaps (runner-up has gaps)');
       }
 
-      res.json({
       // Add default reason if no specific advantages found
       if (recommendationReasons.length === 0) {
         recommendationReasons.push(`Highest overall fit score among compared candidates (${topEntry.overallFit}%)`);
       }
 
-      res.json({
       
       // Generate runner-up consideration
       const runnerUpConsideration: string[] = [];
@@ -10600,7 +10243,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         }
       }
 
-      res.json({
       
       // Head-to-head skill comparison (who wins each skill) - only for comparable candidates with available data
       const skillComparison: { skillName: string; winner: string; winnerScore: number; loserScore: number; margin: number; criticality: string }[] = [];
@@ -10641,7 +10283,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         });
       }
 
-      res.json({
 
       // NEW METRICS: Skill Dominance Count - how many skills each comparable candidate wins
       const skillDominance: { candidateName: string; candidateId: string; winsCount: number; totalSkills: number; dominancePercent: number }[] = [];
@@ -10741,7 +10382,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         });
       }
 
-      res.json({
 
       const summaryInsights = {
         topPerformer: { userId: topPerformer.userId, userName: topPerformer.userName, overallFit: topPerformer.overallFit },
@@ -10822,7 +10462,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       const comparison = await storage.getMultiCandidateComparison(req.params.id);
       
@@ -10830,7 +10469,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "Comparison not found" });
       }
 
-      res.json({
 
       res.json(comparison);
     } catch (error) {
@@ -10851,7 +10489,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "Assessment result not found" });
       }
 
-      res.json({
       
       const user = await storage.getUser(userId);
       const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
@@ -10859,7 +10496,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(403).json({ message: "Forbidden: You can only access your own assessment results" });
       }
 
-      res.json({
       
       // Get all prompt architecture evaluations for this result
       const evaluations = await storage.getEvaluationsByResult(resultId);
@@ -10882,7 +10518,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       // Get all organizations
       const organizations = await storage.getAllOrganizations();
@@ -10924,7 +10559,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
       // Calculate candidates without organization (self-service)
       const selfServiceCandidates = allCandidates.filter((c: any) => !c.user?.organizationId).length;
       
-      res.json({
         totals: {
           organizations: totalOrganizations,
           activeOrganizations,
@@ -10952,12 +10586,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const queueStats = getQueueStats();
       const poolStats = await getPoolStats();
       
-      res.json({
         queues: queueStats,
         database: poolStats,
         timestamp: new Date().toISOString(),
@@ -10978,7 +10610,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const partners = await storage.getAllPartnerAccounts();
       
@@ -11054,7 +10685,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       // Find partner account associated with this user's organisation
       // Priority: 1) Direct organizationId FK link, 2) Email match, 3) Company name match
@@ -11065,14 +10695,12 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
       }
 
-      res.json({
       
       // Fallback to email match if no FK link found
       if (!matchingPartner && user?.email) {
         matchingPartner = await storage.getPartnerAccountByEmail(user.email);
       }
 
-      res.json({
       
       // Final fallback: company name matching (for backwards compatibility)
       if (!matchingPartner && user?.organizationId) {
@@ -11085,13 +10713,11 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         }
       }
 
-      res.json({
       
       if (!matchingPartner) {
         return res.json({ hasPartnerAccount: false });
       }
 
-      res.json({
       
       const quota = await storage.getPartnerQuotaBalance(matchingPartner.id);
       
@@ -11109,7 +10735,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         ? Math.round((quota.testsConsumed / quota.testsPurchased) * 100) 
         : 0;
       
-      res.json({
         hasPartnerAccount: true,
         partner: {
           partnerId: matchingPartner.id,
@@ -11142,7 +10767,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      res.json({
       
       // Find partner account associated with this user's organisation
       let matchingPartner = null;
@@ -11153,13 +10777,11 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
       }
 
-      res.json({
       
       if (!matchingPartner && user?.email) {
         matchingPartner = await storage.getPartnerAccountByEmail(user.email);
       }
 
-      res.json({
       
       if (!matchingPartner && user?.organizationId) {
         const org = await storage.getOrganization(user.organizationId);
@@ -11171,7 +10793,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         }
       }
 
-      res.json({
       
       // Check if user is a team member of a partner
       if (!matchingPartner) {
@@ -11183,13 +10804,11 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         }
       }
 
-      res.json({
       
       if (!matchingPartner) {
         return res.json({ hasPartnerAccount: false });
       }
 
-      res.json({
       
       // Determine if user has admin access
       // Direct partner access (org_admin, super_admin, partner_admin) = admin
@@ -11200,7 +10819,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
       const quota = await storage.getPartnerQuotaBalance(matchingPartner.id);
       const apiKeys = await storage.getApiKeysByPartner(matchingPartner.id);
       
-      res.json({
         hasPartnerAccount: true,
         isTeamMember,
         teamMemberRole,
@@ -11251,7 +10869,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      res.json({
       
       // Find partner account
       let matchingPartner = null;
@@ -11260,19 +10877,16 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
       }
 
-      res.json({
       
       if (!matchingPartner && user?.email) {
         matchingPartner = await storage.getPartnerAccountByEmail(user.email);
       }
 
-      res.json({
       
       if (!matchingPartner) {
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       // Update tour completion status
       await storage.updatePartnerAccount(matchingPartner.id, { tourCompleted: true });
@@ -11294,7 +10908,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      res.json({
       
       // Find partner account
       let matchingPartner = null;
@@ -11303,19 +10916,16 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
       }
 
-      res.json({
       
       if (!matchingPartner && user?.email) {
         matchingPartner = await storage.getPartnerAccountByEmail(user.email);
       }
 
-      res.json({
       
       if (!matchingPartner) {
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       // Update terms acceptance status
       await storage.updatePartnerAccount(matchingPartner.id, { 
@@ -11340,12 +10950,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerRole(partnerData, 'member')) {
         return res.status(403).json({ message: "Member access required" });
       }
 
-      res.json({
       
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -11376,11 +10984,9 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         });
       }
 
-      res.json({
       
       const quota = await storage.getPartnerQuotaBalance(matchingPartner.id);
       
-      res.json({
         currentMonth: {
           sessions: currentMonthSessions,
           period: { start: startOfMonth, end: endOfMonth },
@@ -11412,12 +11018,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      res.json({
       
       // Get all test packages (completed ones are receipts)
       const packages = await storage.getPartnerTestPackages(matchingPartner.id);
@@ -11465,7 +11069,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
       const pendingInvoices = formattedInvoices.filter(i => i.status === 'sent' || i.status === 'overdue');
       const pendingAmount = pendingInvoices.reduce((sum, i) => sum + i.amount, 0);
       
-      res.json({
         billingType: matchingPartner.billingType,
         summary: {
           totalSpent,
@@ -11491,12 +11094,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      res.json({
       
       // Use partner's assigned currency from database, NOT geolocation
       // Partners have negotiated pricing that should not change based on their location
@@ -11552,7 +11153,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
       
       console.log(`[Partner Pricing] Partner: ${matchingPartner.id}, BillingType: ${billingType}, Partner Currency: ${partnerCurrency}, PPP Multiplier: ${pppMultiplier}, Exchange Rate: ${exchangeRate}, Base price/test: ${basePricePerTest}, PPP-adjusted price/test: ${pppAdjustedPricePerTest}, Zero-decimal: ${isZeroDecimal}`);
       
-      res.json({
         currency: partnerCurrency,
         exchangeRate,
         pppMultiplier,
@@ -11576,7 +11176,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      res.json({
       
       // Find partner account
       let matchingPartner = null;
@@ -11585,24 +11184,20 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
       }
 
-      res.json({
       
       if (!matchingPartner && user?.email) {
         matchingPartner = await storage.getPartnerAccountByEmail(user.email);
       }
 
-      res.json({
       
       if (!matchingPartner) {
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const pendingRequest = await storage.getPendingBillingChangeRequest(matchingPartner.id);
       const allRequests = await storage.getBillingChangeRequestsByPartner(matchingPartner.id);
       
-      res.json({
         pendingRequest: pendingRequest || null,
         history: allRequests,
       });
@@ -11622,7 +11217,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      res.json({
       
       // Find partner account
       let matchingPartner = null;
@@ -11631,19 +11225,16 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
       }
 
-      res.json({
       
       if (!matchingPartner && user?.email) {
         matchingPartner = await storage.getPartnerAccountByEmail(user.email);
       }
 
-      res.json({
       
       if (!matchingPartner) {
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const { requestedBillingType, reason } = req.body;
       
@@ -11651,13 +11242,11 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(400).json({ message: "Invalid billing type requested" });
       }
 
-      res.json({
       
       if (requestedBillingType === matchingPartner.billingType) {
         return res.status(400).json({ message: "Already using this billing type" });
       }
 
-      res.json({
       
       // Check for existing pending request
       const existingRequest = await storage.getPendingBillingChangeRequest(matchingPartner.id);
@@ -11665,7 +11254,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(400).json({ message: "A pending billing change request already exists" });
       }
 
-      res.json({
       
       const newRequest = await storage.createBillingChangeRequest({
         partnerId: matchingPartner.id,
@@ -11700,7 +11288,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         // Don't fail the request if email fails
       }
 
-      res.json({
       
       res.json({ success: true, request: newRequest });
     } catch (error) {
@@ -11719,7 +11306,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      res.json({
       
       // Find partner account
       let matchingPartner = null;
@@ -11728,19 +11314,16 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
       }
 
-      res.json({
       
       if (!matchingPartner && user?.email) {
         matchingPartner = await storage.getPartnerAccountByEmail(user.email);
       }
 
-      res.json({
       
       if (!matchingPartner) {
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const request = await storage.getBillingChangeRequest(req.params.requestId);
       
@@ -11748,19 +11331,16 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "Request not found" });
       }
 
-      res.json({
       
       if (request.partnerId !== matchingPartner.id) {
         return res.status(403).json({ message: "Not authorized to cancel this request" });
       }
 
-      res.json({
       
       if (request.status !== 'pending') {
         return res.status(400).json({ message: "Can only cancel pending requests" });
       }
 
-      res.json({
       
       await storage.updateBillingChangeRequest(request.id, {
         status: 'cancelled',
@@ -11784,7 +11364,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(403).json({ message: "Access denied" });
       }
 
-      res.json({
       
       const pendingRequests = await storage.getAllPendingBillingChangeRequests();
       
@@ -11805,7 +11384,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(403).json({ message: "Access denied" });
       }
 
-      res.json({
       
       const { action, reviewNotes } = req.body;
       
@@ -11813,7 +11391,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(400).json({ message: "Invalid action. Must be 'approve' or 'reject'" });
       }
 
-      res.json({
       
       const request = await storage.getBillingChangeRequest(req.params.requestId);
       
@@ -11821,13 +11398,11 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "Request not found" });
       }
 
-      res.json({
       
       if (request.status !== 'pending') {
         return res.status(400).json({ message: "Request is no longer pending" });
       }
 
-      res.json({
       
       const newStatus = action === 'approve' ? 'approved' : 'rejected';
       
@@ -11845,7 +11420,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         });
       }
 
-      res.json({
       
       // Create notification for the partner
       await storage.dispatchPartnerNotification({
@@ -11879,7 +11453,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(403).json({ message: "Access denied" });
       }
 
-      res.json({
       
       const limit = parseInt(req.query.limit as string) || 50;
       const offset = parseInt(req.query.offset as string) || 0;
@@ -11904,7 +11477,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(403).json({ message: "Access denied" });
       }
 
-      res.json({
       
       const notifications = await storage.getAdminNotifications(userId, 100, 0, true);
       
@@ -11925,7 +11497,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(403).json({ message: "Access denied" });
       }
 
-      res.json({
       
       const { notificationId } = req.params;
       await storage.markAdminNotificationRead(notificationId, userId);
@@ -11947,7 +11518,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(403).json({ message: "Access denied" });
       }
 
-      res.json({
       
       // Get all unread notifications and mark them read
       const unreadNotifications = await storage.getAdminNotifications(userId, 100, 0, true);
@@ -11955,7 +11525,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         await storage.markAdminNotificationRead(notif.id, userId);
       }
 
-      res.json({
       
       res.json({ success: true, count: unreadNotifications.length });
     } catch (error) {
@@ -11974,14 +11543,11 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      res.json({
       
-      res.json({
         hasPartnerAccount: true,
         settings: {
           // Quota alert settings
@@ -12021,12 +11587,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      res.json({
       
       const { 
         quotaAlertEnabled, quotaAlertThreshold, quotaAlertEmail, 
@@ -12042,19 +11606,16 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         updates.quotaAlertEnabled = quotaAlertEnabled;
       }
 
-      res.json({
       
       if (typeof quotaAlertThreshold === 'number' && quotaAlertThreshold >= 10 && quotaAlertThreshold <= 100) {
         updates.quotaAlertThreshold = quotaAlertThreshold;
       }
 
-      res.json({
       
       if (typeof quotaAlertEmail === 'string' && quotaAlertEmail.includes('@')) {
         updates.quotaAlertEmail = quotaAlertEmail;
       }
 
-      res.json({
       
       // Auto top-up only for PAYG partners
       if (matchingPartner.billingType === 'payg') {
@@ -12071,14 +11632,12 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         }
       }
 
-      res.json({
       
       // White-label branding settings
       if (typeof brandingEnabled === 'boolean') {
         updates.brandingEnabled = brandingEnabled;
       }
 
-      res.json({
       
       // Validate hex color format
       const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
@@ -12089,7 +11648,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         }
       }
 
-      res.json({
       
       if (typeof brandingAccentColor === 'string') {
         if (brandingAccentColor === '' || hexColorRegex.test(brandingAccentColor)) {
@@ -12097,25 +11655,21 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         }
       }
 
-      res.json({
       
       if (typeof brandingWelcomeTitle === 'string' && brandingWelcomeTitle.length <= 100) {
         updates.brandingWelcomeTitle = brandingWelcomeTitle || null;
       }
 
-      res.json({
       
       if (typeof brandingWelcomeMessage === 'string' && brandingWelcomeMessage.length <= 500) {
         updates.brandingWelcomeMessage = brandingWelcomeMessage || null;
       }
 
-      res.json({
       
       if (typeof brandingCompanyDisplayName === 'string' && brandingCompanyDisplayName.length <= 100) {
         updates.brandingCompanyDisplayName = brandingCompanyDisplayName || null;
       }
 
-      res.json({
       
       if (typeof logoUrl === 'string') {
         // Basic URL validation or allow empty string
@@ -12124,13 +11678,11 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         }
       }
 
-      res.json({
       
       if (Object.keys(updates).length === 0) {
         return res.status(400).json({ message: "No valid settings to update" });
       }
 
-      res.json({
       
       await storage.updatePartnerAccount(matchingPartner.id, updates);
       
@@ -12150,12 +11702,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ hasPartnerAccount: false, apiKeys: [] });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required to view API keys" });
       }
 
-      res.json({
       
       // Get ALL API keys for this partner including deactivated ones (don't expose full key or hash)
       const apiKeys = await storage.getAllPartnerApiKeysByPartner(matchingPartner.id);
@@ -12175,7 +11725,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         isActive: key.isActive,
       }));
       
-      res.json({
         hasPartnerAccount: true,
         apiKeys: maskedKeys,
       });
@@ -12195,12 +11744,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required to rotate API keys" });
       }
 
-      res.json({
       
       // Get the existing key
       const existingKey = await storage.getPartnerApiKey(keyId);
@@ -12208,7 +11755,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "API key not found" });
       }
 
-      res.json({
       
       // Generate new key with same configuration
       const crypto = await import('crypto');
@@ -12228,7 +11774,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
       await notifyApiKeyRegenerated(matchingPartner.id, actorTeamMember?.id, req.user.id);
       
       // Return the new key (only time it's visible in full)
-      res.json({
         success: true,
         message: "API key rotated successfully. Save this key - it won't be shown again.",
         newKey: newRawKey,
@@ -12250,12 +11795,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required to revoke API keys" });
       }
 
-      res.json({
       
       // Get the existing key
       const existingKey = await storage.getPartnerApiKey(keyId);
@@ -12263,7 +11806,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "API key not found" });
       }
 
-      res.json({
       
       // Revoke the key
       await storage.revokePartnerApiKey(keyId);
@@ -12277,7 +11819,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         metadata: { keyId: existingKey.id, keyName: existingKey.name },
       });
       
-      res.json({
         success: true,
         message: "API key revoked successfully",
       });
@@ -12296,12 +11837,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required to create API keys" });
       }
 
-      res.json({
       
       const { name, environment = 'test', organisationId } = req.body;
       
@@ -12309,13 +11848,11 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(400).json({ message: "Key name is required (minimum 2 characters)" });
       }
 
-      res.json({
       
       if (environment !== 'test' && environment !== 'live') {
         return res.status(400).json({ message: "Environment must be 'test' or 'live'" });
       }
 
-      res.json({
       
       // If organisationId provided, verify it belongs to this partner
       if (organisationId) {
@@ -12325,7 +11862,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         }
       }
 
-      res.json({
       
       // Generate the API key
       const { generateApiKey } = await import('./partner-auth');
@@ -12392,7 +11928,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(403).json({ message: "Forbidden: Partner access required" });
       }
 
-      res.json({
       
       // Find partner account associated with this user's organisation
       let matchingPartner = null;
@@ -12401,13 +11936,11 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
       }
 
-      res.json({
       
       if (!matchingPartner && user?.email) {
         matchingPartner = await storage.getPartnerAccountByEmail(user.email);
       }
 
-      res.json({
       
       if (!matchingPartner && user?.organizationId) {
         const org = await storage.getOrganization(user.organizationId);
@@ -12419,13 +11952,11 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         }
       }
 
-      res.json({
       
       if (!matchingPartner) {
         return res.status(404).json({ message: "No partner account found for your organisation" });
       }
 
-      res.json({
       
       // Only PAYG and Subscription billing type partners can self-purchase
       if (matchingPartner.billingType !== 'payg' && matchingPartner.billingType !== 'subscription') {
@@ -12434,14 +11965,12 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         });
       }
 
-      res.json({
       
       const { packageSize, promoCode } = req.body;
       if (!packageSize || typeof packageSize !== 'number' || packageSize < 10) {
         return res.status(400).json({ message: "Package size must be at least 10 tests" });
       }
 
-      res.json({
       
       // Use partner's assigned currency and pricing (no PPP adjustment for B2B partners)
       // Partners have negotiated pricing that should not change based on their location
@@ -12510,7 +12039,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         });
       }
 
-      res.json({
       
       const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0] 
         ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
@@ -12547,7 +12075,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         }
       }
 
-      res.json({
       
       const session = await stripeClient.checkout.sessions.create({
         mode: 'payment',
@@ -12612,17 +12139,14 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         partner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
       }
 
-      res.json({
       if (!partner && user.email) {
         partner = await storage.getPartnerAccountByEmail(user.email);
       }
 
-      res.json({
       if (partner) {
         return { partner, isTeamMember: false, isAdmin: true };
       }
 
-      res.json({
     }
     
     // Check if user is a team member of a partner
@@ -12635,7 +12159,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return { partner, teamMemberRole: teamMembership.role, isTeamMember: true, isAdmin };
       }
 
-      res.json({
     }
     
     return null;
@@ -12689,12 +12212,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      res.json({
       const webhooks = await storage.getPartnerWebhooks(partner.id);
       res.json(webhooks);
     } catch (error) {
@@ -12712,12 +12233,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      res.json({
       
       const { name, url, events, maxRetries, retryDelaySeconds } = req.body;
       
@@ -12725,7 +12244,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(400).json({ message: "Name, URL, and at least one event are required" });
       }
 
-      res.json({
       
       // Generate secret
       const crypto = await import('crypto');
@@ -12758,19 +12276,16 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      res.json({
       
       const webhook = await storage.getPartnerWebhook(req.params.id);
       if (!webhook || webhook.partnerId !== partner.id) {
         return res.status(404).json({ message: "Webhook not found" });
       }
 
-      res.json({
       
       const { name, url, events, isActive, maxRetries, retryDelaySeconds } = req.body;
       
@@ -12800,19 +12315,16 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      res.json({
       
       const webhook = await storage.getPartnerWebhook(req.params.id);
       if (!webhook || webhook.partnerId !== partner.id) {
         return res.status(404).json({ message: "Webhook not found" });
       }
 
-      res.json({
       
       await storage.deletePartnerWebhook(req.params.id);
       res.json({ success: true });
@@ -12831,14 +12343,12 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const webhook = await storage.getPartnerWebhook(req.params.id);
       if (!webhook || webhook.partnerId !== partner.id) {
         return res.status(404).json({ message: "Webhook not found" });
       }
 
-      res.json({
       
       const logs = await storage.getWebhookDeliveryLogs(req.params.id, 50);
       res.json(logs);
@@ -12857,14 +12367,12 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const webhook = await storage.getPartnerWebhook(req.params.id);
       if (!webhook || webhook.partnerId !== partner.id) {
         return res.status(404).json({ message: "Webhook not found" });
       }
 
-      res.json({
       
       const crypto = await import('crypto');
       const newSecret = `whsec_${crypto.randomBytes(32).toString('base64url')}`;
@@ -12887,20 +12395,17 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const webhook = await storage.getPartnerWebhook(req.params.id);
       if (!webhook || webhook.partnerId !== partner.id) {
         return res.status(404).json({ message: "Webhook not found" });
       }
 
-      res.json({
       
       if (!webhook.isActive) {
         return res.status(400).json({ message: "Webhook is not active" });
       }
 
-      res.json({
       
       // Generate test payload
       const crypto = await import('crypto');
@@ -13006,7 +12511,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         });
       }
 
-      res.json({
     } catch (error) {
       console.error("Error testing webhook:", error);
       res.status(500).json({ message: "Failed to test webhook" });
@@ -13024,12 +12528,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      res.json({
       const integrations = await storage.getPartnerAtsIntegrations(partner.id);
       // Mask sensitive credentials
       const masked = integrations.map(i => ({
@@ -13052,12 +12554,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      res.json({
       
       const { provider, name, baseUrl, credentials, fieldMapping, syncMode } = req.body;
       
@@ -13065,7 +12565,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(400).json({ message: "Provider and name are required" });
       }
 
-      res.json({
       
       const integration = await storage.createPartnerAtsIntegration({
         partnerId: partner.id,
@@ -13094,19 +12593,16 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      res.json({
       
       const integration = await storage.getPartnerAtsIntegration(req.params.id);
       if (!integration || integration.partnerId !== partner.id) {
         return res.status(404).json({ message: "ATS integration not found" });
       }
 
-      res.json({
       
       const { name, baseUrl, credentials, fieldMapping, syncMode, isActive } = req.body;
       
@@ -13136,19 +12632,16 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      res.json({
       
       const integration = await storage.getPartnerAtsIntegration(req.params.id);
       if (!integration || integration.partnerId !== partner.id) {
         return res.status(404).json({ message: "ATS integration not found" });
       }
 
-      res.json({
       
       await storage.deletePartnerAtsIntegration(req.params.id);
       res.json({ success: true });
@@ -13169,12 +12662,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      res.json({
       const exports = await storage.getPartnerScheduledExports(partner.id);
       // Mask sensitive delivery credentials
       const masked = exports.map(e => ({
@@ -13198,12 +12689,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      res.json({
       
       const { name, frequency, dayOfWeek, dayOfMonth, timeOfDay, timezone, exportType, deliveryMethod, deliveryEmail, deliveryWebhookUrl } = req.body;
       
@@ -13211,7 +12700,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(400).json({ message: "Name, frequency, export type, and delivery method are required" });
       }
 
-      res.json({
       
       // Calculate next run time
       const nextRunAt = calculateNextRunTime(frequency, dayOfWeek, dayOfMonth, timeOfDay, timezone);
@@ -13248,19 +12736,16 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      res.json({
       
       const exportConfig = await storage.getPartnerScheduledExport(req.params.id);
       if (!exportConfig || exportConfig.partnerId !== partner.id) {
         return res.status(404).json({ message: "Scheduled export not found" });
       }
 
-      res.json({
       
       const { name, frequency, dayOfWeek, dayOfMonth, timeOfDay, timezone, exportType, deliveryMethod, deliveryEmail, deliveryWebhookUrl, isActive } = req.body;
       
@@ -13288,7 +12773,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         );
       }
 
-      res.json({
       
       await storage.updatePartnerScheduledExport(req.params.id, updates);
       
@@ -13309,19 +12793,16 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      res.json({
       
       const exportConfig = await storage.getPartnerScheduledExport(req.params.id);
       if (!exportConfig || exportConfig.partnerId !== partner.id) {
         return res.status(404).json({ message: "Scheduled export not found" });
       }
 
-      res.json({
       
       await storage.deletePartnerScheduledExport(req.params.id);
       res.json({ success: true });
@@ -13350,7 +12831,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         next.setDate(next.getDate() + 1);
       }
 
-      res.json({
     } else if (schedule === 'weekly' && dayOfWeek !== undefined && dayOfWeek !== null) {
       const currentDay = next.getDay();
       let daysUntil = dayOfWeek - currentDay;
@@ -13358,7 +12838,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         daysUntil += 7;
       }
 
-      res.json({
       next.setDate(next.getDate() + daysUntil);
     } else if (schedule === 'monthly' && dayOfMonth !== undefined && dayOfMonth !== null) {
       next.setDate(dayOfMonth);
@@ -13366,7 +12845,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         next.setMonth(next.getMonth() + 1);
       }
 
-      res.json({
     }
     
     return next;
@@ -13383,12 +12861,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerRole(partnerData, 'member')) {
         return res.status(403).json({ message: "Member access required" });
       }
 
-      res.json({
       
       const period = (req.query.period as 'daily' | 'weekly' | 'monthly') || 'daily';
       const days = parseInt(req.query.days as string) || 30;
@@ -13412,12 +12888,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerRole(partnerData, 'member')) {
         return res.status(403).json({ message: "Member access required" });
       }
 
-      res.json({
       
       const sessions = await storage.getSessionsByPartner(partner.id, 10000);
       const completedSessions = sessions.filter(s => s.status === 'completed');
@@ -13460,12 +12934,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerRole(partnerData, 'member')) {
         return res.status(403).json({ message: "Member access required" });
       }
 
-      res.json({
       
       const events = await storage.getUsageEventsByPartner(partner.id);
       
@@ -13499,12 +12971,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      res.json({
       
       const packages = await storage.getPartnerTestPackages(partner.id);
       const invoices = await storage.getPartnerInvoices(partner.id);
@@ -13557,12 +13027,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required" });
       }
 
-      res.json({
       
       let receiptData: ReceiptData;
       
@@ -13668,7 +13136,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(400).json({ message: "Invalid receipt type" });
       }
 
-      res.json({
       
       // Generate the PDF using appropriate generator
       const pdfBuffer = receiptData.documentType === 'invoice' 
@@ -13685,7 +13152,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
       }
 
-      res.json({
       res.send(pdfBuffer);
     } catch (error) {
       console.error("Error generating receipt PDF:", error);
@@ -13704,7 +13170,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const limit = parseInt(req.query.limit as string) || 50;
       const unreadOnly = req.query.unreadOnly === 'true';
@@ -13739,7 +13204,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         res.json({ notifications, unreadCount });
       }
 
-      res.json({
     } catch (error) {
       console.error("Error fetching notifications:", error);
       res.status(500).json({ message: "Failed to fetch notifications" });
@@ -13755,7 +13219,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const teamMember = await storage.getPartnerTeamMemberByUserId(req.user.id);
       const isRecipientId = req.body.isRecipientId === true;
@@ -13771,7 +13234,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         await storage.markNotificationRead(req.params.id);
       }
 
-      res.json({
       
       res.json({ success: true });
     } catch (error) {
@@ -13789,7 +13251,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const teamMember = await storage.getPartnerTeamMemberByUserId(req.user.id);
       
@@ -13801,7 +13262,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         await storage.markAllNotificationsRead(partner.id);
       }
 
-      res.json({
       
       res.json({ success: true });
     } catch (error) {
@@ -13819,14 +13279,12 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const { preferences } = req.body;
       if (!preferences || typeof preferences !== 'object') {
         return res.status(400).json({ message: "Invalid preferences object" });
       }
 
-      res.json({
       
       // Merge with existing preferences
       const currentPrefs = (partner.notificationPreferences as Record<string, boolean>) || {};
@@ -13850,7 +13308,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       res.json({ preferences: partner.notificationPreferences || {} });
     } catch (error) {
@@ -13870,7 +13327,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const members = await storage.getPartnerTeamMembers(partner.id);
       res.json({ members });
@@ -13889,12 +13345,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required to invite team members" });
       }
 
-      res.json({
       
       const { email: rawEmail, name, role } = req.body;
       
@@ -13905,26 +13359,22 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(400).json({ message: "Email is required" });
       }
 
-      res.json({
       
       if (!isValidEmail(email)) {
         return res.status(400).json({ message: "Please provide a valid email address (e.g., name@company.com)" });
       }
 
-      res.json({
       
       if (name && !isValidName(name)) {
         return res.status(400).json({ message: "Invalid name format. Please use only letters, spaces, hyphens, and apostrophes." });
       }
 
-      res.json({
       
       // Check for self-invitation
       if (req.user.email?.toLowerCase() === email) {
         return res.status(400).json({ message: "You cannot invite yourself as a team member." });
       }
 
-      res.json({
       
       // Check if already invited as a team member
       const existing = await storage.getPartnerTeamMemberByEmail(partner.id, email);
@@ -14022,7 +13472,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(400).json({ message: "This email has already been invited." });
       }
 
-      res.json({
       
       // Check if this email belongs to an existing candidate (user with candidate assessments)
       const existingUser = await storage.getUserByEmail(email);
@@ -14049,7 +13498,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         }
       }
 
-      res.json({
       
       const crypto = await import('crypto');
       const inviteToken = crypto.randomBytes(32).toString('hex');
@@ -14082,7 +13530,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         console.error("Failed to send invitation email:", emailError);
       }
 
-      res.json({
       
       res.json({ member, message: "Invitation sent successfully" });
     } catch (error) {
@@ -14116,7 +13563,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         inviteAttempts.set(clientIp, { count: 1, resetAt: now + 60000 });
       }
 
-      res.json({
       
       const { token } = req.params;
       
@@ -14125,7 +13571,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(400).json({ message: "Invalid invitation token format" });
       }
 
-      res.json({
       
       // Find the team member by invite token
       const member = await storage.getPartnerTeamMemberByToken(token);
@@ -14134,21 +13579,18 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "Invalid or expired invitation" });
       }
 
-      res.json({
       
       // Check if invite has expired
       if (member.inviteExpiresAt && new Date(member.inviteExpiresAt) < new Date()) {
         return res.status(400).json({ message: "This invitation has expired" });
       }
 
-      res.json({
       
       // Check if already accepted
       if (member.inviteStatus === 'accepted') {
         return res.status(400).json({ message: "This invitation has already been accepted" });
       }
 
-      res.json({
       
       // Get partner for notification and company name
       const partner = await storage.getPartnerAccount(member.partnerId);
@@ -14156,7 +13598,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "Partner account not found" });
       }
 
-      res.json({
       
       // Check if user already exists
       let existingUser = await storage.getUserByEmail(member.email.toLowerCase());
@@ -14197,7 +13638,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         newUserId = newUser.id;
       }
 
-      res.json({
       
       // Update member status to accepted and link to user
       await storage.updatePartnerTeamMember(member.id, {
@@ -14233,7 +13673,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         }
       }
 
-      res.json({
       
       res.json({ 
         success: true, 
@@ -14258,25 +13697,21 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required to resend invitations" });
       }
 
-      res.json({
       
       const member = await storage.getPartnerTeamMember(req.params.id);
       if (!member || member.partnerId !== partner.id) {
         return res.status(404).json({ message: "Team member not found" });
       }
 
-      res.json({
       
       if (member.inviteStatus === 'accepted') {
         return res.status(400).json({ message: "This person has already accepted their invitation." });
       }
 
-      res.json({
       
       // Generate new invite token and extend expiry
       const crypto = await import('crypto');
@@ -14307,7 +13742,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(500).json({ message: "Failed to send invitation email. Please try again." });
       }
 
-      res.json({
       
       res.json({ 
         success: true, 
@@ -14329,19 +13763,16 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required to remove team members" });
       }
 
-      res.json({
       
       const member = await storage.getPartnerTeamMember(req.params.id);
       if (!member || member.partnerId !== partner.id) {
         return res.status(404).json({ message: "Team member not found" });
       }
 
-      res.json({
       
       await storage.deletePartnerTeamMember(req.params.id);
       
@@ -14375,19 +13806,16 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerAdmin(partnerData)) {
         return res.status(403).json({ message: "Admin access required to update team members" });
       }
 
-      res.json({
       
       const member = await storage.getPartnerTeamMember(req.params.id);
       if (!member || member.partnerId !== partner.id) {
         return res.status(404).json({ message: "Team member not found" });
       }
 
-      res.json({
       
       const { role, name } = req.body;
       const updates: any = {};
@@ -14401,7 +13829,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         updates.role = role;
       }
 
-      res.json({
       
       if (name !== undefined) {
         // Allow clearing name with empty string or updating it
@@ -14411,7 +13838,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         updates.name = name || null;
       }
 
-      res.json({
       
       if (Object.keys(updates).length > 0) {
         const oldRole = member.role;
@@ -14433,7 +13859,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         }
       }
 
-      res.json({
       
       const updated = await storage.getPartnerTeamMember(req.params.id);
       res.json(updated);
@@ -14454,7 +13879,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const organizations = await storage.getPartnerOrganisationsByPartner(partner.id);
       
@@ -14487,7 +13911,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const { name, slug, adminEmail, adminName } = req.body;
       
@@ -14495,28 +13918,24 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(400).json({ message: "Name and slug are required" });
       }
 
-      res.json({
       
       // Validate name format
       if (!isValidName(name)) {
         return res.status(400).json({ message: "Invalid organization name format" });
       }
 
-      res.json({
       
       // Validate admin email if provided
       if (adminEmail && !isValidEmail(adminEmail)) {
         return res.status(400).json({ message: "Invalid admin email format" });
       }
 
-      res.json({
       
       // Validate admin name if provided
       if (adminName && !isValidName(adminName)) {
         return res.status(400).json({ message: "Invalid admin name format" });
       }
 
-      res.json({
       
       // Check if slug already exists for this partner
       const existing = await storage.getPartnerOrganisationBySlug(partner.id, slug);
@@ -14524,7 +13943,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(409).json({ message: "Organization with this slug already exists" });
       }
 
-      res.json({
       
       const org = await storage.createPartnerOrganisation({
         partnerId: partner.id,
@@ -14551,14 +13969,12 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const org = await storage.getPartnerOrganisation(req.params.id);
       if (!org || org.partnerId !== partner.id) {
         return res.status(404).json({ message: "Organization not found" });
       }
 
-      res.json({
       
       // Get sessions for this organization
       const sessions = await storage.getSessionsByPartner(partner.id, 10000);
@@ -14576,7 +13992,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
           score: session.scores || null,
         }));
       
-      res.json({
         organization: org,
         stats: {
           totalTests: orgSessions.length,
@@ -14601,14 +14016,12 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const org = await storage.getPartnerOrganisation(req.params.id);
       if (!org || org.partnerId !== partner.id) {
         return res.status(404).json({ message: "Organization not found" });
       }
 
-      res.json({
       
       const { name, adminEmail, adminName, isActive } = req.body;
       const updates: any = {};
@@ -14635,14 +14048,12 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const org = await storage.getPartnerOrganisation(req.params.id);
       if (!org || org.partnerId !== partner.id) {
         return res.status(404).json({ message: "Organization not found" });
       }
 
-      res.json({
       
       await storage.deletePartnerOrganisation(req.params.id);
       res.json({ success: true });
@@ -14661,12 +14072,10 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       if (!requirePartnerRole(partnerData, 'member')) {
         return res.status(403).json({ message: "Member access required" });
       }
 
-      res.json({
       
       const limit = parseInt(req.query.limit as string) || 50;
       
@@ -14726,7 +14135,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const limit = parseInt(req.query.limit as string) || 50;
       const organizationId = req.query.organizationId as string | undefined;
@@ -14740,7 +14148,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         filteredSessions = sessions.filter(s => s.partnerOrganisationId === organizationId);
       }
 
-      res.json({
       
       // Get completed sessions with results (exclude test API key sessions)
       const completedSessions = filteredSessions
@@ -14787,7 +14194,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const { sessionId } = req.params;
       
@@ -14797,28 +14203,24 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "Session not found" });
       }
 
-      res.json({
       
       // Verify session belongs to this partner
       if (session.partnerId !== partner.id) {
         return res.status(403).json({ message: "Access denied" });
       }
 
-      res.json({
       
       // Verify it's not a test session
       if (session.isTestSession) {
         return res.status(403).json({ message: "Test sessions are not accessible" });
       }
 
-      res.json({
       
       // Verify session is completed
       if (session.status !== 'completed') {
         return res.status(400).json({ message: "Assessment not completed" });
       }
 
-      res.json({
       
       // Get organization info
       const org = session.partnerOrganisationId 
@@ -14908,7 +14310,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         }
       }
 
-      res.json({
       
       // Calculate overall score from skills if not set
       let overallScore = session.totalScore;
@@ -14917,9 +14318,7 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         overallScore = Math.round(skillScores.reduce((sum, score) => sum + score, 0) / skillScores.length);
       }
 
-      res.json({
       
-      res.json({
         sessionId: session.id,
         assessmentType: session.assessmentType,
         externalUserId: session.externalUserId,
@@ -14947,7 +14346,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       // Use a unified candidate map to merge both sources
       const candidateMap = new Map<string, {
@@ -14995,7 +14393,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         });
       }
 
-      res.json({
       
       // SOURCE 2: Partner-invited candidates (partner_candidate_invitations + assessment_results)
       const partnerInvitations = await db.select()
@@ -15057,7 +14454,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         }
       }
 
-      res.json({
       
       // Build final candidates array with notes
       const candidateIds = Array.from(candidateMap.keys());
@@ -15104,7 +14500,6 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const { candidateId } = req.params;
       const { fitScore, aiReadinessScore, promptArchScore, aiqScore, fitSkills, aiSkills } = req.body;
@@ -15161,7 +14556,6 @@ Format your response as JSON with this structure:
         });
       }
 
-      res.json({
 
       const recommendations = JSON.parse(completion.choices[0].message.content || "{}");
       
@@ -15181,7 +14575,6 @@ Format your response as JSON with this structure:
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const { candidateId } = req.params;
       const { assessmentData, forceRefresh } = req.body;
@@ -15190,7 +14583,6 @@ Format your response as JSON with this structure:
         return res.status(400).json({ message: "Candidate ID and assessment data are required" });
       }
 
-      res.json({
 
       // Verify the candidate belongs to this partner FIRST (before checking cache or consuming credits)
       // Check BOTH partner invitations AND B2B sessions (mirrors compare endpoint logic)
@@ -15211,7 +14603,6 @@ Format your response as JSON with this structure:
         return res.status(403).json({ message: "Candidate not found in your organization" });
       }
 
-      res.json({
 
       // Check for existing cached report BEFORE consuming credits (unless forceRefresh is requested)
       if (!forceRefresh) {
@@ -15232,7 +14623,6 @@ Format your response as JSON with this structure:
         }
       }
 
-      res.json({
 
       // No cached report found - NOW check and consume 1 credit for AI feature usage
       const creditResult = await storage.consumePartnerTest(
@@ -15249,7 +14639,6 @@ Format your response as JSON with this structure:
         });
       }
 
-      res.json({
 
       // Fetch candidate from database for verified name (candidateId is email)
       const candidate = await storage.getUserByEmail(candidateId);
@@ -15348,7 +14737,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       // Support both candidateIds and userIds parameter names for compatibility with shared components
       const rawCandidateIds = req.query.candidateIds || req.query.userIds;
@@ -15361,7 +14749,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         return res.status(400).json({ message: "At least 1 candidate ID required" });
       }
 
-      res.json({
 
       // Normalize assessment type for comparison
       const normalizeAssessmentType = (type: string) => 
@@ -15410,7 +14797,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         candidateResultsMap.set(candidateId, []);
       }
 
-      res.json({
       
       // Add session-based results
       for (const session of completedSessions) {
@@ -15432,7 +14818,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         }
       }
 
-      res.json({
       
       // SOURCE 2: Partner-invited candidates (partner_candidate_invitations + assessment_results)
       const partnerInvitations = await db.select()
@@ -15474,7 +14859,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         }
       }
 
-      res.json({
       
       // Convert map to array in candidateIds order
       const candidatesResults = candidateIds.map(id => candidateResultsMap.get(id) || []);
@@ -15501,7 +14885,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         });
       }
 
-      res.json({
 
       // Check for existing cached report (unless forceRefresh is requested)
       // Use correct report type based on candidate count
@@ -15532,7 +14915,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         }
       }
 
-      res.json({
 
       // All validations passed - NOW pre-check credits before consuming
       // Skip credit consumption if regenerating an incomplete cached report (already paid)
@@ -15564,7 +14946,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         }
       }
 
-      res.json({
 
       const skillBasedAssessmentTypes = ['fit', 'ai_readiness', 'ai-readiness'];
       
@@ -15922,7 +15303,6 @@ Keep each section concise (2-3 sentences). Use professional but accessible langu
         }
       }
 
-      res.json({
 
 
       const resultData = {
@@ -15960,7 +15340,6 @@ Keep each section concise (2-3 sentences). Use professional but accessible langu
         generatedByUserId: req.user.id,
       });
 
-      res.json({
         ...resultData,
         cached: false,
         reportId: savedReport.id,
@@ -15980,7 +15359,6 @@ Keep each section concise (2-3 sentences). Use professional but accessible langu
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
 
       const { comparisonData, candidateNames, forceRefresh } = req.body;
 
@@ -15988,7 +15366,6 @@ Keep each section concise (2-3 sentences). Use professional but accessible langu
         return res.status(400).json({ message: "Comparison data and at least 2 candidate names are required" });
       }
 
-      res.json({
 
       const candidateIds = candidateNames.map((n: any) => n.id || n.email || n.name);
 
@@ -16010,7 +15387,6 @@ Keep each section concise (2-3 sentences). Use professional but accessible langu
         }
       }
 
-      res.json({
 
       // Consume 1 credit for AI feature usage
       const creditResult = await storage.consumePartnerTest(
@@ -16027,7 +15403,6 @@ Keep each section concise (2-3 sentences). Use professional but accessible langu
         });
       }
 
-      res.json({
 
       // Build summaries for each candidate
       const candidateSummaries = candidateNames.map((candidate: any, idx: number) => {
@@ -16089,7 +15464,6 @@ Use the candidates' actual names. Be specific and actionable.`;
         metadata: { candidateCount: candidateNames.length },
       }).catch(console.error);
 
-      res.json({
         insights,
         cached: false,
         reportId: savedReport?.id,
@@ -16109,7 +15483,6 @@ Use the candidates' actual names. Be specific and actionable.`;
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const { reportType } = req.query;
       
@@ -16152,7 +15525,6 @@ Use the candidates' actual names. Be specific and actionable.`;
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const { reportId } = req.params;
       
@@ -16162,16 +15534,13 @@ Use the candidates' actual names. Be specific and actionable.`;
         return res.status(404).json({ message: "Report not found" });
       }
 
-      res.json({
       
       // Verify the report belongs to this partner
       if (report.partnerId !== partner.id) {
         return res.status(403).json({ message: "Access denied" });
       }
 
-      res.json({
       
-      res.json({
         ...report.resultData,
         reportId: report.id,
         reportType: report.reportType,
@@ -16195,7 +15564,6 @@ Use the candidates' actual names. Be specific and actionable.`;
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const { reportId } = req.params;
       
@@ -16205,14 +15573,12 @@ Use the candidates' actual names. Be specific and actionable.`;
         return res.status(404).json({ message: "Report not found" });
       }
 
-      res.json({
       
       // Verify the report belongs to this partner
       if (report.partnerId !== partner.id) {
         return res.status(403).json({ message: "Access denied" });
       }
 
-      res.json({
       
       await storage.deletePartnerAnalysisReport(reportId);
       
@@ -16232,7 +15598,6 @@ Use the candidates' actual names. Be specific and actionable.`;
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       // Get partner's candidates
       const sessions = await storage.getSessionsByPartner(partner.id, 10000);
@@ -16276,7 +15641,6 @@ Use the candidates' actual names. Be specific and actionable.`;
         }
       }
 
-      res.json({
       
       // Process invited candidates
       for (const invitation of partnerInvitations) {
@@ -16313,7 +15677,6 @@ Use the candidates' actual names. Be specific and actionable.`;
         }
       }
 
-      res.json({
       
       // Calculate skill averages
       const skillAverages: Record<string, number> = {};
@@ -16330,7 +15693,6 @@ Use the candidates' actual names. Be specific and actionable.`;
         ? Math.round(totalScores.reduce((a, b) => a + b, 0) / totalScores.length)
         : 0;
       
-      res.json({
         totalCandidates: candidateCount,
         avgScoreAcrossCandidates,
         skillAverages,
@@ -16350,14 +15712,12 @@ Use the candidates' actual names. Be specific and actionable.`;
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const { userId, note } = req.body;
       if (!userId || !note) {
         return res.status(400).json({ message: "User ID and note are required" });
       }
 
-      res.json({
       
       // Verify the candidate belongs to this partner by checking sessions or invitations
       const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
@@ -16377,7 +15737,6 @@ Use the candidates' actual names. Be specific and actionable.`;
         return res.status(404).json({ message: "Candidate not found for this partner" });
       }
 
-      res.json({
 
       // Use partner-prefixed userId to store notes for partner candidates
       // This allows notes to be associated with the candidate while keeping partner context
@@ -16389,7 +15748,6 @@ Use the candidates' actual names. Be specific and actionable.`;
         createdBy: req.user.id,
       });
 
-      res.json({
         id: createdNote.id,
         content: createdNote.note,
         createdAt: createdNote.createdAt,
@@ -16409,7 +15767,6 @@ Use the candidates' actual names. Be specific and actionable.`;
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       // Partners can access all job roles
       const roles = await storage.getAllJobRoles();
@@ -16429,7 +15786,6 @@ Use the candidates' actual names. Be specific and actionable.`;
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const { candidateId, jobRoleId, forceRefresh } = req.query;
       
@@ -16437,7 +15793,6 @@ Use the candidates' actual names. Be specific and actionable.`;
         return res.status(400).json({ message: "Candidate ID and job role ID are required" });
       }
 
-      res.json({
 
       // Verify the candidate belongs to this partner FIRST (before consuming credits)
       // SOURCE 1: Check B2B Widget/API sessions
@@ -16461,7 +15816,6 @@ Use the candidates' actual names. Be specific and actionable.`;
         }
       }
 
-      res.json({
 
       // Get role
       const role = await storage.getJobRole(jobRoleId as string);
@@ -16469,7 +15823,6 @@ Use the candidates' actual names. Be specific and actionable.`;
         return res.status(404).json({ message: "Job role not found" });
       }
 
-      res.json({
 
       // Check for existing cached report (unless forceRefresh is requested)
       if (forceRefresh !== 'true') {
@@ -16499,7 +15852,6 @@ Use the candidates' actual names. Be specific and actionable.`;
         }
       }
 
-      res.json({
 
       // Check if we have an incomplete cached report (exists but lacks AI insights)
       // In this case, skip credit consumption since the original report already charged
@@ -16517,7 +15869,6 @@ Use the candidates' actual names. Be specific and actionable.`;
         }
       }
 
-      res.json({
 
       // All validations passed - consume 1 credit unless regenerating incomplete cached report
       let creditResult: any = { success: true, remaining: 0, isOverage: false };
@@ -16537,7 +15888,6 @@ Use the candidates' actual names. Be specific and actionable.`;
         }
       }
 
-      res.json({
 
       // Collect all assessment results for this candidate
       const completedSessions = candidateSessions.filter(s => s.status === 'completed');
@@ -16562,7 +15912,6 @@ Use the candidates' actual names. Be specific and actionable.`;
         }
       }
 
-      res.json({
 
       // Parse role requirements from requiredSkillScores JSON
       const roleRequirements = role.requiredSkillScores as {
@@ -16757,7 +16106,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         console.error("Failed to generate Prompt/AIQ role fit analyses:", aiError);
       }
 
-      res.json({
 
       // Calculate cohort benchmarks from all partner sessions
       const cohortBenchmarks: {
@@ -16902,7 +16250,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         console.error('Failed to calculate cohort benchmarks:', cohortError);
       }
 
-      res.json({
 
       // Calculate role flexibility - find alternative roles this candidate fits
       const roleFlexibilityResults: Array<{
@@ -16977,7 +16324,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         console.error('Failed to calculate role flexibility:', roleFlexError);
       }
 
-      res.json({
 
       const topAlternativeRoles = roleFlexibilityResults.slice(0, 5);
 
@@ -17027,7 +16373,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         generatedByUserId: req.user.id,
       });
 
-      res.json({
         ...resultData,
         cached: false,
         reportId: savedReport.id,
@@ -17047,7 +16392,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const { candidateId, jobRoleId } = req.body;
       
@@ -17055,7 +16399,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(400).json({ message: "Candidate ID and job role ID are required" });
       }
 
-      res.json({
 
       // Verify the candidate belongs to this partner
       // SOURCE 1: Check B2B Widget/API sessions
@@ -17078,7 +16421,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         }
       }
 
-      res.json({
 
       // For now, redirect to the GET endpoint logic (no AI generation for partners)
       // This allows the frontend to use the same mutation pattern
@@ -17102,7 +16444,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const { candidateId, jobRoleId } = req.body;
       
@@ -17110,7 +16451,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(400).json({ message: "Candidate ID and job role ID are required" });
       }
 
-      res.json({
 
       // Verify the candidate belongs to this partner (mirrors profile-insights pattern)
       // SOURCE 1: Partner-invited candidates
@@ -17130,7 +16470,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(403).json({ message: "Candidate not found in your organization" });
       }
 
-      res.json({
 
       // Get user by various methods (candidateId can be email, userId, or externalUserId)
       let user = await storage.getUserByEmail(candidateId);
@@ -17138,24 +16477,20 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         user = await storage.getUser(candidateId);
       }
 
-      res.json({
       // Try via invitation userId
       if (!user && candidateInvitation?.userId) {
         user = await storage.getUser(candidateInvitation.userId);
       }
 
-      res.json({
       // Try via session userId
       if (!user && candidateSession?.userId) {
         user = await storage.getUser(candidateSession.userId);
       }
 
-      res.json({
       if (!user) {
         return res.status(404).json({ message: "Candidate assessment data not found" });
       }
 
-      res.json({
 
       // Get role data
       const role = await storage.getJobRole(jobRoleId);
@@ -17163,7 +16498,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(404).json({ message: "Job role not found" });
       }
 
-      res.json({
 
       // Get Prompt Architecture assessment results
       const results = await storage.getResultsByUser(user.id);
@@ -17186,7 +16520,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         }
       }
 
-      res.json({
 
       // Generate AI analysis
       const prompt = `You are an expert HR analyst evaluating how a candidate's prompt engineering skills align with a specific job role.
@@ -17241,7 +16574,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const { candidateId, jobRoleId } = req.body;
       
@@ -17249,7 +16581,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(400).json({ message: "Candidate ID and job role ID are required" });
       }
 
-      res.json({
 
       // Verify the candidate belongs to this partner (mirrors profile-insights pattern)
       // SOURCE 1: Partner-invited candidates
@@ -17269,7 +16600,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(403).json({ message: "Candidate not found in your organization" });
       }
 
-      res.json({
 
       // Get user by various methods (candidateId can be email, userId, or externalUserId)
       let user = await storage.getUserByEmail(candidateId);
@@ -17277,24 +16607,20 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         user = await storage.getUser(candidateId);
       }
 
-      res.json({
       // Try via invitation userId
       if (!user && candidateInvitation?.userId) {
         user = await storage.getUser(candidateInvitation.userId);
       }
 
-      res.json({
       // Try via session userId
       if (!user && candidateSession?.userId) {
         user = await storage.getUser(candidateSession.userId);
       }
 
-      res.json({
       if (!user) {
         return res.status(404).json({ message: "Candidate assessment data not found" });
       }
 
-      res.json({
 
       // Get role data
       const role = await storage.getJobRole(jobRoleId);
@@ -17302,7 +16628,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(404).json({ message: "Job role not found" });
       }
 
-      res.json({
 
       // Get AIQ assessment results
       const results = await storage.getResultsByUser(user.id);
@@ -17325,7 +16650,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         else aiqBand = 'Critical Concerns (0-19%): Fundamental misalignment with ethical AI principles';
       }
 
-      res.json({
 
       // Generate AI analysis
       const prompt = `You are an expert HR analyst evaluating how a candidate's ethical AI stance (AIQ - Algorithmic Integrity Quotient) aligns with a specific job role.
@@ -17380,7 +16704,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const { jobRoleId, candidateIds, forceRefresh } = req.body;
       
@@ -17388,13 +16711,11 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(400).json({ message: "Job role ID and at least 2 candidate IDs are required" });
       }
 
-      res.json({
       
       if (candidateIds.length > 10) {
         return res.status(400).json({ message: "Maximum 10 candidates can be compared at once" });
       }
 
-      res.json({
 
       // Verify all candidates belong to this partner FIRST (before consuming credits)
       // SOURCE 1: B2B Widget/API sessions
@@ -17425,7 +16746,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         });
       }
 
-      res.json({
 
       // Get job role - roles are shared/public resources accessible by all partners
       // Security note: candidate ownership is validated above; roles are templates not per-partner
@@ -17434,7 +16754,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(404).json({ message: "Job role not found" });
       }
 
-      res.json({
 
       if (!role.requiredSkillScores) {
         return res.status(400).json({ 
@@ -17443,7 +16762,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         });
       }
 
-      res.json({
 
       // Check for existing cached report (unless forceRefresh is requested)
       if (!forceRefresh) {
@@ -17465,7 +16783,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         }
       }
 
-      res.json({
 
       // All validations passed - NOW pre-check credits before consuming
       const creditsRequired = candidateIds.length;
@@ -17484,7 +16801,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         // If partner has card on file, allow overage - credits will be consumed below
       }
 
-      res.json({
 
       // Consume credits atomically (1 per candidate)
       for (let i = 0; i < creditsRequired; i++) {
@@ -17495,7 +16811,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         );
       }
 
-      res.json({
 
       // Helper functions
       const ensureNoMultipleOf5 = (score: number): number => {
@@ -17812,7 +17127,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         });
       }
 
-      res.json({
 
       // Separate candidates with sufficient data from those without
       const comparableCandidates = candidateEntries.filter(e => e.hasSufficientData);
@@ -17833,7 +17147,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(400).json({ message: "At least 2 candidates with completed assessments are required" });
       }
 
-      res.json({
 
       // Sort and assign ranks
       const getHiringBandScore = (candidate: any): number => {
@@ -17921,7 +17234,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         });
       }
 
-      res.json({
       
       const criticalityOrder = { 'critical': 0, 'important': 1, 'nice-to-have': 2 };
       topAdvantages.sort((a, b) => {
@@ -17938,22 +17250,18 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         recommendationReasons.push(`Highest overall fit score (${topEntry.overallFit}%)`);
       }
 
-      res.json({
       if (topCriticalAdvantages.length > 0) {
         recommendationReasons.push(`Leads in ${topCriticalAdvantages.length} critical skill(s)`);
       }
 
-      res.json({
       if (topEntry.strengths.length > 0) {
         recommendationReasons.push(`Strong in multiple key areas`);
       }
 
-      res.json({
       if (topEntry.riskFlags.length === 0) {
         recommendationReasons.push('No critical skill gaps identified');
       }
 
-      res.json({
       
       const runnerUpConsideration: string[] = [];
       if (runnerUp) {
@@ -17965,7 +17273,6 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         }
       }
 
-      res.json({
 
       const summaryInsights = {
         topPerformer: { userId: topPerformer.userId, userName: topPerformer.userName, overallFit: topPerformer.overallFit },
@@ -18079,7 +17386,6 @@ Be specific and reference the candidates by name.`;
         console.error("Failed to generate AI insights for multi-candidate comparison:", aiError);
       }
 
-      res.json({
 
       // Also save to partner analysis reports for unified report listing
       const reportData = {
@@ -18101,7 +17407,6 @@ Be specific and reference the candidates by name.`;
         generatedByUserId: req.user.id,
       });
 
-      res.json({
         ...comparison,
         aiInsights,
         cached: false,
@@ -18122,7 +17427,6 @@ Be specific and reference the candidates by name.`;
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
 
       const { comparisonData, forceRefresh } = req.body;
 
@@ -18130,7 +17434,6 @@ Be specific and reference the candidates by name.`;
         return res.status(400).json({ message: "Comparison data with role snapshot and candidate entries is required" });
       }
 
-      res.json({
 
       const { roleSnapshot, candidateEntries, summaryInsights } = comparisonData;
       const candidateIds = candidateEntries.map((c: any) => c.userId);
@@ -18154,7 +17457,6 @@ Be specific and reference the candidates by name.`;
         }
       }
 
-      res.json({
 
       // Consume 1 credit for AI feature usage
       const creditResult = await storage.consumePartnerTest(
@@ -18171,7 +17473,6 @@ Be specific and reference the candidates by name.`;
         });
       }
 
-      res.json({
 
       // Build comprehensive prompt for OpenAI
       const candidateSummaries = candidateEntries.map((entry: any) => {
@@ -18248,7 +17549,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         metadata: { roleName: roleSnapshot.roleName, candidateCount: candidateEntries.length },
       }).catch(console.error);
 
-      res.json({
         insights,
         cached: false,
         reportId: savedReport?.id,
@@ -18268,7 +17568,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(404).json({ message: "No partner account found" });
       }
 
-      res.json({
       
       const { candidateId, jobRoleId } = req.query;
       
@@ -18276,7 +17575,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(400).json({ message: "Candidate ID and job role ID are required" });
       }
 
-      res.json({
 
       // Get all sessions for this partner
       const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
@@ -18290,7 +17588,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Candidate not found in your organization" });
       }
 
-      res.json({
 
       // Get all unique candidates for this partner with completed assessments
       const candidateMap = new Map<string, {
@@ -18334,7 +17631,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
 
-      res.json({
 
       const candidates = Array.from(candidateMap.values());
       const targetCandidate = candidateMap.get(candidateId as string);
@@ -18343,7 +17639,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(404).json({ message: "Candidate assessment data not found" });
       }
 
-      res.json({
 
       // Calculate overall scores and rankings
       const calculatePercentile = (score: number | null, allScores: (number | null)[]): number => {
@@ -18411,7 +17706,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         },
       ];
 
-      res.json({
         overallPosition,
         totalCandidates: candidates.length,
         assessments,
@@ -18434,7 +17728,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       if (user?.role === 'super_admin') {
         // Super admins don't have a specific organization, they see all
@@ -18444,7 +17737,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       if (!user?.organizationId) {
         return res.json({ 
@@ -18454,7 +17746,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       const organization = await storage.getOrganization(user.organizationId);
       res.json({ 
@@ -18480,7 +17771,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       if (user?.role === 'super_admin') {
         // Super admins see all organizations
@@ -18496,7 +17786,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
 
-      res.json({
     } catch (error) {
       console.error("Error fetching organizations:", error);
       res.status(500).json({ message: "Failed to fetch organizations" });
@@ -18514,26 +17803,22 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       // Regular admins can only view their own organization
       if (user?.role === 'organization_admin' && user.organizationId !== req.params.id) {
         return res.status(403).json({ message: "Forbidden: You can only view your own organization" });
       }
 
-      res.json({
       
       const org = await storage.getOrganization(req.params.id);
       if (!org) {
         return res.status(404).json({ message: "Organization not found" });
       }
 
-      res.json({
       
       // Get member count
       const members = await storage.getUsersByOrganization(org.id);
       
-      res.json({
         ...org,
         memberCount: members.length,
         members: members.map(m => ({
@@ -18561,14 +17846,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       // Regular admins can only create one organization and must not already have one
       if (user?.role === 'organization_admin' && user.organizationId) {
         return res.status(400).json({ message: "You already belong to an organization. Only super admins can create multiple organizations." });
       }
 
-      res.json({
       
       const { name, slug, logoUrl, primaryColor, maxSeats } = req.body;
       
@@ -18576,7 +17859,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(400).json({ message: "Name and slug are required" });
       }
 
-      res.json({
       
       // Check if slug is unique
       const existing = await storage.getOrganizationBySlug(slug);
@@ -18584,7 +17866,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(400).json({ message: "An organization with this slug already exists" });
       }
 
-      res.json({
       
       const org = await storage.createOrganization({
         name,
@@ -18600,7 +17881,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         await storage.updateUserOrganization(userId, org.id);
       }
 
-      res.json({
       
       res.json(org);
     } catch (error) {
@@ -18619,7 +17899,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { name, slug, logoUrl, primaryColor, maxSeats, isActive } = req.body;
       
@@ -18628,7 +17907,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(404).json({ message: "Organization not found" });
       }
 
-      res.json({
       
       // Check slug uniqueness if changed
       if (slug && slug !== org.slug) {
@@ -18638,7 +17916,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
 
-      res.json({
       
       await storage.updateOrganization(req.params.id, {
         name: name ?? org.name,
@@ -18667,14 +17944,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const org = await storage.getOrganization(req.params.id);
       if (!org) {
         return res.status(404).json({ message: "Organization not found" });
       }
 
-      res.json({
       
       // Check if there are any members
       const members = await storage.getUsersByOrganization(org.id);
@@ -18684,7 +17959,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       await storage.deleteOrganization(req.params.id);
       res.json({ success: true });
@@ -18704,7 +17978,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { userEmail, role } = req.body;
       
@@ -18712,21 +17985,18 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(400).json({ message: "User email is required" });
       }
 
-      res.json({
       
       const org = await storage.getOrganization(req.params.id);
       if (!org) {
         return res.status(404).json({ message: "Organization not found" });
       }
 
-      res.json({
       
       const targetUser = await storage.getUserByEmail(userEmail);
       if (!targetUser) {
         return res.status(404).json({ message: "User not found" });
       }
 
-      res.json({
       
       // Check seat limit
       const members = await storage.getUsersByOrganization(org.id);
@@ -18734,7 +18004,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(400).json({ message: `Organization has reached maximum seats (${org.maxSeats})` });
       }
 
-      res.json({
       
       // Update user's organization and role
       await storage.updateUserOrganization(targetUser.id, org.id);
@@ -18742,7 +18011,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         await storage.updateUserRole(targetUser.id, role);
       }
 
-      res.json({
       
       res.json({ success: true });
     } catch (error) {
@@ -18761,20 +18029,17 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const targetUser = await storage.getUser(req.params.memberId);
       if (!targetUser) {
         return res.status(404).json({ message: "User not found" });
       }
 
-      res.json({
       
       if (targetUser.organizationId !== req.params.id) {
         return res.status(400).json({ message: "User is not a member of this organization" });
       }
 
-      res.json({
       
       // Remove from organization and set role to candidate
       await storage.updateUserOrganization(targetUser.id, null);
@@ -18797,27 +18062,23 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { role } = req.body;
       if (!role || (role !== 'candidate' && role !== 'organization_admin')) {
         return res.status(400).json({ message: "Valid role (candidate or admin) is required" });
       }
 
-      res.json({
       
       const targetUser = await storage.getUser(req.params.memberId);
       if (!targetUser) {
         return res.status(404).json({ message: "User not found" });
       }
 
-      res.json({
       
       if (targetUser.organizationId !== req.params.id) {
         return res.status(400).json({ message: "User is not a member of this organization" });
       }
 
-      res.json({
       
       await storage.updateUserRole(targetUser.id, role);
       res.json({ success: true });
@@ -18854,7 +18115,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const settings = await storage.getAllSystemSettings();
       res.json(settings);
@@ -18874,14 +18134,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const setting = await storage.getSystemSetting(req.params.key);
       if (!setting) {
         return res.status(404).json({ message: "Setting not found" });
       }
 
-      res.json({
       
       res.json(setting);
     } catch (error) {
@@ -18900,14 +18158,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { value, description } = req.body;
       if (value === undefined) {
         return res.status(400).json({ message: "Value is required" });
       }
 
-      res.json({
       
       const setting = await storage.upsertSystemSetting({
         key: req.params.key,
@@ -18921,7 +18177,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         console.log(`[System Settings] Test toggle updated: run_tests=${value} by ${user?.email || userId}`);
       }
 
-      res.json({
       
       res.json(setting);
     } catch (error) {
@@ -18940,7 +18195,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       await storage.deleteSystemSetting(req.params.key);
       res.json({ success: true });
@@ -18960,7 +18214,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       // Get from system settings first, fall back to in-memory value
       const setting = await storage.getSystemSetting('email_provider');
@@ -18986,21 +18239,18 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { provider } = req.body;
       if (provider !== 'gmail' && provider !== 'sendgrid') {
         return res.status(400).json({ message: "Invalid provider. Must be 'gmail' or 'sendgrid'" });
       }
 
-      res.json({
       
       // Validate the provider is configured
       if (provider === 'gmail' && (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD)) {
         return res.status(400).json({ message: "Gmail not configured. Please add GMAIL_USER and GMAIL_APP_PASSWORD secrets." });
       }
 
-      res.json({
       
       // Update in-memory value
       setEmailProvider(provider);
@@ -19035,7 +18285,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const partners = await storage.getAllPartnerAccounts();
       
@@ -19098,7 +18347,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { 
         name, companyName, email, country, phone, currency, monthlyQuota, pricePerAssessment, stripeCustomerId, organizationId,
@@ -19110,7 +18358,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(400).json({ message: "Name and email are required" });
       }
 
-      res.json({
       
       // Check for existing partner with same email
       const existing = await storage.getPartnerAccountByEmail(email);
@@ -19118,7 +18365,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(400).json({ message: "A partner with this email already exists" });
       }
 
-      res.json({
       
       // Check if user with this email already exists - reject to prevent silent failures
       const existingUser = await storage.getUserByEmail(email);
@@ -19128,7 +18374,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       let finalOrganizationId = organizationId;
       let partnerUser: any = null;
@@ -19161,7 +18406,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         console.log(`Created organisation ${newOrg.id} for partner ${orgName}`);
       }
 
-      res.json({
       
       // Validate billing type
       const validBillingTypes = ['payg', 'subscription', 'enterprise'];
@@ -19278,7 +18522,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
 
-      res.json({
       
       // Send welcome email with login credentials
       try {
@@ -19296,7 +18539,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         // Don't fail partner creation, just log the error
       }
 
-      res.json({
       
       res.status(201).json(partner);
     } catch (error: any) {
@@ -19312,7 +18554,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
 
-      res.json({
       
       if (createdOrgId) {
         try {
@@ -19323,7 +18564,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
 
-      res.json({
       
       // Include error details for debugging (will be sanitized in production logs)
       const errorMessage = error?.message || 'Unknown error';
@@ -19346,14 +18586,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       // Find the partner admin user by email
       const partnerUser = await storage.getUserByEmail(partner.email);
@@ -19361,7 +18599,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(404).json({ message: "Partner user account not found" });
       }
 
-      res.json({
       
       // Generate new temporary password
       const temporaryPassword = generateTemporaryPassword();
@@ -19387,7 +18624,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         res.status(500).json({ message: "Failed to send welcome email" });
       }
 
-      res.json({
     } catch (error: any) {
       console.error("Error resending partner welcome email:", error);
       res.status(500).json({ message: "Failed to resend welcome email" });
@@ -19404,14 +18640,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       const { 
         name, companyName, email, monthlyQuota, pricePerAssessment, isActive, stripeCustomerId, organizationId,
@@ -19434,7 +18668,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
 
-      res.json({
       
       // Validate billing type if provided
       const validBillingTypes = ['payg', 'subscription', 'enterprise'];
@@ -19542,7 +18775,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
 
-      res.json({
       
       res.json(updated);
     } catch (error) {
@@ -19561,14 +18793,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       // First, delete all team members for this partner
       await storage.deleteAllPartnerTeamMembers(req.params.id);
@@ -19586,7 +18816,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
 
-      res.json({
       
       // Delete the partner account (cascades to API keys, sessions, usage events, etc.)
       await storage.deletePartnerAccount(req.params.id);
@@ -19611,14 +18840,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       // Get ALL keys including deactivated ones for super admin testing
       const keys = await storage.getAllPartnerApiKeysByPartner(req.params.id);
@@ -19655,14 +18882,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       const { name, environment, permissions, rateLimit, expiresAt } = req.body;
       
@@ -19670,7 +18895,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(400).json({ message: "Key name is required" });
       }
 
-      res.json({
       
       const env = environment === 'live' ? 'live' : 'test';
       const { generateApiKey } = await import("./partner-auth");
@@ -19711,14 +18935,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const key = await storage.getPartnerApiKey(req.params.keyId);
       if (!key || key.partnerId !== req.params.id) {
         return res.status(404).json({ message: "API key not found" });
       }
 
-      res.json({
       
       await storage.revokePartnerApiKey(req.params.keyId);
       
@@ -19739,14 +18961,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -19756,7 +18976,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       // Use enriched version that includes isTestMode from session data
       const recentEvents = await storage.getRecentUsageEventsEnriched(partner.id, 100);
       
-      res.json({
         period: { start: startOfMonth, end: endOfMonth },
         summary: usage,
         recentEvents,
@@ -19777,14 +18996,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       const limit = Math.min(parseInt(req.query.limit as string) || 100, 500);
       const sessions = await storage.getSessionsByPartner(partner.id, limit);
@@ -19806,14 +19023,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       // Import billing functions dynamically to avoid circular dependencies
       const { getPartnerBillingInfo, getMonthlyUsageSummary } = await import("./partner-billing");
@@ -19823,7 +19038,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         getMonthlyUsageSummary(partner.id),
       ]);
       
-      res.json({
         partner: {
           id: partner.id,
           name: partner.name,
@@ -19851,14 +19065,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       const { createStripeCustomerForPartner } = await import("./partner-billing");
       const result = await createStripeCustomerForPartner(partner);
@@ -19867,7 +19079,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(500).json({ message: "Failed to create Stripe customer" });
       }
 
-      res.json({
       
       res.json({ 
         success: true, 
@@ -19890,14 +19101,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       // Check payment provider - metered subscriptions only supported with Stripe
       if (partner.paymentProvider === 'airwallex') {
@@ -19906,14 +19115,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       const { priceId } = req.body;
       if (!priceId) {
         return res.status(400).json({ message: "Price ID is required" });
       }
 
-      res.json({
       
       const { createMeteredSubscription } = await import("./partner-billing");
       const result = await createMeteredSubscription(partner, priceId);
@@ -19922,7 +19129,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(500).json({ message: "Failed to create subscription" });
       }
 
-      res.json({
       
       res.json({ 
         success: true, 
@@ -19948,21 +19154,18 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       const balance = await storage.getPartnerQuotaBalance(req.params.id);
       const usagePercentage = balance.testsPurchased > 0 
         ? Math.round((balance.testsConsumed / balance.testsPurchased) * 100)
         : 0;
       
-      res.json({
         ...balance,
         usagePercentage,
         isSuspended: partner.apiAccessSuspendedAt !== null,
@@ -19987,14 +19190,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       const packages = await storage.getPartnerTestPackages(req.params.id);
       const ledger = await storage.getQuotaLedger(req.params.id, 50);
@@ -20017,14 +19218,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       const limit = parseInt(req.query.limit as string) || 100;
       const ledger = await storage.getQuotaLedger(req.params.id, limit);
@@ -20068,21 +19267,18 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       const { packageSize } = req.body;
       if (!packageSize || typeof packageSize !== 'number' || packageSize < 10) {
         return res.status(400).json({ message: "Package size must be at least 10 tests" });
       }
 
-      res.json({
       
       // Find matching tier or use custom pricing based on volume-based tiers
       const tier = PACKAGE_TIERS.find(t => t.size === packageSize);
@@ -20201,7 +19397,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
     } catch (error) {
       console.error("Error creating package checkout:", error);
       res.status(500).json({ message: "Failed to create package checkout" });
@@ -20219,7 +19414,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(400).json({ success: false, message: "Session ID required" });
       }
 
-      res.json({
       
       // Retrieve and validate Stripe session
       const stripe = (await import("stripe")).default;
@@ -20231,14 +19425,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(400).json({ success: false, message: "Payment not completed" });
       }
 
-      res.json({
       
       const metadata = session.metadata;
       if (!metadata || metadata.type !== 'partner_package') {
         return res.status(400).json({ success: false, message: "Invalid session type" });
       }
 
-      res.json({
       
       const { partnerId, packageId, packageSize } = metadata;
       
@@ -20246,7 +19438,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(400).json({ success: false, message: "Invalid session metadata" });
       }
 
-      res.json({
       
       // Verify package exists and belongs to the partner from the session
       const pkg = await storage.getPartnerTestPackage(packageId);
@@ -20254,7 +19445,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(404).json({ success: false, message: "Package not found" });
       }
 
-      res.json({
       
       // Security: Verify package belongs to the partner in the session metadata
       if (pkg.partnerId !== partnerId) {
@@ -20262,7 +19452,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ success: false, message: "Package does not belong to this partner" });
       }
 
-      res.json({
       
       // Additional security: Verify Stripe session matches the package
       if (pkg.stripeCheckoutSessionId && pkg.stripeCheckoutSessionId !== sessionId) {
@@ -20270,7 +19459,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ success: false, message: "Invalid session for this package" });
       }
 
-      res.json({
       
       if (pkg.status === 'completed') {
         console.log(`[Partner Package] Package ${packageId} already processed, skipping`);
@@ -20281,7 +19469,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       // Update package status
       await storage.updatePartnerTestPackage(packageId, {
@@ -20308,7 +19495,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         console.log(`[Partner Package] Reactivated API access for partner ${partnerId}`);
       }
 
-      res.json({
       
       console.log(`[Partner Package] Successfully credited ${packageSize} tests to partner ${partnerId}`);
       
@@ -20362,7 +19548,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         // Don't fail the purchase if receipt fails
       }
 
-      res.json({
       
         success: true, 
         message: `Successfully credited ${packageSize} tests`,
@@ -20386,7 +19571,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(400).json({ success: false, message: "Package ID required" });
       }
 
-      res.json({
       
       // Verify package exists
       const pkg = await storage.getPartnerTestPackage(packageId);
@@ -20394,14 +19578,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(404).json({ success: false, message: "Package not found" });
       }
 
-      res.json({
       
       // Verify this is an Airwallex payment
       if (pkg.paymentProvider !== 'airwallex') {
         return res.status(400).json({ success: false, message: "Package is not using Airwallex payment" });
       }
 
-      res.json({
       
       // Verify payment intent matches
       if (paymentIntentId && pkg.airwallexPaymentIntentId !== paymentIntentId) {
@@ -20409,7 +19591,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ success: false, message: "Invalid payment intent for this package" });
       }
 
-      res.json({
       
       if (pkg.status === 'completed') {
         console.log(`[Partner Package] Airwallex package ${packageId} already processed, skipping`);
@@ -20420,7 +19601,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       // Verify payment status with Airwallex
       const { getPaymentIntent, isAirwallexConfigured } = await import("./airwallex");
@@ -20429,14 +19609,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(500).json({ success: false, message: "Airwallex is not configured" });
       }
 
-      res.json({
       
       const intentId = pkg.airwallexPaymentIntentId;
       if (!intentId) {
         return res.status(400).json({ success: false, message: "No Airwallex payment intent found" });
       }
 
-      res.json({
       
       const paymentIntent = await getPaymentIntent(intentId);
       
@@ -20448,7 +19626,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       const partnerId = pkg.partnerId;
       const packageSize = pkg.packageSize;
@@ -20477,7 +19654,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         console.log(`[Partner Package] Reactivated API access for partner ${partnerId}`);
       }
 
-      res.json({
       
       console.log(`[Partner Package] Successfully credited ${packageSize} tests to partner ${partnerId} via Airwallex`);
       
@@ -20530,7 +19706,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         console.error(`[Partner Package] Failed to send Airwallex receipt email:`, receiptError);
       }
 
-      res.json({
       
         success: true, 
         message: `Successfully credited ${packageSize} tests`,
@@ -20554,26 +19729,22 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       const { amount, description } = req.body;
       if (!amount || typeof amount !== 'number' || amount < 1) {
         return res.status(400).json({ message: "Amount must be at least 1" });
       }
 
-      res.json({
       if (!description || typeof description !== 'string') {
         return res.status(400).json({ message: "Description is required" });
       }
 
-      res.json({
       
       // Create a manual package record
       const pkg = await storage.createPartnerTestPackage({
@@ -20614,14 +19785,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       await storage.reactivatePartnerApiAccess(partner.id);
       
@@ -20645,21 +19814,18 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       // Check if already suspended
       if (partner.invoiceOverdueSuspendedAt) {
         return res.status(400).json({ message: "Partner API access is already suspended" });
       }
 
-      res.json({
       
       const { reason } = req.body;
       
@@ -20719,21 +19885,18 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       // Check if suspended
       if (!partner.invoiceOverdueSuspendedAt) {
         return res.status(400).json({ message: "Partner API access is not currently suspended" });
       }
 
-      res.json({
       
       // Restore the partner's API keys
       await storage.restorePartnerFromOverdueInvoice(partner.id);
@@ -20787,14 +19950,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       const limit = parseInt(req.query.limit as string) || 12;
       const usageHistory = await storage.getMonthlyUsageHistory(partner.id, limit);
@@ -20820,7 +19981,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       res.json(usageHistory);
     } catch (error) {
@@ -20841,14 +20001,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       const invoices = await storage.getPartnerInvoices(partner.id);
       res.json(invoices);
@@ -20868,21 +20026,18 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       // Verify partner is enterprise-billed (pro-forma invoicing)
       if (partner.billingType !== 'enterprise') {
         return res.status(400).json({ message: "Partner is not configured for enterprise billing" });
       }
 
-      res.json({
       
       const { periodStart, periodEnd, testsUsed, vatRate = 20, notes } = req.body;
       
@@ -20890,7 +20045,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(400).json({ message: "Missing required fields: periodStart, periodEnd" });
       }
 
-      res.json({
       
       // Calculate invoice amounts
       const pricePerTest = partner.pricePerAssessment; // In pence
@@ -20967,14 +20121,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const invoice = await storage.getPartnerInvoice(req.params.invoiceId);
       if (!invoice) {
         return res.status(404).json({ message: "Invoice not found" });
       }
 
-      res.json({
       
       const { status, paidAt } = req.body;
       const previousStatus = invoice.status;
@@ -21044,7 +20196,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
 
-      res.json({
       
       const updatedInvoice = await storage.getPartnerInvoice(invoice.id);
       res.json(updatedInvoice);
@@ -21064,7 +20215,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const status = req.query.status as string | undefined;
       const limit = parseInt(req.query.limit as string) || 100;
@@ -21097,27 +20247,23 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const invoice = await storage.getPartnerInvoice(req.params.invoiceId);
       if (!invoice) {
         return res.status(404).json({ message: "Invoice not found" });
       }
 
-      res.json({
       
       if (invoice.status === 'paid' || invoice.status === 'cancelled') {
         return res.status(400).json({ message: `Cannot send reminder for ${invoice.status} invoice` });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(invoice.partnerId);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       const dueDate = new Date(invoice.dueDate);
       const today = new Date();
@@ -21157,27 +20303,23 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const invoice = await storage.getPartnerInvoice(req.params.invoiceId);
       if (!invoice) {
         return res.status(404).json({ message: "Invoice not found" });
       }
 
-      res.json({
       
       if (invoice.status === 'paid' || invoice.status === 'cancelled') {
         return res.status(400).json({ message: `Cannot create payment link for ${invoice.status} invoice` });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(invoice.partnerId);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       // Check payment provider
       if (partner.paymentProvider === 'airwallex') {
@@ -21258,7 +20400,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
     } catch (error) {
       console.error("Error creating payment link:", error);
       res.status(500).json({ message: "Failed to create payment link" });
@@ -21275,26 +20416,22 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const invoice = await storage.getPartnerInvoice(req.params.invoiceId);
       if (!invoice) {
         return res.status(404).json({ message: "Invoice not found" });
       }
 
-      res.json({
       
       if (invoice.status === 'paid') {
         return res.status(400).json({ message: "Cannot cancel a paid invoice" });
       }
 
-      res.json({
       
       if (invoice.status === 'cancelled') {
         return res.status(400).json({ message: "Invoice is already cancelled" });
       }
 
-      res.json({
       
       const { reason } = req.body;
       
@@ -21331,7 +20468,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
 
-      res.json({
       
       const updatedInvoice = await storage.getPartnerInvoice(invoice.id);
       res.json({ 
@@ -21357,7 +20493,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { partnerId, apiKeyId, assessmentType, email, externalUserId, metadata } = req.body;
       
@@ -21365,21 +20500,18 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(400).json({ message: "Missing required fields: partnerId, apiKeyId, assessmentType" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(partnerId);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       const apiKey = await storage.getPartnerApiKey(apiKeyId);
       if (!apiKey || apiKey.partnerId !== partner.id) {
         return res.status(404).json({ message: "API key not found or doesn't belong to this partner" });
       }
 
-      res.json({
       
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 24);
@@ -21440,14 +20572,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       const organisations = await storage.getPartnerOrganisationsByPartner(partner.id);
       
@@ -21479,14 +20609,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const partner = await storage.getPartnerAccount(req.params.id);
       if (!partner) {
         return res.status(404).json({ message: "Partner not found" });
       }
 
-      res.json({
       
       const { name, contactEmail, contactName, metadata } = req.body;
       
@@ -21494,7 +20622,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(400).json({ message: "Organisation name is required" });
       }
 
-      res.json({
       
       // Check for duplicate slug
       const slug = generateSlug(name);
@@ -21503,7 +20630,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(400).json({ message: "An organisation with a similar name already exists" });
       }
 
-      res.json({
       
       // Create the organisation
       const organisation = await storage.createPartnerOrganisation({
@@ -21561,14 +20687,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const organisation = await storage.getPartnerOrganisation(req.params.orgId);
       if (!organisation || organisation.partnerId !== req.params.id) {
         return res.status(404).json({ message: "Organisation not found" });
       }
 
-      res.json({
       
       const { name, contactEmail, contactName, metadata, isActive } = req.body;
       
@@ -21599,14 +20723,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const organisation = await storage.getPartnerOrganisation(req.params.orgId);
       if (!organisation || organisation.partnerId !== req.params.id) {
         return res.status(404).json({ message: "Organisation not found" });
       }
 
-      res.json({
       
       await storage.deletePartnerOrganisation(req.params.orgId);
       
@@ -21628,7 +20750,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       // Find partner account associated with this user's organisation
       let matchingPartner = null;
@@ -21637,19 +20758,16 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
       }
 
-      res.json({
       
       if (!matchingPartner && user?.email) {
         matchingPartner = await storage.getPartnerAccountByEmail(user.email);
       }
 
-      res.json({
       
       if (!matchingPartner) {
         return res.status(404).json({ message: "No partner account associated with your organisation" });
       }
 
-      res.json({
       
       const organisations = await storage.getPartnerOrganisationsByPartner(matchingPartner.id);
       
@@ -21690,7 +20808,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       // Find partner account associated with this user's organisation
       let matchingPartner = null;
@@ -21699,19 +20816,16 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
       }
 
-      res.json({
       
       if (!matchingPartner && user?.email) {
         matchingPartner = await storage.getPartnerAccountByEmail(user.email);
       }
 
-      res.json({
       
       if (!matchingPartner) {
         return res.status(404).json({ message: "No partner account associated with your organisation" });
       }
 
-      res.json({
       
       const { name, contactEmail, contactName, metadata } = req.body;
       
@@ -21719,7 +20833,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(400).json({ message: "Organisation name is required" });
       }
 
-      res.json({
       
       const slug = generateSlug(name);
       
@@ -21780,7 +20893,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       // Find partner account associated with this user's organisation
       let matchingPartner = null;
@@ -21789,26 +20901,22 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         matchingPartner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
       }
 
-      res.json({
       
       if (!matchingPartner && user?.email) {
         matchingPartner = await storage.getPartnerAccountByEmail(user.email);
       }
 
-      res.json({
       
       if (!matchingPartner) {
         return res.status(404).json({ message: "No partner account associated with your organisation" });
       }
 
-      res.json({
       
       const organisation = await storage.getPartnerOrganisation(req.params.orgId);
       if (!organisation || organisation.partnerId !== matchingPartner.id) {
         return res.status(404).json({ message: "Organisation not found" });
       }
 
-      res.json({
       
       await storage.deletePartnerOrganisation(req.params.orgId);
       
@@ -21831,7 +20939,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const stats = await storage.getErrorStats();
       res.json(stats);
@@ -21851,7 +20958,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { severity, status, startDate, endDate, userId: filterUserId, partnerId, limit, offset } = req.query;
       
@@ -21883,14 +20989,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const errorLog = await storage.getErrorLog(req.params.id);
       if (!errorLog) {
         return res.status(404).json({ message: "Error log not found" });
       }
 
-      res.json({
       
       res.json(errorLog);
     } catch (error) {
@@ -21909,7 +21013,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { status, notes } = req.body;
       
@@ -21918,7 +21021,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(404).json({ message: "Error log not found" });
       }
 
-      res.json({
       
       if (status === 'resolved') {
         await storage.resolveErrorLog(req.params.id, userId, notes);
@@ -21929,7 +21031,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       const updatedLog = await storage.getErrorLog(req.params.id);
       res.json(updatedLog);
@@ -21949,7 +21050,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const errors = await storage.getErrorLogsByFingerprint(req.params.fingerprint);
       res.json(errors);
@@ -21971,7 +21071,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const checks: Array<{
         name: string;
@@ -22005,7 +21104,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       // OpenAI API health check
       const openaiStart = Date.now();
@@ -22039,7 +21137,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       // Stripe health check
       try {
@@ -22070,7 +21167,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       // Email service health check
       try {
@@ -22101,7 +21197,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       // Memory usage check - use RSS (Resident Set Size) for total process memory
       const memUsage = process.memoryUsage();
@@ -22145,7 +21240,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const latencyMetrics: Array<{
         endpoint: string;
@@ -22322,7 +21416,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { recipientType, emailType, status, startDate, endDate, search, limit = '100', offset = '0' } = req.query;
       
@@ -22333,22 +21426,18 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         conditions.push(eq(emailLogs.recipientType, recipientType));
       }
 
-      res.json({
       if (emailType && emailType !== 'all') {
         conditions.push(eq(emailLogs.emailType, emailType));
       }
 
-      res.json({
       if (status && status !== 'all') {
         conditions.push(eq(emailLogs.status, status));
       }
 
-      res.json({
       if (startDate) {
         conditions.push(gte(emailLogs.sentAt, new Date(startDate)));
       }
 
-      res.json({
       if (search) {
         conditions.push(
           or(
@@ -22358,7 +21447,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         );
       }
 
-      res.json({
       
       const query = conditions.length > 0
         ? db.select().from(emailLogs).where(and(...conditions))
@@ -22392,7 +21480,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const now = new Date();
       const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -22417,7 +21504,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
           .groupBy(emailLogs.recipientType),
       ]);
       
-      res.json({
         total: Number(total[0]?.count || 0),
         sent24h: Number(sent24h[0]?.count || 0),
         failed24h: Number(failed24h[0]?.count || 0),
@@ -22442,7 +21528,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const now = new Date();
       
@@ -22491,7 +21576,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         byRole[role] = (byRole[role] || 0) + 1;
       });
       
-      res.json({
         sessions: authenticatedSessions,
         stats: {
           totalActive,
@@ -22514,7 +21598,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { sid } = req.params;
       
@@ -22540,7 +21623,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { filter } = req.query;
       const users = await storage.getUsersWithConsentData(filter as string);
@@ -22564,7 +21646,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const now = new Date();
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -22677,7 +21758,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       // Get partner breakdown
       const partnerBreakdown = await Promise.all(allPartners.map(async (partner: any) => {
@@ -22719,7 +21799,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         };
       }
 
-      res.json({
       
       // Build recent activity feed
       const activityFeed = [];
@@ -22743,7 +21822,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       // Add recent B2B sessions
       const recentB2bSessions = allSessions
@@ -22764,12 +21842,10 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       // Sort activity feed by timestamp
       activityFeed.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       
-      res.json({
         overview: {
           totalUsers: allUsers.length,
           totalAssessmentsCompleted: allResults.filter(r => r.status === 'completed').length,
@@ -22820,7 +21896,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const now = new Date();
       const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -22878,7 +21953,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       // Calculate hourly distribution (peak usage times)
       const hourlyDistribution = Array(24).fill(0);
@@ -22926,7 +22000,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       });
       
-      res.json({
         overview: {
           totalUsers: allUsers.length,
           activeUsersLast7Days: dailyStats.slice(-7).reduce((sum, d) => sum + d.totalActiveUsers, 0) / 7,
@@ -22955,7 +22028,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const now = new Date();
       const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -23043,9 +22115,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
-      res.json({
         b2c: {
           allTime: {
             started: b2cStarted,
@@ -23096,7 +22166,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const now = new Date();
       const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -23211,7 +22280,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { 
         limit = '50', 
@@ -23252,7 +22320,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const [actions, resourceTypes] = await Promise.all([
         storage.getAuditLogActions(),
@@ -23276,7 +22343,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const now = new Date();
       const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -23361,7 +22427,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       // Revenue by billing type
       const revenueByBillingType = {
@@ -23404,7 +22469,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         };
       }).sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 10);
       
-      res.json({
         overview: {
           totalRevenue: b2cRevenueTotal + b2bRevenueTotal,
           b2cRevenue: b2cRevenueTotal,
@@ -23459,7 +22523,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
 
       const { startDate, endDate } = req.query;
       
@@ -23498,7 +22561,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
           i.paidAt && new Date(i.paidAt) >= filters.startDate!);
       }
 
-      res.json({
       if (filters.endDate) {
         filteredPurchases = filteredPurchases.filter((p: any) => 
           p.purchase.completedAt && new Date(p.purchase.completedAt) <= filters.endDate!);
@@ -23506,7 +22568,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
           i.paidAt && new Date(i.paidAt) <= filters.endDate!);
       }
 
-      res.json({
 
       // Calculate revenue
       const b2cRevenue = filteredPurchases.reduce((sum: number, p: any) => 
@@ -23571,7 +22632,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         .sort((a, b) => a.month.localeCompare(b.month))
         .slice(-12);
 
-      res.json({
         overview: {
           totalRevenue,
           b2cRevenue,
@@ -23620,7 +22680,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       // Get all users and assess their countries from purchases/sessions
       const allUsers = await db.select().from(users);
@@ -23662,7 +22721,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
 
-      res.json({
       
       // Count users (default to UK for unknown)
       const ukKey = 'United Kingdom|GB';
@@ -23706,7 +22764,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         };
       }).filter(r => r.userCount > 0 || r.assessmentCount > 0);
       
-      res.json({
         usersByCountry,
         assessmentsByCountry,
         revenueByCountry,
@@ -23731,7 +22788,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const now = new Date();
       const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -23779,7 +22835,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       // Generate response time history (last 24 hours)
       const responseTimeHistory = [];
@@ -23792,7 +22847,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       // Get latest critical errors as alerts
       const latestCriticalErrors = await db.select()
@@ -23812,7 +22866,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         timestamp: e.createdAt?.toISOString() || '',
       }));
       
-      res.json({
         uptime: {
           current: Math.min(uptime30d, 99.99),
           target: 99.9,
@@ -23858,7 +22911,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const setting = await storage.getSystemSetting(SYSTEM_SETTING_KEYS.ANNOUNCEMENT_BANNER);
       res.json(setting?.value || { enabled: false, message: "", type: "info", dismissible: true });
@@ -23878,7 +22930,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { enabled, message, type, dismissible, expiresAt } = req.body;
       
@@ -23917,7 +22968,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const broadcasts = await db.select().from(broadcastMessages).orderBy(desc(broadcastMessages.createdAt)).limit(100);
       res.json(broadcasts);
@@ -23937,7 +22987,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { title, content, type, targetAudience, scheduledAt } = req.body;
       
@@ -23979,7 +23028,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { id } = req.params;
       
@@ -23988,7 +23036,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(404).json({ message: "Broadcast not found" });
       }
 
-      res.json({
       
       // Update status to sending
       await db.update(broadcastMessages).set({ status: "sending" }).where(eq(broadcastMessages.id, id));
@@ -24014,7 +23061,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
           break;
       }
 
-      res.json({
       
       let successCount = 0;
       let failureCount = 0;
@@ -24034,7 +23080,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
 
-      res.json({
       
       if (broadcast.type === "notification" || broadcast.type === "both") {
         // Create in-app notifications for admins
@@ -24056,7 +23101,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
 
-      res.json({
       
       // Update broadcast status
       await db.update(broadcastMessages).set({
@@ -24095,7 +23139,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { id } = req.params;
       await db.delete(broadcastMessages).where(eq(broadcastMessages.id, id));
@@ -24128,7 +23171,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       // Get recent user activity from audit logs as proxy for active sessions
       const recentActivity = await db.select()
@@ -24158,7 +23200,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
 
-      res.json({
       
       res.json(Array.from(userActivityMap.values()));
     } catch (error) {
@@ -24177,7 +23218,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const setting = await storage.getSystemSetting(SYSTEM_SETTING_KEYS.BLOCKED_IPS);
       res.json(setting?.value || []);
@@ -24197,7 +23237,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { ips } = req.body;
       
@@ -24235,7 +23274,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -24270,7 +23308,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
           gte(errorLogs.createdAt, oneDayAgo)
         ));
       
-      res.json({
         failedLogins24h,
         criticalErrors24h: Number(criticalErrors[0]?.count || 0),
         securityEvents: securityLogs.slice(0, 20),
@@ -24294,7 +23331,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { startDate, endDate } = req.query;
       
@@ -24325,7 +23361,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { status, startDate, endDate, limit, offset } = req.query;
       const transactions = await storage.getAllPurchasesWithDetails({
@@ -24374,7 +23409,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       // Fetch promo codes from Stripe
       const promoCodes = await stripe.promotionCodes.list({ 
@@ -24414,7 +23448,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { code, percentOff, amountOff, duration, maxRedemptions, expiresAt } = req.body;
       
@@ -24423,21 +23456,18 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(400).json({ message: "A valid promo code is required" });
       }
 
-      res.json({
       
       const sanitisedCode = code.toUpperCase().replace(/[^A-Z0-9]/g, '');
       if (sanitisedCode.length < 3 || sanitisedCode.length > 20) {
         return res.status(400).json({ message: "Promo code must be 3-20 alphanumeric characters" });
       }
 
-      res.json({
       
       // Validate discount amount
       if (!percentOff && !amountOff) {
         return res.status(400).json({ message: "Either percentOff or amountOff is required" });
       }
 
-      res.json({
       
       // Validate percentOff range
       if (percentOff !== undefined) {
@@ -24447,7 +23477,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
 
-      res.json({
       
       // Validate amountOff (must be positive)
       if (amountOff !== undefined) {
@@ -24457,7 +23486,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
 
-      res.json({
       
       // Validate maxRedemptions
       if (maxRedemptions !== undefined) {
@@ -24467,7 +23495,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
 
-      res.json({
       
       // Create coupon first
       const couponParams: Stripe.CouponCreateParams = {
@@ -24482,7 +23509,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         couponParams.currency = 'gbp';
       }
 
-      res.json({
       
       const coupon = await stripe.coupons.create(couponParams);
       
@@ -24496,7 +23522,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         promoCodeParams.max_redemptions = parseInt(String(maxRedemptions), 10);
       }
 
-      res.json({
       if (expiresAt) {
         const expiresDate = new Date(expiresAt);
         if (!isNaN(expiresDate.getTime()) && expiresDate > new Date()) {
@@ -24504,11 +23529,9 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
 
-      res.json({
       
       const promoCode = await stripe.promotionCodes.create(promoCodeParams);
       
-      res.json({
         id: promoCode.id,
         code: promoCode.code,
         active: promoCode.active,
@@ -24528,7 +23551,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
 
-      res.json({
       res.status(500).json({ message: "Failed to create promo code. Please try again." });
     }
   });
@@ -24543,7 +23565,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { active } = req.body;
       
@@ -24551,7 +23572,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         active: active ?? false,
       });
       
-      res.json({
         id: promoCode.id,
         code: promoCode.code,
         active: promoCode.active,
@@ -24572,7 +23592,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { purchaseId, amount, reason } = req.body;
       
@@ -24580,33 +23599,28 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(400).json({ message: "Valid purchase ID is required" });
       }
 
-      res.json({
       
       const purchase = await storage.getPurchase(purchaseId);
       if (!purchase) {
         return res.status(404).json({ message: "Purchase not found" });
       }
 
-      res.json({
       
       // Verify purchase state
       if (purchase.status === 'refunded') {
         return res.status(400).json({ message: "This purchase has already been refunded" });
       }
 
-      res.json({
       
       if (!purchase.resultsAccessPaid) {
         return res.status(400).json({ message: "Cannot refund an unpaid purchase" });
       }
 
-      res.json({
       
       if (!purchase.stripePaymentIntentId) {
         return res.status(400).json({ message: "No payment intent found for this purchase" });
       }
 
-      res.json({
       
       // Validate and clamp refund amount
       let refundAmountPence: number | undefined;
@@ -24619,7 +23633,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         refundAmountPence = Math.min(parsedAmount, purchase.totalAmount);
       }
 
-      res.json({
       
       // Create refund in Stripe with deterministic idempotency key
       const refundParams: Stripe.RefundCreateParams = {
@@ -24631,7 +23644,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         refundParams.amount = refundAmountPence;
       }
 
-      res.json({
       
       // Use deterministic key: purchaseId + amount (or 'full' for full refund)
       const amountKey = refundAmountPence ? refundAmountPence.toString() : 'full';
@@ -24649,9 +23661,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
-      res.json({
         refundId: refund.id,
         amount: refund.amount,
         status: refund.status,
@@ -24680,7 +23690,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { status } = req.query;
       const requests = await storage.getAllBillingChangeRequests(status as string | undefined);
@@ -24714,7 +23723,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { id } = req.params;
       const { action, reviewNotes } = req.body;
@@ -24723,20 +23731,17 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(400).json({ message: "Valid action (approve or reject) is required" });
       }
 
-      res.json({
       
       const request = await storage.getBillingChangeRequest(id);
       if (!request) {
         return res.status(404).json({ message: "Billing change request not found" });
       }
 
-      res.json({
       
       if (request.status !== 'pending') {
         return res.status(400).json({ message: "Only pending requests can be processed" });
       }
 
-      res.json({
       
       // Update the request status
       const updatedRequest = await storage.updateBillingChangeRequest(id, {
@@ -24753,7 +23758,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       res.json(updatedRequest);
     } catch (error) {
@@ -24775,7 +23779,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       let prompts = await storage.getAllGoldenSetPrompts();
       
@@ -24785,7 +23788,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         prompts = await storage.getAllGoldenSetPrompts();
       }
 
-      res.json({
       
       res.json(prompts);
     } catch (error) {
@@ -24805,7 +23807,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       const results = await storage.getLatestGoldenSetResults();
       
@@ -24814,7 +23815,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       const testedPromptIds = new Set(results.map(r => r.promptId));
       const untestedPrompts = prompts.filter(p => !testedPromptIds.has(p.id));
       
-      res.json({
         results,
         untestedPrompts,
         allPrompts: prompts,
@@ -24840,7 +23840,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       // Get all results grouped by test run (using testedAt date)
       const allResults = await db
@@ -24871,7 +23870,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
 
-      res.json({
       
       // Convert to array with summary stats
       const history = Array.from(runGroups.entries()).map(([runTime, results]) => ({
@@ -24901,7 +23899,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       console.log('[Golden Set] Manual evaluation triggered by admin');
       
@@ -24931,7 +23928,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       res.json(goldenSetProgress);
     } catch (error) {
@@ -24951,7 +23947,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       const prompts = await seedGoldenSetPrompts();
       res.json({ message: "Golden set prompts seeded", count: prompts.length });
@@ -24972,7 +23967,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       console.log('[Golden Set] Starting recalibration...');
       
@@ -24989,7 +23983,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         created.push(result);
       }
 
-      res.json({
       
       console.log(`[Golden Set] Seeded ${created.length} prompts. Starting smoothed GPT-5 calibration (5 runs per prompt)...`);
       
@@ -25146,7 +24139,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
 
-      res.json({
       
       const now = new Date();
       
@@ -25271,7 +24263,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
 
-      res.json({
       
       // Calculate forecast
       const completedMonthsActuals = monthsWithData.map(m => m.actual);
@@ -25322,7 +24313,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         MILESTONE_CONFIG.milestonePeriodMonths - monthsSinceEffective
       );
       
-      res.json({
         monthlyData,
         summary: {
           totalTarget,
@@ -25367,7 +24357,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const status = await getXeroStatus();
       res.json(status);
@@ -25385,14 +24374,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const result = await getXeroAuthUrl(req.user.id);
       if (!result) {
         return res.status(500).json({ message: "Xero not configured. Please add XERO_CLIENT_ID and XERO_CLIENT_SECRET." });
       }
 
-      res.json({
       
       res.json({ authUrl: result.url });
     } catch (error) {
@@ -25408,28 +24395,24 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.redirect("/admin?error=not_authenticated");
       }
 
-      res.json({
       
       const user = await storage.getUser(req.user.id);
       if (user?.role !== 'super_admin') {
         return res.redirect("/admin?error=forbidden");
       }
 
-      res.json({
       
       const state = req.query.state as string;
       if (!state) {
         return res.redirect("/admin?tab=accounting&xero=error&message=Missing%20OAuth%20state");
       }
 
-      res.json({
       
       const stateValidation = validateOAuthState(state);
       if (!stateValidation.valid) {
         return res.redirect("/admin?tab=accounting&xero=error&message=Invalid%20or%20expired%20OAuth%20state");
       }
 
-      res.json({
       
       const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
       const result = await handleXeroCallback(fullUrl, req.user.id);
@@ -25440,7 +24423,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         res.redirect(`/admin?tab=accounting&xero=error&message=${encodeURIComponent(result.error || 'Unknown error')}`);
       }
 
-      res.json({
     } catch (error: any) {
       console.error("Xero callback error:", error);
       res.redirect(`/admin?tab=accounting&xero=error&message=${encodeURIComponent(error.message || 'Unknown error')}`);
@@ -25455,7 +24437,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const success = await disconnectXero();
       if (success) {
@@ -25464,7 +24445,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         res.status(500).json({ message: "Failed to disconnect Xero" });
       }
 
-      res.json({
     } catch (error) {
       console.error("Error disconnecting Xero:", error);
       res.status(500).json({ message: "Failed to disconnect Xero" });
@@ -25479,7 +24459,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const stats = await getExpenseStats();
       res.json(stats);
@@ -25497,7 +24476,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { category, status, syncStatus, limit, offset } = req.query;
       const expenses = await getExpenses({
@@ -25523,7 +24501,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { description, amount, currency, category, vendor, invoiceNumber, invoiceDate, dueDate, paidDate, status, receiptUrl, receiptFilename, notes } = req.body;
       
@@ -25531,7 +24508,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(400).json({ message: "Description and amount are required" });
       }
 
-      res.json({
       
       const expense = await createExpense({
         description,
@@ -25565,14 +24541,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const expense = await getExpense(req.params.id);
       if (!expense) {
         return res.status(404).json({ message: "Expense not found" });
       }
 
-      res.json({
       
       res.json(expense);
     } catch (error) {
@@ -25589,7 +24563,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const updates: any = { ...req.body };
       
@@ -25598,7 +24571,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         updates.amount = Math.round(updates.amount * 100);
       }
 
-      res.json({
       
       // Convert date strings to Date objects
       if (updates.invoiceDate) updates.invoiceDate = new Date(updates.invoiceDate);
@@ -25611,7 +24583,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(404).json({ message: "Expense not found" });
       }
 
-      res.json({
       
       res.json(expense);
     } catch (error) {
@@ -25628,7 +24599,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       await deleteExpense(req.params.id);
       res.json({ message: "Expense deleted" });
@@ -25646,7 +24616,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const result = await syncExpenseToXero(req.params.id);
       if (result.success) {
@@ -25655,7 +24624,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         res.status(500).json({ message: result.error || "Failed to sync expense" });
       }
 
-      res.json({
     } catch (error) {
       console.error("Error syncing expense to Xero:", error);
       res.status(500).json({ message: "Failed to sync expense to Xero" });
@@ -25670,7 +24638,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const stats = await getRevenueStats();
       res.json(stats);
@@ -25688,7 +24655,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const unsynced = await getUnsyncedRevenue();
       res.json(unsynced);
@@ -25706,7 +24672,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { status, limit } = req.query;
       const logs = await getRevenueSyncLogs({
@@ -25729,7 +24694,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const { purchaseId, partnerInvoiceId } = req.body;
       
@@ -25737,7 +24701,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(400).json({ message: "Either purchaseId or partnerInvoiceId is required" });
       }
 
-      res.json({
       
       const result = await syncRevenueToXero(purchaseId, partnerInvoiceId);
       if (result.success) {
@@ -25746,7 +24709,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         res.status(500).json({ message: result.error || "Failed to sync revenue" });
       }
 
-      res.json({
     } catch (error) {
       console.error("Error syncing revenue to Xero:", error);
       res.status(500).json({ message: "Failed to sync revenue to Xero" });
@@ -25761,7 +24723,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
 
-      res.json({
       
       const unsynced = await getUnsyncedRevenue();
       const results = {
@@ -25781,7 +24742,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
 
-      res.json({
       
       res.json(results);
     } catch (error) {
@@ -25801,7 +24761,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Super admin access required" });
       }
 
-      res.json({
       
       const timeRange = req.query.timeRange || '1h';
       
@@ -25828,7 +24787,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       `);
       
       const row = stats.rows[0] as any;
-      res.json({
         total: parseInt(row?.total || '0'),
         info: parseInt(row?.info || '0'),
         warn: parseInt(row?.warn || '0'),
@@ -25848,7 +24806,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Super admin access required" });
       }
 
-      res.json({
       
       const { search, level, source, timeRange = '1h', limit = '500' } = req.query;
       
@@ -25874,19 +24831,16 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         query = sql`${query} AND level = ${level}`;
       }
 
-      res.json({
       
       if (source && source !== 'all') {
         query = sql`${query} AND source = ${source}`;
       }
 
-      res.json({
       
       if (search) {
         query = sql`${query} AND message ILIKE ${'%' + search + '%'}`;
       }
 
-      res.json({
       
       query = sql`${query} ORDER BY timestamp DESC LIMIT ${maxLimit}`;
       
@@ -25898,22 +24852,18 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         countQuery = sql`${countQuery} AND level = ${level}`;
       }
 
-      res.json({
       if (source && source !== 'all') {
         countQuery = sql`${countQuery} AND source = ${source}`;
       }
 
-      res.json({
       if (search) {
         countQuery = sql`${countQuery} AND message ILIKE ${'%' + search + '%'}`;
       }
 
-      res.json({
       
       const countResult = await db.execute(countQuery);
       const total = parseInt((countResult.rows[0] as any)?.total || '0');
       
-      res.json({
         logs: result.rows,
         total,
       });
@@ -26171,7 +25121,6 @@ async function calculatePromptArchitectureScores(
         completedCount++;
       }
 
-      res.json({
       
       // Update progress after each batch completes
       updateEvaluationProgress(resultId, completedCount, totalPrompts);
@@ -26235,7 +25184,6 @@ async function calculatePromptArchitectureScores(
         });
       }
 
-      res.json({
       
       // Update assessment result with scores and mark as completed
       await tx.update(assessmentResults)
@@ -26443,7 +25391,6 @@ async function runGoldenSetEvaluation(isCalibrating = false): Promise<{
         evaluations.push(evaluation);
       }
 
-      res.json({
       
       // Calculate averaged scores across all runs
       const averagedEvaluation = {
@@ -26660,7 +25607,6 @@ async function runScheduledBillingCheck() {
         }
       }
 
-      res.json({
     }
     
     console.log(`[Billing Scheduler] Completed billing check for day ${dayOfMonth}`);
@@ -26821,7 +25767,6 @@ async function checkOverdueInvoices() {
         }
       }
 
-      res.json({
     }
     
     console.log(`[Billing Scheduler] Completed overdue invoice check (${overdueItems.length} overdue invoices processed)`);
@@ -27150,7 +26095,6 @@ async function processAutoBillPartner(partner: PartnerAccount) {
         // Don't fail the billing if receipt fails
       }
 
-      res.json({
     } else {
       console.error(`[Billing Scheduler] Partner ${partner.id}: Payment failed - status: ${paymentIntent.status}`);
       await handleBillingFailure(partner, usageRecord.id, amountPence, 'processing_error');
