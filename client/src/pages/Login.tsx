@@ -231,10 +231,10 @@ export default function Login() {
             </form>
             
             <div className="mt-4 pt-4 border-t border-cyan-400/20 text-center">
-              <p className="text-sm text-blue-100/60 mb-2" data-testid="text-no-account">Don't have an account?</p>
+              <p className="text-sm text-blue-200 mb-2" data-testid="text-no-account">Don't have an account?</p>
               <Button
                 variant="outline"
-                className="w-full"
+                className="w-full border-blue-400 text-blue-100"
                 onClick={() => setLocation("/onboarding")}
                 data-testid="button-create-account"
               >
