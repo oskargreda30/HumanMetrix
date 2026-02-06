@@ -237,6 +237,18 @@ export default function Login() {
                 {isLoading ? "Logging in..." : "Sign In"}
               </Button>
             </form>
+            
+            <div className="mt-4 pt-4 border-t border-cyan-400/20 text-center">
+              <p className="text-sm text-blue-100/60 mb-2" data-testid="text-no-account">Don't have an account?</p>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setLocation("/onboarding")}
+                data-testid="button-create-account"
+              >
+                Create Account
+              </Button>
+            </div>
           </Card>
         </div>
       </main>

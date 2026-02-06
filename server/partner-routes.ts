@@ -3328,6 +3328,26 @@ export function registerPartnerRoutes(app: Express) {
       const existingUser = await storage.getUserByEmail(email || '');
       const hasExistingAccount = !!existingUser;
       
+      // Auto-login existing user so they can access dashboard directly after payment
+      if (hasExistingAccount && existingUser) {
+        try {
+          (req as any).session.userId = existingUser.id;
+          await new Promise<void>((resolve, reject) => {
+            (req as any).session.save((err: any) => {
+              if (err) {
+                console.error('[Unlock Results] Session save error:', err);
+                resolve();
+              } else {
+                console.log(`[Unlock Results] Auto-logged in existing user ${existingUser.id}`);
+                resolve();
+              }
+            });
+          });
+        } catch (loginErr: any) {
+          console.error('[Unlock Results] Auto-login failed:', loginErr.message);
+        }
+      }
+      
       // Create or update partner_result_purchases record if user exists
       if (existingUser) {
         // Check for existing purchase record
@@ -4084,6 +4104,22 @@ export function registerPartnerRoutes(app: Express) {
         const existingUser = await storage.getUserByEmail(session.externalEmail);
         const hasExistingAccount = !!existingUser;
         
+        // Auto-login existing user so they can access dashboard directly
+        if (hasExistingAccount && existingUser) {
+          (req as any).session.userId = existingUser.id;
+          await new Promise<void>((resolve, reject) => {
+            (req as any).session.save((err: any) => {
+              if (err) {
+                console.error('[B2B Payment] Session save error (already processed):', err);
+                resolve();
+              } else {
+                console.log(`[B2B Payment] Auto-logged in existing user ${existingUser.id} (already processed)`);
+                resolve();
+              }
+            });
+          });
+        }
+        
         console.log(`[B2B Payment] Already processed, returning: email=${session.externalEmail}, sessionId=${b2bSessionId}`);
         
         return res.json({ 
@@ -4356,6 +4392,26 @@ export function registerPartnerRoutes(app: Express) {
       // Check if user has an existing account
       const existingUser = await storage.getUserByEmail(session.externalEmail);
       const hasExistingAccount = !!existingUser;
+      
+      // Auto-login existing user so they can access dashboard directly after payment
+      if (hasExistingAccount && existingUser) {
+        try {
+          (req as any).session.userId = existingUser.id;
+          await new Promise<void>((resolve, reject) => {
+            (req as any).session.save((err: any) => {
+              if (err) {
+                console.error('[B2B Payment] Session save error:', err);
+                resolve();
+              } else {
+                console.log(`[B2B Payment] Auto-logged in existing user ${existingUser.id}`);
+                resolve();
+              }
+            });
+          });
+        } catch (loginErr: any) {
+          console.error('[B2B Payment] Auto-login failed:', loginErr.message);
+        }
+      }
       
       console.log(`[B2B Payment] Returning response: email=${session.externalEmail}, sessionId=${b2bSessionId}, hasExistingAccount=${hasExistingAccount}`);
       
@@ -5286,6 +5342,26 @@ export function registerPartnerRoutes(app: Express) {
       // Check if user has an existing account
       const existingUser = await storage.getUserByEmail(email);
       const hasExistingAccount = !!existingUser;
+      
+      // Auto-login existing user so they can access dashboard directly after bundle payment
+      if (hasExistingAccount && existingUser) {
+        try {
+          (req as any).session.userId = existingUser.id;
+          await new Promise<void>((resolve, reject) => {
+            (req as any).session.save((err: any) => {
+              if (err) {
+                console.error('[Bundle Payment] Session save error:', err);
+                resolve();
+              } else {
+                console.log(`[Bundle Payment] Auto-logged in existing user ${existingUser.id}`);
+                resolve();
+              }
+            });
+          });
+        } catch (loginErr: any) {
+          console.error('[Bundle Payment] Auto-login failed:', loginErr.message);
+        }
+      }
       
       // Get first session for redirect
       const firstSession = sessionIds[0];
