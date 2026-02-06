@@ -5,6 +5,7 @@ import { registerRoutes, startGoldenSetScheduler, startBillingScheduler, startDa
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeEmailSystem } from "./email";
 import { initializeJobQueues, shutdownJobQueues } from "./queues";
+import { syncCanonicalRoles } from "./scripts/syncRoles";
 import { apiRateLimiter, stripeRateLimiter } from "./middleware/rateLimit";
 import { requestDeduplication } from "./middleware/requestDedup";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
@@ -240,6 +241,9 @@ app.use((req, res, next) => {
     
     // Start database size monitoring scheduler
     startDatabaseSizeScheduler();
+    
+    // Sync canonical job roles (ensures dev and prod have identical role data)
+    syncCanonicalRoles();
     
     // Preload heavy modules in production
     preloadModules();

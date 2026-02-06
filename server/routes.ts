@@ -7884,7 +7884,7 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
       };
       
       // Helper to find criticality with flexible name matching
-      const findCriticality = (skillName: string): string => {
+      const findCriticality = (skillName: string): 'critical' | 'standard' => {
         // Direct match first
         if (skillCriticality[skillName]) return skillCriticality[skillName];
         
@@ -7899,7 +7899,7 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
             return value as string;
           }
         }
-        return 'important';
+        return 'standard';
       };
       
       // Track data coverage - we do NOT penalize for missing assessments
@@ -8000,7 +8000,7 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
               requiredScore,
               gap,
               alignment,
-              criticality: findCriticality(skillName) !== 'important' ? findCriticality(skillName) : findCriticality(fullSkillName),
+              criticality: findCriticality(fullSkillName),
               dataAvailable: true
             });
           } else {
@@ -8011,7 +8011,7 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
               requiredScore,
               gap: null,
               alignment: 'not_assessed',
-              criticality: findCriticality(skillName) !== 'important' ? findCriticality(skillName) : findCriticality(fullSkillName),
+              criticality: findCriticality(fullSkillName),
               dataAvailable: false
             });
           }
@@ -8038,7 +8038,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
       
       const getSkillWeight = (criticality: string): number => {
         if (criticality === 'critical') return 2.0;
-        if (criticality === 'important') return 1.5;
         return 1.0;
       };
       
@@ -8054,7 +8053,7 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         
         // Only include skills WITH data in the weighted calculation
         if (skill.dataAvailable) {
-          const weight = getSkillWeight(skill.criticality || 'important');
+          const weight = getSkillWeight(skill.criticality || 'standard');
           if (isCritical) assessedCriticalSkills++;
           
           // Calculate match percentage (capped at 100%)
@@ -8355,7 +8354,7 @@ Format your response as JSON with this structure:
       // Helper: Get criticality weight (critical=3, important=2, nice-to-have=1)
       const getCriticalityWeight = (criticality: string | undefined): number => {
         if (criticality === 'critical') return 3;
-        if (criticality === 'important') return 2;
+        if (criticality === 'standard') return 1;
         return 1; // nice-to-have or undefined
       };
       
@@ -9560,7 +9559,7 @@ Return valid JSON with only the requested fields.`;
 
       const skillCriticality = role.requiredSkillScores.skillCriticality || {};
       
-      const findCriticality = (skillName: string): 'critical' | 'important' | 'nice-to-have' => {
+      const findCriticality = (skillName: string): 'critical' | 'standard' => {
         if (skillCriticality[skillName]) return skillCriticality[skillName] as any;
         const normalizedInput = normalizeSkillName(skillName);
         for (const [key, value] of Object.entries(skillCriticality)) {
@@ -9569,12 +9568,11 @@ Return valid JSON with only the requested fields.`;
             return value as any;
           }
         }
-        return 'important';
+        return 'standard';
       };
 
       const getSkillWeight = (criticality: string): number => {
         if (criticality === 'critical') return 2.0;
-        if (criticality === 'important') return 1.5;
         return 1.0;
       };
 
@@ -9701,7 +9699,7 @@ Return valid JSON with only the requested fields.`;
                 requiredScore,
                 gap,
                 alignment,
-                criticality: findCriticality(skillName) !== 'important' ? findCriticality(skillName) : findCriticality(fullSkillName),
+                criticality: findCriticality(fullSkillName),
                 category: 'ai_readiness' as const,
                 dataAvailable: true
               });
@@ -9713,7 +9711,7 @@ Return valid JSON with only the requested fields.`;
                 requiredScore,
                 gap: null,
                 alignment: 'not_assessed',
-                criticality: findCriticality(skillName) !== 'important' ? findCriticality(skillName) : findCriticality(fullSkillName),
+                criticality: findCriticality(fullSkillName),
                 category: 'ai_readiness' as const,
                 dataAvailable: false
               });
@@ -9757,7 +9755,7 @@ Return valid JSON with only the requested fields.`;
           
           // Only include skills WITH data in the weighted calculation
           if (skill.dataAvailable) {
-            const weight = getSkillWeight(skill.criticality || 'important');
+            const weight = getSkillWeight(skill.criticality || 'standard');
             if (isCritical) assessedCriticalSkills++;
             
             const matchPercent = skill.score >= skill.requiredScore
@@ -9957,16 +9955,16 @@ Return valid JSON with only the requested fields.`;
           if (runnerUpSkill && runnerUpSkill.dataAvailable) {
             const diff = skill.score - runnerUpSkill.score;
             if (diff > 5) {
-              topAdvantages.push({ skill: skill.skillName, advantage: diff, criticality: skill.criticality || 'important' });
+              topAdvantages.push({ skill: skill.skillName, advantage: diff, criticality: skill.criticality || 'standard' });
             } else if (diff < -5) {
-              runnerUpAdvantages.push({ skill: skill.skillName, advantage: Math.abs(diff), criticality: skill.criticality || 'important' });
+              runnerUpAdvantages.push({ skill: skill.skillName, advantage: Math.abs(diff), criticality: skill.criticality || 'standard' });
             }
           }
         });
       }
       
       // Sort by criticality first (critical > important > nice-to-have), then by advantage
-      const criticalityOrder = { 'critical': 0, 'important': 1, 'nice-to-have': 2 };
+      const criticalityOrder: Record<string, number> = { 'critical': 0, 'standard': 1 };
       topAdvantages.sort((a, b) => {
         const critDiff = (criticalityOrder[a.criticality as keyof typeof criticalityOrder] || 1) - 
                          (criticalityOrder[b.criticality as keyof typeof criticalityOrder] || 1);
@@ -10037,7 +10035,7 @@ Return valid JSON with only the requested fields.`;
             .map(e => {
               const skill = e.skillScores.find((s: any) => s.skillName === skillName);
               if (!skill || !skill.dataAvailable) return null;
-              return { name: e.userName, score: skill.score, criticality: skill.criticality || 'important' };
+              return { name: e.userName, score: skill.score, criticality: skill.criticality || 'standard' };
             })
             .filter((s): s is { name: string; score: number; criticality: string } => s !== null)
             .sort((a, b) => b.score - a.score);
@@ -10137,7 +10135,7 @@ Return valid JSON with only the requested fields.`;
             .map(e => {
               const skill = e.skillScores.find((s: any) => s.skillName === skillName);
               if (!skill || !skill.dataAvailable) return null;
-              return { name: e.userName, score: skill.score, criticality: skill.criticality || 'important' };
+              return { name: e.userName, score: skill.score, criticality: skill.criticality || 'standard' };
             })
             .filter((s): s is { name: string; score: number; criticality: string } => s !== null)
             .sort((a, b) => b.score - a.score);
@@ -15363,7 +15361,7 @@ Use the candidates' actual names. Be specific and actionable.`;
               requiredScore: adjustedRequired,
               gap,
               alignment: gap === null ? 'not_assessed' : gap >= 10 ? 'excellent' : gap >= 0 ? 'good' : gap >= -15 ? 'fair' : 'poor',
-              criticality: skillCriticality[skillName] || 'important',
+              criticality: skillCriticality[skillName] || 'standard',
               dataAvailable: candidateScore !== null,
             };
           })
@@ -15381,7 +15379,7 @@ Use the candidates' actual names. Be specific and actionable.`;
               requiredScore: adjustedRequired,
               gap,
               alignment: gap === null ? 'not_assessed' : gap >= 10 ? 'excellent' : gap >= 0 ? 'good' : gap >= -15 ? 'fair' : 'poor',
-              criticality: skillCriticality[skillName] !== 'important' ? skillCriticality[skillName] : (skillCriticality[fullSkillName] || 'important'),
+              criticality: skillCriticality[fullSkillName] || skillCriticality[skillName] || 'standard',
               dataAvailable: candidateScore !== null,
             };
           })
@@ -16319,7 +16317,7 @@ Return valid JSON with only the requested fields.`;
       }
       const skillCriticality = role.requiredSkillScores.skillCriticality || {};
       
-      const findCriticality = (skillName: string): 'critical' | 'important' | 'nice-to-have' => {
+      const findCriticality = (skillName: string): 'critical' | 'standard' => {
         if (skillCriticality[skillName]) return skillCriticality[skillName] as any;
         const normalizedInput = normalizeSkillName(skillName);
         for (const [key, value] of Object.entries(skillCriticality)) {
@@ -16328,12 +16326,11 @@ Return valid JSON with only the requested fields.`;
             return value as any;
           }
         }
-        return 'important';
+        return 'standard';
       };
 
       const getSkillWeight = (criticality: string): number => {
         if (criticality === 'critical') return 2.0;
-        if (criticality === 'important') return 1.5;
         return 1.0;
       };
 
@@ -16685,15 +16682,15 @@ Return valid JSON with only the requested fields.`;
           if (runnerUpSkill && runnerUpSkill.dataAvailable) {
             const diff = skill.score - runnerUpSkill.score;
             if (diff > 5) {
-              topAdvantages.push({ skill: skill.skillName, advantage: diff, criticality: skill.criticality || 'important' });
+              topAdvantages.push({ skill: skill.skillName, advantage: diff, criticality: skill.criticality || 'standard' });
             } else if (diff < -5) {
-              runnerUpAdvantages.push({ skill: skill.skillName, advantage: Math.abs(diff), criticality: skill.criticality || 'important' });
+              runnerUpAdvantages.push({ skill: skill.skillName, advantage: Math.abs(diff), criticality: skill.criticality || 'standard' });
             }
           }
         });
       }
       
-      const criticalityOrder = { 'critical': 0, 'important': 1, 'nice-to-have': 2 };
+      const criticalityOrder: Record<string, number> = { 'critical': 0, 'standard': 1 };
       topAdvantages.sort((a, b) => {
         const critDiff = (criticalityOrder[a.criticality as keyof typeof criticalityOrder] || 1) - 
                          (criticalityOrder[b.criticality as keyof typeof criticalityOrder] || 1);
