@@ -2413,7 +2413,7 @@ export default function PartnerDashboard() {
                     <p className="text-sm text-muted-foreground">Send assessment invitations</p>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("billing"); scrollToContent(); }} data-testid="card-quick-billing">
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("billing"); setBillingExpandedSection("purchase"); scrollToContent(); }} data-testid="card-quick-billing">
                   <CardContent className="pt-6 text-center">
                     <CreditCard className="h-8 w-8 mx-auto mb-2 text-primary" />
                     <h3 className="font-semibold">Purchase Credits</h3>
@@ -2497,7 +2497,7 @@ export default function PartnerDashboard() {
                       <Button 
                         variant="ghost" 
                         className="h-auto p-0 text-[10px] md:text-xs text-primary underline hover:underline" 
-                        onClick={() => { setActiveTab("billing"); scrollToContent(); }}
+                        onClick={() => { setActiveTab("billing"); setBillingExpandedSection("purchase"); scrollToContent(); }}
                         data-testid="link-purchase-more"
                       >
                         Purchase more
