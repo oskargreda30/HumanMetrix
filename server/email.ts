@@ -2211,28 +2211,23 @@ export async function sendPartnerWelcomeEmail(details: PartnerWelcomeDetails): P
       <html>
         <head>
           <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f3f4f6; }
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #1e293b; margin: 0; padding: 0; background-color: #f1f5f9; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
             .header { background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%); color: white; padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0; }
             .header h1 { margin: 0; font-size: 28px; font-weight: 700; }
             .header p { margin: 10px 0 0 0; opacity: 0.9; font-size: 16px; }
-            .content { background: #ffffff; padding: 35px; border: 1px solid #e5e7eb; border-top: none; }
-            .welcome-badge { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #a7f3d0; border-radius: 8px; padding: 15px 20px; margin-bottom: 25px; text-align: center; }
-            .welcome-badge span { color: #059669; font-weight: 600; font-size: 14px; }
-            .credentials-box { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 20px; margin: 25px 0; }
-            .credentials-box h3 { margin: 0 0 15px 0; color: #92400e; font-size: 16px; }
-            .credential-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #fcd34d; }
+            .content { background: #ffffff; padding: 35px; border: 1px solid #e2e8f0; border-top: none; }
+            .section-box { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 20px; margin: 20px 0; }
+            .section-box h3 { margin: 0 0 14px 0; color: #0c4a6e; font-size: 15px; font-weight: 600; }
+            .credential-row { padding: 8px 0; border-bottom: 1px solid #e0f2fe; }
             .credential-row:last-child { border-bottom: none; }
-            .credential-label { color: #92400e; font-weight: 500; }
-            .credential-value { font-family: monospace; background: #fffbeb; padding: 2px 8px; border-radius: 4px; color: #78350f; }
-            .warning { background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 12px 15px; margin: 15px 0; color: #991b1b; font-size: 13px; }
+            .credential-label { color: #0c4a6e; font-weight: 500; font-size: 14px; }
+            .credential-value { font-family: 'SF Mono', 'Fira Code', monospace; background: #e0f2fe; padding: 2px 8px; border-radius: 4px; color: #0369a1; font-size: 13px; }
+            .notice { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; padding: 12px 15px; margin: 15px 0; color: #0c4a6e; font-size: 13px; }
             .button { display: inline-block; background: #0891b2; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
-            .button:hover { background: #0e7490; }
-            .info-section { background: #f0f9ff; border-radius: 8px; padding: 20px; margin: 25px 0; }
-            .info-section h3 { margin: 0 0 12px 0; color: #0369a1; font-size: 16px; }
-            .info-section ul { margin: 0; padding-left: 20px; }
-            .info-section li { margin: 8px 0; color: #0c4a6e; }
-            .footer { text-align: center; padding: 25px; color: #6b7280; font-size: 14px; background: #f9fafb; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none; }
+            .section-box ul { margin: 0; padding-left: 20px; }
+            .section-box li { margin: 8px 0; color: #334155; font-size: 14px; }
+            .footer { text-align: center; padding: 25px; color: #64748b; font-size: 13px; background: #f8fafc; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none; }
           </style>
         </head>
         <body>
@@ -2242,14 +2237,10 @@ export async function sendPartnerWelcomeEmail(details: PartnerWelcomeDetails): P
               <p>Partner Programme</p>
             </div>
             <div class="content">
-              <div class="welcome-badge">
-                <span>Welcome to the Partner Programme</span>
-              </div>
+              <h2 style="margin-top: 0; color: #0c4a6e;">Hello ${details.partnerName},</h2>
+              <p style="color: #334155;">Your B2B partner account for <strong>${details.companyName}</strong> has been created. You now have admin access to manage assessments for your organisation.</p>
               
-              <h2 style="margin-top: 0;">Hello ${details.partnerName},</h2>
-              <p>Your B2B partner account for <strong>${details.companyName}</strong> has been created. You now have admin access to manage assessments for your organisation.</p>
-              
-              <div class="credentials-box">
+              <div class="section-box">
                 <h3>Your Login Credentials</h3>
                 <div class="credential-row">
                   <span class="credential-label">Email:</span>
@@ -2261,7 +2252,7 @@ export async function sendPartnerWelcomeEmail(details: PartnerWelcomeDetails): P
                 </div>
               </div>
               
-              <div class="warning">
+              <div class="notice">
                 <strong>Important:</strong> Please change your password after your first login for security purposes.
               </div>
               
@@ -2269,7 +2260,7 @@ export async function sendPartnerWelcomeEmail(details: PartnerWelcomeDetails): P
                 <a href="${loginUrl}" class="button" style="color: white !important;">Log In to Your Account</a>
               </div>
               
-              <div class="info-section">
+              <div class="section-box">
                 <h3>Your Account Details</h3>
                 <ul>
                   <li><strong>Billing Type:</strong> ${billingTypeDescriptions[details.billingType] || details.billingType}</li>
@@ -2278,7 +2269,7 @@ export async function sendPartnerWelcomeEmail(details: PartnerWelcomeDetails): P
                 </ul>
               </div>
               
-              <div class="info-section">
+              <div class="section-box">
                 <h3>Getting Started</h3>
                 <ul>
                   <li>Log in with your credentials above</li>
@@ -2288,12 +2279,12 @@ export async function sendPartnerWelcomeEmail(details: PartnerWelcomeDetails): P
                 </ul>
               </div>
               
-              <p style="margin-top: 25px;">If you have any questions or need assistance getting started, please don't hesitate to contact us at <a href="mailto:hello@humanmetrix.co.uk" style="color: #0891b2;">hello@humanmetrix.co.uk</a>.</p>
+              <p style="margin-top: 25px; color: #334155;">If you have any questions or need assistance getting started, please don't hesitate to contact us at <a href="mailto:hello@humanmetrix.co.uk" style="color: #0891b2;">hello@humanmetrix.co.uk</a>.</p>
             </div>
             <div class="footer">
-              <p>© ${new Date().getFullYear()} HumanMetrix Ltd. All rights reserved.</p>
+              <p>&copy; ${new Date().getFullYear()} HumanMetrix Ltd. All rights reserved.</p>
               <p style="margin-top: 10px;">
-                <a href="${loginUrl}" style="color: #0891b2; text-decoration: none;">Log In</a> · 
+                <a href="${loginUrl}" style="color: #0891b2; text-decoration: none;">Log In</a> &middot; 
                 <a href="${developerDocsUrl}" style="color: #0891b2; text-decoration: none;">Developer Docs</a>
               </p>
             </div>
