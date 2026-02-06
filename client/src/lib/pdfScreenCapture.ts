@@ -2,12 +2,6 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { savePdfMobile } from './pdfStyles';
 
-interface ScreenCapturePDFOptions {
-  reportElementId: string;
-  filename?: string;
-  onProgress?: (message: string) => void;
-}
-
 export interface UnifiedPDFOptions {
   elementId: string;
   filename?: string;
@@ -26,8 +20,6 @@ export async function exportResultsPDF(options: UnifiedPDFOptions): Promise<Unif
   const { 
     elementId, 
     filename = 'assessment-results.pdf', 
-    candidateName,
-    assessmentType,
     onProgress,
     returnBlob = false 
   } = options;
@@ -44,86 +36,37 @@ export async function exportResultsPDF(options: UnifiedPDFOptions): Promise<Unif
 
   onProgress?.('Capturing results...');
 
-  const sections = reportElement.querySelectorAll('[data-pdf-section]');
-  const sectionImages: { image: string; width: number; height: number }[] = [];
-
-  if (sections.length > 0) {
-    for (const section of Array.from(sections)) {
-      try {
-        const canvas = await html2canvas(section as HTMLElement, {
-          backgroundColor: '#ffffff',
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          allowTaint: true,
-          removeContainer: true,
-        });
-
-        sectionImages.push({
-          image: canvas.toDataURL('image/png'),
-          width: canvas.width,
-          height: canvas.height,
-        });
-      } catch (err) {
-        console.error('Error capturing section:', err);
-      }
-    }
-  }
-
-  if (sectionImages.length === 0) {
-    try {
-      const canvas = await html2canvas(reportElement, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        allowTaint: true,
-        removeContainer: true,
-      });
-
-      sectionImages.push({
-        image: canvas.toDataURL('image/png'),
-        width: canvas.width,
-        height: canvas.height,
-      });
-    } catch (err) {
-      console.error('Error capturing full results:', err);
-      throw new Error('Failed to capture results');
-    }
-  }
+  const canvas = await html2canvas(reportElement, {
+    scale: 2,
+    useCORS: true,
+    logging: false,
+    backgroundColor: '#ffffff',
+    allowTaint: true,
+    removeContainer: true,
+  });
 
   onProgress?.('Generating PDF...');
 
-  const pdf = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: 'a4',
-  });
+  const imgData = canvas.toDataURL('image/png');
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = pdf.internal.pageSize.getHeight();
+  const imgWidth = canvas.width;
+  const imgHeight = canvas.height;
+  const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+  const imgX = (pdfWidth - imgWidth * ratio) / 2;
 
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
-  const margin = 10;
-  const contentWidth = pageWidth - (margin * 2);
+  let heightLeft = imgHeight * ratio;
+  let position = 0;
 
-  for (let i = 0; i < sectionImages.length; i++) {
-    if (i > 0) {
-      pdf.addPage();
-    }
+  pdf.addImage(imgData, 'PNG', imgX, position, imgWidth * ratio, imgHeight * ratio);
+  heightLeft -= pdfHeight;
 
-    const section = sectionImages[i];
-    const aspectRatio = section.height / section.width;
-    const availableHeight = pageHeight - (margin * 2);
-    
-    let imageWidth = contentWidth;
-    let imageHeight = imageWidth * aspectRatio;
-
-    if (imageHeight > availableHeight) {
-      imageHeight = availableHeight;
-      imageWidth = imageHeight / aspectRatio;
-    }
-
-    const xOffset = margin + (contentWidth - imageWidth) / 2;
-    pdf.addImage(section.image, 'PNG', xOffset, margin, imageWidth, imageHeight);
+  while (heightLeft > 0) {
+    position = heightLeft - imgHeight * ratio;
+    pdf.addPage();
+    pdf.addImage(imgData, 'PNG', imgX, position, imgWidth * ratio, imgHeight * ratio);
+    heightLeft -= pdfHeight;
   }
 
   if (returnBlob) {
@@ -136,99 +79,57 @@ export async function exportResultsPDF(options: UnifiedPDFOptions): Promise<Unif
   return { saved: true };
 }
 
-export async function exportScreenCapturePDF(options: ScreenCapturePDFOptions): Promise<void> {
-  const { reportElementId, filename = 'comparison-report.pdf', onProgress } = options;
+export async function exportScreenCapturePDF(options: { reportElementId: string; filename?: string; onProgress?: (message: string) => void }): Promise<void> {
+  await exportResultsPDF({
+    elementId: options.reportElementId,
+    filename: options.filename || 'comparison-report.pdf',
+    onProgress: options.onProgress,
+  });
+}
 
-  onProgress?.('Preparing report view...');
-
-  const reportElement = document.getElementById(reportElementId);
-  if (!reportElement) {
-    throw new Error('Report element not found');
-  }
+export async function exportElementAsPDF(
+  element: HTMLElement,
+  filename: string = 'report.pdf',
+  onProgress?: (message: string) => void
+): Promise<void> {
+  onProgress?.('Preparing report...');
 
   await document.fonts.ready;
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await new Promise(resolve => setTimeout(resolve, 300));
 
-  onProgress?.('Capturing report sections...');
+  onProgress?.('Capturing report...');
 
-  const sections = reportElement.querySelectorAll('[data-pdf-section]');
-  const sectionImages: { image: string; width: number; height: number }[] = [];
-
-  for (const section of Array.from(sections)) {
-    try {
-      const canvas = await html2canvas(section as HTMLElement, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        allowTaint: true,
-        removeContainer: true,
-      });
-
-      sectionImages.push({
-        image: canvas.toDataURL('image/png'),
-        width: canvas.width,
-        height: canvas.height,
-      });
-    } catch (err) {
-      console.error('Error capturing section:', err);
-    }
-  }
-
-  if (sectionImages.length === 0) {
-    try {
-      const canvas = await html2canvas(reportElement, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        allowTaint: true,
-        removeContainer: true,
-      });
-
-      sectionImages.push({
-        image: canvas.toDataURL('image/png'),
-        width: canvas.width,
-        height: canvas.height,
-      });
-    } catch (err) {
-      console.error('Error capturing full report:', err);
-      throw new Error('Failed to capture report');
-    }
-  }
+  const canvas = await html2canvas(element, {
+    scale: 2,
+    useCORS: true,
+    logging: false,
+    backgroundColor: '#ffffff',
+    allowTaint: true,
+    removeContainer: true,
+  });
 
   onProgress?.('Generating PDF...');
 
-  const pdf = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: 'a4',
-  });
+  const imgData = canvas.toDataURL('image/png');
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = pdf.internal.pageSize.getHeight();
+  const imgWidth = canvas.width;
+  const imgHeight = canvas.height;
+  const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+  const imgX = (pdfWidth - imgWidth * ratio) / 2;
 
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
-  const margin = 10;
-  const contentWidth = pageWidth - (margin * 2);
+  let heightLeft = imgHeight * ratio;
+  let position = 0;
 
-  for (let i = 0; i < sectionImages.length; i++) {
-    if (i > 0) {
-      pdf.addPage();
-    }
+  pdf.addImage(imgData, 'PNG', imgX, position, imgWidth * ratio, imgHeight * ratio);
+  heightLeft -= pdfHeight;
 
-    const section = sectionImages[i];
-    const aspectRatio = section.height / section.width;
-    const availableHeight = pageHeight - (margin * 2);
-    
-    let imageWidth = contentWidth;
-    let imageHeight = imageWidth * aspectRatio;
-
-    if (imageHeight > availableHeight) {
-      imageHeight = availableHeight;
-      imageWidth = imageHeight / aspectRatio;
-    }
-
-    const xOffset = margin + (contentWidth - imageWidth) / 2;
-    pdf.addImage(section.image, 'PNG', xOffset, margin, imageWidth, imageHeight);
+  while (heightLeft > 0) {
+    position = heightLeft - imgHeight * ratio;
+    pdf.addPage();
+    pdf.addImage(imgData, 'PNG', imgX, position, imgWidth * ratio, imgHeight * ratio);
+    heightLeft -= pdfHeight;
   }
 
   onProgress?.('Saving PDF...');
@@ -257,86 +158,37 @@ export async function getBase64FromPDF(options: Base64PDFOptions): Promise<strin
 
   onProgress?.('Capturing results...');
 
-  const sections = reportElement.querySelectorAll('[data-pdf-section]');
-  const sectionImages: { image: string; width: number; height: number }[] = [];
-
-  if (sections.length > 0) {
-    for (const section of Array.from(sections)) {
-      try {
-        const canvas = await html2canvas(section as HTMLElement, {
-          backgroundColor: '#ffffff',
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          allowTaint: true,
-          removeContainer: true,
-        });
-
-        sectionImages.push({
-          image: canvas.toDataURL('image/png'),
-          width: canvas.width,
-          height: canvas.height,
-        });
-      } catch (err) {
-        console.error('Error capturing section:', err);
-      }
-    }
-  }
-
-  if (sectionImages.length === 0) {
-    try {
-      const canvas = await html2canvas(reportElement, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        allowTaint: true,
-        removeContainer: true,
-      });
-
-      sectionImages.push({
-        image: canvas.toDataURL('image/png'),
-        width: canvas.width,
-        height: canvas.height,
-      });
-    } catch (err) {
-      console.error('Error capturing full results:', err);
-      throw new Error('Failed to capture results');
-    }
-  }
+  const canvas = await html2canvas(reportElement, {
+    scale: 2,
+    useCORS: true,
+    logging: false,
+    backgroundColor: '#ffffff',
+    allowTaint: true,
+    removeContainer: true,
+  });
 
   onProgress?.('Generating PDF...');
 
-  const pdf = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: 'a4',
-  });
+  const imgData = canvas.toDataURL('image/png');
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = pdf.internal.pageSize.getHeight();
+  const imgWidth = canvas.width;
+  const imgHeight = canvas.height;
+  const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+  const imgX = (pdfWidth - imgWidth * ratio) / 2;
 
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
-  const margin = 10;
-  const contentWidth = pageWidth - (margin * 2);
+  let heightLeft = imgHeight * ratio;
+  let position = 0;
 
-  for (let i = 0; i < sectionImages.length; i++) {
-    if (i > 0) {
-      pdf.addPage();
-    }
+  pdf.addImage(imgData, 'PNG', imgX, position, imgWidth * ratio, imgHeight * ratio);
+  heightLeft -= pdfHeight;
 
-    const section = sectionImages[i];
-    const aspectRatio = section.height / section.width;
-    const availableHeight = pageHeight - (margin * 2);
-    
-    let imageWidth = contentWidth;
-    let imageHeight = imageWidth * aspectRatio;
-
-    if (imageHeight > availableHeight) {
-      imageHeight = availableHeight;
-      imageWidth = imageHeight / aspectRatio;
-    }
-
-    const xOffset = margin + (contentWidth - imageWidth) / 2;
-    pdf.addImage(section.image, 'PNG', xOffset, margin, imageWidth, imageHeight);
+  while (heightLeft > 0) {
+    position = heightLeft - imgHeight * ratio;
+    pdf.addPage();
+    pdf.addImage(imgData, 'PNG', imgX, position, imgWidth * ratio, imgHeight * ratio);
+    heightLeft -= pdfHeight;
   }
 
   const base64 = pdf.output('datauristring').split(',')[1];

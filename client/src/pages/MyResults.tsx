@@ -277,121 +277,19 @@ export default function MyResults() {
     try {
       toast({
         title: "Generating PDF",
-        description: "Please wait while we prepare your comprehensive report...",
+        description: "Please wait while we capture your report...",
       });
 
-      // Fetch full candidate data (same format as admin uses)
-      const candidateRes = await fetch('/api/my-candidate-data', {
-        credentials: 'include',
+      const { exportResultsPDF } = await import('@/lib/pdfScreenCapture');
+      const candidateName = user.firstName && user.lastName 
+        ? `${user.firstName}_${user.lastName}` 
+        : user.email.split('@')[0];
+      const filename = `${candidateName}_Assessment_Report.pdf`;
+
+      await exportResultsPDF({
+        elementId: 'my-results-content',
+        filename,
       });
-      if (!candidateRes.ok) {
-        throw new Error('Failed to fetch candidate data');
-      }
-      const candidate = await candidateRes.json();
-
-      // Fetch platform averages from API (same as admin dashboard)
-      const averagesRes = await fetch('/api/admin/platform-averages', {
-        credentials: 'include',
-      });
-      const platformAverages = averagesRes.ok ? await averagesRes.json() : {
-        totalCandidates: 1,
-        avgScoreAcrossCandidates: 0,
-        skillAverages: {},
-      };
-
-      // Fetch Prompt Architecture evaluations if needed (from the selected batch only)
-      let promptArchData: any[] = [];
-      // Find Prompt Architecture result from THIS batch only
-      const batchPromptArchResult = completedResults.find((r: any) => r.assessmentType === 'prompt_architecture');
-      if (batchPromptArchResult?.id) {
-        try {
-          const res = await fetch(`/api/prompt-evaluations/${batchPromptArchResult.id}`, {
-            credentials: 'include',
-          });
-          if (res.ok) {
-            promptArchData = await res.json();
-          }
-        } catch (error) {
-          console.error('Error fetching prompt evaluations:', error);
-        }
-      }
-
-      // Wait for charts to render with retry mechanism
-      const waitForElement = async (id: string, maxRetries = 10): Promise<boolean> => {
-        for (let i = 0; i < maxRetries; i++) {
-          const element = document.getElementById(id);
-          if (element && element.querySelector('svg')) {
-            return true;
-          }
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
-        return false;
-      };
-
-      // Wait for both charts to be ready
-      const fitReady = await waitForElement('fit-radar-chart-pdf');
-      const aiReady = await waitForElement('ai-readiness-radar-chart-pdf');
-
-      // Capture radar charts with retry
-      let fitChart = null;
-      let aiReadinessChart = null;
-      
-      if (fitReady) {
-        for (let i = 0; i < 3; i++) {
-          fitChart = await captureRadarChart('fit-radar-chart-pdf');
-          if (fitChart) break;
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
-      }
-      
-      if (aiReady) {
-        for (let i = 0; i < 3; i++) {
-          aiReadinessChart = await captureRadarChart('ai-readiness-radar-chart-pdf');
-          if (aiReadinessChart) break;
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
-      }
-      
-      const radarChartImages: any = {};
-      if (fitChart) radarChartImages.fit = fitChart;
-      if (aiReadinessChart) radarChartImages.aiReadiness = aiReadinessChart;
-
-      // CRITICAL FIX: Filter candidate results to only include results from the selected batch
-      // completedResults is already filtered by batch on lines 103-108
-      const batchResultIds = new Set(completedResults.map((r: any) => r.id));
-      
-      // Filter candidate.results to only include results from this batch
-      const filteredCandidate = {
-        ...candidate,
-        results: candidate.results?.filter((r: any) => batchResultIds.has(r.id)) || []
-      };
-
-      // Prepare skill data using proper transformation (matching admin logic)
-      // Now using filtered results from the selected batch only
-      const completedResultsForPDF = filteredCandidate.results?.filter(
-        (r: any) => r.status === 'completed' && isSkillBasedAssessment(r.assessmentType) && r.scores
-      );
-      
-      const allSkills: Array<{name: string, score: number, assessment: string}> = [];
-      completedResultsForPDF?.forEach((result: any) => {
-        const radarData = transformToRadarData(result.scores, result.assessmentType);
-        radarData.forEach((skill: any) => {
-          allSkills.push({
-            name: skill.skill,
-            score: skill.score,
-            assessment: formatAssessmentType(result.assessmentType)
-          });
-        });
-      });
-
-      await exportEnhancedCandidatePDF(
-        filteredCandidate,
-        allSkills,
-        platformAverages,
-        radarChartImages,
-        undefined,
-        promptArchData
-      );
 
       toast({
         title: "Success",
@@ -426,7 +324,7 @@ export default function MyResults() {
       </div>
       <Navigation />
       <main className="flex-grow py-16 relative z-10">
-        <div className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8">
+        <div id="my-results-content" className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-8">
             <Link href="/dashboard">

@@ -230,133 +230,29 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
     try {
       toast({
         title: "Generating PDF",
-        description: "Please wait while we prepare your comprehensive report...",
+        description: "Please wait while we capture your report...",
       });
       
-      let fitChartImage: string | null = null;
-      let aiChartImage: string | null = null;
+      const { exportResultsPDF } = await import('@/lib/pdfScreenCapture');
+      const candidateName = selectedCandidateData.user.firstName || selectedCandidateData.user.lastName
+        ? `${selectedCandidateData.user.firstName || ''}_${selectedCandidateData.user.lastName || ''}`.trim()
+        : selectedCandidateData.user.email.split('@')[0];
+      const filename = `${candidateName}_Assessment_Report.pdf`;
       
-      if (fitChartRef.current) {
-        try {
-          const canvas = await html2canvas(fitChartRef.current, {
-            backgroundColor: '#ffffff',
-            scale: 2,
-            useCORS: true,
-            logging: false,
-          });
-          fitChartImage = canvas.toDataURL('image/png');
-        } catch (e) {
-          console.error('Failed to capture FIT chart:', e);
-        }
-      }
-      
-      if (aiChartRef.current) {
-        try {
-          const canvas = await html2canvas(aiChartRef.current, {
-            backgroundColor: '#ffffff',
-            scale: 2,
-            useCORS: true,
-            logging: false,
-          });
-          aiChartImage = canvas.toDataURL('image/png');
-        } catch (e) {
-          console.error('Failed to capture AI chart:', e);
-        }
-      }
-      
-      // Use enhanced PDF export (same as B2C) for comprehensive reports
-      const { exportEnhancedCandidatePDF } = await import('@/lib/enhancedPdfExport');
-      
-      // Prepare candidate data in the format expected by enhanced PDF
-      // Include user.id and all completed results with proper structure
-      const candidateForPDF = {
-        user: {
-          id: selectedCandidateData.user.id,
-          firstName: selectedCandidateData.user.firstName,
-          lastName: selectedCandidateData.user.lastName,
-          email: selectedCandidateData.user.email,
-        },
-        results: selectedCandidateData.results?.filter(r => r.status === 'completed') || [],
-      };
-      
-      // Transform scores into skills array using the same method as B2C
-      // This ensures consistent skill naming and normalization
-      const allSkills: Array<{name: string, score: number, assessment: string}> = [];
-      
-      // Use transformToRadarData for proper skill transformation (same as B2C)
-      const completedResults = selectedCandidateData.results?.filter(
-        (r: any) => r.status === 'completed' && isSkillBasedAssessment(r.assessmentType) && r.scores
-      ) || [];
-      
-      completedResults.forEach((result: any) => {
-        const radarData = transformToRadarData(result.scores, result.assessmentType);
-        radarData.forEach((skill: any) => {
-          allSkills.push({
-            name: skill.skill,
-            score: skill.score,
-            assessment: formatAssessmentType(result.assessmentType),
-          });
-        });
+      await exportResultsPDF({
+        elementId: 'individual-report-content',
+        filename,
       });
-      
-      // Fetch platform averages - try admin endpoint, fall back to defaults if not accessible
-      // This matches B2C behavior which also fetches from /api/admin/platform-averages
-      let platformAverages = {
-        totalCandidates: 1,
-        avgScoreAcrossCandidates: 0,
-        skillAverages: {},
-      };
-      try {
-        const averagesRes = await fetch('/api/admin/platform-averages', {
-          credentials: 'include',
-        });
-        if (averagesRes.ok) {
-          platformAverages = await averagesRes.json();
-        }
-      } catch (e) {
-        // Silently use defaults if fetch fails (partner may not have access)
-      }
-      
-      // Prepare radar chart images
-      const radarChartImages: { fit?: string; aiReadiness?: string } = {};
-      if (fitChartImage) radarChartImages.fit = fitChartImage;
-      if (aiChartImage) radarChartImages.aiReadiness = aiChartImage;
-      
-      // Fetch Prompt Architecture evaluation data if applicable
-      let promptArchitectureData: any[] = [];
-      const promptArchResult = selectedCandidateData.results?.find(
-        r => r.assessmentType === 'prompt_architecture' && r.status === 'completed'
-      );
-      if (promptArchResult?.id) {
-        try {
-          const promptEvalRes = await fetch(`/api/prompt-evaluations/${promptArchResult.id}`, {
-            credentials: 'include',
-          });
-          if (promptEvalRes.ok) {
-            promptArchitectureData = await promptEvalRes.json();
-          }
-        } catch (e) {
-          console.error('Failed to fetch prompt evaluations:', e);
-        }
-      }
-      
-      await exportEnhancedCandidatePDF(
-        candidateForPDF,
-        allSkills,
-        platformAverages,
-        radarChartImages,
-        undefined,
-        promptArchitectureData
-      );
       
       toast({
         title: "PDF Generated",
         description: "Your comprehensive report has been downloaded.",
       });
-    } catch (error: any) {
+    } catch (error) {
+      console.error("Error generating PDF:", error);
       toast({
-        title: "Export Failed",
-        description: error.message || "Failed to generate PDF",
+        title: "Export failed",
+        description: "Failed to generate PDF. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -446,7 +342,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
       )}
 
       {selectedCandidate && reportTriggered && loadingTransitionComplete && !isRerunning && candidateReport && selectedCandidateData && (
-        <>
+        <div id="individual-report-content">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3 md:mb-4">
             <div className="flex items-center gap-2">
               <h2 className="text-base md:text-2xl font-bold text-white flex items-center gap-1.5 md:gap-2">
@@ -1234,7 +1130,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
               Back to Top
             </Button>
           </div>
-        </>
+        </div>
       )}
 
       {!selectedCandidate && !isLoading && (

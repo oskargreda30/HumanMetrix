@@ -41,7 +41,6 @@ import {
 } from "recharts";
 import { SkillRadarChart } from "@/components/admin/SkillRadarChart";
 import { isSkillBasedAssessment, transformToRadarData, getTopSkills, getGrowthAreas, formatAssessmentType, calculateAverageScore, FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym, getAIReadinessScore, normalizeAIReadinessScores } from "@/lib/assessmentSkills";
-import { exportEnhancedCandidatePDF, captureRadarChart } from "@/lib/enhancedPdfExport";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 
 const CHART_COLOR = "#5B8DB8";
@@ -211,89 +210,21 @@ export default function PartnerResultsTab() {
     if (!candidate) return;
     
     try {
-      const completedResults = candidate.results?.filter(
-        (r: any) => r.status === 'completed' && isSkillBasedAssessment(r.assessmentType) && r.scores
-      );
-      
-      const allSkills: Array<{name: string, score: number, assessment: string}> = [];
-      completedResults?.forEach((result: any) => {
-        const radarData = transformToRadarData(result.scores, result.assessmentType);
-        radarData.forEach((skill: any) => {
-          allSkills.push({
-            name: skill.skill,
-            score: skill.score,
-            assessment: formatAssessmentType(result.assessmentType)
-          });
-        });
-      });
-      
       toast({
         title: "Generating PDF...",
-        description: "Please wait while we create your professional report.",
+        description: "Please wait while we capture your report.",
       });
 
-      const averagesRes = await fetch('/api/partner/me/platform-averages');
-      const platformAverages = await averagesRes.json();
+      const { exportResultsPDF } = await import('@/lib/pdfScreenCapture');
+      const candidateName = candidate.user.firstName || candidate.user.lastName
+        ? `${candidate.user.firstName || ''}_${candidate.user.lastName || ''}`.trim()
+        : candidate.user.email.split('@')[0];
+      const filename = `${candidateName}_Assessment_Report.pdf`;
 
-      let radarChartImages: { fit?: string; aiReadiness?: string } = {};
-      
-      const fitResult = candidate.results?.find((r: any) => 
-        r.assessmentType === 'fit' && r.status === 'completed'
-      );
-      const aiReadinessResult = candidate.results?.find((r: any) => 
-        r.assessmentType === 'ai_readiness' && r.status === 'completed'
-      );
-
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      if (fitResult) {
-        const fitChart = await captureRadarChart('pdf-fit-chart');
-        if (fitChart) radarChartImages.fit = fitChart;
-      }
-
-      if (aiReadinessResult) {
-        const aiChart = await captureRadarChart('pdf-ai-readiness-chart');
-        if (aiChart) radarChartImages.aiReadiness = aiChart;
-      }
-      
-      const promptArchitectureResult = candidate.results?.find((r: any) => 
-        r.assessmentType === 'prompt_architecture' && r.status === 'completed'
-      );
-      let promptArchitectureData: any[] = [];
-      if (promptArchitectureResult) {
-        try {
-          const promptEvalRes = await fetch(`/api/prompt-evaluations/${promptArchitectureResult.id}`);
-          if (promptEvalRes.ok) {
-            promptArchitectureData = await promptEvalRes.json();
-          }
-        } catch (error) {
-          console.error('Error fetching prompt architecture data:', error);
-        }
-      }
-      
-      if (!platformAverages || 
-          typeof platformAverages.totalCandidates !== 'number' ||
-          typeof platformAverages.avgScoreAcrossCandidates !== 'number' ||
-          !platformAverages.skillAverages) {
-        throw new Error('Platform averages data is incomplete');
-      }
-
-      const selectedRoleData = selectedRole && selectedRole !== "__none__" 
-        ? roles?.find((r: any) => r.id === selectedRole) 
-        : null;
-      
-      const roleComparisonData = (selectedRole && selectedRole !== "__none__" && selectedRoleData && roleAlignment?.overallFit !== undefined) 
-        ? { role: selectedRoleData, alignment: roleAlignment } 
-        : undefined;
-      
-      await exportEnhancedCandidatePDF(
-        candidate, 
-        allSkills, 
-        platformAverages, 
-        radarChartImages,
-        roleComparisonData,
-        promptArchitectureData
-      );
+      await exportResultsPDF({
+        elementId: 'partner-candidate-report-content',
+        filename,
+      });
       
       toast({
         title: "PDF exported successfully",
@@ -615,6 +546,7 @@ export default function PartnerResultsTab() {
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                      <div id="partner-candidate-report-content">
                       <DialogHeader>
                         <DialogTitle>
                           {candidate.user.firstName || candidate.user.lastName
@@ -903,6 +835,7 @@ export default function PartnerResultsTab() {
                         )}
                       </div>
 
+                      </div>
                       <DialogFooter>
                         <Button
                           variant="outline"
