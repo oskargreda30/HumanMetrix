@@ -120,29 +120,25 @@ export default function Login() {
       
       const userData = await response.json();
       
-      // Set the user data directly in the query cache instead of refetching
-      // This avoids a race condition where the session cookie from the login response
-      // hasn't been processed by the browser before the auth check GET request fires
-      queryClient.setQueryData(["/api/auth/user"], userData);
-      
       toast({
         title: "Success",
         description: "Logged in successfully!",
       });
       
-      // Check user role to determine redirect destination
+      // Use hard navigation to ensure session cookie is fully processed
+      // before the next page loads and makes authenticated API calls
+      let destination = redirectTo;
       if (redirectTo === "/dashboard") {
         if (userData && (
           userData.role === 'partner_team_member' || 
           userData.role === 'partner_admin' || 
           userData.role === 'organization_admin'
         )) {
-          setLocation("/partner");
-          return;
+          destination = "/partner";
         }
       }
       
-      setLocation(redirectTo);
+      window.location.href = destination;
     } catch (error: any) {
       toast({
         title: "Error",
