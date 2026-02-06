@@ -13970,63 +13970,17 @@ Return valid JSON with only the requested fields.`;
         });
       }
       
-      // SOURCE 2: Partner-invited candidates (partner_candidate_invitations + assessment_results)
+      // Enrich candidate names from partner invitations (names from invitations take priority)
       const partnerInvitations = await db.select()
         .from(partnerCandidateInvitations)
         .where(eq(partnerCandidateInvitations.partnerId, partner.id));
       
       for (const invitation of partnerInvitations) {
-        // Get assessment results linked to this invitation
-        const invitationResults = await db.select()
-          .from(assessmentResults)
-          .where(eq(assessmentResults.partnerInvitationId, invitation.id));
-        
-        const completedResults = invitationResults.filter(r => r.status === 'completed');
-        
-        if (completedResults.length > 0) {
-          const email = invitation.email;
-          
-          // Parse name from invitation
-          const nameParts = invitation.name?.split(' ') || [];
-          const invitationFirstName = nameParts[0] || null;
-          const invitationLastName = nameParts.slice(1).join(' ') || null;
-          
-          if (!candidateMap.has(email)) {
-            candidateMap.set(email, {
-              id: email,
-              email: email,
-              firstName: invitationFirstName || email.split('@')[0] || null,
-              lastName: invitationLastName,
-              externalUserId: invitation.externalUserId || null,
-              results: [],
-            });
-          } else if (invitation.name) {
-            // Update name from invitation if candidate was added from widget/API sessions
-            // Invitation names take priority over email-derived names
-            const existing = candidateMap.get(email)!;
-            existing.firstName = invitationFirstName || existing.firstName;
-            existing.lastName = invitationLastName || existing.lastName;
-          }
-          
-          // Add results from this invitation
-          for (const result of completedResults) {
-            // Check if this result is already added (avoid duplicates)
-            const existingResults = candidateMap.get(email)!.results;
-            const alreadyExists = existingResults.some(r => 
-              r.assessmentType === result.assessmentType && r.id === result.id
-            );
-            
-            if (!alreadyExists) {
-              existingResults.push({
-                id: result.id,
-                assessmentType: result.assessmentType,
-                totalScore: result.totalScore || 0,
-                scores: result.scores || {},
-                completedAt: result.completedAt?.toISOString() || '',
-                status: result.status,
-              });
-            }
-          }
+        const candidate = candidateMap.get(invitation.email);
+        if (candidate && invitation.name) {
+          const nameParts = invitation.name.split(' ');
+          candidate.firstName = nameParts[0] || candidate.firstName;
+          candidate.lastName = nameParts.slice(1).join(' ') || candidate.lastName;
         }
       }
       
@@ -14394,47 +14348,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         }
       }
       
-      // SOURCE 2: Partner-invited candidates (partner_candidate_invitations + assessment_results)
-      const partnerInvitations = await db.select()
-        .from(partnerCandidateInvitations)
-        .where(eq(partnerCandidateInvitations.partnerId, partner.id));
-      
-      for (const invitation of partnerInvitations) {
-        const email = invitation.email;
-        
-        if (candidateIds.includes(email)) {
-          // Get assessment results linked to this invitation
-          const invitationResults = await db.select()
-            .from(assessmentResults)
-            .where(eq(assessmentResults.partnerInvitationId, invitation.id));
-          
-          const completedResults = invitationResults.filter(r => r.status === 'completed');
-          
-          for (const result of completedResults) {
-            const results = candidateResultsMap.get(email) || [];
-            // Check for duplicates
-            const alreadyExists = results.some(r => 
-              r.assessmentType === result.assessmentType && r.id === result.id
-            );
-            
-            if (!alreadyExists) {
-              results.push({
-                id: result.id,
-                assessmentType: result.assessmentType,
-                scores: result.scores || {},
-                totalScore: result.totalScore || 0,
-                completedAt: result.completedAt,
-                status: result.status,
-                percentile: result.percentile || 0,
-                isFromAssessmentResults: true,
-                evaluations: result.evaluations || null,
-              });
-              candidateResultsMap.set(email, results);
-            }
-          }
-        }
-      }
-      
       // Convert map to array in candidateIds order
       const candidatesResults = candidateIds.map(id => {
         const results = candidateResultsMap.get(id) || [];
@@ -14452,11 +14365,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         if (s.externalEmail) validPartnerCandidateIds.add(s.externalEmail);
         if (s.externalUserId) validPartnerCandidateIds.add(s.externalUserId);
         if (s.id) validPartnerCandidateIds.add(s.id);
-      });
-      partnerInvitations.forEach(inv => {
-        if (inv.email) validPartnerCandidateIds.add(inv.email);
-        if (inv.externalUserId) validPartnerCandidateIds.add(inv.externalUserId);
-        if (inv.userId) validPartnerCandidateIds.add(inv.userId);
       });
       
       const unauthorizedCandidates = candidateIds.filter(id => !validPartnerCandidateIds.has(id));
@@ -15142,11 +15050,6 @@ Use the candidates' actual names. Be specific and actionable.`;
       const sessions = await storage.getSessionsByPartner(partner.id, 10000);
       const completedSessions = sessions.filter(s => s.status === 'completed' && !s.isTestSession);
       
-      // Also get invited candidates
-      const partnerInvitations = await db.select()
-        .from(partnerCandidateInvitations)
-        .where(eq(partnerCandidateInvitations.partnerId, partner.id));
-      
       // Calculate partner-wide averages
       const allSkills: Record<string, number[]> = {};
       let totalScores: number[] = [];
@@ -15176,41 +15079,6 @@ Use the candidates' actual names. Be specific and actionable.`;
           if (sessionScores.length > 0) {
             const avg = sessionScores.reduce((a, b) => a + b, 0) / sessionScores.length;
             totalScores.push(avg);
-          }
-        }
-      }
-      
-      // Process invited candidates
-      for (const invitation of partnerInvitations) {
-        if (!processedEmails.has(invitation.email)) {
-          const invitationResults = await db.select()
-            .from(assessmentResults)
-            .where(eq(assessmentResults.partnerInvitationId, invitation.id));
-          
-          const completedResults = invitationResults.filter(r => r.status === 'completed');
-          if (completedResults.length > 0) {
-            processedEmails.add(invitation.email);
-            candidateCount++;
-            
-            for (const result of completedResults) {
-              if (result.scores && typeof result.scores === 'object') {
-                let resultScores: number[] = [];
-                Object.entries(result.scores as Record<string, any>).forEach(([skillName, score]) => {
-                  if (typeof score === 'number') {
-                    if (!allSkills[skillName]) {
-                      allSkills[skillName] = [];
-                    }
-                    allSkills[skillName].push(score);
-                    resultScores.push(score);
-                  }
-                });
-                
-                if (resultScores.length > 0) {
-                  const avg = resultScores.reduce((a, b) => a + b, 0) / resultScores.length;
-                  totalScores.push(avg);
-                }
-              }
-            }
           }
         }
       }
@@ -16596,20 +16464,20 @@ Return valid JSON with only the requested fields.`;
           );
           
           if (matchingInvitation) {
-            // Partner invitation candidate - get results via partnerInvitationId
-            const invitationResults = await db.select()
-              .from(assessmentResults)
-              .where(eq(assessmentResults.partnerInvitationId, matchingInvitation.id));
+            // Partner invitation candidate - get results from B2B sessions
+            const candidateSessions = allSessions.filter(s => 
+              s.externalEmail === matchingInvitation.email
+            );
             
-            completedResults = invitationResults
-              .filter(r => r.status === 'completed')
-              .map(r => ({
-                id: r.id,
-                assessmentType: r.assessmentType,
-                status: r.status,
-                scores: r.scores,
-                totalScore: r.totalScore,
-                completedAt: r.completedAt,
+            completedResults = candidateSessions
+              .filter(s => s.status === 'completed')
+              .map(s => ({
+                id: s.id,
+                assessmentType: s.assessmentType,
+                status: s.status,
+                scores: s.scores,
+                totalScore: s.totalScore,
+                completedAt: s.completedAt,
               }));
             
             // Use invitation name or extract from email
