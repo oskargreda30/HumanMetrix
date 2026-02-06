@@ -194,11 +194,13 @@ export function PartnerTour({ isOpen, onClose, onComplete, onTabChange }: Partne
       return false;
     }
 
+    targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
     const rect = targetElement.getBoundingClientRect();
     const padding = step.highlightPadding || 8;
 
     const spotlight: SpotlightRect = {
-      top: rect.top - padding + window.scrollY,
+      top: rect.top - padding,
       left: rect.left - padding,
       width: rect.width + padding * 2,
       height: rect.height + padding * 2,
@@ -262,6 +264,7 @@ export function PartnerTour({ isOpen, onClose, onComplete, onTabChange }: Partne
       const element = document.querySelector(step.targetSelector);
       if (element) {
         calculatePositions(element);
+        setTimeout(() => calculatePositions(element), 400);
       } else if (attemptsRef.current < maxAttempts) {
         attemptsRef.current++;
         pollTimeoutRef.current = setTimeout(poll, pollInterval);
