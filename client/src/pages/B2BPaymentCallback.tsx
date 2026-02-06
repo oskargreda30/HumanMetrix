@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useLocation } from "wouter";
-import { Loader2, CheckCircle2, AlertCircle, ArrowRight, Mail } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, ArrowRight, Mail, LogIn, Eye } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -14,8 +14,18 @@ export default function B2BPaymentCallback() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [hasExistingAccount, setHasExistingAccount] = useState(false);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+  const [redirectFailed, setRedirectFailed] = useState(false);
   const processedRef = useRef(false);
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+      if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (processedRef.current) return;
@@ -35,14 +45,12 @@ export default function B2BPaymentCallback() {
         let res;
         
         if (isBundle) {
-          // Bundle payment flow - multiple assessments paid together
           res = await fetch("/api/b2b/results-bundle/process-payment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ stripeSessionId }),
           });
         } else if (b2bSessionId) {
-          // Standard B2B flow - requires b2b_session param
           res = await fetch("/api/b2b/process-payment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -52,8 +60,6 @@ export default function B2BPaymentCallback() {
             }),
           });
         } else {
-          // Unlock flow (from email payment link) - uses metadata from Stripe session
-          // This handles cases with or without success=true param
           res = await fetch("/api/unlock-results/process-payment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -81,11 +87,14 @@ export default function B2BPaymentCallback() {
         if (data.hasExistingAccount && data.resultsUrl) {
           setMessage("Your results are ready! Redirecting to your dashboard...");
           queryClient.clear();
-          setTimeout(() => {
+          redirectTimerRef.current = setTimeout(() => {
             setLocation(data.resultsUrl);
           }, 2000);
+          fallbackTimerRef.current = setTimeout(() => {
+            setRedirectFailed(true);
+          }, 5000);
         } else {
-          setMessage("Your results have been sent to your email!");
+          setMessage("Payment successful! Your results are ready.");
         }
       } catch (error: any) {
         console.error("B2B payment processing error:", error);
@@ -170,9 +179,37 @@ export default function B2BPaymentCallback() {
               <p className="text-slate-600">{message}</p>
               
               {hasExistingAccount ? (
-                <div className="flex items-center justify-center gap-2 py-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-cyan-600" />
-                  <span className="text-slate-500 text-sm">Redirecting to dashboard...</span>
+                <div className="space-y-3 pt-2">
+                  {!redirectFailed && (
+                    <div className="flex items-center justify-center gap-2 py-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-cyan-600" />
+                      <span className="text-slate-500 text-sm">Redirecting to dashboard...</span>
+                    </div>
+                  )}
+                  
+                  {redirectFailed && (
+                    <Button
+                      onClick={() => {
+                        queryClient.clear();
+                        setLocation("/dashboard");
+                      }}
+                      className="w-full bg-gradient-to-r from-cyan-500 to-blue-600"
+                      data-testid="button-go-to-dashboard"
+                    >
+                      <LogIn className="h-4 w-4 mr-2" />
+                      Go to Dashboard
+                    </Button>
+                  )}
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => setLocation("/login")}
+                    className="w-full"
+                    data-testid="button-login"
+                  >
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Login to View Results
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-4 pt-4">
@@ -180,13 +217,24 @@ export default function B2BPaymentCallback() {
                     <div className="flex items-start gap-3">
                       <Mail className="h-5 w-5 text-cyan-600 mt-0.5 flex-shrink-0" />
                       <div className="text-left">
-                        <p className="font-medium text-slate-900">Results sent to your email</p>
+                        <p className="font-medium text-slate-900">Results PDF will be emailed shortly</p>
                         <p className="text-sm text-slate-600 mt-1">
-                          We've sent your assessment results to <strong>{email}</strong>
+                          We'll send your detailed results to <strong>{email}</strong>
                         </p>
                       </div>
                     </div>
                   </div>
+                  
+                  {sessionId && (
+                    <Button
+                      onClick={() => setLocation(`/b2b-pdf-email/${sessionId}?email=${encodeURIComponent(email || '')}`)}
+                      className="w-full bg-gradient-to-r from-cyan-500 to-blue-600"
+                      data-testid="button-view-results"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Results Online
+                    </Button>
+                  )}
                   
                   <div className="bg-cyan-50 rounded-lg p-4 border border-cyan-200">
                     <p className="text-sm text-slate-700 mb-3">
@@ -195,7 +243,8 @@ export default function B2BPaymentCallback() {
                     <Button
                       onClick={handleCreateAccount}
                       disabled={isCreatingAccount}
-                      className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700"
+                      variant="outline"
+                      className="w-full"
                       data-testid="button-create-account"
                     >
                       {isCreatingAccount ? (
@@ -212,14 +261,17 @@ export default function B2BPaymentCallback() {
                     </Button>
                   </div>
                   
-                  <Button
-                    variant="ghost"
-                    onClick={() => setLocation("/")}
-                    className="text-slate-500"
-                    data-testid="button-skip"
-                  >
-                    Skip for now
-                  </Button>
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      variant="ghost"
+                      onClick={() => setLocation("/login")}
+                      className="text-slate-500"
+                      data-testid="button-login-existing"
+                    >
+                      <LogIn className="h-4 w-4 mr-2" />
+                      Already have an account? Login
+                    </Button>
+                  </div>
                 </div>
               )}
             </>
@@ -232,13 +284,23 @@ export default function B2BPaymentCallback() {
               </div>
               <h1 className="text-2xl font-bold text-slate-900">Payment Issue</h1>
               <p className="text-slate-600">{message}</p>
-              <Button 
-                variant="outline" 
-                onClick={() => window.history.back()}
-                data-testid="button-go-back"
-              >
-                Go Back
-              </Button>
+              <div className="flex flex-col gap-2 pt-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => window.history.back()}
+                  data-testid="button-go-back"
+                >
+                  Go Back
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setLocation("/login")}
+                  className="text-slate-500"
+                  data-testid="button-login-error"
+                >
+                  Login to check your account
+                </Button>
+              </div>
             </>
           )}
         </div>
