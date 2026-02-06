@@ -113,13 +113,17 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      await apiRequest("POST", "/api/login", {
+      const response = await apiRequest("POST", "/api/login", {
         email: loginEmail.trim(),
         password: loginPassword,
       });
       
-      // Invalidate auth query to refetch user data
-      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      const userData = await response.json();
+      
+      // Set the user data directly in the query cache instead of refetching
+      // This avoids a race condition where the session cookie from the login response
+      // hasn't been processed by the browser before the auth check GET request fires
+      queryClient.setQueryData(["/api/auth/user"], userData);
       
       toast({
         title: "Success",
@@ -127,22 +131,14 @@ export default function Login() {
       });
       
       // Check user role to determine redirect destination
-      // Only do this if no explicit redirect is set (default dashboard redirect)
       if (redirectTo === "/dashboard") {
-        try {
-          const userRes = await fetch("/api/auth/user", { credentials: "include" });
-          if (userRes.ok) {
-            const userData = await userRes.json();
-            // Partner roles go directly to partner dashboard
-            if (userData.role === 'partner_team_member' || 
-                userData.role === 'partner_admin' || 
-                userData.role === 'organization_admin') {
-              setLocation("/partner");
-              return;
-            }
-          }
-        } catch {
-          // If user check fails, fall through to default redirect
+        if (userData && (
+          userData.role === 'partner_team_member' || 
+          userData.role === 'partner_admin' || 
+          userData.role === 'organization_admin'
+        )) {
+          setLocation("/partner");
+          return;
         }
       }
       
