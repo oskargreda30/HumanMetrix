@@ -5457,9 +5457,24 @@ export function registerGuestAssessmentRoutes(app: Express) {
         // Link partner assessment results to existing user
         await linkPartnerResultsToUser(existingUser.id, invitation);
         
+        // Send a results-ready email reminding them of their existing account
+        const { sendB2BResultsReadyEmail } = await import('./email');
+        const displayName = existingUser.firstName || existingUser.name || existingUser.username || invitation.email.split('@')[0];
+        try {
+          await sendB2BResultsReadyEmail({
+            email: invitation.email,
+            candidateName: displayName,
+            partnerName: invitation.partnerName || 'your employer',
+            dashboardUrl: `${req.protocol}://${req.get('host')}/dashboard`,
+          });
+        } catch (emailErr) {
+          console.error(`[GuestInvite] Failed to send results-ready email to ${invitation.email}:`, emailErr);
+        }
+        console.log(`[GuestInvite] Existing user ${existingUser.id} logged in, results-ready email sent to ${invitation.email}`);
+        
         return res.json({ 
           success: true, 
-          message: "Account already exists. You have been logged in.",
+          message: "You have been logged in to your existing account.",
           existingAccount: true,
           redirectTo: '/dashboard'
         });
@@ -5491,6 +5506,7 @@ export function registerGuestAssessmentRoutes(app: Express) {
         "You've completed your assessments and can now access your results anytime.",
         'post_payment'
       );
+      console.log(`[GuestInvite] New account created for ${invitation.email}, credentials sent`);
       
       // Auto-login the new user
       req.session.userId = newUser.id;

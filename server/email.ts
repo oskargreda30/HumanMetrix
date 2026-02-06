@@ -2845,6 +2845,76 @@ We'll send you an email when they're ready.
   return { success: result.success, messageId: result.messageId };
 }
 
+// B2B Results Ready Notification - sent to existing users after account linking
+interface B2BResultsReadyNotificationDetails {
+  email: string;
+  candidateName?: string;
+  partnerName: string;
+  dashboardUrl: string;
+}
+
+export async function sendB2BResultsReadyEmail(details: B2BResultsReadyNotificationDetails) {
+  const displayName = details.candidateName || details.email;
+  
+  const msg = {
+    to: details.email,
+    subject: `Your assessment results are ready - ${details.partnerName}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .button { display: inline-block; background: #0891b2; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
+            .info-box { background: #f0f9ff; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0891b2; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div style="display: inline-flex; align-items: center; justify-content: center; gap: 12px;">
+                <img src="https://humanmetrix.co.uk/assets/humanmetrix-logo.png" alt="HumanMetrix" style="height: 40px; width: auto;" />
+                <h1 style="margin: 0; font-size: 28px;">HumanMetrix</h1>
+              </div>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
+            </div>
+            <div class="content">
+              <h2 style="text-align: center;">Your Results Are Ready</h2>
+              
+              <p>Hi ${displayName},</p>
+              
+              <p>Your assessment results from <strong>${details.partnerName}</strong> are now available on your dashboard.</p>
+              
+              <div class="info-box">
+                <p style="margin: 0;"><strong>Log in with your existing account</strong> to view your detailed results, insights, and recommendations.</p>
+                <p style="margin: 8px 0 0 0; font-size: 14px; color: #6b7280;">If you've forgotten your password, use the "Forgot Password" link on the login page to reset it.</p>
+              </div>
+              
+              <div style="text-align: center;">
+                <a href="${details.dashboardUrl}" class="button" style="color: white !important;">View Your Results</a>
+              </div>
+            </div>
+            <div class="footer">
+              <p>&copy; ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `Hi ${displayName},\n\nYour assessment results from ${details.partnerName} are now available.\n\nLog in with your existing account at ${details.dashboardUrl} to view your detailed results.\n\nIf you've forgotten your password, use the "Forgot Password" link on the login page.\n\n© ${new Date().getFullYear()} HumanMetrix`,
+  };
+
+  const result = await sendEmail(msg);
+  if (result.success) {
+    console.log(`[Email] B2B results-ready email sent to ${details.email} (ID: ${result.messageId})`);
+  }
+  return { success: result.success, messageId: result.messageId };
+}
+
 // B2B Test-Taker Results Email - sent after payment with PDF attachment
 interface B2BResultsEmailDetails {
   email: string;

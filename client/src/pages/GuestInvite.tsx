@@ -107,10 +107,10 @@ export default function GuestInvite() {
         title: "Welcome back!",
         description: "Redirecting to your dashboard...",
       });
-      setLocation('/dashboard');
+      window.location.href = '/dashboard';
       return;
     }
-  }, [authLoading, loading, currentUser, invitation, toast, setLocation]);
+  }, [authLoading, loading, currentUser, invitation, toast]);
 
   const startNextAssessment = useCallback(async (invitationData: InvitationData) => {
     if (!token) return;
@@ -198,11 +198,8 @@ export default function GuestInvite() {
           description: "Redirecting to your dashboard...",
         });
         
-        // Invalidate auth cache to ensure the session is recognized
-        await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-        
-        // Redirect to dashboard immediately
-        setLocation(data.redirectTo || '/dashboard');
+        // Use full page navigation to ensure session cookie is properly recognized
+        window.location.href = data.redirectTo || '/dashboard';
       } catch (err: any) {
         toast({
           title: "Error",
@@ -325,11 +322,9 @@ export default function GuestInvite() {
           : "Check your email for your login password. You have been logged in automatically.",
       });
       
-      // Invalidate auth cache to ensure the session is recognized
-      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      
       if (data.redirectTo) {
-        setLocation(data.redirectTo);
+        // Use full page navigation to ensure session cookie is properly recognized
+        window.location.href = data.redirectTo;
       }
     } catch (err: any) {
       toast({
