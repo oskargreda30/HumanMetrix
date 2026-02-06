@@ -3071,7 +3071,8 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       for (const result of resultsToPurchase) {
         const normalizedType = normalizeAssessmentId(result.assessmentType);
         const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
-        const assessmentB2CPrice = BASE_FEE + assessmentPrice;
+        // B2B pricing: assessment price only (no base fee) - £4-5 per test with PPP
+        const assessmentB2CPrice = assessmentPrice;
         
         // Calculate PPP-adjusted price in pence
         const pppB2CPrice = getPPPAdjustedPriceInPence(assessmentB2CPrice, userCountry);
@@ -3369,7 +3370,8 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       for (const result of purchasableResults) {
         const normalizedType = normalizeAssessmentId(result.assessmentType);
         const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
-        const assessmentB2CPrice = BASE_FEE + assessmentPrice;
+        // B2B pricing: assessment price only (no base fee) - £4-5 per test with PPP
+        const assessmentB2CPrice = assessmentPrice;
         
         // Calculate original B2C price with PPP adjustment
         const pppB2CPrice = getPPPAdjustedPriceInPence(assessmentB2CPrice, userCountry);
@@ -3386,7 +3388,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         const roundedDiscountedPrice = roundPriceUp(discountedLocalPrice, userCurrency);
         const priceDisplay = `${userCurrency.symbol}${roundedDiscountedPrice.toLocaleString()}`;
         
-        // Add the FULL B2C price for each assessment (BASE_FEE + assessment price)
+        // Add the assessment price (B2B uses assessment price only, no base fee)
         totalB2CPriceInPence += assessmentB2CPrice;
         assessmentPrices.push({ 
           type: normalizedType, 
