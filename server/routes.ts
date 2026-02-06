@@ -14363,6 +14363,7 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         status: string;
         percentile?: number;
         isFromAssessmentResults: boolean;
+        evaluations?: any;
       };
       
       const candidateResultsMap = new Map<string, ResultWithId[]>();
@@ -14387,6 +14388,7 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
             status: session.status,
             percentile: 0, // Sessions don't have percentile
             isFromAssessmentResults: false,
+            evaluations: session.evaluations || null,
           });
           candidateResultsMap.set(email, results);
         }
@@ -14425,6 +14427,7 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
                 status: result.status,
                 percentile: result.percentile || 0,
                 isFromAssessmentResults: true,
+                evaluations: result.evaluations || null,
               });
               candidateResultsMap.set(email, results);
             }
