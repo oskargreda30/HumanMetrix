@@ -482,7 +482,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                   }}
                   disabled={isFetchingReport}
                   data-testid="button-rerun-individual-analysis"
-                  className="text-xs md:text-sm"
+                  className="text-xs md:text-sm border-blue-300/50 text-blue-100 hover:bg-blue-500/20"
                 >
                   <RefreshCw className="h-3 w-3 mr-1" />
                   Re-run Analysis (1 credit)
