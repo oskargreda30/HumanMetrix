@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useLocation } from "wouter";
-import { Loader2, CheckCircle2, AlertCircle, ArrowRight, Mail, LogIn, Eye } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, Mail, LogIn, Eye } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -13,7 +13,6 @@ export default function B2BPaymentCallback() {
   const [email, setEmail] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [hasExistingAccount, setHasExistingAccount] = useState(false);
-  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [redirectFailed, setRedirectFailed] = useState(false);
   const processedRef = useRef(false);
   const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -106,51 +105,6 @@ export default function B2BPaymentCallback() {
     processPayment();
   }, [setLocation]);
 
-  const handleCreateAccount = async () => {
-    if (!email || !sessionId) {
-      console.error("[B2B Callback] Missing email or sessionId for account creation", { email, sessionId });
-      toast({
-        title: "Unable to create account",
-        description: "Missing required information. Please contact support or check your email for your results.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsCreatingAccount(true);
-    
-    try {
-      const res = await apiRequest("POST", "/api/b2b/create-account", {
-        email,
-        sessionId,
-      });
-      
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to create account");
-      }
-      
-      const data = await res.json();
-      
-      toast({
-        title: "Account created!",
-        description: "Welcome to HumanMetrix. Redirecting to your dashboard...",
-      });
-      
-      queryClient.clear();
-      
-      setTimeout(() => {
-        setLocation(data.redirectTo || "/dashboard");
-      }, 1500);
-    } catch (error: any) {
-      setIsCreatingAccount(false);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create account. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -235,32 +189,7 @@ export default function B2BPaymentCallback() {
                       View Results Online
                     </Button>
                   )}
-                  
-                  <div className="bg-cyan-50 rounded-lg p-4 border border-cyan-200">
-                    <p className="text-sm text-slate-700 mb-3">
-                      Create an account to access your results anytime and track your progress.
-                    </p>
-                    <Button
-                      onClick={handleCreateAccount}
-                      disabled={isCreatingAccount}
-                      variant="outline"
-                      className="w-full"
-                      data-testid="button-create-account"
-                    >
-                      {isCreatingAccount ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Creating Account...
-                        </>
-                      ) : (
-                        <>
-                          Create Account & View Results
-                          <ArrowRight className="h-4 w-4 ml-2" />
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                  
+
                   <div className="flex flex-col gap-2">
                     <Button
                       variant="ghost"
