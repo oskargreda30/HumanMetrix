@@ -14,6 +14,11 @@ import {
   YAxis,
   CartesianGrid,
   ResponsiveContainer,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
 } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 import { FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym, getAIReadinessScore, normalizeAIReadinessScores, transformToRadarData, isSkillBasedAssessment, formatAssessmentType } from "@/lib/assessmentSkills";
@@ -693,18 +698,18 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                 <div className="grid gap-6 lg:grid-cols-2">
                   <div ref={fitChartRef} className="h-72 bg-white dark:bg-gray-900 rounded-lg p-2">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={fitRadarData} layout="vertical" barCategoryGap="28%" margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis type="number" domain={[0, 100]} />
-                        <YAxis type="category" dataKey="skill" width={120} tick={{ fontSize: 11 }} />
-                        <Bar
+                      <RadarChart data={fitRadarData} cx="50%" cy="50%" outerRadius="70%">
+                        <PolarGrid stroke="#e2e8f0" />
+                        <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11, fill: '#64748b' }} />
+                        <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 9, fill: '#94a3b8' }} />
+                        <Radar
                           dataKey="score"
-                          fill="#5B8DB8"
-                          radius={[0, 4, 4, 0]}
-                          barSize={18}
-                          label={{ position: 'right', fontSize: 12, fontWeight: 600 }}
+                          stroke="#3b82f6"
+                          fill="#3b82f6"
+                          fillOpacity={0.25}
+                          strokeWidth={2}
                         />
-                      </BarChart>
+                      </RadarChart>
                     </ResponsiveContainer>
                   </div>
                   
@@ -739,18 +744,18 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                 <div className="grid gap-6 lg:grid-cols-2">
                   <div ref={aiChartRef} className="h-96 bg-white dark:bg-gray-900 rounded-lg p-2">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={aiRadarData} layout="vertical" barCategoryGap="28%" margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis type="number" domain={[0, 100]} />
-                        <YAxis type="category" dataKey="skill" width={120} tick={{ fontSize: 11 }} />
-                        <Bar
+                      <RadarChart data={aiRadarData} cx="50%" cy="50%" outerRadius="65%">
+                        <PolarGrid stroke="#e2e8f0" />
+                        <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10, fill: '#64748b' }} />
+                        <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 9, fill: '#94a3b8' }} />
+                        <Radar
                           dataKey="score"
-                          fill="#6E8FA8"
-                          radius={[0, 4, 4, 0]}
-                          barSize={18}
-                          label={{ position: 'right', fontSize: 12, fontWeight: 600 }}
+                          stroke="#8b5cf6"
+                          fill="#8b5cf6"
+                          fillOpacity={0.25}
+                          strokeWidth={2}
                         />
-                      </BarChart>
+                      </RadarChart>
                     </ResponsiveContainer>
                   </div>
                   
