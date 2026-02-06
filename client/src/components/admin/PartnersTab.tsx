@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { CURRENCIES, COUNTRY_PRICING_TIER, PPP_MULTIPLIERS } from "@shared/currencies";
 import { COUNTRIES, formatPhoneNumber, getPhonePlaceholder } from "@shared/countries";
-import { B2B_VOLUME_TIERS } from "@shared/schema";
+import { B2B_VOLUME_TIERS, ASSESSMENT_PRICES } from "@shared/schema";
 import stripeLogo from "@assets/images_1769082266515.png";
 import airwallexLogo from "@assets/images_1769082266514.jpg";
 
@@ -607,23 +607,23 @@ export default function PartnersTab() {
       return { suggestedPrice: null, tierName: '', inDatabase: false };
     }
     
-    // Get base price for Boutique tier (default for new partners) in USD cents
-    const basePriceUsdCents = B2B_VOLUME_TIERS.BOUTIQUE.pricePerTest;
-    const multiplier = PPP_MULTIPLIERS[pricingTier];
-    const adjustedPriceUsdCents = Math.round(basePriceUsdCents * multiplier);
+    // Use average of ASSESSMENT_PRICES as the base (in GBP pence)
+    const assessmentPriceValues = Object.values(ASSESSMENT_PRICES) as number[];
+    const avgPriceGbpPence = Math.round(
+      assessmentPriceValues.reduce((sum: number, p: number) => sum + p, 0) / assessmentPriceValues.length
+    );
     
-    // Convert from USD cents to target currency's minor units
-    const usdConfig = CURRENCIES.USD;
+    const multiplier = PPP_MULTIPLIERS[pricingTier];
+    const adjustedPriceGbpPence = Math.round(avgPriceGbpPence * multiplier);
+    
+    // Convert from GBP pence to target currency's minor units
     const targetConfig = CURRENCIES[currencyCode];
-    if (!usdConfig || !targetConfig) {
-      return { suggestedPrice: adjustedPriceUsdCents, tierName: pricingTier, inDatabase: true };
+    if (!targetConfig) {
+      return { suggestedPrice: adjustedPriceGbpPence, tierName: pricingTier, inDatabase: true };
     }
     
-    // Exchange rate is GBP -> target, so we need to go USD -> GBP -> target
-    // USD to GBP: divide by USD exchange rate (1.27)
     // GBP to target: multiply by target exchange rate
-    const priceInGbpPence = adjustedPriceUsdCents / usdConfig.exchangeRate;
-    const priceInTargetMinor = Math.round(priceInGbpPence * targetConfig.exchangeRate);
+    const priceInTargetMinor = Math.round(adjustedPriceGbpPence * targetConfig.exchangeRate);
     
     return { suggestedPrice: priceInTargetMinor, tierName: pricingTier, inDatabase: true };
   };
