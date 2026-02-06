@@ -3213,26 +3213,6 @@ export default function PartnersTab() {
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="organizationId">Link to Organisation (Optional)</Label>
-                  <Select value={selectedOrganizationId} onValueChange={setSelectedOrganizationId}>
-                    <SelectTrigger className="bg-slate-800 border-slate-600" data-testid="select-partner-organization">
-                      <SelectValue placeholder="Select an organisation..." />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-700">
-                      <SelectItem value="none" className="text-slate-400">None</SelectItem>
-                      {/* Deduplicate organizations by ID to handle any duplicate entries */}
-                      {organizations?.filter((org, index, arr) => 
-                        arr.findIndex(o => o.id === org.id) === index
-                      ).map((org) => (
-                        <SelectItem key={org.id} value={org.id} className="text-white">
-                          {org.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-slate-400">Linking allows org admins to view their partner usage in the dashboard</p>
-                </div>
                 <DialogFooter>
                   <Button type="submit" disabled={createPartnerMutation.isPending} data-testid="button-submit-partner">
                     {createPartnerMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
