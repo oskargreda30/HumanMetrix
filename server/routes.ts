@@ -14405,36 +14405,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         }
       }
 
-      // All validations passed - NOW pre-check credits before consuming
-      // Skip credit consumption if regenerating an incomplete cached report (already paid)
-      const creditsRequired = candidateIds.length;
-      
-      if (!hasIncompleteCachedReport) {
-        const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);
-        
-        if (quotaBalance.remaining < creditsRequired) {
-          // Check if partner has overage enabled (has card on file)
-          const partnerAccount = await storage.getPartnerAccount(partner.id);
-          if (!partnerAccount?.stripeCustomerId) {
-            return res.status(402).json({ 
-              message: `Insufficient credits. You need ${creditsRequired} credits to compare ${creditsRequired} candidates, but only have ${quotaBalance.remaining} available.`,
-              creditsRequired,
-              creditsRemaining: quotaBalance.remaining
-            });
-          }
-          // If partner has card on file, allow overage - credits will be consumed below
-        }
-
-        // Consume credits atomically (1 per candidate)
-        for (let i = 0; i < creditsRequired; i++) {
-          await storage.consumePartnerTest(
-            partner.id,
-            null,
-            `Candidate comparison analysis (${i + 1}/${creditsRequired})`
-          );
-        }
-      }
-
       const skillBasedAssessmentTypes = ['fit', 'ai_readiness', 'ai-readiness'];
       
       // Build skills map for radar chart
@@ -14878,21 +14848,6 @@ Keep each section concise (2-3 sentences). Use professional but accessible langu
             reportId: existingReport.id,
           });
         }
-      }
-
-      // Consume 1 credit for AI feature usage
-      const creditResult = await storage.consumePartnerTest(
-        partner.id,
-        null,
-        "Candidate comparison AI insights"
-      );
-
-      if (!creditResult.success && !creditResult.isOverage) {
-        return res.status(402).json({
-          message: "Insufficient credits. Please purchase more credits to use AI features.",
-          creditsRequired: 1,
-          creditsRemaining: creditResult.remaining
-        });
       }
 
       // Build summaries for each candidate
