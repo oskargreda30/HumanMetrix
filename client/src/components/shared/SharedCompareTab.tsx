@@ -2014,7 +2014,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                               <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} axisLine={false} tickLine={false} />
                               <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} axisLine={{ stroke: 'hsl(var(--border))' }} tickLine={{ stroke: 'hsl(var(--border))' }} />
-                              <RechartsTooltip />
+                              <RechartsTooltip cursor={false} />
                               {selectedCandidateData?.map((candidate: any, index: number) => {
                                 if (!comparison.fitAssessments?.[index]) return null;
                                 return (
@@ -2029,8 +2029,9 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                                     {FIT_SKILLS.map((skill, i) => (
                                       <Cell
                                         key={`cell-${i}`}
-                                        fill={hoveredSkill === getSkillAcronym(skill.displayName) ? (isCapturingPDF ? PDF_CHART_COLORS[index] : MULTI_CANDIDATE_COLORS[index % MULTI_CANDIDATE_COLORS.length]) : '#C8CDD3'}
-                                        style={{ transition: 'fill 0.2s ease' }}
+                                        fill={isCapturingPDF ? PDF_CHART_COLORS[index] : MULTI_CANDIDATE_COLORS[index % MULTI_CANDIDATE_COLORS.length]}
+                                        fillOpacity={!hoveredSkill || hoveredSkill === getSkillAcronym(skill.displayName) ? 1 : 0.2}
+                                        style={{ transition: 'fill-opacity 0.2s ease' }}
                                       />
                                     ))}
                                   </Bar>
@@ -2140,7 +2141,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                               <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} axisLine={false} tickLine={false} />
                               <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} axisLine={{ stroke: 'hsl(var(--border))' }} tickLine={{ stroke: 'hsl(var(--border))' }} />
-                              <RechartsTooltip />
+                              <RechartsTooltip cursor={false} />
                               {selectedCandidateData?.map((candidate: any, index: number) => {
                                 if (!comparison.aiReadinessAssessments?.[index]) return null;
                                 return (
@@ -2155,8 +2156,9 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                                     {AI_READINESS_SKILLS.map((skill, i) => (
                                       <Cell
                                         key={`cell-${i}`}
-                                        fill={hoveredSkill === getSkillAcronym(skill.displayName) ? (isCapturingPDF ? PDF_CHART_COLORS[index] : MULTI_CANDIDATE_COLORS[index % MULTI_CANDIDATE_COLORS.length]) : '#C8CDD3'}
-                                        style={{ transition: 'fill 0.2s ease' }}
+                                        fill={isCapturingPDF ? PDF_CHART_COLORS[index] : MULTI_CANDIDATE_COLORS[index % MULTI_CANDIDATE_COLORS.length]}
+                                        fillOpacity={!hoveredSkill || hoveredSkill === getSkillAcronym(skill.displayName) ? 1 : 0.2}
+                                        style={{ transition: 'fill-opacity 0.2s ease' }}
                                       />
                                     ))}
                                   </Bar>
@@ -2464,7 +2466,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                               <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} axisLine={false} tickLine={false} />
                               <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} axisLine={{ stroke: 'hsl(var(--border))' }} tickLine={{ stroke: 'hsl(var(--border))' }} />
-                              <RechartsTooltip />
+                              <RechartsTooltip cursor={false} />
                               {selectedCandidateData?.map((candidate: any, index: number) => (
                                 <Bar
                                   key={candidate.user.id}
@@ -2477,8 +2479,9 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                                   {comparison.radarData.map((item: any, i: number) => (
                                     <Cell
                                       key={`cell-${i}`}
-                                      fill={hoveredSkill === getSkillAcronym(item.skill) ? (isCapturingPDF ? PDF_CHART_COLORS[index] : MULTI_CANDIDATE_COLORS[index % MULTI_CANDIDATE_COLORS.length]) : '#C8CDD3'}
-                                      style={{ transition: 'fill 0.2s ease' }}
+                                      fill={isCapturingPDF ? PDF_CHART_COLORS[index] : MULTI_CANDIDATE_COLORS[index % MULTI_CANDIDATE_COLORS.length]}
+                                      fillOpacity={!hoveredSkill || hoveredSkill === getSkillAcronym(item.skill) ? 1 : 0.2}
+                                      style={{ transition: 'fill-opacity 0.2s ease' }}
                                     />
                                   ))}
                                 </Bar>

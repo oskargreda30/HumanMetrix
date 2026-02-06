@@ -508,8 +508,9 @@ export default function SampleComparisonReport() {
                           {fitRadarData.map((entry: any, i: number) => (
                             <Cell
                               key={`cell-${i}`}
-                              fill={hoveredSkill === entry.skill ? CANDIDATE_COLORS[index].fill : '#C8CDD3'}
-                              style={{ transition: 'fill 0.2s ease' }}
+                              fill={CANDIDATE_COLORS[index].fill}
+                              fillOpacity={!hoveredSkill || hoveredSkill === entry.skill ? 1 : 0.2}
+                              style={{ transition: 'fill-opacity 0.2s ease' }}
                             />
                           ))}
                         </Bar>
@@ -519,7 +520,7 @@ export default function SampleComparisonReport() {
                           <span style={{ color: CANDIDATE_COLORS[index % CANDIDATE_COLORS.length]?.fill || '#4A7FA8' }}>{value}</span>
                         )}
                       />
-                      <Tooltip />
+                      <Tooltip cursor={false} />
                     </BarChart>
                   </ResponsiveContainer>
                   <p className="text-xs text-muted-foreground text-center mt-1">Hover over a skill to highlight comparison</p>
@@ -549,8 +550,9 @@ export default function SampleComparisonReport() {
                           {aiRadarData.map((entry: any, i: number) => (
                             <Cell
                               key={`cell-${i}`}
-                              fill={hoveredSkill === entry.skill ? CANDIDATE_COLORS[index].fill : '#C8CDD3'}
-                              style={{ transition: 'fill 0.2s ease' }}
+                              fill={CANDIDATE_COLORS[index].fill}
+                              fillOpacity={!hoveredSkill || hoveredSkill === entry.skill ? 1 : 0.2}
+                              style={{ transition: 'fill-opacity 0.2s ease' }}
                             />
                           ))}
                         </Bar>
@@ -560,7 +562,7 @@ export default function SampleComparisonReport() {
                           <span style={{ color: CANDIDATE_COLORS[index % CANDIDATE_COLORS.length]?.fill || '#4A7FA8' }}>{value}</span>
                         )}
                       />
-                      <Tooltip />
+                      <Tooltip cursor={false} />
                     </BarChart>
                   </ResponsiveContainer>
                   <p className="text-xs text-muted-foreground text-center mt-1">Hover over a skill to highlight comparison</p>
@@ -756,8 +758,9 @@ export default function SampleComparisonReport() {
                         {COMBINED_RADAR_DATA.map((entry: any, i: number) => (
                           <Cell
                             key={`cell-${i}`}
-                            fill={hoveredSkill === entry.skill ? CANDIDATE_COLORS[index].fill : '#C8CDD3'}
-                            style={{ transition: 'fill 0.2s ease' }}
+                            fill={CANDIDATE_COLORS[index].fill}
+                            fillOpacity={!hoveredSkill || hoveredSkill === entry.skill ? 1 : 0.2}
+                            style={{ transition: 'fill-opacity 0.2s ease' }}
                           />
                         ))}
                       </Bar>
@@ -767,7 +770,7 @@ export default function SampleComparisonReport() {
                         <span style={{ color: CANDIDATE_COLORS[index % CANDIDATE_COLORS.length]?.fill || '#4A7FA8' }}>{value}</span>
                       )}
                     />
-                    <Tooltip />
+                    <Tooltip cursor={false} />
                   </BarChart>
                 </ResponsiveContainer>
                 <p className="text-xs text-muted-foreground text-center mt-1">Hover over a skill to highlight comparison</p>

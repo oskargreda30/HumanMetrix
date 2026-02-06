@@ -235,7 +235,7 @@ export function MultiCandidateBarChart({
                 borderRadius: '8px',
                 fontSize: '13px',
               }}
-              cursor={{ fill: 'hsl(var(--muted))', opacity: 0.15 }}
+              cursor={false}
             />
             {candidates.map((candidate, index) => (
               <Bar
@@ -247,8 +247,9 @@ export function MultiCandidateBarChart({
                 {mergedData.map((entry, i) => (
                   <Cell
                     key={`cell-${i}`}
-                    fill={hoveredSkill === entry.skill ? blueColors[index] : GREY_DEFAULT}
-                    style={{ transition: 'fill 0.2s ease' }}
+                    fill={blueColors[index]}
+                    fillOpacity={!hoveredSkill || hoveredSkill === entry.skill ? 1 : 0.2}
+                    style={{ transition: 'fill-opacity 0.2s ease' }}
                   />
                 ))}
               </Bar>
@@ -261,7 +262,7 @@ export function MultiCandidateBarChart({
             />
           </BarChart>
         </ResponsiveContainer>
-        <p className="text-xs text-muted-foreground text-center mt-1">Hover over a skill to highlight comparison</p>
+        <p className="text-xs text-muted-foreground text-center mt-1">Hover over a skill to highlight</p>
       </CardContent>
     </Card>
   );
