@@ -106,7 +106,7 @@ interface RoleFitData {
       requiredScore: number;
       gap: number | null;
       alignment: string;
-      criticality?: 'critical' | 'important' | 'nice-to-have';
+      criticality?: 'critical' | 'standard';
       dataAvailable?: boolean;
     }> | null;
     aiReadinessSkillAlignments?: Array<{
@@ -115,7 +115,7 @@ interface RoleFitData {
       requiredScore: number;
       gap: number | null;
       alignment: string;
-      criticality?: 'critical' | 'important' | 'nice-to-have';
+      criticality?: 'critical' | 'standard';
       dataAvailable?: boolean;
     }> | null;
     strengths: (string | { skill: string; summary: string; description: string })[];
@@ -1642,9 +1642,8 @@ export async function exportComparisonPDF(data: ComparisonData) {
     const skillCriticality = (data.roleData?.requiredSkillScores?.skillCriticality || {}) as Record<string, string>;
     
     const getSkillWeight = (skillName: string): number => {
-      const criticality = skillCriticality[skillName] || 'important';
+      const criticality = skillCriticality[skillName] || 'standard';
       if (criticality === 'critical') return 2.0;
-      if (criticality === 'important') return 1.5;
       return 1.0;
     };
     
@@ -2491,7 +2490,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
       const skillY = chartStartY + (index * skillHeight) + (skillHeight / 2);
       
       // Skill label on left with prominent criticality indicator
-      const criticality = skill.criticality || 'important';
+      const criticality = skill.criticality || 'standard';
       const isCriticalGap = criticality === 'critical' && skill.gap > 0;
       const skillName = skill.skillName.length > 18 ? skill.skillName.substring(0, 16) + '...' : skill.skillName;
       
@@ -3320,7 +3319,7 @@ interface MultiCandidateComparisonData {
       requiredScore: number;
       gap: number | null;
       alignment: string;
-      criticality: 'critical' | 'important' | 'nice-to-have';
+      criticality: 'critical' | 'standard';
       category: 'fit' | 'ai_readiness';
       dataAvailable?: boolean;
     }>;

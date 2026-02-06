@@ -46,7 +46,7 @@ type RoleAlignment = {
     requiredScore: number;
     gap: number | null;
     alignment: string;
-    criticality?: 'critical' | 'important' | 'nice-to-have';
+    criticality?: 'critical' | 'standard';
     dataAvailable?: boolean;
   }> | null;
   aiReadinessSkillAlignments?: Array<{
@@ -55,7 +55,7 @@ type RoleAlignment = {
     requiredScore: number;
     gap: number | null;
     alignment: string;
-    criticality?: 'critical' | 'important' | 'nice-to-have';
+    criticality?: 'critical' | 'standard';
     dataAvailable?: boolean;
   }> | null;
   strengths: (string | { skill: string; summary: string; description: string })[];
@@ -133,7 +133,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
   };
 
   const getCriticalityBadge = (criticality: string | undefined) => {
-    const level = criticality || 'important';
+    const level = criticality || 'standard';
     if (level === 'critical') {
       return (
         <Badge className="text-xs ml-1 px-1.5 min-w-[20px] justify-center bg-blue-600 text-white hover:bg-blue-700">

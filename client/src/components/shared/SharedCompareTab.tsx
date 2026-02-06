@@ -842,11 +842,10 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
     let totalCriticalSkills = 0;
     const missingSkills: string[] = [];
     
-    // Define weights: critical = 2x, important = 1.5x, nice-to-have = 1x
+    // Define weights: critical = 2x, standard = 1x
     const getWeight = (skillName: string): number => {
-      const criticality = skillCriticality[skillName] || 'important';
+      const criticality = skillCriticality[skillName] || 'standard';
       if (criticality === 'critical') return 2.0;
-      if (criticality === 'important') return 1.5;
       return 1.0;
     };
     

@@ -94,7 +94,7 @@ type CandidateEntry = {
     requiredScore: number;
     gap: number | null;
     alignment: string;
-    criticality: 'critical' | 'important' | 'nice-to-have';
+    criticality: 'critical' | 'standard';
     category: 'fit' | 'ai_readiness';
     dataAvailable?: boolean;
   }>;
