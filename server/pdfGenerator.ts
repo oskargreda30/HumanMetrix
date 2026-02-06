@@ -12,6 +12,19 @@ function readPngHeight(buffer: Buffer): number {
   return buffer.readUInt32BE(20);
 }
 
+function getInternalPort(): number {
+  const port = parseInt(process.env.PORT || '5000', 10);
+  if (isNaN(port)) {
+    console.warn('[PDF Generator] PORT env var is not a valid number, defaulting to 5000');
+    return 5000;
+  }
+  return port;
+}
+
+function getPdfBaseUrl(requestBaseUrl: string): string {
+  return `http://127.0.0.1:${getInternalPort()}`;
+}
+
 function findChromiumPath(): string {
   if (process.env.PUPPETEER_EXECUTABLE_PATH) {
     return process.env.PUPPETEER_EXECUTABLE_PATH;
@@ -57,6 +70,7 @@ async function getBrowser(): Promise<Browser> {
         '--no-zygote',
         '--single-process',
         '--disable-extensions',
+        '--ignore-certificate-errors',
       ],
     });
     console.log('[PDF Generator] Browser launched successfully');
@@ -83,15 +97,25 @@ export async function generateResultsPDF(options: GeneratePDFOptions): Promise<B
   const {
     sessionId,
     email,
+    baseUrl,
     waitForSelector = '[data-testid="results-content"]',
   } = options;
 
-  const localUrl = `http://127.0.0.1:5000/b2b-pdf-email/${sessionId}?email=${encodeURIComponent(email)}&pdf=true`;
+  const path = `/b2b-pdf-email/${sessionId}?email=${encodeURIComponent(email)}&pdf=true`;
+  const localUrl = `${getPdfBaseUrl(baseUrl)}${path}`;
+  const externalUrl = `${baseUrl}${path}`;
+  console.log(`[PDF Generator] Using local URL: ${localUrl}`);
   
-  return generatePDFFromUrl({
-    url: localUrl,
-    waitForSelector,
-  });
+  try {
+    return await generatePDFFromUrl({ url: localUrl, waitForSelector });
+  } catch (localError: any) {
+    console.log(`[PDF Generator] Local URL failed: ${localError.message}`);
+    if (localUrl !== externalUrl) {
+      console.log(`[PDF Generator] Retrying with external URL: ${externalUrl}`);
+      return generatePDFFromUrl({ url: externalUrl, waitForSelector });
+    }
+    throw localError;
+  }
 }
 
 interface GenerateMultiSessionPDFOptions {
@@ -101,16 +125,24 @@ interface GenerateMultiSessionPDFOptions {
 }
 
 export async function generateMultiSessionPDF(options: GenerateMultiSessionPDFOptions): Promise<Buffer> {
-  const { sessionIds, email } = options;
+  const { sessionIds, email, baseUrl } = options;
   
   console.log(`[PDF Generator] Generating multi-session PDF for ${sessionIds.length} sessions`);
   
-  const bundleUrl = `http://127.0.0.1:5000/b2b-results-bundle?sessions=${sessionIds.join(',')}&email=${encodeURIComponent(email)}&pdf=true`;
+  const path = `/b2b-results-bundle?sessions=${sessionIds.join(',')}&email=${encodeURIComponent(email)}&pdf=true`;
+  const localUrl = `${getPdfBaseUrl(baseUrl)}${path}`;
+  const externalUrl = `${baseUrl}${path}`;
   
-  return generatePDFFromUrl({
-    url: bundleUrl,
-    waitForSelector: '[data-testid="bundle-results-content"]',
-  });
+  try {
+    return await generatePDFFromUrl({ url: localUrl, waitForSelector: '[data-testid="bundle-results-content"]' });
+  } catch (localError: any) {
+    console.log(`[PDF Generator] Local URL failed for bundle: ${localError.message}`);
+    if (localUrl !== externalUrl) {
+      console.log(`[PDF Generator] Retrying bundle with external URL: ${externalUrl}`);
+      return generatePDFFromUrl({ url: externalUrl, waitForSelector: '[data-testid="bundle-results-content"]' });
+    }
+    throw localError;
+  }
 }
 
 interface GeneratePDFFromUrlOptions {
@@ -130,6 +162,20 @@ export async function generatePDFFromUrl(options: GeneratePDFFromUrlOptions): Pr
   try {
     page = await browser.newPage();
     
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        console.log(`[PDF Generator] Page console error: ${msg.text()}`);
+      }
+    });
+    
+    page.on('pageerror', (err) => {
+      console.log(`[PDF Generator] Page JS error: ${String(err)}`);
+    });
+    
+    page.on('requestfailed', (request) => {
+      console.log(`[PDF Generator] Failed request: ${request.url()} - ${request.failure()?.errorText}`);
+    });
+    
     await page.setViewport({
       width: 1200,
       height: 800,
@@ -142,6 +188,9 @@ export async function generatePDFFromUrl(options: GeneratePDFFromUrlOptions): Pr
       waitUntil: 'networkidle0',
       timeout: 60000,
     });
+
+    const pageTitle = await page.title();
+    console.log(`[PDF Generator] Page loaded, title: "${pageTitle}"`);
 
     if (waitForSelector) {
       try {
