@@ -1189,6 +1189,9 @@ export default function PartnerDashboard() {
   const [showPdfImportModal, setShowPdfImportModal] = useState(false);
   
   // Enterprise billing setup state
+  const [showSubscriptionEnquiry, setShowSubscriptionEnquiry] = useState(false);
+  const [subscriptionMessage, setSubscriptionMessage] = useState("");
+  const [sendingSubscriptionEnquiry, setSendingSubscriptionEnquiry] = useState(false);
   const [showBillingSetupDialog, setShowBillingSetupDialog] = useState(false);
   const [billingSetupForm, setBillingSetupForm] = useState({
     billingAddressLine1: "",
@@ -3347,6 +3350,19 @@ export default function PartnerDashboard() {
                                 );
                               })}
                             </div>
+                            {/* Request Subscription button for non-subscription users */}
+                            {(account?.partner?.billingType === 'payg' || account?.partner?.billingType === 'enterprise') && (
+                              <div className="mt-6 flex justify-center">
+                                <Button
+                                  variant="default"
+                                  onClick={() => setShowSubscriptionEnquiry(true)}
+                                  data-testid="button-request-subscription"
+                                >
+                                  <Mail className="h-4 w-4 mr-2" />
+                                  Request a Subscription Plan
+                                </Button>
+                              </div>
+                            )}
                             {/* Note for PAYG/Enterprise users about subscription discounts */}
                             {(account?.partner?.billingType === 'payg' || account?.partner?.billingType === 'enterprise') && (
                               <div className="mt-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800" data-testid="subscription-discount-banner">
@@ -6182,6 +6198,64 @@ export default function PartnerDashboard() {
             >
               {isSubmittingBillingChange && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Submit Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Subscription Enquiry Dialog */}
+      <Dialog open={showSubscriptionEnquiry} onOpenChange={setShowSubscriptionEnquiry}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Request a Subscription Plan</DialogTitle>
+            <DialogDescription>
+              Tell us about your needs and we'll get back to you with a tailored subscription plan that includes volume discounts.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Your Message</label>
+              <Textarea
+                value={subscriptionMessage}
+                onChange={(e) => setSubscriptionMessage(e.target.value)}
+                placeholder="e.g. We're looking to run approximately 200 assessments per month across multiple teams..."
+                rows={4}
+                data-testid="input-subscription-message"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSubscriptionEnquiry(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={!subscriptionMessage.trim() || sendingSubscriptionEnquiry}
+              data-testid="button-send-subscription-enquiry"
+              onClick={async () => {
+                setSendingSubscriptionEnquiry(true);
+                try {
+                  await apiRequest("POST", "/api/partner/subscription-enquiry", {
+                    message: subscriptionMessage.trim(),
+                  });
+                  toast({
+                    title: "Enquiry Sent",
+                    description: "We'll review your request and get back to you shortly.",
+                  });
+                  setShowSubscriptionEnquiry(false);
+                  setSubscriptionMessage("");
+                } catch (error: any) {
+                  toast({
+                    title: "Error",
+                    description: error.message || "Failed to send enquiry. Please try again.",
+                    variant: "destructive",
+                  });
+                } finally {
+                  setSendingSubscriptionEnquiry(false);
+                }
+              }}
+            >
+              {sendingSubscriptionEnquiry && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Send Enquiry
             </Button>
           </DialogFooter>
         </DialogContent>

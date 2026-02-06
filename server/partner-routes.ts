@@ -244,6 +244,66 @@ export function registerPartnerRoutes(app: Express) {
     }
   });
 
+  // Partner subscription enquiry - sends email to hello@humanmetrix.co.uk
+  app.post("/api/partner/subscription-enquiry", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user?.organizationId) {
+        return res.status(403).json({ error: "No partner organization linked" });
+      }
+
+      const partner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      if (!partner) {
+        return res.status(403).json({ error: "Partner account not found" });
+      }
+
+      const schema = z.object({
+        message: z.string().min(1, "Message is required").max(2000),
+      });
+
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid request", details: parsed.error.errors });
+      }
+
+      const { sendEmail } = await import("./email");
+      const result = await sendEmail({
+        to: "hello@humanmetrix.co.uk",
+        subject: `Subscription Enquiry from ${partner.companyName || user.firstName + " " + user.lastName}`,
+        html: `
+          <h2>Subscription Plan Enquiry</h2>
+          <p><strong>Partner:</strong> ${partner.companyName || "N/A"}</p>
+          <p><strong>Contact:</strong> ${user.firstName} ${user.lastName} (${user.email})</p>
+          <p><strong>Current Billing Type:</strong> ${partner.billingType || "PAYG"}</p>
+          <p><strong>Current Credits:</strong> ${partner.credits || 0}</p>
+          <p><strong>Message:</strong></p>
+          <p>${parsed.data.message.replace(/\n/g, "<br>")}</p>
+        `,
+        text: `Subscription Enquiry from ${partner.companyName}\nContact: ${user.firstName} ${user.lastName} (${user.email})\nBilling Type: ${partner.billingType}\nCredits: ${partner.credits}\nMessage: ${parsed.data.message}`,
+        replyTo: user.email,
+      }, {
+        recipientType: 'admin' as any,
+        emailType: 'general' as any,
+        recipientName: 'HumanMetrix Admin',
+        metadata: { partnerId: partner.id, enquiryType: 'subscription' },
+      });
+
+      if (!result.success) {
+        return res.status(500).json({ error: "Failed to send enquiry email" });
+      }
+
+      res.json({ success: true, message: "Subscription enquiry sent successfully" });
+    } catch (error: any) {
+      console.error("Error sending subscription enquiry:", error);
+      res.status(500).json({ error: error.message || "Failed to send enquiry" });
+    }
+  });
+
   // Get partner billing info for display
   app.get("/api/partner/me/billing-info", isAuthenticated, async (req: any, res: Response) => {
     try {
