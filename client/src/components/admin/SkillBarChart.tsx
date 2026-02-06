@@ -1,5 +1,6 @@
 import { Bar, BarChart, XAxis, YAxis, ResponsiveContainer, Legend, Tooltip, Cell, CartesianGrid } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart3 } from "lucide-react";
 
 interface SkillData {
   skill: string;
@@ -31,12 +32,20 @@ export function SkillBarChart({
   fill = "#3b82f6",
   maxScore = 100,
 }: SkillBarChartProps) {
-  const chartContent = (
+  const emptyState = (
+    <div className="flex flex-col items-center justify-center text-muted-foreground" style={{ height }}>
+      <BarChart3 className="h-10 w-10 mb-2 opacity-30" />
+      <p className="text-sm font-medium">No data available</p>
+      <p className="text-xs mt-1">Assessment data will appear here once completed.</p>
+    </div>
+  );
+
+  const chartContent = (!data || data.length === 0) ? emptyState : (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart
         data={data}
         layout="vertical"
-        margin={{ top: 5, right: 40, left: 10, bottom: 5 }}
+        margin={{ top: 5, right: 55, left: 10, bottom: 5 }}
       >
         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
         <XAxis
@@ -117,6 +126,25 @@ export function MultiCandidateBarChart({
   height = 400,
   maxScore = 100,
 }: MultiCandidateBarChartProps) {
+  if (!candidates || candidates.length === 0 || candidates.every(c => !c.data || c.data.length === 0)) {
+    return (
+      <Card>
+        {title && (
+          <CardHeader>
+            <CardTitle>{title}</CardTitle>
+          </CardHeader>
+        )}
+        <CardContent>
+          <div className="flex flex-col items-center justify-center text-muted-foreground py-12">
+            <BarChart3 className="h-10 w-10 mb-2 opacity-30" />
+            <p className="text-sm font-medium">No comparison data available</p>
+            <p className="text-xs mt-1">Select candidates with completed assessments to compare.</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const allSkills = new Set<string>();
   candidates.forEach(candidate => {
     candidate.data.forEach(d => allSkills.add(d.skill));
@@ -143,7 +171,7 @@ export function MultiCandidateBarChart({
           <BarChart
             data={mergedData}
             layout="vertical"
-            margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+            margin={{ top: 5, right: 55, left: 10, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
             <XAxis

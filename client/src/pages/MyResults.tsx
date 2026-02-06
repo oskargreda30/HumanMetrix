@@ -573,7 +573,7 @@ export default function MyResults() {
                         skill: getSkillAcronym(skill),
                         score: score as number,
                         fullMark: 100
-                      }))} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                      }))} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                         <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                         <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
@@ -659,7 +659,7 @@ export default function MyResults() {
                         skill: getSkillAcronym(skill),
                         score: score as number,
                         fullMark: 100
-                      }))} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                      }))} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                         <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                         <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
@@ -996,7 +996,7 @@ export default function MyResults() {
           return (
             <div id="fit-radar-chart-pdf" style={{ width: '400px', height: '400px', background: 'white' }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart layout="vertical" data={fitData} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                <BarChart layout="vertical" data={fitData} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
                   <YAxis type="category" dataKey="skill" width={120} tick={{ fill: '#000', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                   <XAxis type="number" domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 11 }} />
@@ -1020,7 +1020,7 @@ export default function MyResults() {
           return (
             <div id="ai-readiness-radar-chart-pdf" style={{ width: '400px', height: '400px', background: 'white' }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart layout="vertical" data={aiData} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                <BarChart layout="vertical" data={aiData} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
                   <YAxis type="category" dataKey="skill" width={120} tick={{ fill: '#000', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                   <XAxis type="number" domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 11 }} />

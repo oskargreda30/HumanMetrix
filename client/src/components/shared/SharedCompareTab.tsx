@@ -1987,7 +1987,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                         <h3 className="font-semibold mb-4">Combined Comparison</h3>
                         <div id="pdf-comparison-fit-overlapping" className="bg-white p-4 rounded-lg">
                           <ResponsiveContainer width="100%" height={280}>
-                            <BarChart layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }} data={(() => {
+                            <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} data={(() => {
                               return FIT_SKILLS.map(skill => {
                                 const dataPoint: any = { skill: getSkillAcronym(skill.displayName) };
                                 selectedCandidateData?.forEach((candidate: any, index: number) => {
@@ -2057,7 +2057,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                                 </div>
                                 <div id={`pdf-comparison-fit-${index}`} className="bg-white p-4 rounded-lg">
                                   <ResponsiveContainer width="100%" height={220}>
-                                    <BarChart layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }} data={radarData}>
+                                    <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} data={radarData}>
                                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                                       <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} axisLine={false} tickLine={false} />
                                       <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} axisLine={{ stroke: 'hsl(var(--border))' }} tickLine={{ stroke: 'hsl(var(--border))' }} />
@@ -2101,7 +2101,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                         <h3 className="font-semibold mb-4">Combined Comparison</h3>
                         <div id="pdf-comparison-ai-overlapping" className="bg-white p-4 rounded-lg">
                           <ResponsiveContainer width="100%" height={280}>
-                            <BarChart layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }} data={(() => {
+                            <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} data={(() => {
                               return AI_READINESS_SKILLS.map(skill => {
                                 const dataPoint: any = { skill: getSkillAcronym(skill.displayName) };
                                 selectedCandidateData?.forEach((candidate: any, index: number) => {
@@ -2171,7 +2171,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                                 </div>
                                 <div id={`pdf-comparison-ai-${index}`} className="bg-white p-4 rounded-lg">
                                   <ResponsiveContainer width="100%" height={220}>
-                                    <BarChart layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }} data={radarData}>
+                                    <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} data={radarData}>
                                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                                       <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} axisLine={false} tickLine={false} />
                                       <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} axisLine={{ stroke: 'hsl(var(--border))' }} tickLine={{ stroke: 'hsl(var(--border))' }} />
@@ -2421,7 +2421,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                           <h3 className="font-semibold mb-4">All Skills Combined</h3>
                           <div id="pdf-comparison-overall-skills" className="bg-white p-4 md:p-6 rounded-lg overflow-visible">
                           <ResponsiveContainer width="100%" height={400} className="min-h-[320px] md:min-h-[400px]">
-                            <BarChart layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }} data={comparison.radarData.map(item => ({
+                            <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} data={comparison.radarData.map(item => ({
                               ...item,
                               skill: getSkillAcronym(item.skill)
                             }))}>
@@ -2798,7 +2798,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                   {getCandidateName(selectedCandidateData?.[index])} - FIT
                 </h3>
                 <ResponsiveContainer width="100%" height="90%">
-                  <BarChart layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }} data={radarData}>
+                  <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} data={radarData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                     <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} axisLine={false} tickLine={false} />
                     <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} axisLine={{ stroke: 'hsl(var(--border))' }} tickLine={{ stroke: 'hsl(var(--border))' }} />
@@ -2834,7 +2834,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                   {getCandidateName(selectedCandidateData?.[index])} - AI Readiness
                 </h3>
                 <ResponsiveContainer width="100%" height="90%">
-                  <BarChart layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }} data={radarData}>
+                  <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} data={radarData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                     <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} axisLine={false} tickLine={false} />
                     <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} axisLine={{ stroke: 'hsl(var(--border))' }} tickLine={{ stroke: 'hsl(var(--border))' }} />
@@ -2861,7 +2861,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                 <BarChart 
                   layout="vertical"
                   data={comparison.radarData} 
-                  margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+                  margin={{ top: 5, right: 55, left: 10, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                   <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} axisLine={false} tickLine={false} />

@@ -63,12 +63,12 @@ export function PromptArchitectureResults({ scores, totalScore, evaluations }: P
           <div>
             <h3 className="text-center font-semibold mb-4">Dimension Breakdown</h3>
             <ResponsiveContainer width="100%" height={250}>
-              <BarChart layout="vertical" data={radarData} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+              <BarChart layout="vertical" data={radarData} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                 <YAxis 
                   type="category" 
                   dataKey="dimension" 
-                  width={120} 
+                  width={130} 
                   tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} 
                   axisLine={false} 
                   tickLine={false} 

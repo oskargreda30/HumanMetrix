@@ -596,7 +596,7 @@ export default function EcosystemSampleReport() {
             <div className="bg-muted/30 rounded-lg p-4 border">
               <div className="h-[350px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart layout="vertical" data={cumulativeScores} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                  <BarChart layout="vertical" data={cumulativeScores} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                     <YAxis type="category" dataKey="code" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                     <XAxis type="number" domain={[0, sampleTeamMembers.length * 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />

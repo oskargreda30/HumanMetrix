@@ -1113,7 +1113,7 @@ export default function PartnerResultsTab() {
                             <div className="grid gap-6 lg:grid-cols-2">
                               <div className="h-72 bg-white dark:bg-gray-900 rounded-lg p-2">
                                 <ResponsiveContainer width="100%" height="100%">
-                                  <BarChart layout="vertical" data={fitRadarData} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                                  <BarChart layout="vertical" data={fitRadarData} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                                     <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                                     <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
@@ -1156,9 +1156,9 @@ export default function PartnerResultsTab() {
                           </CardHeader>
                           <CardContent>
                             <div className="grid gap-6 lg:grid-cols-2">
-                              <div className="h-72 bg-white dark:bg-gray-900 rounded-lg p-2">
+                              <div className="h-80 bg-white dark:bg-gray-900 rounded-lg p-2">
                                 <ResponsiveContainer width="100%" height="100%">
-                                  <BarChart layout="vertical" data={aiRadarData} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                                  <BarChart layout="vertical" data={aiRadarData} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                                     <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                                     <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />

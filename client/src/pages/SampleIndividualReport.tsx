@@ -285,7 +285,7 @@ export default function SampleIndividualReport() {
                 <h3 className="text-lg font-semibold mb-4 text-center" data-testid="heading-fit-bar-chart">Skills Overview</h3>
                 <div data-testid="chart-fit-bar-chart">
                 <ResponsiveContainer width="100%" height={280}>
-                  <BarChart layout="vertical" data={fitRadarData} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                  <BarChart layout="vertical" data={fitRadarData} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                     <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                     <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
@@ -374,7 +374,7 @@ export default function SampleIndividualReport() {
                 <h3 className="text-lg font-semibold mb-4 text-center" data-testid="heading-ai-bar-chart">Skills Overview</h3>
                 <div data-testid="chart-ai-bar-chart">
                 <ResponsiveContainer width="100%" height={280}>
-                  <BarChart layout="vertical" data={aiRadarData} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                  <BarChart layout="vertical" data={aiRadarData} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                     <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                     <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />

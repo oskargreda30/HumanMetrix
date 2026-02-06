@@ -562,7 +562,7 @@ export default function B2BPdfEmail() {
                     skill: getSkillAcronym(skill),
                     score: Math.round(score as number),
                     fullMark: 100
-                  }))} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                  }))} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={isPdfRender ? '#e2e8f0' : 'hsl(var(--border))'} horizontal={false} />
                     <YAxis type="category" dataKey="skill" width={120} tick={{ fill: isPdfRender ? '#1e293b' : 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                     <XAxis type="number" domain={[0, 100]} tick={{ fill: isPdfRender ? '#64748b' : 'hsl(var(--muted-foreground))', fontSize: 11 }} />

@@ -481,7 +481,7 @@ export default function SampleComparisonReport() {
               <CardContent>
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart layout="vertical" data={fitRadarData} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                    <BarChart layout="vertical" data={fitRadarData} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                       <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                       <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
@@ -510,7 +510,7 @@ export default function SampleComparisonReport() {
               <CardContent>
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart layout="vertical" data={aiRadarData} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                    <BarChart layout="vertical" data={aiRadarData} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                       <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                       <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
@@ -705,7 +705,7 @@ export default function SampleComparisonReport() {
               <h3 className="font-semibold mb-4">All Skills Combined</h3>
               <div className="h-[400px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart layout="vertical" data={COMBINED_RADAR_DATA} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                  <BarChart layout="vertical" data={COMBINED_RADAR_DATA} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                     <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                     <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
