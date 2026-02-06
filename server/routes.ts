@@ -22,7 +22,6 @@ import Stripe from "stripe";
 import { z } from "zod";
 import { EMAIL_REGEX, isValidEmail, isValidName } from "@shared/validation";
 import { createPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured, getPaymentIntent, verifyAirwallexWebhookSignature, AirwallexWebhookEvent } from "./airwallex";
-import { consumeTestCredit } from "./partner-auth";
 import { logAiCost, extractUsage, AI_USAGE_OPERATION_TYPES } from "./ai-cost-tracker";
 import multer from "multer";
 import { getStrengthDescription, getDevelopmentDescription } from "../shared/skillNames";
@@ -4811,23 +4810,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
             });
             // calculatePromptArchitectureScores already updates the database in a transaction
             
-            // Consume partner credits if this is a partner-invited assessment
-            if (result.partnerInvitationId) {
-              try {
-                const invitation = await storage.getPartnerCandidateInvitation(result.partnerInvitationId);
-                if (invitation && invitation.partnerId) {
-                  console.log(`[Partner Credit] Consuming credit for partner ${invitation.partnerId} - Prompt Architecture`);
-                  const creditResult = await consumeTestCredit(
-                    invitation.partnerId,
-                    id,
-                    result.assessmentType
-                  );
-                  console.log(`[Partner Credit] Credit consumed result:`, creditResult);
-                }
-              } catch (creditError) {
-                console.error(`[Partner Credit] Failed to consume credit for partner invitation ${result.partnerInvitationId}:`, creditError);
-              }
-            }
           } catch (error: any) {
             console.error(`[Prompt Arch Background ERROR] Evaluation failed for assessment ${id}:`, {
               error: error.message,
@@ -4876,25 +4858,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
           message: "Failed to save assessment results. Please try again.",
           error: "database_error"
         });
-      }
-      
-      // Consume partner credits if this is a partner-invited assessment
-      if (result.partnerInvitationId) {
-        try {
-          const invitation = await storage.getPartnerCandidateInvitation(result.partnerInvitationId);
-          if (invitation && invitation.partnerId) {
-            console.log(`[Partner Credit] Consuming credit for partner ${invitation.partnerId} - assessment ${result.assessmentType}`);
-            const creditResult = await consumeTestCredit(
-              invitation.partnerId,
-              id, // Use assessment result ID as session ID for tracking
-              result.assessmentType
-            );
-            console.log(`[Partner Credit] Credit consumed result:`, creditResult);
-          }
-        } catch (creditError) {
-          // Log error but don't fail the submission - assessment is already saved
-          console.error(`[Partner Credit] Failed to consume credit for partner invitation ${result.partnerInvitationId}:`, creditError);
-        }
       }
       
       res.json({ success: true, scores, totalScore, evaluations });

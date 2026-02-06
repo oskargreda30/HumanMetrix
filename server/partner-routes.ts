@@ -1,7 +1,7 @@
 import { Express, Request, Response } from "express";
 import { evaluatePromptWithGPT, PA_LEVEL_DESCRIPTIONS } from "./services/promptArchitecture";
 import { storage } from "./storage";
-import { partnerAuth, PartnerRequest, trackUsage, generateApiKey, consumeTestCredit } from "./partner-auth";
+import { partnerAuth, PartnerRequest, trackUsage, generateApiKey } from "./partner-auth";
 import { isAuthenticated } from "./auth";
 import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation, sendPartnerBulkInvitationEmail, sendB2BCongratulatoryEmail, sendB2BAllCompleteEmail } from "./email";
 import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount, B2C_RETAIL_PRICE_PER_ASSESSMENT, BASE_FEE, ASSESSMENT_PRICES, assessmentResults, assessmentSessions, promptArchitectureEvaluations } from "@shared/schema";
@@ -1581,85 +1581,16 @@ export function registerPartnerRoutes(app: Express) {
           );
           console.log(`[Test Session] Skipping billing for test session ${sessionId}`);
         } else {
-          // Check if this test should use a free credit (from welcome package)
-          // Free tests are consumed first, then paid credits
-          const quotaBalanceBefore = await storage.getPartnerQuotaBalance(session.partnerId);
-          const freeTestsRemaining = Math.max(0, (quotaBalanceBefore.freeTestsAllocated || 0) - quotaBalanceBefore.testsConsumed);
-          const isUsingFreeCredit = freeTestsRemaining > 0;
-          
-          // Track usage - free tests are not billed
+          // Track usage for reporting only - assessments are not billed
           await trackUsage(
             session.partnerId,
             session.apiKeyId,
             sessionId,
             "session_completed",
             session.assessmentType,
-            !isUsingFreeCredit, // Only billable if not using free credit
-            isUsingFreeCredit ? 0 : (partner?.pricePerAssessment || 500)
+            false, // Not billable - assessments don't consume credits
+            0
           );
-          
-          if (isUsingFreeCredit) {
-            console.log(`[Free Test] Using complimentary test credit for session ${sessionId} (${freeTestsRemaining} remaining before this test)`);
-          }
-          
-          // Consume a test credit from the partner's prepaid quota (only for production sessions)
-          const quotaResult = await consumeTestCredit(
-            session.partnerId,
-            sessionId,
-            session.assessmentType
-          );
-          
-          // Handle quota consumption failure - block result delivery if quota couldn't be deducted
-          if (!quotaResult.success) {
-            console.error(`Failed to consume test credit for session ${sessionId}: Insufficient quota`);
-            // Return error but assessment data is saved - admin can add credits for retry
-            return res.status(402).json({
-              error: "Quota Consumption Failed",
-              message: "Unable to deduct test credit. Please ensure you have available quota.",
-              sessionId: session.id,
-              status: "billing_pending",
-            });
-          }
-          
-          // Send quota warning emails if thresholds are crossed
-          if (partner) {
-            const balance = await storage.getPartnerQuotaBalance(session.partnerId);
-            const alertEmail = partner.quotaAlertEmail || partner.billingEmail || partner.email;
-            
-            if (quotaResult.shouldNotifyFirst) {
-              await sendPartnerQuotaWarning70(
-                alertEmail,
-                partner.companyName || partner.name,
-                balance.testsConsumed,
-                balance.testsPurchased,
-                balance.remaining
-              );
-            }
-            if (quotaResult.shouldNotifyUrgent) {
-              await sendPartnerQuotaWarning90(
-                alertEmail,
-                partner.companyName || partner.name,
-                balance.testsConsumed,
-                balance.testsPurchased,
-                balance.remaining
-              );
-            }
-            if (quotaResult.suspended) {
-              await sendPartnerAccessSuspendedEmail(
-                alertEmail,
-                partner.companyName || partner.name
-              );
-            }
-          
-            // Handle auto top-up if triggered
-            if (quotaResult.shouldAutoTopUp && partner.autoTopUpPackage && partner.stripeCustomerId) {
-              try {
-                await processAutoTopUp(partner);
-              } catch (err) {
-                console.error('Auto top-up failed:', err);
-              }
-            }
-          }
         } // End of else block for non-test sessions
         
         // Create notification for assessment completion (skip for test API key sessions)
