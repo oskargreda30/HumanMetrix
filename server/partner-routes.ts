@@ -4247,23 +4247,11 @@ export function registerPartnerRoutes(app: Express) {
               
               let pdfBuffer: Buffer;
               
-              // Use jsPDF generation (matches ecosystem tab PDF export format exactly)
-              const { generateB2BResultsPDF } = await import("./generateB2BPDF");
-              const freshSession = await storage.getAssessmentSession(b2bSessionId);
-              if (!freshSession) {
-                throw new Error(`Session ${b2bSessionId} not found during PDF generation`);
-              }
-              const pdfPartner = freshSession.partnerId ? await storage.getPartnerAccount(freshSession.partnerId) : null;
-              pdfBuffer = generateB2BResultsPDF({
-                candidateName: (freshSession as any)?.metadata?.candidateName || targetEmail.split('@')[0],
-                candidateEmail: targetEmail,
-                assessmentType: freshSession.assessmentType,
-                scores: (freshSession as any)?.scores || {},
-                totalScore: (freshSession as any)?.totalScore || 0,
-                percentile: (freshSession as any)?.percentile,
-                evaluations: (freshSession as any)?.evaluations || [],
-                completedAt: freshSession.completedAt || new Date(),
-                partnerCompanyName: pdfPartner?.companyName || pdfPartner?.name || 'HumanMetrix Partner',
+              const { generateResultsPDF } = await import("./pdfGenerator");
+              pdfBuffer = await generateResultsPDF({
+                sessionId: b2bSessionId,
+                email: targetEmail,
+                baseUrl,
               });
               
               const pdfSizeMB = (pdfBuffer.length / (1024 * 1024)).toFixed(2);
@@ -4633,23 +4621,12 @@ export function registerPartnerRoutes(app: Express) {
       const partner = session.partnerId ? await storage.getPartnerAccount(session.partnerId) : null;
       const partnerCompanyName = partner?.companyName || partner?.name || 'HumanMetrix Partner';
       
-      // Get scores and generate PDF
-      const scores = (session as any).scores || {};
-      const totalScore = (session as any).totalScore || 0;
-      const percentile = (session as any).percentile;
-      const evaluations = (session as any).evaluations || [];
-      
-      const { generateB2BResultsPDF } = await import("./generateB2BPDF");
-      const pdfBuffer = generateB2BResultsPDF({
-        candidateName: (session as any).metadata?.candidateName || session.externalEmail.split('@')[0],
-        candidateEmail: session.externalEmail,
-        assessmentType: session.assessmentType,
-        scores,
-        totalScore,
-        percentile,
-        evaluations,
-        completedAt: session.completedAt || new Date(),
-        partnerCompanyName,
+      const baseUrl = getBaseUrl(req);
+      const { generateResultsPDF } = await import("./pdfGenerator");
+      const pdfBuffer = await generateResultsPDF({
+        sessionId,
+        email: session.externalEmail,
+        baseUrl,
       });
       
       // Format assessment name for filename
@@ -4735,21 +4712,15 @@ export function registerPartnerRoutes(app: Express) {
       const partner = session.partnerId ? await storage.getPartnerAccount(session.partnerId) : null;
       const partnerCompanyName = partner?.companyName || partner?.name || 'HumanMetrix Partner';
       
-      // Generate PDF using jsPDF (matches ecosystem tab PDF export format exactly)
-      const { generateB2BResultsPDF } = await import("./generateB2BPDF");
+      const baseUrl = getBaseUrl(req);
+      const { generateResultsPDF } = await import("./pdfGenerator");
       
       console.log(`[Server PDF] Generating PDF for session ${sessionId}`);
       
-      const pdfBuffer = generateB2BResultsPDF({
-        candidateName: (session as any)?.metadata?.candidateName || targetEmail.split('@')[0],
-        candidateEmail: targetEmail,
-        assessmentType: session.assessmentType,
-        scores: (session as any)?.scores || {},
-        totalScore: (session as any)?.totalScore || 0,
-        percentile: (session as any)?.percentile,
-        evaluations: (session as any)?.evaluations || [],
-        completedAt: session.completedAt || new Date(),
-        partnerCompanyName,
+      const pdfBuffer = await generateResultsPDF({
+        sessionId,
+        email: targetEmail,
+        baseUrl,
       });
       
       const pdfSizeMB = (pdfBuffer.length / (1024 * 1024)).toFixed(2);
@@ -5370,12 +5341,12 @@ export function registerPartnerRoutes(app: Express) {
       });
       
       // Send ONE email with all PDFs attached asynchronously
+      const bundleBaseUrl = getBaseUrl(req);
       (async () => {
         try {
-          const { generateB2BResultsPDF } = await import("./generateB2BPDF");
+          const { generateResultsPDF } = await import("./pdfGenerator");
           const { sendBundleResultsEmail } = await import("./email");
           
-          // Get all completed sessions for email
           const sessions = await Promise.all(
             sessionIds.map(id => storage.getAssessmentSession(id))
           );
@@ -5383,7 +5354,6 @@ export function registerPartnerRoutes(app: Express) {
           
           console.log(`[Bundle Payment] Generating PDFs for ${validSessions.length} sessions`);
           
-          // Generate all PDFs using jsPDF (matches ecosystem tab PDF export format exactly)
           const pdfAttachments: Array<{ filename: string; buffer: Buffer; assessmentType: string }> = [];
           
           for (const session of validSessions) {
@@ -5401,17 +5371,10 @@ export function registerPartnerRoutes(app: Express) {
               
               console.log(`[Bundle Payment] Generating PDF for ${session.assessmentType}`);
               
-              const bundlePartner = session.partnerId ? await storage.getPartnerAccount(session.partnerId) : null;
-              const pdfBuffer = generateB2BResultsPDF({
-                candidateName: (session as any)?.metadata?.candidateName || email.split('@')[0],
-                candidateEmail: email,
-                assessmentType: session.assessmentType,
-                scores: (session as any)?.scores || {},
-                totalScore: (session as any)?.totalScore || 0,
-                percentile: (session as any)?.percentile,
-                evaluations: (session as any)?.evaluations || [],
-                completedAt: session.completedAt || new Date(),
-                partnerCompanyName: bundlePartner?.companyName || bundlePartner?.name || 'HumanMetrix Partner',
+              const pdfBuffer = await generateResultsPDF({
+                sessionId: session.id,
+                email,
+                baseUrl: bundleBaseUrl,
               });
               
               pdfAttachments.push({

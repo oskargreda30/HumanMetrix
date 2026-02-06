@@ -11,7 +11,6 @@ import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, broadcastMessages, SYSTEM_SETTING_KEYS, auditLogs, errorLogs, partnerInvoices, invitations, partnerCandidateInvitations, candidateNotes, emailLogs, sessions, appLogs, type PartnerAccount, type AssessmentSession } from "@shared/schema";
 import { eq, desc, sql, and, or, gte, isNotNull } from "drizzle-orm";
 import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPartnerWelcomeEmail, sendGeneralEnquiryEmail, sendB2BResultsEmail, sendPaymentReceiptWithPdf, type PdfReceiptEmailDetails, getEmailProvider, setEmailProvider, type EmailProvider } from "./email";
-import { generateB2BResultsPDF } from "./generateB2BPDF";
 import { generateReceiptPDF, generateInvoicePDF, generateInvoiceReceiptNumber, type ReceiptData } from "./generateReceipt";
 import { generateTemporaryPassword } from "./passwordUtils";
 import { getQueueStats } from "./queues";
@@ -1808,16 +1807,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // 2. Send results email with PDF
             try {
-              const resultsPdfBuffer = generateB2BResultsPDF({
-                candidateName: session.externalUserId || undefined,
-                candidateEmail: session.externalEmail,
-                assessmentType: session.assessmentType,
-                scores: session.scores || {},
-                totalScore: session.totalScore || undefined,
-                percentile: session.percentile || undefined,
-                evaluations: session.evaluations || undefined,
-                completedAt: session.completedAt || new Date(),
-                partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
+              const { generateResultsPDF } = await import('./pdfGenerator');
+              const resultsPdfBuffer = await generateResultsPDF({
+                sessionId,
+                email: session.externalEmail,
+                baseUrl: getRoutesBaseUrl(req),
               });
               
               await sendB2BResultsEmail({
@@ -25731,16 +25725,11 @@ async function sendFreeUnlockResultsEmail(session: AssessmentSession) {
     const paymentStatus = session.resultsPaymentStatus || 'unpaid';
     
     // Generate proper PDF with real assessment results
-    const pdfBuffer = generateB2BResultsPDF({
-      candidateName: session.externalUserId || undefined,
-      candidateEmail: session.externalEmail,
-      assessmentType: session.assessmentType,
-      scores: session.scores || {},
-      totalScore: session.totalScore || undefined,
-      percentile: session.percentile || undefined,
-      evaluations: session.evaluations || undefined,
-      completedAt: session.completedAt || new Date(),
-      partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
+    const { generateResultsPDF } = await import('./pdfGenerator');
+    const pdfBuffer = await generateResultsPDF({
+      sessionId: session.id,
+      email: session.externalEmail,
+      baseUrl: getStaticBaseUrl(),
     });
     const pdfFilename = `${assessmentName.replace(/\s/g, '_')}_Results.pdf`;
     
