@@ -1164,15 +1164,22 @@ export default function EmbedAssessment() {
 
   const startSubmissionProgress = () => {
     setSubmissionProgress(0);
-    let progress = 0;
+    const startTime = Date.now();
+    const targetDurationMs = 75000;
+    const maxProgress = 95;
+    
     const interval = setInterval(() => {
-      progress += Math.random() * 3 + 1;
-      if (progress >= 95) {
-        progress = 95;
+      const elapsed = Date.now() - startTime;
+      const t = Math.min(elapsed / targetDurationMs, 1);
+      const eased = 1 - Math.pow(1 - t, 2.5);
+      const progress = eased * maxProgress;
+      
+      setSubmissionProgress(Math.min(progress, maxProgress));
+      
+      if (progress >= maxProgress) {
         clearInterval(interval);
       }
-      setSubmissionProgress(Math.min(progress, 95));
-    }, 300);
+    }, 200);
     submissionProgressRef.current = interval;
   };
 
@@ -2533,7 +2540,7 @@ export default function EmbedAssessment() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-between mt-6 relative">
+        <div className="flex justify-between mt-6 gap-3">
           <Button
             variant="outline"
             onClick={handlePrevious}
@@ -2562,22 +2569,6 @@ export default function EmbedAssessment() {
                   "Submit Assessment"
                 )}
               </Button>
-              {isSubmitting && isCurrentPromptArchitecture && (
-                <div className="absolute bottom-0 left-0 right-0 px-6 pb-2" data-testid="progress-submission">
-                  <div className="w-full bg-slate-700 rounded-full h-2">
-                    <div 
-                      className="bg-cyan-500 h-2 rounded-full transition-all duration-300 ease-out"
-                      style={{ width: `${submissionProgress}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-center mt-1 text-slate-400">
-                    {submissionProgress < 30 ? "Sending responses to AI engine..." : 
-                     submissionProgress < 60 ? "Evaluating prompt structure and clarity..." : 
-                     submissionProgress < 90 ? "Calculating scores and generating feedback..." : 
-                     "Finalising results..."}
-                  </p>
-                </div>
-              )}
             </>
           ) : (
             <Button
@@ -2591,6 +2582,23 @@ export default function EmbedAssessment() {
             </Button>
           )}
         </div>
+
+        {isSubmitting && isCurrentPromptArchitecture && (
+          <div className="mt-4 px-2" data-testid="progress-submission">
+            <div className="w-full bg-slate-700 rounded-full h-2">
+              <div 
+                className="bg-cyan-500 h-2 rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${submissionProgress}%` }}
+              />
+            </div>
+            <p className="text-xs text-center mt-1.5 text-slate-400">
+              {submissionProgress < 25 ? "Sending responses to AI engine..." : 
+               submissionProgress < 55 ? "Evaluating prompt structure and clarity..." : 
+               submissionProgress < 85 ? "Calculating scores and generating feedback..." : 
+               "Finalising results..."}
+            </p>
+          </div>
+        )}
 
         <div className="mt-8 pt-4 border-t border-slate-700/50 flex items-center justify-center gap-2">
           <span className={`text-xs ${textMuted}`}>Powered by</span>

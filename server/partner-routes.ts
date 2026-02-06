@@ -2962,9 +2962,13 @@ export function registerPartnerRoutes(app: Express) {
       const existingUser = await storage.getUserByEmail(invitation.email);
       const userExists = !!existingUser;
       
-      // Get all completed assessment types for this invitation
+      // Get all completed assessment sessions for this invitation (with metadata for country code)
       const completedSessions = await db
-        .select({ assessmentType: assessmentSessions.assessmentType })
+        .select({ 
+          assessmentType: assessmentSessions.assessmentType,
+          metadata: assessmentSessions.metadata,
+          resultsPaymentStatus: assessmentSessions.resultsPaymentStatus,
+        })
         .from(assessmentSessions)
         .where(
           and(
@@ -2986,34 +2990,37 @@ export function registerPartnerRoutes(app: Express) {
         });
       }
       
+      // Get country code from session metadata for PPP pricing
+      const sessionWithCountry = completedSessions.find(s => (s.metadata as any)?.countryCode);
+      const userCountryCode = (sessionWithCountry?.metadata as any)?.countryCode || 'GB';
+      const userCurrency = getCurrencyForCountry(userCountryCode);
+      
       // Check if user has already paid for any results (sessions unlocked mid-series)
-      const unlockedSessions = await db
-        .select({ id: assessmentSessions.id })
-        .from(assessmentSessions)
-        .where(
-          and(
-            sql`${assessmentSessions.metadata}->>'invitationToken' = ${token}`,
-            eq(assessmentSessions.status, 'completed'),
-            eq(assessmentSessions.resultsPaymentStatus, 'paid')
-          )
-        );
+      const paidCount = completedSessions.filter(s => s.resultsPaymentStatus === 'paid').length;
+      const hasAlreadyPaid = paidCount > 0;
       
-      const hasAlreadyPaid = unlockedSessions.length > 0;
-      
-      const unpaidCount = completedTypes.length - unlockedSessions.length;
+      const unpaidCount = completedTypes.length - paidCount;
       const assessmentCount = unpaidCount > 0 ? unpaidCount : completedTypes.length;
-      const pricePerAssessment = 20;
-      const originalTotal = assessmentCount * pricePerAssessment;
+      
+      // Calculate PPP-adjusted pricing using B2C retail price (£20.00 per assessment)
+      const totalPricePence = assessmentCount * B2C_RETAIL_PRICE_PER_ASSESSMENT;
+      const pppTotalPence = getPPPAdjustedPriceInPence(totalPricePence, userCountryCode);
+      
       const discountPercentage = assessmentCount >= 2 ? 25 : 0;
-      const bundlePrice = originalTotal * (1 - discountPercentage / 100);
+      const pppDiscountedPence = Math.round(pppTotalPence * (1 - discountPercentage / 100));
+      
+      const bundlePriceDisplay = formatPrice(pppDiscountedPence, userCurrency);
+      const originalPriceDisplay = formatPrice(pppTotalPence, userCurrency);
+      
+      console.log(`[Invite Complete] Country: ${userCountryCode}, Currency: ${userCurrency}, Original: ${originalPriceDisplay}, Bundle: ${bundlePriceDisplay}`);
       
       // Free unlock date (30 days from now)
       const freeUnlockDate = new Date();
       freeUnlockDate.setDate(freeUnlockDate.getDate() + 30);
       
-      // Generate payment URL with invitation context
+      // Generate payment URL with invitation context and country code
       const baseUrl = getBaseUrl(req);
-      const paymentUrl = `${baseUrl}/unlock-results?email=${encodeURIComponent(invitation.email)}&invite=${token}`;
+      const paymentUrl = `${baseUrl}/unlock-results?email=${encodeURIComponent(invitation.email)}&invite=${token}&country=${userCountryCode}`;
       
       // Only send completion email with bundle pricing if user hasn't already paid mid-series
       if (!hasAlreadyPaid) {
@@ -3024,15 +3031,14 @@ export function registerPartnerRoutes(app: Express) {
             partnerCompanyName: companyName,
             completedAssessments: completedTypes,
             paymentUrl,
-            bundlePrice: `£${bundlePrice.toFixed(2)}`,
-            originalTotalPrice: `£${originalTotal.toFixed(2)}`,
+            bundlePrice: bundlePriceDisplay,
+            originalTotalPrice: originalPriceDisplay,
             discountPercentage,
             freeUnlockDate,
           });
           console.log(`[Invite Complete] Sent completion email to ${invitation.email}`);
         } catch (emailError) {
           console.error(`[Invite Complete] Failed to send completion email:`, emailError);
-          // Don't fail the request if email fails
         }
       } else {
         console.log(`[Invite Complete] Skipping bundle pricing email - user has already paid for results`);
@@ -3049,8 +3055,8 @@ export function registerPartnerRoutes(app: Express) {
         userExists,
         email: invitation.email,
         completedAssessments: completedTypes,
-        bundlePrice: `£${bundlePrice.toFixed(2)}`,
-        originalPrice: `£${originalTotal.toFixed(2)}`,
+        bundlePrice: bundlePriceDisplay,
+        originalPrice: originalPriceDisplay,
         discountPercentage,
         freeUnlockDate: freeUnlockDate.toISOString(),
         dashboardUrl: userExists ? `${baseUrl}/dashboard` : null,
