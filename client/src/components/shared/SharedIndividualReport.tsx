@@ -482,7 +482,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                   }}
                   disabled={isFetchingReport}
                   data-testid="button-rerun-individual-analysis"
-                  className="text-xs md:text-sm border-blue-300/50 text-blue-100 hover:bg-blue-500/20"
+                  className="text-xs md:text-sm border-blue-300/50 text-blue-100"
                 >
                   <RefreshCw className="h-3 w-3 mr-1" />
                   Re-run Analysis (1 credit)
@@ -1176,7 +1176,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
               <div className="mt-4 text-center">
                 <Button 
                   variant="outline" 
-                  className="border-white text-white hover:bg-white/20"
+                  className="border-white text-white"
                   onClick={() => setShowEnquiryModal(true)}
                   data-testid="button-contact-team-individual"
                 >
@@ -1227,7 +1227,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
             <Button 
               variant="outline"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="text-white border-white/50 hover:bg-white/10"
+              className="text-white border-white/50"
               data-testid="button-back-to-top-individual"
             >
               <ChevronUp className="h-4 w-4 mr-2" />

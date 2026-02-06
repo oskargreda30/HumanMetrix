@@ -19,8 +19,8 @@ export function csrfProtection() {
       csrfToken = generateToken();
       res.cookie(CSRF_COOKIE_NAME, csrfToken, {
         httpOnly: false,
-        secure: isProduction,
-        sameSite: "lax",
+        secure: true,
+        sameSite: "none",
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: "/",
       });

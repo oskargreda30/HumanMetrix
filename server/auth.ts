@@ -30,8 +30,8 @@ export function getSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: 'lax', // Required for Stripe redirects
+      secure: true,
+      sameSite: 'none',
       maxAge: sessionTtl,
     },
   });
