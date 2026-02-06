@@ -1645,9 +1645,7 @@ export function registerPartnerRoutes(app: Express) {
         if (candidateEmail && partner && !isTestSession) {
           try {
             // Generate payment URL for immediate access
-            const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-              ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-              : 'https://humanmetrix.co.uk';
+            const baseUrl = getBaseUrl(req);
             
             // Get user's country code for PPP pricing (stored during session start)
             const userCountryCode = (updatedSession?.metadata as any)?.countryCode || 'GB';
@@ -2267,7 +2265,7 @@ export function registerPartnerRoutes(app: Express) {
                         const newInviteToken = crypto.randomBytes(32).toString('hex');
             const newExpiresAt = new Date();
             newExpiresAt.setDate(newExpiresAt.getDate() + expiresInDays);
-            const baseUrl = process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER?.toLowerCase() || 'repl'}.repl.co` : 'http://localhost:5000';
+            const baseUrl = getBaseUrl(req);
             const newInviteUrl = `${baseUrl}/invite/${newInviteToken}`;
             
             // Determine assessment types - use existing or new ones
@@ -2591,7 +2589,7 @@ export function registerPartnerRoutes(app: Express) {
         expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 14); // 14 day expiry
         
-        const baseUrl = process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER?.toLowerCase() || 'repl'}.repl.co` : 'http://localhost:5000';
+        const baseUrl = getBaseUrl(req);
         const inviteUrl = `${baseUrl}/invite/${inviteToken}`;
         
         await storage.updatePartnerCandidateInvitation(invitation.id, {
@@ -3965,9 +3963,7 @@ export function registerPartnerRoutes(app: Express) {
       const stripeCurrency = getStripeCurrencyCode(countryCode);
       
       // Get base URL
-      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-        ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-        : 'https://humanmetrix.co.uk';
+      const baseUrl = getBaseUrl(req);
       
       // Create Stripe Checkout Session
       const checkoutSession = await stripe.checkout.sessions.create({

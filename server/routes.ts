@@ -32,6 +32,24 @@ import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const { PDFParse } = require("pdf-parse");
 
+// Helper to get the correct base URL from request headers (works in both dev and production)
+function getRoutesBaseUrl(req: express.Request): string {
+  const protocol = req.headers["x-forwarded-proto"] || req.protocol;
+  const host = req.headers["x-forwarded-host"] || req.headers.host;
+  return `${protocol}://${host}`;
+}
+
+// Standalone base URL helper for contexts without req (background jobs, cron, etc.)
+function getStaticBaseUrl(): string {
+  if (process.env.REPLIT_DOMAINS) {
+    const primaryDomain = process.env.REPLIT_DOMAINS.split(",")[0];
+    if (primaryDomain) return `https://${primaryDomain}`;
+  }
+  if (process.env.REPLIT_DEV_DOMAIN) {
+    return `https://${process.env.REPLIT_DEV_DOMAIN}`;
+  }
+  return "https://humanmetrix.co.uk";
+}
 // Helper function to parse PDF buffer and return text
 async function parsePdfBuffer(buffer: Buffer): Promise<{ text: string; numpages?: number; info?: any }> {
   const parser = new PDFParse({ data: buffer });
@@ -1310,9 +1328,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[Results Payment Debug] Platform fee local: ${platformFeeLocal}, Assessments total local: ${assessmentsTotalLocal}`);
       console.log(`[Results Payment Debug] Total local: ${totalLocal}, Stripe amount: ${stripeAmount}`);
       
-      const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0] 
-        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
-        : `${req.protocol}://${req.hostname}`;
+      const baseUrl = getRoutesBaseUrl(req);
       
       // Use Stripe for B2C payments (Airwallex reserved for B2B partner billing)
       const session = await stripe.checkout.sessions.create({
@@ -1539,9 +1555,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
               
               if (pdfAttachments.length > 0) {
-                const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0] 
-                  ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
-                  : 'http://localhost:5000';
+                const baseUrl = getRoutesBaseUrl(req);
                 const resultsUrl = `${baseUrl}/dashboard`;
                 
                 await sendB2BResultsEmailWithMultiplePDFs({
@@ -1907,9 +1921,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 });
                 
                 // Send notification
-                const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-                  ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-                  : 'https://humanmetrix.ai';
+                const baseUrl = getRoutesBaseUrl(req);
                 
                 const { sendBillingFailureNotification, sendBillingFailureAdminNotification } = await import('./email');
                 
@@ -2354,9 +2366,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               });
               
               // Send notification
-              const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-                ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-                : 'https://humanmetrix.ai';
+              const baseUrl = getRoutesBaseUrl(req);
               
               const { sendBillingFailureNotification, sendBillingFailureAdminNotification } = await import('./email');
               
@@ -2705,9 +2715,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0] 
-        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
-        : `${req.protocol}://${req.hostname}`;
+      const baseUrl = getRoutesBaseUrl(req);
       
       // Use Airwallex if configured, otherwise fall back to Stripe
       if (isAirwallexConfigured()) {
@@ -2979,8 +2987,8 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         customer_email: user.email,
         line_items: lineItems,
         mode: "payment",
-        success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/purchase/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/dashboard?payment=cancelled`,
+        success_url: `${getRoutesBaseUrl(req)}/purchase/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${getRoutesBaseUrl(req)}/dashboard?payment=cancelled`,
         metadata: {
           userId: userId,
           assessmentIds: JSON.stringify(assessmentIds),
@@ -3216,8 +3224,8 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         line_items: lineItems,
         mode: "payment",
         allow_promotion_codes: true,
-        success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/dashboard?partner_purchase=success&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : req.protocol + '://' + req.hostname}/dashboard?partner_purchase=cancelled`,
+        success_url: `${getRoutesBaseUrl(req)}/dashboard?partner_purchase=success&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${getRoutesBaseUrl(req)}/dashboard?partner_purchase=cancelled`,
         metadata: {
           type: 'partner_result_purchase',
           userId: userId,
@@ -3296,9 +3304,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
             
             // Get the list of assessment types that were purchased
             const purchasedTypes = purchase.purchasedAssessmentTypes || [];
-            const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0] 
-              ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
-              : 'http://localhost:5000';
+            const baseUrl = getRoutesBaseUrl(req);
             const resultsUrl = `${baseUrl}/dashboard`;
             
             // Get the user's assessment results for this invitation
@@ -11674,11 +11680,7 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         });
       }
       
-      const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0] 
-        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` 
-        : process.env.REPLIT_DEV_DOMAIN 
-          ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-          : 'http://localhost:5000';
+      const baseUrl = getRoutesBaseUrl(req);
       
       // Get currency symbol for description
       const currencySymbols: Record<string, string> = {
@@ -18725,9 +18727,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       const pricePerTest = tier?.pricePerTest || 2000; // Default to $20/test (Boutique tier) for custom sizes
       const totalPrice = packageSize * pricePerTest;
       
-      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-        : 'http://localhost:5000';
+      const baseUrl = getRoutesBaseUrl(req);
       
       // Check partner's payment provider and route accordingly
       if (partner.paymentProvider === 'airwallex') {
@@ -19245,9 +19245,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       await storage.suspendPartnerForOverdueInvoice(partner.id);
       
       // Send suspension notification to partner
-      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-        : 'https://humanmetrix.ai';
+      const baseUrl = getRoutesBaseUrl(req);
       
       const { notifyInvoiceSuspension } = await import('./email');
       await notifyInvoiceSuspension({
@@ -19311,9 +19309,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       await storage.restorePartnerFromOverdueInvoice(partner.id);
       
       // Send restoration notification to partner
-      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-        : 'https://humanmetrix.ai';
+      const baseUrl = getRoutesBaseUrl(req);
       
       const { notifyInvoiceRestoration } = await import('./email');
       await notifyInvoiceRestoration({
@@ -19717,9 +19713,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
           return res.status(500).json({ message: "Airwallex is not configured" });
         }
         
-        const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-          ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-          : 'http://localhost:5000';
+        const baseUrl = getRoutesBaseUrl(req);
         
         // Create Airwallex payment intent for the invoice
         const paymentIntent = await createPaymentIntent({
@@ -19749,9 +19743,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         const stripe = (await import("stripe")).default;
         const stripeClient = new stripe(process.env.STRIPE_SECRET_KEY!);
         
-        const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-          ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-          : 'http://localhost:5000';
+        const baseUrl = getRoutesBaseUrl(req);
         
         const session = await stripeClient.checkout.sessions.create({
           mode: 'payment',
@@ -24784,9 +24776,7 @@ async function processCardExpirationWarnings(partners: PartnerAccount[]) {
     if (shouldSendWarning && partner.cardLast4 && partner.cardBrand) {
       console.log(`[Billing Scheduler] Sending card expiry warning to partner ${partner.id} (${daysUntilExpiry} days until expiry, warning level ${warningLevel})`);
       
-      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-        : 'https://humanmetrix.ai';
+      const baseUrl = getRoutesBaseUrl(req);
       
       const { sendCardExpiryWarning } = await import('./email');
       await sendCardExpiryWarning({
@@ -24949,9 +24939,7 @@ async function checkLowPrepaidBalances(partners: PartnerAccount[]) {
     if (shouldNotify) {
       console.log(`[Billing Scheduler] Sending low balance warning for partner ${partner.id}, ${testsRemaining} tests remaining`);
       
-      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-        : 'https://humanmetrix.ai';
+      const baseUrl = getStaticBaseUrl();
       
       const { notifyPrepaidLowBalance } = await import('./email');
       await notifyPrepaidLowBalance({
@@ -25060,9 +25048,7 @@ async function handleBillingFailure(
   await storage.updateMonthlyUsageBillingStatus(usageRecordId, 'failed');
   
   // Get partner's dashboard URL for payment update
-  const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-    ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-    : 'https://humanmetrix.ai';
+  const baseUrl = getStaticBaseUrl();
   const updatePaymentUrl = `${baseUrl}/partner-dashboard?tab=billing`;
   
   // Send notifications
