@@ -5,7 +5,7 @@ import { registerRoutes, startGoldenSetScheduler, startBillingScheduler, startDa
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeEmailSystem } from "./email";
 import { initializeJobQueues, shutdownJobQueues } from "./queues";
-import { apiRateLimiter, authRateLimiter, stripeRateLimiter } from "./middleware/rateLimit";
+import { apiRateLimiter, stripeRateLimiter } from "./middleware/rateLimit";
 import { requestDeduplication } from "./middleware/requestDedup";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { staticCacheHeaders, setSecurityHeaders } from "./middleware/staticCache";
@@ -82,8 +82,6 @@ app.use(staticCacheHeaders());
 devLog('✅ Security headers, keep-alive, and cache headers configured');
 
 app.use('/api/', apiRateLimiter);
-app.use('/api/login', authRateLimiter);
-app.use('/api/signup', authRateLimiter);
 app.use('/api/stripe', stripeRateLimiter);
 devLog('✅ API rate limiting enabled');
 

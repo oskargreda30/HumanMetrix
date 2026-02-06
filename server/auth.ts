@@ -5,6 +5,34 @@ import type { Express, RequestHandler } from "express";
 import { storage } from "./storage";
 import { isValidEmail, isValidName, normalizeEmail } from "@shared/validation";
 
+const authAttempts = new Map<string, { count: number; resetTime: number }>();
+const AUTH_WINDOW_MS = 15 * 60 * 1000;
+const AUTH_MAX_ATTEMPTS = 15;
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of authAttempts) {
+    if (entry.resetTime < now) authAttempts.delete(key);
+  }
+}, 60000);
+
+function checkAuthRateLimit(email: string, ip: string): { blocked: boolean } {
+  const key = `${email.toLowerCase()}:${ip}`;
+  const now = Date.now();
+  const entry = authAttempts.get(key);
+
+  if (!entry || entry.resetTime < now) {
+    authAttempts.set(key, { count: 1, resetTime: now + AUTH_WINDOW_MS });
+    return { blocked: false };
+  }
+
+  entry.count++;
+  if (entry.count > AUTH_MAX_ATTEMPTS) {
+    return { blocked: true };
+  }
+  return { blocked: false };
+}
+
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   const pgStore = connectPg(session);
@@ -63,6 +91,12 @@ export async function setupAuth(app: Express) {
       
       if (!isValidEmail(email)) {
         return res.status(400).json({ message: "Invalid email format" });
+      }
+
+      const clientIp = req.ip || req.socket?.remoteAddress || 'unknown';
+      const { blocked } = checkAuthRateLimit(email, clientIp);
+      if (blocked) {
+        return res.status(429).json({ message: "Too many login attempts. Please try again later." });
       }
 
       const user = await storage.getUserByEmail(normalizeEmail(email));
@@ -127,6 +161,12 @@ export async function setupAuth(app: Express) {
       
       if (!isValidEmail(email)) {
         return res.status(400).json({ message: "Invalid email format" });
+      }
+
+      const clientIp = req.ip || req.socket?.remoteAddress || 'unknown';
+      const { blocked } = checkAuthRateLimit(email, clientIp);
+      if (blocked) {
+        return res.status(429).json({ message: "Too many signup attempts. Please try again later." });
       }
       
       // Validate names if provided
