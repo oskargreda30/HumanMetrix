@@ -233,16 +233,45 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
         description: "Please wait while we capture your report...",
       });
       
-      const { exportResultsPDF } = await import('@/lib/pdfScreenCapture');
+      const element = document.getElementById('individual-report-content');
+      if (!element) throw new Error('Report content not found');
+      
+      const { jsPDF } = await import('jspdf');
+      const html2canvas = (await import('html2canvas')).default;
+      
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#0f172a',
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      
+      let heightLeft = imgHeight * ratio;
+      let position = 0;
+      
+      pdf.addImage(imgData, 'PNG', imgX, position, imgWidth * ratio, imgHeight * ratio);
+      heightLeft -= pdfHeight;
+      
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight * ratio;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', imgX, position, imgWidth * ratio, imgHeight * ratio);
+        heightLeft -= pdfHeight;
+      }
+      
       const candidateName = selectedCandidateData.user.firstName || selectedCandidateData.user.lastName
         ? `${selectedCandidateData.user.firstName || ''}_${selectedCandidateData.user.lastName || ''}`.trim()
         : selectedCandidateData.user.email.split('@')[0];
-      const filename = `${candidateName}_Assessment_Report.pdf`;
-      
-      await exportResultsPDF({
-        elementId: 'individual-report-content',
-        filename,
-      });
+      pdf.save(`${candidateName}_Assessment_Report.pdf`);
       
       toast({
         title: "PDF Generated",
