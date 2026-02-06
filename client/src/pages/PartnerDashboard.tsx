@@ -4072,6 +4072,16 @@ export default function PartnerDashboard() {
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-6">
+                        {!dashboardCardStatus?.hasCard ? (
+                          <div className="p-4 rounded-lg bg-muted/50 border border-dashed text-center space-y-2" data-testid="auto-topup-no-card">
+                            <CreditCard className="h-8 w-8 mx-auto text-muted-foreground" />
+                            <p className="text-sm font-medium">Card required</p>
+                            <p className="text-xs text-muted-foreground">
+                              You need to save a card on file before enabling auto top-up. Go to Billing Options to add a card.
+                            </p>
+                          </div>
+                        ) : (
+                        <>
                         <div className="flex items-center justify-between">
                           <div className="space-y-0.5">
                             <Label htmlFor="auto-topup">Enable auto top-up</Label>
@@ -4121,6 +4131,8 @@ export default function PartnerDashboard() {
                               </Select>
                             </div>
                           </>
+                        )}
+                        </>
                         )}
                       </CardContent>
                     </Card>

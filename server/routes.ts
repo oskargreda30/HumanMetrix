@@ -11292,8 +11292,14 @@ Return valid JSON with only the requested fields.`;
       // Auto top-up only for PAYG partners
       if (matchingPartner.billingType === 'payg') {
         if (typeof autoTopUpEnabled === 'boolean') {
+          if (autoTopUpEnabled && !matchingPartner.stripePaymentMethodId) {
+            return res.status(400).json({ message: "A saved card is required to enable auto top-up. Please add a card in Billing Options first." });
+          }
           updates.autoTopUpEnabled = autoTopUpEnabled;
         }
+
+
+
         
         if (typeof autoTopUpThreshold === 'number' && autoTopUpThreshold >= 1 && autoTopUpThreshold <= 100) {
           updates.autoTopUpThreshold = autoTopUpThreshold;
