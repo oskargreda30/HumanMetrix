@@ -367,7 +367,13 @@ export default function B2BResults() {
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
               Get your detailed results right now for just{" "}
-              <span className="font-bold text-primary text-lg">{data.pricing?.single.discountedDisplay}</span>
+              {(data.pricing?.single?.discountPercent ?? 0) > 0 && (
+                <span className="line-through text-muted-foreground/60 mr-1">{data.pricing?.single?.originalDisplay}</span>
+              )}
+              <span className="font-bold text-primary text-lg">{data.pricing?.single?.discountedDisplay}</span>
+              {(data.pricing?.single?.discountPercent ?? 0) > 0 && (
+                <span className="ml-1 text-sm text-green-600 font-medium">({data.pricing?.single?.discountPercent}% off)</span>
+              )}
             </p>
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2">

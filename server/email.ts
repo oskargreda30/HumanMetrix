@@ -2588,17 +2588,20 @@ interface B2BCongratulatoryEmailDetails {
 
 export async function sendB2BCongratulatoryEmail(details: B2BCongratulatoryEmailDetails) {
   const assessmentName = formatAssessmentName(details.assessmentType);
-  // Use email as the display name instead of externalUserId
-  const displayName = details.email;
+  const displayName = details.candidateName || details.email;
   const freeDate = details.freeUnlockDate.toLocaleDateString('en-GB', { 
     day: 'numeric', 
     month: 'long', 
     year: 'numeric' 
   });
   
-  // Build price display (no discount for individual results)
-  const priceDisplay = `<span class="price">${details.paymentAmount}</span>`;
-  const textPriceDisplay = details.paymentAmount;
+  const hasDiscount = details.originalPaymentAmount && details.originalPaymentAmount !== details.paymentAmount;
+  const priceDisplay = hasDiscount
+    ? `<span style="text-decoration: line-through; color: #6b7280; font-size: 16px;">${details.originalPaymentAmount}</span> <span class="price">${details.paymentAmount}</span> <span style="color: #059669; font-size: 14px; font-weight: 600;">(25% off)</span>`
+    : `<span class="price">${details.paymentAmount}</span>`;
+  const textPriceDisplay = hasDiscount
+    ? `${details.originalPaymentAmount} → ${details.paymentAmount} (25% off)`
+    : details.paymentAmount;
   
   const msg = {
     to: details.email,
@@ -2716,7 +2719,7 @@ interface B2BAllCompleteEmailDetails {
 }
 
 export async function sendB2BAllCompleteEmail(details: B2BAllCompleteEmailDetails) {
-  const displayName = details.email;
+  const displayName = details.candidateName || details.email;
   const freeDate = details.freeUnlockDate.toLocaleDateString('en-GB', { 
     day: 'numeric', 
     month: 'long', 

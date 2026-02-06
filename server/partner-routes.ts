@@ -1656,12 +1656,12 @@ export function registerPartnerRoutes(app: Express) {
             
             // Calculate B2C price: BASE_FEE + per-assessment price (exactly matches B2C pricing)
             const normalizedType = normalizeAssessmentId(session.assessmentType);
-            const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400; // Default to £4 if unknown
+            const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
             const b2cPriceInPence = BASE_FEE + assessmentPrice;
             
-            // Apply PPP adjustment (no individual discount - full price)
+            // Apply PPP adjustment then 25% bulk discount for B2B candidates
             const pppAdjustedPricePence = getPPPAdjustedPriceInPence(b2cPriceInPence, userCountryCode);
-            const discountedPricePence = pppAdjustedPricePence; // Full price, no individual discount
+            const discountedPricePence = Math.round(pppAdjustedPricePence * 0.75);
             
             // Format prices in user's local currency using same B2C functions
             const originalPriceDisplay = formatPrice(pppAdjustedPricePence, userCurrency);
@@ -1677,9 +1677,13 @@ export function registerPartnerRoutes(app: Express) {
             const paymentUrl = `${baseUrl}/b2b-results?session=${sessionId}&country=${userCountryCode}`;
             
             try {
+                // Look up user account to get their name if they exist
+                const existingUser = await storage.getUserByEmail(candidateEmail);
+                const candidateDisplayName = existingUser?.name || existingUser?.username || undefined;
+                
                 await sendB2BCongratulatoryEmail({
                   email: candidateEmail,
-                  candidateName: session.externalUserId || undefined,
+                  candidateName: candidateDisplayName,
                   assessmentType: session.assessmentType,
                   partnerCompanyName: partner.companyName || partner.name,
                   paymentUrl,
@@ -1784,9 +1788,12 @@ export function registerPartnerRoutes(app: Express) {
                 
                 const bundlePaymentUrl = `${baseUrl}/b2b-results-bundle?email=${encodeURIComponent(candidateEmail)}&partner=${session.partnerId}&country=${userCountryCode}&types=${bundleAssessmentTypes.join(',')}`;
                 
+                const bundleUser = await storage.getUserByEmail(candidateEmail);
+                const bundleCandidateName = bundleUser?.name || bundleUser?.username || undefined;
+                
                 await sendB2BAllCompleteEmail({
                   email: candidateEmail,
-                  candidateName: session.externalUserId || undefined,
+                  candidateName: bundleCandidateName,
                   partnerCompanyName: partner.companyName || partner.name,
                   completedAssessments: bundleAssessmentTypes,
                   paymentUrl: bundlePaymentUrl,
@@ -3848,7 +3855,7 @@ export function registerPartnerRoutes(app: Express) {
         });
       }
       
-      // Calculate pricing: B2C base + assessment price, then PPP (no individual discount)
+      // Calculate pricing: B2C base + assessment price, then PPP, then 25% bulk discount
       const normalizedType = normalizeAssessmentId(session.assessmentType);
       const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
       const b2cPriceInPence = BASE_FEE + assessmentPrice;
@@ -3856,8 +3863,8 @@ export function registerPartnerRoutes(app: Express) {
       // PPP adjustment
       const pppAdjustedPricePence = getPPPAdjustedPriceInPence(b2cPriceInPence, countryCode);
       
-      // Full price for single assessment (no discount)
-      const discountedPricePence = pppAdjustedPricePence;
+      // 25% bulk discount for B2B candidates
+      const discountedPricePence = Math.round(pppAdjustedPricePence * 0.75);
       
       // Get currency config for display - both original and discounted should show PPP-adjusted prices
       const userCurrency = getCurrencyForCountry(countryCode);
@@ -3891,7 +3898,7 @@ export function registerPartnerRoutes(app: Express) {
             discountedPricePence,
             originalDisplay: originalPriceDisplay,
             discountedDisplay: discountedPriceDisplay,
-            discountPercent: 0
+            discountPercent: 25
           },
           bundle: {
             originalPricePence: bundlePppAdjustedPence,
@@ -3946,8 +3953,8 @@ export function registerPartnerRoutes(app: Express) {
       } else {
         const b2cPriceInPence = BASE_FEE + assessmentPrice;
         const pppAdjustedPricePence = getPPPAdjustedPriceInPence(b2cPriceInPence, countryCode.toUpperCase());
-        priceInPence = pppAdjustedPricePence; // Full price, no individual discount
-        discountPercent = 0;
+        priceInPence = Math.round(pppAdjustedPricePence * 0.75); // 25% bulk discount for B2B candidates
+        discountPercent = 25;
         productName = `HumanMetrix ${session.assessmentType.toUpperCase()} Assessment Results`;
       }
       
