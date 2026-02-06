@@ -1126,7 +1126,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
           {/* Prompt Architecture Comparison Section */}
           {(() => {
             const paRoleSkills = comparison.roleSnapshot.requiredSkillScores || {};
-            const REQUIRED_PA_SCORE = paRoleSkills.promptArchitectureScore || 60;
+            const REQUIRED_PA_SCORE = paRoleSkills.promptArchitectureScore;
             return (
           <Card data-testid="card-prompt-architecture-comparison">
             <CardHeader className="bg-gradient-to-r from-cyan-500/10 via-cyan-500/5 to-transparent">
@@ -1135,7 +1135,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                 Prompt Architecture Comparison
               </CardTitle>
               <p className="text-xs md:text-sm text-muted-foreground">
-                AI prompt engineering ability across 7 progressive levels - candidates should score {REQUIRED_PA_SCORE}+ to demonstrate proficiency
+                AI prompt engineering ability across 7 progressive levels{REQUIRED_PA_SCORE ? ` - candidates should score ${REQUIRED_PA_SCORE}+ to demonstrate proficiency` : ""}
               </p>
             </CardHeader>
             <CardContent className="pt-4">
@@ -1149,7 +1149,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                     <div className="text-center py-6 text-muted-foreground">
                       <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-yellow-500" />
                       <p className="text-sm">No candidates have completed the Prompt Architecture assessment yet.</p>
-                      <p className="text-xs mt-1">Required score for this role: {REQUIRED_PA_SCORE}/100</p>
+                      {REQUIRED_PA_SCORE != null && <p className="text-xs mt-1">Required score for this role: {REQUIRED_PA_SCORE}/100</p>}
                     </div>
                   );
                 }
@@ -1169,7 +1169,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                         {comparison.candidateEntries.map((candidate: CandidateEntry, idx: number) => {
                           const hasScore = candidate.promptArchitectureScore != null;
                           const score = candidate.promptArchitectureScore || 0;
-                          const meetsRequirement = hasScore && score >= REQUIRED_PA_SCORE;
+                          const meetsRequirement = hasScore && REQUIRED_PA_SCORE != null && score >= REQUIRED_PA_SCORE;
                           
                           return (
                             <tr key={candidate.userId} className={idx % 2 === 0 ? 'bg-muted/20' : ''}>
@@ -1185,7 +1185,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                               </td>
                               <td className="text-center p-2 md:p-3">
                                 <Badge variant="outline" className="text-cyan-600 border-cyan-300 text-[10px] md:text-xs px-1">
-                                  {REQUIRED_PA_SCORE}+
+                                  {REQUIRED_PA_SCORE != null ? `${REQUIRED_PA_SCORE}+` : "N/A"}
                                 </Badge>
                               </td>
                               <td className="text-center p-2 md:p-3">
@@ -1219,7 +1219,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
           {/* AIQ (Algorithmic Integrity Quotient) Comparison Section */}
           {(() => {
             const aiqRoleSkills = comparison.roleSnapshot.requiredSkillScores || {};
-            const REQUIRED_AIQ_SCORE = aiqRoleSkills.aiqScore || 60;
+            const REQUIRED_AIQ_SCORE = aiqRoleSkills.aiqScore;
             return (
           <Card data-testid="card-aiq-comparison">
             <CardHeader className="bg-gradient-to-r from-purple-500/10 via-purple-500/5 to-transparent">
@@ -1228,7 +1228,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                 AIQ (Algorithmic Integrity Quotient) Comparison
               </CardTitle>
               <p className="text-xs md:text-sm text-muted-foreground">
-                Ethical AI decision-making - balancing efficiency, fairness, and transparency. Candidates should score {REQUIRED_AIQ_SCORE}+ to demonstrate proficiency
+                Ethical AI decision-making - balancing efficiency, fairness, and transparency{REQUIRED_AIQ_SCORE ? ` - candidates should score ${REQUIRED_AIQ_SCORE}+ to demonstrate proficiency` : ""}
               </p>
             </CardHeader>
             <CardContent className="pt-4">
@@ -1242,7 +1242,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                     <div className="text-center py-6 text-muted-foreground">
                       <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-yellow-500" />
                       <p className="text-sm">No candidates have completed the AIQ assessment yet.</p>
-                      <p className="text-xs mt-1">Required score for this role: {REQUIRED_AIQ_SCORE}/100</p>
+                      {REQUIRED_AIQ_SCORE != null && <p className="text-xs mt-1">Required score for this role: {REQUIRED_AIQ_SCORE}/100</p>}
                     </div>
                   );
                 }
@@ -1262,7 +1262,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                         {comparison.candidateEntries.map((candidate: CandidateEntry, idx: number) => {
                           const hasScore = candidate.aiqScore != null;
                           const score = candidate.aiqScore || 0;
-                          const meetsRequirement = hasScore && score >= REQUIRED_AIQ_SCORE;
+                          const meetsRequirement = hasScore && REQUIRED_AIQ_SCORE != null && score >= REQUIRED_AIQ_SCORE;
                           
                           return (
                             <tr key={candidate.userId} className={idx % 2 === 0 ? 'bg-muted/20' : ''}>
@@ -1278,7 +1278,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                               </td>
                               <td className="text-center p-2 md:p-3">
                                 <Badge variant="outline" className="text-purple-600 border-purple-300 text-[10px] md:text-xs px-1">
-                                  {REQUIRED_AIQ_SCORE}+
+                                  {REQUIRED_AIQ_SCORE != null ? `${REQUIRED_AIQ_SCORE}+` : "N/A"}
                                 </Badge>
                               </td>
                               <td className="text-center p-2 md:p-3">

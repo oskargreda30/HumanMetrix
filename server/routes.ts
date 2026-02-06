@@ -9509,8 +9509,8 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return name.toLowerCase().replace(/[^a-z0-9]/g, '');
       };
 
-      const needsPromptArchScore = !role.requiredSkillScores.promptArchitectureScore || role.requiredSkillScores.promptArchitectureScore === 58;
-      const needsAiqScore = !role.requiredSkillScores.aiqScore || role.requiredSkillScores.aiqScore === 58;
+      const needsPromptArchScore = !role.requiredSkillScores.promptArchitectureScore;
+      const needsAiqScore = !role.requiredSkillScores.aiqScore;
       const needsCriticality = !role.requiredSkillScores.skillCriticality || Object.keys(role.requiredSkillScores.skillCriticality).length === 0;
       const hasTooFewCritical = !needsCriticality && role.requiredSkillScores.skillCriticality && 
         Object.values(role.requiredSkillScores.skillCriticality).filter(v => v === 'critical').length < 3;
@@ -9552,7 +9552,7 @@ ${missingFieldsList.join('\n')}
 IMPORTANT SCORING GUIDELINES:
 - promptArchitectureScore: Consider how heavily this role relies on AI prompt engineering in daily work. A Chief AI Officer or Prompt Engineer would need 80+. A traditional Operations Manager might only need 45-55. A Data Scientist might need 65-75. Score based on how critical prompt engineering competency is for THIS specific role.
 - aiqScore: Consider how much ethical AI decision-making responsibility this role carries. A Chief Ethics Officer or AI Governance Lead would need 85+. A Sales Representative might only need 50-60. An ML Engineer deploying models might need 70-80. Score based on the ethical impact and AI governance responsibility of THIS specific role.
-- Use precise scores NOT multiples of 5 (use 47, 53, 58, 63, 67, 71, 76 etc.)
+- Use precise scores NOT multiples of 5 (use 47, 53, 63, 67, 71, 76, 82 etc.)
 - Different roles MUST have meaningfully different scores - a Marketing Manager and a Machine Learning Engineer should NOT have similar promptArchitectureScore values
 - For skillCriticality, mark 3-5 skills as "critical" based on which are most essential for THIS specific role
 
@@ -9597,8 +9597,6 @@ Return valid JSON with only the requested fields.`;
           }
         } catch (aiErr) {
           console.error(`[Admin Comparison] OpenAI call failed for role "${role.name}", using heuristic fallback:`, aiErr);
-          if (needsPromptArchScore) role.requiredSkillScores.promptArchitectureScore = 58;
-          if (needsAiqScore) role.requiredSkillScores.aiqScore = 58;
           if (needsCriticality) {
             const autoSkillCriticality: Record<string, string> = {};
             const allSkillsForCrit: Array<{skill: string; score: number}> = [];
@@ -16501,8 +16499,8 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return name.toLowerCase().replace(/[^a-z0-9]/g, '');
       };
 
-      const needsPromptArchScore = !role.requiredSkillScores.promptArchitectureScore || role.requiredSkillScores.promptArchitectureScore === 58;
-      const needsAiqScore = !role.requiredSkillScores.aiqScore || role.requiredSkillScores.aiqScore === 58;
+      const needsPromptArchScore = !role.requiredSkillScores.promptArchitectureScore;
+      const needsAiqScore = !role.requiredSkillScores.aiqScore;
       const needsCriticality = !role.requiredSkillScores.skillCriticality || Object.keys(role.requiredSkillScores.skillCriticality).length === 0;
       const hasTooFewCritical = !needsCriticality && role.requiredSkillScores.skillCriticality && 
         Object.values(role.requiredSkillScores.skillCriticality).filter(v => v === 'critical').length < 3;
@@ -16544,7 +16542,7 @@ ${missingFieldsList.join('\n')}
 IMPORTANT SCORING GUIDELINES:
 - promptArchitectureScore: Consider how heavily this role relies on AI prompt engineering in daily work. A Chief AI Officer or Prompt Engineer would need 80+. A traditional Operations Manager might only need 45-55. A Data Scientist might need 65-75. Score based on how critical prompt engineering competency is for THIS specific role.
 - aiqScore: Consider how much ethical AI decision-making responsibility this role carries. A Chief Ethics Officer or AI Governance Lead would need 85+. A Sales Representative might only need 50-60. An ML Engineer deploying models might need 70-80. Score based on the ethical impact and AI governance responsibility of THIS specific role.
-- Use precise scores NOT multiples of 5 (use 47, 53, 58, 63, 67, 71, 76 etc.)
+- Use precise scores NOT multiples of 5 (use 47, 53, 63, 67, 71, 76, 82 etc.)
 - Different roles MUST have meaningfully different scores - a Marketing Manager and a Machine Learning Engineer should NOT have similar promptArchitectureScore values
 - For skillCriticality, mark 3-5 skills as "critical" based on which are most essential for THIS specific role
 
@@ -16590,8 +16588,6 @@ Return valid JSON with only the requested fields.`;
           }
         } catch (aiErr) {
           console.error(`[Partner Comparison] OpenAI call failed for role "${role.name}", using heuristic fallback:`, aiErr);
-          if (needsPromptArchScore) role.requiredSkillScores.promptArchitectureScore = 58;
-          if (needsAiqScore) role.requiredSkillScores.aiqScore = 58;
           if (needsCriticality) {
             const autoSkillCriticality: Record<string, string> = {};
             const allSkillsForCrit: Array<{skill: string; score: number}> = [];

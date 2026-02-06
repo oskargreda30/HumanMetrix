@@ -1128,19 +1128,19 @@ export default function MultiCandidateRoleFitTab() {
           {(() => {
             // Get role-specific required PA score from OpenAI analysis, default to 60 if not set
             const roleSkills = comparison.roleSnapshot.requiredSkillScores || {};
-            const REQUIRED_PA_SCORE = roleSkills.promptArchitectureScore || 60;
+            const REQUIRED_PA_SCORE = roleSkills.promptArchitectureScore;
             
             const candidatePromptData = comparison.candidateEntries.map((candidate: CandidateEntry) => {
               const score = candidate.promptArchitectureScore;
               const hasData = score !== null && score !== undefined;
-              const threshold = REQUIRED_PA_SCORE * 0.8; // 80% of required score
+              const threshold = (REQUIRED_PA_SCORE || 0) * 0.8; // 80% of required score
               return {
                 userId: candidate.userId,
                 userName: candidate.userName,
                 score: hasData ? score : null,
                 dataAvailable: hasData,
-                gap: hasData && score != null ? score - REQUIRED_PA_SCORE : null,
-                meetsRequirement: hasData && (score || 0) >= REQUIRED_PA_SCORE,
+                gap: hasData && score != null && REQUIRED_PA_SCORE != null ? score - REQUIRED_PA_SCORE : null,
+                meetsRequirement: hasData && REQUIRED_PA_SCORE != null && (score || 0) >= REQUIRED_PA_SCORE,
                 meetsThreshold: hasData && (score || 0) >= threshold,
               };
             });
@@ -1159,7 +1159,7 @@ export default function MultiCandidateRoleFitTab() {
                     Prompt Architecture Comparison
                   </CardTitle>
                   <p className="text-sm text-white/80">
-                    Multi-candidate comparison of prompt engineering skills (Required: {REQUIRED_PA_SCORE}/100)
+                    Multi-candidate comparison of prompt engineering skills{REQUIRED_PA_SCORE != null ? ` (Required: ${REQUIRED_PA_SCORE}/100)` : ""}
                   </p>
                 </CardHeader>
                 <CardContent className="pt-6 space-y-4">
@@ -1206,8 +1206,8 @@ export default function MultiCandidateRoleFitTab() {
                                 />
                                 <div 
                                   className="absolute top-0 h-4 w-0.5 bg-cyan-600" 
-                                  style={{ left: `${REQUIRED_PA_SCORE}%` }}
-                                  title={`Required: ${REQUIRED_PA_SCORE}`}
+                                  style={{ left: `${REQUIRED_PA_SCORE || 0}%` }}
+                                  title={`Required: ${REQUIRED_PA_SCORE || "N/A"}`}
                                 />
                               </div>
                               <div className="w-16 flex items-center gap-1">
@@ -1276,19 +1276,19 @@ export default function MultiCandidateRoleFitTab() {
           {(() => {
             // Get role-specific required AIQ score from OpenAI analysis, default to 60 if not set
             const roleSkills = comparison.roleSnapshot.requiredSkillScores || {};
-            const REQUIRED_AIQ_SCORE = roleSkills.aiqScore || 60;
+            const REQUIRED_AIQ_SCORE = roleSkills.aiqScore;
             
             const candidateAiqData = comparison.candidateEntries.map((candidate: CandidateEntry) => {
               const score = candidate.aiqScore;
               const hasData = score !== null && score !== undefined;
-              const threshold = REQUIRED_AIQ_SCORE * 0.8; // 80% of required score
+              const threshold = (REQUIRED_AIQ_SCORE || 0) * 0.8; // 80% of required score
               return {
                 userId: candidate.userId,
                 userName: candidate.userName,
                 score: hasData ? score : null,
                 dataAvailable: hasData,
-                gap: hasData && score != null ? score - REQUIRED_AIQ_SCORE : null,
-                meetsRequirement: hasData && (score || 0) >= REQUIRED_AIQ_SCORE,
+                gap: hasData && score != null && REQUIRED_AIQ_SCORE != null ? score - REQUIRED_AIQ_SCORE : null,
+                meetsRequirement: hasData && REQUIRED_AIQ_SCORE != null && (score || 0) >= REQUIRED_AIQ_SCORE,
                 meetsThreshold: hasData && (score || 0) >= threshold,
               };
             });
@@ -1307,7 +1307,7 @@ export default function MultiCandidateRoleFitTab() {
                     AIQ (Algorithmic Integrity Quotient) Comparison
                   </CardTitle>
                   <p className="text-sm text-white/80">
-                    Multi-candidate comparison of ethical AI awareness (Required: {REQUIRED_AIQ_SCORE}/100)
+                    Multi-candidate comparison of ethical AI awareness{REQUIRED_AIQ_SCORE != null ? ` (Required: ${REQUIRED_AIQ_SCORE}/100)` : ""}
                   </p>
                 </CardHeader>
                 <CardContent className="pt-6 space-y-4">
@@ -1354,8 +1354,8 @@ export default function MultiCandidateRoleFitTab() {
                                 />
                                 <div 
                                   className="absolute top-0 h-4 w-0.5 bg-purple-600" 
-                                  style={{ left: `${REQUIRED_AIQ_SCORE}%` }}
-                                  title={`Required: ${REQUIRED_AIQ_SCORE}`}
+                                  style={{ left: `${REQUIRED_AIQ_SCORE || 0}%` }}
+                                  title={`Required: ${REQUIRED_AIQ_SCORE || "N/A"}`}
                                 />
                               </div>
                               <div className="w-16 flex items-center gap-1">
