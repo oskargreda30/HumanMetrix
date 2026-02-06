@@ -87,19 +87,7 @@ export async function setupAuth(app: Express) {
       const { clearFailedLoginAttempts } = await import('./security-monitor');
       clearFailedLoginAttempts(email);
 
-      // Regenerate session to prevent session fixation attacks
-      await new Promise<void>((resolve, reject) => {
-        req.session.regenerate((err: any) => {
-          if (err) {
-            console.error("Session regenerate error during login:", err);
-            reject(err);
-          } else {
-            resolve();
-          }
-        });
-      });
-
-      // Set session and explicitly save to ensure it's persisted before responding
+      // Set userId on current session (skip regenerate to avoid cookie issues)
       (req.session as any).userId = user.id;
       
       // Explicitly save session to PostgreSQL before responding
@@ -109,6 +97,7 @@ export async function setupAuth(app: Express) {
             console.error("Session save error during login:", err);
             reject(err);
           } else {
+            console.log(`[Auth] Session saved successfully for user ${user.id}, session ID: ${req.session.id}`);
             resolve();
           }
         });
