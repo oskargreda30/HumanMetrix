@@ -2382,11 +2382,10 @@ export default function PartnerDashboard() {
                         <Button 
                           variant={isUrgent ? "default" : "outline"} 
                           size="sm" 
-                          onClick={() => window.open('/developers', '_blank')}
+                          onClick={() => { setActiveTab("invitations"); scrollToContent(); }}
                           className={isUrgent ? 'bg-amber-600 hover:bg-amber-700' : ''}
                         >
                           Get Started
-                          <ExternalLink className="h-3 w-3 ml-2" />
                         </Button>
                       </div>
                     </CardContent>
