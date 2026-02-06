@@ -329,6 +329,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.error('[Stripe] Failed to initialize coupons:', err.message);
   });
 
+  // Recover stuck Prompt Architecture evaluations on startup (max 5 per restart, sequential)
+  setTimeout(async () => {
+    try {
+      const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+      const stuckResults = await db.select()
+        .from(assessmentResults)
+        .where(
+          and(
+            eq(assessmentResults.assessmentType, 'prompt_architecture'),
+            or(
+              eq(assessmentResults.status, 'evaluating'),
+              eq(assessmentResults.status, 'evaluation_failed')
+            )
+          )
+        );
+
+      const toRetry = stuckResults.filter(r => {
+        const startTime = r.startedAt ? new Date(r.startedAt).getTime() : 0;
+        if (r.status === 'evaluation_failed') {
+          if (r.completedAt) {
+            const failedAt = new Date(r.completedAt).getTime();
+            const retryCount = Math.floor((Date.now() - failedAt) / (15 * 60 * 1000));
+            if (retryCount < 1) return false;
+          }
+          return true;
+        }
+        return startTime > 0 && startTime < fifteenMinutesAgo.getTime();
+      });
+
+      if (toRetry.length === 0) {
+        console.log('[PA Recovery] No stuck Prompt Architecture evaluations found');
+        return;
+      }
+
+      const batch = toRetry.slice(0, 5);
+      console.log(`[PA Recovery] Found ${toRetry.length} stuck PA evaluation(s), retrying ${batch.length}`);
+
+      for (const result of batch) {
+        if (!result.answers || typeof result.answers !== 'object') {
+          console.log(`[PA Recovery] Skipping ${result.id} - no answers saved`);
+          continue;
+        }
+
+        const claimed = await db.update(assessmentResults)
+          .set({ status: 'evaluating' })
+          .where(
+            and(
+              eq(assessmentResults.id, result.id),
+              or(
+                eq(assessmentResults.status, 'evaluating'),
+                eq(assessmentResults.status, 'evaluation_failed')
+              )
+            )
+          );
+
+        console.log(`[PA Recovery] Re-triggering evaluation for ${result.id} (was: ${result.status})`);
+
+        try {
+          const promptEvalResult = await calculatePromptArchitectureScores(
+            result.answers as Record<string, string>,
+            result.id
+          );
+          console.log(`[PA Recovery] Completed evaluation for ${result.id}, totalScore: ${promptEvalResult.totalScore}`);
+        } catch (error: any) {
+          console.error(`[PA Recovery] Failed to re-evaluate ${result.id}:`, error.message);
+          try {
+            await db.update(assessmentResults)
+              .set({ status: 'evaluation_failed', completedAt: new Date() })
+              .where(eq(assessmentResults.id, result.id));
+          } catch (dbErr) {
+            console.error(`[PA Recovery] Failed to mark ${result.id} as failed:`, dbErr);
+          }
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+    } catch (error: any) {
+      console.error('[PA Recovery] Startup recovery failed:', error.message);
+    }
+  }, 30000);
+
   // Version check endpoint
   app.get("/api/version", (req, res) => {
     res.json({ 
