@@ -60,7 +60,9 @@ interface SharedIndividualReportProps {
 
 const formatReportDate = (dateStr: string) => {
   const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const datePart = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const timePart = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  return `${datePart} at ${timePart}`;
 };
 
 export function SharedIndividualReport({ config }: SharedIndividualReportProps) {
@@ -452,7 +454,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                 Individual Candidate Report
               </h2>
               {config.contextType === 'partner' && candidateReport?.generatedAt && (
-                <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-blue-200/70" data-testid="text-individual-report-date-top">
+                <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-blue-100" data-testid="text-individual-report-date-top">
                   {candidateReport?.cached ? (
                     <>
                       <Clock className="h-3 w-3" />
