@@ -2181,9 +2181,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const partnerId = pkg.partnerId;
               const packageSize = pkg.packageSize;
               
-              // Update package status
+              // Update package status with actual amount paid from Airwallex
+              const airwallexAmount = paymentIntent.amount ? Math.round(parseFloat(paymentIntent.amount) * 100) : pkg.totalPrice;
               await storage.updatePartnerTestPackage(packageId, {
                 status: 'completed',
+                totalPrice: airwallexAmount,
               } as any);
               
               // Credit the tests
@@ -19061,10 +19063,13 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
       }
       
-      // Update package status
+      // Update package status with actual amount paid from Stripe
+      // session.amount_total reflects the real charge after discounts/promo codes
+      const actualAmountPaid = session.amount_total ?? 0;
       await storage.updatePartnerTestPackage(packageId, {
         status: 'completed',
         stripePaymentIntentId: session.payment_intent as string,
+        totalPrice: actualAmountPaid,
       } as any);
       
       // Get the current balance BEFORE crediting (for animation)
@@ -19212,9 +19217,11 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       const partnerId = pkg.partnerId;
       const packageSize = pkg.packageSize;
       
-      // Update package status
+      // Update package status with actual amount paid from Airwallex
+      const airwallexActualAmount = paymentIntent.amount ? Math.round(parseFloat(paymentIntent.amount) * 100) : pkg.totalPrice;
       await storage.updatePartnerTestPackage(packageId, {
         status: 'completed',
+        totalPrice: airwallexActualAmount,
       } as any);
       
       // Get the current balance BEFORE crediting (for animation)
