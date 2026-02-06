@@ -1025,17 +1025,21 @@ export default function EmbedAssessment() {
 
   const handleNext = () => {
     if (currentIndex < questions.length - 1) {
-      // Save progress immediately before moving to next question
       saveProgressImmediately(currentIndex + 1);
       setCurrentIndex((prev) => prev + 1);
+      if (window.innerWidth < 768) {
+        window.scrollTo({ top: 0, behavior: "instant" });
+      }
     }
   };
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
-      // Save progress immediately before moving to previous question
       saveProgressImmediately(currentIndex - 1);
       setCurrentIndex((prev) => prev - 1);
+      if (window.innerWidth < 768) {
+        window.scrollTo({ top: 0, behavior: "instant" });
+      }
     }
   };
 
