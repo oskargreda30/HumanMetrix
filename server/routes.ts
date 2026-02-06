@@ -15435,17 +15435,42 @@ Use the candidates' actual names. Be specific and actionable.`;
       const aiReadinessRequiredScores = roleRequirements?.aiReadinessSkills || null;
       const skillCriticality = roleRequirements?.skillCriticality || {};
 
+      // Nudge helper to avoid multiples of 5 in required scores (matches admin endpoint)
+      const ensureNoMultipleOf5 = (score) => {
+        if (typeof score !== 'number') return score;
+        if (score % 5 === 0) return score + (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 3) + 1);
+        return score;
+      };
+
+      // Mapping from short skill names (used in required scores) to full names (stored in assessment results)
+      const aiReadinessSkillMapping = {
+        'AI Literacy': 'AI Literacy & Prompt Engineering',
+        'Collaboration': 'Collaboration & Communication',
+        'Domain Fluency': 'Data Fluency',
+        'Responsible AI': 'Responsible AI & Ethical Awareness',
+        'Data Fluency': 'Data Fluency',
+        'Technical Fundamentals': 'Technical Fundamentals',
+        'Technical Fluency': 'Technical Fundamentals',
+        'Critical Thinking': 'Critical Thinking & Problem-Solving',
+        'Adaptability': 'Adaptability & Continuous Learning',
+        'Adaptive Learning': 'Adaptability & Continuous Learning',
+        'Creativity': 'Creativity & Innovation',
+        'Creative Innovation': 'Creativity & Innovation',
+        'Domain Expertise': 'Domain Expertise',
+      };
+
       // Calculate alignment
       const fitSkillAlignments = fitRequiredScores && fitScores
         ? Object.entries(fitRequiredScores).map(([skillName, requiredScore]) => {
+            const adjustedRequired = ensureNoMultipleOf5(requiredScore);
             const candidateScore = fitScores![skillName] ?? null;
-            const gap = candidateScore !== null ? candidateScore - requiredScore : null;
+            const gap = candidateScore !== null ? candidateScore - adjustedRequired : null;
             return {
               skillName,
               candidateScore,
-              requiredScore,
+              requiredScore: adjustedRequired,
               gap,
-              alignment: gap === null ? 'Missing' : gap >= 0 ? 'Meets' : 'Gap',
+              alignment: gap === null ? 'not_assessed' : gap >= 10 ? 'excellent' : gap >= 0 ? 'good' : gap >= -15 ? 'fair' : 'poor',
               criticality: skillCriticality[skillName] || 'important',
               dataAvailable: candidateScore !== null,
             };
@@ -15454,15 +15479,17 @@ Use the candidates' actual names. Be specific and actionable.`;
 
       const aiReadinessSkillAlignments = aiReadinessRequiredScores && aiReadinessScores
         ? Object.entries(aiReadinessRequiredScores).map(([skillName, requiredScore]) => {
-            const candidateScore = aiReadinessScores![skillName] ?? null;
-            const gap = candidateScore !== null ? candidateScore - requiredScore : null;
+            const adjustedRequired = ensureNoMultipleOf5(requiredScore);
+            const fullSkillName = aiReadinessSkillMapping[skillName] || skillName;
+            const candidateScore = aiReadinessScores![fullSkillName] ?? aiReadinessScores![skillName] ?? null;
+            const gap = candidateScore !== null ? candidateScore - adjustedRequired : null;
             return {
-              skillName,
+              skillName: fullSkillName,
               candidateScore,
-              requiredScore,
+              requiredScore: adjustedRequired,
               gap,
-              alignment: gap === null ? 'Missing' : gap >= 0 ? 'Meets' : 'Gap',
-              criticality: skillCriticality[skillName] || 'important',
+              alignment: gap === null ? 'not_assessed' : gap >= 10 ? 'excellent' : gap >= 0 ? 'good' : gap >= -15 ? 'fair' : 'poor',
+              criticality: skillCriticality[skillName] !== 'important' ? skillCriticality[skillName] : (skillCriticality[fullSkillName] || 'important'),
               dataAvailable: candidateScore !== null,
             };
           })
