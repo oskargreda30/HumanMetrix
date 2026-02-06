@@ -1088,11 +1088,13 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                   </p>
                 </div>
                 <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white flex-wrap">
-                    <TrendingUp className="h-4 w-4 text-white" />
-                    Cohort Benchmarking
-                    <Badge className="bg-amber-500 text-white border-amber-600 text-xs ml-auto">Coming Soon</Badge>
-                  </h4>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <h4 className="font-medium flex items-center gap-2 text-white">
+                      <TrendingUp className="h-4 w-4 text-white shrink-0" />
+                      Cohort Benchmarking
+                    </h4>
+                    <Badge className="bg-amber-500 text-white border-amber-600 text-xs shrink-0">Coming Soon</Badge>
+                  </div>
                   <p className="text-sm text-white/70">
                     Compare candidate performance against industry benchmarks and peer organizations
                   </p>
