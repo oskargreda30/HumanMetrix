@@ -8351,11 +8351,11 @@ Format your response as JSON with this structure:
       const targetAiSkills = (role.requiredSkillScores?.aiReadinessSkills || {}) as Record<string, number>;
       const targetCriticality = (role.requiredSkillScores?.skillCriticality || {}) as Record<string, string>;
       
-      // Helper: Get criticality weight (critical=3, important=2, nice-to-have=1)
+      // Helper: Get criticality weight (critical=3, standard=1)
       const getCriticalityWeight = (criticality: string | undefined): number => {
         if (criticality === 'critical') return 3;
         if (criticality === 'standard') return 1;
-        return 1; // nice-to-have or undefined
+        return 1; // standard or undefined
       };
       
       for (const altRole of allRoles) {
@@ -9963,7 +9963,7 @@ Return valid JSON with only the requested fields.`;
         });
       }
       
-      // Sort by criticality first (critical > important > nice-to-have), then by advantage
+      // Sort by criticality first (critical > standard), then by advantage
       const criticalityOrder: Record<string, number> = { 'critical': 0, 'standard': 1 };
       topAdvantages.sort((a, b) => {
         const critDiff = (criticalityOrder[a.criticality as keyof typeof criticalityOrder] || 1) - 
@@ -16464,8 +16464,8 @@ Return valid JSON with only the requested fields.`;
           Object.entries(role.requiredSkillScores.aiReadinessSkills).forEach(([skillName, rawRequiredScore]) => {
             totalRequiredSkills++;
             const requiredScore = ensureNoMultipleOf5(rawRequiredScore as number);
-            const normalizedSkillName = aiReadinessSkillMapping[skillName] || skillName;
-            const candidateScoreRaw = aiReadinessSkills.get(normalizedSkillName) || aiReadinessSkills.get(skillName);
+            const fullSkillName = aiReadinessSkillMapping[skillName] || skillName;
+            const candidateScoreRaw = aiReadinessSkills.get(fullSkillName) || aiReadinessSkills.get(skillName);
             const dataAvailable = candidateScoreRaw !== undefined;
             
             if (dataAvailable) {
@@ -16479,23 +16479,23 @@ Return valid JSON with only the requested fields.`;
               else alignment = 'poor';
               
               skillScores.push({
-                skillName,
+                skillName: fullSkillName,
                 score: candidateScore,
                 requiredScore,
                 gap,
                 alignment,
-                criticality: findCriticality(skillName),
+                criticality: findCriticality(fullSkillName),
                 category: 'ai_readiness' as const,
                 dataAvailable: true
               });
             } else {
               skillScores.push({
-                skillName,
+                skillName: fullSkillName,
                 score: null,
                 requiredScore,
                 gap: null,
                 alignment: 'not_assessed',
-                criticality: findCriticality(skillName),
+                criticality: findCriticality(fullSkillName),
                 category: 'ai_readiness' as const,
                 dataAvailable: false
               });
