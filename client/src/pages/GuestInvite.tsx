@@ -430,6 +430,10 @@ export default function GuestInvite() {
                   ))}
                 </div>
               </div>
+
+              <p className="text-sm text-slate-500 text-center">
+                Your results have been sent to <strong className="text-slate-700">{invitation.partnerName || "your employer"}</strong>.
+              </p>
               
               <div className="flex items-center justify-center gap-3 py-4">
                 <Loader2 className="h-5 w-5 animate-spin text-cyan-600" />
@@ -474,6 +478,10 @@ export default function GuestInvite() {
                 ))}
               </div>
             </div>
+
+            <p className="text-sm text-slate-500 text-center">
+              Your results have been sent to <strong className="text-slate-700">{invitation.partnerName || "your employer"}</strong>.
+            </p>
             
             <div className="border rounded-lg p-4 bg-cyan-50 border-cyan-200">
               <div className="flex items-start gap-3">
