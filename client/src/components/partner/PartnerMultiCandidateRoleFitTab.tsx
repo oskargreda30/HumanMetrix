@@ -1226,7 +1226,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
           {/* Prompt Architecture Comparison Section */}
           {(() => {
             const paRoleSkills = comparison.roleSnapshot.requiredSkillScores || {};
-            const REQUIRED_PA_SCORE = paRoleSkills.promptArchitectureScore;
+            const REQUIRED_PA_SCORE = paRoleSkills.promptArchitectureScore || 62;
             return (
           <Card data-testid="card-prompt-architecture-comparison">
             <CardHeader className="bg-gradient-to-r from-cyan-500/10 via-cyan-500/5 to-transparent">
@@ -1319,7 +1319,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
           {/* AIQ (Algorithmic Integrity Quotient) Comparison Section */}
           {(() => {
             const aiqRoleSkills = comparison.roleSnapshot.requiredSkillScores || {};
-            const REQUIRED_AIQ_SCORE = aiqRoleSkills.aiqScore;
+            const REQUIRED_AIQ_SCORE = aiqRoleSkills.aiqScore || 62;
             return (
           <Card data-testid="card-aiq-comparison">
             <CardHeader className="bg-gradient-to-r from-purple-500/10 via-purple-500/5 to-transparent">

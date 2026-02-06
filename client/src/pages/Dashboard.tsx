@@ -1719,12 +1719,12 @@ export default function Dashboard() {
                         const isAllSelected = selected.length === pricingData.assessments.length;
                         const isBulkEligible = isAllSelected && selected.length > 1;
                         
-                        // Calculate sum of selected assessments
+                        // Calculate sum of selected assessments (priceInPence is in pence, divide by 100 for display)
                         const selectedTotalPence = selected.reduce((sum, a) => sum + a.priceInPence, 0);
-                        const selectedOriginalDisplay = `${pricingData.currencySymbol}${Math.round(selectedTotalPence)}`;
+                        const selectedOriginalDisplay = `${pricingData.currencySymbol}${Math.round(selectedTotalPence / 100)}`;
                         // Apply 25% discount only if ALL selected and more than 1
                         const discountedPence = isBulkEligible ? Math.round(selectedTotalPence * 0.75) : selectedTotalPence;
-                        const selectedDiscountedDisplay = `${pricingData.currencySymbol}${discountedPence}`;
+                        const selectedDiscountedDisplay = `${pricingData.currencySymbol}${Math.round(discountedPence / 100)}`;
                         
                         return (
                           <div className="pt-3 mt-2 border-t">
@@ -1819,7 +1819,7 @@ export default function Dashboard() {
                         const isBulkEligible = isAllSelected && selected.length > 1;
                         const selectedTotalPence = selected.reduce((sum, a) => sum + a.priceInPence, 0);
                         const finalPrice = isBulkEligible ? Math.round(selectedTotalPence * 0.75) : selectedTotalPence;
-                        const priceDisplay = `${pricingData?.currencySymbol || ''}${Math.round(finalPrice)}`;
+                        const priceDisplay = `${pricingData?.currencySymbol || ''}${Math.round(finalPrice / 100)}`;
                         
                         if (selectedAssessments.size === 0) return 'Select Assessments';
                         if (selectedAssessments.size === 1) {

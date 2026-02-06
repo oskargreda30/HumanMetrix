@@ -9502,6 +9502,14 @@ Return valid JSON with only the requested fields.`;
         }
       }
 
+      // Ensure PA and AIQ required scores always have values (fallback if AI generation failed or was skipped)
+      if (!role.requiredSkillScores.promptArchitectureScore) {
+        role.requiredSkillScores.promptArchitectureScore = 62;
+      }
+      if (!role.requiredSkillScores.aiqScore) {
+        role.requiredSkillScores.aiqScore = 62;
+      }
+
       const skillCriticality = role.requiredSkillScores.skillCriticality || {};
       
       const findCriticality = (skillName: string): 'critical' | 'important' | 'nice-to-have' => {
@@ -16493,6 +16501,14 @@ Return valid JSON with only the requested fields.`;
         }
       }
 
+
+      // Ensure PA and AIQ required scores always have values (fallback if AI generation failed or was skipped)
+      if (!role.requiredSkillScores.promptArchitectureScore) {
+        role.requiredSkillScores.promptArchitectureScore = 62;
+      }
+      if (!role.requiredSkillScores.aiqScore) {
+        role.requiredSkillScores.aiqScore = 62;
+      }
       const skillCriticality = role.requiredSkillScores.skillCriticality || {};
       
       const findCriticality = (skillName: string): 'critical' | 'important' | 'nice-to-have' => {
