@@ -2061,9 +2061,7 @@ export function registerPartnerRoutes(app: Express) {
         // Check if this candidate already exists in the system
         const existingInvitation = existingInvitationEmails.get(candidate.email.toLowerCase());
         if (existingInvitation) {
-          // Check the invitation status to determine action
           if (existingInvitation.status === 'revoked' || existingInvitation.status === 'expired') {
-            // Allow re-invitation for revoked/expired invitations - track for reactivation
             candidatesToReactivate.push({
               row,
               candidate,
@@ -2073,41 +2071,8 @@ export function registerPartnerRoutes(app: Express) {
             continue;
           }
           
-          // If forceReinvite is true, allow creating a new invitation for a new testing series
-          if (forceReinvite) {
-            // Don't add to reactivate list - let it proceed as a new invitation
-            // The candidate will be processed normally below
-            console.log(`[Bulk Invitations] Force re-invite for ${candidate.email} - creating new testing series invitation`);
-            // Skip the duplicate check and continue to allow this candidate
-          } else {
-            // For active invitations (pending, sent, opened, started, completed), provide specific errors
-            let errorMessage = 'DUPLICATE_CANDIDATE';
-            let additionalInfo: any = {
-              candidateName: existingInvitation.name || candidate.email,
-              candidateEmail: candidate.email,
-              invitationId: existingInvitation.id,
-              status: existingInvitation.status,
-              hasResults: existingInvitation.status === 'completed' || existingInvitation.status === 'in_progress',
-            };
-            
-            if (existingInvitation.status === 'completed') {
-              additionalInfo.message = 'This candidate has already completed their assessment.';
-            } else if (existingInvitation.status === 'in_progress' || existingInvitation.status === 'started') {
-              additionalInfo.message = 'This candidate has an assessment in progress.';
-            } else if (existingInvitation.status === 'pending' || existingInvitation.status === 'sent') {
-              additionalInfo.message = 'An invitation is already pending for this candidate. Use the resend option if needed.';
-              additionalInfo.canResend = true;
-            }
-            
-            validationErrors.push({ 
-              row, 
-              externalUserId: identifier, 
-              field: 'email', 
-              error: errorMessage,
-              ...additionalInfo
-            } as any);
-            continue;
-          }
+          // Always allow re-inviting the same email - creates a new invitation for a new testing series
+          console.log(`[Bulk Invitations] Re-invite for ${candidate.email} (existing status: ${existingInvitation.status}) - creating new invitation`);
         }
         
         // Check for duplicate emails within batch
