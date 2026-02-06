@@ -1589,7 +1589,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
               <div className="mt-4 text-center">
                 <Button 
                   variant="outline" 
-                  className="border-white text-white hover:bg-white/20"
+                  className="border-white text-white"
                   onClick={() => setShowEnquiryModal(true)}
                   data-testid="button-contact-team-services-multi"
                 >

@@ -9509,6 +9509,58 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return name.toLowerCase().replace(/[^a-z0-9]/g, '');
       };
 
+      if (!role.requiredSkillScores.promptArchitectureScore) {
+        role.requiredSkillScores.promptArchitectureScore = 60;
+      }
+      if (!role.requiredSkillScores.aiqScore) {
+        role.requiredSkillScores.aiqScore = 60;
+      }
+
+      if (!role.requiredSkillScores.skillCriticality || Object.keys(role.requiredSkillScores.skillCriticality).length === 0) {
+        const autoSkillCriticality: Record<string, string> = {};
+        const allSkillsForCriticality: Array<{skill: string; score: number}> = [];
+        if (role.requiredSkillScores.fitSkills) {
+          Object.entries(role.requiredSkillScores.fitSkills).forEach(([skill, score]) => {
+            allSkillsForCriticality.push({ skill, score: score as number });
+            autoSkillCriticality[skill] = 'standard';
+          });
+        }
+        if (role.requiredSkillScores.aiReadinessSkills) {
+          Object.entries(role.requiredSkillScores.aiReadinessSkills).forEach(([skill, score]) => {
+            allSkillsForCriticality.push({ skill, score: score as number });
+            autoSkillCriticality[skill] = 'standard';
+          });
+        }
+        allSkillsForCriticality.sort((a, b) => b.score - a.score);
+        const toMarkCritical = allSkillsForCriticality.slice(0, Math.min(5, Math.max(3, Math.ceil(allSkillsForCriticality.length * 0.3))));
+        toMarkCritical.forEach(({ skill }) => {
+          autoSkillCriticality[skill] = 'critical';
+        });
+        role.requiredSkillScores.skillCriticality = autoSkillCriticality;
+        console.log(`[Partner Comparison] Auto-generated skillCriticality for role "${role.name}" - marked ${toMarkCritical.length} skills as critical`);
+      } else {
+        const criticalCount = Object.values(role.requiredSkillScores.skillCriticality).filter(v => v === 'critical').length;
+        if (criticalCount < 3) {
+          const allSkillsForFix: Array<{skill: string; score: number}> = [];
+          if (role.requiredSkillScores.fitSkills) {
+            Object.entries(role.requiredSkillScores.fitSkills).forEach(([skill, score]) => {
+              allSkillsForFix.push({ skill, score: score as number });
+            });
+          }
+          if (role.requiredSkillScores.aiReadinessSkills) {
+            Object.entries(role.requiredSkillScores.aiReadinessSkills).forEach(([skill, score]) => {
+              allSkillsForFix.push({ skill, score: score as number });
+            });
+          }
+          allSkillsForFix.sort((a, b) => b.score - a.score);
+          const toMarkCritical = allSkillsForFix.slice(0, Math.max(3, 5 - criticalCount));
+          toMarkCritical.forEach(({ skill }) => {
+            role.requiredSkillScores.skillCriticality[skill] = 'critical';
+          });
+          console.log(`[Partner Comparison] Auto-marked ${toMarkCritical.length} additional skills as critical for role "${role.name}"`);
+        }
+      }
+
       const skillCriticality = role.requiredSkillScores.skillCriticality || {};
       
       const findCriticality = (skillName: string): 'critical' | 'important' | 'nice-to-have' => {
@@ -16386,6 +16438,58 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
       const normalizeSkillName = (name: string): string => {
         return name.toLowerCase().replace(/[^a-z0-9]/g, '');
       };
+
+      if (!role.requiredSkillScores.promptArchitectureScore) {
+        role.requiredSkillScores.promptArchitectureScore = 60;
+      }
+      if (!role.requiredSkillScores.aiqScore) {
+        role.requiredSkillScores.aiqScore = 60;
+      }
+
+      if (!role.requiredSkillScores.skillCriticality || Object.keys(role.requiredSkillScores.skillCriticality).length === 0) {
+        const autoSkillCriticality: Record<string, string> = {};
+        const allSkillsForCriticality: Array<{skill: string; score: number}> = [];
+        if (role.requiredSkillScores.fitSkills) {
+          Object.entries(role.requiredSkillScores.fitSkills).forEach(([skill, score]) => {
+            allSkillsForCriticality.push({ skill, score: score as number });
+            autoSkillCriticality[skill] = 'standard';
+          });
+        }
+        if (role.requiredSkillScores.aiReadinessSkills) {
+          Object.entries(role.requiredSkillScores.aiReadinessSkills).forEach(([skill, score]) => {
+            allSkillsForCriticality.push({ skill, score: score as number });
+            autoSkillCriticality[skill] = 'standard';
+          });
+        }
+        allSkillsForCriticality.sort((a, b) => b.score - a.score);
+        const toMarkCritical = allSkillsForCriticality.slice(0, Math.min(5, Math.max(3, Math.ceil(allSkillsForCriticality.length * 0.3))));
+        toMarkCritical.forEach(({ skill }) => {
+          autoSkillCriticality[skill] = 'critical';
+        });
+        role.requiredSkillScores.skillCriticality = autoSkillCriticality;
+        console.log(`[Partner Comparison] Auto-generated skillCriticality for role "${role.name}" - marked ${toMarkCritical.length} skills as critical`);
+      } else {
+        const criticalCount = Object.values(role.requiredSkillScores.skillCriticality).filter(v => v === 'critical').length;
+        if (criticalCount < 3) {
+          const allSkillsForFix: Array<{skill: string; score: number}> = [];
+          if (role.requiredSkillScores.fitSkills) {
+            Object.entries(role.requiredSkillScores.fitSkills).forEach(([skill, score]) => {
+              allSkillsForFix.push({ skill, score: score as number });
+            });
+          }
+          if (role.requiredSkillScores.aiReadinessSkills) {
+            Object.entries(role.requiredSkillScores.aiReadinessSkills).forEach(([skill, score]) => {
+              allSkillsForFix.push({ skill, score: score as number });
+            });
+          }
+          allSkillsForFix.sort((a, b) => b.score - a.score);
+          const toMarkCritical = allSkillsForFix.slice(0, Math.max(3, 5 - criticalCount));
+          toMarkCritical.forEach(({ skill }) => {
+            role.requiredSkillScores.skillCriticality[skill] = 'critical';
+          });
+          console.log(`[Partner Comparison] Auto-marked ${toMarkCritical.length} additional skills as critical for role "${role.name}"`);
+        }
+      }
 
       const skillCriticality = role.requiredSkillScores.skillCriticality || {};
       

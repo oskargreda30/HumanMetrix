@@ -1607,7 +1607,7 @@ export default function MultiCandidateRoleFitTab() {
               <div className="mt-4 text-center">
                 <Button 
                   variant="outline" 
-                  className="border-white text-white hover:bg-white/20"
+                  className="border-white text-white"
                   onClick={() => setShowEnquiryModal(true)}
                   data-testid="button-contact-team-services-multi"
                 >
@@ -1645,7 +1645,7 @@ export default function MultiCandidateRoleFitTab() {
               variant="outline"
               size="lg"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="text-white border-white/50 hover:bg-white/10"
+              className="text-white border-white/50"
               data-testid="button-back-to-top-multi"
             >
               <ChevronUp className="h-4 w-4 mr-2" />
