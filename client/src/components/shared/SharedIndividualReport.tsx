@@ -8,11 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import {
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
 import { useToast } from "@/hooks/use-toast";
@@ -24,26 +24,6 @@ import html2canvas from "html2canvas";
 import { EnquiryModal } from "@/components/EnquiryModal";
 
 const CHART_COLOR = "#3b82f6";
-
-const renderInsideLabel = (props: any) => {
-  const { cx, cy, x, y, value } = props;
-  const insideX = cx + (x - cx) * 0.8;
-  const insideY = cy + (y - cy) * 0.8;
-  
-  return (
-    <text
-      x={insideX}
-      y={insideY}
-      fill="#374151"
-      fontSize={10}
-      fontWeight="bold"
-      textAnchor="middle"
-      dominantBaseline="middle"
-    >
-      {value}
-    </text>
-  );
-};
 
 export interface SharedIndividualReportConfig {
   candidatesEndpoint: string;
@@ -651,18 +631,18 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                 <div className="grid gap-6 lg:grid-cols-2">
                   <div ref={fitChartRef} className="h-80 bg-white dark:bg-gray-900 rounded-lg p-2">
                     <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart data={fitRadarData} cx="50%" cy="50%" outerRadius="70%">
-                        <PolarGrid strokeDasharray="3 3" />
-                        <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11 }} />
-                        <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
-                        <Radar
+                      <BarChart data={fitRadarData} layout="vertical" margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis type="number" domain={[0, 100]} />
+                        <YAxis type="category" dataKey="skill" width={120} tick={{ fontSize: 11 }} />
+                        <Bar
                           dataKey="score"
-                          stroke={CHART_COLOR}
-                          fill={CHART_COLOR}
-                          fillOpacity={0.5}
-                          label={renderInsideLabel}
+                          fill="#3b82f6"
+                          radius={[0, 4, 4, 0]}
+                          barSize={20}
+                          label={{ position: 'right', fontSize: 12, fontWeight: 600 }}
                         />
-                      </RadarChart>
+                      </BarChart>
                     </ResponsiveContainer>
                   </div>
                   
@@ -697,18 +677,18 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                 <div className="grid gap-6 lg:grid-cols-2">
                   <div ref={aiChartRef} className="h-80 bg-white dark:bg-gray-900 rounded-lg p-2">
                     <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart data={aiRadarData} cx="50%" cy="50%" outerRadius="70%">
-                        <PolarGrid strokeDasharray="3 3" />
-                        <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11 }} />
-                        <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
-                        <Radar
+                      <BarChart data={aiRadarData} layout="vertical" margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis type="number" domain={[0, 100]} />
+                        <YAxis type="category" dataKey="skill" width={120} tick={{ fontSize: 11 }} />
+                        <Bar
                           dataKey="score"
-                          stroke={CHART_COLOR}
-                          fill={CHART_COLOR}
-                          fillOpacity={0.5}
-                          label={renderInsideLabel}
+                          fill="#3b82f6"
+                          radius={[0, 4, 4, 0]}
+                          barSize={20}
+                          label={{ position: 'right', fontSize: 12, fontWeight: 600 }}
                         />
-                      </RadarChart>
+                      </BarChart>
                     </ResponsiveContainer>
                   </div>
                   

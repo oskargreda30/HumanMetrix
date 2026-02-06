@@ -189,7 +189,7 @@ export default function GenerateSamplePDFs() {
         sarahChenData as any,
         skills,
         platformAverages,
-        undefined, // no radar chart images
+        undefined, // no chart images
         undefined, // no role comparison for individual report
         promptArchitectureData as any
       );

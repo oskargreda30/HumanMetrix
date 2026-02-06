@@ -12,11 +12,6 @@ import { exportResultsPDF } from "@/lib/pdfScreenCapture";
 import { useToast } from "@/hooks/use-toast";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import {
-  Radar,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
   ResponsiveContainer,
   BarChart,
   Bar,
@@ -552,49 +547,14 @@ export default function Results() {
           {/* Visualizations - For FIT and AI Readiness */}
           {Object.keys(scores).length > 0 && assessmentType !== 'aiq' && (
             <div className="grid md:grid-cols-2 gap-8 mb-8" data-pdf-section>
-              {/* Radar Chart */}
+              {/* Skills Bar Chart */}
               <Card className="p-6">
-                <h2 className="text-xl font-semibold mb-6 text-center">Skills Radar</h2>
+                <h2 className="text-xl font-semibold mb-6 text-center">Skills Overview</h2>
                 <ResponsiveContainer width="100%" height={300}>
-                  <RadarChart data={radarData}>
-                    <PolarGrid stroke="hsl(var(--border))" />
-                    <PolarAngleAxis 
-                      dataKey="skill" 
-                      tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
-                    />
-                    <PolarRadiusAxis 
-                      angle={90} 
-                      domain={[0, 100]}
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                    />
-                    <Radar
-                      name="Score"
-                      dataKey="score"
-                      stroke="hsl(var(--primary))"
-                      fill="hsl(var(--primary))"
-                      fillOpacity={0.6}
-                    />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </Card>
-
-              {/* Bar Chart */}
-              <Card className="p-6">
-                <h2 className="text-xl font-semibold mb-6 text-center">Skills Comparison</h2>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={barData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis 
-                      dataKey="skill" 
-                      tick={{ fill: 'hsl(var(--foreground))', fontSize: 11 }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                    />
-                    <YAxis 
-                      domain={[0, 100]}
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                    />
+                  <BarChart layout="vertical" data={radarData} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                    <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
+                    <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: 'hsl(var(--card))',
@@ -603,11 +563,28 @@ export default function Results() {
                       }}
                       labelStyle={{ color: 'hsl(var(--foreground))' }}
                     />
-                    <Bar 
-                      dataKey="score" 
-                      fill="hsl(var(--primary))"
-                      radius={[8, 8, 0, 0]}
+                    <Bar dataKey="score" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Card>
+
+              {/* Skills Comparison Bar Chart */}
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-6 text-center">Skills Comparison</h2>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart layout="vertical" data={barData} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                    <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
+                    <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                      }}
+                      labelStyle={{ color: 'hsl(var(--foreground))' }}
                     />
+                    <Bar dataKey="score" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
                   </BarChart>
                 </ResponsiveContainer>
               </Card>

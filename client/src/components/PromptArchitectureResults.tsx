@@ -9,11 +9,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
 } from "recharts";
 
 interface PromptArchitectureResultsProps {
@@ -64,29 +59,35 @@ export function PromptArchitectureResults({ scores, totalScore, evaluations }: P
             </Badge>
           </div>
 
-          {/* Radar Chart */}
+          {/* Bar Chart */}
           <div>
             <h3 className="text-center font-semibold mb-4">Dimension Breakdown</h3>
             <ResponsiveContainer width="100%" height={250}>
-              <RadarChart data={radarData}>
-                <PolarGrid stroke="hsl(var(--border))" />
-                <PolarAngleAxis 
+              <BarChart layout="vertical" data={radarData} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                <YAxis 
+                  type="category" 
                   dataKey="dimension" 
-                  tick={{ fill: 'hsl(var(--foreground))', fontSize: 11 }}
+                  width={120} 
+                  tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} 
+                  axisLine={false} 
+                  tickLine={false} 
                 />
-                <PolarRadiusAxis 
-                  angle={90} 
+                <XAxis 
+                  type="number" 
                   domain={[0, 20]}
-                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
                 />
-                <Radar
+                <Tooltip />
+                <Bar
                   name="Score"
                   dataKey="score"
-                  stroke="hsl(var(--primary))"
                   fill="hsl(var(--primary))"
-                  fillOpacity={0.6}
+                  radius={[0, 4, 4, 0]}
+                  barSize={20}
+                  label={{ position: 'right', fontSize: 12, fontWeight: 600 }}
                 />
-              </RadarChart>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>

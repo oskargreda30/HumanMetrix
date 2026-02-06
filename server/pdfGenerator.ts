@@ -151,7 +151,7 @@ export async function generatePDFFromUrl(options: GeneratePDFFromUrlOptions): Pr
     
     // Wait for specific chart elements to render
     try {
-      await page.waitForSelector('.recharts-bar-rectangle, .recharts-radar-polygon', { timeout: 2000 });
+      await page.waitForSelector('.recharts-bar-rectangle, .recharts-bar', { timeout: 2000 });
       console.log('[PDF Generator] Chart elements rendered');
     } catch (chartElError) {
       console.log('[PDF Generator] Chart elements not found, continuing...');

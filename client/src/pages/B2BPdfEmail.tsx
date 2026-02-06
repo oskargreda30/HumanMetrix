@@ -10,7 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import SkillsLegend from "@/components/SkillsLegend";
 import { normalizeAIReadinessScores, getSkillAcronym } from "@/lib/assessmentSkills";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 
 interface B2BSessionData {
   sessionId: string;
@@ -551,36 +551,23 @@ export default function B2BPdfEmail() {
           </CardContent>
         </Card>
 
-        {/* Radar Chart Visualization */}
+        {/* Skills Bar Chart Visualization */}
         {hasDetailedScores && (
           <Card className="page-break-before avoid-page-break" data-pdf-section="radar" style={isPdfRender ? { backgroundColor: 'white', border: '1px solid #e2e8f0' } : undefined}>
             <CardContent className="pt-6">
-              <h3 className="text-lg font-bold mb-4 text-center" style={isPdfRender ? { color: '#1e293b' } : undefined}>Skills Radar</h3>
+              <h3 className="text-lg font-bold mb-4 text-center" style={isPdfRender ? { color: '#1e293b' } : undefined}>Skills Overview</h3>
               <div className="flex justify-center">
                 <ResponsiveContainer width={400} height={300}>
-                  <RadarChart data={sortedScores.map(([skill, score]) => ({
+                  <BarChart layout="vertical" data={sortedScores.map(([skill, score]) => ({
                     skill: getSkillAcronym(skill),
                     score: Math.round(score as number),
                     fullMark: 100
-                  }))}>
-                    <PolarGrid stroke={isPdfRender ? '#e2e8f0' : 'hsl(var(--border))'} />
-                    <PolarAngleAxis 
-                      dataKey="skill" 
-                      tick={{ fill: isPdfRender ? '#1e293b' : 'hsl(var(--foreground))', fontSize: 11 }}
-                    />
-                    <PolarRadiusAxis 
-                      angle={90} 
-                      domain={[0, 100]}
-                      tick={{ fill: isPdfRender ? '#64748b' : 'hsl(var(--muted-foreground))' }}
-                    />
-                    <Radar
-                      name="Score"
-                      dataKey="score"
-                      stroke="#3b82f6"
-                      fill="#3b82f6"
-                      fillOpacity={0.6}
-                    />
-                  </RadarChart>
+                  }))} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={isPdfRender ? '#e2e8f0' : 'hsl(var(--border))'} horizontal={false} />
+                    <YAxis type="category" dataKey="skill" width={120} tick={{ fill: isPdfRender ? '#1e293b' : 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
+                    <XAxis type="number" domain={[0, 100]} tick={{ fill: isPdfRender ? '#64748b' : 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                    <Bar dataKey="score" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
+                  </BarChart>
                 </ResponsiveContainer>
               </div>
             </CardContent>

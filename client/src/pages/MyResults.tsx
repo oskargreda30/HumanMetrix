@@ -18,11 +18,11 @@ import SkillsLegend from "@/components/SkillsLegend";
 import { transformToRadarData, isSkillBasedAssessment, formatAssessmentType, getSkillAcronym } from "@/lib/assessmentSkills";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import {
-  Radar,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
 import dashboardBg from "@assets/image_1763608498774.png";
@@ -566,25 +566,19 @@ export default function MyResults() {
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
-                  {/* Radar Chart */}
+                  {/* Bar Chart */}
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart data={sortedScores.map(([skill, score]) => ({
+                      <BarChart layout="vertical" data={sortedScores.map(([skill, score]) => ({
                         skill: getSkillAcronym(skill),
                         score: score as number,
                         fullMark: 100
-                      }))}>
-                        <PolarGrid stroke="hsl(var(--border))" />
-                        <PolarAngleAxis dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 11 }} />
-                        <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
-                        <Radar
-                          name="Score"
-                          dataKey="score"
-                          stroke="#3b82f6"
-                          fill="#3b82f6"
-                          fillOpacity={0.4}
-                        />
-                      </RadarChart>
+                      }))} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                        <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
+                        <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                        <Bar dataKey="score" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
+                      </BarChart>
                     </ResponsiveContainer>
                   </div>
 
@@ -658,25 +652,19 @@ export default function MyResults() {
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
-                  {/* Radar Chart */}
+                  {/* Bar Chart */}
                   <div className="h-72">
                     <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart data={sortedScores.map(([skill, score]) => ({
+                      <BarChart layout="vertical" data={sortedScores.map(([skill, score]) => ({
                         skill: getSkillAcronym(skill),
                         score: score as number,
                         fullMark: 100
-                      }))}>
-                        <PolarGrid stroke="hsl(var(--border))" />
-                        <PolarAngleAxis dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 10 }} />
-                        <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
-                        <Radar
-                          name="Score"
-                          dataKey="score"
-                          stroke="#8b5cf6"
-                          fill="#8b5cf6"
-                          fillOpacity={0.4}
-                        />
-                      </RadarChart>
+                      }))} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                        <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
+                        <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                        <Bar dataKey="score" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
+                      </BarChart>
                     </ResponsiveContainer>
                   </div>
 
@@ -1008,18 +996,12 @@ export default function MyResults() {
           return (
             <div id="fit-radar-chart-pdf" style={{ width: '400px', height: '400px', background: 'white' }}>
               <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={fitData}>
-                  <PolarGrid stroke="#e5e7eb" />
-                  <PolarAngleAxis dataKey="skill" tick={{ fill: '#000', fontSize: 12 }} />
-                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
-                  <Radar
-                    name="Score"
-                    dataKey="score"
-                    stroke="#3b82f6"
-                    fill="#3b82f6"
-                    fillOpacity={0.6}
-                  />
-                </RadarChart>
+                <BarChart layout="vertical" data={fitData} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+                  <YAxis type="category" dataKey="skill" width={120} tick={{ fill: '#000', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
+                  <XAxis type="number" domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 11 }} />
+                  <Bar dataKey="score" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
+                </BarChart>
               </ResponsiveContainer>
             </div>
           );
@@ -1038,18 +1020,12 @@ export default function MyResults() {
           return (
             <div id="ai-readiness-radar-chart-pdf" style={{ width: '400px', height: '400px', background: 'white' }}>
               <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={aiData}>
-                  <PolarGrid stroke="#e5e7eb" />
-                  <PolarAngleAxis dataKey="skill" tick={{ fill: '#000', fontSize: 12 }} />
-                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
-                  <Radar
-                    name="Score"
-                    dataKey="score"
-                    stroke="#8b5cf6"
-                    fill="#8b5cf6"
-                    fillOpacity={0.6}
-                  />
-                </RadarChart>
+                <BarChart layout="vertical" data={aiData} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+                  <YAxis type="category" dataKey="skill" width={120} tick={{ fill: '#000', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
+                  <XAxis type="number" domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 11 }} />
+                  <Bar dataKey="score" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
+                </BarChart>
               </ResponsiveContainer>
             </div>
           );

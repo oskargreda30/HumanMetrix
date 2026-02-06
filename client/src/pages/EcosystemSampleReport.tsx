@@ -22,7 +22,7 @@ import {
   ShieldAlert,
   CheckCircle,
 } from "lucide-react";
-import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip } from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 
 const CALENDLY_URL = "https://calendly.com/hello-humanmetrix/30min";
 
@@ -583,65 +583,23 @@ export default function EcosystemSampleReport() {
             </div>
           </div>
 
-          {/* SECTION 7: Team Capability Radar Chart */}
+          {/* SECTION 7: Team Cumulative Capability Chart */}
           <div>
             <h4 className="font-semibold mb-4 flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Team Cumulative Capability Profile
             </h4>
             <p className="text-sm text-muted-foreground mb-4">
-              This radar chart shows your team's combined scores across all six FIT capabilities. 
+              This skills chart shows your team's combined scores across all six FIT capabilities. 
               With {sampleTeamMembers.length} team member{sampleTeamMembers.length !== 1 ? 's' : ''}, the maximum possible score for each capability is {sampleTeamMembers.length * 100}.
             </p>
             <div className="bg-muted/30 rounded-lg p-4 border">
               <div className="h-[350px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart data={cumulativeScores} margin={{ top: 30, right: 40, bottom: 30, left: 40 }}>
-                    <PolarGrid stroke="hsl(var(--border))" />
-                    <PolarAngleAxis 
-                      dataKey="code" 
-                      tick={({ x, y, payload, textAnchor, index }: any) => {
-                        const item = cumulativeScores[index];
-                        const score = item?.score || 0;
-                        return (
-                          <g transform={`translate(${x},${y})`}>
-                            <text 
-                              x={0} 
-                              y={0} 
-                              textAnchor={textAnchor}
-                              fill="hsl(var(--foreground))" 
-                              fontSize={12}
-                              fontWeight="600"
-                            >
-                              {payload.value}
-                            </text>
-                            <text 
-                              x={0} 
-                              y={14} 
-                              textAnchor={textAnchor}
-                              fill="hsl(var(--muted-foreground))" 
-                              fontSize={10}
-                            >
-                              {score}
-                            </text>
-                          </g>
-                        );
-                      }}
-                    />
-                    <PolarRadiusAxis 
-                      angle={30} 
-                      domain={[0, sampleTeamMembers.length * 100]}
-                      tick={false}
-                      axisLine={false}
-                    />
-                    <Radar
-                      name="Team Score"
-                      dataKey="score"
-                      stroke="hsl(var(--primary))"
-                      fill="hsl(var(--primary))"
-                      fillOpacity={0.3}
-                      strokeWidth={2}
-                    />
+                  <BarChart layout="vertical" data={cumulativeScores} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                    <YAxis type="category" dataKey="code" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
+                    <XAxis type="number" domain={[0, sampleTeamMembers.length * 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: 'hsl(var(--card))', 
@@ -653,7 +611,8 @@ export default function EcosystemSampleReport() {
                         props.payload.capability
                       ]}
                     />
-                  </RadarChart>
+                    <Bar dataKey="score" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
+                  </BarChart>
                 </ResponsiveContainer>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4 pt-4 border-t">

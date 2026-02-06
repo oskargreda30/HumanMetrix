@@ -51,12 +51,11 @@ export const CHART_COLORS = {
   blue100: '#dbeafe',  // rgb(219, 234, 254)
 };
 
-// Radar chart specific styling
-export const RADAR_CHART_STYLE = {
+// Bar chart specific styling
+export const BAR_CHART_STYLE = {
   strokeWidth: 2,
-  dotRadius: 3,
-  activeDotRadius: 4,
-  fillOpacity: 0.2,
+  barRadius: 4,
+  fillOpacity: 0.8,
   gridStroke: '#e5e7eb',
   gridStrokeWidth: 1,
 };

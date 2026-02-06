@@ -27,11 +27,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
 import { SkillRadarChart } from "@/components/admin/SkillRadarChart";
@@ -1113,18 +1113,18 @@ export default function PartnerResultsTab() {
                             <div className="grid gap-6 lg:grid-cols-2">
                               <div className="h-72 bg-white dark:bg-gray-900 rounded-lg p-2">
                                 <ResponsiveContainer width="100%" height="100%">
-                                  <RadarChart data={fitRadarData} cx="50%" cy="50%" outerRadius="70%">
-                                    <PolarGrid strokeDasharray="3 3" />
-                                    <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11 }} />
-                                    <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
-                                    <Radar
+                                  <BarChart layout="vertical" data={fitRadarData} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                                    <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
+                                    <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                                    <Bar
                                       dataKey="score"
-                                      stroke={CHART_COLOR}
                                       fill={CHART_COLOR}
-                                      fillOpacity={0.5}
-                                      label={renderInsideLabel}
+                                      radius={[0, 4, 4, 0]}
+                                      barSize={20}
+                                      label={{ position: 'right', fontSize: 12, fontWeight: 600 }}
                                     />
-                                  </RadarChart>
+                                  </BarChart>
                                 </ResponsiveContainer>
                               </div>
                               <div className="space-y-3">
@@ -1158,18 +1158,18 @@ export default function PartnerResultsTab() {
                             <div className="grid gap-6 lg:grid-cols-2">
                               <div className="h-72 bg-white dark:bg-gray-900 rounded-lg p-2">
                                 <ResponsiveContainer width="100%" height="100%">
-                                  <RadarChart data={aiRadarData} cx="50%" cy="50%" outerRadius="70%">
-                                    <PolarGrid strokeDasharray="3 3" />
-                                    <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10 }} />
-                                    <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
-                                    <Radar
+                                  <BarChart layout="vertical" data={aiRadarData} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                                    <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
+                                    <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                                    <Bar
                                       dataKey="score"
-                                      stroke="#8b5cf6"
                                       fill="#8b5cf6"
-                                      fillOpacity={0.5}
-                                      label={renderInsideLabel}
+                                      radius={[0, 4, 4, 0]}
+                                      barSize={20}
+                                      label={{ position: 'right', fontSize: 12, fontWeight: 600 }}
                                     />
-                                  </RadarChart>
+                                  </BarChart>
                                 </ResponsiveContainer>
                               </div>
                               <div className="space-y-3 max-h-72 overflow-y-auto">

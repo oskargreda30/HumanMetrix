@@ -8,12 +8,12 @@ import { ArrowLeft, ArrowUp, Users, TrendingUp, TrendingDown, Award, Target, Fil
 import { Progress } from "@/components/ui/progress";
 import SkillsLegend from "@/components/SkillsLegend";
 import {
-  Radar,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
   ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Legend,
   Tooltip,
 } from "recharts";
@@ -269,7 +269,7 @@ export default function SampleComparisonReport() {
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
                   <div>
                     <p className="font-medium text-sm">Skill-by-Skill Breakdown</p>
-                    <p className="text-xs text-muted-foreground">Radar charts and tables show each candidate's strengths. Look for the highest scores in skills critical to your role.</p>
+                    <p className="text-xs text-muted-foreground">Skills charts and tables show each candidate's strengths. Look for the highest scores in skills critical to your role.</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
@@ -472,7 +472,7 @@ export default function SampleComparisonReport() {
             </CardContent>
           </Card>
 
-          {/* Radar Charts */}
+          {/* Skills Charts */}
           <div className="grid gap-6 lg:grid-cols-2 mb-6">
             <Card data-testid="section-fit-comparison">
               <CardHeader>
@@ -481,32 +481,23 @@ export default function SampleComparisonReport() {
               <CardContent>
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={fitRadarData}>
-                      <PolarGrid stroke="hsl(var(--border))" />
-                      <PolarAngleAxis 
-                        dataKey="skill" 
-                        tick={{ fill: 'hsl(var(--foreground))', fontSize: 11 }}
-                      />
-                      <PolarRadiusAxis 
-                        angle={30} 
-                        domain={[0, 100]}
-                        tick={false}
-                        axisLine={false}
-                      />
+                    <BarChart layout="vertical" data={fitRadarData} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                      <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
+                      <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                       {DEMO_CANDIDATES.map((candidate, index) => (
-                        <Radar
+                        <Bar
                           key={candidate.id}
                           name={candidate.name}
                           dataKey={candidate.name}
-                          stroke={CANDIDATE_COLORS[index].stroke}
                           fill={CANDIDATE_COLORS[index].fill}
-                          fillOpacity={0.1}
-                          strokeWidth={2}
+                          radius={[0, 4, 4, 0]}
+                          barSize={14}
                         />
                       ))}
                       <Legend />
                       <Tooltip />
-                    </RadarChart>
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
@@ -519,32 +510,23 @@ export default function SampleComparisonReport() {
               <CardContent>
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={aiRadarData}>
-                      <PolarGrid stroke="hsl(var(--border))" />
-                      <PolarAngleAxis 
-                        dataKey="skill" 
-                        tick={{ fill: 'hsl(var(--foreground))', fontSize: 11 }}
-                      />
-                      <PolarRadiusAxis 
-                        angle={30} 
-                        domain={[0, 100]}
-                        tick={false}
-                        axisLine={false}
-                      />
+                    <BarChart layout="vertical" data={aiRadarData} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                      <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
+                      <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                       {DEMO_CANDIDATES.map((candidate, index) => (
-                        <Radar
+                        <Bar
                           key={candidate.id}
                           name={candidate.name}
                           dataKey={candidate.name}
-                          stroke={CANDIDATE_COLORS[index].stroke}
                           fill={CANDIDATE_COLORS[index].fill}
-                          fillOpacity={0.1}
-                          strokeWidth={2}
+                          radius={[0, 4, 4, 0]}
+                          barSize={14}
                         />
                       ))}
                       <Legend />
                       <Tooltip />
-                    </RadarChart>
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
@@ -723,24 +705,23 @@ export default function SampleComparisonReport() {
               <h3 className="font-semibold mb-4">All Skills Combined</h3>
               <div className="h-[400px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart data={COMBINED_RADAR_DATA}>
-                    <PolarGrid strokeDasharray="3 3" />
-                    <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9 }} />
-                    <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} />
+                  <BarChart layout="vertical" data={COMBINED_RADAR_DATA} margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                    <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
+                    <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                     {DEMO_CANDIDATES.map((candidate, index) => (
-                      <Radar
+                      <Bar
                         key={candidate.id}
                         name={candidate.name}
                         dataKey={`candidate${index}`}
-                        stroke={CANDIDATE_COLORS[index].stroke}
-                        strokeWidth={3}
-                        strokeDasharray="8 4"
-                        fill="transparent"
-                        fillOpacity={0}
+                        fill={CANDIDATE_COLORS[index].fill}
+                        radius={[0, 4, 4, 0]}
+                        barSize={14}
                       />
                     ))}
                     <Legend />
-                  </RadarChart>
+                    <Tooltip />
+                  </BarChart>
                 </ResponsiveContainer>
               </div>
             </CardContent>

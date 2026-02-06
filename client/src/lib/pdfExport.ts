@@ -340,7 +340,7 @@ function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, r
       'Weighted average across all assessments. Use the sliders to adjust weights based on role priorities (e.g., higher AI Readiness for tech roles).', yPos);
     
     yPos = addGuideItem(3, 'Skill-by-Skill Breakdown', 
-      'Radar charts and tables show each candidate\'s strengths. Look for the highest scores in skills critical to your role.', yPos);
+      'Bar charts and tables show each candidate\'s strengths. Look for the highest scores in skills critical to your role.', yPos);
     
     yPos = addGuideItem(4, 'Role Fit Analysis (Separate Tool)', 
       'For detailed role-specific analysis including cohort benchmarking and hiring recommendations, use the Role Fit tab with individual candidates.', yPos);
@@ -625,7 +625,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       : candidate.user.email.split('@')[0];
   }
   
-  // Skill abbreviation mapping (matching radar chart labels)
+  // Skill abbreviation mapping (matching bar chart labels)
   const skillAbbreviations: Record<string, string> = {
     // FIT Skills
     'High Agency': 'HA',
@@ -962,14 +962,14 @@ export async function exportComparisonPDF(data: ComparisonData) {
   yPos += 8;
   pdf.setTextColor(0, 0, 0);
   
-  // ========== PAGE 2: RADAR CHARTS ==========
+  // ========== PAGE 2: SKILLS CHARTS ==========
   pdf.addPage();
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
   
   yPos = 32;
   
-  // FIT Assessment Radar Charts
+  // FIT Assessment Bar Charts
   const hasFIT = data.fitAssessments?.some(a => a !== null);
   if (hasFIT && data.fitChartImages) {
     yPos = addSectionHeader(pdf, 'FIT ASSESSMENT COMPARISON', yPos, pageWidth);
@@ -1046,7 +1046,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos += 10; // Increased breathing room before AI READINESS section
   }
   
-  // AI Readiness Radar Charts - ALWAYS start on a new page to keep chart + table together
+  // AI Readiness Bar Charts - ALWAYS start on a new page to keep chart + table together
   const hasAI = data.aiReadinessAssessments?.some(a => a !== null);
   if (hasAI && data.aiChartImages) {
     // Always start AI Readiness section on a new page
@@ -1146,7 +1146,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     pdf.text('Combined view of all skill-based assessments (FIT + AI Readiness + AIQ)', 20, yPos);
     yPos += 3;
     
-    // Use larger dimensions - 170mm height for bigger radar chart
+    // Use larger dimensions - 170mm height for bigger skills chart
     const imgProps = pdf.getImageProperties(data.overallSkillsChartImage);
     const maxWidth = pageWidth - 25; // Wider margins for bigger chart
     const maxHeight = 170; // Larger height for bigger chart display
@@ -4736,7 +4736,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
       yPos += 7;
     });
     
-    // Right column - Radar Chart
+    // Right column - Bar Chart
     if (data.fitChartImage) {
       try {
         pdf.addImage(data.fitChartImage, 'PNG', rightColStart, fitScoresStartY - 5, chartWidth, chartHeight);
@@ -4758,23 +4758,17 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(55, 65, 81);
       pdf.text('FIT Assessment', rightColStart + chartWidth / 2, fitScoresStartY + 10, { align: 'center' });
-      // Draw simple radar placeholder
-      const centerX = rightColStart + chartWidth / 2;
-      const centerY = fitScoresStartY + chartHeight / 2 + 5;
-      const radius = 18;
-      pdf.setDrawColor(59, 130, 246);
+      // Draw simple bar chart placeholder
+      const barStartX = rightColStart + 10;
+      const barStartY = fitScoresStartY + 20;
+      const barW = 8;
+      const barSpacing = 12;
+      const maxBarH = 25;
       pdf.setFillColor(59, 130, 246);
       for (let i = 0; i < 6; i++) {
-        const angle = (i * Math.PI * 2) / 6 - Math.PI / 2;
-        const x = centerX + Math.cos(angle) * radius;
-        const y = centerY + Math.sin(angle) * radius;
-        if (i === 0) {
-          pdf.setLineWidth(0.3);
-        }
-        pdf.line(centerX, centerY, x, y);
+        const barH = maxBarH * (0.4 + Math.random() * 0.6);
+        pdf.rect(barStartX + i * barSpacing, barStartY + maxBarH - barH, barW, barH, 'F');
       }
-      pdf.setFillColor(59, 130, 246);
-      pdf.circle(centerX, centerY, 2, 'F');
     }
     
     yPos = Math.max(yPos, fitScoresStartY + chartHeight) + 15;
@@ -4818,7 +4812,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
       yPos += 7; // Match FIT spacing
     });
     
-    // Right column - Radar Chart (positioned to align with skills list)
+    // Right column - Bar Chart (positioned to align with skills list)
     if (data.aiChartImage) {
       try {
         pdf.addImage(data.aiChartImage, 'PNG', rightColStart, aiScoresStartY + 5, chartWidth, aiChartHeight);
@@ -4840,20 +4834,17 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(55, 65, 81);
       pdf.text('AI Readiness', rightColStart + chartWidth / 2, aiScoresStartY + 20, { align: 'center' });
-      // Draw simple radar placeholder
-      const centerX = rightColStart + chartWidth / 2;
-      const centerY = aiScoresStartY + aiChartHeight / 2 + 15;
-      const radius = 18; // Smaller to fit compact chart
-      pdf.setDrawColor(34, 197, 94);
-      for (let i = 0; i < 9; i++) {
-        const angle = (i * Math.PI * 2) / 9 - Math.PI / 2;
-        const x = centerX + Math.cos(angle) * radius;
-        const y = centerY + Math.sin(angle) * radius;
-        pdf.setLineWidth(0.3);
-        pdf.line(centerX, centerY, x, y);
-      }
+      // Draw simple bar chart placeholder
+      const barStartX = rightColStart + 10;
+      const barStartY = aiScoresStartY + 25;
+      const barW = 6;
+      const barSpacing = 9;
+      const maxBarH = 25;
       pdf.setFillColor(34, 197, 94);
-      pdf.circle(centerX, centerY, 2, 'F');
+      for (let i = 0; i < 9; i++) {
+        const barH = maxBarH * (0.4 + Math.random() * 0.6);
+        pdf.rect(barStartX + i * barSpacing, barStartY + maxBarH - barH, barW, barH, 'F');
+      }
     }
     
     yPos = Math.max(yPos, aiScoresStartY + aiChartHeight) + 5;

@@ -861,7 +861,7 @@ export async function exportEnhancedCandidatePDF(
   
   pdf.setTextColor(0, 0, 0);
   
-  // ========== RADAR CHARTS PAGE ==========
+  // ========== SKILLS CHARTS PAGE ==========
   pdf.addPage();
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
@@ -899,7 +899,7 @@ export async function exportEnhancedCandidatePDF(
     return currentY + (Math.ceil(skillsList.length / 3) * 6) + 5;
   };
   
-  // FIT Assessment Radar Chart
+  // FIT Assessment Bar Chart
   const fitSkills = skills.filter(s => s.assessment === 'FIT Assessment');
   if (fitSkills.length > 0) {
     pdf.setFontSize(11);
@@ -945,7 +945,7 @@ export async function exportEnhancedCandidatePDF(
     yPos += 10;
   }
   
-  // AI Readiness Radar Chart (on same page)
+  // AI Readiness Bar Chart (on same page)
   const aiReadinessSkills = skills.filter(s => s.assessment === 'AI Readiness');
   if (aiReadinessSkills.length > 0) {
     // Check if we need a new page for AI Readiness section
@@ -1590,7 +1590,7 @@ export async function exportEnhancedCandidatePDF(
   savePdfMobile(pdf, `humanmetrix-report-${safeCandidateName}${roleLabel}-${timestamp}.pdf`);
 }
 
-// Capture radar chart from DOM
+// Capture skills chart from DOM (kept as captureRadarChart for backward compatibility)
 export async function captureRadarChart(elementId: string): Promise<string | null> {
   const element = document.getElementById(elementId);
   if (!element) {
