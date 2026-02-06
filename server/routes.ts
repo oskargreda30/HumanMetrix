@@ -9509,55 +9509,115 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return name.toLowerCase().replace(/[^a-z0-9]/g, '');
       };
 
-      if (!role.requiredSkillScores.promptArchitectureScore) {
-        role.requiredSkillScores.promptArchitectureScore = 60;
-      }
-      if (!role.requiredSkillScores.aiqScore) {
-        role.requiredSkillScores.aiqScore = 60;
-      }
+      const needsPromptArchScore = !role.requiredSkillScores.promptArchitectureScore;
+      const needsAiqScore = !role.requiredSkillScores.aiqScore;
+      const needsCriticality = !role.requiredSkillScores.skillCriticality || Object.keys(role.requiredSkillScores.skillCriticality).length === 0;
+      const hasTooFewCritical = !needsCriticality && role.requiredSkillScores.skillCriticality && 
+        Object.values(role.requiredSkillScores.skillCriticality).filter(v => v === 'critical').length < 3;
 
-      if (!role.requiredSkillScores.skillCriticality || Object.keys(role.requiredSkillScores.skillCriticality).length === 0) {
-        const autoSkillCriticality: Record<string, string> = {};
-        const allSkillsForCriticality: Array<{skill: string; score: number}> = [];
-        if (role.requiredSkillScores.fitSkills) {
-          Object.entries(role.requiredSkillScores.fitSkills).forEach(([skill, score]) => {
-            allSkillsForCriticality.push({ skill, score: score as number });
-            autoSkillCriticality[skill] = 'standard';
+      if (needsPromptArchScore || needsAiqScore || needsCriticality || hasTooFewCritical) {
+        console.log(`[Admin Comparison] Role "${role.name}" missing fields - prompting OpenAI to generate: ${[
+          needsPromptArchScore && 'promptArchitectureScore',
+          needsAiqScore && 'aiqScore', 
+          needsCriticality && 'skillCriticality',
+          hasTooFewCritical && 'more critical skills'
+        ].filter(Boolean).join(', ')}`);
+
+        try {
+          const existingSkills = {
+            fitSkills: role.requiredSkillScores.fitSkills || {},
+            aiReadinessSkills: role.requiredSkillScores.aiReadinessSkills || {},
+          };
+
+          const missingFieldsList: string[] = [];
+          if (needsPromptArchScore) missingFieldsList.push('"promptArchitectureScore": number (0-100, required minimum for Prompt Architecture assessment - measures prompt engineering ability across 7 difficulty levels)');
+          if (needsAiqScore) missingFieldsList.push('"aiqScore": number (0-100, required minimum for AIQ assessment - measures ethical AI decision-making)');
+          if (needsCriticality || hasTooFewCritical) {
+            const allSkillNames = [...Object.keys(existingSkills.fitSkills), ...Object.keys(existingSkills.aiReadinessSkills)];
+            missingFieldsList.push(`"skillCriticality": { ${allSkillNames.map(s => `"${s}": "critical" | "standard"`).join(', ')} } — Mark 3-5 skills as "critical" (must-have, gaps are deal-breakers) and the rest as "standard"`);
+          }
+
+          const fillPrompt = `You are an expert HR consultant. A job role is missing some required benchmark fields for candidate comparison.
+
+JOB ROLE: ${role.name}
+${role.description ? `DESCRIPTION: ${role.description}` : ''}
+
+EXISTING REQUIRED SKILL SCORES (already set for this role):
+FIT Skills: ${JSON.stringify(existingSkills.fitSkills)}
+AI Readiness Skills: ${JSON.stringify(existingSkills.aiReadinessSkills)}
+
+Based on this role and the existing skill benchmarks, generate ONLY the following missing fields:
+${missingFieldsList.join('\n')}
+
+IMPORTANT: 
+- Use precise scores NOT multiples of 5 (use 47, 53, 58, 63, 67, 71, 76 etc.)
+- Scores should be consistent with the existing skill score ranges for this role
+- For skillCriticality, mark 3-5 skills as "critical" based on which are most essential for THIS specific role
+
+Return valid JSON with only the requested fields.`;
+
+          const completion = await openai.chat.completions.create({
+            model: "gpt-5",
+            messages: [{ role: "user", content: fillPrompt }],
+            response_format: { type: "json_object" },
+            temperature: 0.3,
           });
-        }
-        if (role.requiredSkillScores.aiReadinessSkills) {
-          Object.entries(role.requiredSkillScores.aiReadinessSkills).forEach(([skill, score]) => {
-            allSkillsForCriticality.push({ skill, score: score as number });
-            autoSkillCriticality[skill] = 'standard';
-          });
-        }
-        allSkillsForCriticality.sort((a, b) => b.score - a.score);
-        const toMarkCritical = allSkillsForCriticality.slice(0, Math.min(5, Math.max(3, Math.ceil(allSkillsForCriticality.length * 0.3))));
-        toMarkCritical.forEach(({ skill }) => {
-          autoSkillCriticality[skill] = 'critical';
-        });
-        role.requiredSkillScores.skillCriticality = autoSkillCriticality;
-        console.log(`[Partner Comparison] Auto-generated skillCriticality for role "${role.name}" - marked ${toMarkCritical.length} skills as critical`);
-      } else {
-        const criticalCount = Object.values(role.requiredSkillScores.skillCriticality).filter(v => v === 'critical').length;
-        if (criticalCount < 3) {
-          const allSkillsForFix: Array<{skill: string; score: number}> = [];
-          if (role.requiredSkillScores.fitSkills) {
-            Object.entries(role.requiredSkillScores.fitSkills).forEach(([skill, score]) => {
-              allSkillsForFix.push({ skill, score: score as number });
+
+          if (completion.usage) {
+            logAiCost({
+              operationType: 'role_fit_comparison',
+              model: "gpt-5",
+              usage: extractUsage(completion),
+              metadata: { roleTitle: role.name, action: 'fill_missing_scores' },
             });
           }
-          if (role.requiredSkillScores.aiReadinessSkills) {
-            Object.entries(role.requiredSkillScores.aiReadinessSkills).forEach(([skill, score]) => {
-              allSkillsForFix.push({ skill, score: score as number });
-            });
+
+          const generated = JSON.parse(completion.choices[0].message.content || "{}");
+          console.log(`[Admin Comparison] OpenAI generated missing fields for role "${role.name}":`, JSON.stringify(generated));
+
+          if (needsPromptArchScore && generated.promptArchitectureScore) {
+            role.requiredSkillScores.promptArchitectureScore = generated.promptArchitectureScore;
           }
-          allSkillsForFix.sort((a, b) => b.score - a.score);
-          const toMarkCritical = allSkillsForFix.slice(0, Math.max(3, 5 - criticalCount));
-          toMarkCritical.forEach(({ skill }) => {
-            role.requiredSkillScores.skillCriticality[skill] = 'critical';
-          });
-          console.log(`[Partner Comparison] Auto-marked ${toMarkCritical.length} additional skills as critical for role "${role.name}"`);
+          if (needsAiqScore && generated.aiqScore) {
+            role.requiredSkillScores.aiqScore = generated.aiqScore;
+          }
+          if ((needsCriticality || hasTooFewCritical) && generated.skillCriticality) {
+            role.requiredSkillScores.skillCriticality = generated.skillCriticality;
+          }
+
+          try {
+            await storage.updateJobRole(role.id, {
+              requiredSkillScores: role.requiredSkillScores,
+            });
+            console.log(`[Admin Comparison] Persisted AI-generated scores for role "${role.name}"`);
+          } catch (saveErr) {
+            console.error(`[Admin Comparison] Failed to persist scores for role "${role.name}":`, saveErr);
+          }
+        } catch (aiErr) {
+          console.error(`[Admin Comparison] OpenAI call failed for role "${role.name}", using heuristic fallback:`, aiErr);
+          if (needsPromptArchScore) role.requiredSkillScores.promptArchitectureScore = 58;
+          if (needsAiqScore) role.requiredSkillScores.aiqScore = 58;
+          if (needsCriticality) {
+            const autoSkillCriticality: Record<string, string> = {};
+            const allSkillsForCrit: Array<{skill: string; score: number}> = [];
+            if (role.requiredSkillScores.fitSkills) {
+              Object.entries(role.requiredSkillScores.fitSkills).forEach(([skill, score]) => {
+                allSkillsForCrit.push({ skill, score: score as number });
+                autoSkillCriticality[skill] = 'standard';
+              });
+            }
+            if (role.requiredSkillScores.aiReadinessSkills) {
+              Object.entries(role.requiredSkillScores.aiReadinessSkills).forEach(([skill, score]) => {
+                allSkillsForCrit.push({ skill, score: score as number });
+                autoSkillCriticality[skill] = 'standard';
+              });
+            }
+            allSkillsForCrit.sort((a, b) => b.score - a.score);
+            allSkillsForCrit.slice(0, Math.min(5, Math.max(3, Math.ceil(allSkillsForCrit.length * 0.3)))).forEach(({ skill }) => {
+              autoSkillCriticality[skill] = 'critical';
+            });
+            role.requiredSkillScores.skillCriticality = autoSkillCriticality;
+          }
         }
       }
 
@@ -16439,55 +16499,116 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return name.toLowerCase().replace(/[^a-z0-9]/g, '');
       };
 
-      if (!role.requiredSkillScores.promptArchitectureScore) {
-        role.requiredSkillScores.promptArchitectureScore = 60;
-      }
-      if (!role.requiredSkillScores.aiqScore) {
-        role.requiredSkillScores.aiqScore = 60;
-      }
+      const needsPromptArchScore = !role.requiredSkillScores.promptArchitectureScore;
+      const needsAiqScore = !role.requiredSkillScores.aiqScore;
+      const needsCriticality = !role.requiredSkillScores.skillCriticality || Object.keys(role.requiredSkillScores.skillCriticality).length === 0;
+      const hasTooFewCritical = !needsCriticality && role.requiredSkillScores.skillCriticality && 
+        Object.values(role.requiredSkillScores.skillCriticality).filter(v => v === 'critical').length < 3;
 
-      if (!role.requiredSkillScores.skillCriticality || Object.keys(role.requiredSkillScores.skillCriticality).length === 0) {
-        const autoSkillCriticality: Record<string, string> = {};
-        const allSkillsForCriticality: Array<{skill: string; score: number}> = [];
-        if (role.requiredSkillScores.fitSkills) {
-          Object.entries(role.requiredSkillScores.fitSkills).forEach(([skill, score]) => {
-            allSkillsForCriticality.push({ skill, score: score as number });
-            autoSkillCriticality[skill] = 'standard';
+      if (needsPromptArchScore || needsAiqScore || needsCriticality || hasTooFewCritical) {
+        console.log(`[Partner Comparison] Role "${role.name}" missing fields - prompting OpenAI to generate: ${[
+          needsPromptArchScore && 'promptArchitectureScore',
+          needsAiqScore && 'aiqScore', 
+          needsCriticality && 'skillCriticality',
+          hasTooFewCritical && 'more critical skills'
+        ].filter(Boolean).join(', ')}`);
+
+        try {
+          const existingSkills = {
+            fitSkills: role.requiredSkillScores.fitSkills || {},
+            aiReadinessSkills: role.requiredSkillScores.aiReadinessSkills || {},
+          };
+
+          const missingFieldsList: string[] = [];
+          if (needsPromptArchScore) missingFieldsList.push('"promptArchitectureScore": number (0-100, required minimum for Prompt Architecture assessment - measures prompt engineering ability across 7 difficulty levels)');
+          if (needsAiqScore) missingFieldsList.push('"aiqScore": number (0-100, required minimum for AIQ assessment - measures ethical AI decision-making)');
+          if (needsCriticality || hasTooFewCritical) {
+            const allSkillNames = [...Object.keys(existingSkills.fitSkills), ...Object.keys(existingSkills.aiReadinessSkills)];
+            missingFieldsList.push(`"skillCriticality": { ${allSkillNames.map(s => `"${s}": "critical" | "standard"`).join(', ')} } — Mark 3-5 skills as "critical" (must-have, gaps are deal-breakers) and the rest as "standard"`);
+          }
+
+          const fillPrompt = `You are an expert HR consultant. A job role is missing some required benchmark fields for candidate comparison.
+
+JOB ROLE: ${role.name}
+${role.description ? `DESCRIPTION: ${role.description}` : ''}
+
+EXISTING REQUIRED SKILL SCORES (already set for this role):
+FIT Skills: ${JSON.stringify(existingSkills.fitSkills)}
+AI Readiness Skills: ${JSON.stringify(existingSkills.aiReadinessSkills)}
+
+Based on this role and the existing skill benchmarks, generate ONLY the following missing fields:
+${missingFieldsList.join('\n')}
+
+IMPORTANT: 
+- Use precise scores NOT multiples of 5 (use 47, 53, 58, 63, 67, 71, 76 etc.)
+- Scores should be consistent with the existing skill score ranges for this role
+- For skillCriticality, mark 3-5 skills as "critical" based on which are most essential for THIS specific role
+
+Return valid JSON with only the requested fields.`;
+
+          const completion = await openai.chat.completions.create({
+            model: "gpt-5",
+            messages: [{ role: "user", content: fillPrompt }],
+            response_format: { type: "json_object" },
+            temperature: 0.3,
           });
-        }
-        if (role.requiredSkillScores.aiReadinessSkills) {
-          Object.entries(role.requiredSkillScores.aiReadinessSkills).forEach(([skill, score]) => {
-            allSkillsForCriticality.push({ skill, score: score as number });
-            autoSkillCriticality[skill] = 'standard';
-          });
-        }
-        allSkillsForCriticality.sort((a, b) => b.score - a.score);
-        const toMarkCritical = allSkillsForCriticality.slice(0, Math.min(5, Math.max(3, Math.ceil(allSkillsForCriticality.length * 0.3))));
-        toMarkCritical.forEach(({ skill }) => {
-          autoSkillCriticality[skill] = 'critical';
-        });
-        role.requiredSkillScores.skillCriticality = autoSkillCriticality;
-        console.log(`[Partner Comparison] Auto-generated skillCriticality for role "${role.name}" - marked ${toMarkCritical.length} skills as critical`);
-      } else {
-        const criticalCount = Object.values(role.requiredSkillScores.skillCriticality).filter(v => v === 'critical').length;
-        if (criticalCount < 3) {
-          const allSkillsForFix: Array<{skill: string; score: number}> = [];
-          if (role.requiredSkillScores.fitSkills) {
-            Object.entries(role.requiredSkillScores.fitSkills).forEach(([skill, score]) => {
-              allSkillsForFix.push({ skill, score: score as number });
+
+          if (completion.usage) {
+            logAiCost({
+              operationType: 'role_fit_comparison',
+              model: "gpt-5",
+              usage: extractUsage(completion),
+              metadata: { roleTitle: role.name, action: 'fill_missing_scores' },
             });
           }
-          if (role.requiredSkillScores.aiReadinessSkills) {
-            Object.entries(role.requiredSkillScores.aiReadinessSkills).forEach(([skill, score]) => {
-              allSkillsForFix.push({ skill, score: score as number });
-            });
+
+          const generated = JSON.parse(completion.choices[0].message.content || "{}");
+          console.log(`[Partner Comparison] OpenAI generated missing fields for role "${role.name}":`, JSON.stringify(generated));
+
+          if (needsPromptArchScore && generated.promptArchitectureScore) {
+            role.requiredSkillScores.promptArchitectureScore = generated.promptArchitectureScore;
           }
-          allSkillsForFix.sort((a, b) => b.score - a.score);
-          const toMarkCritical = allSkillsForFix.slice(0, Math.max(3, 5 - criticalCount));
-          toMarkCritical.forEach(({ skill }) => {
-            role.requiredSkillScores.skillCriticality[skill] = 'critical';
-          });
-          console.log(`[Partner Comparison] Auto-marked ${toMarkCritical.length} additional skills as critical for role "${role.name}"`);
+          if (needsAiqScore && generated.aiqScore) {
+            role.requiredSkillScores.aiqScore = generated.aiqScore;
+          }
+          if ((needsCriticality || hasTooFewCritical) && generated.skillCriticality) {
+            role.requiredSkillScores.skillCriticality = generated.skillCriticality;
+          }
+
+          // Persist to database so future comparisons skip this OpenAI call
+          try {
+            await storage.updateJobRole(role.id, {
+              requiredSkillScores: role.requiredSkillScores,
+            });
+            console.log(`[Partner Comparison] Persisted AI-generated scores for role "${role.name}"`);
+          } catch (saveErr) {
+            console.error(`[Partner Comparison] Failed to persist scores for role "${role.name}":`, saveErr);
+          }
+        } catch (aiErr) {
+          console.error(`[Partner Comparison] OpenAI call failed for role "${role.name}", using heuristic fallback:`, aiErr);
+          if (needsPromptArchScore) role.requiredSkillScores.promptArchitectureScore = 58;
+          if (needsAiqScore) role.requiredSkillScores.aiqScore = 58;
+          if (needsCriticality) {
+            const autoSkillCriticality: Record<string, string> = {};
+            const allSkillsForCrit: Array<{skill: string; score: number}> = [];
+            if (role.requiredSkillScores.fitSkills) {
+              Object.entries(role.requiredSkillScores.fitSkills).forEach(([skill, score]) => {
+                allSkillsForCrit.push({ skill, score: score as number });
+                autoSkillCriticality[skill] = 'standard';
+              });
+            }
+            if (role.requiredSkillScores.aiReadinessSkills) {
+              Object.entries(role.requiredSkillScores.aiReadinessSkills).forEach(([skill, score]) => {
+                allSkillsForCrit.push({ skill, score: score as number });
+                autoSkillCriticality[skill] = 'standard';
+              });
+            }
+            allSkillsForCrit.sort((a, b) => b.score - a.score);
+            allSkillsForCrit.slice(0, Math.min(5, Math.max(3, Math.ceil(allSkillsForCrit.length * 0.3)))).forEach(({ skill }) => {
+              autoSkillCriticality[skill] = 'critical';
+            });
+            role.requiredSkillScores.skillCriticality = autoSkillCriticality;
+          }
         }
       }
 
