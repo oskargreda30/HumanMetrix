@@ -4,7 +4,33 @@ import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 
-const AlertDialog = AlertDialogPrimitive.Root
+function AlertDialog({ open, ...props }: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Root>) {
+  const wasOpenRef = React.useRef(false);
+
+  React.useEffect(() => {
+    wasOpenRef.current = !!open;
+  }, [open]);
+
+  React.useEffect(() => {
+    return () => {
+      if (wasOpenRef.current) {
+        setTimeout(() => {
+          const body = document.body;
+          if (body.style.pointerEvents === 'none') {
+            const hasOpenOverlay = document.querySelector(
+              '[data-state="open"][role="dialog"], [data-state="open"][role="alertdialog"]'
+            );
+            if (!hasOpenOverlay) {
+              body.style.pointerEvents = '';
+            }
+          }
+        }, 100);
+      }
+    };
+  }, []);
+
+  return <AlertDialogPrimitive.Root open={open} {...props} />;
+}
 
 const AlertDialogTrigger = AlertDialogPrimitive.Trigger
 

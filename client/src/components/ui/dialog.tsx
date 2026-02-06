@@ -6,7 +6,33 @@ import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-const Dialog = DialogPrimitive.Root
+function Dialog({ open, ...props }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root>) {
+  const wasOpenRef = React.useRef(false);
+
+  React.useEffect(() => {
+    wasOpenRef.current = !!open;
+  }, [open]);
+
+  React.useEffect(() => {
+    return () => {
+      if (wasOpenRef.current) {
+        setTimeout(() => {
+          const body = document.body;
+          if (body.style.pointerEvents === 'none') {
+            const hasOpenOverlay = document.querySelector(
+              '[data-state="open"][role="dialog"], [data-state="open"][role="alertdialog"]'
+            );
+            if (!hasOpenOverlay) {
+              body.style.pointerEvents = '';
+            }
+          }
+        }, 100);
+      }
+    };
+  }, []);
+
+  return <DialogPrimitive.Root open={open} {...props} />;
+}
 
 const DialogTrigger = DialogPrimitive.Trigger
 

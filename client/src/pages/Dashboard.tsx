@@ -765,13 +765,12 @@ export default function Dashboard() {
                   </div>
                   <AlertDialogFooter>
                     <AlertDialogCancel onClick={() => setDeleteConfirmText("")}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={(e) => {
-                        e.preventDefault(); // Prevent auto-close, let mutation handle it
+                    <Button
+                      onClick={() => {
                         deleteAccountMutation.mutate();
                       }}
                       disabled={deleteConfirmText !== "DELETE" || deleteAccountMutation.isPending}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      variant="destructive"
                       data-testid="button-confirm-delete"
                     >
                       {deleteAccountMutation.isPending ? (
@@ -782,7 +781,7 @@ export default function Dashboard() {
                       ) : (
                         "Submit Request"
                       )}
-                    </AlertDialogAction>
+                    </Button>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
