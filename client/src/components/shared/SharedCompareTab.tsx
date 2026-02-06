@@ -4,7 +4,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Users, BarChart3, AlertCircle, Download, Award, Brain, Target, Sparkles, TrendingUp, TrendingDown, Trophy, AlertTriangle, Minus, ChevronUp, ChevronDown, Scale, FileText, Camera, MessageSquare, Clock, ShieldAlert, DollarSign } from "lucide-react";
+import { Loader2, Users, BarChart3, AlertCircle, Download, Award, Brain, Target, Sparkles, TrendingUp, TrendingDown, Trophy, AlertTriangle, Minus, ChevronUp, ChevronDown, Scale, FileText, Camera, MessageSquare, Clock, ShieldAlert, DollarSign, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -145,6 +145,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
     setHoveredSkill(null);
   }, []);
   const reportContainerRef = useRef<HTMLDivElement>(null);
+  const forceRefreshRef = useRef(false);
   const { toast } = useToast();
 
   const { data: candidates, isLoading } = useQuery<any[]>({
@@ -160,6 +161,10 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
     queryFn: async () => {
       const params = new URLSearchParams();
       selectedCandidates.forEach(id => params.append('userIds', id));
+      if (forceRefreshRef.current) {
+        params.append('forceRefresh', 'true');
+        forceRefreshRef.current = false;
+      }
       const response = await fetch(`${config.compareEndpoint}?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch comparison');
       return response.json();
@@ -1297,14 +1302,31 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                       <Users className="h-5 w-5" />
                       Candidate Overview & Assessment Status
                     </CardTitle>
-                    <Button 
-                      size="sm"
-                      onClick={handleExportPDF}
-                      data-testid="button-export-comparison-top"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Export as PDF
-                    </Button>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {comparison?.cached && config.contextType === 'partner' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            forceRefreshRef.current = true;
+                            queryClient.invalidateQueries({ queryKey: ['compare', config.contextType, selectedCandidates] });
+                          }}
+                          disabled={isComparing}
+                          data-testid="button-rerun-comparison-analysis"
+                        >
+                          <RefreshCw className="h-3 w-3 mr-1" />
+                          Re-run Analysis ({selectedCandidates.length} credits)
+                        </Button>
+                      )}
+                      <Button 
+                        size="sm"
+                        onClick={handleExportPDF}
+                        data-testid="button-export-comparison-top"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Export as PDF
+                      </Button>
+                    </div>
                   </div>
                   <CardDescription>
                     Contact details, application date, and completion status for each assessment type (FIT, AI Readiness, Prompt Architecture, AIQ)

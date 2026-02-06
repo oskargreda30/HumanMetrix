@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, TrendingDown, Download, Award, Brain, Sparkles, MessageSquare, Users, Clock, ShieldAlert, DollarSign, FileText, User, ChevronUp, BarChart3 } from "lucide-react";
+import { Loader2, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, TrendingDown, Download, Award, Brain, Sparkles, MessageSquare, Users, Clock, ShieldAlert, DollarSign, FileText, User, ChevronUp, BarChart3, RefreshCw } from "lucide-react";
 import { AnalysisLoadingScreen } from "./AnalysisLoadingScreen";
 import { Badge } from "@/components/ui/badge";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -106,6 +106,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
   const [analysisTriggered, setAnalysisTriggered] = useState(false);
   const [loadingTransitionComplete, setLoadingTransitionComplete] = useState(false);
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
+  const forceRefreshRef = useRef(false);
   const { toast } = useToast();
 
   const { data: candidates, isLoading: isLoadingCandidates } = useQuery<any[]>({
@@ -152,8 +153,18 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
 
   const { data: alignment, isLoading: isLoadingAlignment } = useQuery<RoleAlignment>({
     queryKey: alignmentQueryKey as any,
+    queryFn: async () => {
+      let url = `${config.roleAlignmentEndpoint}?${config.candidateIdParam}=${selectedCandidate}&jobRoleId=${selectedRole}`;
+      if (forceRefreshRef.current) {
+        url += '&forceRefresh=true';
+        forceRefreshRef.current = false;
+      }
+      const response = await fetch(url, { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch role alignment');
+      return response.json();
+    },
     enabled: !!selectedCandidate && !!selectedRole && analysisTriggered,
-    staleTime: Infinity, // Prevent refetch - report is cached server-side
+    staleTime: Infinity,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
@@ -462,8 +473,23 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                   <Target className="h-5 w-5" />
                   Overall Role Fit Score
                 </CardTitle>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   {getFitTierBadge(getOverallFitTier(alignment.overallFit))}
+                  {(alignment as any)?.cached && config.contextType === 'partner' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        forceRefreshRef.current = true;
+                        queryClient.invalidateQueries({ queryKey: alignmentQueryKey as any });
+                      }}
+                      disabled={isLoadingAlignment}
+                      data-testid="button-rerun-rolefit-analysis"
+                    >
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      Re-run Analysis (1 credit)
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"

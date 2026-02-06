@@ -14107,15 +14107,22 @@ Format your response as JSON with this structure:
       }
 
       // Check for existing cached report BEFORE consuming credits (unless forceRefresh is requested)
-      if (!forceRefresh) {
+      if (forceRefresh) {
         const existingReport = await storage.findExistingPartnerReport(
           partner.id,
           'profile_insights',
           [candidateId]
         );
-        
         if (existingReport) {
-          // Return cached report without charging credits
+          await storage.deletePartnerAnalysisReport(existingReport.id);
+        }
+      } else {
+        const existingReport = await storage.findExistingPartnerReport(
+          partner.id,
+          'profile_insights',
+          [candidateId]
+        );
+        if (existingReport) {
           return res.json({
             insights: existingReport.resultData?.insights || '',
             cached: true,
@@ -14392,18 +14399,24 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
       const cachedReportType = candidateIds.length === 1 ? 'individual' : 'comparison';
       let hasIncompleteCachedReport = false;
       
-      if (!forceRefresh) {
+      if (forceRefresh) {
         const existingReport = await storage.findExistingPartnerReport(
           partner.id,
           cachedReportType,
           candidateIds
         );
-
         if (existingReport) {
-          // Only use cached report if it has non-null aiInsights (for complete data)
+          await storage.deletePartnerAnalysisReport(existingReport.id);
+        }
+      } else {
+        const existingReport = await storage.findExistingPartnerReport(
+          partner.id,
+          cachedReportType,
+          candidateIds
+        );
+        if (existingReport) {
           const resultData = existingReport.resultData as any;
           if (resultData && resultData.aiInsights) {
-            // Return cached report without charging credits
             return res.json({
               ...resultData,
               cached: true,
@@ -14411,7 +14424,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
               reportId: existingReport.id,
             });
           }
-          // Cached report lacks aiInsights - mark for regeneration without credit charge
           hasIncompleteCachedReport = true;
         }
       }
@@ -15302,21 +15314,27 @@ Use the candidates' actual names. Be specific and actionable.`;
       }
 
       // Check for existing cached report (unless forceRefresh is requested)
-      if (forceRefresh !== 'true') {
+      if (forceRefresh === 'true') {
         const existingReport = await storage.findExistingPartnerReport(
           partner.id,
           'role_fit_single',
           [candidateId as string],
           jobRoleId as string
         );
-        
         if (existingReport) {
-          // Only use cached report if it has AI insights (promptRoleFitAnalysis or aiqRoleFitAnalysis)
+          await storage.deletePartnerAnalysisReport(existingReport.id);
+        }
+      } else {
+        const existingReport = await storage.findExistingPartnerReport(
+          partner.id,
+          'role_fit_single',
+          [candidateId as string],
+          jobRoleId as string
+        );
+        if (existingReport) {
           const resultData = existingReport.resultData as any;
           const hasAiInsights = resultData && (resultData.promptRoleFitAnalysis || resultData.aiqRoleFitAnalysis);
-          
           if (hasAiInsights) {
-            // Return cached report without charging credits
             return res.json({
               ...resultData,
               cached: true,
@@ -15324,8 +15342,6 @@ Use the candidates' actual names. Be specific and actionable.`;
               reportId: existingReport.id,
             });
           }
-          // Cached report exists but lacks AI insights - regenerate without consuming credits
-          // (Credit was already consumed for the original report)
         }
       }
 
@@ -16281,14 +16297,23 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
       }
 
       // Check for existing cached report (unless forceRefresh is requested)
-      if (!forceRefresh) {
+      if (forceRefresh) {
         const existingReport = await storage.findExistingPartnerReport(
           partner.id,
           'role_fit_multi',
           candidateIds,
           jobRoleId
         );
-        
+        if (existingReport) {
+          await storage.deletePartnerAnalysisReport(existingReport.id);
+        }
+      } else {
+        const existingReport = await storage.findExistingPartnerReport(
+          partner.id,
+          'role_fit_multi',
+          candidateIds,
+          jobRoleId
+        );
         if (existingReport) {
           const cachedData = existingReport.resultData as any;
           if (cachedData?.roleSnapshot) {

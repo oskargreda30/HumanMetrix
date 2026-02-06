@@ -9,7 +9,7 @@ function getCsrfToken(): string | null {
   return match ? decodeURIComponent(match[2]) : null;
 }
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Users, Target, TrendingUp, Trophy, AlertTriangle, Download, CheckCircle2, AlertCircle, FileText, Sparkles, MessageSquare, Clock, ShieldAlert, DollarSign, ArrowUp, Brain, Send, ExternalLink } from "lucide-react";
+import { Loader2, Users, Target, TrendingUp, Trophy, AlertTriangle, Download, CheckCircle2, AlertCircle, FileText, Sparkles, MessageSquare, Clock, ShieldAlert, DollarSign, ArrowUp, Brain, Send, ExternalLink, RefreshCw } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -245,6 +245,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
   const [insufficientDataError, setInsufficientDataError] = useState<InsufficientDataError | null>(null);
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
+  const forceRefreshRef = useRef(false);
   const { toast } = useToast();
 
   const { data: candidates } = useQuery<any[]>({
@@ -271,6 +272,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
         body: JSON.stringify({
           jobRoleId: selectedRole,
           candidateIds: selectedCandidates,
+          forceRefresh: forceRefreshRef.current,
         }),
         credentials: 'include',
       });
@@ -290,6 +292,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
       return res.json();
     },
     onSuccess: (data: MultiCandidateComparison) => {
+      forceRefreshRef.current = false;
       queryClient.setQueryData(['multi-candidate-comparison', selectedRole, selectedCandidates.join(',')], data);
       toast({ title: "Comparison generated successfully" });
     },
@@ -566,10 +569,27 @@ export default function PartnerMultiCandidateRoleFitTab() {
           {/* How to Read This Report Section - Matching Individual Tab Style */}
           <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <FileText className="h-5 w-5 text-primary" />
-                How to Read This Report
-              </CardTitle>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <FileText className="h-5 w-5 text-primary" />
+                  How to Read This Report
+                </CardTitle>
+                {(comparison as any)?.cached && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      forceRefreshRef.current = true;
+                      compareMutation.mutate();
+                    }}
+                    disabled={compareMutation.isPending}
+                    data-testid="button-rerun-multi-rolefit-analysis"
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Re-run Analysis ({selectedCandidates.length} credits)
+                  </Button>
+                )}
+              </div>
               <p className="text-sm text-muted-foreground">
                 A step-by-step guide to understanding this multi-candidate comparison for the {comparison.roleSnapshot?.roleName} role
               </p>

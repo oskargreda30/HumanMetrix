@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym, getAIReadinessScore, normalizeAIReadinessScores, transformToRadarData, isSkillBasedAssessment, formatAssessmentType } from "@/lib/assessmentSkills";
 import SkillsLegend from "@/components/SkillsLegend";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import html2canvas from "html2canvas";
 import { EnquiryModal } from "@/components/EnquiryModal";
 
@@ -63,6 +63,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
   
   const fitChartRef = useRef<HTMLDivElement>(null);
   const aiChartRef = useRef<HTMLDivElement>(null);
+  const forceRefreshRef = useRef(false);
 
   const { data: candidates, isLoading } = useQuery<CandidateData[]>({
     queryKey: [config.candidatesEndpoint],
@@ -73,6 +74,10 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
     queryFn: async () => {
       const params = new URLSearchParams();
       params.append('userIds', selectedCandidate);
+      if (forceRefreshRef.current) {
+        params.append('forceRefresh', 'true');
+        forceRefreshRef.current = false;
+      }
       const response = await fetch(`${config.reportEndpoint}?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch candidate report');
       return response.json();
@@ -907,10 +912,27 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
 
           <Card data-testid="card-profile-insights">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-foreground">
-                <Lightbulb className="h-5 w-5 text-amber-500" />
-                Profile Insights and Recommendations
-              </CardTitle>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <CardTitle className="flex items-center gap-2 text-foreground">
+                  <Lightbulb className="h-5 w-5 text-amber-500" />
+                  Profile Insights and Recommendations
+                </CardTitle>
+                {candidateReport?.cached && config.contextType === 'partner' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      forceRefreshRef.current = true;
+                      queryClient.invalidateQueries({ queryKey: ['individual-report', selectedCandidate, config.contextType] });
+                    }}
+                    disabled={isLoadingReport}
+                    data-testid="button-rerun-individual-analysis"
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Re-run Analysis (1 credit)
+                  </Button>
+                )}
+              </div>
               <CardDescription>
                 Analysis of {getCandidateName(selectedCandidateData)}'s profile with role fit recommendations
               </CardDescription>
