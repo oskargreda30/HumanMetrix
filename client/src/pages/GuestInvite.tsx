@@ -462,7 +462,7 @@ export default function GuestInvite() {
               All Assessments Complete!
             </CardTitle>
             <CardDescription className="text-slate-600 text-base mt-2">
-              Great job{invitation.name ? `, ${invitation.name.split(" ")[0]}` : ""}! You've completed all {invitation.assessmentTypes.length} assessments assigned by {invitation.partnerName}.
+              Great job{invitation.name ? `, ${invitation.name.split(" ")[0]}` : ""}! You've completed all {invitation.assessmentTypes.length} assessments assigned by {invitation.partnerName + "."}
             </CardDescription>
           </CardHeader>
           
