@@ -297,6 +297,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
       toast({ title: "Comparison generated successfully" });
     },
     onError: (error: Error & { insufficientDataCandidates?: InsufficientDataError['insufficientDataCandidates'] }) => {
+      forceRefreshRef.current = false;
       // Check if this is an insufficient data error that should show a dialog
       if (error.insufficientDataCandidates && error.insufficientDataCandidates.length > 0) {
         setInsufficientDataError({
