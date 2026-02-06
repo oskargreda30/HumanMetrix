@@ -991,15 +991,21 @@ export default function EmbedAssessment() {
   // Track if timer has expired from server (prevents client-side reset from overriding)
   const timerExpiredFromServerRef = useRef<boolean>(false);
   
-  // Reset timer for prompt architecture when moving to next question
-  // But only if the timer hasn't already expired from server
+  // Track navigation direction for prompt architecture per-question timer
+  const navigationDirectionRef = useRef<'forward' | 'backward' | 'initial'>('initial');
+  
+  // Reset timer for prompt architecture when moving FORWARD to next question
+  // Don't reset when going back to a previous question
   useEffect(() => {
     if (status === 'started' && session?.assessmentType.replace(/-/g, '_') === 'prompt_architecture') {
       // Don't reset if server already indicated timer expired
-      if (!timerExpiredFromServerRef.current) {
+      // Don't reset if navigating backward - keep the current timer running
+      if (!timerExpiredFromServerRef.current && navigationDirectionRef.current !== 'backward') {
         setTimeRemaining(120); // Reset to 2 minutes per question
         setShowTimeWarning(false);
       }
+      // Reset direction after handling
+      navigationDirectionRef.current = 'initial';
     }
   }, [currentIndex]);
 
@@ -1081,6 +1087,7 @@ export default function EmbedAssessment() {
 
   const handleNext = () => {
     if (currentIndex < questions.length - 1) {
+      navigationDirectionRef.current = 'forward';
       saveProgressImmediately(currentIndex + 1);
       setCurrentIndex((prev) => prev + 1);
       if (window.innerWidth < 768) {
@@ -1091,6 +1098,7 @@ export default function EmbedAssessment() {
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
+      navigationDirectionRef.current = 'backward';
       saveProgressImmediately(currentIndex - 1);
       setCurrentIndex((prev) => prev - 1);
       if (window.innerWidth < 768) {
