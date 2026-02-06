@@ -2075,8 +2075,8 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                       <div>
                         <h3 className="font-semibold mb-4">Combined Comparison</h3>
                         <div id="pdf-comparison-fit-overlapping" className="bg-white p-4 rounded-lg">
-                          <ResponsiveContainer width="100%" height={280}>
-                            <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} barCategoryGap="30%" barGap={2} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} data={(() => {
+                          <ResponsiveContainer width="100%" height={340}>
+                            <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} barCategoryGap="40%" barGap={4} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} data={(() => {
                               return FIT_SKILLS.map(skill => {
                                 const dataPoint: any = { skill: getSkillAcronym(skill.displayName) };
                                 selectedCandidateData?.forEach((candidate: any, index: number) => {
@@ -2202,8 +2202,8 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                       <div>
                         <h3 className="font-semibold mb-4">Combined Comparison</h3>
                         <div id="pdf-comparison-ai-overlapping" className="bg-white p-4 rounded-lg">
-                          <ResponsiveContainer width="100%" height={280}>
-                            <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} barCategoryGap="30%" barGap={2} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} data={(() => {
+                          <ResponsiveContainer width="100%" height={420}>
+                            <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} barCategoryGap="40%" barGap={4} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} data={(() => {
                               return AI_READINESS_SKILLS.map(skill => {
                                 const dataPoint: any = { skill: getSkillAcronym(skill.displayName) };
                                 selectedCandidateData?.forEach((candidate: any, index: number) => {
@@ -2536,7 +2536,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                           <h3 className="font-semibold mb-4">All Skills Combined</h3>
                           <div id="pdf-comparison-overall-skills" className="bg-white p-4 md:p-6 rounded-lg overflow-visible">
                           <ResponsiveContainer width="100%" height={400} className="min-h-[320px] md:min-h-[400px]">
-                            <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} barCategoryGap="30%" barGap={2} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} data={comparison.radarData.map(item => ({
+                            <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} barCategoryGap="40%" barGap={4} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} data={comparison.radarData.map(item => ({
                               ...item,
                               skill: getSkillAcronym(item.skill)
                             }))}>
