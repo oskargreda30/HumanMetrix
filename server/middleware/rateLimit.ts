@@ -27,7 +27,11 @@ export function createRateLimiter(config: RateLimitConfig) {
     windowMs,
     maxRequests,
     message = 'Too many requests, please try again later.',
-    keyGenerator = (req) => req.ip || req.connection?.remoteAddress || 'unknown',
+    keyGenerator = (req) => {
+      const forwarded = req.headers?.['x-forwarded-for'];
+      const clientIp = forwarded ? (typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : forwarded[0]) : null;
+      return clientIp || req.ip || req.connection?.remoteAddress || 'unknown';
+    },
   } = config;
 
   return (req: any, res: any, next: any) => {
@@ -67,7 +71,7 @@ export const apiRateLimiter = createRateLimiter({
 
 export const authRateLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
-  maxRequests: 10,
+  maxRequests: 25,
   message: 'Too many login attempts. Please try again later.',
 });
 
