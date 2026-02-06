@@ -289,9 +289,8 @@ export default function MultiCandidateRoleFitTab() {
         setInsufficientDataDialogOpen(true);
       } else {
         toast({
-          title: "Comparison failed",
+          title: "Unable to compare",
           description: error.message || "Failed to generate comparison. Please try again.",
-          variant: "destructive",
         });
       }
     },

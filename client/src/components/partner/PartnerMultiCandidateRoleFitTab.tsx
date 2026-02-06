@@ -323,9 +323,8 @@ export default function PartnerMultiCandidateRoleFitTab() {
       } else {
         // Regular error - show toast
         toast({
-          title: "Comparison failed",
+          title: "Unable to compare",
           description: error.message || "Failed to generate comparison. Please try again.",
-          variant: "destructive",
         });
       }
     },

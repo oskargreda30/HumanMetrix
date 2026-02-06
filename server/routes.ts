@@ -9815,7 +9815,7 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
             }))
           });
         }
-        return res.status(400).json({ message: "At least 2 candidates with completed assessments are required" });
+        return res.status(400).json({ message: "Please ensure at least 2 of the selected candidates have completed their assessments before comparing" });
       }
 
       // Sort and assign ranks - only rank candidates with sufficient data
@@ -16704,7 +16704,7 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
             }))
           });
         }
-        return res.status(400).json({ message: "At least 2 candidates with completed assessments are required" });
+        return res.status(400).json({ message: "Please ensure at least 2 of the selected candidates have completed their assessments before comparing" });
       }
 
       // Sort and assign ranks
