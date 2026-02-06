@@ -9509,8 +9509,8 @@ Keep your analysis concise (2-3 paragraphs) and focused on practical hiring impl
         return name.toLowerCase().replace(/[^a-z0-9]/g, '');
       };
 
-      const needsPromptArchScore = !role.requiredSkillScores.promptArchitectureScore;
-      const needsAiqScore = !role.requiredSkillScores.aiqScore;
+      const needsPromptArchScore = !role.requiredSkillScores.promptArchitectureScore || role.requiredSkillScores.promptArchitectureScore === 58;
+      const needsAiqScore = !role.requiredSkillScores.aiqScore || role.requiredSkillScores.aiqScore === 58;
       const needsCriticality = !role.requiredSkillScores.skillCriticality || Object.keys(role.requiredSkillScores.skillCriticality).length === 0;
       const hasTooFewCritical = !needsCriticality && role.requiredSkillScores.skillCriticality && 
         Object.values(role.requiredSkillScores.skillCriticality).filter(v => v === 'critical').length < 3;
@@ -9549,9 +9549,11 @@ AI Readiness Skills: ${JSON.stringify(existingSkills.aiReadinessSkills)}
 Based on this role and the existing skill benchmarks, generate ONLY the following missing fields:
 ${missingFieldsList.join('\n')}
 
-IMPORTANT: 
+IMPORTANT SCORING GUIDELINES:
+- promptArchitectureScore: Consider how heavily this role relies on AI prompt engineering in daily work. A Chief AI Officer or Prompt Engineer would need 80+. A traditional Operations Manager might only need 45-55. A Data Scientist might need 65-75. Score based on how critical prompt engineering competency is for THIS specific role.
+- aiqScore: Consider how much ethical AI decision-making responsibility this role carries. A Chief Ethics Officer or AI Governance Lead would need 85+. A Sales Representative might only need 50-60. An ML Engineer deploying models might need 70-80. Score based on the ethical impact and AI governance responsibility of THIS specific role.
 - Use precise scores NOT multiples of 5 (use 47, 53, 58, 63, 67, 71, 76 etc.)
-- Scores should be consistent with the existing skill score ranges for this role
+- Different roles MUST have meaningfully different scores - a Marketing Manager and a Machine Learning Engineer should NOT have similar promptArchitectureScore values
 - For skillCriticality, mark 3-5 skills as "critical" based on which are most essential for THIS specific role
 
 Return valid JSON with only the requested fields.`;
@@ -9881,7 +9883,7 @@ Return valid JSON with only the requested fields.`;
         const aiqResult = completedResults.find((r: any) => r.assessmentType === 'aiq');
         
         const promptArchitectureScore = promptArchResult ? (promptArchResult.totalScore || 0) : null;
-        const aiqTotalScore = aiqResult ? (aiqResult.scores?.['Algorithmic Integrity'] || aiqResult.totalScore || 0) : null;
+        const aiqTotalScore = aiqResult ? (aiqResult.totalScore || 0) : null;
 
         candidateEntries.push({
           userId: candidateId,
@@ -16499,8 +16501,8 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return name.toLowerCase().replace(/[^a-z0-9]/g, '');
       };
 
-      const needsPromptArchScore = !role.requiredSkillScores.promptArchitectureScore;
-      const needsAiqScore = !role.requiredSkillScores.aiqScore;
+      const needsPromptArchScore = !role.requiredSkillScores.promptArchitectureScore || role.requiredSkillScores.promptArchitectureScore === 58;
+      const needsAiqScore = !role.requiredSkillScores.aiqScore || role.requiredSkillScores.aiqScore === 58;
       const needsCriticality = !role.requiredSkillScores.skillCriticality || Object.keys(role.requiredSkillScores.skillCriticality).length === 0;
       const hasTooFewCritical = !needsCriticality && role.requiredSkillScores.skillCriticality && 
         Object.values(role.requiredSkillScores.skillCriticality).filter(v => v === 'critical').length < 3;
@@ -16539,9 +16541,11 @@ AI Readiness Skills: ${JSON.stringify(existingSkills.aiReadinessSkills)}
 Based on this role and the existing skill benchmarks, generate ONLY the following missing fields:
 ${missingFieldsList.join('\n')}
 
-IMPORTANT: 
+IMPORTANT SCORING GUIDELINES:
+- promptArchitectureScore: Consider how heavily this role relies on AI prompt engineering in daily work. A Chief AI Officer or Prompt Engineer would need 80+. A traditional Operations Manager might only need 45-55. A Data Scientist might need 65-75. Score based on how critical prompt engineering competency is for THIS specific role.
+- aiqScore: Consider how much ethical AI decision-making responsibility this role carries. A Chief Ethics Officer or AI Governance Lead would need 85+. A Sales Representative might only need 50-60. An ML Engineer deploying models might need 70-80. Score based on the ethical impact and AI governance responsibility of THIS specific role.
 - Use precise scores NOT multiples of 5 (use 47, 53, 58, 63, 67, 71, 76 etc.)
-- Scores should be consistent with the existing skill score ranges for this role
+- Different roles MUST have meaningfully different scores - a Marketing Manager and a Machine Learning Engineer should NOT have similar promptArchitectureScore values
 - For skillCriticality, mark 3-5 skills as "critical" based on which are most essential for THIS specific role
 
 Return valid JSON with only the requested fields.`;
@@ -16889,6 +16893,11 @@ Return valid JSON with only the requested fields.`;
         const hasAiReadiness = completedResults.some(r => r.assessmentType === 'ai_readiness');
         if (!hasFit) missingAssessments.push('FIT Assessment');
         if (!hasAiReadiness) missingAssessments.push('AI Readiness Assessment');
+        // Get Prompt Architecture and AIQ scores for this candidate
+        const promptArchResult = completedResults.find((r: any) => r.assessmentType === 'prompt_architecture');
+        const aiqResult = completedResults.find((r: any) => r.assessmentType === 'aiq');
+        const promptArchitectureScore = promptArchResult ? (promptArchResult.totalScore || 0) : null;
+        const aiqTotalScore = aiqResult ? (aiqResult.totalScore || 0) : null;
 
         candidateEntries.push({
           userId: candidateId,
@@ -16909,7 +16918,9 @@ Return valid JSON with only the requested fields.`;
             hasSufficientData
           },
           hasSufficientData,
-          missingAssessments
+          missingAssessments,
+          promptArchitectureScore,
+          aiqScore: aiqTotalScore
         });
       }
 
