@@ -10,11 +10,12 @@ function getCsrfToken(): string | null {
   return match ? decodeURIComponent(match[2]) : null;
 }
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Users, Target, TrendingUp, Trophy, AlertTriangle, Download, CheckCircle2, AlertCircle, FileText, Sparkles, MessageSquare, Clock, ShieldAlert, DollarSign, ArrowUp, Brain, Send, ExternalLink, RefreshCw } from "lucide-react";
+import { Loader2, Users, Target, TrendingUp, Trophy, AlertTriangle, Download, CheckCircle2, AlertCircle, FileText, Sparkles, MessageSquare, Clock, ShieldAlert, DollarSign, ArrowUp, Brain, Send, ExternalLink, RefreshCw, Mail } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -253,9 +254,23 @@ export default function PartnerMultiCandidateRoleFitTab() {
   const [insufficientDataError, setInsufficientDataError] = useState<InsufficientDataError | null>(null);
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
   const [isRerunning, setIsRerunning] = useState(false);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [incompleteCandidates, setIncompleteCandidates] = useState<Array<{
+    id: string;
+    name: string;
+    email: string;
+    missingAssessments: string[];
+  }>>([]);
   const chartRef = useRef<HTMLDivElement>(null);
   const forceRefreshRef = useRef(false);
   const { toast } = useToast();
+
+  const ALL_ASSESSMENT_TYPES = [
+    { id: 'fit', label: 'FIT Assessment' },
+    { id: 'ai_readiness', label: 'AI Readiness' },
+    { id: 'prompt_architecture', label: 'Prompt Architecture' },
+    { id: 'aiq', label: 'AIQ' },
+  ];
 
   const { data: candidates } = useQuery<any[]>({
     queryKey: ['/api/partner/me/candidates'],
@@ -266,6 +281,91 @@ export default function PartnerMultiCandidateRoleFitTab() {
   });
 
   const selectedRoleData = roles?.find((r) => r.id === selectedRole);
+
+  const inviteMutation = useMutation({
+    mutationFn: async (candidatesToInvite: Array<{ email: string; name: string; missingAssessments: string[] }>) => {
+      const groups = new Map<string, Array<{ email: string; name: string }>>();
+      for (const c of candidatesToInvite) {
+        const key = c.missingAssessments.sort().join(',');
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key)!.push({ email: c.email, name: c.name });
+      }
+
+      let totalSuccess = 0;
+      for (const [assessmentKey, groupCandidates] of Array.from(groups.entries())) {
+        const payload = {
+          candidates: groupCandidates,
+          assessmentTypes: assessmentKey.split(','),
+          sendEmails: true,
+          forceReinvite: true,
+        };
+        const response = await apiRequest('POST', '/api/partner/me/invitations/bulk', payload, { timeoutMs: 120000 });
+        const data = await response.json();
+        totalSuccess += data.summary?.successCount || 0;
+      }
+      return { totalSuccess };
+    },
+    onSuccess: (data: { totalSuccess: number }) => {
+      setInviteModalOpen(false);
+      setIncompleteCandidates([]);
+      queryClient.invalidateQueries({ queryKey: ['/api/partner/me/candidates'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/partner/me/invitations'] });
+      toast({
+        title: "Invitations sent",
+        description: `${data.totalSuccess} invitation(s) sent successfully.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to send invitations",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCompareClick = () => {
+    if (!candidates) return;
+
+    const incomplete: typeof incompleteCandidates = [];
+    const complete: string[] = [];
+
+    for (const candidateId of selectedCandidates) {
+      const candidate = candidates.find((c: any) => c.user.id === candidateId);
+      if (!candidate) continue;
+
+      const completedTypes = (candidate.results || [])
+        .filter((r: any) => r.status === 'completed')
+        .map((r: any) => r.assessmentType?.toLowerCase());
+
+      const missing = ALL_ASSESSMENT_TYPES
+        .filter(at => !completedTypes.includes(at.id))
+        .map(at => at.id);
+
+      const hasFit = completedTypes.includes('fit');
+
+      if (!hasFit) {
+        const displayName = candidate.user.firstName || candidate.user.lastName
+          ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
+          : candidate.user.email;
+        incomplete.push({
+          id: candidateId,
+          name: displayName,
+          email: candidate.user.email,
+          missingAssessments: missing.length > 0 ? missing : ['fit'],
+        });
+      } else {
+        complete.push(candidateId);
+      }
+    }
+
+    if (incomplete.length > 0) {
+      setIncompleteCandidates(incomplete);
+      setInviteModalOpen(true);
+    } else {
+      compareMutation.mutate();
+    }
+  };
 
   const compareMutation = useMutation({
     mutationFn: async () => {
@@ -558,7 +658,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
 
           <div className="space-y-2">
             <Button
-              onClick={() => compareMutation.mutate()}
+              onClick={handleCompareClick}
               disabled={!canCompare || compareMutation.isPending}
               className="w-full"
               data-testid="button-compare-candidates"
@@ -1711,6 +1811,73 @@ export default function PartnerMultiCandidateRoleFitTab() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={inviteModalOpen} onOpenChange={setInviteModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-500" />
+              Assessments Required
+            </DialogTitle>
+            <DialogDescription>
+              The following candidates have not completed the assessments needed for this comparison. Send them an invitation to complete the missing tests.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 max-h-64 overflow-y-auto">
+            {incompleteCandidates.map((candidate) => (
+              <div key={candidate.id} className="p-3 bg-muted rounded-lg">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <p className="font-medium text-sm" data-testid={`text-incomplete-candidate-${candidate.id}`}>{candidate.name}</p>
+                    <p className="text-xs text-muted-foreground">{candidate.email}</p>
+                  </div>
+                </div>
+                <div className="mt-1">
+                  <p className="text-xs text-muted-foreground mb-1">Missing assessments:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {candidate.missingAssessments.map((assessmentId) => {
+                      const label = ALL_ASSESSMENT_TYPES.find(a => a.id === assessmentId)?.label || assessmentId;
+                      return (
+                        <Badge key={assessmentId} variant="secondary" className="text-xs">
+                          {label}
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              variant="outline"
+              onClick={() => setInviteModalOpen(false)}
+              data-testid="button-cancel-invite-modal"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => inviteMutation.mutate(incompleteCandidates)}
+              disabled={inviteMutation.isPending}
+              data-testid="button-send-invite-from-comparison"
+            >
+              {inviteMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Send Invitation{incompleteCandidates.length > 1 ? 's' : ''}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
