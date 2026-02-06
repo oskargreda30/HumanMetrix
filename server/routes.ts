@@ -14601,67 +14601,9 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
               .sort((a, b) => a.level - b.level);
           }
           
-          // If no level-by-level evaluations exist, create a summary from scores
-          if (finalLevelData.length === 0 && promptResult.scores && typeof promptResult.scores === 'object') {
-            const summaryScores = promptResult.scores as Record<string, number>;
-            const normalizeKey = (key: string) => key.toLowerCase().replace(/\s+/g, '');
-            
-            // Detect if scores are out of 25 or already out of 100
-            const allScoreValues = Object.values(summaryScores).filter(v => typeof v === 'number');
-            const maxScore = Math.max(...allScoreValues, 0);
-            const scoresAreOutOf100 = maxScore > 25;
-            
-            const getSummaryScore = (dimension: string): number | undefined => {
-              let rawScore: number | undefined;
-              
-              if (summaryScores[dimension] !== undefined) {
-                rawScore = summaryScores[dimension];
-              } else {
-                const normalized = normalizeKey(dimension);
-                for (const [key, value] of Object.entries(summaryScores)) {
-                  if (normalizeKey(key) === normalized) {
-                    rawScore = value;
-                    break;
-                  }
-                }
-              }
-              
-              if (rawScore === undefined) return undefined;
-              
-              if (scoresAreOutOf100) {
-                return Math.round((rawScore / 100) * 20);
-              } else {
-                return scaleDimensionScore(rawScore);
-              }
-            };
-            
-            const clarity = getSummaryScore('clarity') || getSummaryScore('Clarity') || 0;
-            const structure = getSummaryScore('structure') || getSummaryScore('Structure') || 
-                             getSummaryScore('contextSetting') || getSummaryScore('Context Setting') || 0;
-            const contextRelevance = getSummaryScore('contextRelevance') || getSummaryScore('Context Relevance') ||
-                                    getSummaryScore('outputFormatting') || getSummaryScore('Output Formatting') || 0;
-            const creativity = getSummaryScore('creativity') || getSummaryScore('Creativity') ||
-                              getSummaryScore('constraintDefinition') || getSummaryScore('Constraint Definition') || 0;
-            const iterativeImprovement = getSummaryScore('iterativeImprovement') || getSummaryScore('Iterative Improvement') || 0;
-            
-            // For PDF imports with summary scores but no per-level data, create a summary entry
-            // This allows the report to show something meaningful for imported assessments
-            if (clarity || structure || contextRelevance || creativity || iterativeImprovement) {
-              const avgScore = Math.round((clarity + structure + contextRelevance + creativity + iterativeImprovement) / 5);
-              finalLevelData.push({
-                level: 0, // Use level 0 to indicate this is a summary/imported view
-                scores: { 
-                  clarity, 
-                  structure, 
-                  contextRelevance, 
-                  creativity, 
-                  iterativeImprovement 
-                },
-                totalScore: avgScore,
-                feedback: 'Imported assessment - summary scores only',
-                isImported: true,
-              });
-            }
+          // If no per-level evaluations exist in the database, return null (no fallback guessing)
+          if (finalLevelData.length === 0) {
+            return null;
           }
           
           // Ensure all 7 levels are present, fill missing with placeholders

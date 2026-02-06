@@ -4,7 +4,8 @@ import { storage } from "./storage";
 import { partnerAuth, PartnerRequest, trackUsage, generateApiKey, consumeTestCredit } from "./partner-auth";
 import { isAuthenticated } from "./auth";
 import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation, sendPartnerBulkInvitationEmail, sendB2BCongratulatoryEmail, sendB2BAllCompleteEmail } from "./email";
-import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount, B2C_RETAIL_PRICE_PER_ASSESSMENT, BASE_FEE, ASSESSMENT_PRICES, assessmentResults, assessmentSessions } from "@shared/schema";
+import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount, B2C_RETAIL_PRICE_PER_ASSESSMENT, BASE_FEE, ASSESSMENT_PRICES, assessmentResults, assessmentSessions, promptArchitectureEvaluations } from "@shared/schema";
+import { db } from "./db";
 import { getQuestionLocale, getPPPAdjustedPriceInPence, getCurrencyForCountry, formatPrice, COUNTRY_CURRENCY_MAP, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal } from "@shared/currencies";
 import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { generateTemporaryPassword } from "./passwordUtils";
@@ -5395,6 +5396,7 @@ async function calculateScores(
   const normalizedType = normalizeAssessmentId(assessmentType);
   let scores: Record<string, number>;
   let totalScore: number;
+  let evaluations: any[] | undefined;
   
   if (normalizedType === 'fit') {
     scores = calculateFITScores(answers);
@@ -5501,7 +5503,7 @@ async function calculateScores(
   // Calculate percentile based on total score
   const percentile = Math.min(99, Math.max(1, Math.round(totalScore * 0.9)));
   
-  return { scores, totalScore, percentile };
+  return { scores, totalScore, percentile, evaluations };
 }
 
 async function sendWebhook(url: string, payload: any): Promise<void> {
@@ -5561,7 +5563,7 @@ async function linkPartnerResultsToUser(userId: string, invitation: any) {
       existingResultsSet.add(resultKey);
       
       // Create assessment result entry linked to user
-      await storage.createAssessmentResult({
+      const createdResult = await storage.createAssessmentResult({
         userId,
         partnerInvitationId: invitation.id,
         assessmentType: session.assessmentType,
@@ -5574,6 +5576,45 @@ async function linkPartnerResultsToUser(userId: string, invitation: any) {
         status: 'completed',
         completedAt: session.completedAt,
       });
+      
+      // For PA assessments, copy per-level evaluations from session JSONB into the dedicated table
+      const normalizedType = normalizeAssessmentId(session.assessmentType);
+      if (normalizedType === 'prompt_architecture' && session.evaluations && Array.isArray(session.evaluations)) {
+        try {
+          for (const evalEntry of session.evaluations) {
+            if (evalEntry.level === undefined || evalEntry.totalScore === undefined) continue;
+            
+            const answers = session.answers || {};
+            const levelKey = Object.keys(answers).find(k => {
+              const match = k.match(/level-?(\d+)/);
+              return match && parseInt(match[1]) === evalEntry.level;
+            });
+            const userPrompt = levelKey ? (answers as any)[levelKey] : '';
+            
+            await db.insert(promptArchitectureEvaluations).values({
+              resultId: createdResult.id,
+              level: evalEntry.level,
+              userPrompt: userPrompt || '',
+              aiResponse: null,
+              evaluationScores: {
+                clarity: evalEntry.clarity ?? 0,
+                structure: evalEntry.structure ?? 0,
+                contextRelevance: evalEntry.contextRelevance ?? 0,
+                creativity: evalEntry.creativity ?? 0,
+                iterativeImprovement: evalEntry.iterativeImprovement ?? 0,
+              },
+              totalScore: evalEntry.totalScore,
+              feedback: evalEntry.feedback || null,
+              status: 'completed',
+              evaluatedAt: new Date(),
+            });
+          }
+          console.log(`[Link PA] Inserted ${session.evaluations.length} PA evaluations for result ${createdResult.id}`);
+        } catch (paError) {
+          console.error(`[Link PA] Failed to insert PA evaluations for result ${createdResult.id}:`, paError);
+        }
+      }
+      
       linkedCount++;
     }
     
