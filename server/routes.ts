@@ -16290,9 +16290,12 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         );
         
         if (existingReport) {
-          // Return cached report without charging credits
+          const cachedData = existingReport.resultData as any;
+          if (cachedData?.roleSnapshot) {
+            cachedData.roleSnapshot.requiredSkillScores = role.requiredSkillScores;
+          }
           return res.json({
-            ...existingReport.resultData,
+            ...cachedData,
             cached: true,
             cachedAt: existingReport.createdAt,
             reportId: existingReport.id,

@@ -1043,6 +1043,10 @@ export default function PartnerMultiCandidateRoleFitTab() {
           })()}
 
           {/* Prompt Architecture Comparison Section */}
+          {(() => {
+            const paRoleSkills = comparison.roleSnapshot.requiredSkillScores || {};
+            const REQUIRED_PA_SCORE = paRoleSkills.promptArchitectureScore || 60;
+            return (
           <Card data-testid="card-prompt-architecture-comparison">
             <CardHeader className="bg-gradient-to-r from-cyan-500/10 via-cyan-500/5 to-transparent">
               <CardTitle className="flex items-center gap-2 text-sm md:text-base">
@@ -1050,7 +1054,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                 Prompt Architecture Comparison
               </CardTitle>
               <p className="text-xs md:text-sm text-muted-foreground">
-                AI prompt engineering ability across 7 progressive levels - candidates should score 60+ to demonstrate proficiency
+                AI prompt engineering ability across 7 progressive levels - candidates should score {REQUIRED_PA_SCORE}+ to demonstrate proficiency
               </p>
             </CardHeader>
             <CardContent className="pt-4">
@@ -1058,10 +1062,6 @@ export default function PartnerMultiCandidateRoleFitTab() {
                 const candidatesWithPA = comparison.candidateEntries.filter(
                   (c: CandidateEntry) => c.promptArchitectureScore != null && c.promptArchitectureScore !== undefined
                 );
-                
-                // Get role-specific required PA score from OpenAI analysis, default to 60 if not set
-                const roleSkills = comparison.roleSnapshot.requiredSkillScores || {};
-                const REQUIRED_PA_SCORE = roleSkills.promptArchitectureScore || 60;
                 
                 if (candidatesWithPA.length === 0) {
                   return (
@@ -1132,8 +1132,14 @@ export default function PartnerMultiCandidateRoleFitTab() {
               })()}
             </CardContent>
           </Card>
+            );
+          })()}
 
           {/* AIQ (Algorithmic Integrity Quotient) Comparison Section */}
+          {(() => {
+            const aiqRoleSkills = comparison.roleSnapshot.requiredSkillScores || {};
+            const REQUIRED_AIQ_SCORE = aiqRoleSkills.aiqScore || 60;
+            return (
           <Card data-testid="card-aiq-comparison">
             <CardHeader className="bg-gradient-to-r from-purple-500/10 via-purple-500/5 to-transparent">
               <CardTitle className="flex items-center gap-2 text-sm md:text-base">
@@ -1141,7 +1147,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                 AIQ (Algorithmic Integrity Quotient) Comparison
               </CardTitle>
               <p className="text-xs md:text-sm text-muted-foreground">
-                Ethical AI decision-making - balancing efficiency, fairness, and transparency. Candidates should score 60+ to demonstrate proficiency
+                Ethical AI decision-making - balancing efficiency, fairness, and transparency. Candidates should score {REQUIRED_AIQ_SCORE}+ to demonstrate proficiency
               </p>
             </CardHeader>
             <CardContent className="pt-4">
@@ -1149,10 +1155,6 @@ export default function PartnerMultiCandidateRoleFitTab() {
                 const candidatesWithAIQ = comparison.candidateEntries.filter(
                   (c: CandidateEntry) => c.aiqScore != null && c.aiqScore !== undefined
                 );
-                
-                // Get role-specific required AIQ score from OpenAI analysis, default to 60 if not set
-                const roleSkills = comparison.roleSnapshot.requiredSkillScores || {};
-                const REQUIRED_AIQ_SCORE = roleSkills.aiqScore || 60;
                 
                 if (candidatesWithAIQ.length === 0) {
                   return (
@@ -1223,6 +1225,8 @@ export default function PartnerMultiCandidateRoleFitTab() {
               })()}
             </CardContent>
           </Card>
+            );
+          })()}
 
           {/* AI-Powered Strategic Insights */}
           <Card className="bg-gradient-to-r from-purple-500/10 via-purple-500/5 to-transparent border-purple-500/20" data-testid="card-ai-insights">
