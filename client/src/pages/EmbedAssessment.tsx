@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { useSearch } from "wouter";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -95,6 +95,98 @@ function getQuestions(assessmentType: string, locale: QuestionLocale = 'default'
       return [];
   }
 }
+
+interface AssessmentTimerProps {
+  initialTime: number;
+  isLight: boolean;
+  warningThreshold: number;
+  isActive: boolean;
+  onWarning: () => void;
+  onExpiry: () => void;
+  timeRemainingRef: React.MutableRefObject<number>;
+}
+
+const AssessmentTimerDisplay = memo(function AssessmentTimerDisplay({
+  initialTime,
+  isLight,
+  warningThreshold,
+  isActive,
+  onWarning,
+  onExpiry,
+  timeRemainingRef,
+}: AssessmentTimerProps) {
+  const [localTime, setLocalTime] = useState(initialTime);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const onWarningRef = useRef(onWarning);
+  const onExpiryRef = useRef(onExpiry);
+  const warningFiredRef = useRef(false);
+
+  onWarningRef.current = onWarning;
+  onExpiryRef.current = onExpiry;
+
+  useEffect(() => {
+    setLocalTime(initialTime);
+    timeRemainingRef.current = initialTime;
+    warningFiredRef.current = initialTime <= warningThreshold;
+  }, [initialTime, timeRemainingRef, warningThreshold]);
+
+  useEffect(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    if (!isActive) return;
+
+    intervalRef.current = setInterval(() => {
+      setLocalTime((prev) => {
+        const newTime = prev - 1;
+        timeRemainingRef.current = newTime;
+
+        if (newTime === warningThreshold && !warningFiredRef.current) {
+          warningFiredRef.current = true;
+          onWarningRef.current();
+        }
+
+        if (newTime <= 0) {
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          onExpiryRef.current();
+          return 0;
+        }
+
+        return newTime;
+      });
+    }, 1000);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [isActive, warningThreshold, timeRemainingRef]);
+
+  const mins = Math.floor(Math.max(0, localTime) / 60);
+  const secs = Math.max(0, localTime) % 60;
+  const display = `${mins}:${secs.toString().padStart(2, '0')}`;
+  const isWarning = localTime <= warningThreshold;
+
+  return (
+    <div className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 ${
+      isWarning
+        ? 'bg-red-500/20 text-red-400 border-red-500/50 animate-pulse'
+        : isLight ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-blue-900/30 text-blue-300 border-blue-500/30'
+    }`}>
+      <Clock className="h-5 w-5" />
+      <span className="text-lg font-bold tabular-nums" data-testid="timer-display">
+        {display}
+      </span>
+    </div>
+  );
+});
 
 function getAssessmentDisplayName(type: string): string {
   const names: Record<string, string> = {
@@ -284,7 +376,6 @@ export default function EmbedAssessment() {
     paymentUrl: string;
   } | null>(null);
   const [isLoadingCompletion, setIsLoadingCompletion] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const hasSubmittedRef = useRef<boolean>(false);
   const hasCalledCompletionRef = useRef<boolean>(false);
   const startCallInProgressRef = useRef<boolean>(false); // Prevent concurrent /start calls
@@ -818,13 +909,6 @@ export default function EmbedAssessment() {
     }, 2000);
   }, [sessionId, status, currentIndex, saveProgressImmediately]);
 
-  // Format time as MM:SS
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   // Handle confirming to leave the assessment
   const handleConfirmLeave = useCallback(() => {
     setShowLeaveConfirmModal(false);
@@ -865,74 +949,44 @@ export default function EmbedAssessment() {
   // Timer is now initialized from server response in fetchSession and startAssessment
   // This ensures correct remaining time is used when resuming after tab close
 
-  // Timer countdown effect
-  useEffect(() => {
-    if (status !== 'started' || isSubmitting) return;
+  // Timer warning and expiry callbacks (stable refs to avoid re-creating AssessmentTimerDisplay)
+  const handleTimerWarning = useCallback(() => {
+    setShowTimeWarning(true);
+  }, []);
 
-    timerRef.current = setInterval(() => {
-      setTimeRemaining((prev) => {
-        const newTime = prev - 1;
+  const handleTimerExpiry = useCallback(() => {
+    setIsSubmitting(true);
 
-        // Show warning at 5 minutes for regular or 30 seconds for prompt architecture
-        const warningThreshold = session?.assessmentType.replace(/-/g, '_') === 'prompt_architecture' ? 30 : 300;
-        if (newTime === warningThreshold && !showTimeWarning) {
-          setShowTimeWarning(true);
-        }
-
-        // Auto-submit when time runs out
-        if (newTime <= 0) {
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
+    if (Object.keys(answersRef.current).length > 0 && !hasSubmittedRef.current) {
+      hasSubmittedRef.current = true;
+      fetch(`/api/embed/session/${sessionId}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answers: answersRef.current }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          setCompletedScores(data);
+          setStatus("completed");
+          if (window.parent !== window) {
+            window.parent.postMessage(
+              {
+                type: "humanmetrix:completed",
+                sessionId,
+                scores: data.scores,
+                totalScore: data.totalScore,
+                percentile: data.percentile,
+              },
+              "*"
+            );
           }
-
-          setIsSubmitting(true);
-
-          // Only auto-submit if user has answered at least one question
-          if (Object.keys(answersRef.current).length > 0 && !hasSubmittedRef.current) {
-            hasSubmittedRef.current = true;
-            // Submit with current answers
-            fetch(`/api/embed/session/${sessionId}/submit`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ answers: answersRef.current }),
-            })
-              .then((res) => res.json())
-              .then((data) => {
-                setCompletedScores(data);
-                setStatus("completed");
-                if (window.parent !== window) {
-                  window.parent.postMessage(
-                    {
-                      type: "humanmetrix:completed",
-                      sessionId,
-                      scores: data.scores,
-                      totalScore: data.totalScore,
-                      percentile: data.percentile,
-                    },
-                    "*"
-                  );
-                }
-              })
-              .catch(() => {
-                setStatus("error");
-                setErrorMessage("Failed to submit assessment on time expiry");
-              });
-          }
-          return 0;
-        }
-
-        return newTime;
-      });
-    }, 1000);
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [status, isSubmitting, showTimeWarning, sessionId, session]);
+        })
+        .catch(() => {
+          setStatus("error");
+          setErrorMessage("Failed to submit assessment on time expiry");
+        });
+    }
+  }, [sessionId]);
 
   // Track if timer has expired from server (prevents client-side reset from overriding)
   const timerExpiredFromServerRef = useRef<boolean>(false);
@@ -2396,16 +2450,15 @@ export default function EmbedAssessment() {
               <span className={`text-sm ${textMuted}`}>
                 Question {currentIndex + 1} of {questions.length}
               </span>
-              <div className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 ${
-                timeRemaining <= (isPromptArchitecture ? 30 : 300) 
-                  ? 'bg-red-500/20 text-red-400 border-red-500/50 animate-pulse' 
-                  : isLight ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-blue-900/30 text-blue-300 border-blue-500/30'
-              }`}>
-                <Clock className="h-5 w-5" />
-                <span className="text-lg font-bold tabular-nums" data-testid="timer-display">
-                  {formatTime(timeRemaining)}
-                </span>
-              </div>
+              <AssessmentTimerDisplay
+                initialTime={timeRemaining}
+                isLight={isLight}
+                warningThreshold={isPromptArchitecture ? 30 : 300}
+                isActive={status === 'started' && !isSubmitting}
+                onWarning={handleTimerWarning}
+                onExpiry={handleTimerExpiry}
+                timeRemainingRef={timeRemainingRef}
+              />
             </div>
           </div>
           <Progress value={progress} className="h-2" style={{ '--progress-color': primaryColor } as any} />

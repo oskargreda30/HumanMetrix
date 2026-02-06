@@ -146,6 +146,7 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
   }>({
     queryKey: ['/api/partner/me/invitations'],
     enabled: !!partnerId,
+    refetchInterval: 15000,
   });
 
   const { data: importsData, isLoading: importsLoading } = useQuery<{
