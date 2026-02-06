@@ -1675,9 +1675,10 @@ export function registerPartnerRoutes(app: Express) {
             const paymentUrl = `${baseUrl}/b2b-results?session=${sessionId}&country=${userCountryCode}`;
             
             try {
-                // Look up user account to get their name if they exist
+                const invitationId = (updatedSession?.metadata as any)?.invitationId;
+                const invitation = invitationId ? await storage.getPartnerCandidateInvitation(invitationId) : null;
                 const existingUser = await storage.getUserByEmail(candidateEmail);
-                const candidateDisplayName = existingUser?.name || existingUser?.username || undefined;
+                const candidateDisplayName = invitation?.name || existingUser?.name || existingUser?.username || undefined;
                 
                 await sendB2BCongratulatoryEmail({
                   email: candidateEmail,
@@ -1785,8 +1786,10 @@ export function registerPartnerRoutes(app: Express) {
                 
                 const bundlePaymentUrl = `${baseUrl}/b2b-results-bundle?email=${encodeURIComponent(candidateEmail)}&partner=${session.partnerId}&country=${userCountryCode}&types=${bundleAssessmentTypes.join(',')}`;
                 
+                const bundleInvitationId = (updatedSession?.metadata as any)?.invitationId;
+                const bundleInvitation = bundleInvitationId ? await storage.getPartnerCandidateInvitation(bundleInvitationId) : null;
                 const bundleUser = await storage.getUserByEmail(candidateEmail);
-                const bundleCandidateName = bundleUser?.name || bundleUser?.username || undefined;
+                const bundleCandidateName = bundleInvitation?.name || bundleUser?.name || bundleUser?.username || undefined;
                 
                 await sendB2BAllCompleteEmail({
                   email: candidateEmail,
