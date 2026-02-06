@@ -23,7 +23,7 @@ import { apiRequest } from "@/lib/queryClient";
 import html2canvas from "html2canvas";
 import { EnquiryModal } from "@/components/EnquiryModal";
 
-const CHART_COLOR = "#3b82f6";
+const CHART_COLOR = "#5B8DB8";
 
 export interface SharedIndividualReportConfig {
   candidatesEndpoint: string;
@@ -629,17 +629,17 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
               </CardHeader>
               <CardContent>
                 <div className="grid gap-6 lg:grid-cols-2">
-                  <div ref={fitChartRef} className="h-80 bg-white dark:bg-gray-900 rounded-lg p-2">
+                  <div ref={fitChartRef} className="h-72 bg-white dark:bg-gray-900 rounded-lg p-2">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={fitRadarData} layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
+                      <BarChart data={fitRadarData} layout="vertical" barCategoryGap="28%" margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis type="number" domain={[0, 100]} />
                         <YAxis type="category" dataKey="skill" width={120} tick={{ fontSize: 11 }} />
                         <Bar
                           dataKey="score"
-                          fill="#3b82f6"
+                          fill="#5B8DB8"
                           radius={[0, 4, 4, 0]}
-                          barSize={20}
+                          barSize={18}
                           label={{ position: 'right', fontSize: 12, fontWeight: 600 }}
                         />
                       </BarChart>
@@ -675,17 +675,17 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
               </CardHeader>
               <CardContent>
                 <div className="grid gap-6 lg:grid-cols-2">
-                  <div ref={aiChartRef} className="h-80 bg-white dark:bg-gray-900 rounded-lg p-2">
+                  <div ref={aiChartRef} className="h-96 bg-white dark:bg-gray-900 rounded-lg p-2">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={aiRadarData} layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
+                      <BarChart data={aiRadarData} layout="vertical" barCategoryGap="28%" margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis type="number" domain={[0, 100]} />
                         <YAxis type="category" dataKey="skill" width={120} tick={{ fontSize: 11 }} />
                         <Bar
                           dataKey="score"
-                          fill="#8b5cf6"
+                          fill="#6E8FA8"
                           radius={[0, 4, 4, 0]}
-                          barSize={20}
+                          barSize={18}
                           label={{ position: 'right', fontSize: 12, fontWeight: 600 }}
                         />
                       </BarChart>

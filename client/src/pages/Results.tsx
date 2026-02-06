@@ -551,7 +551,7 @@ export default function Results() {
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-6 text-center">Skills Overview</h2>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart layout="vertical" data={radarData} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
+                  <BarChart layout="vertical" data={radarData} barCategoryGap="28%" margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                     <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                     <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
@@ -563,7 +563,7 @@ export default function Results() {
                       }}
                       labelStyle={{ color: 'hsl(var(--foreground))' }}
                     />
-                    <Bar dataKey="score" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
+                    <Bar dataKey="score" fill="#5B8DB8" radius={[0, 4, 4, 0]} barSize={18} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
                   </BarChart>
                 </ResponsiveContainer>
               </Card>
@@ -572,7 +572,7 @@ export default function Results() {
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-6 text-center">Skills Comparison</h2>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart layout="vertical" data={barData} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
+                  <BarChart layout="vertical" data={barData} barCategoryGap="28%" margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                     <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                     <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
@@ -584,7 +584,7 @@ export default function Results() {
                       }}
                       labelStyle={{ color: 'hsl(var(--foreground))' }}
                     />
-                    <Bar dataKey="score" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
+                    <Bar dataKey="score" fill="#5B8DB8" radius={[0, 4, 4, 0]} barSize={18} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
                   </BarChart>
                 </ResponsiveContainer>
               </Card>

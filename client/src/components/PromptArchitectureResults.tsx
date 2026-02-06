@@ -63,7 +63,7 @@ export function PromptArchitectureResults({ scores, totalScore, evaluations }: P
           <div>
             <h3 className="text-center font-semibold mb-4">Dimension Breakdown</h3>
             <ResponsiveContainer width="100%" height={250}>
-              <BarChart layout="vertical" data={radarData} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
+              <BarChart layout="vertical" data={radarData} barCategoryGap="28%" margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                 <YAxis 
                   type="category" 
@@ -82,9 +82,9 @@ export function PromptArchitectureResults({ scores, totalScore, evaluations }: P
                 <Bar
                   name="Score"
                   dataKey="score"
-                  fill="hsl(var(--primary))"
+                  fill="#4A7193"
                   radius={[0, 4, 4, 0]}
-                  barSize={20}
+                  barSize={18}
                   label={{ position: 'right', fontSize: 12, fontWeight: 600 }}
                 />
               </BarChart>

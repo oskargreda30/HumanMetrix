@@ -2812,7 +2812,7 @@ function TeamAnalysisResults({
         <div className="bg-muted/30 rounded-lg p-4 border">
           <div className="h-[350px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart layout="vertical" data={cumulativeScores} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
+              <BarChart layout="vertical" data={cumulativeScores} barCategoryGap="28%" margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                 <YAxis 
                   type="category" 
@@ -2830,9 +2830,9 @@ function TeamAnalysisResults({
                 <Bar
                   name="Team Score"
                   dataKey="score"
-                  fill="hsl(var(--primary))"
+                  fill="#5B8DB8"
                   radius={[0, 4, 4, 0]}
-                  barSize={20}
+                  barSize={18}
                   label={{ position: 'right', fontSize: 12, fontWeight: 600 }}
                 />
                 <Tooltip 

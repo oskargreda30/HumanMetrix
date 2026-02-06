@@ -567,9 +567,9 @@ export default function MyResults() {
 
                 <div className="grid md:grid-cols-2 gap-4">
                   {/* Bar Chart */}
-                  <div className="h-64">
+                  <div className="h-72">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart layout="vertical" data={sortedScores.map(([skill, score]) => ({
+                      <BarChart layout="vertical" barCategoryGap="28%" data={sortedScores.map(([skill, score]) => ({
                         skill: getSkillAcronym(skill),
                         score: score as number,
                         fullMark: 100
@@ -577,7 +577,7 @@ export default function MyResults() {
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                         <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                         <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
-                        <Bar dataKey="score" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
+                        <Bar dataKey="score" fill="#5B8DB8" radius={[0, 4, 4, 0]} barSize={18} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -653,9 +653,9 @@ export default function MyResults() {
 
                 <div className="grid md:grid-cols-2 gap-4">
                   {/* Bar Chart */}
-                  <div className="h-72">
+                  <div className="h-96">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart layout="vertical" data={sortedScores.map(([skill, score]) => ({
+                      <BarChart layout="vertical" barCategoryGap="28%" data={sortedScores.map(([skill, score]) => ({
                         skill: getSkillAcronym(skill),
                         score: score as number,
                         fullMark: 100
@@ -663,7 +663,7 @@ export default function MyResults() {
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                         <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                         <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
-                        <Bar dataKey="score" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
+                        <Bar dataKey="score" fill="#6E8FA8" radius={[0, 4, 4, 0]} barSize={18} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -996,11 +996,11 @@ export default function MyResults() {
           return (
             <div id="fit-radar-chart-pdf" style={{ width: '400px', height: '400px', background: 'white' }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart layout="vertical" data={fitData} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
+                <BarChart layout="vertical" data={fitData} barCategoryGap="28%" margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
                   <YAxis type="category" dataKey="skill" width={120} tick={{ fill: '#000', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                   <XAxis type="number" domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 11 }} />
-                  <Bar dataKey="score" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
+                  <Bar dataKey="score" fill="#5B8DB8" radius={[0, 4, 4, 0]} barSize={18} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -1020,11 +1020,11 @@ export default function MyResults() {
           return (
             <div id="ai-readiness-radar-chart-pdf" style={{ width: '400px', height: '400px', background: 'white' }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart layout="vertical" data={aiData} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
+                <BarChart layout="vertical" data={aiData} barCategoryGap="28%" margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
                   <YAxis type="category" dataKey="skill" width={120} tick={{ fill: '#000', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                   <XAxis type="number" domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 11 }} />
-                  <Bar dataKey="score" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
+                  <Bar dataKey="score" fill="#6E8FA8" radius={[0, 4, 4, 0]} barSize={18} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

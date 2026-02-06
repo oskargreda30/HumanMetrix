@@ -39,7 +39,7 @@ import { isSkillBasedAssessment, transformToRadarData, getTopSkills, getGrowthAr
 import { exportEnhancedCandidatePDF, captureRadarChart } from "@/lib/enhancedPdfExport";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 
-const CHART_COLOR = "#3b82f6";
+const CHART_COLOR = "#5B8DB8";
 
 const renderInsideLabel = (props: any) => {
   const { cx, cy, x, y, value } = props;
@@ -1113,15 +1113,15 @@ export default function PartnerResultsTab() {
                             <div className="grid gap-6 lg:grid-cols-2">
                               <div className="h-72 bg-white dark:bg-gray-900 rounded-lg p-2">
                                 <ResponsiveContainer width="100%" height="100%">
-                                  <BarChart layout="vertical" data={fitRadarData} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
+                                  <BarChart layout="vertical" data={fitRadarData} barCategoryGap="28%" margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                                     <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                                     <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                                     <Bar
                                       dataKey="score"
-                                      fill={CHART_COLOR}
+                                      fill="#5B8DB8"
                                       radius={[0, 4, 4, 0]}
-                                      barSize={20}
+                                      barSize={18}
                                       label={{ position: 'right', fontSize: 12, fontWeight: 600 }}
                                     />
                                   </BarChart>
@@ -1156,17 +1156,17 @@ export default function PartnerResultsTab() {
                           </CardHeader>
                           <CardContent>
                             <div className="grid gap-6 lg:grid-cols-2">
-                              <div className="h-80 bg-white dark:bg-gray-900 rounded-lg p-2">
+                              <div className="h-96 bg-white dark:bg-gray-900 rounded-lg p-2">
                                 <ResponsiveContainer width="100%" height="100%">
-                                  <BarChart layout="vertical" data={aiRadarData} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
+                                  <BarChart layout="vertical" data={aiRadarData} barCategoryGap="28%" margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                                     <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                                     <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                                     <Bar
                                       dataKey="score"
-                                      fill="#8b5cf6"
+                                      fill="#6E8FA8"
                                       radius={[0, 4, 4, 0]}
-                                      barSize={20}
+                                      barSize={18}
                                       label={{ position: 'right', fontSize: 12, fontWeight: 600 }}
                                     />
                                   </BarChart>

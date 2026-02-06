@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -18,6 +18,7 @@ import {
   Legend,
   ResponsiveContainer,
   Tooltip as RechartsTooltip,
+  Cell,
 } from "recharts";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -36,10 +37,12 @@ const CHART_COLORS = [
 
 // Concrete colors for PDF export (CSS variables don't work in html2canvas)
 const PDF_CHART_COLORS = [
-  "#3b82f6", // Blue
-  "#22c55e", // Green
-  "#f59e0b", // Amber
+  "#4A7FA8", // Steel blue
+  "#6A9BC5", // Medium blue
+  "#8AB5D5", // Light blue
 ];
+
+const MULTI_CANDIDATE_COLORS = ['#4A7FA8', '#6A9BC5', '#8AB5D5', '#3D6F96', '#7BAAD0'];
 
 // Role definitions with skill weightings for suitability scoring
 // Uses the same keys as FIT_SKILLS and AI_READINESS_SKILLS
@@ -132,6 +135,15 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
   const [isCapturingPDF, setIsCapturingPDF] = useState(false);
   const [comparisonTriggered, setComparisonTriggered] = useState(false);
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
+  const [hoveredSkill, setHoveredSkill] = useState<string | null>(null);
+  const handleMouseMove = useCallback((state: any) => {
+    if (state && state.activeLabel) {
+      setHoveredSkill(state.activeLabel);
+    }
+  }, []);
+  const handleMouseLeave = useCallback(() => {
+    setHoveredSkill(null);
+  }, []);
   const reportContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -1987,7 +1999,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                         <h3 className="font-semibold mb-4">Combined Comparison</h3>
                         <div id="pdf-comparison-fit-overlapping" className="bg-white p-4 rounded-lg">
                           <ResponsiveContainer width="100%" height={280}>
-                            <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} data={(() => {
+                            <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} barCategoryGap="30%" barGap={2} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} data={(() => {
                               return FIT_SKILLS.map(skill => {
                                 const dataPoint: any = { skill: getSkillAcronym(skill.displayName) };
                                 selectedCandidateData?.forEach((candidate: any, index: number) => {
@@ -2010,16 +2022,28 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                                     key={candidate.user.id}
                                     name={getCandidateName(candidate)}
                                     dataKey={candidate.user.id}
-                                    fill={isCapturingPDF ? PDF_CHART_COLORS[index] : CHART_COLORS[index]}
                                     radius={[0, 4, 4, 0]}
-                                    barSize={14}
+                                    barSize={12}
                                     isAnimationActive={!isCapturingPDF}
-                                  />
+                                  >
+                                    {FIT_SKILLS.map((skill, i) => (
+                                      <Cell
+                                        key={`cell-${i}`}
+                                        fill={hoveredSkill === getSkillAcronym(skill.displayName) ? (isCapturingPDF ? PDF_CHART_COLORS[index] : MULTI_CANDIDATE_COLORS[index % MULTI_CANDIDATE_COLORS.length]) : '#C8CDD3'}
+                                        style={{ transition: 'fill 0.2s ease' }}
+                                      />
+                                    ))}
+                                  </Bar>
                                 );
                               })}
-                              <Legend />
+                              <Legend
+                                formatter={(value: string, entry: any, index: number) => (
+                                  <span style={{ color: MULTI_CANDIDATE_COLORS[index % MULTI_CANDIDATE_COLORS.length] }}>{value}</span>
+                                )}
+                              />
                             </BarChart>
                           </ResponsiveContainer>
+                          <p className="text-xs text-muted-foreground text-center mt-1">Hover over a skill to highlight comparison</p>
                         </div>
                       </div>
 
@@ -2057,16 +2081,16 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                                 </div>
                                 <div id={`pdf-comparison-fit-${index}`} className="bg-white p-4 rounded-lg">
                                   <ResponsiveContainer width="100%" height={220}>
-                                    <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} data={radarData}>
+                                    <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} barCategoryGap="28%" data={radarData}>
                                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                                       <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} axisLine={false} tickLine={false} />
                                       <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} axisLine={{ stroke: 'hsl(var(--border))' }} tickLine={{ stroke: 'hsl(var(--border))' }} />
                                       <RechartsTooltip />
                                       <Bar
                                         dataKey="score"
-                                        fill={isCapturingPDF ? PDF_CHART_COLORS[index] : CHART_COLORS[index]}
+                                        fill="#5B8DB8"
                                         radius={[0, 4, 4, 0]}
-                                        barSize={20}
+                                        barSize={18}
                                         isAnimationActive={!isCapturingPDF}
                                       />
                                     </BarChart>
@@ -2101,7 +2125,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                         <h3 className="font-semibold mb-4">Combined Comparison</h3>
                         <div id="pdf-comparison-ai-overlapping" className="bg-white p-4 rounded-lg">
                           <ResponsiveContainer width="100%" height={280}>
-                            <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} data={(() => {
+                            <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} barCategoryGap="30%" barGap={2} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} data={(() => {
                               return AI_READINESS_SKILLS.map(skill => {
                                 const dataPoint: any = { skill: getSkillAcronym(skill.displayName) };
                                 selectedCandidateData?.forEach((candidate: any, index: number) => {
@@ -2124,16 +2148,28 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                                     key={candidate.user.id}
                                     name={getCandidateName(candidate)}
                                     dataKey={candidate.user.id}
-                                    fill={isCapturingPDF ? PDF_CHART_COLORS[index] : CHART_COLORS[index]}
                                     radius={[0, 4, 4, 0]}
-                                    barSize={14}
+                                    barSize={12}
                                     isAnimationActive={!isCapturingPDF}
-                                  />
+                                  >
+                                    {AI_READINESS_SKILLS.map((skill, i) => (
+                                      <Cell
+                                        key={`cell-${i}`}
+                                        fill={hoveredSkill === getSkillAcronym(skill.displayName) ? (isCapturingPDF ? PDF_CHART_COLORS[index] : MULTI_CANDIDATE_COLORS[index % MULTI_CANDIDATE_COLORS.length]) : '#C8CDD3'}
+                                        style={{ transition: 'fill 0.2s ease' }}
+                                      />
+                                    ))}
+                                  </Bar>
                                 );
                               })}
-                              <Legend />
+                              <Legend
+                                formatter={(value: string, entry: any, index: number) => (
+                                  <span style={{ color: MULTI_CANDIDATE_COLORS[index % MULTI_CANDIDATE_COLORS.length] }}>{value}</span>
+                                )}
+                              />
                             </BarChart>
                           </ResponsiveContainer>
+                          <p className="text-xs text-muted-foreground text-center mt-1">Hover over a skill to highlight comparison</p>
                         </div>
                       </div>
 
@@ -2171,16 +2207,16 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                                 </div>
                                 <div id={`pdf-comparison-ai-${index}`} className="bg-white p-4 rounded-lg">
                                   <ResponsiveContainer width="100%" height={220}>
-                                    <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} data={radarData}>
+                                    <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} barCategoryGap="28%" data={radarData}>
                                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                                       <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} axisLine={false} tickLine={false} />
                                       <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} axisLine={{ stroke: 'hsl(var(--border))' }} tickLine={{ stroke: 'hsl(var(--border))' }} />
                                       <RechartsTooltip />
                                       <Bar
                                         dataKey="score"
-                                        fill={isCapturingPDF ? PDF_CHART_COLORS[index] : CHART_COLORS[index]}
+                                        fill="#5B8DB8"
                                         radius={[0, 4, 4, 0]}
-                                        barSize={20}
+                                        barSize={18}
                                         isAnimationActive={!isCapturingPDF}
                                       />
                                     </BarChart>
@@ -2421,7 +2457,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                           <h3 className="font-semibold mb-4">All Skills Combined</h3>
                           <div id="pdf-comparison-overall-skills" className="bg-white p-4 md:p-6 rounded-lg overflow-visible">
                           <ResponsiveContainer width="100%" height={400} className="min-h-[320px] md:min-h-[400px]">
-                            <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} data={comparison.radarData.map(item => ({
+                            <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} barCategoryGap="30%" barGap={2} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} data={comparison.radarData.map(item => ({
                               ...item,
                               skill: getSkillAcronym(item.skill)
                             }))}>
@@ -2434,15 +2470,27 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                                   key={candidate.user.id}
                                   name={getCandidateName(candidate)}
                                   dataKey={`candidate${index}`}
-                                  fill={isCapturingPDF ? PDF_CHART_COLORS[index] : CHART_COLORS[index]}
                                   radius={[0, 4, 4, 0]}
-                                  barSize={14}
+                                  barSize={12}
                                   isAnimationActive={!isCapturingPDF}
-                                />
+                                >
+                                  {comparison.radarData.map((item: any, i: number) => (
+                                    <Cell
+                                      key={`cell-${i}`}
+                                      fill={hoveredSkill === getSkillAcronym(item.skill) ? (isCapturingPDF ? PDF_CHART_COLORS[index] : MULTI_CANDIDATE_COLORS[index % MULTI_CANDIDATE_COLORS.length]) : '#C8CDD3'}
+                                      style={{ transition: 'fill 0.2s ease' }}
+                                    />
+                                  ))}
+                                </Bar>
                               ))}
-                              <Legend />
+                              <Legend
+                                formatter={(value: string, entry: any, index: number) => (
+                                  <span style={{ color: MULTI_CANDIDATE_COLORS[index % MULTI_CANDIDATE_COLORS.length] }}>{value}</span>
+                                )}
+                              />
                             </BarChart>
                           </ResponsiveContainer>
+                          <p className="text-xs text-muted-foreground text-center mt-1">Hover over a skill to highlight comparison</p>
                           </div>
                         </div>
                       )}
@@ -2805,9 +2853,9 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                     <RechartsTooltip />
                     <Bar
                       dataKey="score"
-                      fill={CHART_COLORS[index]}
+                      fill="#5B8DB8"
                       radius={[0, 4, 4, 0]}
-                      barSize={20}
+                      barSize={18}
                     />
                   </BarChart>
                 </ResponsiveContainer>
@@ -2841,9 +2889,9 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                     <RechartsTooltip />
                     <Bar
                       dataKey="score"
-                      fill={CHART_COLORS[index]}
+                      fill="#5B8DB8"
                       radius={[0, 4, 4, 0]}
-                      barSize={20}
+                      barSize={18}
                     />
                   </BarChart>
                 </ResponsiveContainer>
@@ -2872,9 +2920,9 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                       key={candidate.user.id}
                       name={getCandidateName(candidate)}
                       dataKey={`candidate${index}`}
-                      fill={CHART_COLORS[index]}
+                      fill={MULTI_CANDIDATE_COLORS[index % MULTI_CANDIDATE_COLORS.length]}
                       radius={[0, 4, 4, 0]}
-                      barSize={14}
+                      barSize={12}
                     />
                   ))}
                   <Legend />

@@ -191,7 +191,7 @@ type MultiCandidateComparison = {
   createdAt: string;
 };
 
-const CHART_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16'];
+const CHART_COLORS = ['#4A7FA8', '#6A9BC5', '#8AB5D5', '#3D6F96', '#7BAAD0', '#527EA3', '#6393B9', '#4878A0', '#7CA8CC', '#5B8DB8'];
 
 const getFitTierBadge = (tier: string) => {
   switch (tier) {

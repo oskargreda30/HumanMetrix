@@ -285,12 +285,12 @@ export default function SampleIndividualReport() {
                 <h3 className="text-lg font-semibold mb-4 text-center" data-testid="heading-fit-bar-chart">Skills Overview</h3>
                 <div data-testid="chart-fit-bar-chart">
                 <ResponsiveContainer width="100%" height={280}>
-                  <BarChart layout="vertical" data={fitRadarData} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
+                  <BarChart layout="vertical" data={fitRadarData} barCategoryGap="28%" margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                     <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                     <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                     <Tooltip />
-                    <Bar dataKey="score" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
+                    <Bar dataKey="score" fill="#5B8DB8" radius={[0, 4, 4, 0]} barSize={18} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
                   </BarChart>
                 </ResponsiveContainer>
                 </div>
@@ -373,13 +373,13 @@ export default function SampleIndividualReport() {
               <Card className="p-6">
                 <h3 className="text-lg font-semibold mb-4 text-center" data-testid="heading-ai-bar-chart">Skills Overview</h3>
                 <div data-testid="chart-ai-bar-chart">
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart layout="vertical" data={aiRadarData} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
+                <ResponsiveContainer width="100%" height={380}>
+                  <BarChart layout="vertical" data={aiRadarData} barCategoryGap="28%" margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                     <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                     <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                     <Tooltip />
-                    <Bar dataKey="score" fill="#06b6d4" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
+                    <Bar dataKey="score" fill="#6E8FA8" radius={[0, 4, 4, 0]} barSize={18} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
                   </BarChart>
                 </ResponsiveContainer>
                 </div>

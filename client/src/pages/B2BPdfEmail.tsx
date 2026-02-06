@@ -558,7 +558,7 @@ export default function B2BPdfEmail() {
               <h3 className="text-lg font-bold mb-4 text-center" style={isPdfRender ? { color: '#1e293b' } : undefined}>Skills Overview</h3>
               <div className="flex justify-center">
                 <ResponsiveContainer width={400} height={300}>
-                  <BarChart layout="vertical" data={sortedScores.map(([skill, score]) => ({
+                  <BarChart layout="vertical" barCategoryGap="28%" data={sortedScores.map(([skill, score]) => ({
                     skill: getSkillAcronym(skill),
                     score: Math.round(score as number),
                     fullMark: 100
@@ -566,7 +566,7 @@ export default function B2BPdfEmail() {
                     <CartesianGrid strokeDasharray="3 3" stroke={isPdfRender ? '#e2e8f0' : 'hsl(var(--border))'} horizontal={false} />
                     <YAxis type="category" dataKey="skill" width={120} tick={{ fill: isPdfRender ? '#1e293b' : 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                     <XAxis type="number" domain={[0, 100]} tick={{ fill: isPdfRender ? '#64748b' : 'hsl(var(--muted-foreground))', fontSize: 11 }} />
-                    <Bar dataKey="score" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
+                    <Bar dataKey="score" fill="#5B8DB8" radius={[0, 4, 4, 0]} barSize={18} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
