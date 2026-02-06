@@ -83,8 +83,8 @@ export default function B2BPaymentCallback() {
         setSessionId(data.sessionId || null);
         setHasExistingAccount(data.hasExistingAccount);
 
-        if (data.hasExistingAccount && data.resultsUrl) {
-          setMessage("Your results are ready! Redirecting to your dashboard...");
+        if (data.resultsUrl) {
+          setMessage("Your results are ready! Redirecting to your results...");
           queryClient.clear();
           redirectTimerRef.current = setTimeout(() => {
             setLocation(data.resultsUrl);
@@ -132,41 +132,29 @@ export default function B2BPaymentCallback() {
               <h1 className="text-2xl font-bold text-slate-900">Payment Successful!</h1>
               <p className="text-slate-600">{message}</p>
               
-              {hasExistingAccount ? (
-                <div className="space-y-3 pt-2">
-                  {!redirectFailed && (
-                    <div className="flex items-center justify-center gap-2 py-2">
-                      <Loader2 className="h-4 w-4 animate-spin text-cyan-600" />
-                      <span className="text-slate-500 text-sm">Redirecting to dashboard...</span>
-                    </div>
-                  )}
-                  
-                  {redirectFailed && (
-                    <Button
-                      onClick={() => {
-                        queryClient.clear();
-                        setLocation("/dashboard");
-                      }}
-                      className="w-full bg-gradient-to-r from-cyan-500 to-blue-600"
-                      data-testid="button-go-to-dashboard"
-                    >
-                      <LogIn className="h-4 w-4 mr-2" />
-                      Go to Dashboard
-                    </Button>
-                  )}
-                  
+              <div className="space-y-4 pt-2">
+                {!redirectFailed && (
+                  <div className="flex items-center justify-center gap-2 py-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-cyan-600" />
+                    <span className="text-slate-500 text-sm">Redirecting to your results...</span>
+                  </div>
+                )}
+
+                {redirectFailed && sessionId && (
                   <Button
-                    variant="outline"
-                    onClick={() => setLocation("/login")}
-                    className="w-full"
-                    data-testid="button-login"
+                    onClick={() => {
+                      queryClient.clear();
+                      setLocation(`/b2b-results/${sessionId}`);
+                    }}
+                    className="w-full bg-gradient-to-r from-cyan-500 to-blue-600"
+                    data-testid="button-view-results"
                   >
-                    <LogIn className="h-4 w-4 mr-2" />
-                    Login to View Results
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Results
                   </Button>
-                </div>
-              ) : (
-                <div className="space-y-4 pt-4">
+                )}
+
+                {!hasExistingAccount && email && (
                   <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
                     <div className="flex items-start gap-3">
                       <Mail className="h-5 w-5 text-cyan-600 mt-0.5 flex-shrink-0" />
@@ -178,31 +166,20 @@ export default function B2BPaymentCallback() {
                       </div>
                     </div>
                   </div>
-                  
-                  {sessionId && (
-                    <Button
-                      onClick={() => setLocation(`/b2b-pdf-email/${sessionId}?email=${encodeURIComponent(email || '')}`)}
-                      className="w-full bg-gradient-to-r from-cyan-500 to-blue-600"
-                      data-testid="button-view-results"
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      View Results Online
-                    </Button>
-                  )}
+                )}
 
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      variant="ghost"
-                      onClick={() => setLocation("/login")}
-                      className="text-slate-500"
-                      data-testid="button-login-existing"
-                    >
-                      <LogIn className="h-4 w-4 mr-2" />
-                      Already have an account? Login
-                    </Button>
-                  </div>
-                </div>
-              )}
+                {!hasExistingAccount && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => setLocation("/login")}
+                    className="w-full text-slate-500"
+                    data-testid="button-login-existing"
+                  >
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Already have an account? Login
+                  </Button>
+                )}
+              </div>
             </>
           )}
 

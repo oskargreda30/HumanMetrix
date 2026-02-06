@@ -3377,7 +3377,7 @@ export function registerPartnerRoutes(app: Express) {
         try {
           const { sendB2BResultsUnlockedEmail } = await import('./email');
           const baseUrl = getBaseUrl(req);
-          const resultsUrl = hasExistingAccount ? `${baseUrl}/dashboard` : baseUrl;
+          const resultsUrl = `${baseUrl}/b2b-results/${sessionIds[0]}`;
           
           await sendB2BResultsUnlockedEmail(
             email,
@@ -3397,7 +3397,7 @@ export function registerPartnerRoutes(app: Express) {
         success: true,
         email,
         hasExistingAccount,
-        resultsUrl: hasExistingAccount ? '/dashboard' : null,
+        resultsUrl: `/b2b-results/${sessionIds[0]}`,
         sessionId: sessionIds[0], // For account creation flow
       });
     } catch (error: any) {
@@ -4100,7 +4100,7 @@ export function registerPartnerRoutes(app: Express) {
           sessionId: b2bSessionId,
           hasExistingAccount,
           userId: existingUser?.id,
-          resultsUrl: hasExistingAccount ? "/dashboard" : `/embed/assessment?session=${b2bSessionId}&showResults=true`
+          resultsUrl: `/b2b-results/${b2bSessionId}`
         });
       }
       
@@ -4371,7 +4371,7 @@ export function registerPartnerRoutes(app: Express) {
         sessionId: b2bSessionId,
         hasExistingAccount,
         userId: existingUser?.id,
-        resultsUrl: hasExistingAccount ? "/dashboard" : null
+        resultsUrl: `/b2b-results/${b2bSessionId}`
       });
     } catch (error) {
       console.error("Error processing B2B payment:", error);
@@ -5308,7 +5308,7 @@ export function registerPartnerRoutes(app: Express) {
         email,
         sessionId: firstSession,
         hasExistingAccount,
-        resultsUrl: hasExistingAccount ? `/dashboard?session=${firstSession}` : null,
+        resultsUrl: `/b2b-results/${firstSession}`,
       });
       
       // Send ONE email with all PDFs attached asynchronously

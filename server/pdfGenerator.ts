@@ -1,13 +1,43 @@
 import puppeteer, { Browser, Page } from 'puppeteer';
+import { execSync } from 'child_process';
 
 let browserInstance: Browser | null = null;
 
+function findChromiumPath(): string {
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    return process.env.PUPPETEER_EXECUTABLE_PATH;
+  }
+  
+  const candidates = [
+    '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
+  ];
+  
+  for (const candidate of candidates) {
+    try {
+      const { statSync } = require('fs');
+      statSync(candidate);
+      return candidate;
+    } catch {}
+  }
+  
+  try {
+    const result = execSync('which chromium 2>/dev/null || find /nix/store -name chromium -path "*/bin/chromium" 2>/dev/null | head -1', { encoding: 'utf-8' }).trim();
+    if (result) {
+      console.log(`[PDF Generator] Found chromium at: ${result}`);
+      return result;
+    }
+  } catch {}
+  
+  return 'chromium';
+}
+
 async function getBrowser(): Promise<Browser> {
   if (!browserInstance || !browserInstance.connected) {
-    console.log('[PDF Generator] Launching headless browser...');
+    const chromiumPath = findChromiumPath();
+    console.log(`[PDF Generator] Launching headless browser with: ${chromiumPath}`);
     browserInstance = await puppeteer.launch({
       headless: true,
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
+      executablePath: chromiumPath,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -59,7 +89,8 @@ export async function generateResultsPDF(options: GeneratePDFOptions): Promise<B
     margin = { top: '20mm', right: '15mm', bottom: '20mm', left: '15mm' },
   } = options;
 
-  const resultsUrl = `${baseUrl}/b2b-pdf-email/${sessionId}?email=${encodeURIComponent(email)}&pdf=true`;
+  const localUrl = `http://127.0.0.1:5000/b2b-pdf-email/${sessionId}?email=${encodeURIComponent(email)}&pdf=true`;
+  const resultsUrl = localUrl;
   
   return generatePDFFromUrl({
     url: resultsUrl,
@@ -81,7 +112,7 @@ export async function generateMultiSessionPDF(options: GenerateMultiSessionPDFOp
   
   console.log(`[PDF Generator] Generating multi-session PDF for ${sessionIds.length} sessions`);
   
-  const bundleUrl = `${baseUrl}/b2b-results-bundle?sessions=${sessionIds.join(',')}&email=${encodeURIComponent(email)}&pdf=true`;
+  const bundleUrl = `http://127.0.0.1:5000/b2b-results-bundle?sessions=${sessionIds.join(',')}&email=${encodeURIComponent(email)}&pdf=true`;
   
   return generatePDFFromUrl({
     url: bundleUrl,
