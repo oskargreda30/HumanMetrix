@@ -3000,9 +3000,9 @@ export function registerPartnerRoutes(app: Express) {
       
       const hasAlreadyPaid = unlockedSessions.length > 0;
       
-      // Calculate bundle pricing (25% discount for all assessments)
-      const assessmentCount = completedTypes.length;
-      const pricePerAssessment = 20; // £20 per assessment
+      const unpaidCount = completedTypes.length - unlockedSessions.length;
+      const assessmentCount = unpaidCount > 0 ? unpaidCount : completedTypes.length;
+      const pricePerAssessment = 20;
       const originalTotal = assessmentCount * pricePerAssessment;
       const discountPercentage = assessmentCount >= 2 ? 25 : 0;
       const bundlePrice = originalTotal * (1 - discountPercentage / 100);

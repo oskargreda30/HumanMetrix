@@ -258,6 +258,8 @@ export default function EmbedAssessment() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionProgress, setSubmissionProgress] = useState(0);
+  const submissionProgressRef = useRef<NodeJS.Timeout | null>(null);
   const [completedScores, setCompletedScores] = useState<any>(null);
   const [timeRemaining, setTimeRemaining] = useState(1200); // 20 minutes default
   const [showTimeWarning, setShowTimeWarning] = useState(false);
@@ -1106,10 +1108,35 @@ export default function EmbedAssessment() {
     // For real sessions, questions will reload via fetchSession/startAssessment
   };
 
+  const startSubmissionProgress = () => {
+    setSubmissionProgress(0);
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += Math.random() * 3 + 1;
+      if (progress >= 95) {
+        progress = 95;
+        clearInterval(interval);
+      }
+      setSubmissionProgress(Math.min(progress, 95));
+    }, 300);
+    submissionProgressRef.current = interval;
+  };
+
+  const stopSubmissionProgress = () => {
+    if (submissionProgressRef.current) {
+      clearInterval(submissionProgressRef.current);
+      submissionProgressRef.current = null;
+    }
+    setSubmissionProgress(100);
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     
-    // Demo mode - show mock completion
+    if (isCurrentPromptArchitecture) {
+      startSubmissionProgress();
+    }
+    
     if (isDemo) {
       const demoScores = {
         scores: { "Demo Score": 75 },
@@ -1117,14 +1144,12 @@ export default function EmbedAssessment() {
         percentile: 65,
       };
       setCompletedScores(demoScores);
+      stopSubmissionProgress();
       
-      // If multi-assessment and not the last one, show transition screen
       if (isMultiAssessment && !isLastAssessment) {
-        // Store scores in ref for use in advanceToNextAssessment
         pendingScoresRef.current = demoScores;
         setShowTransitionScreen(true);
         setIsSubmitting(false);
-        // No auto-advance - user must click button to start next assessment
         return;
       }
       
@@ -1159,6 +1184,7 @@ export default function EmbedAssessment() {
         return;
       }
 
+      stopSubmissionProgress();
       const data = await res.json();
       setCompletedScores(data);
 
@@ -1192,6 +1218,7 @@ export default function EmbedAssessment() {
       
       setStatus("completed");
     } catch (err) {
+      stopSubmissionProgress();
       setStatus("error");
       setErrorMessage("Failed to submit assessment");
     } finally {
@@ -1204,6 +1231,9 @@ export default function EmbedAssessment() {
     return () => {
       if (transitionTimerRef.current) {
         clearTimeout(transitionTimerRef.current);
+      }
+      if (submissionProgressRef.current) {
+        clearInterval(submissionProgressRef.current);
       }
     };
   }, []);
@@ -2450,7 +2480,7 @@ export default function EmbedAssessment() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-between mt-6">
+        <div className="flex justify-between mt-6 relative">
           <Button
             variant="outline"
             onClick={handlePrevious}
@@ -2463,21 +2493,39 @@ export default function EmbedAssessment() {
           </Button>
 
           {isLastQuestion ? (
-            <Button
-              onClick={handleSubmit}
-              disabled={!hasAnswered || isSubmitting}
-              className="bg-green-600 hover:bg-green-700"
-              data-testid="button-submit"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                "Submit Assessment"
+            <>
+              <Button
+                onClick={handleSubmit}
+                disabled={!hasAnswered || isSubmitting}
+                className="bg-green-600"
+                data-testid="button-submit"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    {isCurrentPromptArchitecture ? "Analysing..." : "Submitting..."}
+                  </>
+                ) : (
+                  "Submit Assessment"
+                )}
+              </Button>
+              {isSubmitting && isCurrentPromptArchitecture && (
+                <div className="absolute bottom-0 left-0 right-0 px-6 pb-2" data-testid="progress-submission">
+                  <div className="w-full bg-slate-700 rounded-full h-2">
+                    <div 
+                      className="bg-cyan-500 h-2 rounded-full transition-all duration-300 ease-out"
+                      style={{ width: `${submissionProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-center mt-1 text-slate-400">
+                    {submissionProgress < 30 ? "Sending responses to AI engine..." : 
+                     submissionProgress < 60 ? "Evaluating prompt structure and clarity..." : 
+                     submissionProgress < 90 ? "Calculating scores and generating feedback..." : 
+                     "Finalising results..."}
+                  </p>
+                </div>
               )}
-            </Button>
+            </>
           ) : (
             <Button
               onClick={handleNext}
