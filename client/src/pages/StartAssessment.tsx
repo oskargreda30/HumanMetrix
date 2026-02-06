@@ -123,7 +123,7 @@ export default function StartAssessment() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-slate-900">
         <div className="text-center">
           <div className="w-20 h-20 mx-auto mb-4 loader-pulse">
             <img src="/favicon.png" alt="HumanMetrix" className="w-full h-full object-contain" />
@@ -139,7 +139,7 @@ export default function StartAssessment() {
 
   if (status === "error") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-slate-900 p-4">
         <Card className="max-w-md w-full bg-slate-800 border-slate-700">
           <CardContent className="pt-6 text-center">
             <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
@@ -153,7 +153,7 @@ export default function StartAssessment() {
 
   if (status === "starting") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-slate-900">
         <div className="text-center">
           <div className="w-20 h-20 mx-auto mb-4 loader-pulse">
             <img src="/favicon.png" alt="HumanMetrix" className="w-full h-full object-contain" />
@@ -168,7 +168,7 @@ export default function StartAssessment() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 pt-16 md:pt-12 pb-12 px-4">
+    <div className="min-h-[100dvh] bg-slate-900 pt-16 md:pt-12 pb-12 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
           {invitation?.branding?.logoUrl ? (

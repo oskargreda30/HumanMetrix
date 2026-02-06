@@ -355,7 +355,7 @@ export default function GuestInvite() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-slate-900">
         <div className="text-center">
           <div className="w-20 h-20 mx-auto mb-4 loader-pulse">
             <img src="/favicon.png" alt="HumanMetrix" className="w-full h-full object-contain" data-testid="loading-spinner" />
@@ -371,7 +371,7 @@ export default function GuestInvite() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <XCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
@@ -399,7 +399,7 @@ export default function GuestInvite() {
     // Auto-logging in existing user
     if (autoLoggingIn || invitation.hasExistingAccount) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+        <div className="min-h-[100dvh] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10" />
           
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl" />
@@ -443,7 +443,7 @@ export default function GuestInvite() {
     
     // New user - show Create Account option
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+      <div className="min-h-[100dvh] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
         <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10" />
         
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl" />
@@ -530,7 +530,7 @@ export default function GuestInvite() {
 
   if (creatingSession) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-slate-900">
         <div className="text-center">
           <div className="w-20 h-20 mx-auto mb-4 loader-pulse">
             <img src="/favicon.png" alt="HumanMetrix" className="w-full h-full object-contain" />
@@ -548,12 +548,12 @@ export default function GuestInvite() {
     const embedUrl = `/embed/assessment?session=${currentSessionId}&inviteToken=${token}`;
     
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-[100dvh] flex flex-col">
         <div className="flex-1">
           <iframe
             ref={iframeRef}
             src={embedUrl}
-            className="w-full h-full min-h-screen border-0"
+            className="w-full h-full min-h-[100dvh] border-0"
             title={getCurrentAssessmentName()}
             data-testid="assessment-iframe"
           />
@@ -564,7 +564,7 @@ export default function GuestInvite() {
 
   if (invitation.expiresAt && new Date(invitation.expiresAt) < new Date()) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
@@ -591,7 +591,7 @@ export default function GuestInvite() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-slate-900">
       <div className="text-center">
         <div className="w-20 h-20 mx-auto mb-4 loader-pulse">
           <img src="/favicon.png" alt="HumanMetrix" className="w-full h-full object-contain" />

@@ -1248,7 +1248,7 @@ export default function EmbedAssessment() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900" data-testid="embed-loading">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-slate-900" data-testid="embed-loading">
         <div className="text-center">
           <div className="w-20 h-20 mx-auto mb-4 loader-pulse">
             <img src="/favicon.png" alt="HumanMetrix" className="w-full h-full object-contain" />
@@ -1264,7 +1264,7 @@ export default function EmbedAssessment() {
 
   if (status === "error") {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${bgMain}`} data-testid="embed-error">
+      <div className={`min-h-[100dvh] flex items-center justify-center ${bgMain}`} data-testid="embed-error">
         <Card className={`max-w-md ${bgCard} border-red-500/30`}>
           <CardContent className="pt-6 text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
@@ -1278,7 +1278,7 @@ export default function EmbedAssessment() {
 
   if (status === "expired") {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${bgMain}`} data-testid="embed-expired">
+      <div className={`min-h-[100dvh] flex items-center justify-center ${bgMain}`} data-testid="embed-expired">
         <Card className={`max-w-md ${bgCard} border-amber-500/30`}>
           <CardContent className="pt-6 text-center">
             <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
@@ -1301,7 +1301,7 @@ export default function EmbedAssessment() {
     const isTestMode = isDemo || session?.isTestSession;
     
     return (
-      <div className={`min-h-screen flex items-center justify-center ${bgMain} p-4`} data-testid="embed-transition">
+      <div className={`min-h-[100dvh] flex items-center justify-center ${bgMain} p-4`} data-testid="embed-transition">
         <Card className={`max-w-lg w-full ${bgCard}`}>
           <CardContent className="pt-8 pb-8 text-center space-y-6">
             <div className="relative">
@@ -1419,7 +1419,7 @@ export default function EmbedAssessment() {
       };
       
       return (
-        <div className={`min-h-screen ${bgMain} pt-12 md:pt-4 pb-4 px-4`} data-testid="embed-results">
+        <div className={`min-h-[100dvh] ${bgMain} pt-12 md:pt-4 pb-4 px-4`} data-testid="embed-results">
           <div className="max-w-4xl mx-auto space-y-6">
             <Card className={bgCard}>
               <CardHeader className="text-center border-b border-slate-700/30 pb-6">
@@ -1606,7 +1606,7 @@ export default function EmbedAssessment() {
     if (session?.isTestSession) {
       const primaryColor = branding?.primaryColor || '#0891b2';
       return (
-        <div className={`min-h-screen flex items-center justify-center ${bgMain} p-4`} data-testid="embed-completed-test">
+        <div className={`min-h-[100dvh] flex items-center justify-center ${bgMain} p-4`} data-testid="embed-completed-test">
           <Card className={`max-w-lg ${bgCard} border-green-500/30`}>
             <CardContent className="pt-6 text-center">
               {branding?.logoUrl && (
@@ -1667,7 +1667,7 @@ export default function EmbedAssessment() {
         : '';
       
       return (
-        <div className={`min-h-screen flex items-center justify-center ${bgMain} p-4`} data-testid="embed-completed-invitation">
+        <div className={`min-h-[100dvh] flex items-center justify-center ${bgMain} p-4`} data-testid="embed-completed-invitation">
           <Card className={`max-w-lg ${bgCard} border-green-500/30`}>
             <CardContent className="pt-6 text-center">
               {branding?.logoUrl && (
@@ -1796,7 +1796,7 @@ export default function EmbedAssessment() {
     });
     
     return (
-      <div className={`min-h-screen flex items-center justify-center ${bgMain} p-4`} data-testid="embed-completed">
+      <div className={`min-h-[100dvh] flex items-center justify-center ${bgMain} p-4`} data-testid="embed-completed">
         <Card className={`max-w-lg ${bgCard} border-green-500/30`}>
           <CardContent className="pt-6 text-center">
             {branding?.logoUrl && (
@@ -1876,7 +1876,7 @@ export default function EmbedAssessment() {
     const currentAssessmentName = getAssessmentDisplayName(currentAssessmentType);
     
     return (
-      <div className={`min-h-screen flex items-center justify-center ${bgMain} p-4`} data-testid="embed-completed-mid-series">
+      <div className={`min-h-[100dvh] flex items-center justify-center ${bgMain} p-4`} data-testid="embed-completed-mid-series">
         <Card className={`max-w-lg ${bgCard}`}>
           <CardContent className="p-8 text-center">
             {branding?.logoUrl && (
@@ -1948,7 +1948,7 @@ export default function EmbedAssessment() {
     const welcomeMessage = branding?.welcomeMessage;
     
     return (
-      <div className={`min-h-screen flex items-center justify-center ${bgMain} p-4`} data-testid="embed-ready">
+      <div className={`min-h-[100dvh] flex items-center justify-center ${bgMain} p-4`} data-testid="embed-ready">
         <Card className={`max-w-lg ${bgCard}`}>
           <CardHeader className="text-center">
             {branding?.logoUrl ? (
@@ -2316,7 +2316,7 @@ export default function EmbedAssessment() {
   const accentColor = branding?.accentColor || '#06b6d4';
 
   return (
-    <div className={`min-h-screen ${bgMain} pt-12 md:pt-4 pb-4 px-4`} data-testid="embed-assessment">
+    <div className={`min-h-[100dvh] ${bgMain} pt-12 md:pt-4 pb-4 px-4`} data-testid="embed-assessment">
       <div className="max-w-2xl mx-auto">
         {/* Multi-assessment progress indicator */}
         {isMultiAssessment && (
