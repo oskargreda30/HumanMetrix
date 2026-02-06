@@ -156,7 +156,8 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
     ? [`${config.roleAlignmentEndpoint}?${config.candidateIdParam}=${selectedCandidate}&jobRoleId=${selectedRole}`]
     : undefined;
 
-  const { data: alignment, isLoading: isLoadingAlignment } = useQuery<RoleAlignment>({
+  const isRerunningRef = useRef(false);
+  const { data: alignment, isLoading: isLoadingAlignment, isFetching: isFetchingAlignment } = useQuery<RoleAlignment>({
     queryKey: alignmentQueryKey as any,
     queryFn: async () => {
       let url = `${config.roleAlignmentEndpoint}?${config.candidateIdParam}=${selectedCandidate}&jobRoleId=${selectedRole}`;
@@ -173,6 +174,13 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
+
+  useEffect(() => {
+    if (isRerunningRef.current && !isFetchingAlignment) {
+      isRerunningRef.current = false;
+      toast({ title: "Analysis regenerated", description: "Fresh AI analysis has been generated successfully." });
+    }
+  }, [isFetchingAlignment]);
 
   // Reset analysis state when selection changes
   const handleCandidateChange = (value: string) => {
@@ -444,13 +452,15 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                   size="sm"
                   onClick={() => {
                     forceRefreshRef.current = true;
+                    isRerunningRef.current = true;
                     queryClient.invalidateQueries({ queryKey: alignmentQueryKey as any });
+                    toast({ title: "Re-running analysis...", description: "Generating fresh AI analysis. This may take a moment." });
                   }}
-                  disabled={isLoadingAlignment}
+                  disabled={isFetchingAlignment}
                   data-testid="button-rerun-rolefit-analysis"
                 >
-                  <RefreshCw className="h-3 w-3 mr-1" />
-                  Re-run Analysis (1 credit)
+                  <RefreshCw className={`h-3 w-3 mr-1 ${isFetchingAlignment ? 'animate-spin' : ''}`} />
+                  {isFetchingAlignment ? 'Analyzing...' : 'Re-run Analysis (1 credit)'}
                 </Button>
               )}
               <Button
