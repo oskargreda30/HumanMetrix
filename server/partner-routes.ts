@@ -1658,15 +1658,14 @@ export function registerPartnerRoutes(app: Express) {
             const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
             const b2cPriceInPence = BASE_FEE + assessmentPrice;
             
-            // Apply PPP adjustment then 25% bulk discount for B2B candidates
+            // Apply PPP adjustment (no discount for individual assessments — same price as B2C)
             const pppAdjustedPricePence = getPPPAdjustedPriceInPence(b2cPriceInPence, userCountryCode);
-            const discountedPricePence = Math.round(pppAdjustedPricePence * 0.75);
             
-            // Format prices in user's local currency using same B2C functions
-            const originalPriceDisplay = formatPrice(pppAdjustedPricePence, userCurrency);
-            const discountedPriceDisplay = formatPrice(discountedPricePence, userCurrency);
+            // Individual assessment emails show B2C price (no bulk discount)
+            // The 25% bulk discount only applies to bundle pricing
+            const individualPriceDisplay = formatPrice(pppAdjustedPricePence, userCurrency);
             
-            console.log(`[B2B Pricing] Assessment: ${normalizedType}, Base: ${BASE_FEE}p + ${assessmentPrice}p = ${b2cPriceInPence}p, Country: ${userCountryCode}, PPP: ${pppAdjustedPricePence}p (${originalPriceDisplay}), Discounted: ${discountedPricePence}p (${discountedPriceDisplay})`);
+            console.log(`[B2B Pricing] Assessment: ${normalizedType}, Base: ${BASE_FEE}p + ${assessmentPrice}p = ${b2cPriceInPence}p, Country: ${userCountryCode}, PPP: ${pppAdjustedPricePence}p (${individualPriceDisplay})`);
             
             // Calculate 30-day free unlock date
             const freeUnlockDate = new Date();
@@ -1686,8 +1685,7 @@ export function registerPartnerRoutes(app: Express) {
                   assessmentType: session.assessmentType,
                   partnerCompanyName: partner.companyName || partner.name,
                   paymentUrl,
-                  paymentAmount: discountedPriceDisplay,
-                  originalPaymentAmount: originalPriceDisplay,
+                  paymentAmount: individualPriceDisplay,
                   freeUnlockDate,
                 });
                 console.log(`[B2B Email] Sent congratulatory email to ${candidateEmail} for session ${sessionId}`);
@@ -3854,7 +3852,9 @@ export function registerPartnerRoutes(app: Express) {
         });
       }
       
-      // Calculate pricing: B2C base + assessment price, then PPP, then 25% bulk discount
+      // Calculate pricing: B2C base + assessment price, then PPP
+      // Individual assessments use B2C pricing (no discount)
+      // Only bundle purchases get 25% off
       const normalizedType = normalizeAssessmentId(session.assessmentType);
       const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
       const b2cPriceInPence = BASE_FEE + assessmentPrice;
@@ -3862,16 +3862,12 @@ export function registerPartnerRoutes(app: Express) {
       // PPP adjustment
       const pppAdjustedPricePence = getPPPAdjustedPriceInPence(b2cPriceInPence, countryCode);
       
-      // 25% bulk discount for B2B candidates
-      const discountedPricePence = Math.round(pppAdjustedPricePence * 0.75);
-      
-      // Get currency config for display - both original and discounted should show PPP-adjusted prices
+      // Get currency config for display
       const userCurrency = getCurrencyForCountry(countryCode);
-      // Format PPP-adjusted original (pre-discount) price - skip double PPP adjustment
-      const originalPriceDisplay = formatPrice(pppAdjustedPricePence, userCurrency, { countryCode, skipPPPAdjustment: true });
-      const discountedPriceDisplay = formatPrice(discountedPricePence, userCurrency, { countryCode, skipPPPAdjustment: true });
+      // Individual: B2C price (no discount)
+      const individualPriceDisplay = formatPrice(pppAdjustedPricePence, userCurrency, { countryCode, skipPPPAdjustment: true });
       
-      // Calculate bundle pricing (all 4 assessments)
+      // Calculate bundle pricing (all 4 assessments) — 25% discount for bundle only
       const allAssessmentPrices = Object.values(ASSESSMENT_PRICES).reduce((sum, price) => sum + price, 0);
       const bundleB2CPricePence = BASE_FEE + allAssessmentPrices;
       const bundlePppAdjustedPence = getPPPAdjustedPriceInPence(bundleB2CPricePence, countryCode);
@@ -3894,10 +3890,10 @@ export function registerPartnerRoutes(app: Express) {
         pricing: {
           single: {
             originalPricePence: pppAdjustedPricePence,
-            discountedPricePence,
-            originalDisplay: originalPriceDisplay,
-            discountedDisplay: discountedPriceDisplay,
-            discountPercent: 25
+            discountedPricePence: pppAdjustedPricePence,
+            originalDisplay: individualPriceDisplay,
+            discountedDisplay: individualPriceDisplay,
+            discountPercent: 0
           },
           bundle: {
             originalPricePence: bundlePppAdjustedPence,
@@ -3946,14 +3942,14 @@ export function registerPartnerRoutes(app: Express) {
         const allAssessmentPrices = Object.values(ASSESSMENT_PRICES).reduce((sum, price) => sum + price, 0);
         const bundleB2CPricePence = BASE_FEE + allAssessmentPrices;
         const bundlePppAdjustedPence = getPPPAdjustedPriceInPence(bundleB2CPricePence, countryCode.toUpperCase());
-        priceInPence = Math.round(bundlePppAdjustedPence * 0.75); // 25% discount for bundle
+        priceInPence = Math.round(bundlePppAdjustedPence * 0.75); // 25% discount for bundle only
         discountPercent = 25;
         productName = 'HumanMetrix Complete Assessment Bundle';
       } else {
         const b2cPriceInPence = BASE_FEE + assessmentPrice;
         const pppAdjustedPricePence = getPPPAdjustedPriceInPence(b2cPriceInPence, countryCode.toUpperCase());
-        priceInPence = Math.round(pppAdjustedPricePence * 0.75); // 25% bulk discount for B2B candidates
-        discountPercent = 25;
+        priceInPence = pppAdjustedPricePence; // B2C price (no discount for individual)
+        discountPercent = 0;
         productName = `HumanMetrix ${session.assessmentType.toUpperCase()} Assessment Results`;
       }
       
