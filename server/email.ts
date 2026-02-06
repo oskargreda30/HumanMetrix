@@ -3724,6 +3724,139 @@ Assessment completed as part of your evaluation with ${partnerName}.
   return { success: result.success, messageId: result.messageId };
 }
 
+export interface ResultsReadyEmailDetails {
+  email: string;
+  candidateName?: string;
+  assessmentTypes: string[];
+  partnerCompanyName: string;
+  hasExistingAccount: boolean;
+  sessionId?: string;
+}
+
+export async function sendResultsReadyEmail(details: ResultsReadyEmailDetails) {
+  const baseUrl = getBaseUrl();
+  const candidateName = details.candidateName || 'there';
+  
+  const assessmentNames = details.assessmentTypes.map(t => formatAssessmentName(t));
+  const assessmentListHtml = assessmentNames.map(name => `<li>${name}</li>`).join('');
+  const assessmentListText = assessmentNames.join(', ');
+  const subjectLabel = assessmentNames.length === 1 ? assessmentNames[0] : `${assessmentNames.length} Assessment`;
+  
+  let ctaUrl: string;
+  let ctaLabel: string;
+  let ctaNote: string;
+  
+  if (details.hasExistingAccount) {
+    ctaUrl = `${baseUrl}/dashboard`;
+    ctaLabel = 'View Your Results';
+    ctaNote = 'Log in to your HumanMetrix account to view your detailed results and download your report.';
+  } else {
+    ctaUrl = `${baseUrl}/auth?email=${encodeURIComponent(details.email)}&redirect=dashboard`;
+    ctaLabel = 'Create Account & View Results';
+    ctaNote = 'Create a free HumanMetrix account to access your detailed results and download your report.';
+  }
+  
+  const msg = {
+    to: details.email,
+    subject: `Your ${subjectLabel} Results Are Ready`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+            .button { display: inline-block; background: #0891b2; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
+            .success-badge { background: #10b981; color: white; padding: 8px 16px; border-radius: 20px; display: inline-block; font-weight: 600; margin: 10px 0; }
+            .assessments { background: #f0f9ff; border: 1px solid #bae6fd; padding: 15px 20px; border-radius: 8px; margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div style="display: inline-flex; align-items: center; justify-content: center; gap: 12px;">
+                <img src="${baseUrl}/assets/humanmetrix-logo.png" alt="HumanMetrix" style="height: 40px; width: auto;" />
+                <h1 style="margin: 0; font-size: 28px;">HumanMetrix</h1>
+              </div>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">AI Assessment Platform</p>
+            </div>
+            <div class="content">
+              <div style="text-align: center;">
+                <span class="success-badge">Results Ready</span>
+              </div>
+              
+              <h2 style="text-align: center;">Hello ${candidateName},</h2>
+              
+              <p style="text-align: center;">Your assessment results are now available!</p>
+              
+              <div class="assessments">
+                <h4 style="margin: 0 0 8px 0; color: #0e7490;">Completed Assessments:</h4>
+                <ul style="margin: 0; padding-left: 20px;">
+                  ${assessmentListHtml}
+                </ul>
+              </div>
+              
+              <p style="text-align: center; color: #6b7280; font-size: 14px;">${ctaNote}</p>
+              
+              <div style="text-align: center;">
+                <a href="${ctaUrl}" class="button" style="color: white !important;">${ctaLabel}</a>
+              </div>
+              
+              <h3>From your dashboard you can:</h3>
+              <ul>
+                <li>View your detailed scores and percentile rankings</li>
+                <li>See personalized insights and recommendations</li>
+                <li>Export your results as a PDF report</li>
+                <li>Compare your performance across assessments</li>
+              </ul>
+              
+              <p style="color: #6b7280; font-size: 14px; margin-top: 30px; text-align: center;">
+                Assessment completed as part of your evaluation with <strong>${details.partnerCompanyName}</strong>.
+              </p>
+            </div>
+            <div class="footer">
+              <p>Questions about your results? <a href="${baseUrl}/contact" style="color: #0891b2;">Contact us</a></p>
+              <p>&copy; ${new Date().getFullYear()} HumanMetrix. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+Hello ${candidateName},
+
+Your assessment results are now available!
+
+COMPLETED ASSESSMENTS: ${assessmentListText}
+
+${ctaNote}
+
+${ctaLabel}: ${ctaUrl}
+
+FROM YOUR DASHBOARD YOU CAN:
+- View your detailed scores and percentile rankings
+- See personalized insights and recommendations
+- Export your results as a PDF report
+- Compare your performance across assessments
+
+Assessment completed as part of your evaluation with ${details.partnerCompanyName}.
+
+---
+Questions about your results? Visit ${baseUrl}/contact
+(c) ${new Date().getFullYear()} HumanMetrix. All rights reserved.
+    `.trim(),
+  };
+
+  const result = await sendEmail(msg);
+  if (result.success) {
+    console.log(`[Email] Results ready email sent to ${details.email} (ID: ${result.messageId})`);
+  }
+  return { success: result.success, messageId: result.messageId };
+}
+
 // Email Verification Code - sent to verify email before starting B2B assessment
 export async function sendEmailVerificationCode(
   email: string,

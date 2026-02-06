@@ -1510,69 +1510,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[Payment Callback] ⚠ PDF generation failed, receipt email not sent to ${user.email}`);
           }
           
-          // Also send the actual results PDF with assessment scores
+          // Also send results ready notification email
           try {
-            const { generateB2BResultsPDF } = await import('./generateB2BPDF');
-            const { sendB2BResultsEmailWithMultiplePDFs } = await import('./email');
-            
-            // Get user's completed results for the purchased assessments
-            const allResults = await storage.getResultsByUser(userId);
-            const completedResults = allResults.filter((r: any) => 
-              r.status === 'completed' && 
-              assessmentTypes.includes(normalizeAssessmentId(r.assessmentType))
-            );
-            
-            if (completedResults.length > 0) {
-              const pdfAttachments = [];
-              
-              for (const result of completedResults) {
-                const normalizedType = normalizeAssessmentId(result.assessmentType);
-                
-                const pdfBuffer = generateB2BResultsPDF({
-                  candidateName: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email.split('@')[0],
-                  candidateEmail: user.email,
-                  assessmentType: result.assessmentType,
-                  scores: result.scores || {},
-                  totalScore: result.totalScore || 0,
-                  percentile: result.percentile,
-                  evaluations: result.evaluations || [],
-                  completedAt: result.completedAt || new Date(),
-                  partnerCompanyName: 'HumanMetrix',
-                });
-                
-                const assessmentName = {
-                  'fit': 'FIT',
-                  'ai_readiness': 'AI_Readiness',
-                  'prompt_architecture': 'Prompt_Architecture',
-                  'aiq': 'AIQ',
-                }[normalizedType] || result.assessmentType;
-                
-                pdfAttachments.push({
-                  filename: `HumanMetrix_${assessmentName}_Results.pdf`,
-                  content: pdfBuffer,
-                });
-              }
-              
-              if (pdfAttachments.length > 0) {
-                const baseUrl = getRoutesBaseUrl(req);
-                const resultsUrl = `${baseUrl}/dashboard`;
-                
-                await sendB2BResultsEmailWithMultiplePDFs({
-                  email: user.email,
-                  candidateName: user.firstName || undefined,
-                  assessmentLabel: assessmentTypes.length === 1 
-                    ? (assessmentNames[assessmentTypes[0]] || assessmentTypes[0])
-                    : `${assessmentTypes.length} Assessments`,
-                  partnerName: 'HumanMetrix',
-                  resultsUrl,
-                  pdfAttachments,
-                });
-                console.log(`[Payment Callback] ✓ Results PDF email sent to ${user.email} (${pdfAttachments.length} PDFs)`);
-              }
-            }
+            const { sendResultsReadyEmail } = await import('./email');
+            await sendResultsReadyEmail({
+              email: user.email,
+              candidateName: user.firstName || undefined,
+              assessmentTypes,
+              partnerCompanyName: 'HumanMetrix',
+              hasExistingAccount: true,
+            });
+            console.log(`[Payment Callback] ✓ Results ready email sent to ${user.email}`);
           } catch (resultsPdfError) {
-            console.error(`[Payment Callback] Failed to send results PDF email:`, resultsPdfError);
-            // Don't fail the payment if results PDF email fails
+            console.error(`[Payment Callback] Failed to send results ready email:`, resultsPdfError);
+            // Don't fail the payment if results email fails
           }
         }
       } catch (emailError) {
@@ -1805,22 +1756,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.error(`[Airwallex Webhook] Failed to send B2B payment receipt:`, receiptError);
             }
             
-            // 2. Send results email with PDF
+            // 2. Send results ready notification email
             try {
-              const { generateResultsPDF } = await import('./pdfGenerator');
-              const resultsPdfBuffer = await generateResultsPDF({
-                sessionId,
-                email: session.externalEmail,
-                baseUrl: getRoutesBaseUrl(req),
-              });
-              
-              await sendB2BResultsEmail({
+              const { sendResultsReadyEmail } = await import('./email');
+              const existingUser = await storage.getUserByEmail(session.externalEmail);
+              await sendResultsReadyEmail({
                 email: session.externalEmail,
                 candidateName: session.externalUserId || undefined,
-                assessmentType: session.assessmentType,
+                assessmentTypes: [session.assessmentType],
                 partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
-                pdfBuffer: resultsPdfBuffer,
-                pdfFilename: `${assessmentName.replace(/\s/g, '_')}_Results.pdf`,
+                hasExistingAccount: !!existingUser,
+                sessionId,
               });
               
               // Email sent successfully - update delivery status
@@ -3318,78 +3264,19 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
                 ? `${purchasedTypes.length} Assessments`
                 : 'All Assessments';
             
-            // Generate PDF for each purchased assessment type and send email with attachments
-            if (invitationResults.length > 0) {
-              try {
-                const { generateB2BResultsPDF } = await import('./generateB2BPDF');
-                const { sendB2BResultsEmailWithMultiplePDFs, sendB2BResultsUnlockedEmail } = await import('./email');
-                
-                const pdfAttachments = [];
-                
-                for (const result of invitationResults) {
-                  // Only include if this type was purchased (or all were purchased)
-                  const normalizedType = normalizeAssessmentId(result.assessmentType);
-                  if (normalizedPurchasedTypes.length === 0 || normalizedPurchasedTypes.includes(normalizedType)) {
-                    const pdfBuffer = generateB2BResultsPDF({
-                      candidateName: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email.split('@')[0],
-                      candidateEmail: user.email,
-                      assessmentType: result.assessmentType,
-                      scores: result.scores || {},
-                      totalScore: result.totalScore || 0,
-                      percentile: result.percentile,
-                      evaluations: result.evaluations || [],
-                      completedAt: result.completedAt || new Date(),
-                      partnerCompanyName: partnerName,
-                    });
-                    
-                    const assessmentName = {
-                      'fit': 'FIT',
-                      'ai_readiness': 'AI_Readiness',
-                      'prompt_architecture': 'Prompt_Architecture',
-                      'aiq': 'AIQ',
-                    }[normalizedType] || result.assessmentType;
-                    
-                    pdfAttachments.push({
-                      filename: `HumanMetrix_${assessmentName}_Results.pdf`,
-                      content: pdfBuffer,
-                    });
-                  }
-                }
-                
-                // Send email with PDF attachments if we have any, otherwise send basic email
-                if (pdfAttachments.length > 0) {
-                  await sendB2BResultsEmailWithMultiplePDFs({
-                    email: user.email,
-                    candidateName: user.firstName || undefined,
-                    assessmentLabel,
-                    partnerCompanyName: partnerName,
-                    resultsUrl,
-                    pdfAttachments,
-                    receiptDetails: {
-                      amount: purchase.amount || 0,
-                      currency: purchase.currency || 'GBP',
-                      transactionId: session.payment_intent as string,
-                      purchaseDate: new Date(),
-                    },
-                  });
-                  console.log(`[Partner Results] Sent unlock email with ${pdfAttachments.length} PDF(s) to ${user.email}`);
-                } else {
-                  // Fallback: no PDFs generated, send basic email
-                  await sendB2BResultsUnlockedEmail(user.email, assessmentLabel, partnerName, resultsUrl);
-                  console.log(`[Partner Results] Sent unlock email (no PDFs) to ${user.email}`);
-                }
-              } catch (pdfError) {
-                console.error("Error generating/sending PDF:", pdfError);
-                // Fall back to simple email without PDF
-                const { sendB2BResultsUnlockedEmail } = await import('./email');
-                await sendB2BResultsUnlockedEmail(user.email, assessmentLabel, partnerName, resultsUrl);
-              }
-            } else {
-              // No completed results yet, still send confirmation email
-              const { sendB2BResultsUnlockedEmail } = await import('./email');
-              await sendB2BResultsUnlockedEmail(user.email, assessmentLabel, partnerName, resultsUrl);
-              console.log(`[Partner Results] Sent unlock email (no results found) to ${user.email}`);
-            }
+            // Send results ready notification email
+            const { sendResultsReadyEmail } = await import('./email');
+            const assessmentTypesForEmail = purchasedTypes.length > 0 
+              ? purchasedTypes 
+              : invitationResults.map((r: any) => r.assessmentType);
+            await sendResultsReadyEmail({
+              email: user.email,
+              candidateName: user.firstName || undefined,
+              assessmentTypes: assessmentTypesForEmail,
+              partnerCompanyName: partnerName,
+              hasExistingAccount: !!user,
+            });
+            console.log(`[Partner Results] Sent results ready email to ${user.email}`);
           }
         } catch (emailError) {
           console.error("Error sending partner results confirmation email:", emailError);
@@ -25724,22 +25611,15 @@ async function sendFreeUnlockResultsEmail(session: AssessmentSession) {
     const assessmentName = normalizeAssessmentId(session.assessmentType).toUpperCase().replace('_', ' ');
     const paymentStatus = session.resultsPaymentStatus || 'unpaid';
     
-    // Generate proper PDF with real assessment results
-    const { generateResultsPDF } = await import('./pdfGenerator');
-    const pdfBuffer = await generateResultsPDF({
-      sessionId: session.id,
-      email: session.externalEmail,
-      baseUrl: getStaticBaseUrl(),
-    });
-    const pdfFilename = `${assessmentName.replace(/\s/g, '_')}_Results.pdf`;
-    
-    await sendB2BResultsEmail({
+    const { sendResultsReadyEmail } = await import('./email');
+    const existingUser = await storage.getUserByEmail(session.externalEmail);
+    await sendResultsReadyEmail({
       email: session.externalEmail,
       candidateName: session.externalUserId || undefined,
-      assessmentType: session.assessmentType,
+      assessmentTypes: [session.assessmentType],
       partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
-      pdfBuffer,
-      pdfFilename,
+      hasExistingAccount: !!existingUser,
+      sessionId: session.id,
     });
     
     // Mark email as sent - update both email sent time and delivery status

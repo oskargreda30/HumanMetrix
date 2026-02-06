@@ -4190,152 +4190,48 @@ export function registerPartnerRoutes(app: Express) {
           resultsEmailSentAt: now,
         } as any);
       } else {
-        // Mark as pending and trigger server-side Puppeteer PDF generation asynchronously
-        await storage.updateAssessmentSession(b2bSessionId, {
-          resultsDeliveryStatus: 'pending',
-        } as any);
-        console.log(`[B2B Payment] Triggering server-side PDF generation for session ${b2bSessionId}`);
-        
-        // Fire off PDF generation asynchronously with retry logic
-        const baseUrl = getBaseUrl(req);
+        // Send results ready notification email (no PDF - candidates export from dashboard)
         const targetEmail = session.externalEmail;
-        const MAX_RETRIES = 3;
-        
-        (async () => {
-          if (!targetEmail) {
-            console.error(`[B2B PDF Async] No email address for session ${b2bSessionId}`);
+        if (targetEmail) {
+          const existingUserForEmail = await storage.getUserByEmail(targetEmail);
+          const partner = session.partnerId ? await storage.getPartnerAccount(session.partnerId) : null;
+          const partnerCompanyName = partner?.companyName || partner?.name || 'HumanMetrix Partner';
+          
+          try {
+            const { sendResultsReadyEmail } = await import("./email");
+            const emailResult = await sendResultsReadyEmail({
+              email: targetEmail,
+              candidateName: (session as any).metadata?.candidateName,
+              assessmentTypes: [session.assessmentType],
+              partnerCompanyName,
+              hasExistingAccount: !!existingUserForEmail,
+              sessionId: b2bSessionId,
+            });
+            
+            if (emailResult.success) {
+              await storage.updateAssessmentSession(b2bSessionId, {
+                resultsDeliveryStatus: 'sent',
+                resultsEmailSentAt: new Date(),
+              } as any);
+              console.log(`[B2B Payment] Results ready email sent to ${targetEmail}`);
+            } else {
+              await storage.updateAssessmentSession(b2bSessionId, {
+                resultsDeliveryStatus: 'failed',
+              } as any);
+              console.error(`[B2B Payment] Failed to send results ready email to ${targetEmail}`);
+            }
+          } catch (emailError: any) {
+            console.error(`[B2B Payment] Error sending results ready email:`, emailError.message);
             await storage.updateAssessmentSession(b2bSessionId, {
               resultsDeliveryStatus: 'failed',
             } as any);
-            return;
           }
-          
-          for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-            try {
-              console.log(`[B2B PDF Async] Attempt ${attempt}/${MAX_RETRIES} - Starting PDF generation for session ${b2bSessionId}`);
-              
-              const { sendB2BResultsEmail } = await import("./email");
-              
-              let pdfBuffer: Buffer;
-              
-              const { generateResultsPDF } = await import("./pdfGenerator");
-              pdfBuffer = await generateResultsPDF({
-                sessionId: b2bSessionId,
-                email: targetEmail,
-                baseUrl,
-              });
-              
-              const pdfSizeMB = (pdfBuffer.length / (1024 * 1024)).toFixed(2);
-              console.log(`[B2B PDF Async] Generated PDF: ${pdfSizeMB}MB`);
-              
-              const partner = session.partnerId ? await storage.getPartnerAccount(session.partnerId) : null;
-              const partnerCompanyName = partner?.companyName || partner?.name || 'HumanMetrix Partner';
-              
-              const assessmentName = {
-                'fit': 'FIT',
-                'ai_readiness': 'AI_Readiness',
-                'prompt_architecture': 'Prompt_Architecture',
-                'aiq': 'AIQ',
-              }[session.assessmentType.toLowerCase()] || session.assessmentType;
-              
-              const pdfFilename = `HumanMetrix_${assessmentName}_Results.pdf`;
-              const PDF_SIZE_LIMIT = 20 * 1024 * 1024; // 20MB
-              
-              let emailResult;
-              
-              if (pdfBuffer.length > PDF_SIZE_LIMIT) {
-                console.log(`[B2B PDF Async] PDF exceeds 20MB limit, using object storage`);
-                
-                const { objectStorageClient } = await import("./replit_integrations/object_storage/objectStorage");
-                const { sendB2BResultsEmailWithDownloadLink } = await import("./email");
-                const privateDir = process.env.PRIVATE_OBJECT_DIR;
-                
-                if (!privateDir) {
-                  throw new Error("Object storage not configured");
-                }
-                
-                const expiryDays = 7;
-                const expiryDate = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
-                const objectPath = `${privateDir}/pdfs/${b2bSessionId}/${Date.now()}_${pdfFilename}`;
-                
-                const pathParts = objectPath.split("/").filter(Boolean);
-                const bucketName = pathParts[0];
-                const objectName = pathParts.slice(1).join("/");
-                
-                const bucket = objectStorageClient.bucket(bucketName);
-                const file = bucket.file(objectName);
-                
-                await file.save(pdfBuffer, {
-                  contentType: 'application/pdf',
-                  metadata: {
-                    sessionId: b2bSessionId,
-                    email: targetEmail,
-                    uploadedAt: new Date().toISOString(),
-                    expiresAt: expiryDate.toISOString(),
-                  },
-                });
-                
-                const [signedUrl] = await file.getSignedUrl({
-                  action: 'read',
-                  expires: expiryDate,
-                });
-                
-                emailResult = await sendB2BResultsEmailWithDownloadLink({
-                  email: targetEmail,
-                  assessmentType: session.assessmentType,
-                  partnerCompanyName,
-                  downloadUrl: signedUrl,
-                  expiryDays,
-                });
-              } else {
-                emailResult = await sendB2BResultsEmail({
-                  email: targetEmail,
-                  assessmentType: session.assessmentType,
-                  partnerCompanyName,
-                  pdfBuffer,
-                  pdfFilename,
-                });
-              }
-              
-              if (emailResult.success) {
-                await storage.updateAssessmentSession(b2bSessionId, {
-                  resultsDeliveryStatus: 'sent',
-                  resultsEmailSentAt: new Date(),
-                } as any);
-                console.log(`[B2B PDF Async] Successfully sent PDF email to ${targetEmail} on attempt ${attempt}`);
-                return; // Success - exit retry loop
-              } else {
-                throw new Error(`Email send returned failure`);
-              }
-            } catch (error: any) {
-              const errorMsg = error?.message || String(error);
-              console.error(`[B2B PDF Async] Attempt ${attempt}/${MAX_RETRIES} failed for session ${b2bSessionId}: ${errorMsg}`);
-              
-              if (attempt < MAX_RETRIES) {
-                const delay = attempt * 5000; // 5s, 10s backoff
-                console.log(`[B2B PDF Async] Retrying in ${delay / 1000}s...`);
-                await new Promise(resolve => setTimeout(resolve, delay));
-              } else {
-                console.error(`[B2B PDF Async] All ${MAX_RETRIES} attempts exhausted for session ${b2bSessionId}`);
-                await storage.updateAssessmentSession(b2bSessionId, {
-                  resultsDeliveryStatus: 'failed',
-                } as any);
-                
-                try {
-                  const { notifyCriticalError } = await import('./email');
-                  await notifyCriticalError({
-                    source: 'B2B PDF Delivery',
-                    error: `PDF generation/email delivery failed after ${MAX_RETRIES} attempts. Last error: ${errorMsg}`,
-                    sessionId: b2bSessionId,
-                    additionalContext: { email: targetEmail, assessmentType: session.assessmentType },
-                  });
-                } catch (notifyErr) {
-                  console.error('[B2B PDF Async] Failed to send failure notification:', notifyErr);
-                }
-              }
-            }
-          }
-        })();
+        } else {
+          console.error(`[B2B Payment] No email address for session ${b2bSessionId}`);
+          await storage.updateAssessmentSession(b2bSessionId, {
+            resultsDeliveryStatus: 'failed',
+          } as any);
+        }
       }
       
       // Check if user has an existing account
@@ -4592,33 +4488,16 @@ export function registerPartnerRoutes(app: Express) {
       const partner = session.partnerId ? await storage.getPartnerAccount(session.partnerId) : null;
       const partnerCompanyName = partner?.companyName || partner?.name || 'HumanMetrix Partner';
       
-      const baseUrl = getBaseUrl(req);
-      const { generateResultsPDF } = await import("./pdfGenerator");
-      const pdfBuffer = await generateResultsPDF({
-        sessionId,
-        email: session.externalEmail,
-        baseUrl,
-      });
+      const existingUserForResend = await storage.getUserByEmail(session.externalEmail);
       
-      // Format assessment name for filename
-      const assessmentName = {
-        'fit': 'FIT',
-        'ai_readiness': 'AI_Readiness',
-        'prompt_architecture': 'Prompt_Architecture',
-        'aiq': 'AIQ',
-      }[session.assessmentType.toLowerCase()] || session.assessmentType;
-      
-      const pdfFilename = `HumanMetrix_${assessmentName}_Results.pdf`;
-      
-      // Send email with PDF attachment
-      const { sendB2BResultsEmail } = await import("./email");
-      const emailResult = await sendB2BResultsEmail({
+      const { sendResultsReadyEmail } = await import("./email");
+      const emailResult = await sendResultsReadyEmail({
         email: session.externalEmail,
         candidateName: (session as any).metadata?.candidateName,
-        assessmentType: session.assessmentType,
+        assessmentTypes: [session.assessmentType],
         partnerCompanyName,
-        pdfBuffer,
-        pdfFilename,
+        hasExistingAccount: !!existingUserForResend,
+        sessionId,
       });
       
       if (!emailResult.success) {
@@ -4626,7 +4505,6 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(500).json({ error: "Failed to send email. Please try again." });
       }
       
-      // Update session to track the resend
       await storage.updateAssessmentSession(sessionId, {
         resultsDeliveryStatus: 'sent',
         resultsEmailSentAt: new Date(),
@@ -4645,8 +4523,7 @@ export function registerPartnerRoutes(app: Express) {
     }
   });
 
-  // POST /api/b2b/results/:sessionId/generate-pdf - Server-side PDF generation using headless browser
-  // This endpoint generates PDF with exact styling by rendering the actual results page
+  // POST /api/b2b/results/:sessionId/generate-pdf - Send results ready notification email
   // Security: Requires email in body that must match session email
   app.post("/api/b2b/results/:sessionId/generate-pdf", async (req: Request, res: Response) => {
     try {
@@ -4661,196 +4538,91 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(400).json({ error: "Email is required for verification" });
       }
       
-      // Get the session
       const session = await storage.getAssessmentSession(sessionId);
       if (!session) {
         return res.status(404).json({ error: "Session not found" });
       }
       
-      // Check if the session has been paid for / results released
       if ((session as any).resultsPaymentStatus !== 'paid' && (session as any).resultsReleaseStatus !== 'released') {
         return res.status(403).json({ error: "Results have not been unlocked yet" });
       }
       
-      // Security: Validate ownership - email must match session email
       if (!session.externalEmail || email.toLowerCase() !== session.externalEmail.toLowerCase()) {
         return res.status(403).json({ error: "Unauthorized access to session" });
       }
       
       const targetEmail = session.externalEmail;
-      
-      // Get partner info
       const partner = session.partnerId ? await storage.getPartnerAccount(session.partnerId) : null;
       const partnerCompanyName = partner?.companyName || partner?.name || 'HumanMetrix Partner';
       
-      const baseUrl = getBaseUrl(req);
-      const { generateResultsPDF } = await import("./pdfGenerator");
-      
-      console.log(`[Server PDF] Generating PDF for session ${sessionId}`);
-      
-      const pdfBuffer = await generateResultsPDF({
-        sessionId,
-        email: targetEmail,
-        baseUrl,
-      });
-      
-      const pdfSizeMB = (pdfBuffer.length / (1024 * 1024)).toFixed(2);
-      console.log(`[Server PDF] Generated PDF: ${pdfSizeMB}MB`);
-      
-      // Format assessment name for filename
-      const assessmentName = {
-        'fit': 'FIT',
-        'ai_readiness': 'AI_Readiness',
-        'prompt_architecture': 'Prompt_Architecture',
-        'aiq': 'AIQ',
-      }[session.assessmentType.toLowerCase()] || session.assessmentType;
-      
-      const pdfFilename = `HumanMetrix_${assessmentName}_Results.pdf`;
-      
       if (shouldSendEmail) {
-        // Check PDF size - if over 20MB, use object storage with download link
-        const PDF_SIZE_LIMIT = 20 * 1024 * 1024; // 20MB
-        
-        let emailResult;
-        
-        if (pdfBuffer.length > PDF_SIZE_LIMIT) {
-          // Large PDF - upload to object storage and send download link
-          console.log(`[Server PDF] PDF exceeds ${PDF_SIZE_LIMIT / (1024 * 1024)}MB limit, using object storage`);
-          
-          const { objectStorageClient } = await import("./replit_integrations/object_storage/objectStorage");
-          const privateDir = process.env.PRIVATE_OBJECT_DIR;
-          
-          if (!privateDir) {
-            throw new Error("Object storage not configured");
-          }
-          
-          const expiryDays = 7;
-          const expiryDate = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
-          const objectPath = `${privateDir}/pdfs/${sessionId}/${Date.now()}_${pdfFilename}`;
-          
-          const pathParts = objectPath.split("/").filter(Boolean);
-          const bucketName = pathParts[0];
-          const objectName = pathParts.slice(1).join("/");
-          
-          const bucket = objectStorageClient.bucket(bucketName);
-          const file = bucket.file(objectName);
-          
-          await file.save(pdfBuffer, {
-            contentType: 'application/pdf',
-            metadata: {
-              sessionId,
-              email: targetEmail,
-              uploadedAt: new Date().toISOString(),
-              expiresAt: expiryDate.toISOString(),
-            },
-          });
-          
-          const [signedUrl] = await file.getSignedUrl({
-            action: 'read',
-            expires: expiryDate,
-          });
-          
-          console.log(`[Server PDF] Uploaded to object storage, sending download link`);
-          
-          const { sendB2BResultsEmailWithDownloadLink } = await import("./email");
-          emailResult = await sendB2BResultsEmailWithDownloadLink({
-            email: targetEmail,
-            candidateName: (session as any).metadata?.candidateName,
-            assessmentType: session.assessmentType,
-            partnerCompanyName,
-            downloadUrl: signedUrl,
-            expiryDays,
-          });
-        } else {
-          // Small PDF - send as attachment
-          const { sendB2BResultsEmail } = await import("./email");
-          emailResult = await sendB2BResultsEmail({
-            email: targetEmail,
-            candidateName: (session as any).metadata?.candidateName,
-            assessmentType: session.assessmentType,
-            partnerCompanyName,
-            pdfBuffer,
-            pdfFilename,
-          });
-        }
+        const existingUser = await storage.getUserByEmail(targetEmail);
+        const { sendResultsReadyEmail } = await import("./email");
+        const emailResult = await sendResultsReadyEmail({
+          email: targetEmail,
+          candidateName: (session as any).metadata?.candidateName,
+          assessmentTypes: [session.assessmentType],
+          partnerCompanyName,
+          hasExistingAccount: !!existingUser,
+          sessionId,
+        });
         
         if (!emailResult.success) {
-          console.error(`[Server PDF] Failed to send email to ${targetEmail}`);
           return res.status(500).json({ error: "Failed to send email. Please try again." });
         }
         
-        // Update session status
         await storage.updateAssessmentSession(sessionId, {
           resultsDeliveryStatus: 'sent',
           resultsEmailSentAt: new Date(),
         } as any);
         
-        console.log(`[Server PDF] Successfully sent PDF email to ${targetEmail}`);
-        
         res.json({
           success: true,
-          message: "Results email has been sent with your PDF report",
+          message: "Results ready notification email has been sent",
           email: targetEmail,
-          pdfSizeKB: Math.round(pdfBuffer.length / 1024),
         });
       } else {
-        // Just return PDF for download without sending email
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="${pdfFilename}"`);
-        res.setHeader('Content-Length', pdfBuffer.length);
-        res.send(pdfBuffer);
+        res.json({
+          success: true,
+          message: "Results are available on the dashboard",
+        });
       }
     } catch (error: any) {
-      console.error("[Server PDF] Error:", error.message);
-      res.status(500).json({ error: "Failed to generate PDF. Please try again." });
+      console.error("[Results Email] Error:", error.message);
+      res.status(500).json({ error: "Failed to send notification email. Please try again." });
     }
   });
 
-  // POST /api/b2b/results/:sessionId/send-pdf-email - Receive client-generated PDF and send email (LEGACY)
-  // This endpoint is called from the client after generating a screen-capture PDF
-  // Security: Requires email in body that must match session email, and only works for pending_client_pdf status
+  // POST /api/b2b/results/:sessionId/send-pdf-email - Send results ready notification (LEGACY endpoint kept for compatibility)
   app.post("/api/b2b/results/:sessionId/send-pdf-email", async (req: Request, res: Response) => {
     try {
       const { sessionId } = req.params;
-      const { pdfBase64, email } = req.body;
+      const { email } = req.body;
       
       if (!sessionId) {
         return res.status(400).json({ error: "Session ID is required" });
       }
       
-      if (!pdfBase64) {
-        return res.status(400).json({ error: "PDF data is required" });
-      }
-      
-      // Security: Email is required in request body to verify ownership
       if (!email) {
         return res.status(400).json({ error: "Email is required for verification" });
       }
       
-      // Get the session
       const session = await storage.getAssessmentSession(sessionId);
       if (!session) {
         return res.status(404).json({ error: "Session not found" });
       }
       
-      // Check if the session has been paid for / results released
       if ((session as any).resultsPaymentStatus !== 'paid' && (session as any).resultsReleaseStatus !== 'released') {
         return res.status(403).json({ error: "Results have not been unlocked yet" });
       }
       
-      // Security: Validate ownership - email must match session email
       if (!session.externalEmail || email.toLowerCase() !== session.externalEmail.toLowerCase()) {
         return res.status(403).json({ error: "Unauthorized access to session" });
       }
       
       const targetEmail = session.externalEmail;
-      
-      // Strict state gating: Only allow sending when status is 'pending_client_pdf' or 'pending'
-      // This prevents duplicate sends and spam
       const currentStatus = (session as any).resultsDeliveryStatus;
       if (currentStatus === 'sent') {
-        // Already sent - return success without sending again
-        console.log(`[B2B PDF Email] Email already sent for session ${sessionId}`);
         return res.json({
           success: true,
           message: "Results email has already been sent",
@@ -4859,133 +4631,39 @@ export function registerPartnerRoutes(app: Express) {
         });
       }
       
-      // Only allow sending when in pending states
-      if (currentStatus !== 'pending_client_pdf' && currentStatus !== 'pending') {
-        console.log(`[B2B PDF Email] Rejected: unexpected status ${currentStatus} for session ${sessionId}`);
-        return res.status(409).json({ 
-          error: "Cannot send email in current state",
-          currentStatus 
-        });
-      }
-      
-      // Get partner info
       const partner = session.partnerId ? await storage.getPartnerAccount(session.partnerId) : null;
       const partnerCompanyName = partner?.companyName || partner?.name || 'HumanMetrix Partner';
+      const existingUser = await storage.getUserByEmail(targetEmail);
       
-      // Convert base64 to Buffer
-      const pdfBuffer = Buffer.from(pdfBase64, 'base64');
-      
-      // Format assessment name for filename
-      const assessmentName = {
-        'fit': 'FIT',
-        'ai_readiness': 'AI_Readiness',
-        'prompt_architecture': 'Prompt_Architecture',
-        'aiq': 'AIQ',
-      }[session.assessmentType.toLowerCase()] || session.assessmentType;
-      
-      const pdfFilename = `HumanMetrix_${assessmentName}_Results.pdf`;
-      
-      // Check PDF size - if over 20MB, use object storage with download link
-      const PDF_SIZE_LIMIT = 20 * 1024 * 1024; // 20MB
-      const pdfSizeMB = (pdfBuffer.length / (1024 * 1024)).toFixed(2);
-      console.log(`[B2B PDF Email] PDF size: ${pdfSizeMB}MB for session ${sessionId}`);
-      
-      let emailResult;
-      
-      if (pdfBuffer.length > PDF_SIZE_LIMIT) {
-        // Large PDF - upload to object storage and send download link
-        console.log(`[B2B PDF Email] PDF exceeds ${PDF_SIZE_LIMIT / (1024 * 1024)}MB limit, using object storage`);
-        
-        try {
-          const { objectStorageClient } = await import("./replit_integrations/object_storage/objectStorage");
-          const privateDir = process.env.PRIVATE_OBJECT_DIR;
-          
-          if (!privateDir) {
-            throw new Error("Object storage not configured");
-          }
-          
-          // Generate unique filename with expiry info
-          const expiryDays = 7;
-          const expiryDate = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
-          const objectPath = `${privateDir}/pdfs/${sessionId}/${Date.now()}_${pdfFilename}`;
-          
-          // Parse bucket and object name from path
-          const pathParts = objectPath.split("/").filter(Boolean);
-          const bucketName = pathParts[0];
-          const objectName = pathParts.slice(1).join("/");
-          
-          // Upload PDF to object storage
-          const bucket = objectStorageClient.bucket(bucketName);
-          const file = bucket.file(objectName);
-          
-          await file.save(pdfBuffer, {
-            contentType: 'application/pdf',
-            metadata: {
-              sessionId,
-              email: targetEmail,
-              uploadedAt: new Date().toISOString(),
-              expiresAt: expiryDate.toISOString(),
-            },
-          });
-          
-          // Generate signed download URL (7 days expiry)
-          const [signedUrl] = await file.getSignedUrl({
-            action: 'read',
-            expires: expiryDate,
-          });
-          
-          console.log(`[B2B PDF Email] Uploaded PDF to object storage, sending download link`);
-          
-          // Send email with download link instead of attachment
-          const { sendB2BResultsEmailWithDownloadLink } = await import("./email");
-          emailResult = await sendB2BResultsEmailWithDownloadLink({
-            email: targetEmail,
-            candidateName: (session as any).metadata?.candidateName,
-            assessmentType: session.assessmentType,
-            partnerCompanyName,
-            downloadUrl: signedUrl,
-            expiryDays,
-          });
-        } catch (storageError: any) {
-          console.error(`[B2B PDF Email] Object storage failed:`, storageError.message);
-          return res.status(500).json({ 
-            error: "Failed to process large PDF. Please try downloading directly instead." 
-          });
-        }
-      } else {
-        // Small PDF - send as attachment
-        const { sendB2BResultsEmail } = await import("./email");
-        emailResult = await sendB2BResultsEmail({
-          email: targetEmail,
-          candidateName: (session as any).metadata?.candidateName,
-          assessmentType: session.assessmentType,
-          partnerCompanyName,
-          pdfBuffer,
-          pdfFilename,
-        });
-      }
+      const { sendResultsReadyEmail } = await import("./email");
+      const emailResult = await sendResultsReadyEmail({
+        email: targetEmail,
+        candidateName: (session as any).metadata?.candidateName,
+        assessmentTypes: [session.assessmentType],
+        partnerCompanyName,
+        hasExistingAccount: !!existingUser,
+        sessionId,
+      });
       
       if (!emailResult.success) {
-        console.error(`[B2B PDF Email] Failed to send PDF email to ${targetEmail}`);
         return res.status(500).json({ error: "Failed to send email. Please try again." });
       }
       
-      // Update session to track the email was sent
       await storage.updateAssessmentSession(sessionId, {
         resultsDeliveryStatus: 'sent',
         resultsEmailSentAt: new Date(),
       } as any);
       
-      console.log(`[B2B PDF Email] Successfully sent screen-capture PDF email to ${targetEmail}`);
+      console.log(`[B2B Email] Results ready email sent to ${targetEmail}`);
       
       res.json({
         success: true,
-        message: "Results email has been sent with your PDF report",
+        message: "Results notification email has been sent",
         email: targetEmail,
       });
     } catch (error: any) {
-      console.error("[B2B PDF Email] Error:", error);
-      res.status(500).json({ error: "Failed to send PDF email" });
+      console.error("[B2B Email] Error:", error);
+      res.status(500).json({ error: "Failed to send notification email" });
     }
   });
 
@@ -5311,67 +4989,27 @@ export function registerPartnerRoutes(app: Express) {
         resultsUrl: `/b2b-results/${firstSession}`,
       });
       
-      // Send ONE email with all PDFs attached asynchronously
-      const bundleBaseUrl = getBaseUrl(req);
+      // Send results ready notification email (no PDFs)
       (async () => {
         try {
-          const { generateResultsPDF } = await import("./pdfGenerator");
-          const { sendBundleResultsEmail } = await import("./email");
-          
           const sessions = await Promise.all(
             sessionIds.map(id => storage.getAssessmentSession(id))
           );
           const validSessions = sessions.filter(s => s && s.completedAt);
+          const assessmentTypes = validSessions.map(s => s!.assessmentType);
           
-          console.log(`[Bundle Payment] Generating PDFs for ${validSessions.length} sessions`);
+          const { sendResultsReadyEmail } = await import("./email");
+          const emailResult = await sendResultsReadyEmail({
+            email,
+            assessmentTypes: assessmentTypes.length > 0 ? assessmentTypes : ['fit'],
+            partnerCompanyName: partnerName,
+            hasExistingAccount,
+          });
           
-          const pdfAttachments: Array<{ filename: string; buffer: Buffer; assessmentType: string }> = [];
-          
-          for (const session of validSessions) {
-            if (!session) continue;
-            
-            try {
-              const assessmentName = {
-                'fit': 'FIT',
-                'ai_readiness': 'AI_Readiness',
-                'prompt_architecture': 'Prompt_Architecture',
-                'aiq': 'AIQ',
-              }[session.assessmentType.toLowerCase()] || session.assessmentType;
-              
-              const pdfFilename = `HumanMetrix_${assessmentName}_Results.pdf`;
-              
-              console.log(`[Bundle Payment] Generating PDF for ${session.assessmentType}`);
-              
-              const pdfBuffer = await generateResultsPDF({
-                sessionId: session.id,
-                email,
-                baseUrl: bundleBaseUrl,
-              });
-              
-              pdfAttachments.push({
-                filename: pdfFilename,
-                buffer: pdfBuffer,
-                assessmentType: session.assessmentType,
-              });
-              
-              console.log(`[Bundle Payment] Generated ${session.assessmentType} PDF (${Math.round(pdfBuffer.length / 1024)}KB)`);
-            } catch (sessionError) {
-              console.error(`[Bundle Payment] Error generating PDF for session ${session.id}:`, sessionError);
-            }
-          }
-          
-          if (pdfAttachments.length > 0) {
-            const emailResult = await sendBundleResultsEmail({
-              email,
-              partnerCompanyName: partnerName,
-              attachments: pdfAttachments,
-            });
-            
-            if (emailResult.success) {
-              console.log(`[Bundle Payment] Sent bundle email with ${pdfAttachments.length} PDFs to ${email}`);
-            } else {
-              console.error(`[Bundle Payment] Failed to send bundle email`);
-            }
+          if (emailResult.success) {
+            console.log(`[Bundle Payment] Results ready email sent to ${email} for ${assessmentTypes.length} assessments`);
+          } else {
+            console.error(`[Bundle Payment] Failed to send results ready email`);
           }
         } catch (emailError) {
           console.error('[Bundle Payment] Failed to send results email:', emailError);
