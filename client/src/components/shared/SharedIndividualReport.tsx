@@ -53,6 +53,11 @@ interface SharedIndividualReportProps {
   config: SharedIndividualReportConfig;
 }
 
+const formatReportDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
 export function SharedIndividualReport({ config }: SharedIndividualReportProps) {
   const [selectedCandidate, setSelectedCandidate] = useState<string>('');
   const [reportTriggered, setReportTriggered] = useState(false);
@@ -936,6 +941,21 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
               <CardDescription>
                 Analysis of {getCandidateName(selectedCandidateData)}'s profile with role fit recommendations
               </CardDescription>
+              {config.contextType === 'partner' && candidateReport?.generatedAt && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1" data-testid="text-individual-report-status">
+                  {candidateReport?.cached ? (
+                    <>
+                      <Clock className="h-3 w-3" />
+                      <span>Retrieved from cache — Originally generated on {formatReportDate(candidateReport.generatedAt)}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3 w-3" />
+                      <span>Report generated on {formatReportDate(candidateReport.generatedAt)}</span>
+                    </>
+                  )}
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               {(!candidateReport?.fitAssessments?.[0] && !candidateReport?.aiReadinessAssessments?.[0] && !candidateReport?.promptArchitectureAssessments?.[0] && !candidateReport?.aiqAssessments?.[0]) ? (

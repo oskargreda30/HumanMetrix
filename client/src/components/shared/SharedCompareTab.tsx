@@ -123,6 +123,11 @@ interface SharedCompareTabProps {
   config: SharedCompareTabConfig;
 }
 
+const formatReportDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
 export function SharedCompareTab({ config }: SharedCompareTabProps) {
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
   const [selectedRole, setSelectedRole] = useState<string>('');
@@ -1331,6 +1336,21 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                   <CardDescription>
                     Contact details, application date, and completion status for each assessment type (FIT, AI Readiness, Prompt Architecture, AIQ)
                   </CardDescription>
+                  {config.contextType === 'partner' && comparison?.generatedAt && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1" data-testid="text-compare-report-status">
+                      {comparison?.cached ? (
+                        <>
+                          <Clock className="h-3 w-3" />
+                          <span>Retrieved from cache — Originally generated on {formatReportDate(comparison.generatedAt)}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-3 w-3" />
+                          <span>Report generated on {formatReportDate(comparison.generatedAt)}</span>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </CardHeader>
                 <CardContent>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

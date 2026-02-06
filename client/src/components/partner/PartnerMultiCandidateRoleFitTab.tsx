@@ -237,6 +237,11 @@ type InsufficientDataError = {
   }>;
 };
 
+const formatReportDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
 export default function PartnerMultiCandidateRoleFitTab() {
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
   const [selectedRole, setSelectedRole] = useState("");
@@ -594,6 +599,21 @@ export default function PartnerMultiCandidateRoleFitTab() {
               <p className="text-sm text-muted-foreground">
                 A step-by-step guide to understanding this multi-candidate comparison for the {comparison.roleSnapshot?.roleName} role
               </p>
+              {(comparison as any)?.generatedAt && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1" data-testid="text-multi-rolefit-report-status">
+                  {(comparison as any)?.cached ? (
+                    <>
+                      <Clock className="h-3 w-3" />
+                      <span>Retrieved from cache — Originally generated on {formatReportDate((comparison as any).generatedAt)}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3 w-3" />
+                      <span>Report generated on {formatReportDate((comparison as any).generatedAt)}</span>
+                    </>
+                  )}
+                </div>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">

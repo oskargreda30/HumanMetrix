@@ -14127,6 +14127,7 @@ Format your response as JSON with this structure:
             insights: existingReport.resultData?.insights || '',
             cached: true,
             cachedAt: existingReport.createdAt,
+            generatedAt: existingReport.createdAt,
             reportId: existingReport.id,
           });
         }
@@ -14227,6 +14228,7 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
       res.json({ 
         insights,
         cached: false,
+        generatedAt: new Date().toISOString(),
         reportId: savedReport?.id,
       });
     } catch (error) {
@@ -14421,6 +14423,7 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
               ...resultData,
               cached: true,
               cachedAt: existingReport.createdAt,
+              generatedAt: existingReport.createdAt,
               reportId: existingReport.id,
             });
           }
@@ -14849,6 +14852,7 @@ Keep each section concise (2-3 sentences). Use professional but accessible langu
       res.json({
         ...resultData,
         cached: false,
+        generatedAt: new Date().toISOString(),
         reportId: savedReport.id,
       });
     } catch (error) {
@@ -14887,6 +14891,7 @@ Keep each section concise (2-3 sentences). Use professional but accessible langu
             insights: existingReport.resultData?.insights || '',
             cached: true,
             cachedAt: existingReport.createdAt,
+            generatedAt: existingReport.createdAt,
             reportId: existingReport.id,
           });
         }
@@ -14970,6 +14975,7 @@ Use the candidates' actual names. Be specific and actionable.`;
       res.json({
         insights,
         cached: false,
+        generatedAt: new Date().toISOString(),
         reportId: savedReport?.id,
       });
     } catch (error) {
@@ -15049,6 +15055,7 @@ Use the candidates' actual names. Be specific and actionable.`;
         createdAt: report.createdAt,
         cached: true,
         cachedAt: report.createdAt,
+        generatedAt: report.createdAt,
       });
     } catch (error) {
       console.error("Error fetching partner analysis report:", error);
@@ -15339,6 +15346,7 @@ Use the candidates' actual names. Be specific and actionable.`;
               ...resultData,
               cached: true,
               cachedAt: existingReport.createdAt,
+              generatedAt: existingReport.createdAt,
               reportId: existingReport.id,
             });
           }
@@ -15934,6 +15942,7 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
       res.json({
         ...resultData,
         cached: false,
+        generatedAt: new Date().toISOString(),
         reportId: savedReport.id,
       });
     } catch (error) {
@@ -16323,6 +16332,7 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
             ...cachedData,
             cached: true,
             cachedAt: existingReport.createdAt,
+            generatedAt: existingReport.createdAt,
             reportId: existingReport.id,
           });
         }
@@ -16944,6 +16954,7 @@ Be specific and reference the candidates by name.`;
         ...comparison,
         aiInsights,
         cached: false,
+        generatedAt: new Date().toISOString(),
         reportId: savedReport.id,
       });
     } catch (error) {
@@ -16984,6 +16995,7 @@ Be specific and reference the candidates by name.`;
             insights: existingReport.resultData?.insights || '',
             cached: true,
             cachedAt: existingReport.createdAt,
+            generatedAt: existingReport.createdAt,
             reportId: existingReport.id,
           });
         }
@@ -17082,6 +17094,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       res.json({
         insights,
         cached: false,
+        generatedAt: new Date().toISOString(),
         reportId: savedReport?.id,
       });
     } catch (error) {

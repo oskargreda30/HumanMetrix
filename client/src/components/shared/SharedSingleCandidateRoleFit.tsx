@@ -100,6 +100,11 @@ interface SharedSingleCandidateRoleFitProps {
   config: SharedRoleFitConfig;
 }
 
+const formatReportDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
 export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRoleFitProps) {
   const [selectedCandidate, setSelectedCandidate] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
@@ -511,6 +516,21 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                   </Button>
                 </div>
               </div>
+              {config.contextType === 'partner' && (alignment as any)?.generatedAt && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1" data-testid="text-rolefit-report-status">
+                  {(alignment as any)?.cached ? (
+                    <>
+                      <Clock className="h-3 w-3" />
+                      <span>Retrieved from cache — Originally generated on {formatReportDate((alignment as any).generatedAt)}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3 w-3" />
+                      <span>Report generated on {formatReportDate((alignment as any).generatedAt)}</span>
+                    </>
+                  )}
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-4">
