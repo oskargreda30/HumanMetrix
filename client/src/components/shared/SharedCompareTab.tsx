@@ -1299,58 +1299,62 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
               </Card>
               )}
 
-              {/* Summary Cards - Candidate Details & Assessment Status */}
-              <Card data-testid="card-candidate-summary">
-                <CardHeader>
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <CardTitle className="flex items-center gap-2">
-                      <Users className="h-5 w-5" />
-                      Candidate Overview & Assessment Status
-                    </CardTitle>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {comparison?.cached && config.contextType === 'partner' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            forceRefreshRef.current = true;
-                            queryClient.invalidateQueries({ queryKey: ['compare', config.contextType, selectedCandidates] });
-                          }}
-                          disabled={isComparing}
-                          data-testid="button-rerun-comparison-analysis"
-                        >
-                          <RefreshCw className="h-3 w-3 mr-1" />
-                          Re-run Analysis ({selectedCandidates.length} credits)
-                        </Button>
-                      )}
-                      <Button 
-                        size="sm"
-                        onClick={handleExportPDF}
-                        data-testid="button-export-comparison-top"
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Export as PDF
-                      </Button>
-                    </div>
-                  </div>
-                  <CardDescription>
-                    Contact details, application date, and completion status for each assessment type (FIT, AI Readiness, Prompt Architecture, AIQ)
-                  </CardDescription>
-                  {config.contextType === 'partner' && comparison?.generatedAt && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1" data-testid="text-compare-report-status">
-                      {comparison?.cached ? (
+              {/* Report Header with Date, Re-run, and Export PDF */}
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                <div className="flex items-center gap-2">
+                  {config.contextType === 'partner' && (comparison as any)?.generatedAt && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="text-compare-report-date">
+                      {(comparison as any)?.cached ? (
                         <>
                           <Clock className="h-3 w-3" />
-                          <span>Retrieved from cache — Originally generated on {formatReportDate(comparison.generatedAt)}</span>
+                          <span>Cached — {formatReportDate((comparison as any).generatedAt)}</span>
                         </>
                       ) : (
                         <>
                           <Sparkles className="h-3 w-3" />
-                          <span>Report generated on {formatReportDate(comparison.generatedAt)}</span>
+                          <span>Generated {formatReportDate((comparison as any).generatedAt)}</span>
                         </>
                       )}
                     </div>
                   )}
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {config.contextType === 'partner' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        forceRefreshRef.current = true;
+                        queryClient.invalidateQueries({ queryKey: ['compare', config.contextType, selectedCandidates] });
+                      }}
+                      disabled={isComparing}
+                      data-testid="button-rerun-comparison-analysis"
+                    >
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      Re-run Analysis ({selectedCandidates.length} credits)
+                    </Button>
+                  )}
+                  <Button 
+                    size="sm"
+                    onClick={handleExportPDF}
+                    data-testid="button-export-comparison-top"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export as PDF
+                  </Button>
+                </div>
+              </div>
+
+              {/* Summary Cards - Candidate Details & Assessment Status */}
+              <Card data-testid="card-candidate-summary">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Candidate Overview & Assessment Status
+                  </CardTitle>
+                  <CardDescription>
+                    Contact details, application date, and completion status for each assessment type (FIT, AI Readiness, Prompt Architecture, AIQ)
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

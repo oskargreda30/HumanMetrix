@@ -169,7 +169,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
       return response.json();
     },
     enabled: !!selectedCandidate && !!selectedRole && analysisTriggered,
-    staleTime: Infinity,
+    staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
@@ -418,6 +418,53 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
 
       {alignment && loadingTransitionComplete && (
         <div className="space-y-6">
+          {/* Report Header with Date, Re-run, and Export PDF */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              {config.contextType === 'partner' && (alignment as any)?.generatedAt && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="text-rolefit-report-date">
+                  {(alignment as any)?.cached ? (
+                    <>
+                      <Clock className="h-3 w-3" />
+                      <span>Cached — {formatReportDate((alignment as any).generatedAt)}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3 w-3" />
+                      <span>Generated {formatReportDate((alignment as any).generatedAt)}</span>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {config.contextType === 'partner' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    forceRefreshRef.current = true;
+                    queryClient.invalidateQueries({ queryKey: alignmentQueryKey as any });
+                  }}
+                  disabled={isLoadingAlignment}
+                  data-testid="button-rerun-rolefit-analysis"
+                >
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Re-run Analysis (1 credit)
+                </Button>
+              )}
+              <Button
+                size="sm"
+                onClick={handleExportPDF}
+                disabled={isLoadingAlignment}
+                data-testid="button-export-pdf-top"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export PDF
+              </Button>
+            </div>
+          </div>
+
           {/* Executive Summary - Guide for Hiring Managers */}
           <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
             <CardHeader className="pb-3">
@@ -478,59 +525,8 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                   <Target className="h-5 w-5" />
                   Overall Role Fit Score
                 </CardTitle>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {getFitTierBadge(getOverallFitTier(alignment.overallFit))}
-                  {(alignment as any)?.cached && config.contextType === 'partner' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        forceRefreshRef.current = true;
-                        queryClient.invalidateQueries({ queryKey: alignmentQueryKey as any });
-                      }}
-                      disabled={isLoadingAlignment}
-                      data-testid="button-rerun-rolefit-analysis"
-                    >
-                      <RefreshCw className="h-3 w-3 mr-1" />
-                      Re-run Analysis (1 credit)
-                    </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleExportPDF}
-                    disabled={isLoadingAlignment || false /* pre-loaded */ || false /* pre-loaded */}
-                    data-testid="button-export-pdf"
-                  >
-                    {isLoadingAlignment || false /* pre-loaded */ || false /* pre-loaded */ ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Please Wait...
-                      </>
-                    ) : (
-                      <>
-                        <Download className="h-4 w-4 mr-2" />
-                        Export PDF
-                      </>
-                    )}
-                  </Button>
-                </div>
+                {getFitTierBadge(getOverallFitTier(alignment.overallFit))}
               </div>
-              {config.contextType === 'partner' && (alignment as any)?.generatedAt && (
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1" data-testid="text-rolefit-report-status">
-                  {(alignment as any)?.cached ? (
-                    <>
-                      <Clock className="h-3 w-3" />
-                      <span>Retrieved from cache — Originally generated on {formatReportDate((alignment as any).generatedAt)}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-3 w-3" />
-                      <span>Report generated on {formatReportDate((alignment as any).generatedAt)}</span>
-                    </>
-                  )}
-                </div>
-              )}
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-4">

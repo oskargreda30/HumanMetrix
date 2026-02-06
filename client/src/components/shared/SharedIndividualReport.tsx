@@ -426,29 +426,64 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
       {selectedCandidate && reportTriggered && loadingTransitionComplete && candidateReport && selectedCandidateData && (
         <>
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3 md:mb-4">
-            <h2 className="text-base md:text-2xl font-bold text-white flex items-center gap-1.5 md:gap-2">
-              <FileText className="h-4 w-4 md:h-6 md:w-6 text-blue-300" />
-              Individual Candidate Report
-            </h2>
-            <Button 
-              size="sm"
-              onClick={handleExportPDF}
-              disabled={isExporting}
-              data-testid="button-export-pdf-top"
-              className="text-xs md:text-sm"
-            >
-              {isExporting ? (
-                <>
-                  <Loader2 className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2 animate-spin" />
-                  Exporting...
-                </>
-              ) : (
-                <>
-                  <Download className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                  Export as PDF
-                </>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base md:text-2xl font-bold text-white flex items-center gap-1.5 md:gap-2">
+                <FileText className="h-4 w-4 md:h-6 md:w-6 text-blue-300" />
+                Individual Candidate Report
+              </h2>
+              {config.contextType === 'partner' && candidateReport?.generatedAt && (
+                <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-blue-200/70" data-testid="text-individual-report-date-top">
+                  {candidateReport?.cached ? (
+                    <>
+                      <Clock className="h-3 w-3" />
+                      <span>Cached — {formatReportDate(candidateReport.generatedAt)}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3 w-3" />
+                      <span>Generated {formatReportDate(candidateReport.generatedAt)}</span>
+                    </>
+                  )}
+                </div>
               )}
-            </Button>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {config.contextType === 'partner' && (
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    forceRefreshRef.current = true;
+                    queryClient.invalidateQueries({ queryKey: ['individual-report', selectedCandidate, config.contextType] });
+                  }}
+                  disabled={isLoadingReport}
+                  data-testid="button-rerun-individual-analysis"
+                  className="text-xs md:text-sm"
+                >
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Re-run Analysis (1 credit)
+                </Button>
+              )}
+              <Button 
+                size="sm"
+                onClick={handleExportPDF}
+                disabled={isExporting}
+                data-testid="button-export-pdf-top"
+                className="text-xs md:text-sm"
+              >
+                {isExporting ? (
+                  <>
+                    <Loader2 className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2 animate-spin" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                    Export as PDF
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
 
           <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20" data-testid="card-candidate-summary">
@@ -917,45 +952,13 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
 
           <Card data-testid="card-profile-insights">
             <CardHeader>
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <CardTitle className="flex items-center gap-2 text-foreground">
-                  <Lightbulb className="h-5 w-5 text-amber-500" />
-                  Profile Insights and Recommendations
-                </CardTitle>
-                {candidateReport?.cached && config.contextType === 'partner' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      forceRefreshRef.current = true;
-                      queryClient.invalidateQueries({ queryKey: ['individual-report', selectedCandidate, config.contextType] });
-                    }}
-                    disabled={isLoadingReport}
-                    data-testid="button-rerun-individual-analysis"
-                  >
-                    <RefreshCw className="h-3 w-3 mr-1" />
-                    Re-run Analysis (1 credit)
-                  </Button>
-                )}
-              </div>
+              <CardTitle className="flex items-center gap-2 text-foreground">
+                <Lightbulb className="h-5 w-5 text-amber-500" />
+                Profile Insights and Recommendations
+              </CardTitle>
               <CardDescription>
                 Analysis of {getCandidateName(selectedCandidateData)}'s profile with role fit recommendations
               </CardDescription>
-              {config.contextType === 'partner' && candidateReport?.generatedAt && (
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1" data-testid="text-individual-report-status">
-                  {candidateReport?.cached ? (
-                    <>
-                      <Clock className="h-3 w-3" />
-                      <span>Retrieved from cache — Originally generated on {formatReportDate(candidateReport.generatedAt)}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-3 w-3" />
-                      <span>Report generated on {formatReportDate(candidateReport.generatedAt)}</span>
-                    </>
-                  )}
-                </div>
-              )}
             </CardHeader>
             <CardContent>
               {(!candidateReport?.fitAssessments?.[0] && !candidateReport?.aiReadinessAssessments?.[0] && !candidateReport?.promptArchitectureAssessments?.[0] && !candidateReport?.aiqAssessments?.[0]) ? (

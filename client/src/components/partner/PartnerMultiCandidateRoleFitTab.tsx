@@ -572,48 +572,70 @@ export default function PartnerMultiCandidateRoleFitTab() {
 
       {comparison && (
         <>
-          {/* How to Read This Report Section - Matching Individual Tab Style */}
-          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <FileText className="h-5 w-5 text-primary" />
-                  How to Read This Report
-                </CardTitle>
-                {(comparison as any)?.cached && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      forceRefreshRef.current = true;
-                      compareMutation.mutate();
-                    }}
-                    disabled={compareMutation.isPending}
-                    data-testid="button-rerun-multi-rolefit-analysis"
-                  >
-                    <RefreshCw className="h-3 w-3 mr-1" />
-                    Re-run Analysis ({selectedCandidates.length} credits)
-                  </Button>
-                )}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                A step-by-step guide to understanding this multi-candidate comparison for the {comparison.roleSnapshot?.roleName} role
-              </p>
+          {/* Report Header with Date, Re-run, and Export PDF */}
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div className="flex items-center gap-2">
               {(comparison as any)?.generatedAt && (
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1" data-testid="text-multi-rolefit-report-status">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="text-multi-rolefit-report-date">
                   {(comparison as any)?.cached ? (
                     <>
                       <Clock className="h-3 w-3" />
-                      <span>Retrieved from cache — Originally generated on {formatReportDate((comparison as any).generatedAt)}</span>
+                      <span>Cached — {formatReportDate((comparison as any).generatedAt)}</span>
                     </>
                   ) : (
                     <>
                       <Sparkles className="h-3 w-3" />
-                      <span>Report generated on {formatReportDate((comparison as any).generatedAt)}</span>
+                      <span>Generated {formatReportDate((comparison as any).generatedAt)}</span>
                     </>
                   )}
                 </div>
               )}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  forceRefreshRef.current = true;
+                  compareMutation.mutate();
+                }}
+                disabled={compareMutation.isPending}
+                data-testid="button-rerun-multi-rolefit-analysis"
+              >
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Re-run Analysis ({selectedCandidates.length} credits)
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleExportPDF}
+                disabled={isExporting}
+                data-testid="button-export-multi-comparison-top"
+              >
+                {isExporting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export as PDF
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {/* How to Read This Report Section - Matching Individual Tab Style */}
+          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <FileText className="h-5 w-5 text-primary" />
+                How to Read This Report
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                A step-by-step guide to understanding this multi-candidate comparison for the {comparison.roleSnapshot?.roleName} role
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
