@@ -819,7 +819,7 @@ export default function Assessment() {
                     <h1 className="text-2xl md:text-3xl font-bold mb-2">
                       {formatAssessmentName(assessment.assessmentType)} Assessment
                     </h1>
-                    <p className="text-muted-foreground">
+                    <p className="text-muted-foreground whitespace-nowrap">
                       Question {currentQuestion + 1} of {questions.length}
                     </p>
                   </div>
