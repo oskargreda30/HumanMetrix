@@ -2158,7 +2158,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                                   </p>
                                 </div>
                                 <div id={`pdf-comparison-fit-${index}`} className="bg-white p-4 rounded-lg">
-                                  <ResponsiveContainer width="100%" height={220}>
+                                  <ResponsiveContainer width="100%" height={300}>
                                     <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} barCategoryGap="28%" data={radarData}>
                                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                                       <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} axisLine={false} tickLine={false} />
@@ -2285,7 +2285,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                                   </p>
                                 </div>
                                 <div id={`pdf-comparison-ai-${index}`} className="bg-white p-4 rounded-lg">
-                                  <ResponsiveContainer width="100%" height={220}>
+                                  <ResponsiveContainer width="100%" height={380}>
                                     <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} barCategoryGap="28%" data={radarData}>
                                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                                       <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} axisLine={false} tickLine={false} />
