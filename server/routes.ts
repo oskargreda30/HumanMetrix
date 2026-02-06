@@ -13025,8 +13025,14 @@ Return valid JSON with only the requested fields.`;
                 inviteToken: newInviteToken,
                 role: role || existing.role || 'member',
               });
-            } catch (emailError) {
+            } catch (emailError: any) {
               console.error("Failed to send invitation email:", emailError);
+              return res.json({ 
+                member: { ...existing, inviteToken: newInviteToken, inviteExpiresAt: newExpiresAt },
+                message: "Invitation updated but email failed to send. Please try resending.",
+                resent: true,
+                emailFailed: true
+              });
             }
             
             return res.json({ 
@@ -13069,8 +13075,14 @@ Return valid JSON with only the requested fields.`;
               inviteToken: newInviteToken,
               role: role || existing.role || 'member',
             });
-          } catch (emailError) {
+          } catch (emailError: any) {
             console.error("Failed to send invitation email:", emailError);
+            return res.json({ 
+              member: { ...existing, inviteStatus: 'pending', inviteToken: newInviteToken, inviteExpiresAt: newExpiresAt },
+              message: "Invitation created but email failed to send. Please try resending.",
+              reactivated: true,
+              emailFailed: true
+            });
           }
           
           return res.json({ 
@@ -13136,8 +13148,9 @@ Return valid JSON with only the requested fields.`;
           inviteToken,
           role: role || 'member',
         });
-      } catch (emailError) {
+      } catch (emailError: any) {
         console.error("Failed to send invitation email:", emailError);
+        return res.json({ member, message: "Team member added but invitation email failed to send. Please try resending.", emailFailed: true });
       }
       
       res.json({ member, message: "Invitation sent successfully" });

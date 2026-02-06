@@ -1875,8 +1875,12 @@ export default function PartnerDashboard() {
       setInviteName("");
       setInviteRole("member");
       const message = data?.message || "Team member has been invited.";
-      const title = data?.reactivated ? "Invitation renewed" : (data?.resent ? "Invitation resent" : "Invitation sent");
-      toast({ title, description: message });
+      if (data?.emailFailed) {
+        toast({ title: "Email delivery failed", description: message, variant: "destructive" });
+      } else {
+        const title = data?.reactivated ? "Invitation renewed" : (data?.resent ? "Invitation resent" : "Invitation sent");
+        toast({ title, description: message });
+      }
     },
     onError: (error: Error) => {
       toast({ title: "Unable to send invitation", description: error.message, variant: "destructive" });
