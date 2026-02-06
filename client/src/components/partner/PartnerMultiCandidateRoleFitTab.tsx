@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { AnalysisLoadingScreen } from "@/components/shared/AnalysisLoadingScreen";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -249,6 +250,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
   const [insufficientDataDialogOpen, setInsufficientDataDialogOpen] = useState(false);
   const [insufficientDataError, setInsufficientDataError] = useState<InsufficientDataError | null>(null);
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
+  const [isRerunning, setIsRerunning] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const forceRefreshRef = useRef(false);
   const { toast } = useToast();
@@ -299,10 +301,16 @@ export default function PartnerMultiCandidateRoleFitTab() {
     onSuccess: (data: MultiCandidateComparison) => {
       forceRefreshRef.current = false;
       queryClient.setQueryData(['multi-candidate-comparison', selectedRole, selectedCandidates.join(',')], data);
-      toast({ title: "Comparison generated successfully" });
+      if (isRerunning) {
+        setIsRerunning(false);
+        toast({ title: "Analysis regenerated", description: "Fresh AI comparison has been generated successfully." });
+      } else {
+        toast({ title: "Comparison generated successfully" });
+      }
     },
     onError: (error: Error & { insufficientDataCandidates?: InsufficientDataError['insufficientDataCandidates'] }) => {
       forceRefreshRef.current = false;
+      setIsRerunning(false);
       // Check if this is an insufficient data error that should show a dialog
       if (error.insufficientDataCandidates && error.insufficientDataCandidates.length > 0) {
         setInsufficientDataError({
@@ -570,7 +578,15 @@ export default function PartnerMultiCandidateRoleFitTab() {
         </CardContent>
       </Card>
 
-      {comparison && (
+      {compareMutation.isPending && (
+        <AnalysisLoadingScreen
+          isComplete={false}
+          averageTimeSeconds={30}
+          message={isRerunning ? "Re-generating AI comparison with fresh insights..." : "Analyzing candidates against role requirements..."}
+        />
+      )}
+
+      {comparison && !compareMutation.isPending && (
         <>
           {/* Report Header with Date, Re-run, and Export PDF */}
           <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
@@ -597,6 +613,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                 size="sm"
                 onClick={() => {
                   forceRefreshRef.current = true;
+                  setIsRerunning(true);
                   compareMutation.mutate();
                 }}
                 disabled={compareMutation.isPending}

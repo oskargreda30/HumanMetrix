@@ -110,6 +110,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
   const [selectedRole, setSelectedRole] = useState("");
   const [analysisTriggered, setAnalysisTriggered] = useState(false);
   const [loadingTransitionComplete, setLoadingTransitionComplete] = useState(false);
+  const [isRerunning, setIsRerunning] = useState(false);
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
   const forceRefreshRef = useRef(false);
   const { toast } = useToast();
@@ -156,8 +157,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
     ? [`${config.roleAlignmentEndpoint}?${config.candidateIdParam}=${selectedCandidate}&jobRoleId=${selectedRole}`]
     : undefined;
 
-  const isRerunningRef = useRef(false);
-  const { data: alignment, isLoading: isLoadingAlignment, isFetching: isFetchingAlignment } = useQuery<RoleAlignment>({
+  const { data: alignment, isLoading: isLoadingAlignment, isFetching: isFetchingAlignment, error: alignmentError } = useQuery<RoleAlignment>({
     queryKey: alignmentQueryKey as any,
     queryFn: async () => {
       let url = `${config.roleAlignmentEndpoint}?${config.candidateIdParam}=${selectedCandidate}&jobRoleId=${selectedRole}`;
@@ -176,11 +176,12 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
   });
 
   useEffect(() => {
-    if (isRerunningRef.current && !isFetchingAlignment) {
-      isRerunningRef.current = false;
-      toast({ title: "Analysis regenerated", description: "Fresh AI analysis has been generated successfully." });
+    if (alignmentError && isRerunning) {
+      setIsRerunning(false);
+      setLoadingTransitionComplete(true);
+      toast({ title: "Re-run failed", description: "Failed to regenerate analysis. Please try again.", variant: "destructive" });
     }
-  }, [isFetchingAlignment]);
+  }, [alignmentError, isRerunning]);
 
   // Reset analysis state when selection changes
   const handleCandidateChange = (value: string) => {
@@ -415,16 +416,22 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
         </CardContent>
       </Card>
 
-      {analysisTriggered && !loadingTransitionComplete && (
+      {analysisTriggered && (!loadingTransitionComplete || isRerunning) && (
         <AnalysisLoadingScreen 
-          isComplete={!isLoadingAlignment && !!alignment}
+          isComplete={!isFetchingAlignment && !!alignment}
           averageTimeSeconds={25}
-          message="Analyzing role fit and generating insights..."
-          onTransitionComplete={() => setLoadingTransitionComplete(true)}
+          message={isRerunning ? "Re-generating AI analysis with fresh insights..." : "Analyzing role fit and generating insights..."}
+          onTransitionComplete={() => {
+            setLoadingTransitionComplete(true);
+            if (isRerunning) {
+              setIsRerunning(false);
+              toast({ title: "Analysis regenerated", description: "Fresh AI analysis has been generated successfully." });
+            }
+          }}
         />
       )}
 
-      {alignment && loadingTransitionComplete && (
+      {alignment && loadingTransitionComplete && !isRerunning && (
         <div className="space-y-6">
           {/* Report Header with Date, Re-run, and Export PDF */}
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -452,15 +459,15 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                   size="sm"
                   onClick={() => {
                     forceRefreshRef.current = true;
-                    isRerunningRef.current = true;
+                    setIsRerunning(true);
+                    setLoadingTransitionComplete(false);
                     queryClient.invalidateQueries({ queryKey: alignmentQueryKey as any });
-                    toast({ title: "Re-running analysis...", description: "Generating fresh AI analysis. This may take a moment." });
                   }}
                   disabled={isFetchingAlignment}
                   data-testid="button-rerun-rolefit-analysis"
                 >
-                  <RefreshCw className={`h-3 w-3 mr-1 ${isFetchingAlignment ? 'animate-spin' : ''}`} />
-                  {isFetchingAlignment ? 'Analyzing...' : 'Re-run Analysis (1 credit)'}
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Re-run Analysis (1 credit)
                 </Button>
               )}
               <Button

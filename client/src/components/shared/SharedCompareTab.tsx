@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { AnalysisLoadingScreen } from "./AnalysisLoadingScreen";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -139,6 +140,8 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
   });
   const [isCapturingPDF, setIsCapturingPDF] = useState(false);
   const [comparisonTriggered, setComparisonTriggered] = useState(false);
+  const [loadingTransitionComplete, setLoadingTransitionComplete] = useState(false);
+  const [isRerunning, setIsRerunning] = useState(false);
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
   const [hoveredSkill, setHoveredSkill] = useState<string | null>(null);
   const handleMouseMove = useCallback((state: any) => {
@@ -161,7 +164,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
     queryKey: [config.rolesEndpoint],
   });
 
-  const { data: comparison, isLoading: isComparing, refetch: runComparison } = useQuery<ComparisonData>({
+  const { data: comparison, isLoading: isComparing, isFetching: isFetchingComparison, error: comparisonError, refetch: runComparison } = useQuery<ComparisonData>({
     queryKey: ['compare', config.contextType, selectedCandidates],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -177,8 +180,17 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
     enabled: selectedCandidates.length >= 2 && comparisonTriggered,
   });
 
+  useEffect(() => {
+    if (comparisonError && isRerunning) {
+      setIsRerunning(false);
+      setLoadingTransitionComplete(true);
+      toast({ title: "Re-run failed", description: "Failed to regenerate comparison. Please try again.", variant: "destructive" });
+    }
+  }, [comparisonError, isRerunning]);
+
   const handleRunComparison = () => {
     if (selectedCandidates.length >= 2) {
+      setLoadingTransitionComplete(false);
       setComparisonTriggered(true);
     }
   };
@@ -1179,15 +1191,30 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
         </Card>
       )}
 
-      {selectedCandidates.length >= 2 && comparisonTriggered && (
+      {selectedCandidates.length >= 2 && comparisonTriggered && (!loadingTransitionComplete || isRerunning) && (
+        <AnalysisLoadingScreen
+          isComplete={!isFetchingComparison && !!comparison}
+          averageTimeSeconds={25}
+          message={isRerunning ? "Re-generating AI comparison with fresh insights..." : "Comparing candidates and generating insights..."}
+          onTransitionComplete={() => {
+            setLoadingTransitionComplete(true);
+            if (isRerunning) {
+              setIsRerunning(false);
+              toast({ title: "Analysis regenerated", description: "Fresh AI comparison has been generated successfully." });
+            }
+          }}
+        />
+      )}
+
+      {selectedCandidates.length >= 2 && comparisonTriggered && loadingTransitionComplete && !isRerunning && (
         <>
-          {isComparing ? (
+          {!comparison ? (
             <Card>
               <CardContent className="flex justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </CardContent>
             </Card>
-          ) : comparison ? (
+          ) : (
             <>
               {/* Report Container for Screen Capture PDF */}
               <div 
@@ -1325,9 +1352,11 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                       size="sm"
                       onClick={() => {
                         forceRefreshRef.current = true;
+                        setIsRerunning(true);
+                        setLoadingTransitionComplete(false);
                         queryClient.invalidateQueries({ queryKey: ['compare', config.contextType, selectedCandidates] });
                       }}
-                      disabled={isComparing}
+                      disabled={isFetchingComparison}
                       data-testid="button-rerun-comparison-analysis"
                     >
                       <RefreshCw className="h-3 w-3 mr-1" />
@@ -2822,7 +2851,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                 </Card>
               )}
             </>
-          ) : null}
+          )}
         </>
       )}
 

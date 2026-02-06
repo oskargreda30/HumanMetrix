@@ -62,6 +62,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
   const [selectedCandidate, setSelectedCandidate] = useState<string>('');
   const [reportTriggered, setReportTriggered] = useState(false);
   const [loadingTransitionComplete, setLoadingTransitionComplete] = useState(false);
+  const [isRerunning, setIsRerunning] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
   const { toast } = useToast();
@@ -74,7 +75,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
     queryKey: [config.candidatesEndpoint],
   });
 
-  const { data: candidateReport, isLoading: isLoadingReport } = useQuery<any>({
+  const { data: candidateReport, isLoading: isLoadingReport, isFetching: isFetchingReport, error: reportError } = useQuery<any>({
     queryKey: ['individual-report', selectedCandidate, config.contextType],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -89,6 +90,14 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
     },
     enabled: !!selectedCandidate && reportTriggered,
   });
+
+  useEffect(() => {
+    if (reportError && isRerunning) {
+      setIsRerunning(false);
+      setLoadingTransitionComplete(true);
+      toast({ title: "Re-run failed", description: "Failed to regenerate analysis. Please try again.", variant: "destructive" });
+    }
+  }, [reportError, isRerunning]);
 
   const handleCandidateChange = (value: string) => {
     setSelectedCandidate(value);
@@ -414,16 +423,22 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
         </Card>
       )}
 
-      {selectedCandidate && reportTriggered && !loadingTransitionComplete && (
+      {selectedCandidate && reportTriggered && (!loadingTransitionComplete || isRerunning) && (
         <AnalysisLoadingScreen 
-          isComplete={!isLoadingReport && !!candidateReport}
+          isComplete={!isFetchingReport && !!candidateReport}
           averageTimeSeconds={20}
-          message="Generating AI-powered profile insights..."
-          onTransitionComplete={() => setLoadingTransitionComplete(true)}
+          message={isRerunning ? "Re-generating AI analysis with fresh insights..." : "Generating AI-powered profile insights..."}
+          onTransitionComplete={() => {
+            setLoadingTransitionComplete(true);
+            if (isRerunning) {
+              setIsRerunning(false);
+              toast({ title: "Analysis regenerated", description: "Fresh AI analysis has been generated successfully." });
+            }
+          }}
         />
       )}
 
-      {selectedCandidate && reportTriggered && loadingTransitionComplete && candidateReport && selectedCandidateData && (
+      {selectedCandidate && reportTriggered && loadingTransitionComplete && !isRerunning && candidateReport && selectedCandidateData && (
         <>
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3 md:mb-4">
             <div className="flex items-center gap-2">
@@ -454,9 +469,11 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                   size="sm"
                   onClick={() => {
                     forceRefreshRef.current = true;
+                    setIsRerunning(true);
+                    setLoadingTransitionComplete(false);
                     queryClient.invalidateQueries({ queryKey: ['individual-report', selectedCandidate, config.contextType] });
                   }}
-                  disabled={isLoadingReport}
+                  disabled={isFetchingReport}
                   data-testid="button-rerun-individual-analysis"
                   className="text-xs md:text-sm"
                 >
