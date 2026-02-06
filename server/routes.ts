@@ -8719,9 +8719,9 @@ Format your response as JSON with this structure:
       let promptScore = 'No data available';
       let promptLevels = '';
       
-      if (promptResult) {
-        promptScore = `${promptResult.totalScore || 0}%`;
-        const levels = (promptResult as any).levels || [];
+      if (promptSession) {
+        promptScore = `${promptSession.totalScore || 0}%`;
+        const levels = (promptSession as any).levels || [];
         if (levels.length > 0) {
           promptLevels = levels.map((l: any) => 
             `Level ${l.level}: ${l.passed ? 'Passed' : 'Failed'}${l.scores ? ` (Clarity: ${l.scores.clarity}%, Structure: ${l.scores.structure}%, Context: ${l.scores.contextRelevance}%, Creativity: ${l.scores.creativity}%, Iterative: ${l.scores.iterativeImprovement}%)` : ''}`
@@ -14170,12 +14170,8 @@ Format your response as JSON with this structure:
         });
       }
 
-      // Fetch candidate from database for verified name (candidateId is email)
-      const candidate = await storage.getUserByEmail(candidateId);
-      // Use invitation/session data if no user record exists yet
-      const candidateName = candidate 
-        ? (`${candidate.firstName || ''} ${candidate.lastName || ''}`.trim() || candidate.email?.split('@')[0] || 'Candidate')
-        : (candidateInvitation?.name || candidateSession?.externalEmail?.split('@')[0] || candidateId.split('@')[0] || 'Candidate');
+      // Use invitation/session data for candidate name (B2B sessions only)
+      const candidateName = candidateInvitation?.name || candidateSession?.externalEmail?.split('@')[0] || candidateId.split('@')[0] || 'Candidate';
 
       // Build prompt for OpenAI with 5 structured sections (matches frontend expectations)
       const prompt = `You are an expert HR analyst. Generate a comprehensive profile analysis for a job candidate based on their assessment results.
@@ -14300,7 +14296,7 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         return skillMap[skill] || skill;
       };
 
-      // Build candidate results from BOTH sources (sessions AND assessment_results)
+      // Build candidate results from B2B sessions only
       // This mirrors the logic in /api/partner/me/candidates endpoint
       
       // SOURCE 1: B2B Widget/API sessions
@@ -15318,38 +15314,7 @@ Use the candidates' actual names. Be specific and actionable.`;
         }
       }
       
-      // SOURCE 2: For invited candidates (B2C flow), also check assessment_results table
-      // This handles cases where candidate was invited but completed assessments via B2C flow
-      if (isInvitedCandidate || (!fitScores && !aiReadinessScores)) {
-        // Try to find the candidate's B2C results
-        let candidateUser = await storage.getUserByEmail(candidateId as string);
-        if (!candidateUser) {
-          const invitations = await storage.getPartnerCandidateInvitations(partner.id);
-          const inv = invitations.find(i => i.email === candidateId || i.userId === candidateId);
-          if (inv?.userId) {
-            candidateUser = await storage.getUser(inv.userId);
-          }
-        }
-        
-        if (candidateUser) {
-          const b2cResults = await storage.getResultsByUser(candidateUser.id);
-          const completedB2cResults = b2cResults.filter(r => r.status === 'completed');
-          
-          for (const result of completedB2cResults) {
-            if (!result.scores) continue;
-            
-            if (result.assessmentType === 'fit' && !fitScores) {
-              fitScores = result.scores as Record<string, number>;
-            } else if (result.assessmentType === 'ai_readiness' && !aiReadinessScores) {
-              aiReadinessScores = result.scores as Record<string, number>;
-            } else if (result.assessmentType === 'prompt_architecture' && promptArchitectureScore === null) {
-              promptArchitectureScore = result.totalScore;
-            } else if (result.assessmentType === 'aiq' && aiqScore === null) {
-              aiqScore = result.totalScore;
-            }
-          }
-        }
-      }
+
 
       // Parse role requirements from requiredSkillScores JSON
       const roleRequirements = role.requiredSkillScores as {
@@ -15449,32 +15414,23 @@ Use the candidates' actual names. Be specific and actionable.`;
       let aiqRoleFitAnalysis: string | null = null;
       
       try {
-        // Get user for assessment results lookup
+        // Get assessment data from partner's B2B sessions only
+        const promptSession = candidateSessions.find(s => s.assessmentType === 'prompt_architecture' && s.status === 'completed');
+        const aiqSession = candidateSessions.find(s => s.assessmentType === 'aiq' && s.status === 'completed');
+        
+        // Use invitation name or extract from email
         const invitations = await storage.getPartnerCandidateInvitations(partner.id);
         const candidateInvitation = invitations.find(inv => 
-          inv.email === candidateId || inv.externalUserId === candidateId || inv.userId === candidateId
+          inv.email === candidateId || inv.externalUserId === candidateId
         );
-        
-        let user = await storage.getUserByEmail(candidateId as string);
-        if (!user) user = await storage.getUser(candidateId as string);
-        if (!user && candidateInvitation?.userId) user = await storage.getUser(candidateInvitation.userId);
-        if (!user && candidateSessions[0]?.userId) user = await storage.getUser(candidateSessions[0].userId);
-        
-        if (user) {
-          const results = await storage.getResultsByUser(user.id);
-          const promptResult = results.find(r => r.assessmentType === 'prompt_architecture' && r.status === 'completed');
-          const aiqResult = results.find(r => r.assessmentType === 'aiq' && r.status === 'completed');
-          
-          const candidateName = user.firstName && user.lastName 
-            ? `${user.firstName} ${user.lastName}` 
-            : user.email;
+        const candidateName = candidateInvitation?.name || candidateSessions[0]?.externalEmail?.split('@')[0] || candidateId;
 
           // Generate Prompt Role Fit analysis
-          if (promptArchitectureScore !== null || promptResult) {
-            let promptScore = promptArchitectureScore !== null ? `${promptArchitectureScore}%` : (promptResult ? `${promptResult.totalScore || 0}%` : 'No data available');
+          if (promptArchitectureScore !== null || promptSession) {
+            let promptScore = promptArchitectureScore !== null ? `${promptArchitectureScore}%` : (promptSession ? `${promptSession.totalScore || 0}%` : 'No data available');
             let promptLevels = '';
-            if (promptResult) {
-              const levels = (promptResult as any).levels || [];
+            if (promptSession) {
+              const levels = (promptSession as any).levels || [];
               if (levels.length > 0) {
                 promptLevels = levels.map((l: any) => 
                   `Level ${l.level}: ${l.passed ? 'Passed' : 'Failed'}${l.scores ? ` (Clarity: ${l.scores.clarity}%, Structure: ${l.scores.structure}%, Context: ${l.scores.contextRelevance}%, Creativity: ${l.scores.creativity}%, Iterative: ${l.scores.iterativeImprovement}%)` : ''}`
@@ -15519,18 +15475,18 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
               operationType: AI_USAGE_OPERATION_TYPES.PROMPT_ROLE_FIT,
               model: "gpt-4o",
               usage: extractUsage(promptResponse),
-              userId: user.id,
+              userId: candidateId as string,
               partnerId: partner.id,
               metadata: { roleTitle: role.name },
             }).catch(console.error);
           }
 
           // Generate AIQ Role Fit analysis
-          if (aiqScore !== null || aiqResult) {
-            let aiqScoreStr = aiqScore !== null ? `${aiqScore}%` : (aiqResult ? `${aiqResult.totalScore || 0}%` : 'No data available');
+          if (aiqScore !== null || aiqSession) {
+            let aiqScoreStr = aiqScore !== null ? `${aiqScore}%` : (aiqSession ? `${aiqSession.totalScore || 0}%` : 'No data available');
             let aiqBand = '';
-            if (aiqScore !== null || aiqResult) {
-              const score = aiqScore !== null ? aiqScore : (aiqResult?.totalScore || 0);
+            if (aiqScore !== null || aiqSession) {
+              const score = aiqScore !== null ? aiqScore : (aiqSession?.totalScore || 0);
               if (score >= 80) aiqBand = 'Exemplary (80-100%): Strong ethical foundation with nuanced understanding of AI implications';
               else if (score >= 60) aiqBand = 'Strong (60-79%): Solid grasp of AI ethics with some areas for deeper exploration';
               else if (score >= 40) aiqBand = 'Developing (40-59%): Foundational understanding with room for growth';
@@ -15568,12 +15524,11 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
               operationType: AI_USAGE_OPERATION_TYPES.AIQ_ROLE_FIT,
               model: "gpt-4o",
               usage: extractUsage(aiqResponse),
-              userId: user.id,
+              userId: candidateId as string,
               partnerId: partner.id,
               metadata: { roleTitle: role.name },
             }).catch(console.error);
           }
-        }
       } catch (aiError) {
         console.error("Failed to generate Prompt/AIQ role fit analyses:", aiError);
       }
@@ -15936,36 +15891,16 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(403).json({ message: "Candidate not found in your organization" });
       }
 
-      // Get user by various methods (candidateId can be email, userId, or externalUserId)
-      let user = await storage.getUserByEmail(candidateId);
-      if (!user) {
-        user = await storage.getUser(candidateId);
-      }
-      // Try via invitation userId
-      if (!user && candidateInvitation?.userId) {
-        user = await storage.getUser(candidateInvitation.userId);
-      }
-      // Try via session userId
-      if (!user && candidateSession?.userId) {
-        user = await storage.getUser(candidateSession.userId);
-      }
-      if (!user) {
-        return res.status(404).json({ message: "Candidate assessment data not found" });
-      }
-
       // Get role data
       const role = await storage.getJobRole(jobRoleId);
       if (!role) {
         return res.status(404).json({ message: "Job role not found" });
       }
 
-      // Get Prompt Architecture assessment results
-      const results = await storage.getResultsByUser(user.id);
-      const promptResult = results.find(r => r.assessmentType === 'prompt_architecture' && r.status === 'completed');
+      // Get Prompt Architecture data from partner's B2B sessions only
+      const promptResult = candidateSessions.find(s => s.assessmentType === 'prompt_architecture' && s.status === 'completed');
       
-      const candidateName = user.firstName && user.lastName 
-        ? `${user.firstName} ${user.lastName}` 
-        : user.email;
+      const candidateName = candidateInvitation?.name || candidateSession?.externalEmail?.split('@')[0] || candidateId;
 
       let promptScore = 'No data available';
       let promptLevels = '';
@@ -16012,7 +15947,7 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         operationType: AI_USAGE_OPERATION_TYPES.PROMPT_ROLE_FIT,
         model: "gpt-4o",
         usage: extractUsage(response),
-        userId: user.id,
+        userId: candidateId,
         partnerId: partner.id,
         metadata: { roleTitle: role.name },
       }).catch(console.error);
@@ -16057,36 +15992,16 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         return res.status(403).json({ message: "Candidate not found in your organization" });
       }
 
-      // Get user by various methods (candidateId can be email, userId, or externalUserId)
-      let user = await storage.getUserByEmail(candidateId);
-      if (!user) {
-        user = await storage.getUser(candidateId);
-      }
-      // Try via invitation userId
-      if (!user && candidateInvitation?.userId) {
-        user = await storage.getUser(candidateInvitation.userId);
-      }
-      // Try via session userId
-      if (!user && candidateSession?.userId) {
-        user = await storage.getUser(candidateSession.userId);
-      }
-      if (!user) {
-        return res.status(404).json({ message: "Candidate assessment data not found" });
-      }
-
       // Get role data
       const role = await storage.getJobRole(jobRoleId);
       if (!role) {
         return res.status(404).json({ message: "Job role not found" });
       }
 
-      // Get AIQ assessment results
-      const results = await storage.getResultsByUser(user.id);
-      const aiqResult = results.find(r => r.assessmentType === 'aiq' && r.status === 'completed');
+      // Get AIQ assessment data from partner's B2B sessions only
+      const aiqResult = candidateSessions.find(s => s.assessmentType === 'aiq' && s.status === 'completed');
       
-      const candidateName = user.firstName && user.lastName 
-        ? `${user.firstName} ${user.lastName}` 
-        : user.email;
+      const candidateName = candidateInvitation?.name || candidateSession?.externalEmail?.split('@')[0] || candidateId;
 
       let aiqScore = 'No data available';
       let aiqBand = '';
@@ -16134,7 +16049,7 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         operationType: AI_USAGE_OPERATION_TYPES.AIQ_ROLE_FIT,
         model: "gpt-4o",
         usage: extractUsage(response),
-        userId: user.id,
+        userId: candidateId,
         partnerId: partner.id,
         metadata: { roleTitle: role.name },
       }).catch(console.error);
@@ -16443,80 +16358,43 @@ Return valid JSON with only the requested fields.`;
       const candidateEntries: any[] = [];
       
       for (const candidateId of candidateIds) {
-        // For B2B partners, candidateId is typically the email address
-        // Try multiple lookup paths: 1) user ID, 2) partner invitation, 3) B2B sessions
-        let user = await storage.getUser(candidateId);
+        // Partner dashboard only uses assessment_sessions data (B2B sessions)
         let completedResults: any[] = [];
         let candidateName = '';
         let candidateEmail = candidateId;
         
-        if (user) {
-          // Standard B2C user found
-          const resultsRaw = await storage.getResultsByUser(candidateId);
-          const results = resultsRaw.map(recalculateScores);
-          completedResults = results.filter((r: any) => r.status === 'completed');
-          candidateName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || candidateId;
-          candidateEmail = user.email || candidateId;
+        // Look up candidate in partner's B2B sessions only
+        const candidateSessions = allSessions.filter(s => 
+          s.externalEmail === candidateId || 
+          s.externalUserId === candidateId ||
+          s.id === candidateId
+        );
+        
+        if (candidateSessions.length === 0) continue;
+        
+        completedResults = candidateSessions
+          .filter(s => s.status === 'completed')
+          .map(s => ({
+            id: s.id,
+            assessmentType: s.assessmentType,
+            status: s.status,
+            scores: s.scores,
+            totalScore: s.totalScore,
+            completedAt: s.completedAt,
+          }));
+        
+        // Try to get name from partner invitation, fall back to email
+        const matchingInvitation = partnerInvitations.find(
+          inv => inv.email === candidateId || inv.externalUserId === candidateId
+        );
+        
+        if (matchingInvitation?.name) {
+          candidateName = matchingInvitation.name;
         } else {
-          // Check for partner invitation candidate first
-          const matchingInvitation = partnerInvitations.find(
-            inv => inv.email === candidateId || inv.externalUserId === candidateId || inv.userId === candidateId
-          );
-          
-          if (matchingInvitation) {
-            // Partner invitation candidate - get results from B2B sessions
-            const candidateSessions = allSessions.filter(s => 
-              s.externalEmail === matchingInvitation.email
-            );
-            
-            completedResults = candidateSessions
-              .filter(s => s.status === 'completed')
-              .map(s => ({
-                id: s.id,
-                assessmentType: s.assessmentType,
-                status: s.status,
-                scores: s.scores,
-                totalScore: s.totalScore,
-                completedAt: s.completedAt,
-              }));
-            
-            // Use invitation name or extract from email
-            const invitationName = matchingInvitation.name;
-            if (invitationName) {
-              candidateName = invitationName;
-            } else {
-              const emailPart = matchingInvitation.email.split('@')[0];
-              candidateName = emailPart.replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-            }
-            candidateEmail = matchingInvitation.email;
-          } else {
-            // B2B widget candidate - look up by email in assessment_sessions
-            const candidateSessions = allSessions.filter(s => 
-              s.externalEmail === candidateId || 
-              s.externalUserId === candidateId ||
-              s.id === candidateId
-            );
-            
-            if (candidateSessions.length === 0) continue;
-            
-            // Convert sessions to result-like objects for processing
-            completedResults = candidateSessions
-              .filter(s => s.status === 'completed')
-              .map(s => ({
-                id: s.id,
-                assessmentType: s.assessmentType,
-                status: s.status,
-                scores: s.scores,
-                totalScore: s.totalScore,
-                completedAt: s.completedAt,
-              }));
-            
-            // Extract name from email
-            const emailPart = candidateSessions[0].externalEmail?.split('@')[0] || candidateId;
-            candidateName = emailPart.replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-            candidateEmail = candidateSessions[0].externalEmail || candidateId;
-          }
+          const emailPart = candidateSessions[0].externalEmail?.split('@')[0] || candidateId;
+          candidateName = emailPart.replace(/\b\w/g, c => c.toUpperCase());
         }
+        candidateEmail = candidateSessions[0].externalEmail || candidateId;
         
         if (completedResults.length === 0) continue;
 
