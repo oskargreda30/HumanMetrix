@@ -14878,8 +14878,17 @@ Keep each section concise (2-3 sentences). Use professional but accessible langu
 
       const candidateIds = candidateNames.map((n: any) => n.id || n.email || n.name);
 
-      // Check for cached insights
-      if (!forceRefresh) {
+      // Check for cached insights (delete old if forceRefresh)
+      if (forceRefresh) {
+        const existingReport = await storage.findExistingPartnerReport(
+          partner.id,
+          'compare_insights',
+          candidateIds
+        );
+        if (existingReport) {
+          await storage.deletePartnerAnalysisReport(existingReport.id);
+        }
+      } else {
         const existingReport = await storage.findExistingPartnerReport(
           partner.id,
           'compare_insights',
@@ -16981,8 +16990,18 @@ Be specific and reference the candidates by name.`;
       const { roleSnapshot, candidateEntries, summaryInsights } = comparisonData;
       const candidateIds = candidateEntries.map((c: any) => c.userId);
 
-      // Check for existing cached insights (unless forceRefresh)
-      if (!forceRefresh) {
+      // Check for existing cached insights (delete old if forceRefresh)
+      if (forceRefresh) {
+        const existingReport = await storage.findExistingPartnerReport(
+          partner.id,
+          'multi_candidate_insights',
+          candidateIds,
+          roleSnapshot.roleId
+        );
+        if (existingReport) {
+          await storage.deletePartnerAnalysisReport(existingReport.id);
+        }
+      } else {
         const existingReport = await storage.findExistingPartnerReport(
           partner.id,
           'multi_candidate_insights',
