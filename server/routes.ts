@@ -10,7 +10,7 @@ import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, conv
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, broadcastMessages, SYSTEM_SETTING_KEYS, auditLogs, errorLogs, partnerInvoices, invitations, partnerCandidateInvitations, candidateNotes, emailLogs, sessions, appLogs, type PartnerAccount, type AssessmentSession } from "@shared/schema";
 import { eq, desc, sql, and, or, gte, isNotNull } from "drizzle-orm";
-import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPartnerWelcomeEmail, sendGeneralEnquiryEmail, sendB2BResultsEmail, sendPaymentReceiptWithPdf, type PdfReceiptEmailDetails, getEmailProvider, setEmailProvider, type EmailProvider } from "./email";
+import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPartnerWelcomeEmail, sendGeneralEnquiryEmail, sendB2BResultsEmail, sendPaymentReceiptWithPdf, type PdfReceiptEmailDetails } from "./email";
 import { generateReceiptPDF, generateInvoicePDF, generateInvoiceReceiptNumber, type ReceiptData } from "./generateReceipt";
 import { generateTemporaryPassword } from "./passwordUtils";
 import { getQueueStats } from "./queues";
@@ -17853,7 +17853,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
     }
   });
 
-  // Email provider configuration endpoints
+  // Email provider configuration endpoint (SendGrid primary, Gmail fallback - not configurable)
   app.get("/api/admin/email-provider", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
@@ -17863,58 +17863,14 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(403).json({ message: "Forbidden: Super admin access required" });
       }
       
-      // Get from system settings first, fall back to in-memory value
-      const setting = await storage.getSystemSetting('email_provider');
-      const provider = (setting?.value as EmailProvider) || getEmailProvider();
-      
       res.json({ 
-        provider,
+        provider: 'sendgrid',
         gmailConfigured: !!(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD),
-        sendgridConfigured: !!process.env.SENDGRID_API_KEY || true, // Assume SendGrid is configured via Replit connector
+        sendgridConfigured: true,
       });
     } catch (error) {
       console.error("Error getting email provider:", error);
       res.status(500).json({ message: "Failed to get email provider setting" });
-    }
-  });
-
-  app.put("/api/admin/email-provider", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      
-      if (user?.role !== 'super_admin') {
-        return res.status(403).json({ message: "Forbidden: Super admin access required" });
-      }
-      
-      const { provider } = req.body;
-      if (provider !== 'gmail' && provider !== 'sendgrid') {
-        return res.status(400).json({ message: "Invalid provider. Must be 'gmail' or 'sendgrid'" });
-      }
-      
-      // Validate the provider is configured
-      if (provider === 'gmail' && (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD)) {
-        return res.status(400).json({ message: "Gmail not configured. Please add GMAIL_USER and GMAIL_APP_PASSWORD secrets." });
-      }
-      
-      // Update in-memory value
-      setEmailProvider(provider);
-      
-      // Persist to database
-      await storage.upsertSystemSetting({
-        key: 'email_provider',
-        value: provider,
-        description: 'Email provider for sending transactional emails (gmail or sendgrid)',
-        updatedBy: userId,
-      });
-      
-      // Log the change
-      console.log(`[Email] Provider changed to ${provider} by user ${userId}`);
-      
-      res.json({ success: true, provider });
-    } catch (error) {
-      console.error("Error setting email provider:", error);
-      res.status(500).json({ message: "Failed to set email provider" });
     }
   });
 

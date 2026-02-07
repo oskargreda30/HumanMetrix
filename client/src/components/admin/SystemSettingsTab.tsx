@@ -96,28 +96,6 @@ export default function SystemSettingsTab() {
     },
   });
 
-  const updateEmailProviderMutation = useMutation({
-    mutationFn: async (provider: 'gmail' | 'sendgrid') => {
-      return apiRequest("PUT", "/api/admin/email-provider", { provider });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/email-provider"] });
-      toast({
-        title: "Email Provider Updated",
-        description: "The email provider has been changed successfully.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Update Failed",
-        description: error.message || "Failed to update the email provider.",
-        variant: "destructive",
-      });
-    },
-    onSettled: () => {
-      setIsUpdating(null);
-    },
-  });
 
   const getSettingValue = (key: string, defaultValue: any = false): any => {
     const setting = settings?.find(s => s.key === key);
@@ -311,7 +289,7 @@ export default function SystemSettingsTab() {
             Email Provider
           </CardTitle>
           <CardDescription className="text-white/70">
-            Choose which email service to use for sending transactional emails
+            Email delivery configuration (automatic failover)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -322,92 +300,63 @@ export default function SystemSettingsTab() {
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Gmail Option */}
-                <button
-                  onClick={() => {
-                    if (emailProviderData?.provider !== 'gmail') {
-                      setIsUpdating('email_provider');
-                      updateEmailProviderMutation.mutate('gmail');
-                    }
-                  }}
-                  disabled={isUpdating === 'email_provider' || !emailProviderData?.gmailConfigured}
-                  className={`relative p-6 rounded-lg border-2 transition-all ${
-                    emailProviderData?.provider === 'gmail'
-                      ? 'border-cyan-500 bg-cyan-500/10'
-                      : 'border-white/20 bg-white/5 hover-elevate'
-                  } ${!emailProviderData?.gmailConfigured ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                  data-testid="button-select-gmail"
+                {/* SendGrid - Primary */}
+                <div
+                  className="relative p-6 rounded-lg border-2 border-cyan-500 bg-cyan-500/10"
+                  data-testid="status-sendgrid-primary"
                 >
-                  {emailProviderData?.provider === 'gmail' && (
-                    <div className="absolute top-3 right-3">
-                      <CheckCircle2 className="h-5 w-5 text-cyan-400" />
-                    </div>
-                  )}
-                  <div className="flex flex-col items-center gap-3">
-                    <img src={gmailLogo} alt="Gmail" className="h-12 w-12 object-contain" />
-                    <div className="text-center">
-                      <h4 className="text-white font-medium">Gmail</h4>
-                      <p className="text-white/60 text-sm mt-1">Via SMTP (App Password)</p>
-                    </div>
-                    {!emailProviderData?.gmailConfigured && (
-                      <Badge variant="outline" className="bg-amber-500/20 text-amber-300 border-amber-500/30">
-                        Not Configured
-                      </Badge>
-                    )}
-                    {emailProviderData?.gmailConfigured && emailProviderData?.provider === 'gmail' && (
-                      <Badge variant="outline" className="bg-green-500/20 text-green-300 border-green-500/30">
-                        Active
-                      </Badge>
-                    )}
+                  <div className="absolute top-3 right-3">
+                    <CheckCircle2 className="h-5 w-5 text-cyan-400" />
                   </div>
-                </button>
-
-                {/* SendGrid Option */}
-                <button
-                  onClick={() => {
-                    if (emailProviderData?.provider !== 'sendgrid') {
-                      setIsUpdating('email_provider');
-                      updateEmailProviderMutation.mutate('sendgrid');
-                    }
-                  }}
-                  disabled={isUpdating === 'email_provider'}
-                  className={`relative p-6 rounded-lg border-2 transition-all cursor-pointer ${
-                    emailProviderData?.provider === 'sendgrid'
-                      ? 'border-cyan-500 bg-cyan-500/10'
-                      : 'border-white/20 bg-white/5 hover-elevate'
-                  }`}
-                  data-testid="button-select-sendgrid"
-                >
-                  {emailProviderData?.provider === 'sendgrid' && (
-                    <div className="absolute top-3 right-3">
-                      <CheckCircle2 className="h-5 w-5 text-cyan-400" />
-                    </div>
-                  )}
                   <div className="flex flex-col items-center gap-3">
                     <img src={sendgridLogo} alt="SendGrid" className="h-12 w-12 object-contain" />
                     <div className="text-center">
                       <h4 className="text-white font-medium">SendGrid</h4>
                       <p className="text-white/60 text-sm mt-1">Via API (Replit Integration)</p>
                     </div>
-                    {emailProviderData?.provider === 'sendgrid' && (
-                      <Badge variant="outline" className="bg-green-500/20 text-green-300 border-green-500/30">
-                        Active
+                    <Badge variant="outline" className="bg-green-500/20 text-green-300 border-green-500/30">
+                      Primary
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Gmail - Fallback */}
+                <div
+                  className={`relative p-6 rounded-lg border-2 border-white/20 bg-white/5 ${!emailProviderData?.gmailConfigured ? 'opacity-50' : ''}`}
+                  data-testid="status-gmail-fallback"
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <img src={gmailLogo} alt="Gmail" className="h-12 w-12 object-contain" />
+                    <div className="text-center">
+                      <h4 className="text-white font-medium">Gmail</h4>
+                      <p className="text-white/60 text-sm mt-1">Via SMTP (App Password)</p>
+                    </div>
+                    {emailProviderData?.gmailConfigured ? (
+                      <Badge variant="outline" className="bg-blue-500/20 text-blue-300 border-blue-500/30">
+                        Fallback Ready
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-amber-500/20 text-amber-300 border-amber-500/30">
+                        Not Configured
                       </Badge>
                     )}
                   </div>
-                </button>
+                </div>
               </div>
 
-              {/* Info about current provider */}
+              {/* Info about email delivery */}
               <div className="p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
                 <div className="flex items-start gap-3">
                   <Shield className="h-5 w-5 text-cyan-400 mt-0.5 shrink-0" />
                   <div>
-                    <h4 className="text-cyan-300 font-medium mb-1">Provider Information</h4>
-                    <ul className="text-white/70 text-sm space-y-1 list-disc list-inside">
-                      <li><strong className="text-white">Gmail</strong>: Uses SMTP with an App Password. Good for low volume. Requires GMAIL_USER and GMAIL_APP_PASSWORD secrets.</li>
-                      <li><strong className="text-white">SendGrid</strong>: Uses the SendGrid API via Replit's integration. Recommended for production with higher sending limits.</li>
-                    </ul>
+                    <h4 className="text-cyan-300 font-medium mb-1">Automatic Failover</h4>
+                    <p className="text-white/70 text-sm">
+                      All transactional emails are sent via <strong className="text-white">SendGrid</strong> (Replit Integration). 
+                      If SendGrid is unavailable, the system automatically falls back to <strong className="text-white">Gmail</strong> SMTP 
+                      {emailProviderData?.gmailConfigured 
+                        ? ' (configured and ready).' 
+                        : ' (requires GMAIL_USER and GMAIL_APP_PASSWORD secrets to enable).'}
+                    </p>
                   </div>
                 </div>
               </div>

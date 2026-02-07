@@ -65,19 +65,8 @@ async function logEmailToDb(params: EmailLogParams): Promise<void> {
 // Email provider types
 export type EmailProvider = 'sendgrid' | 'gmail';
 
-// Current email provider (defaults to sendgrid)
-let currentEmailProvider: EmailProvider = 'sendgrid';
-
-// Get the current email provider setting
-export function getEmailProvider(): EmailProvider {
-  return currentEmailProvider;
-}
-
-// Set the email provider (called from routes when admin changes the setting)
-export function setEmailProvider(provider: EmailProvider) {
-  currentEmailProvider = provider;
-  console.log(`[Email] Provider switched to: ${provider}`);
-}
+// SendGrid is always the primary provider, Gmail is the fallback
+const currentEmailProvider: EmailProvider = 'sendgrid';
 
 // Get the production base URL - prioritize custom domain over Replit domains
 function getBaseUrl(): string {
@@ -101,11 +90,7 @@ function formatAssessmentName(type: string): string {
   return names[type] || type;
 }
 
-// SendGrid configuration
-let sendGridInitialized = false;
-let fromEmail: string = '';
-
-// Gmail/Nodemailer configuration
+// Gmail/Nodemailer configuration (fallback provider)
 let gmailTransporter: nodemailer.Transporter | null = null;
 let gmailInitialized = false;
 
@@ -116,7 +101,7 @@ function initGmail(): boolean {
   const gmailPassword = process.env.GMAIL_APP_PASSWORD;
   
   if (!gmailUser || !gmailPassword) {
-    console.warn('❌ Gmail not configured - GMAIL_USER or GMAIL_APP_PASSWORD missing');
+    console.warn('[Email] Gmail not configured - GMAIL_USER or GMAIL_APP_PASSWORD missing (fallback unavailable)');
     return false;
   }
   
@@ -129,13 +114,17 @@ function initGmail(): boolean {
       },
     });
     gmailInitialized = true;
-    console.log('✅ Gmail ready to send emails');
+    console.log('[Email] Gmail ready as fallback provider');
     return true;
   } catch (error: any) {
-    console.error('❌ Gmail initialization failed:', error.message);
+    console.error('[Email] Gmail initialization failed:', error.message);
     return false;
   }
 }
+
+// SendGrid configuration (primary provider)
+let sendGridInitialized = false;
+let fromEmail: string = '';
 
 async function getSendGridCredentials() {
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
@@ -189,30 +178,19 @@ function getTransporter() {
 export async function initializeEmailSystem() {
   console.log('Initializing email systems...');
   
-  // Initialize both providers so we can switch between them
-  const gmailSuccess = initGmail();
+  // Initialize SendGrid as primary provider
   const sendgridSuccess = await initSendGrid();
-  
   if (sendgridSuccess) {
-    console.log('✅ SendGrid ready');
-  }
-  if (gmailSuccess) {
-    console.log('✅ Gmail ready');
+    console.log('✅ SendGrid ready (primary)');
   }
   
-  // Load persisted email provider setting from database
-  try {
-    const { storage } = await import('./storage');
-    const setting = await storage.getSystemSetting('email_provider');
-    if (setting?.value && (setting.value === 'gmail' || setting.value === 'sendgrid')) {
-      currentEmailProvider = setting.value;
-      console.log(`📧 Email provider loaded from settings: ${currentEmailProvider}`);
-    } else {
-      console.log(`📧 Email provider set to default: ${currentEmailProvider}`);
-    }
-  } catch (error) {
-    console.log(`📧 Email provider set to default: ${currentEmailProvider} (could not load from settings)`);
+  // Initialize Gmail as fallback provider
+  const gmailSuccess = initGmail();
+  if (gmailSuccess) {
+    console.log('✅ Gmail ready (fallback)');
   }
+  
+  console.log('📧 Email provider: SendGrid (primary) with Gmail fallback');
 }
 
 // Unified email sending function that routes to the correct provider
@@ -479,7 +457,7 @@ export async function sendPartnerEmail(options: {
     subject: options.subject,
     html: options.html,
     text: options.text,
-    from: { email: fromEmail || process.env.GMAIL_USER || '', name: 'HumanMetrix' },
+    from: { email: fromEmail || '', name: 'HumanMetrix' },
   }, options.logContext);
 }
 
