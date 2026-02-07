@@ -33,6 +33,7 @@ const WhitePaperFIT = lazy(() => import("@/pages/WhitePaperFIT"));
 const WhitePaperAIReadiness = lazy(() => import("@/pages/WhitePaperAIReadiness"));
 const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
+const AutoLogin = lazy(() => import("@/pages/AutoLogin"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const Assessment = lazy(() => import("@/pages/Assessment"));
 const Results = lazy(() => import("@/pages/Results"));
@@ -119,6 +120,7 @@ function Router() {
         <Route path="/login" component={Login} />
         <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/reset-password/:token" component={ResetPassword} />
+        <Route path="/auto-login/:token" component={AutoLogin} />
         <Route path="/dashboard">
           {() => (
             <ProtectedRoute>

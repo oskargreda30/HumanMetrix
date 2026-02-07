@@ -1,0 +1,67 @@
+import { useEffect, useState } from "react";
+import { useRoute, useLocation } from "wouter";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Loader2 } from "lucide-react";
+
+export default function AutoLogin() {
+  const [, params] = useRoute("/auto-login/:token");
+  const [, setLocation] = useLocation();
+  const [error, setError] = useState<string | null>(null);
+
+  const token = params?.token;
+
+  useEffect(() => {
+    if (!token) {
+      setLocation("/login");
+      return;
+    }
+
+    let cancelled = false;
+
+    async function doAutoLogin() {
+      try {
+        const res = await apiRequest("POST", "/api/auth/auto-login", { token });
+        const user = await res.json();
+
+        if (cancelled) return;
+
+        await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+
+        if (user.role === 'partner_admin') {
+          setLocation("/partner");
+        } else if (user.role === 'super_admin') {
+          setLocation("/admin");
+        } else {
+          setLocation("/dashboard");
+        }
+      } catch (err: any) {
+        if (cancelled) return;
+        const message = err?.message || "Auto-login failed. Please log in manually.";
+        setError(message);
+        setTimeout(() => setLocation("/login"), 3000);
+      }
+    }
+
+    doAutoLogin();
+
+    return () => { cancelled = true; };
+  }, [token, setLocation]);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0a1628] via-[#0f2035] to-[#0a1628]">
+      <div className="text-center" data-testid="auto-login-container">
+        {error ? (
+          <div className="space-y-4">
+            <p className="text-red-400 text-lg" data-testid="text-auto-login-error">{error}</p>
+            <p className="text-white/60 text-sm">Redirecting to login page...</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin text-cyan-400 mx-auto" />
+            <p className="text-white/80 text-lg" data-testid="text-auto-login-loading">Signing you in...</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

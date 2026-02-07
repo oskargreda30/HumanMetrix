@@ -2175,11 +2175,14 @@ export interface PartnerWelcomeDetails {
   temporaryPassword: string;
   billingType: 'prepaid' | 'auto_bill' | 'invoice';
   freeTestsAllocated?: number;
+  autoLoginToken?: string;
 }
 
 export async function sendPartnerWelcomeEmail(details: PartnerWelcomeDetails): Promise<{ success: boolean; messageId?: string }> {
   const baseUrl = getBaseUrl();
-  const loginUrl = `${baseUrl}/login`;
+  const loginUrl = details.autoLoginToken 
+    ? `${baseUrl}/auto-login/${details.autoLoginToken}` 
+    : `${baseUrl}/login`;
   const developerDocsUrl = `${baseUrl}/developers`;
   
   const billingTypeDescriptions: Record<string, string> = {

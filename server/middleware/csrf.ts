@@ -37,6 +37,7 @@ export function csrfProtection() {
       "/api/logout",
       "/api/request-password-reset",
       "/api/reset-password",
+      "/api/auth/auto-login",
       
       // Public contact/enquiry forms
       "/api/contact",

@@ -18117,6 +18117,11 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         }
       }
       
+      // Generate auto-login token for the welcome email (valid for 7 days)
+      const autoLoginToken = crypto.randomUUID();
+      const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      await storage.setAutoLoginToken(partnerUser.id, autoLoginToken, autoLoginExpiry);
+      
       // Send welcome email with login credentials
       try {
         await sendPartnerWelcomeEmail({
@@ -18126,6 +18131,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
           temporaryPassword: temporaryPassword!,
           billingType: selectedBillingType as 'payg' | 'subscription' | 'enterprise',
           freeTestsAllocated: freeTestsAllocated || 0,
+          autoLoginToken,
         });
         console.log(`Sent welcome email to partner ${email}`);
       } catch (emailError) {
@@ -18195,6 +18201,11 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       // Update user's password
       await storage.updateUserPassword(partnerUser.id, passwordHash);
       
+      // Generate auto-login token for the welcome email (valid for 7 days)
+      const autoLoginToken = crypto.randomUUID();
+      const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      await storage.setAutoLoginToken(partnerUser.id, autoLoginToken, autoLoginExpiry);
+      
       // Send welcome email with new credentials
       const result = await sendPartnerWelcomeEmail({
         partnerName: partner.name,
@@ -18203,6 +18214,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         temporaryPassword,
         billingType: (partner.billingType as 'payg' | 'subscription' | 'enterprise') || 'payg',
         freeTestsAllocated: partner.freeTestsAllocated || 0,
+        autoLoginToken,
       });
       
       if (result.success) {

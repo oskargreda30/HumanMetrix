@@ -150,6 +150,53 @@ export async function setupAuth(app: Express) {
     }
   });
 
+  app.post("/api/auth/auto-login", async (req, res) => {
+    try {
+      const { token } = req.body;
+      
+      if (!token || typeof token !== 'string') {
+        return res.status(400).json({ message: "Token required" });
+      }
+
+      const user = await storage.getUserByAutoLoginToken(token);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid or expired login link" });
+      }
+
+      if (user.autoLoginTokenExpiry && new Date(user.autoLoginTokenExpiry) < new Date()) {
+        await storage.clearAutoLoginToken(user.id);
+        return res.status(401).json({ message: "Login link has expired. Please use your email and password to log in." });
+      }
+
+      await storage.clearAutoLoginToken(user.id);
+
+      (req.session as any).userId = user.id;
+      
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err: any) => {
+          if (err) {
+            console.error("Session save error during auto-login:", err);
+            reject(err);
+          } else {
+            console.log(`[Auth] Auto-login session saved for user ${user.id}`);
+            resolve();
+          }
+        });
+      });
+      
+      res.json({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+      });
+    } catch (error) {
+      console.error("Auto-login error:", error);
+      res.status(500).json({ message: "Auto-login failed" });
+    }
+  });
+
   // Signup endpoint
   app.post("/api/signup", async (req, res) => {
     try {

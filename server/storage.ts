@@ -163,6 +163,9 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   deleteUser(id: string): Promise<void>; // For cleanup of just-created users only
   setResetToken(userId: string, token: string, expiry: Date): Promise<void>;
+  setAutoLoginToken(userId: string, token: string, expiry: Date): Promise<void>;
+  getUserByAutoLoginToken(token: string): Promise<User | undefined>;
+  clearAutoLoginToken(userId: string): Promise<void>;
   updatePassword(userId: string, passwordHash: string): Promise<void>;
   updateResultsRetentionConsent(userId: string, consent: boolean): Promise<void>;
   acceptTerms(userId: string, termsAccepted: boolean, dataShareConsent: boolean): Promise<void>;
@@ -687,6 +690,33 @@ export class DatabaseStorage implements IStorage {
       .set({ 
         resetToken: token, 
         resetTokenExpiry: expiry,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async setAutoLoginToken(userId: string, token: string, expiry: Date): Promise<void> {
+    await db
+      .update(users)
+      .set({ 
+        autoLoginToken: token, 
+        autoLoginTokenExpiry: expiry,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async getUserByAutoLoginToken(token: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.autoLoginToken, token));
+    return user;
+  }
+
+  async clearAutoLoginToken(userId: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ 
+        autoLoginToken: null, 
+        autoLoginTokenExpiry: null,
         updatedAt: new Date()
       })
       .where(eq(users.id, userId));
