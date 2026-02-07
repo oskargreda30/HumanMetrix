@@ -986,40 +986,20 @@ export function EcosystemWorkflow({
 
   return (
     <div className="space-y-4">
-      {/* Intro Banner - Premium Service Explanation */}
-      <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10">
-        <div className="p-6">
-          <div className="flex items-start gap-4">
-            <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-              <Sparkles className="h-6 w-6 text-primary" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <h2 className="text-xl font-bold">Team Diagnostic Service</h2>
-                <Badge variant="default" className="bg-primary">NEW</Badge>
-              </div>
-              <p className="text-muted-foreground mb-3">
-                Our AI-powered team capability analysis helps you understand your team's strengths, 
-                identify skill gaps, and generate ideal candidate profiles for your next hire.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span>Capability gap analysis</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span>Ideal hire recommendations</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span>Risk alerts & insights</span>
-                </div>
-              </div>
-            </div>
-          </div>
+      {/* Analysis Header - compact with name and date */}
+      <div className="flex items-center gap-3 px-1">
+        <Sparkles className="h-5 w-5 text-primary flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <h2 className="text-base md:text-lg font-semibold truncate" data-testid="text-analysis-name">
+            {project?.name || "Team Diagnostic"}
+          </h2>
+          <p className="text-xs text-muted-foreground" data-testid="text-analysis-date">
+            {project?.createdAt
+              ? new Date(project.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              : ""}
+          </p>
         </div>
-      </Card>
+      </div>
 
       {/* PAYG Restriction Banner - shown when partner has insufficient credits and no card on file */}
       {isPaygRestricted && (

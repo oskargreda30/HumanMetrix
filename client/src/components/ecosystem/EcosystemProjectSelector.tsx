@@ -131,46 +131,16 @@ export function EcosystemProjectSelector({
 
   return (
     <div className="space-y-6">
-      {/* Intro Banner - Premium Service Explanation */}
-      <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10">
-        <div className="p-6">
-          <div className="flex items-start gap-4">
-            <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-              <Sparkles className="h-6 w-6 text-primary" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <h2 className="text-xl font-bold">Team Diagnostic Service</h2>
-                <Badge variant="default" className="bg-primary">NEW</Badge>
-              </div>
-              <p className="text-muted-foreground mb-3">
-                Our AI-powered team capability analysis helps you understand your team's strengths, 
-                identify skill gaps, and generate ideal candidate profiles for your next hire.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span>Capability gap analysis</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span>Ideal hire recommendations</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span>Risk alerts & insights</span>
-                </div>
-              </div>
-              <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-                <p className="text-sm">
-                  <strong>Pricing:</strong> {formatLocalPrice(ECOSYSTEM_BASE_PRICE_PENCE)} per analysis 
-                  <span className="text-muted-foreground"> (one-time fee, includes full diagnostic report)</span>
-                </p>
-              </div>
-            </div>
-          </div>
+      {/* Compact Header */}
+      <div className="flex items-center gap-3 px-1">
+        <Sparkles className="h-5 w-5 text-primary flex-shrink-0" />
+        <div>
+          <h2 className="text-base md:text-lg font-semibold">Team Diagnostic Service</h2>
+          <p className="text-xs text-muted-foreground">
+            {formatLocalPrice(ECOSYSTEM_BASE_PRICE_PENCE)} per analysis
+          </p>
         </div>
-      </Card>
+      </div>
 
       <div className="flex items-center justify-between">
         <div>
