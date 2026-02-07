@@ -2526,7 +2526,7 @@ export default function EmbedAssessment() {
           </div>
         )}
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
             <Badge 
               className="border"
               style={{ 
