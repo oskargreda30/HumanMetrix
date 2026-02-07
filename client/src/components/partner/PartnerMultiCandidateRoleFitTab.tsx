@@ -560,6 +560,20 @@ export default function PartnerMultiCandidateRoleFitTab() {
 
   return (
     <div className="space-y-6">
+      <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-3 md:p-4">
+        <div className="flex items-start gap-2 md:gap-3">
+          <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs md:text-sm font-medium text-blue-800 dark:text-blue-200">
+              Credit Usage for Analysis
+            </p>
+            <p className="text-[11px] md:text-xs text-blue-700 dark:text-blue-300 mt-0.5 md:mt-1">
+              Credits are only consumed when generating new analysis – saved results are always free. Multi-candidate comparison: 1 credit per candidate.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
