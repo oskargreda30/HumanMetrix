@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card } from "@/components/ui/card";
@@ -20,6 +20,7 @@ import {
   Image,
   ChevronRight,
   ChevronLeft,
+  GripVertical,
 } from "lucide-react";
 import type { BugReport, BugStatus } from "@shared/schema";
 import { BUG_STATUS_ORDER, BUG_STATUS_LABELS } from "@shared/schema";
@@ -47,10 +48,12 @@ const STATUS_HEADER_COLORS: Record<string, string> = {
   closed: "bg-gray-500/20 text-gray-400",
 };
 
-function BugCard({ bug, onView, onMove }: {
+function BugCard({ bug, onView, onMove, onDragStart, onDragEnd }: {
   bug: BugReport;
   onView: () => void;
   onMove: (newStatus: BugStatus) => void;
+  onDragStart: (e: React.DragEvent, bugId: string) => void;
+  onDragEnd: () => void;
 }) {
   const severityConfig = SEVERITY_CONFIG[bug.severity] || SEVERITY_CONFIG.medium;
   const currentIdx = BUG_STATUS_ORDER.indexOf(bug.status as BugStatus);
@@ -59,14 +62,20 @@ function BugCard({ bug, onView, onMove }: {
 
   return (
     <Card
-      className="p-3 bg-white/5 border-white/10 hover-elevate cursor-pointer group"
+      className="p-3 bg-white/5 border-white/10 hover-elevate cursor-grab active:cursor-grabbing group"
+      draggable
+      onDragStart={(e) => onDragStart(e, bug.id)}
+      onDragEnd={onDragEnd}
       onClick={onView}
       data-testid={`card-bug-${bug.id}`}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
-        <h4 className="text-sm font-medium text-white line-clamp-2 flex-1" data-testid={`text-bug-title-${bug.id}`}>
-          {bug.title}
-        </h4>
+        <div className="flex items-start gap-1.5 flex-1 min-w-0">
+          <GripVertical className="h-4 w-4 text-white/20 shrink-0 mt-0.5" />
+          <h4 className="text-sm font-medium text-white line-clamp-2 flex-1" data-testid={`text-bug-title-${bug.id}`}>
+            {bug.title}
+          </h4>
+        </div>
         <Badge variant="outline" className={`${severityConfig.bgClass} text-[10px] shrink-0`} data-testid={`badge-severity-${bug.id}`}>
           {severityConfig.label}
         </Badge>
@@ -126,6 +135,8 @@ export default function BugReportsTab() {
   const [selectedBug, setSelectedBug] = useState<BugReport | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
   const [screenshotIndex, setScreenshotIndex] = useState(0);
+  const [dragOverStatus, setDragOverStatus] = useState<string | null>(null);
+  const draggedBugId = useRef<string | null>(null);
   const { toast } = useToast();
 
   const { data: bugs = [], isLoading } = useQuery<BugReport[]>({
@@ -139,6 +150,7 @@ export default function BugReportsTab() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/bug-reports"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/bug-reports/new-count"] });
     },
     onError: (error: any) => {
       toast({
@@ -155,6 +167,7 @@ export default function BugReportsTab() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/bug-reports"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/bug-reports/new-count"] });
       setSelectedBug(null);
       toast({ title: "Bug report deleted" });
     },
@@ -182,6 +195,54 @@ export default function BugReportsTab() {
         },
       }
     );
+  };
+
+  const handleDragStart = (e: React.DragEvent, bugId: string) => {
+    draggedBugId.current = bugId;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", bugId);
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = "0.5";
+    }
+  };
+
+  const handleDragEnd = (e?: React.DragEvent) => {
+    draggedBugId.current = null;
+    setDragOverStatus(null);
+    const cards = document.querySelectorAll('[data-testid^="card-bug-"]');
+    cards.forEach((card) => {
+      (card as HTMLElement).style.opacity = "1";
+    });
+  };
+
+  const handleDragOver = (e: React.DragEvent, status: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverStatus(status);
+  };
+
+  const handleDragLeave = (e: React.DragEvent, status: string) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      if (dragOverStatus === status) {
+        setDragOverStatus(null);
+      }
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, targetStatus: string) => {
+    e.preventDefault();
+    setDragOverStatus(null);
+    const bugId = draggedBugId.current || e.dataTransfer.getData("text/plain");
+    if (!bugId) return;
+
+    const bug = bugs.find((b) => b.id === bugId);
+    if (!bug || bug.status === targetStatus) return;
+
+    handleMoveStatus(bugId, targetStatus as BugStatus);
+    toast({ title: `Moved to ${BUG_STATUS_LABELS[targetStatus as BugStatus]}` });
   };
 
   if (isLoading) {
@@ -252,9 +313,19 @@ export default function BugReportsTab() {
                 {bugsByStatus[status]?.length || 0}
               </Badge>
             </div>
-            <div className={`border-x border-b rounded-b-md p-2 space-y-2 min-h-[200px] ${STATUS_COLORS[status]} border-white/10`}>
+            <div
+              className={`border-x border-b rounded-b-md p-2 space-y-2 min-h-[200px] transition-colors duration-150 ${STATUS_COLORS[status]} border-white/10 ${
+                dragOverStatus === status ? "bg-white/10 ring-2 ring-inset ring-white/20" : ""
+              }`}
+              onDragOver={(e) => handleDragOver(e, status)}
+              onDragLeave={(e) => handleDragLeave(e, status)}
+              onDrop={(e) => handleDrop(e, status)}
+              data-testid={`kanban-drop-zone-${status}`}
+            >
               {bugsByStatus[status]?.length === 0 ? (
-                <p className="text-xs text-white/30 text-center py-8">No bugs</p>
+                <p className={`text-xs text-center py-8 ${dragOverStatus === status ? "text-white/50" : "text-white/30"}`}>
+                  {dragOverStatus === status ? "Drop here" : "No bugs"}
+                </p>
               ) : (
                 bugsByStatus[status]?.map((bug) => (
                   <BugCard
@@ -266,6 +337,8 @@ export default function BugReportsTab() {
                       setScreenshotIndex(0);
                     }}
                     onMove={(newStatus) => handleMoveStatus(bug.id, newStatus)}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
                   />
                 ))
               )}
