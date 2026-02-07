@@ -1334,10 +1334,10 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
               )}
 
               {/* Report Header with Date, Re-run, and Export PDF */}
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 p-3">
                 <div className="flex items-center gap-2">
                   {config.contextType === 'partner' && (comparison as any)?.generatedAt && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="text-compare-report-date">
+                    <div className="flex items-center gap-1.5 text-xs text-white/80" data-testid="text-compare-report-date">
                       {(comparison as any)?.cached ? (
                         <>
                           <Clock className="h-3 w-3" />
@@ -1365,6 +1365,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                       }}
                       disabled={isFetchingComparison}
                       data-testid="button-rerun-comparison-analysis"
+                      className="border-white/30 text-white/90"
                     >
                       <RefreshCw className="h-3 w-3 mr-1" />
                       Re-run Analysis ({selectedCandidates.length} credits)

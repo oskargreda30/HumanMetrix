@@ -436,10 +436,10 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
       {alignment && loadingTransitionComplete && !isRerunning && (
         <div className="space-y-6">
           {/* Report Header with Date, Re-run, and Export PDF */}
-          <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 p-3">
             <div className="flex items-center gap-2">
               {config.contextType === 'partner' && (alignment as any)?.generatedAt && (
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="text-rolefit-report-date">
+                <div className="flex items-center gap-1.5 text-xs text-white/80" data-testid="text-rolefit-report-date">
                   {(alignment as any)?.cached ? (
                     <>
                       <Clock className="h-3 w-3" />
@@ -467,6 +467,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                   }}
                   disabled={isFetchingAlignment}
                   data-testid="button-rerun-rolefit-analysis"
+                  className="border-white/30 text-white/90"
                 >
                   <RefreshCw className="h-3 w-3 mr-1" />
                   Re-run Analysis (1 credit)

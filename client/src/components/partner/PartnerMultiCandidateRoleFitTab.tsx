@@ -704,10 +704,10 @@ export default function PartnerMultiCandidateRoleFitTab() {
       {comparison && !compareMutation.isPending && (
         <>
           {/* Report Header with Date, Re-run, and Export PDF */}
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 p-3">
             <div className="flex items-center gap-2">
               {(comparison as any)?.generatedAt && (
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="text-multi-rolefit-report-date">
+                <div className="flex items-center gap-1.5 text-xs text-white/80" data-testid="text-multi-rolefit-report-date">
                   {(comparison as any)?.cached ? (
                     <>
                       <Clock className="h-3 w-3" />
@@ -733,6 +733,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                 }}
                 disabled={compareMutation.isPending}
                 data-testid="button-rerun-multi-rolefit-analysis"
+                className="border-white/30 text-white/90"
               >
                 <RefreshCw className="h-3 w-3 mr-1" />
                 Re-run Analysis ({selectedCandidates.length} credits)
