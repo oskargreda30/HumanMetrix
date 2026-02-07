@@ -939,9 +939,6 @@ export default function Assessment() {
                         className="min-h-[200px] text-base disabled:opacity-60 disabled:cursor-not-allowed"
                         data-testid={`input-prompt-${currentQ.id}`}
                       />
-                      <p className="text-xs text-destructive mt-1">
-                        Pasting is disabled. Copied content will score zero.
-                      </p>
                       <p className="text-xs text-muted-foreground mt-2">
                         Your prompt will be evaluated by an AI model on clarity, structure, context relevance, creativity, and iterative improvement.
                       </p>
