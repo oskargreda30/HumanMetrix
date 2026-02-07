@@ -1261,6 +1261,55 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                   </div>
                 )}
 
+              {/* Report Header with Date, Re-run, and Export PDF */}
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 p-3">
+                <div className="flex items-center gap-2">
+                  {config.contextType === 'partner' && (comparison as any)?.generatedAt && (
+                    <div className="flex items-center gap-1.5 text-xs text-white/80" data-testid="text-compare-report-date">
+                      {(comparison as any)?.cached ? (
+                        <>
+                          <Clock className="h-3 w-3" />
+                          <span>Cached — {formatReportDate((comparison as any).generatedAt)}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-3 w-3" />
+                          <span>Generated {formatReportDate((comparison as any).generatedAt)}</span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {config.contextType === 'partner' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        forceRefreshRef.current = true;
+                        setIsRerunning(true);
+                        setLoadingTransitionComplete(false);
+                        queryClient.invalidateQueries({ queryKey: ['compare', config.contextType, selectedCandidates] });
+                      }}
+                      disabled={isFetchingComparison}
+                      data-testid="button-rerun-comparison-analysis"
+                      className="border-white/30 text-white/90"
+                    >
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      Re-run Analysis ({selectedCandidates.length} credits)
+                    </Button>
+                  )}
+                  <Button 
+                    size="sm"
+                    onClick={handleExportPDF}
+                    data-testid="button-export-comparison-top"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export as PDF
+                  </Button>
+                </div>
+              </div>
+
               {/* Executive Summary - Guide for Hiring Managers */}
               {!isCapturingPDF && (
               <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
@@ -1332,55 +1381,6 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                 </CardContent>
               </Card>
               )}
-
-              {/* Report Header with Date, Re-run, and Export PDF */}
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-4 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 p-3">
-                <div className="flex items-center gap-2">
-                  {config.contextType === 'partner' && (comparison as any)?.generatedAt && (
-                    <div className="flex items-center gap-1.5 text-xs text-white/80" data-testid="text-compare-report-date">
-                      {(comparison as any)?.cached ? (
-                        <>
-                          <Clock className="h-3 w-3" />
-                          <span>Cached — {formatReportDate((comparison as any).generatedAt)}</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="h-3 w-3" />
-                          <span>Generated {formatReportDate((comparison as any).generatedAt)}</span>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {config.contextType === 'partner' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        forceRefreshRef.current = true;
-                        setIsRerunning(true);
-                        setLoadingTransitionComplete(false);
-                        queryClient.invalidateQueries({ queryKey: ['compare', config.contextType, selectedCandidates] });
-                      }}
-                      disabled={isFetchingComparison}
-                      data-testid="button-rerun-comparison-analysis"
-                      className="border-white/30 text-white/90"
-                    >
-                      <RefreshCw className="h-3 w-3 mr-1" />
-                      Re-run Analysis ({selectedCandidates.length} credits)
-                    </Button>
-                  )}
-                  <Button 
-                    size="sm"
-                    onClick={handleExportPDF}
-                    data-testid="button-export-comparison-top"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Export as PDF
-                  </Button>
-                </div>
-              </div>
 
               {/* Summary Cards - Candidate Details & Assessment Status */}
               <Card data-testid="card-candidate-summary">
