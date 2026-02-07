@@ -25,21 +25,21 @@ const DEMO_ROLE = {
 const SKILL_ALIGNMENTS = [
   { skillName: "High Agency", candidateScore: 85, requiredScore: 80, gap: 5, alignment: "exceeds", criticality: "critical" },
   { skillName: "Intellectual Curiosity", candidateScore: 88, requiredScore: 85, gap: 3, alignment: "exceeds", criticality: "critical" },
-  { skillName: "Resilience", candidateScore: 78, requiredScore: 75, gap: 3, alignment: "meets", criticality: "important" },
-  { skillName: "Empathy & Ethics", candidateScore: 84, requiredScore: 80, gap: 4, alignment: "exceeds", criticality: "important" },
+  { skillName: "Resilience", candidateScore: 78, requiredScore: 75, gap: 3, alignment: "meets", criticality: "standard" },
+  { skillName: "Empathy & Ethics", candidateScore: 84, requiredScore: 80, gap: 4, alignment: "exceeds", criticality: "standard" },
   { skillName: "Growth Mindset", candidateScore: 86, requiredScore: 85, gap: 1, alignment: "meets", criticality: "critical" },
-  { skillName: "Interpersonal Agility", candidateScore: 80, requiredScore: 85, gap: -5, alignment: "gap", criticality: "important" },
+  { skillName: "Interpersonal Agility", candidateScore: 80, requiredScore: 85, gap: -5, alignment: "gap", criticality: "standard" },
 ];
 
 const AI_SKILL_ALIGNMENTS = [
   { skillName: "AI Literacy & Prompt Engineering", candidateScore: 82, requiredScore: 80, gap: 2, alignment: "meets", criticality: "critical" },
-  { skillName: "Technical Fundamentals", candidateScore: 75, requiredScore: 70, gap: 5, alignment: "exceeds", criticality: "important" },
-  { skillName: "Data Fluency", candidateScore: 78, requiredScore: 75, gap: 3, alignment: "exceeds", criticality: "important" },
+  { skillName: "Technical Fundamentals", candidateScore: 75, requiredScore: 70, gap: 5, alignment: "exceeds", criticality: "standard" },
+  { skillName: "Data Fluency", candidateScore: 78, requiredScore: 75, gap: 3, alignment: "exceeds", criticality: "standard" },
   { skillName: "Critical Thinking & Problem-Solving", candidateScore: 85, requiredScore: 80, gap: 5, alignment: "exceeds", criticality: "critical" },
-  { skillName: "Adaptability & Continuous Learning", candidateScore: 88, requiredScore: 85, gap: 3, alignment: "exceeds", criticality: "important" },
-  { skillName: "Collaboration & Communication", candidateScore: 80, requiredScore: 75, gap: 5, alignment: "exceeds", criticality: "important" },
+  { skillName: "Adaptability & Continuous Learning", candidateScore: 88, requiredScore: 85, gap: 3, alignment: "exceeds", criticality: "standard" },
+  { skillName: "Collaboration & Communication", candidateScore: 80, requiredScore: 75, gap: 5, alignment: "exceeds", criticality: "standard" },
   { skillName: "Responsible AI & Ethical Awareness", candidateScore: 90, requiredScore: 85, gap: 5, alignment: "exceeds", criticality: "critical" },
-  { skillName: "Creativity & Innovation", candidateScore: 76, requiredScore: 70, gap: 6, alignment: "exceeds", criticality: "important" },
+  { skillName: "Creativity & Innovation", candidateScore: 76, requiredScore: 70, gap: 6, alignment: "exceeds", criticality: "standard" },
 ];
 
 const INTERVIEW_QUESTIONS = [
@@ -94,8 +94,7 @@ export default function SampleRoleFitReport() {
 
   const getCriticalityBadge = (criticality: string) => {
     if (criticality === "critical") return <Badge variant="destructive" className="text-xs">Critical</Badge>;
-    if (criticality === "important") return <Badge variant="secondary" className="text-xs">Important</Badge>;
-    return <Badge variant="outline" className="text-xs">Nice to Have</Badge>;
+    return <Badge variant="outline" className="text-xs">Standard</Badge>;
   };
 
   const overallFitScore = 84;

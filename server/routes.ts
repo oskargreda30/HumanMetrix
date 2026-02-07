@@ -15217,6 +15217,8 @@ Use the candidates' actual names. Be specific and actionable.`;
         return res.status(404).json({ message: "Job role not found" });
       }
 
+      let hadInvalidatedOldReport = false;
+
       // Check for existing cached report (unless forceRefresh is requested)
       if (forceRefresh === 'true') {
         const existingReport = await storage.findExistingPartnerReport(
@@ -15238,7 +15240,9 @@ Use the candidates' actual names. Be specific and actionable.`;
         if (existingReport) {
           const resultData = existingReport.resultData as any;
           const hasAiInsights = resultData && (resultData.promptRoleFitAnalysis || resultData.aiqRoleFitAnalysis);
-          if (hasAiInsights) {
+          const hasOldCriticality = (resultData?.fitSkillAlignments || []).some((s: any) => s.criticality === 'important') ||
+            (resultData?.aiReadinessSkillAlignments || []).some((s: any) => s.criticality === 'important');
+          if (hasAiInsights && !hasOldCriticality) {
             return res.json({
               ...resultData,
               cached: true,
@@ -15247,11 +15251,16 @@ Use the candidates' actual names. Be specific and actionable.`;
               reportId: existingReport.id,
             });
           }
+          if (hasOldCriticality) {
+            await storage.deletePartnerAnalysisReport(existingReport.id);
+            hadInvalidatedOldReport = true;
+          }
         }
       }
 
       // Check if we have an incomplete cached report (exists but lacks AI insights)
       // In this case, skip credit consumption since the original report already charged
+      // Also skip credit consumption if we just invalidated an old cached report (already paid for)
       let hasIncompleteCachedReport = false;
       if (forceRefresh !== 'true') {
         const existingReport = await storage.findExistingPartnerReport(
@@ -15268,7 +15277,7 @@ Use the candidates' actual names. Be specific and actionable.`;
 
       // All validations passed - consume 1 credit unless regenerating incomplete cached report
       let creditResult: any = { success: true, remaining: 0, isOverage: false };
-      if (!hasIncompleteCachedReport) {
+      if (!hasIncompleteCachedReport && !hadInvalidatedOldReport) {
         creditResult = await storage.consumePartnerTest(
           partner.id,
           null,
