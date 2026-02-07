@@ -655,6 +655,7 @@ export default function Dashboard() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem 
+                    onSelect={(e) => e.preventDefault()}
                     onClick={() => setNotificationsDialogOpen(true)}
                     data-testid="menu-notifications"
                   >
@@ -662,6 +663,7 @@ export default function Dashboard() {
                     Notifications
                   </DropdownMenuItem>
                   <DropdownMenuItem 
+                    onSelect={(e) => e.preventDefault()}
                     onClick={() => setDeleteDialogOpen(true)}
                     className="text-red-600 focus:text-red-600"
                     data-testid="menu-delete-account"

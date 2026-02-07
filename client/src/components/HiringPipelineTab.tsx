@@ -341,6 +341,7 @@ export function HiringPipelineTab() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem 
+                  onSelect={(e) => e.preventDefault()}
                   onClick={(e) => { e.stopPropagation(); openNotesDialog(candidate); }} 
                   data-testid={`menu-item-notes-${candidate.candidateEmail.replace(/[^a-zA-Z0-9]/g, '_')}`}
                 >
