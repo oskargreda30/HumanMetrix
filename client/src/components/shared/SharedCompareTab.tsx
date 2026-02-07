@@ -883,11 +883,17 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
     // Calculate weighted average match (matches backend formula)
     let adjustedScore = weightSum > 0 ? weightedTotal / weightSum : 0;
     
-    // Apply critical gap penalty: 10% per gap, capped at 50% (matches backend formula)
+    // Apply critical gap penalty: 15% per gap, capped at 60% (matches backend formula)
     // IMPORTANT: Only apply if we actually assessed critical skills
     if (criticalGaps > 0 && totalCriticalSkills > 0) {
-      const criticalPenalty = criticalGaps * 0.10;
-      adjustedScore = adjustedScore * (1 - Math.min(criticalPenalty, 0.50));
+      const criticalPenalty = criticalGaps * 0.15;
+      adjustedScore = adjustedScore * (1 - Math.min(criticalPenalty, 0.60));
+    }
+    
+    // Hard cap: if candidate fails more than half their critical skills,
+    // overall fit cannot exceed 74% (prevents "Strong Fit" tier for critically deficient candidates)
+    if (totalCriticalSkills > 0 && criticalGaps > totalCriticalSkills / 2) {
+      adjustedScore = Math.min(adjustedScore, 74);
     }
     
     return { 

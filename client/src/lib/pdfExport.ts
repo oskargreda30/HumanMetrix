@@ -1687,10 +1687,16 @@ export async function exportComparisonPDF(data: ComparisonData) {
     // Calculate weighted average with coverage penalty
     let score = weightSum > 0 ? (weightedTotal / weightSum) * coverage : 0;
     
-    // Apply critical gap penalty: 10% reduction per critical gap (capped at 50%)
+    // Apply critical gap penalty: 15% reduction per critical gap (capped at 60%)
     if (criticalGaps > 0 && totalCriticalSkills > 0) {
-      const criticalPenalty = criticalGaps * 0.10;
-      score = score * (1 - Math.min(criticalPenalty, 0.5));
+      const criticalPenalty = criticalGaps * 0.15;
+      score = score * (1 - Math.min(criticalPenalty, 0.6));
+    }
+    
+    // Hard cap: if candidate fails more than half their critical skills,
+    // overall fit cannot exceed 74% (prevents "Strong Fit" tier for critically deficient candidates)
+    if (totalCriticalSkills > 0 && criticalGaps > totalCriticalSkills / 2) {
+      score = Math.min(score, 74);
     }
     
     return Math.round(score);
