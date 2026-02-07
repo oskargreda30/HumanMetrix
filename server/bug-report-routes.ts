@@ -3,7 +3,7 @@ import { storage } from "./storage";
 import { isAuthenticated } from "./auth";
 import { bugReports } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import multer from "multer";
 import OpenAI from "openai";
 import { objectStorageClient } from "./replit_integrations/object_storage/objectStorage";
@@ -221,6 +221,26 @@ export function registerBugReportRoutes(app: Express) {
     } catch (error: any) {
       console.error("[Bug Report] Error fetching screenshot:", error);
       res.status(500).json({ message: "Failed to fetch screenshot" });
+    }
+  });
+
+  app.get("/api/admin/bug-reports/new-count", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      const user = await storage.getUser(userId);
+      if (user?.role !== "super_admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const [result] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(bugReports)
+        .where(eq(bugReports.status, "new"));
+
+      res.json({ count: result?.count || 0 });
+    } catch (error: any) {
+      console.error("[Bug Report] Error fetching new count:", error);
+      res.status(500).json({ message: "Failed to fetch new bug report count" });
     }
   });
 

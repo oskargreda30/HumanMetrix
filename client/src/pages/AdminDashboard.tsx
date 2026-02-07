@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useUser } from "@/hooks/use-user";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -47,10 +48,17 @@ export default function AdminDashboard() {
   const [analysisSubTab, setAnalysisSubTab] = useState("individual");
   const [billingSubTab, setBillingSubTab] = useState("overview");
   const [logsSubTab, setLogsSubTab] = useState("app");
+  const [bugBadgeDismissed, setBugBadgeDismissed] = useState(false);
   
   const { data: orgInfo } = useQuery<{ isSuperAdmin: boolean; organization: any }>({
     queryKey: ["/api/admin/my-organization"],
     enabled: !!user,
+  });
+
+  const { data: newBugCount } = useQuery<{ count: number }>({
+    queryKey: ["/api/admin/bug-reports/new-count"],
+    enabled: !!user && user.role === 'super_admin',
+    refetchInterval: 60000,
   });
   
   const hasAdminAccess = user?.role === 'super_admin' || user?.role === 'organization_admin';
@@ -156,7 +164,12 @@ export default function AdminDashboard() {
             </p>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <Tabs value={activeTab} onValueChange={(val) => {
+              setActiveTab(val);
+              if (val === 'bug-reports') {
+                setBugBadgeDismissed(true);
+              }
+            }} className="space-y-6">
             <TabsList className="inline-flex flex-wrap gap-1 h-auto p-1 bg-white/10 border border-white/20 w-auto">
               <TabsTrigger value="overview" data-testid="tab-overview" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                 Overview
@@ -212,8 +225,16 @@ export default function AdminDashboard() {
                 </>
               )}
               {isSuperAdmin && (
-                <TabsTrigger value="bug-reports" data-testid="tab-bug-reports" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                <TabsTrigger value="bug-reports" data-testid="tab-bug-reports" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors relative">
                   Bug Reports
+                  {!bugBadgeDismissed && (newBugCount?.count ?? 0) > 0 && (
+                    <span 
+                      className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold px-1 leading-none"
+                      data-testid="badge-new-bug-count"
+                    >
+                      {newBugCount!.count}
+                    </span>
+                  )}
                 </TabsTrigger>
               )}
               {isSuperAdmin && (
