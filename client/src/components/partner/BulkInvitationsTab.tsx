@@ -208,9 +208,30 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
       sendEmails: boolean;
       forceReinvite?: boolean;
     }) => {
-      // Use longer timeout for bulk operations (2 minutes)
-      const response = await apiRequest('POST', '/api/partner/me/invitations/bulk', payload, { timeoutMs: 120000 });
-      return response.json();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
+      try {
+        const csrfToken = document.cookie.split('; ').find(c => c.startsWith('csrf_token='))?.split('=')[1];
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        };
+        if (csrfToken) headers["x-csrf-token"] = csrfToken;
+        const response = await fetch('/api/partner/me/invitations/bulk', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload),
+          credentials: 'include',
+          signal: controller.signal,
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw data;
+        }
+        return data;
+      } finally {
+        clearTimeout(timeoutId);
+      }
     },
     onSuccess: (data: any) => {
       setPendingReinvitePayload(null);
