@@ -22,6 +22,7 @@ import Stripe from "stripe";
 import { z } from "zod";
 import { EMAIL_REGEX, isValidEmail, isValidName } from "@shared/validation";
 import { createPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured, getPaymentIntent, verifyAirwallexWebhookSignature, AirwallexWebhookEvent } from "./airwallex";
+import { getPaymentProviders, createCheckoutWithFallback, type PaymentCheckoutResult } from "./payment-routing";
 import { logAiCost, extractUsage, AI_USAGE_OPERATION_TYPES } from "./ai-cost-tracker";
 import multer from "multer";
 import { getStrengthDescription, getDevelopmentDescription } from "../shared/skillNames";
@@ -1409,44 +1410,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const baseUrl = getRoutesBaseUrl(req);
       
-      // Use Stripe for B2C payments (Airwallex reserved for B2B partner billing)
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        customer_email: user.email, // Pre-fill email from account (results sent to this email)
-        line_items: [
-          {
-            price_data: {
-              currency: stripeCurrency,
-              product_data: {
-                name: 'Assessment Results Access',
-                description: `Unlock your assessment results and download your professional PDF report (${totalAssessmentCount} assessment${totalAssessmentCount > 1 ? 's' : ''})${discountDescription}. Results will be sent to your account email.`,
-              },
-              unit_amount: stripeAmount,
-            },
-            quantity: 1,
-          },
-        ],
-        mode: 'payment',
-        allow_promotion_codes: true,
-        success_url: `${baseUrl}/payment-callback?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${baseUrl}/payment-cancel-callback`,
-        metadata: {
-          userId: userId.toString(),
-          purchaseId: unpaidPurchase.id.toString(),
-          isResultsPayment: 'true',
-          countryCode: currencyCountry,
-          pricingTier,
-          localCurrency: currencyCode,
-          isVPN: isVPN ? 'true' : 'false',
-        },
-      });
+      // Airwallex primary, Stripe fallback for B2C payments
+      const paymentMeta = {
+        userId: userId.toString(),
+        purchaseId: unpaidPurchase.id.toString(),
+        isResultsPayment: 'true',
+        countryCode: currencyCountry,
+        pricingTier,
+        localCurrency: currencyCode,
+        isVPN: isVPN ? 'true' : 'false',
+      };
       
-      res.json({ 
-        success: true,
-        provider: 'stripe',
-        sessionUrl: session.url,
-        free: false 
-      });
+      const { primary, fallback } = getPaymentProviders();
+      
+      const airwallexResultsFn = async (): Promise<PaymentCheckoutResult> => {
+        const airwallexAmount = formatAmountForAirwallex(stripeAmount);
+        const merchantOrderId = `results_${unpaidPurchase.id}_${Date.now()}`;
+        const intent = await createPaymentIntent({
+          amount: airwallexAmount,
+          currency: stripeCurrency.toUpperCase(),
+          merchantOrderId,
+          returnUrl: `${baseUrl}/payment-callback?provider=airwallex`,
+          customerEmail: user.email,
+          description: `Assessment Results Access (${totalAssessmentCount} assessment${totalAssessmentCount > 1 ? 's' : ''})${discountDescription}`,
+          metadata: paymentMeta,
+        });
+        return {
+          provider: 'airwallex',
+          intentId: intent.id,
+          clientSecret: intent.clientSecret,
+          amount: airwallexAmount,
+          currency: stripeCurrency.toUpperCase(),
+          returnUrl: `${baseUrl}/payment-callback?provider=airwallex`,
+        };
+      };
+      
+      const stripeResultsFn = async (): Promise<PaymentCheckoutResult> => {
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
+          customer_email: user.email,
+          line_items: [
+            {
+              price_data: {
+                currency: stripeCurrency,
+                product_data: {
+                  name: 'Assessment Results Access',
+                  description: `Unlock your assessment results and download your professional PDF report (${totalAssessmentCount} assessment${totalAssessmentCount > 1 ? 's' : ''})${discountDescription}. Results will be sent to your account email.`,
+                },
+                unit_amount: stripeAmount,
+              },
+              quantity: 1,
+            },
+          ],
+          mode: 'payment',
+          allow_promotion_codes: true,
+          success_url: `${baseUrl}/payment-callback?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${baseUrl}/payment-cancel-callback`,
+          metadata: paymentMeta,
+        });
+        return { provider: 'stripe', url: session.url, sessionId: session.id };
+      };
+      
+      const checkoutResult = await createCheckoutWithFallback(primary, fallback, airwallexResultsFn, stripeResultsFn);
+      
+      if (checkoutResult.provider === 'airwallex') {
+        res.json({
+          success: true,
+          provider: 'airwallex',
+          intentId: checkoutResult.intentId,
+          clientSecret: checkoutResult.clientSecret,
+          amount: checkoutResult.amount,
+          currency: checkoutResult.currency,
+          returnUrl: checkoutResult.returnUrl,
+          free: false,
+        });
+      } else {
+        res.json({ 
+          success: true,
+          provider: 'stripe',
+          sessionUrl: checkoutResult.url,
+          free: false 
+        });
+      }
     } catch (error: any) {
       console.error("Error unlocking results:", error);
       res.status(500).json({ 
@@ -2739,49 +2784,49 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
 
       const baseUrl = getRoutesBaseUrl(req);
       
-      // Use Airwallex if configured, otherwise fall back to Stripe
-      if (isAirwallexConfigured()) {
-        // Calculate total amount for Airwallex (single payment intent)
+      // Airwallex primary, Stripe fallback for guest checkout
+      const guestMeta = {
+        customerEmail,
+        customerName,
+        firstName,
+        lastName,
+        assessmentIds: JSON.stringify(assessmentIds),
+        isGuestCheckout: "true",
+        countryCode: userCountry,
+        pricingTier,
+        localCurrency: localCurrencyCode,
+      };
+      
+      const { primary: guestPrimary, fallback: guestFallback } = getPaymentProviders();
+      
+      const airwallexGuestFn = async (): Promise<PaymentCheckoutResult> => {
         let totalAmount = baseFeeInLocalCurrency;
         for (const assessmentId of assessmentIds) {
           const normalizedId = normalizeAssessmentId(assessmentId);
           totalAmount += convertToStripeCurrencyAmount(ASSESSMENT_PRICES[normalizedId], localCurrencyCode, userCountry);
         }
-        
         const airwallexAmount = formatAmountForAirwallex(totalAmount);
         const merchantOrderId = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-        
-        const paymentIntent = await createPaymentIntent({
+        const intent = await createPaymentIntent({
           amount: airwallexAmount,
           currency: localCurrencyCode.toUpperCase(),
           merchantOrderId,
           returnUrl: `${baseUrl}/purchase/success`,
           customerEmail,
           description: `HumanMetrix Assessment Purchase (${assessmentIds.length} assessment${assessmentIds.length > 1 ? 's' : ''})`,
-          metadata: {
-            customerEmail,
-            customerName,
-            firstName,
-            lastName,
-            assessmentIds: JSON.stringify(assessmentIds),
-            isGuestCheckout: "true",
-            countryCode: userCountry,
-            pricingTier,
-            localCurrency: localCurrencyCode,
-          },
+          metadata: guestMeta,
         });
-        
-        res.json({ 
+        return {
           provider: 'airwallex',
-          intentId: paymentIntent.id,
-          clientSecret: paymentIntent.clientSecret,
-          currency: localCurrencyCode.toUpperCase(),
-          countryCode: userCountry,
+          intentId: intent.id,
+          clientSecret: intent.clientSecret,
           amount: airwallexAmount,
+          currency: localCurrencyCode.toUpperCase(),
           returnUrl: `${baseUrl}/purchase/success`,
-        });
-      } else {
-        // Fall back to Stripe checkout session
+        };
+      };
+      
+      const stripeGuestFn = async (): Promise<PaymentCheckoutResult> => {
         const session = await stripe.checkout.sessions.create({
           customer_email: customerEmail,
           line_items: lineItems,
@@ -2789,20 +2834,25 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
           allow_promotion_codes: true,
           success_url: `${baseUrl}/purchase/success?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${baseUrl}/dashboard?payment=cancelled`,
-          metadata: {
-            customerEmail,
-            customerName,
-            firstName,
-            lastName,
-            assessmentIds: JSON.stringify(assessmentIds),
-            isGuestCheckout: "true",
-            countryCode: userCountry,
-            pricingTier,
-            localCurrency: localCurrencyCode,
-          },
+          metadata: guestMeta,
         });
-
-        res.json({ provider: 'stripe', url: session.url });
+        return { provider: 'stripe', url: session.url, sessionId: session.id };
+      };
+      
+      const guestResult = await createCheckoutWithFallback(guestPrimary, guestFallback, airwallexGuestFn, stripeGuestFn);
+      
+      if (guestResult.provider === 'airwallex') {
+        res.json({
+          provider: 'airwallex',
+          intentId: guestResult.intentId,
+          clientSecret: guestResult.clientSecret,
+          currency: guestResult.currency,
+          countryCode: userCountry,
+          amount: guestResult.amount,
+          returnUrl: guestResult.returnUrl,
+        });
+      } else {
+        res.json({ provider: 'stripe', url: guestResult.url });
       }
     } catch (error: any) {
       console.error("Error creating guest checkout session:", error);
@@ -3004,23 +3054,71 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      // Create checkout session with local currency
-      const session = await stripe.checkout.sessions.create({
-        customer_email: user.email,
-        line_items: lineItems,
-        mode: "payment",
-        success_url: `${getRoutesBaseUrl(req)}/purchase/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${getRoutesBaseUrl(req)}/dashboard?payment=cancelled`,
-        metadata: {
-          userId: userId,
-          assessmentIds: JSON.stringify(assessmentIds),
-          countryCode: userCountry,
-          pricingTier,
-          localCurrency: localCurrencyCode,
-        },
-      });
-
-      res.json({ url: session.url });
+      // Airwallex primary, Stripe fallback for B2C checkout
+      const baseUrl = getRoutesBaseUrl(req);
+      const checkoutMeta = {
+        userId: userId.toString(),
+        assessmentIds: JSON.stringify(assessmentIds),
+        countryCode: userCountry,
+        pricingTier,
+        localCurrency: localCurrencyCode,
+      };
+      
+      const { primary, fallback } = getPaymentProviders();
+      
+      const airwallexCheckoutFn = async (): Promise<PaymentCheckoutResult> => {
+        let totalAmount = baseFeeInLocalCurrency;
+        for (const assessmentId of assessmentIds) {
+          const normalizedId = normalizeAssessmentId(assessmentId);
+          totalAmount += convertToStripeCurrencyAmount(ASSESSMENT_PRICES[normalizedId], localCurrencyCode, userCountry);
+        }
+        const airwallexAmount = formatAmountForAirwallex(totalAmount);
+        const merchantOrderId = `checkout_${userId}_${Date.now()}`;
+        const intent = await createPaymentIntent({
+          amount: airwallexAmount,
+          currency: localCurrencyCode.toUpperCase(),
+          merchantOrderId,
+          returnUrl: `${baseUrl}/purchase/success`,
+          customerEmail: user.email,
+          description: `HumanMetrix Assessment Purchase (${assessmentIds.length} assessment${assessmentIds.length > 1 ? 's' : ''})`,
+          metadata: checkoutMeta,
+        });
+        return {
+          provider: 'airwallex',
+          intentId: intent.id,
+          clientSecret: intent.clientSecret,
+          amount: airwallexAmount,
+          currency: localCurrencyCode.toUpperCase(),
+          returnUrl: `${baseUrl}/purchase/success`,
+        };
+      };
+      
+      const stripeCheckoutFn = async (): Promise<PaymentCheckoutResult> => {
+        const session = await stripe.checkout.sessions.create({
+          customer_email: user.email,
+          line_items: lineItems,
+          mode: "payment",
+          success_url: `${baseUrl}/purchase/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${baseUrl}/dashboard?payment=cancelled`,
+          metadata: checkoutMeta,
+        });
+        return { provider: 'stripe', url: session.url, sessionId: session.id };
+      };
+      
+      const checkoutResult = await createCheckoutWithFallback(primary, fallback, airwallexCheckoutFn, stripeCheckoutFn);
+      
+      if (checkoutResult.provider === 'airwallex') {
+        res.json({
+          provider: 'airwallex',
+          intentId: checkoutResult.intentId,
+          clientSecret: checkoutResult.clientSecret,
+          amount: checkoutResult.amount,
+          currency: checkoutResult.currency,
+          returnUrl: checkoutResult.returnUrl,
+        });
+      } else {
+        res.json({ provider: 'stripe', url: checkoutResult.url });
+      }
     } catch (error: any) {
       console.error("Error creating checkout session:", error);
       res.status(500).json({ message: "Failed to create checkout session: " + error.message });
@@ -3241,32 +3339,77 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      // Create Stripe checkout session
-      const session = await stripe.checkout.sessions.create({
-        customer_email: user.email,
-        line_items: lineItems,
-        mode: "payment",
-        allow_promotion_codes: true,
-        success_url: `${getRoutesBaseUrl(req)}/dashboard?partner_purchase=success&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${getRoutesBaseUrl(req)}/dashboard?partner_purchase=cancelled`,
-        metadata: {
-          type: 'partner_result_purchase',
-          userId: userId,
-          partnerInvitationId,
-          purchaseId: purchaseRecord.id,
-          countryCode: userCountry,
-          localCurrency: localCurrencyCode,
-          purchasedAssessmentTypes: purchasedTypes ? purchasedTypes.join(',') : 'all',
-          isBulkPurchase: isBulk ? 'true' : 'false',
-        },
-      });
-
-      // Update purchase with session ID
-      await storage.updatePartnerResultPurchase(purchaseRecord.id, {
-        stripeSessionId: session.id,
-      });
-
-      res.json({ url: session.url });
+      // Route by partner's payment provider with fallback
+      const partnerForPayment = await storage.getPartnerAccount(invitation.partnerId);
+      const baseUrl = getRoutesBaseUrl(req);
+      const purchaseMeta = {
+        type: 'partner_result_purchase',
+        userId: userId.toString(),
+        partnerInvitationId,
+        purchaseId: purchaseRecord.id,
+        countryCode: userCountry,
+        localCurrency: localCurrencyCode,
+        purchasedAssessmentTypes: purchasedTypes ? purchasedTypes.join(',') : 'all',
+        isBulkPurchase: isBulk ? 'true' : 'false',
+      };
+      
+      const { primary: prPrimary, fallback: prFallback } = getPaymentProviders(partnerForPayment?.paymentProvider);
+      
+      const airwallexPrFn = async (): Promise<PaymentCheckoutResult> => {
+        const airwallexAmount = formatAmountForAirwallex(stripeAmount);
+        const merchantOrderId = `partner_results_${purchaseRecord.id}_${Date.now()}`;
+        const intent = await createPaymentIntent({
+          amount: airwallexAmount,
+          currency: stripeCurrency.toUpperCase(),
+          merchantOrderId,
+          returnUrl: `${baseUrl}/dashboard?partner_purchase=success`,
+          customerEmail: user.email,
+          description: `Results Access: ${assessmentTypesList}${discountDescription ? ' (' + discountDescription + ')' : ''}`,
+          metadata: purchaseMeta,
+        });
+        await storage.updatePartnerResultPurchase(purchaseRecord.id, {
+          stripeSessionId: intent.id,
+        });
+        return {
+          provider: 'airwallex',
+          intentId: intent.id,
+          clientSecret: intent.clientSecret,
+          amount: airwallexAmount,
+          currency: stripeCurrency.toUpperCase(),
+          returnUrl: `${baseUrl}/dashboard?partner_purchase=success`,
+        };
+      };
+      
+      const stripePrFn = async (): Promise<PaymentCheckoutResult> => {
+        const session = await stripe.checkout.sessions.create({
+          customer_email: user.email,
+          line_items: lineItems,
+          mode: "payment",
+          allow_promotion_codes: true,
+          success_url: `${baseUrl}/dashboard?partner_purchase=success&session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${baseUrl}/dashboard?partner_purchase=cancelled`,
+          metadata: purchaseMeta,
+        });
+        await storage.updatePartnerResultPurchase(purchaseRecord.id, {
+          stripeSessionId: session.id,
+        });
+        return { provider: 'stripe', url: session.url, sessionId: session.id };
+      };
+      
+      const prResult = await createCheckoutWithFallback(prPrimary, prFallback, airwallexPrFn, stripePrFn);
+      
+      if (prResult.provider === 'airwallex') {
+        res.json({
+          provider: 'airwallex',
+          intentId: prResult.intentId,
+          clientSecret: prResult.clientSecret,
+          amount: prResult.amount,
+          currency: prResult.currency,
+          returnUrl: prResult.returnUrl,
+        });
+      } else {
+        res.json({ provider: 'stripe', url: prResult.url });
+      }
     } catch (error: any) {
       console.error("Error creating partner results checkout session:", error);
       res.status(500).json({ message: "Failed to create checkout session: " + error.message });
@@ -18664,16 +18807,10 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       
       const baseUrl = getRoutesBaseUrl(req);
       
-      // Check partner's payment provider and route accordingly
-      if (partner.paymentProvider === 'airwallex') {
-        // Use Airwallex for payment
-        const { createPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured } = await import("./airwallex");
-        
-        if (!isAirwallexConfigured()) {
-          return res.status(500).json({ message: "Airwallex is not configured. Please contact support." });
-        }
-        
-        // Create package record (pending) with Airwallex provider
+      // Route by partner's payment provider with fallback
+      const { primary: pkgPrimary, fallback: pkgFallback } = getPaymentProviders(partner.paymentProvider);
+      
+      const airwallexPkgFn = async (): Promise<PaymentCheckoutResult> => {
         const pkg = await storage.createPartnerTestPackage({
           partnerId: partner.id,
           packageSize,
@@ -18684,9 +18821,8 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
           paymentProvider: 'airwallex',
         });
         
-        // Create Airwallex payment intent
         const paymentIntent = await createPaymentIntent({
-          amount: formatAmountForAirwallex(totalPrice), // Airwallex uses decimal amounts
+          amount: formatAmountForAirwallex(totalPrice),
           currency: 'usd',
           merchantOrderId: pkg.id,
           returnUrl: `${baseUrl}/admin/partners/${partner.id}?package_success=true&airwallex_intent=${pkg.id}`,
@@ -18700,24 +18836,19 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
           },
         });
         
-        // Update package with Airwallex payment intent ID
         await storage.updatePartnerTestPackage(pkg.id, {
           airwallexPaymentIntentId: paymentIntent.id,
         });
         
-        // Return Airwallex hosted payment page URL (or client secret for embedded checkout)
-        res.json({ 
-          success: true,
-          paymentProvider: 'airwallex',
-          paymentIntentId: paymentIntent.id,
+        return {
+          provider: 'airwallex',
+          intentId: paymentIntent.id,
           clientSecret: paymentIntent.clientSecret,
           packageId: pkg.id,
-          // Airwallex uses a different flow - client-side checkout with clientSecret
-          // For now, provide details for frontend to handle
-        });
-      } else {
-        // Default: Use Stripe for payment
-        // Create package record (pending)
+        };
+      };
+      
+      const stripePkgFn = async (): Promise<PaymentCheckoutResult> => {
         const pkg = await storage.createPartnerTestPackage({
           partnerId: partner.id,
           packageSize,
@@ -18728,13 +18859,9 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
           paymentProvider: 'stripe',
         });
         
-        // Create Stripe checkout session
-        const stripe = (await import("stripe")).default;
-        const stripeClient = new stripe(process.env.STRIPE_SECRET_KEY!);
-        
-        const session = await stripeClient.checkout.sessions.create({
+        const session = await stripe.checkout.sessions.create({
           mode: 'payment',
-          adaptive_pricing: { enabled: false }, // Disable currency selection
+          adaptive_pricing: { enabled: false },
           customer: partner.stripeCustomerId || undefined,
           customer_email: partner.stripeCustomerId ? undefined : partner.billingEmail || partner.email,
           allow_promotion_codes: true,
@@ -18743,7 +18870,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
               currency: 'usd',
               product_data: {
                 name: `HumanMetrix Test Package - ${packageSize} Tests`,
-                description: `${tier?.name || 'Custom'} package: ${packageSize} assessment credits at $${(pricePerTest / 100).toFixed(2)} per test`,
+                description: `${tier?.name || 'Custom'} package: ${packageSize} assessment credits at ${(pricePerTest / 100).toFixed(2)} per test`,
               },
               unit_amount: totalPrice,
             },
@@ -18759,16 +18886,29 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
           cancel_url: `${baseUrl}/admin/partners/${partner.id}?package_cancelled=true`,
         });
         
-        // Update package with Stripe session ID
         await storage.updatePartnerTestPackage(pkg.id, {
           stripeCheckoutSessionId: session.id,
         });
         
-        res.json({ 
+        return { provider: 'stripe', url: session.url, packageId: pkg.id };
+      };
+      
+      const pkgResult = await createCheckoutWithFallback(pkgPrimary, pkgFallback, airwallexPkgFn, stripePkgFn);
+      
+      if (pkgResult.provider === 'airwallex') {
+        res.json({
+          success: true,
+          paymentProvider: 'airwallex',
+          paymentIntentId: pkgResult.intentId,
+          clientSecret: pkgResult.clientSecret,
+          packageId: pkgResult.packageId,
+        });
+      } else {
+        res.json({
           success: true,
           paymentProvider: 'stripe',
-          sessionUrl: session.url,
-          packageId: pkg.id,
+          sessionUrl: pkgResult.url,
+          packageId: pkgResult.packageId,
         });
       }
     } catch (error) {
@@ -19645,17 +19785,18 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         return res.status(404).json({ message: "Partner not found" });
       }
       
-      // Check payment provider
-      if (partner.paymentProvider === 'airwallex') {
-        const { createPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured } = await import("./airwallex");
-        
-        if (!isAirwallexConfigured()) {
-          return res.status(500).json({ message: "Airwallex is not configured" });
-        }
-        
-        const baseUrl = getRoutesBaseUrl(req);
-        
-        // Create Airwallex payment intent for the invoice
+      // Route by partner's payment provider with fallback
+      const baseUrl = getRoutesBaseUrl(req);
+      const invoiceMeta = {
+        type: 'enterprise_invoice',
+        invoiceId: invoice.id,
+        invoiceNumber: invoice.invoiceNumber,
+        partnerId: partner.id,
+      };
+      
+      const { primary: invPrimary, fallback: invFallback } = getPaymentProviders(partner.paymentProvider);
+      
+      const airwallexInvFn = async (): Promise<PaymentCheckoutResult> => {
         const paymentIntent = await createPaymentIntent({
           amount: formatAmountForAirwallex(invoice.totalAmount),
           currency: invoice.currency || 'gbp',
@@ -19663,31 +19804,19 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
           returnUrl: `${baseUrl}/admin/invoices?payment_success=true&invoice=${invoice.id}`,
           customerEmail: partner.billingEmail || partner.email,
           description: `Invoice ${invoice.invoiceNumber} - HumanMetrix`,
-          metadata: {
-            type: 'enterprise_invoice',
-            invoiceId: invoice.id,
-            invoiceNumber: invoice.invoiceNumber,
-            partnerId: partner.id,
-          },
+          metadata: invoiceMeta,
         });
-        
-        res.json({
-          success: true,
-          paymentProvider: 'airwallex',
-          paymentIntentId: paymentIntent.id,
+        return {
+          provider: 'airwallex',
+          intentId: paymentIntent.id,
           clientSecret: paymentIntent.clientSecret,
-          message: "Airwallex payment intent created. Use the client secret for checkout.",
-        });
-      } else {
-        // Stripe payment link
-        const stripe = (await import("stripe")).default;
-        const stripeClient = new stripe(process.env.STRIPE_SECRET_KEY!);
-        
-        const baseUrl = getRoutesBaseUrl(req);
-        
-        const session = await stripeClient.checkout.sessions.create({
+        };
+      };
+      
+      const stripeInvFn = async (): Promise<PaymentCheckoutResult> => {
+        const session = await stripe.checkout.sessions.create({
           mode: 'payment',
-          adaptive_pricing: { enabled: false }, // Disable currency selection
+          adaptive_pricing: { enabled: false },
           customer: partner.stripeCustomerId || undefined,
           customer_email: partner.stripeCustomerId ? undefined : partner.billingEmail || partner.email,
           allow_promotion_codes: true,
@@ -19702,20 +19831,28 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
             },
             quantity: 1,
           }],
-          metadata: {
-            type: 'enterprise_invoice',
-            invoiceId: invoice.id,
-            invoiceNumber: invoice.invoiceNumber,
-            partnerId: partner.id,
-          },
+          metadata: invoiceMeta,
           success_url: `${baseUrl}/admin/invoices?payment_success=true&invoice=${invoice.id}`,
           cancel_url: `${baseUrl}/admin/invoices?payment_cancelled=true&invoice=${invoice.id}`,
         });
-        
+        return { provider: 'stripe', url: session.url, sessionId: session.id };
+      };
+      
+      const invResult = await createCheckoutWithFallback(invPrimary, invFallback, airwallexInvFn, stripeInvFn);
+      
+      if (invResult.provider === 'airwallex') {
+        res.json({
+          success: true,
+          paymentProvider: 'airwallex',
+          paymentIntentId: invResult.intentId,
+          clientSecret: invResult.clientSecret,
+          message: "Airwallex payment intent created. Use the client secret for checkout.",
+        });
+      } else {
         res.json({
           success: true,
           paymentProvider: 'stripe',
-          sessionUrl: session.url,
+          sessionUrl: invResult.url,
           message: "Stripe checkout session created",
         });
       }
@@ -25075,22 +25212,916 @@ async function processAutoBillPartner(partner: PartnerAccount) {
     return;
   }
   
-  // Check for missing payment method
-  if (!partner.stripeCustomerId || !partner.stripePaymentMethodId) {
-    console.error(`[Billing Scheduler] Partner ${partner.id} (${partner.companyName}): Missing Stripe payment method, cannot charge`);
-    await handleBillingFailure(partner, usageRecord.id, amountPence, 'no_payment_method');
+  // Use the partner's configured currency (normalized to lowercase for Stripe)
+  const partnerCurrency = (partner.currency || 'GBP').toLowerCase();
+  const currencySymbols: Record<string, string> = { gbp: '£', usd: '
+  } catch (error: any) {
+    console.error(`[Billing Scheduler] Partner ${partner.id}: Stripe error - ${error.message}`);
+    const failureReason = mapStripeErrorToReason(error);
+    await handleBillingFailure(partner, usageRecord.id, amountPence, failureReason);
+  }
+}
+
+async function archiveMonthlyUsage(partner: PartnerAccount) {
+  const usage = partner.currentMonthUsage || 0;
+  
+  if (usage > 0) {
+    // Reset the current month usage counter
+    await storage.updatePartnerAccount(partner.id, { currentMonthUsage: 0 });
+    
+    console.log(`[Billing Scheduler] Partner ${partner.id}: Archived ${usage} tests, reset counter`);
+  }
+}
+
+async function processEnterpriseInvoice(partner: PartnerAccount) {
+  const prevMonthKey = storage.getPreviousMonthKey();
+  const usageRecord = await storage.getMonthlyUsage(partner.id, prevMonthKey);
+  
+  if (!usageRecord) {
+    console.log(`[Billing Scheduler] Enterprise Partner ${partner.id} (${partner.companyName}): No usage record for ${prevMonthKey}, skipping invoice`);
     return;
   }
   
-  // Use the partner's configured currency (normalized to lowercase for Stripe)
+  if (usageRecord.invoiceId) {
+    console.log(`[Billing Scheduler] Enterprise Partner ${partner.id} (${partner.companyName}): Already invoiced for ${prevMonthKey}, skipping`);
+    return;
+  }
+  
+  const usage = usageRecord.testsUsed;
+  const amountPence = usageRecord.totalAmountPence;
+  
+  if (usage === 0 || amountPence === 0) {
+    console.log(`[Billing Scheduler] Enterprise Partner ${partner.id} (${partner.companyName}): No billable usage for ${prevMonthKey}, skipping invoice`);
+    await storage.updateMonthlyUsageBillingStatus(usageRecord.id, 'billed');
+    return;
+  }
+  
+  // Calculate billing period dates
+  const [year, month] = prevMonthKey.split('-').map(Number);
+  const periodStart = new Date(year, month - 1, 1);
+  const periodEnd = new Date(year, month, 0); // Last day of the month
+  
+  // Calculate VAT (20% standard UK VAT rate)
+  const vatRate = 20;
+  const subtotal = amountPence;
+  const vatAmount = Math.round(subtotal * (vatRate / 100));
+  const totalAmount = subtotal + vatAmount;
+  
+  // Calculate due date based on payment terms
+  const paymentTermsDays = partner.paymentTermsDays || 30;
+  const dueDate = new Date();
+  dueDate.setDate(dueDate.getDate() + paymentTermsDays);
+  
+  // Get next invoice number
+  const invoiceNumber = await storage.getNextInvoiceNumber();
+  
+  // Use the partner's price per assessment (stored in smallest currency unit)
+  const pricePerTest = partner.pricePerAssessment || (usage > 0 ? Math.round(amountPence / usage) : 0);
+  
+  // Use the partner's configured currency (normalized to lowercase for consistency)
   const partnerCurrency = (partner.currency || 'GBP').toLowerCase();
-  const currencySymbols: Record<string, string> = { gbp: '£', usd: '$', eur: '€', aud: 'A$', sgd: 'S$' };
+  
+  // Get the partner's billing email for invoice
+  const billingEmail = partner.billingEmail || partner.invoiceContact || partner.email;
+  
+  console.log(`[Billing Scheduler] Enterprise Partner ${partner.id} (${partner.companyName}): Generating invoice ${invoiceNumber} for ${partnerCurrency.toUpperCase()} ${(totalAmount / 100).toFixed(2)} (${usage} tests @ ${(pricePerTest / 100).toFixed(2)} each)`);
+  
+  try {
+    // Create the invoice record with partner's currency
+    const invoice = await storage.createPartnerInvoice({
+      partnerId: partner.id,
+      invoiceNumber,
+      periodStart,
+      periodEnd,
+      testsUsed: usage,
+      pricePerTest,
+      subtotal,
+      vatRate,
+      vatAmount,
+      totalAmount,
+      currency: partnerCurrency,
+      dueDate,
+      status: 'sent',
+      notes: partner.invoiceNotes || undefined,
+      sentToEmail: billingEmail,
+    });
+    
+    // Link the invoice to the usage record
+    await storage.updateMonthlyUsageBillingStatus(usageRecord.id, 'billed', undefined, invoice.id);
+    
+    // Get the partner owner's email for sending invoice
+    const partnerUser = await storage.getUser(partner.userId);
+    const partnerEmail = partnerUser?.email || partner.invoiceContact;
+    
+    if (partnerEmail) {
+      // Send invoice email with partner's currency and PDF attachment
+      const { sendPartnerInvoiceEmail } = await import('./email');
+      await sendPartnerInvoiceEmail({
+        invoiceNumber,
+        companyName: partner.companyName,
+        partnerEmail,
+        periodStart,
+        periodEnd,
+        testsUsed: usage,
+        pricePerTest,
+        subtotal,
+        vatRate,
+        vatAmount,
+        totalAmount,
+        currency: partnerCurrency,
+        dueDate,
+        paymentTermsDays,
+        invoiceNotes: partner.invoiceNotes || undefined,
+        billingAddress: partner.billingAddressLine1 ? {
+          line1: partner.billingAddressLine1,
+          line2: partner.billingAddressLine2 || undefined,
+          city: partner.billingCity || undefined,
+          postcode: partner.billingPostcode || undefined,
+          country: partner.billingCountry || undefined,
+        } : undefined,
+      });
+      
+      console.log(`[Billing Scheduler] Enterprise Partner ${partner.id}: Invoice ${invoiceNumber} sent to ${partnerEmail}`);
+    }
+    
+    // Format currency symbol for notification
+    const currencySymbols: Record<string, string> = { gbp: '£', usd: '$', eur: '€', aud: 'A$', sgd: 'S$' };
+    const currencySymbol = currencySymbols[partnerCurrency] || partnerCurrency.toUpperCase() + ' ';
+    
+    // Dispatch in-app notification (only sent to admin+ roles per notification-types.ts)
+    await storage.dispatchPartnerNotification({
+      partnerId: partner.id,
+      type: 'invoice_generated',
+      title: 'New Invoice Available',
+      message: `Invoice ${invoiceNumber} for ${currencySymbol}${(totalAmount / 100).toFixed(2)} is now available. Payment due by ${dueDate.toLocaleDateString('en-GB')}.`,
+      metadata: { 
+        invoiceId: invoice.id, 
+        invoiceNumber,
+        amount: totalAmount,
+        currency: partnerCurrency,
+        testsUsed: usage,
+        dueDate: dueDate.toISOString(),
+      },
+    });
+    
+    console.log(`[Billing Scheduler] Enterprise Partner ${partner.id}: Invoice ${invoiceNumber} created successfully`);
+  } catch (error: any) {
+    console.error(`[Billing Scheduler] Enterprise Partner ${partner.id}: Failed to generate invoice - ${error.message}`);
+  }
+}
+
+// ========================================
+// B2B FREE UNLOCK SCHEDULER
+// Sends results emails to test-takers who have waited 30 days
+// ========================================
+
+let freeUnlockSchedulerStarted = false;
+
+export function startFreeUnlockScheduler() {
+  if (freeUnlockSchedulerStarted) {
+    console.log('[Free Unlock Scheduler] Already started, skipping');
+    return;
+  }
+  
+  freeUnlockSchedulerStarted = true;
+  
+  // Run immediately, then every hour to check for sessions due for free unlock
+  console.log('[Free Unlock Scheduler] Starting scheduler, will check every hour');
+  
+  // Run first check after 1 minute to allow server startup
+  setTimeout(() => {
+    processB2BFreeUnlocks();
+    
+    // Then run every hour
+    setInterval(() => {
+      processB2BFreeUnlocks();
+    }, 60 * 60 * 1000); // 1 hour
+  }, 60 * 1000); // 1 minute delay
+}
+
+async function processB2BFreeUnlocks() {
+  console.log(`[Free Unlock Scheduler] Checking for sessions due for free unlock at ${new Date().toISOString()}`);
+  
+  try {
+    const sessionsDue = await storage.getSessionsDueForFreeUnlock();
+    
+    if (sessionsDue.length === 0) {
+      console.log('[Free Unlock Scheduler] No sessions due for free unlock');
+      return;
+    }
+    
+    console.log(`[Free Unlock Scheduler] Found ${sessionsDue.length} sessions due for free unlock`);
+    
+    for (const session of sessionsDue) {
+      await sendFreeUnlockResultsEmail(session);
+    }
+    
+    console.log(`[Free Unlock Scheduler] Completed processing ${sessionsDue.length} free unlock emails`);
+  } catch (error: any) {
+    console.error('[Free Unlock Scheduler] Error:', error.message);
+  }
+}
+
+// Constants for delivery retry logic
+const MAX_RETRY_ATTEMPTS = 3;
+const RETRY_BACKOFF_HOURS = 24;
+
+async function sendFreeUnlockResultsEmail(session: AssessmentSession) {
+  if (!session.externalEmail) {
+    console.log(`[Free Unlock Scheduler] Session ${session.id} has no email, skipping`);
+    return;
+  }
+  
+  // Check for previous failures using persistent columns
+  const attemptCount = session.resultsDeliveryAttemptCount || 0;
+  const lastAttempt = session.lastResultsDeliveryAttemptAt;
+  const deliveryStatus = session.resultsDeliveryStatus || 'pending';
+  
+  // Skip if already marked as permanently failed
+  if (deliveryStatus === 'failed') {
+    console.log(`[Free Unlock Scheduler] Session ${session.id} marked as failed, manual intervention needed`);
+    return;
+  }
+  
+  // Check backoff period if there were previous attempts
+  if (attemptCount > 0 && lastAttempt) {
+    const hoursSinceLastAttempt = (Date.now() - new Date(lastAttempt).getTime()) / (1000 * 60 * 60);
+    
+    if (attemptCount >= MAX_RETRY_ATTEMPTS) {
+      // Mark as permanently failed after max attempts
+      await storage.updateAssessmentSession(session.id, {
+        resultsDeliveryStatus: 'failed',
+      } as any);
+      console.log(`[Free Unlock Scheduler] Session ${session.id} exceeded max retries (${MAX_RETRY_ATTEMPTS}), marked as failed`);
+      return;
+    }
+    
+    if (hoursSinceLastAttempt < RETRY_BACKOFF_HOURS) {
+      console.log(`[Free Unlock Scheduler] Session ${session.id} in backoff period, ${Math.round(RETRY_BACKOFF_HOURS - hoursSinceLastAttempt)}h remaining`);
+      return;
+    }
+  }
+  
+  // Record the attempt before trying
+  await storage.updateAssessmentSession(session.id, {
+    resultsDeliveryAttemptCount: attemptCount + 1,
+    lastResultsDeliveryAttemptAt: new Date(),
+  } as any);
+  
+  try {
+    const partner = await storage.getPartnerAccount(session.partnerId);
+    const assessmentName = normalizeAssessmentId(session.assessmentType).toUpperCase().replace('_', ' ');
+    const paymentStatus = session.resultsPaymentStatus || 'unpaid';
+    
+    const { sendResultsReadyEmail } = await import('./email');
+    const existingUser = await storage.getUserByEmail(session.externalEmail);
+    await sendResultsReadyEmail({
+      email: session.externalEmail,
+      candidateName: session.externalUserId || undefined,
+      assessmentTypes: [session.assessmentType],
+      partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
+      hasExistingAccount: !!existingUser,
+      sessionId: session.id,
+    });
+    
+    // Mark email as sent - update both email sent time and delivery status
+    await storage.updateAssessmentSession(session.id, {
+      resultsEmailSentAt: new Date(),
+      resultsDeliveryStatus: 'sent',
+    } as any);
+    
+    const deliveryType = paymentStatus === 'paid' ? 'paid results' : paymentStatus === 'free' ? 'free unlock' : '30-day free unlock';
+    console.log(`[Free Unlock Scheduler] Sent ${deliveryType} email to ${session.externalEmail} for session ${session.id}`);
+  } catch (error: any) {
+    // Check if this was the final attempt
+    const newAttemptCount = attemptCount + 1;
+    if (newAttemptCount >= MAX_RETRY_ATTEMPTS) {
+      await storage.updateAssessmentSession(session.id, {
+        resultsDeliveryStatus: 'failed',
+      } as any);
+      console.error(`[Free Unlock Scheduler] Failed to send email for session ${session.id} (final attempt ${newAttemptCount}/${MAX_RETRY_ATTEMPTS}), marked as failed:`, error.message);
+    } else {
+      console.error(`[Free Unlock Scheduler] Failed to send email for session ${session.id} (attempt ${newAttemptCount}/${MAX_RETRY_ATTEMPTS}):`, error.message);
+    }
+  }
+}
+, eur: '€', aud: 'A
+  } catch (error: any) {
+    console.error(`[Billing Scheduler] Partner ${partner.id}: Stripe error - ${error.message}`);
+    const failureReason = mapStripeErrorToReason(error);
+    await handleBillingFailure(partner, usageRecord.id, amountPence, failureReason);
+  }
+}
+
+async function archiveMonthlyUsage(partner: PartnerAccount) {
+  const usage = partner.currentMonthUsage || 0;
+  
+  if (usage > 0) {
+    // Reset the current month usage counter
+    await storage.updatePartnerAccount(partner.id, { currentMonthUsage: 0 });
+    
+    console.log(`[Billing Scheduler] Partner ${partner.id}: Archived ${usage} tests, reset counter`);
+  }
+}
+
+async function processEnterpriseInvoice(partner: PartnerAccount) {
+  const prevMonthKey = storage.getPreviousMonthKey();
+  const usageRecord = await storage.getMonthlyUsage(partner.id, prevMonthKey);
+  
+  if (!usageRecord) {
+    console.log(`[Billing Scheduler] Enterprise Partner ${partner.id} (${partner.companyName}): No usage record for ${prevMonthKey}, skipping invoice`);
+    return;
+  }
+  
+  if (usageRecord.invoiceId) {
+    console.log(`[Billing Scheduler] Enterprise Partner ${partner.id} (${partner.companyName}): Already invoiced for ${prevMonthKey}, skipping`);
+    return;
+  }
+  
+  const usage = usageRecord.testsUsed;
+  const amountPence = usageRecord.totalAmountPence;
+  
+  if (usage === 0 || amountPence === 0) {
+    console.log(`[Billing Scheduler] Enterprise Partner ${partner.id} (${partner.companyName}): No billable usage for ${prevMonthKey}, skipping invoice`);
+    await storage.updateMonthlyUsageBillingStatus(usageRecord.id, 'billed');
+    return;
+  }
+  
+  // Calculate billing period dates
+  const [year, month] = prevMonthKey.split('-').map(Number);
+  const periodStart = new Date(year, month - 1, 1);
+  const periodEnd = new Date(year, month, 0); // Last day of the month
+  
+  // Calculate VAT (20% standard UK VAT rate)
+  const vatRate = 20;
+  const subtotal = amountPence;
+  const vatAmount = Math.round(subtotal * (vatRate / 100));
+  const totalAmount = subtotal + vatAmount;
+  
+  // Calculate due date based on payment terms
+  const paymentTermsDays = partner.paymentTermsDays || 30;
+  const dueDate = new Date();
+  dueDate.setDate(dueDate.getDate() + paymentTermsDays);
+  
+  // Get next invoice number
+  const invoiceNumber = await storage.getNextInvoiceNumber();
+  
+  // Use the partner's price per assessment (stored in smallest currency unit)
+  const pricePerTest = partner.pricePerAssessment || (usage > 0 ? Math.round(amountPence / usage) : 0);
+  
+  // Use the partner's configured currency (normalized to lowercase for consistency)
+  const partnerCurrency = (partner.currency || 'GBP').toLowerCase();
+  
+  // Get the partner's billing email for invoice
+  const billingEmail = partner.billingEmail || partner.invoiceContact || partner.email;
+  
+  console.log(`[Billing Scheduler] Enterprise Partner ${partner.id} (${partner.companyName}): Generating invoice ${invoiceNumber} for ${partnerCurrency.toUpperCase()} ${(totalAmount / 100).toFixed(2)} (${usage} tests @ ${(pricePerTest / 100).toFixed(2)} each)`);
+  
+  try {
+    // Create the invoice record with partner's currency
+    const invoice = await storage.createPartnerInvoice({
+      partnerId: partner.id,
+      invoiceNumber,
+      periodStart,
+      periodEnd,
+      testsUsed: usage,
+      pricePerTest,
+      subtotal,
+      vatRate,
+      vatAmount,
+      totalAmount,
+      currency: partnerCurrency,
+      dueDate,
+      status: 'sent',
+      notes: partner.invoiceNotes || undefined,
+      sentToEmail: billingEmail,
+    });
+    
+    // Link the invoice to the usage record
+    await storage.updateMonthlyUsageBillingStatus(usageRecord.id, 'billed', undefined, invoice.id);
+    
+    // Get the partner owner's email for sending invoice
+    const partnerUser = await storage.getUser(partner.userId);
+    const partnerEmail = partnerUser?.email || partner.invoiceContact;
+    
+    if (partnerEmail) {
+      // Send invoice email with partner's currency and PDF attachment
+      const { sendPartnerInvoiceEmail } = await import('./email');
+      await sendPartnerInvoiceEmail({
+        invoiceNumber,
+        companyName: partner.companyName,
+        partnerEmail,
+        periodStart,
+        periodEnd,
+        testsUsed: usage,
+        pricePerTest,
+        subtotal,
+        vatRate,
+        vatAmount,
+        totalAmount,
+        currency: partnerCurrency,
+        dueDate,
+        paymentTermsDays,
+        invoiceNotes: partner.invoiceNotes || undefined,
+        billingAddress: partner.billingAddressLine1 ? {
+          line1: partner.billingAddressLine1,
+          line2: partner.billingAddressLine2 || undefined,
+          city: partner.billingCity || undefined,
+          postcode: partner.billingPostcode || undefined,
+          country: partner.billingCountry || undefined,
+        } : undefined,
+      });
+      
+      console.log(`[Billing Scheduler] Enterprise Partner ${partner.id}: Invoice ${invoiceNumber} sent to ${partnerEmail}`);
+    }
+    
+    // Format currency symbol for notification
+    const currencySymbols: Record<string, string> = { gbp: '£', usd: '$', eur: '€', aud: 'A$', sgd: 'S$' };
+    const currencySymbol = currencySymbols[partnerCurrency] || partnerCurrency.toUpperCase() + ' ';
+    
+    // Dispatch in-app notification (only sent to admin+ roles per notification-types.ts)
+    await storage.dispatchPartnerNotification({
+      partnerId: partner.id,
+      type: 'invoice_generated',
+      title: 'New Invoice Available',
+      message: `Invoice ${invoiceNumber} for ${currencySymbol}${(totalAmount / 100).toFixed(2)} is now available. Payment due by ${dueDate.toLocaleDateString('en-GB')}.`,
+      metadata: { 
+        invoiceId: invoice.id, 
+        invoiceNumber,
+        amount: totalAmount,
+        currency: partnerCurrency,
+        testsUsed: usage,
+        dueDate: dueDate.toISOString(),
+      },
+    });
+    
+    console.log(`[Billing Scheduler] Enterprise Partner ${partner.id}: Invoice ${invoiceNumber} created successfully`);
+  } catch (error: any) {
+    console.error(`[Billing Scheduler] Enterprise Partner ${partner.id}: Failed to generate invoice - ${error.message}`);
+  }
+}
+
+// ========================================
+// B2B FREE UNLOCK SCHEDULER
+// Sends results emails to test-takers who have waited 30 days
+// ========================================
+
+let freeUnlockSchedulerStarted = false;
+
+export function startFreeUnlockScheduler() {
+  if (freeUnlockSchedulerStarted) {
+    console.log('[Free Unlock Scheduler] Already started, skipping');
+    return;
+  }
+  
+  freeUnlockSchedulerStarted = true;
+  
+  // Run immediately, then every hour to check for sessions due for free unlock
+  console.log('[Free Unlock Scheduler] Starting scheduler, will check every hour');
+  
+  // Run first check after 1 minute to allow server startup
+  setTimeout(() => {
+    processB2BFreeUnlocks();
+    
+    // Then run every hour
+    setInterval(() => {
+      processB2BFreeUnlocks();
+    }, 60 * 60 * 1000); // 1 hour
+  }, 60 * 1000); // 1 minute delay
+}
+
+async function processB2BFreeUnlocks() {
+  console.log(`[Free Unlock Scheduler] Checking for sessions due for free unlock at ${new Date().toISOString()}`);
+  
+  try {
+    const sessionsDue = await storage.getSessionsDueForFreeUnlock();
+    
+    if (sessionsDue.length === 0) {
+      console.log('[Free Unlock Scheduler] No sessions due for free unlock');
+      return;
+    }
+    
+    console.log(`[Free Unlock Scheduler] Found ${sessionsDue.length} sessions due for free unlock`);
+    
+    for (const session of sessionsDue) {
+      await sendFreeUnlockResultsEmail(session);
+    }
+    
+    console.log(`[Free Unlock Scheduler] Completed processing ${sessionsDue.length} free unlock emails`);
+  } catch (error: any) {
+    console.error('[Free Unlock Scheduler] Error:', error.message);
+  }
+}
+
+// Constants for delivery retry logic
+const MAX_RETRY_ATTEMPTS = 3;
+const RETRY_BACKOFF_HOURS = 24;
+
+async function sendFreeUnlockResultsEmail(session: AssessmentSession) {
+  if (!session.externalEmail) {
+    console.log(`[Free Unlock Scheduler] Session ${session.id} has no email, skipping`);
+    return;
+  }
+  
+  // Check for previous failures using persistent columns
+  const attemptCount = session.resultsDeliveryAttemptCount || 0;
+  const lastAttempt = session.lastResultsDeliveryAttemptAt;
+  const deliveryStatus = session.resultsDeliveryStatus || 'pending';
+  
+  // Skip if already marked as permanently failed
+  if (deliveryStatus === 'failed') {
+    console.log(`[Free Unlock Scheduler] Session ${session.id} marked as failed, manual intervention needed`);
+    return;
+  }
+  
+  // Check backoff period if there were previous attempts
+  if (attemptCount > 0 && lastAttempt) {
+    const hoursSinceLastAttempt = (Date.now() - new Date(lastAttempt).getTime()) / (1000 * 60 * 60);
+    
+    if (attemptCount >= MAX_RETRY_ATTEMPTS) {
+      // Mark as permanently failed after max attempts
+      await storage.updateAssessmentSession(session.id, {
+        resultsDeliveryStatus: 'failed',
+      } as any);
+      console.log(`[Free Unlock Scheduler] Session ${session.id} exceeded max retries (${MAX_RETRY_ATTEMPTS}), marked as failed`);
+      return;
+    }
+    
+    if (hoursSinceLastAttempt < RETRY_BACKOFF_HOURS) {
+      console.log(`[Free Unlock Scheduler] Session ${session.id} in backoff period, ${Math.round(RETRY_BACKOFF_HOURS - hoursSinceLastAttempt)}h remaining`);
+      return;
+    }
+  }
+  
+  // Record the attempt before trying
+  await storage.updateAssessmentSession(session.id, {
+    resultsDeliveryAttemptCount: attemptCount + 1,
+    lastResultsDeliveryAttemptAt: new Date(),
+  } as any);
+  
+  try {
+    const partner = await storage.getPartnerAccount(session.partnerId);
+    const assessmentName = normalizeAssessmentId(session.assessmentType).toUpperCase().replace('_', ' ');
+    const paymentStatus = session.resultsPaymentStatus || 'unpaid';
+    
+    const { sendResultsReadyEmail } = await import('./email');
+    const existingUser = await storage.getUserByEmail(session.externalEmail);
+    await sendResultsReadyEmail({
+      email: session.externalEmail,
+      candidateName: session.externalUserId || undefined,
+      assessmentTypes: [session.assessmentType],
+      partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
+      hasExistingAccount: !!existingUser,
+      sessionId: session.id,
+    });
+    
+    // Mark email as sent - update both email sent time and delivery status
+    await storage.updateAssessmentSession(session.id, {
+      resultsEmailSentAt: new Date(),
+      resultsDeliveryStatus: 'sent',
+    } as any);
+    
+    const deliveryType = paymentStatus === 'paid' ? 'paid results' : paymentStatus === 'free' ? 'free unlock' : '30-day free unlock';
+    console.log(`[Free Unlock Scheduler] Sent ${deliveryType} email to ${session.externalEmail} for session ${session.id}`);
+  } catch (error: any) {
+    // Check if this was the final attempt
+    const newAttemptCount = attemptCount + 1;
+    if (newAttemptCount >= MAX_RETRY_ATTEMPTS) {
+      await storage.updateAssessmentSession(session.id, {
+        resultsDeliveryStatus: 'failed',
+      } as any);
+      console.error(`[Free Unlock Scheduler] Failed to send email for session ${session.id} (final attempt ${newAttemptCount}/${MAX_RETRY_ATTEMPTS}), marked as failed:`, error.message);
+    } else {
+      console.error(`[Free Unlock Scheduler] Failed to send email for session ${session.id} (attempt ${newAttemptCount}/${MAX_RETRY_ATTEMPTS}):`, error.message);
+    }
+  }
+}
+, sgd: 'S
+  } catch (error: any) {
+    console.error(`[Billing Scheduler] Partner ${partner.id}: Stripe error - ${error.message}`);
+    const failureReason = mapStripeErrorToReason(error);
+    await handleBillingFailure(partner, usageRecord.id, amountPence, failureReason);
+  }
+}
+
+async function archiveMonthlyUsage(partner: PartnerAccount) {
+  const usage = partner.currentMonthUsage || 0;
+  
+  if (usage > 0) {
+    // Reset the current month usage counter
+    await storage.updatePartnerAccount(partner.id, { currentMonthUsage: 0 });
+    
+    console.log(`[Billing Scheduler] Partner ${partner.id}: Archived ${usage} tests, reset counter`);
+  }
+}
+
+async function processEnterpriseInvoice(partner: PartnerAccount) {
+  const prevMonthKey = storage.getPreviousMonthKey();
+  const usageRecord = await storage.getMonthlyUsage(partner.id, prevMonthKey);
+  
+  if (!usageRecord) {
+    console.log(`[Billing Scheduler] Enterprise Partner ${partner.id} (${partner.companyName}): No usage record for ${prevMonthKey}, skipping invoice`);
+    return;
+  }
+  
+  if (usageRecord.invoiceId) {
+    console.log(`[Billing Scheduler] Enterprise Partner ${partner.id} (${partner.companyName}): Already invoiced for ${prevMonthKey}, skipping`);
+    return;
+  }
+  
+  const usage = usageRecord.testsUsed;
+  const amountPence = usageRecord.totalAmountPence;
+  
+  if (usage === 0 || amountPence === 0) {
+    console.log(`[Billing Scheduler] Enterprise Partner ${partner.id} (${partner.companyName}): No billable usage for ${prevMonthKey}, skipping invoice`);
+    await storage.updateMonthlyUsageBillingStatus(usageRecord.id, 'billed');
+    return;
+  }
+  
+  // Calculate billing period dates
+  const [year, month] = prevMonthKey.split('-').map(Number);
+  const periodStart = new Date(year, month - 1, 1);
+  const periodEnd = new Date(year, month, 0); // Last day of the month
+  
+  // Calculate VAT (20% standard UK VAT rate)
+  const vatRate = 20;
+  const subtotal = amountPence;
+  const vatAmount = Math.round(subtotal * (vatRate / 100));
+  const totalAmount = subtotal + vatAmount;
+  
+  // Calculate due date based on payment terms
+  const paymentTermsDays = partner.paymentTermsDays || 30;
+  const dueDate = new Date();
+  dueDate.setDate(dueDate.getDate() + paymentTermsDays);
+  
+  // Get next invoice number
+  const invoiceNumber = await storage.getNextInvoiceNumber();
+  
+  // Use the partner's price per assessment (stored in smallest currency unit)
+  const pricePerTest = partner.pricePerAssessment || (usage > 0 ? Math.round(amountPence / usage) : 0);
+  
+  // Use the partner's configured currency (normalized to lowercase for consistency)
+  const partnerCurrency = (partner.currency || 'GBP').toLowerCase();
+  
+  // Get the partner's billing email for invoice
+  const billingEmail = partner.billingEmail || partner.invoiceContact || partner.email;
+  
+  console.log(`[Billing Scheduler] Enterprise Partner ${partner.id} (${partner.companyName}): Generating invoice ${invoiceNumber} for ${partnerCurrency.toUpperCase()} ${(totalAmount / 100).toFixed(2)} (${usage} tests @ ${(pricePerTest / 100).toFixed(2)} each)`);
+  
+  try {
+    // Create the invoice record with partner's currency
+    const invoice = await storage.createPartnerInvoice({
+      partnerId: partner.id,
+      invoiceNumber,
+      periodStart,
+      periodEnd,
+      testsUsed: usage,
+      pricePerTest,
+      subtotal,
+      vatRate,
+      vatAmount,
+      totalAmount,
+      currency: partnerCurrency,
+      dueDate,
+      status: 'sent',
+      notes: partner.invoiceNotes || undefined,
+      sentToEmail: billingEmail,
+    });
+    
+    // Link the invoice to the usage record
+    await storage.updateMonthlyUsageBillingStatus(usageRecord.id, 'billed', undefined, invoice.id);
+    
+    // Get the partner owner's email for sending invoice
+    const partnerUser = await storage.getUser(partner.userId);
+    const partnerEmail = partnerUser?.email || partner.invoiceContact;
+    
+    if (partnerEmail) {
+      // Send invoice email with partner's currency and PDF attachment
+      const { sendPartnerInvoiceEmail } = await import('./email');
+      await sendPartnerInvoiceEmail({
+        invoiceNumber,
+        companyName: partner.companyName,
+        partnerEmail,
+        periodStart,
+        periodEnd,
+        testsUsed: usage,
+        pricePerTest,
+        subtotal,
+        vatRate,
+        vatAmount,
+        totalAmount,
+        currency: partnerCurrency,
+        dueDate,
+        paymentTermsDays,
+        invoiceNotes: partner.invoiceNotes || undefined,
+        billingAddress: partner.billingAddressLine1 ? {
+          line1: partner.billingAddressLine1,
+          line2: partner.billingAddressLine2 || undefined,
+          city: partner.billingCity || undefined,
+          postcode: partner.billingPostcode || undefined,
+          country: partner.billingCountry || undefined,
+        } : undefined,
+      });
+      
+      console.log(`[Billing Scheduler] Enterprise Partner ${partner.id}: Invoice ${invoiceNumber} sent to ${partnerEmail}`);
+    }
+    
+    // Format currency symbol for notification
+    const currencySymbols: Record<string, string> = { gbp: '£', usd: '$', eur: '€', aud: 'A$', sgd: 'S$' };
+    const currencySymbol = currencySymbols[partnerCurrency] || partnerCurrency.toUpperCase() + ' ';
+    
+    // Dispatch in-app notification (only sent to admin+ roles per notification-types.ts)
+    await storage.dispatchPartnerNotification({
+      partnerId: partner.id,
+      type: 'invoice_generated',
+      title: 'New Invoice Available',
+      message: `Invoice ${invoiceNumber} for ${currencySymbol}${(totalAmount / 100).toFixed(2)} is now available. Payment due by ${dueDate.toLocaleDateString('en-GB')}.`,
+      metadata: { 
+        invoiceId: invoice.id, 
+        invoiceNumber,
+        amount: totalAmount,
+        currency: partnerCurrency,
+        testsUsed: usage,
+        dueDate: dueDate.toISOString(),
+      },
+    });
+    
+    console.log(`[Billing Scheduler] Enterprise Partner ${partner.id}: Invoice ${invoiceNumber} created successfully`);
+  } catch (error: any) {
+    console.error(`[Billing Scheduler] Enterprise Partner ${partner.id}: Failed to generate invoice - ${error.message}`);
+  }
+}
+
+// ========================================
+// B2B FREE UNLOCK SCHEDULER
+// Sends results emails to test-takers who have waited 30 days
+// ========================================
+
+let freeUnlockSchedulerStarted = false;
+
+export function startFreeUnlockScheduler() {
+  if (freeUnlockSchedulerStarted) {
+    console.log('[Free Unlock Scheduler] Already started, skipping');
+    return;
+  }
+  
+  freeUnlockSchedulerStarted = true;
+  
+  // Run immediately, then every hour to check for sessions due for free unlock
+  console.log('[Free Unlock Scheduler] Starting scheduler, will check every hour');
+  
+  // Run first check after 1 minute to allow server startup
+  setTimeout(() => {
+    processB2BFreeUnlocks();
+    
+    // Then run every hour
+    setInterval(() => {
+      processB2BFreeUnlocks();
+    }, 60 * 60 * 1000); // 1 hour
+  }, 60 * 1000); // 1 minute delay
+}
+
+async function processB2BFreeUnlocks() {
+  console.log(`[Free Unlock Scheduler] Checking for sessions due for free unlock at ${new Date().toISOString()}`);
+  
+  try {
+    const sessionsDue = await storage.getSessionsDueForFreeUnlock();
+    
+    if (sessionsDue.length === 0) {
+      console.log('[Free Unlock Scheduler] No sessions due for free unlock');
+      return;
+    }
+    
+    console.log(`[Free Unlock Scheduler] Found ${sessionsDue.length} sessions due for free unlock`);
+    
+    for (const session of sessionsDue) {
+      await sendFreeUnlockResultsEmail(session);
+    }
+    
+    console.log(`[Free Unlock Scheduler] Completed processing ${sessionsDue.length} free unlock emails`);
+  } catch (error: any) {
+    console.error('[Free Unlock Scheduler] Error:', error.message);
+  }
+}
+
+// Constants for delivery retry logic
+const MAX_RETRY_ATTEMPTS = 3;
+const RETRY_BACKOFF_HOURS = 24;
+
+async function sendFreeUnlockResultsEmail(session: AssessmentSession) {
+  if (!session.externalEmail) {
+    console.log(`[Free Unlock Scheduler] Session ${session.id} has no email, skipping`);
+    return;
+  }
+  
+  // Check for previous failures using persistent columns
+  const attemptCount = session.resultsDeliveryAttemptCount || 0;
+  const lastAttempt = session.lastResultsDeliveryAttemptAt;
+  const deliveryStatus = session.resultsDeliveryStatus || 'pending';
+  
+  // Skip if already marked as permanently failed
+  if (deliveryStatus === 'failed') {
+    console.log(`[Free Unlock Scheduler] Session ${session.id} marked as failed, manual intervention needed`);
+    return;
+  }
+  
+  // Check backoff period if there were previous attempts
+  if (attemptCount > 0 && lastAttempt) {
+    const hoursSinceLastAttempt = (Date.now() - new Date(lastAttempt).getTime()) / (1000 * 60 * 60);
+    
+    if (attemptCount >= MAX_RETRY_ATTEMPTS) {
+      // Mark as permanently failed after max attempts
+      await storage.updateAssessmentSession(session.id, {
+        resultsDeliveryStatus: 'failed',
+      } as any);
+      console.log(`[Free Unlock Scheduler] Session ${session.id} exceeded max retries (${MAX_RETRY_ATTEMPTS}), marked as failed`);
+      return;
+    }
+    
+    if (hoursSinceLastAttempt < RETRY_BACKOFF_HOURS) {
+      console.log(`[Free Unlock Scheduler] Session ${session.id} in backoff period, ${Math.round(RETRY_BACKOFF_HOURS - hoursSinceLastAttempt)}h remaining`);
+      return;
+    }
+  }
+  
+  // Record the attempt before trying
+  await storage.updateAssessmentSession(session.id, {
+    resultsDeliveryAttemptCount: attemptCount + 1,
+    lastResultsDeliveryAttemptAt: new Date(),
+  } as any);
+  
+  try {
+    const partner = await storage.getPartnerAccount(session.partnerId);
+    const assessmentName = normalizeAssessmentId(session.assessmentType).toUpperCase().replace('_', ' ');
+    const paymentStatus = session.resultsPaymentStatus || 'unpaid';
+    
+    const { sendResultsReadyEmail } = await import('./email');
+    const existingUser = await storage.getUserByEmail(session.externalEmail);
+    await sendResultsReadyEmail({
+      email: session.externalEmail,
+      candidateName: session.externalUserId || undefined,
+      assessmentTypes: [session.assessmentType],
+      partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
+      hasExistingAccount: !!existingUser,
+      sessionId: session.id,
+    });
+    
+    // Mark email as sent - update both email sent time and delivery status
+    await storage.updateAssessmentSession(session.id, {
+      resultsEmailSentAt: new Date(),
+      resultsDeliveryStatus: 'sent',
+    } as any);
+    
+    const deliveryType = paymentStatus === 'paid' ? 'paid results' : paymentStatus === 'free' ? 'free unlock' : '30-day free unlock';
+    console.log(`[Free Unlock Scheduler] Sent ${deliveryType} email to ${session.externalEmail} for session ${session.id}`);
+  } catch (error: any) {
+    // Check if this was the final attempt
+    const newAttemptCount = attemptCount + 1;
+    if (newAttemptCount >= MAX_RETRY_ATTEMPTS) {
+      await storage.updateAssessmentSession(session.id, {
+        resultsDeliveryStatus: 'failed',
+      } as any);
+      console.error(`[Free Unlock Scheduler] Failed to send email for session ${session.id} (final attempt ${newAttemptCount}/${MAX_RETRY_ATTEMPTS}), marked as failed:`, error.message);
+    } else {
+      console.error(`[Free Unlock Scheduler] Failed to send email for session ${session.id} (attempt ${newAttemptCount}/${MAX_RETRY_ATTEMPTS}):`, error.message);
+    }
+  }
+}
+ };
   const currencySymbol = currencySymbols[partnerCurrency] || partnerCurrency.toUpperCase() + ' ';
   
   console.log(`[Billing Scheduler] Partner ${partner.id} (${partner.companyName}): Charging ${currencySymbol}${(amountPence / 100).toFixed(2)} for ${usage} tests (${prevMonthKey})`);
   
-  try {
-    // Create a payment intent and charge immediately using partner's currency
+  // Route by partner's payment provider with fallback
+  const { primary: billingPrimary, fallback: billingFallback } = getPaymentProviders(partner.paymentProvider);
+  
+  const attemptAirwallexCharge = async (): Promise<{ success: boolean; paymentId: string; provider: string }> => {
+    if (!partner.airwallexCustomerId) {
+      throw new Error('No Airwallex customer ID configured for partner');
+    }
+    const { createPaymentIntent: createAWIntent, formatAmountForAirwallex: formatAW } = await import("./airwallex");
+    const intent = await createAWIntent({
+      amount: formatAW(amountPence),
+      currency: partnerCurrency.toUpperCase(),
+      merchantOrderId: `payg_${partner.id}_${prevMonthKey}_${Date.now()}`,
+      returnUrl: `${process.env.REPLIT_DEV_DOMAIN ? 'https://' + process.env.REPLIT_DEV_DOMAIN : 'https://humanmetrix.com'}/partner-dashboard`,
+      customerEmail: partner.billingEmail || partner.email,
+      description: `HumanMetrix API Usage - ${usage} assessments (${prevMonthKey})`,
+      metadata: {
+        type: 'payg_billing',
+        partner_id: partner.id,
+        usage_count: usage.toString(),
+        usage_record_id: usageRecord.id,
+        billing_period: prevMonthKey,
+      },
+    });
+    return { success: true, paymentId: intent.id, provider: 'Airwallex' };
+  };
+  
+  const attemptStripeCharge = async (): Promise<{ success: boolean; paymentId: string; provider: string }> => {
+    if (!partner.stripeCustomerId || !partner.stripePaymentMethodId) {
+      throw new Error('Missing Stripe payment method for partner');
+    }
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountPence,
       currency: partnerCurrency,
@@ -25106,50 +26137,81 @@ async function processAutoBillPartner(partner: PartnerAccount) {
         billing_period: prevMonthKey,
       },
     });
+    if (paymentIntent.status !== 'succeeded') {
+      throw new Error(`Stripe payment failed with status: ${paymentIntent.status}`);
+    }
+    return { success: true, paymentId: paymentIntent.id, provider: 'Stripe' };
+  };
+  
+  try {
+    let chargeResult: { success: boolean; paymentId: string; provider: string };
     
-    if (paymentIntent.status === 'succeeded') {
-      console.log(`[Billing Scheduler] Partner ${partner.id}: Payment successful - ${paymentIntent.id}`);
-      await storage.updateMonthlyUsageBillingStatus(usageRecord.id, 'billed', paymentIntent.id);
-      await handleBillingSuccess(partner);
-      
-      // Send PDF receipt email to partner
-      try {
-        const receiptDetails: PdfReceiptEmailDetails = {
-          email: partner.email,
-          name: partner.name,
-          companyName: partner.companyName || partner.name,
-          items: [{
-            description: `API Usage - ${usage} Assessments (${prevMonthKey})`,
-            quantity: usage,
-            unitPrice: partner.pricePerAssessment || Math.round(amountPence / usage),
-            amount: amountPence
-          }],
-          subtotal: amountPence,
-          total: amountPence,
-          currency: partnerCurrency,
-          transactionId: paymentIntent.id,
-          paymentMethod: 'Stripe',
-          billingAddress: partner.billingAddressLine1 ? {
-            line1: partner.billingAddressLine1,
-            line2: partner.billingAddressLine2 || undefined,
-            city: partner.billingCity || undefined,
-            postcode: partner.billingPostcode || undefined,
-            country: partner.billingCountry || undefined,
-          } : undefined,
-        };
-        
-        const { sendPaymentReceiptWithPdf: sendReceipt } = await import('./email');
-        const receiptResult = await sendReceipt(receiptDetails);
-        if (receiptResult.success) {
-          console.log(`[Billing Scheduler] Partner ${partner.id}: PDF receipt sent (Receipt: ${receiptResult.receiptNumber})`);
-        }
-      } catch (receiptError) {
-        console.error(`[Billing Scheduler] Partner ${partner.id}: Failed to send receipt email:`, receiptError);
-        // Don't fail the billing if receipt fails
+    try {
+      if (billingPrimary === 'airwallex') {
+        chargeResult = await attemptAirwallexCharge();
+      } else {
+        chargeResult = await attemptStripeCharge();
       }
-    } else {
-      console.error(`[Billing Scheduler] Partner ${partner.id}: Payment failed - status: ${paymentIntent.status}`);
-      await handleBillingFailure(partner, usageRecord.id, amountPence, 'processing_error');
+    } catch (primaryError: any) {
+      console.error(`[Billing Scheduler] Partner ${partner.id}: Primary provider (${billingPrimary}) failed: ${primaryError.message}`);
+      
+      if (billingFallback) {
+        console.log(`[Billing Scheduler] Partner ${partner.id}: Attempting fallback provider (${billingFallback})`);
+        try {
+          if (billingFallback === 'airwallex') {
+            chargeResult = await attemptAirwallexCharge();
+          } else {
+            chargeResult = await attemptStripeCharge();
+          }
+          console.log(`[Billing Scheduler] Partner ${partner.id}: Fallback provider (${billingFallback}) succeeded`);
+        } catch (fallbackError: any) {
+          console.error(`[Billing Scheduler] Partner ${partner.id}: Fallback (${billingFallback}) also failed: ${fallbackError.message}`);
+          await handleBillingFailure(partner, usageRecord.id, amountPence, 'processing_error');
+          return;
+        }
+      } else {
+        await handleBillingFailure(partner, usageRecord.id, amountPence, 'no_payment_method');
+        return;
+      }
+    }
+    
+    console.log(`[Billing Scheduler] Partner ${partner.id}: Payment successful via ${chargeResult.provider} - ${chargeResult.paymentId}`);
+    await storage.updateMonthlyUsageBillingStatus(usageRecord.id, 'billed', chargeResult.paymentId);
+    await handleBillingSuccess(partner);
+    
+    // Send PDF receipt email to partner
+    try {
+      const receiptDetails: PdfReceiptEmailDetails = {
+        email: partner.email,
+        name: partner.name,
+        companyName: partner.companyName || partner.name,
+        items: [{
+          description: `API Usage - ${usage} Assessments (${prevMonthKey})`,
+          quantity: usage,
+          unitPrice: partner.pricePerAssessment || Math.round(amountPence / usage),
+          amount: amountPence
+        }],
+        subtotal: amountPence,
+        total: amountPence,
+        currency: partnerCurrency,
+        transactionId: chargeResult.paymentId,
+        paymentMethod: chargeResult.provider,
+        billingAddress: partner.billingAddressLine1 ? {
+          line1: partner.billingAddressLine1,
+          line2: partner.billingAddressLine2 || undefined,
+          city: partner.billingCity || undefined,
+          postcode: partner.billingPostcode || undefined,
+          country: partner.billingCountry || undefined,
+        } : undefined,
+      };
+      
+      const { sendPaymentReceiptWithPdf: sendReceipt } = await import('./email');
+      const receiptResult = await sendReceipt(receiptDetails);
+      if (receiptResult.success) {
+        console.log(`[Billing Scheduler] Partner ${partner.id}: PDF receipt sent via ${chargeResult.provider} (Receipt: ${receiptResult.receiptNumber})`);
+      }
+    } catch (receiptError) {
+      console.error(`[Billing Scheduler] Partner ${partner.id}: Failed to send receipt email:`, receiptError);
     }
   } catch (error: any) {
     console.error(`[Billing Scheduler] Partner ${partner.id}: Stripe error - ${error.message}`);
