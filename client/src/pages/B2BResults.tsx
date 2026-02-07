@@ -53,7 +53,7 @@ export default function B2BResults() {
   const [checkoutType, setCheckoutType] = useState<'single' | 'bundle' | null>(null);
   const [isProcessingAccount, setIsProcessingAccount] = useState(false);
   const [isResendingEmail, setIsResendingEmail] = useState(false);
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isGeneratingResults, setIsGeneratingResults] = useState(false);
   const { toast } = useToast();
 
   const [, routeParams] = useRoute("/b2b-results/:sessionId");
@@ -219,7 +219,6 @@ export default function B2BResults() {
 
   if (!data) return null;
 
-  // Check if we need to send the results email (pending_client_pdf status)
   const needsResultsEmail = data.alreadyPaid && data.resultsDeliveryStatus === 'pending_client_pdf';
 
   if (data.alreadyPaid) {
@@ -248,7 +247,7 @@ export default function B2BResults() {
                 <Button
                   onClick={() => setLocation(`/b2b-pdf-email/${data.sessionId}?email=${encodeURIComponent(data.email)}`)}
                   className="w-full bg-gradient-to-r from-cyan-500 to-blue-600"
-                  data-testid="button-generate-pdf"
+                  data-testid="button-view-results-send-email"
                 >
                   View Results & Send Email
                   <ArrowRight className="h-4 w-4 ml-2" />

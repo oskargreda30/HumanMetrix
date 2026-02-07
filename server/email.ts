@@ -1101,7 +1101,7 @@ export async function sendPaymentReceiptEmail(
               <h3>Next Steps:</h3>
               <ol style="padding-left: 20px;">
                 <li>Log in to your HumanMetrix account</li>
-                <li>View your comprehensive results and download your PDF report</li>
+                <li>View your comprehensive results on your dashboard</li>
               </ol>
               
               <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
@@ -1133,7 +1133,7 @@ Date: ${new Date().toLocaleDateString('en-GB')}
 
 NEXT STEPS:
 1. Log in to your HumanMetrix account
-2. View your comprehensive results and download your PDF report
+2. View your comprehensive results on your dashboard
 
 If you have any questions, please contact us at hello@humanmetrix.co.uk
 
@@ -2640,7 +2640,7 @@ export async function sendB2BCongratulatoryEmail(details: B2BCongratulatoryEmail
                 <div class="option option-immediate">
                   <strong>Immediate Access</strong>
                   <p style="margin: 5px 0;">Get your detailed results right now for just ${priceDisplay}</p>
-                  <p style="margin: 5px 0; font-size: 14px; color: #0369a1;">Receive a comprehensive PDF report with insights and recommendations.</p>
+                  <p style="margin: 5px 0; font-size: 14px; color: #0369a1;">View your detailed results with insights and recommendations on your dashboard.</p>
                 </div>
                 
                 <div style="text-align: center;">
@@ -2675,7 +2675,7 @@ ACCESS YOUR RESULTS
 
 IMMEDIATE ACCESS
 Get your detailed results right now for just ${textPriceDisplay}
-Receive a comprehensive PDF report with insights and recommendations.
+View your detailed results with insights and recommendations on your dashboard.
 
 Click here to unlock your results: ${details.paymentUrl}
 
@@ -2787,7 +2787,7 @@ export async function sendB2BAllCompleteEmail(details: B2BAllCompleteEmailDetail
                 </div>
                 
                 <p style="text-align: center; font-size: 14px; color: #78350f; margin: 15px 0 0 0;">
-                  Get comprehensive PDF reports for all ${assessmentCount} assessments with insights and recommendations.
+                  View detailed results for all ${assessmentCount} assessments with insights and recommendations on your dashboard.
                 </p>
               </div>
               
@@ -2825,7 +2825,7 @@ Original Price: ${details.originalTotalPrice}
 Bundle Price: ${details.bundlePrice}
 SAVINGS: ${details.discountPercentage}% OFF!
 
-Get comprehensive PDF reports for all ${assessmentCount} assessments with insights and recommendations.
+View detailed results for all ${assessmentCount} assessments with insights and recommendations on your dashboard.
 
 Click here to unlock all results: ${details.paymentUrl}
 
@@ -3810,11 +3810,11 @@ export async function sendResultsReadyEmail(details: ResultsReadyEmailDetails) {
   if (details.hasExistingAccount) {
     ctaUrl = `${baseUrl}/dashboard`;
     ctaLabel = 'View Your Results';
-    ctaNote = 'Log in to your HumanMetrix account to view your detailed results and download your report.';
+    ctaNote = 'Log in to your HumanMetrix account to view your detailed results and insights.';
   } else {
     ctaUrl = `${baseUrl}/auth?email=${encodeURIComponent(details.email)}&redirect=dashboard`;
     ctaLabel = 'Create Account & View Results';
-    ctaNote = 'Create a free HumanMetrix account to access your detailed results and download your report.';
+    ctaNote = 'Create a free HumanMetrix account to access your detailed results and insights.';
   }
   
   const msg = {
@@ -3870,7 +3870,7 @@ export async function sendResultsReadyEmail(details: ResultsReadyEmailDetails) {
               <ul>
                 <li>View your detailed scores and percentile rankings</li>
                 <li>See personalized insights and recommendations</li>
-                <li>Export your results as a PDF report</li>
+                <li>Download or share your results</li>
                 <li>Compare your performance across assessments</li>
               </ul>
               
@@ -3900,7 +3900,7 @@ ${ctaLabel}: ${ctaUrl}
 FROM YOUR DASHBOARD YOU CAN:
 - View your detailed scores and percentile rankings
 - See personalized insights and recommendations
-- Export your results as a PDF report
+- Download or share your results
 - Compare your performance across assessments
 
 Assessment completed as part of your evaluation with ${details.partnerCompanyName}.

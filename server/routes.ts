@@ -1459,7 +1459,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 currency: stripeCurrency,
                 product_data: {
                   name: 'Assessment Results Access',
-                  description: `Unlock your assessment results and download your professional PDF report (${totalAssessmentCount} assessment${totalAssessmentCount > 1 ? 's' : ''})${discountDescription}. Results will be sent to your account email.`,
+                  description: `Unlock your assessment results and view your detailed report online (${totalAssessmentCount} assessment${totalAssessmentCount > 1 ? 's' : ''})${discountDescription}. A results link will be sent to your email.`,
                 },
                 unit_amount: stripeAmount,
               },
