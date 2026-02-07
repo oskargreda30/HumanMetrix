@@ -1598,7 +1598,7 @@ export default function EmbedAssessment() {
       };
       
       return (
-        <div className={`min-h-screen ${bgMain} pt-12 md:pt-4 pb-4 px-4`} data-testid="embed-results">
+        <div className={`${bgMain} pt-12 md:pt-4 pb-4 px-4`} style={{ minHeight: '100dvh', overscrollBehaviorY: 'none' }} data-testid="embed-results">
           <div className="max-w-4xl mx-auto space-y-6">
             <Card className={bgCard}>
               <CardHeader className="text-center border-b border-slate-700/30 pb-6">
@@ -2495,7 +2495,7 @@ export default function EmbedAssessment() {
   const accentColor = branding?.accentColor || '#06b6d4';
 
   return (
-    <div className={`min-h-screen ${bgMain} pt-12 md:pt-4 pb-4 px-4`} data-testid="embed-assessment">
+    <div className={`${bgMain} pt-12 md:pt-4 pb-4 px-4`} style={{ minHeight: '100dvh', overscrollBehaviorY: 'none' }} data-testid="embed-assessment">
       <div className="max-w-2xl mx-auto">
         {/* Multi-assessment progress indicator */}
         {isMultiAssessment && (
