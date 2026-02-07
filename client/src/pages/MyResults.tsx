@@ -18,11 +18,11 @@ import SkillsLegend from "@/components/SkillsLegend";
 import { transformToRadarData, isSkillBasedAssessment, formatAssessmentType, getSkillAcronym } from "@/lib/assessmentSkills";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
+  RadarChart,
+  Radar,
+  PolarAngleAxis,
+  PolarGrid,
+  PolarRadiusAxis,
   ResponsiveContainer,
 } from "recharts";
 import dashboardBg from "@assets/image_1763608498774.png";
@@ -417,6 +417,77 @@ export default function MyResults() {
             );
           })()}
 
+          {/* How to Read This Report */}
+          <Card className="mb-8" data-testid="section-how-to-read">
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-bold" data-testid="heading-how-to-read">How to Read This Report</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4" data-testid="text-guide-intro">
+                A step-by-step guide to understanding your assessment results and how to use them for career growth
+              </p>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
+                  <div>
+                    <span className="font-medium text-sm">Score Interpretation</span>
+                    <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1 mt-1">
+                      <Badge className="bg-green-500 text-white text-[10px] px-1 py-0">75%+</Badge> <span>Strong capability,</span>
+                      <Badge className="bg-amber-500 text-white text-[10px] px-1 py-0">50-74%</Badge> <span>Developing,</span>
+                      <Badge className="bg-red-500 text-white text-[10px] px-1 py-0">&lt;50%</Badge> <span>Growth opportunity</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
+                  <div>
+                    <p className="font-medium text-sm">Four Assessment Areas</p>
+                    <p className="text-xs text-muted-foreground">
+                      Your report covers FIT (behavioral traits), AI Readiness, Prompt Architecture, and AI Ethics (AIQ) - together providing a complete picture of your capabilities.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
+                  <div>
+                    <p className="font-medium text-sm">Strengths & Development Areas</p>
+                    <p className="text-xs text-muted-foreground">
+                      Each section highlights your strengths to leverage in interviews and development areas to focus on for career growth.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
+                  <div>
+                    <p className="font-medium text-sm">Using Your Results</p>
+                    <p className="text-xs text-muted-foreground">
+                      Share your report with potential employers to demonstrate your capabilities, or use insights to guide your professional development plan.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
+                  <div>
+                    <p className="font-medium text-sm">Radar Chart Visualization</p>
+                    <p className="text-xs text-muted-foreground">
+                      The radar chart provides a visual overview of your skills profile, making it easy to identify patterns across dimensions.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">6</div>
+                  <div>
+                    <p className="font-medium text-sm">Individual Skill Scores</p>
+                    <p className="text-xs text-muted-foreground">
+                      Review detailed scores for each skill to understand your specific competencies and target areas for improvement.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+
           {/* FIT Assessment Results */}
           {(() => {
             const fitResult = completedResults.find((r: any) => r.assessmentType === 'fit');
@@ -464,19 +535,19 @@ export default function MyResults() {
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
-                  {/* Bar Chart */}
-                  <div className="h-72">
+                  {/* Radar Chart */}
+                  <div className="h-72 flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart layout="vertical" barCategoryGap="28%" data={sortedScores.map(([skill, score]) => ({
+                      <RadarChart cx="50%" cy="50%" outerRadius="70%" data={sortedScores.map(([skill, score]) => ({
                         skill: getSkillAcronym(skill),
                         score: score as number,
                         fullMark: 100
-                      }))} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                        <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
-                        <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
-                        <Bar dataKey="score" fill="#5B8DB8" radius={[0, 4, 4, 0]} barSize={18} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
-                      </BarChart>
+                      }))}>
+                        <PolarGrid stroke="hsl(var(--border))" />
+                        <PolarAngleAxis dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} />
+                        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
+                        <Radar name="FIT Score" dataKey="score" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.25} strokeWidth={2} />
+                      </RadarChart>
                     </ResponsiveContainer>
                   </div>
 
@@ -550,19 +621,19 @@ export default function MyResults() {
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
-                  {/* Bar Chart */}
-                  <div className="h-96">
+                  {/* Radar Chart */}
+                  <div className="h-80 flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart layout="vertical" barCategoryGap="28%" data={sortedScores.map(([skill, score]) => ({
+                      <RadarChart cx="50%" cy="50%" outerRadius="65%" data={sortedScores.map(([skill, score]) => ({
                         skill: getSkillAcronym(skill),
                         score: score as number,
                         fullMark: 100
-                      }))} margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                        <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
-                        <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
-                        <Bar dataKey="score" fill="#6E8FA8" radius={[0, 4, 4, 0]} barSize={18} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
-                      </BarChart>
+                      }))}>
+                        <PolarGrid stroke="hsl(var(--border))" />
+                        <PolarAngleAxis dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 10, fontWeight: 500 }} />
+                        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
+                        <Radar name="AI Readiness" dataKey="score" stroke="#a855f7" fill="#a855f7" fillOpacity={0.25} strokeWidth={2} />
+                      </RadarChart>
                     </ResponsiveContainer>
                   </div>
 
@@ -737,77 +808,6 @@ export default function MyResults() {
             );
           })()}
 
-          {/* How to Read This Report */}
-          <Card className="mb-8" data-testid="section-how-to-read">
-            <div className="p-6">
-              <div className="flex items-center gap-2 mb-2">
-                <FileText className="h-5 w-5 text-primary" />
-                <h3 className="text-lg font-bold" data-testid="heading-how-to-read">How to Read This Report</h3>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4" data-testid="text-guide-intro">
-                A step-by-step guide to understanding your assessment results and how to use them for career growth
-              </p>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
-                  <div>
-                    <span className="font-medium text-sm">Score Interpretation</span>
-                    <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1 mt-1">
-                      <Badge className="bg-green-500 text-white text-[10px] px-1 py-0">75%+</Badge> <span>Strong capability,</span>
-                      <Badge className="bg-amber-500 text-white text-[10px] px-1 py-0">50-74%</Badge> <span>Developing,</span>
-                      <Badge className="bg-red-500 text-white text-[10px] px-1 py-0">&lt;50%</Badge> <span>Growth opportunity</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
-                  <div>
-                    <p className="font-medium text-sm">Four Assessment Areas</p>
-                    <p className="text-xs text-muted-foreground">
-                      Your report covers FIT (behavioral traits), AI Readiness, Prompt Architecture, and AI Ethics (AIQ) - together providing a complete picture of your capabilities.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
-                  <div>
-                    <p className="font-medium text-sm">Strengths & Development Areas</p>
-                    <p className="text-xs text-muted-foreground">
-                      Each section highlights your strengths to leverage in interviews and development areas to focus on for career growth.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
-                  <div>
-                    <p className="font-medium text-sm">Using Your Results</p>
-                    <p className="text-xs text-muted-foreground">
-                      Share your report with potential employers to demonstrate your capabilities, or use insights to guide your professional development plan.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
-                  <div>
-                    <p className="font-medium text-sm">Radar Chart Visualization</p>
-                    <p className="text-xs text-muted-foreground">
-                      The radar chart provides a visual overview of your skills profile, making it easy to identify patterns across dimensions.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">6</div>
-                  <div>
-                    <p className="font-medium text-sm">Individual Skill Scores</p>
-                    <p className="text-xs text-muted-foreground">
-                      Review detailed scores for each skill to understand your specific competencies and target areas for improvement.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-
           {/* Skills Legend */}
           <SkillsLegend className="mb-8" compact data-testid="section-skills-legend" />
 
@@ -889,17 +889,18 @@ export default function MyResults() {
           const fitData = Object.entries(fitResult.scores).map(([skill, score]) => ({
             skill: getSkillAcronym(skill),
             score: score as number,
+            fullMark: 100,
           }));
           
           return (
             <div id="fit-radar-chart-pdf" style={{ width: '400px', height: '400px', background: 'white' }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart layout="vertical" data={fitData} barCategoryGap="28%" margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-                  <YAxis type="category" dataKey="skill" width={120} tick={{ fill: '#000', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
-                  <XAxis type="number" domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 11 }} />
-                  <Bar dataKey="score" fill="#5B8DB8" radius={[0, 4, 4, 0]} barSize={18} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
-                </BarChart>
+                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={fitData}>
+                  <PolarGrid stroke="#e5e7eb" />
+                  <PolarAngleAxis dataKey="skill" tick={{ fill: '#000', fontSize: 11, fontWeight: 500 }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 10 }} />
+                  <Radar name="FIT Score" dataKey="score" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.25} strokeWidth={2} />
+                </RadarChart>
               </ResponsiveContainer>
             </div>
           );
@@ -913,17 +914,18 @@ export default function MyResults() {
           const aiData = Object.entries(aiResult.scores).map(([skill, score]) => ({
             skill: getSkillAcronym(skill),
             score: score as number,
+            fullMark: 100,
           }));
           
           return (
             <div id="ai-readiness-radar-chart-pdf" style={{ width: '400px', height: '400px', background: 'white' }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart layout="vertical" data={aiData} barCategoryGap="28%" margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-                  <YAxis type="category" dataKey="skill" width={120} tick={{ fill: '#000', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
-                  <XAxis type="number" domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 11 }} />
-                  <Bar dataKey="score" fill="#6E8FA8" radius={[0, 4, 4, 0]} barSize={18} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
-                </BarChart>
+                <RadarChart cx="50%" cy="50%" outerRadius="65%" data={aiData}>
+                  <PolarGrid stroke="#e5e7eb" />
+                  <PolarAngleAxis dataKey="skill" tick={{ fill: '#000', fontSize: 10, fontWeight: 500 }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 10 }} />
+                  <Radar name="AI Readiness" dataKey="score" stroke="#a855f7" fill="#a855f7" fillOpacity={0.25} strokeWidth={2} />
+                </RadarChart>
               </ResponsiveContainer>
             </div>
           );
