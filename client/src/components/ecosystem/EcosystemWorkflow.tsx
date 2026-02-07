@@ -189,6 +189,7 @@ export function EcosystemWorkflow({
   
   // Button click protection to prevent double-clicking
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showRegenConfirm, setShowRegenConfirm] = useState(false);
 
   // Team member dialog
   const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
@@ -636,7 +637,7 @@ export function EcosystemWorkflow({
     } catch (error: any) {
       toast({
         title: "Analysis failed",
-        description: error.message || "Could not generate team analysis.",
+        description: (error.message || "Could not generate team analysis.") + " You can retry without being charged again.",
         variant: "destructive",
       });
     }
@@ -741,7 +742,6 @@ export function EcosystemWorkflow({
     }
   };
 
-  // Handler for regenerating analysis (always charges 20 credits)
   const handleRegenerateWithCredits = async () => {
     if (isGenerating || generateAnalysis.isPending) return;
     setIsGenerating(true);
@@ -756,39 +756,32 @@ export function EcosystemWorkflow({
         return;
       }
 
-      // Always charge credits for regeneration (forceCharge=true)
-      setIsProcessingPayment(true);
       try {
-        const response = await apiRequest("POST", `/api/ecosystem/projects/${projectId}/consume-credits`, { 
-          forceCharge: true 
-        });
-        const data = await response.json();
-        
-        if (!data.success) {
-          throw new Error(data.error || "Failed to consume credits");
-        }
-        
-        // Invalidate partner data to refresh credit count
+        await generateAnalysis.mutateAsync({ projectId, isRegeneration: true });
+        await refetchProject();
         queryClient.invalidateQueries({ queryKey: ['/api/partner/me'] });
-        
+        setIsEditingForm(false);
         toast({
-          title: "Credits consumed",
-          description: `${data.creditsConsumed || ECOSYSTEM_CREDITS_REQUIRED} credits used for regeneration.`,
+          title: "Report regenerated",
+          description: `${ECOSYSTEM_CREDITS_REQUIRED} credits used for regeneration.`,
         });
+        setTimeout(() => {
+          const reportSection = document.querySelector('[data-testid="section-team-diagnostic-report"]');
+          if (reportSection) {
+            reportSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
       } catch (error: any) {
-        const errorData = await error?.json?.().catch(() => null);
+        const msg = error?.message || "Could not regenerate analysis.";
+        const isCreditsError = msg.toLowerCase().includes("insufficient credits");
         toast({
-          title: "Insufficient credits",
-          description: errorData?.error || error.message || "Could not consume credits. Please ensure you have enough credits.",
+          title: isCreditsError ? "Insufficient credits" : "Regeneration failed",
+          description: isCreditsError 
+            ? msg 
+            : "The AI analysis could not be completed. No credits were charged. Please try again.",
           variant: "destructive",
         });
-        return;
-      } finally {
-        setIsProcessingPayment(false);
       }
-
-      // Now generate the analysis
-      await handleGenerateAnalysis();
     } finally {
       setIsGenerating(false);
     }
@@ -1108,7 +1101,7 @@ export function EcosystemWorkflow({
                     Edit Data
                   </Button>
                   <Button 
-                    onClick={handleRegenerateWithCredits}
+                    onClick={() => setShowRegenConfirm(true)}
                     variant="default"
                     size="sm"
                     disabled={generateAnalysis.isPending || isGenerating}
@@ -1135,7 +1128,7 @@ export function EcosystemWorkflow({
                 setIsEditingForm(true);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              onRegenerate={handleRegenerateWithCredits}
+              onRegenerate={() => setShowRegenConfirm(true)}
               generateAnalysis={generateAnalysis}
               isRegenerating={isGenerating || generateAnalysis.isPending}
             />
@@ -1797,6 +1790,34 @@ export function EcosystemWorkflow({
           </Card>
         </>
       )}
+
+      {/* Regeneration Confirmation Dialog */}
+      <Dialog open={showRegenConfirm} onOpenChange={setShowRegenConfirm}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Regenerate Report?</DialogTitle>
+            <DialogDescription>
+              This will use {ECOSYSTEM_CREDITS_REQUIRED} credits to regenerate your Team Diagnostic Report with the latest data. Credits are only charged if the report generates successfully.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setShowRegenConfirm(false)} data-testid="button-cancel-regen">
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                setShowRegenConfirm(false);
+                handleRegenerateWithCredits();
+              }}
+              disabled={isGenerating || generateAnalysis.isPending}
+              data-testid="button-confirm-regen"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Regenerate ({ECOSYSTEM_CREDITS_REQUIRED} credits)
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Team Member Dialog */}
       <Dialog open={showAddMemberDialog} onOpenChange={setShowAddMemberDialog}>

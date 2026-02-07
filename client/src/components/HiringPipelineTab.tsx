@@ -60,6 +60,7 @@ interface CandidateSession {
 
 interface PipelineCandidate {
   candidateEmail: string;
+  candidateName: string | null;
   externalUserId: string | null;
   pipelineStage: string;
   sessions: CandidateSession[];
@@ -107,7 +108,7 @@ export function HiringPipelineTab() {
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [notes, setNotes] = useState("");
-  const [notesSessionId, setNotesSessionId] = useState<string | null>(null);
+  const [notesSessionIds, setNotesSessionIds] = useState<string[]>([]);
   const [draggedCandidate, setDraggedCandidate] = useState<PipelineCandidate | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [expandedStages, setExpandedStages] = useState<Set<string>>(new Set(["new", "reviewing", "shortlisted"]));
@@ -128,18 +129,13 @@ export function HiringPipelineTab() {
     queryKey: ["/api/partner/pipeline"],
   });
 
-  const updateSessionStage = useCallback(async (sessionId: string, pipelineStage?: string, pipelineNotes?: string) => {
-    return await apiRequest("PATCH", `/api/partner/sessions/${sessionId}/pipeline`, {
-      pipelineStage,
-      pipelineNotes,
-    });
-  }, []);
-
   const updateStageMutation = useMutation({
-    mutationFn: async ({ sessionId, pipelineNotes }: { sessionId: string; pipelineNotes: string }) => {
-      return await apiRequest("PATCH", `/api/partner/sessions/${sessionId}/pipeline`, {
-        pipelineNotes,
-      });
+    mutationFn: async ({ sessionIds, pipelineNotes }: { sessionIds: string[]; pipelineNotes: string }) => {
+      await Promise.all(
+        sessionIds.map(sid =>
+          apiRequest("PATCH", `/api/partner/sessions/${sid}/pipeline`, { pipelineNotes })
+        )
+      );
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/partner/pipeline"] });
@@ -185,11 +181,12 @@ export function HiringPipelineTab() {
     }
     
     try {
-      await Promise.all(
-        candidate.sessions.map(session =>
-          updateSessionStage(session.sessionId, targetStage)
-        )
-      );
+      await apiRequest("POST", "/api/partner/pipeline/bulk-update", {
+        updates: candidate.sessions.map(session => ({
+          sessionId: session.sessionId,
+          pipelineStage: targetStage,
+        })),
+      });
       toast({ title: "Success", description: `Moved to ${targetStage.replace('_', ' ')}` });
     } catch (error) {
       if (previousData) {
@@ -200,7 +197,7 @@ export function HiringPipelineTab() {
     } finally {
       queryClient.invalidateQueries({ queryKey: ["/api/partner/pipeline"] });
     }
-  }, [updateSessionStage, toast]);
+  }, [toast]);
 
   const handleDragStart = (e: React.DragEvent, candidate: PipelineCandidate) => {
     setDraggedCandidate(candidate);
@@ -227,15 +224,15 @@ export function HiringPipelineTab() {
   };
 
   const handleSaveNotes = async () => {
-    if (notesSessionId) {
+    if (notesSessionIds.length > 0) {
       try {
         await updateStageMutation.mutateAsync({
-          sessionId: notesSessionId,
+          sessionIds: notesSessionIds,
           pipelineNotes: notes,
         });
         toast({ title: "Notes saved", description: "Candidate notes have been updated" });
         setNotesDialogOpen(false);
-        setNotesSessionId(null);
+        setNotesSessionIds([]);
       } catch (error) {
         console.error("Failed to save notes:", error);
         toast({ title: "Error", description: "Failed to save notes. Please try again.", variant: "destructive" });
@@ -244,9 +241,9 @@ export function HiringPipelineTab() {
   };
 
   const openNotesDialog = (candidate: PipelineCandidate) => {
-    const firstSession = candidate.sessions[0];
-    setNotesSessionId(firstSession?.sessionId || null);
-    setNotes(firstSession?.pipelineNotes || "");
+    setNotesSessionIds(candidate.sessions.map(s => s.sessionId));
+    const existingNotes = candidate.sessions.find(s => s.pipelineNotes)?.pipelineNotes || "";
+    setNotes(existingNotes);
     setNotesDialogOpen(true);
   };
 
@@ -286,16 +283,23 @@ export function HiringPipelineTab() {
         draggable
         onDragStart={(e) => handleDragStart(e, candidate)}
         onClick={() => openDetailsDialog(candidate)}
-        data-testid={`pipeline-card-${isMobile ? 'mobile-' : ''}${candidate.candidateEmail}`}
+        data-testid={`pipeline-card-${isMobile ? 'mobile-' : ''}${candidate.candidateEmail.replace(/[^a-zA-Z0-9]/g, '_')}`}
       >
         <CardContent className={isMobile ? "p-3" : "p-2"}>
           <div className="flex items-start justify-between gap-1">
             <div className="flex-1 min-w-0">
               <div className="flex items-start gap-1 mb-1">
                 <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0 cursor-grab mt-0.5" />
-                <span className={`font-medium ${isMobile ? 'text-sm truncate' : 'text-xs break-all leading-tight'}`} title={candidate.candidateEmail} data-testid={`text-candidate-${candidate.candidateEmail}`}>
-                  {candidate.candidateEmail}
-                </span>
+                <div className="min-w-0">
+                  {candidate.candidateName && (
+                    <span className={`font-medium block ${isMobile ? 'text-sm truncate' : 'text-xs truncate'}`} data-testid={`text-candidate-name-${candidate.candidateEmail.replace(/[^a-zA-Z0-9]/g, '_')}`}>
+                      {candidate.candidateName}
+                    </span>
+                  )}
+                  <span className={`${candidate.candidateName ? 'text-muted-foreground' : 'font-medium'} ${isMobile ? 'text-sm truncate' : 'text-[11px] break-all leading-tight'}`} title={candidate.candidateEmail} data-testid={`text-candidate-email-${candidate.candidateEmail.replace(/[^a-zA-Z0-9]/g, '_')}`}>
+                    {candidate.candidateEmail}
+                  </span>
+                </div>
               </div>
               <div className="flex items-center gap-1 flex-wrap mb-1">
                 {candidate.sessions.map((session) => (
@@ -331,14 +335,14 @@ export function HiringPipelineTab() {
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()} data-testid={`button-card-menu-${candidate.candidateEmail}`}>
+                <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()} data-testid={`button-card-menu-${candidate.candidateEmail.replace(/[^a-zA-Z0-9]/g, '_')}`}>
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem 
                   onClick={(e) => { e.stopPropagation(); openNotesDialog(candidate); }} 
-                  data-testid={`menu-item-notes-${candidate.candidateEmail}`}
+                  data-testid={`menu-item-notes-${candidate.candidateEmail.replace(/[^a-zA-Z0-9]/g, '_')}`}
                 >
                   <FileText className="h-4 w-4 mr-2" />
                   {hasNotes ? "Edit Notes" : "Add Notes"}
@@ -349,7 +353,7 @@ export function HiringPipelineTab() {
                       href={`/partner/results/${candidate.sessions.find(s => s.status === 'completed')?.sessionId}`} 
                       target="_blank" 
                       rel="noopener noreferrer" 
-                      data-testid={`menu-item-results-${candidate.candidateEmail}`}
+                      data-testid={`menu-item-results-${candidate.candidateEmail.replace(/[^a-zA-Z0-9]/g, '_')}`}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Eye className="h-4 w-4 mr-2" />
@@ -361,7 +365,7 @@ export function HiringPipelineTab() {
                   <DropdownMenuItem
                     key={targetStage.id}
                     onClick={(e) => moveCandidateToStage(candidate, targetStage.id, e)}
-                    data-testid={`menu-item-move-${candidate.candidateEmail}-${targetStage.id}`}
+                    data-testid={`menu-item-move-${candidate.candidateEmail.replace(/[^a-zA-Z0-9]/g, '_')}-${targetStage.id}`}
                   >
                     <ChevronRight className="h-4 w-4 mr-2" />
                     Move to {targetStage.label}
@@ -539,6 +543,12 @@ export function HiringPipelineTab() {
           {selectedCandidate && (
             <div className="space-y-4 py-2">
               <div className="space-y-3">
+                {selectedCandidate.candidateName && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Name</p>
+                    <p className="font-medium" data-testid="text-detail-candidate-name">{selectedCandidate.candidateName}</p>
+                  </div>
+                )}
                 <div>
                   <p className="text-xs text-muted-foreground">Email</p>
                   <p className="font-medium">{selectedCandidate.candidateEmail || "Not provided"}</p>

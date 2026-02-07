@@ -662,8 +662,12 @@ export function registerPartnerRoutes(app: Express) {
         for (const candidate of Object.values(candidateMap)) {
           const stage = candidate.stage;
           if (pipeline[stage]) {
+            const candidateName = candidate.sessions
+              .map((s: any) => (s.metadata as any)?.candidateName)
+              .find((n: string | undefined) => n) || null;
             pipeline[stage].push({
               candidateEmail: candidate.email,
+              candidateName,
               externalUserId: candidate.userId,
               pipelineStage: stage,
               sessions: candidate.sessions,
@@ -816,17 +820,38 @@ export function registerPartnerRoutes(app: Express) {
     }
   );
 
-  // Bulk update pipeline stages
+  // Bulk update pipeline stages (atomic - all succeed or all fail via DB transaction)
   app.post(
     "/api/partner/pipeline/bulk-update",
     isAuthenticated,
     async (req: any, res: Response) => {
       try {
-        const partnerId = req.user?.partnerId;
-        if (!partnerId) {
+        const user = await storage.getUser(req.user.id);
+        if (!user) {
           return res.status(403).json({ error: "Partner access required" });
         }
-        
+
+        let partner = null;
+        const hasPartnerAccess = user.role === 'super_admin' || user.role === 'organization_admin' || user.role === 'partner_admin';
+        if (hasPartnerAccess) {
+          if (user.organizationId) {
+            partner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+          }
+          if (!partner && user.email) {
+            partner = await storage.getPartnerAccountByEmail(user.email);
+          }
+        }
+        if (!partner) {
+          const teamMembership = await storage.getPartnerTeamMemberByUserId(req.user.id);
+          if (teamMembership) {
+            partner = await storage.getPartnerAccount(teamMembership.partnerId);
+          }
+        }
+        if (!partner) {
+          return res.status(403).json({ error: "Partner access required" });
+        }
+
+        const partnerId = partner.id;
         const { updates } = req.body;
         
         if (!Array.isArray(updates) || updates.length === 0) {
@@ -834,32 +859,56 @@ export function registerPartnerRoutes(app: Express) {
         }
         
         const validStages = ["new", "in_progress", "completed", "reviewing", "shortlisted", "hired", "rejected"];
-        const results = [];
-        
+
         for (const update of updates) {
-          const { sessionId, pipelineStage } = update;
-          
-          if (!sessionId || !pipelineStage || !validStages.includes(pipelineStage)) {
-            results.push({ sessionId, success: false, error: "Invalid data" });
-            continue;
+          if (!update.sessionId || !update.pipelineStage || !validStages.includes(update.pipelineStage)) {
+            return res.status(400).json({ error: `Invalid data for session ${update.sessionId}` });
           }
-          
-          const session = await storage.getAssessmentSession(sessionId);
+        }
+
+        // Pre-validate ownership of ALL sessions before making any changes
+        const sessions = [];
+        for (const update of updates) {
+          const session = await storage.getAssessmentSession(update.sessionId);
           if (!session || session.partnerId !== partnerId) {
-            results.push({ sessionId, success: false, error: "Not found or access denied" });
-            continue;
+            return res.status(403).json({ error: `Access denied for session ${update.sessionId}` });
           }
-          
-          await storage.updateAssessmentSession(sessionId, {
-            pipelineStage,
-            pipelineStageUpdatedAt: new Date(),
-            pipelineStageUpdatedBy: req.user?.id,
-          } as any);
-          
-          results.push({ sessionId, success: true, pipelineStage });
+          sessions.push(session);
+        }
+
+        // All validated - now apply all updates atomically in a DB transaction
+        const now = new Date();
+        await db.transaction(async (tx) => {
+          for (const update of updates) {
+            await tx
+              .update(assessmentSessions)
+              .set({
+                pipelineStage: update.pipelineStage,
+                pipelineStageUpdatedAt: now,
+                pipelineStageUpdatedBy: req.user?.id,
+              })
+              .where(eq(assessmentSessions.id, update.sessionId));
+          }
+        });
+
+        // Create a single notification for the move
+        if (updates.length > 0 && updates[0].pipelineStage) {
+          const stageLabels: Record<string, string> = {
+            new: "New", in_progress: "In Progress", completed: "Completed",
+            reviewing: "Under Review", shortlisted: "Shortlisted", hired: "Hired", rejected: "Rejected",
+          };
+          await storage.createPartnerNotification({
+            partnerId,
+            type: "pipeline_updated",
+            title: "Pipeline Stage Updated",
+            message: `${sessions[0]?.externalEmail || "Candidate"} moved to ${stageLabels[updates[0].pipelineStage]}`,
+            metadata: { sessionIds: updates.map((u: any) => u.sessionId), newStage: updates[0].pipelineStage },
+          });
         }
         
-        res.json({ results });
+        res.json({ 
+          results: updates.map((u: any) => ({ sessionId: u.sessionId, success: true, pipelineStage: u.pipelineStage }))
+        });
       } catch (error) {
         console.error("Error bulk updating pipeline:", error);
         res.status(500).json({ error: "Failed to bulk update pipeline" });

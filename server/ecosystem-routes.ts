@@ -1587,6 +1587,8 @@ export function registerEcosystemRoutes(app: Express): void {
         return res.status(401).json({ error: "Authentication required" });
       }
 
+      const { isRegeneration } = req.body || {};
+
       const project = await storage.getEcosystemProject(req.params.id);
       if (!project) {
         return res.status(404).json({ error: "Project not found" });
@@ -1596,26 +1598,45 @@ export function registerEcosystemRoutes(app: Express): void {
         return res.status(403).json({ error: "Access denied" });
       }
 
-      // Check payment status (currently free at £0, but ready for future pricing)
-      if (!project.isPaid) {
-        return res.status(402).json({ 
-          error: "Payment required", 
-          message: "Please complete payment to generate your team analysis report.",
-          requiresPayment: true 
-        });
+      // For regeneration, handle credit consumption atomically (deduct only after success)
+      let partnerForRegen: any = null;
+      const ECOSYSTEM_CREDITS_REQUIRED = 20;
+
+      if (isRegeneration) {
+        const dbUser = await storage.getUser(user.id);
+        if (!dbUser?.organizationId) {
+          return res.status(403).json({ error: "Partner account required" });
+        }
+        partnerForRegen = await storage.getPartnerAccountByOrganizationId(dbUser.organizationId);
+        if (!partnerForRegen) {
+          return res.status(403).json({ error: "Partner account not found" });
+        }
+        const remaining = partnerForRegen.testsPurchased - partnerForRegen.testsConsumed;
+        if (remaining < ECOSYSTEM_CREDITS_REQUIRED) {
+          return res.status(400).json({
+            error: `Insufficient credits. This service requires ${ECOSYSTEM_CREDITS_REQUIRED} credits. You have ${remaining} credits remaining.`,
+            creditsRequired: ECOSYSTEM_CREDITS_REQUIRED,
+            creditsRemaining: remaining,
+          });
+        }
+      } else {
+        if (!project.isPaid) {
+          return res.status(402).json({ 
+            error: "Payment required", 
+            message: "Please complete payment to generate your team analysis report.",
+            requiresPayment: true 
+          });
+        }
       }
 
-      // Check if project has team members
       const teamMembers = await storage.getEcosystemTeamMembers(req.params.id);
       if (teamMembers.length === 0) {
         return res.status(400).json({ error: "No team members added. Please add at least one team member before generating analysis." });
       }
 
-      // Check if any team members have valid FIT scores (at least one score > 0)
       const membersWithScores = teamMembers.filter(m => {
         if (!m.fitScores || typeof m.fitScores !== 'object') return false;
         const scores = m.fitScores as Record<string, number>;
-        // Must have at least one score with value > 0
         return Object.values(scores).some(val => typeof val === 'number' && val > 0);
       });
       if (membersWithScores.length === 0) {
@@ -1626,34 +1647,39 @@ export function registerEcosystemRoutes(app: Express): void {
         });
       }
 
-      // Run mission analysis if not already done (deferred from Step 2)
       let missionAnalysis = project.missionAnalysis as EcosystemMissionAnalysis | null;
       if (!missionAnalysis && project.missionStatement) {
         console.log("[Ecosystem] Running deferred mission analysis for project:", req.params.id);
         missionAnalysis = await analyzeMissionWithAI(project.missionStatement, project.companyEthos || "");
-        // Save mission analysis immediately
         await storage.updateEcosystemProject(req.params.id, {
           missionAnalysis,
         });
       }
 
-      // Generate the analysis
       const teamAnalysis = await generateTeamAnalysis(
         req.params.id,
         missionAnalysis,
         project
       );
 
-      // Update project
+      // For regeneration, deduct credits ONLY after successful analysis generation
+      if (isRegeneration && partnerForRegen) {
+        await storage.updatePartnerAccount(partnerForRegen.id, {
+          testsConsumed: partnerForRegen.testsConsumed + ECOSYSTEM_CREDITS_REQUIRED,
+        });
+        console.log(`[Ecosystem] Partner ${partnerForRegen.id} consumed ${ECOSYSTEM_CREDITS_REQUIRED} credits for regeneration of project ${req.params.id}`);
+      }
+
       const updated = await storage.updateEcosystemProject(req.params.id, {
         teamAnalysis,
-        currentStep: 7, // Step 7 is the results step
+        currentStep: 7,
         status: "completed",
       });
 
       res.json({
         project: updated,
         teamAnalysis,
+        creditsConsumed: isRegeneration ? ECOSYSTEM_CREDITS_REQUIRED : 0,
       });
     } catch (error: any) {
       console.error("[Ecosystem] Error generating analysis:", error);

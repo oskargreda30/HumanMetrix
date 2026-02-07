@@ -264,16 +264,15 @@ export function useGenerateTeamAnalysis() {
   const queryClient = useQueryClient();
   
   return useMutation<
-    { project: EcosystemProject; teamAnalysis: EcosystemTeamAnalysis },
+    { project: EcosystemProject; teamAnalysis: EcosystemTeamAnalysis; creditsConsumed?: number },
     Error,
-    { projectId: string }
+    { projectId: string; isRegeneration?: boolean }
   >({
-    mutationFn: async ({ projectId }) => {
-      // AI analysis can take 60-90 seconds with GPT-4o, use 2 minute timeout
+    mutationFn: async ({ projectId, isRegeneration }) => {
       const response = await apiRequest(
         "POST", 
         `/api/ecosystem/projects/${projectId}/generate-analysis`,
-        undefined,
+        isRegeneration ? { isRegeneration: true } : undefined,
         { timeoutMs: 120000 }
       );
       return response.json();
