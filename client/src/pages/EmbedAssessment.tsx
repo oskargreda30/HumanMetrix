@@ -387,6 +387,9 @@ export default function EmbedAssessment() {
   const [showTransitionScreen, setShowTransitionScreen] = useState(false);
   const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false);
   const [awaitingNextStart, setAwaitingNextStart] = useState(false); // Require user to click Start for next assessment
+  const [showTimesUp, setShowTimesUp] = useState(false); // "Time's Up" overlay
+  const timerExpiredHandledRef = useRef<boolean>(false); // Re-entry guard for full assessment expiry
+  const paQuestionAdvancingRef = useRef<boolean>(false); // Re-entry guard for PA per-question auto-advance
   const transitionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const pendingScoresRef = useRef<any>(null); // Store scores for transition
   
@@ -556,6 +559,14 @@ export default function EmbedAssessment() {
           console.log('[EmbedAssessment] Setting up multi-assessment queue from invitation:', data.invitationContext);
           setAssessmentQueue(data.invitationContext.assessmentTypes);
           setCurrentAssessmentIndex(data.invitationContext.currentIndex);
+          
+          // Initialize completedAssessments from server context so progress persists across reloads
+          if (data.invitationContext.currentIndex > 0) {
+            const previouslyCompleted = data.invitationContext.assessmentTypes
+              .slice(0, data.invitationContext.currentIndex)
+              .map((type: string) => ({ type, scores: null }));
+            setCompletedAssessments(previouslyCompleted);
+          }
         }
       }
       
@@ -955,19 +966,75 @@ export default function EmbedAssessment() {
   }, []);
 
   const handleTimerExpiry = useCallback(() => {
-    setIsSubmitting(true);
+    // Re-entry guard: prevent double-fire from timer or re-renders
+    if (timerExpiredHandledRef.current) return;
+    if (hasSubmittedRef.current) return;
 
+    const isPA = session?.assessmentType?.replace(/-/g, '_') === 'prompt_architecture';
     const isMulti = assessmentQueue.length > 1;
     const isLast = currentAssessmentIndex >= assessmentQueue.length - 1;
 
-    if (Object.keys(answersRef.current).length === 0 || hasSubmittedRef.current) {
-      setIsSubmitting(false);
-      if (isMulti && !isLast) {
-        pendingScoresRef.current = null;
-        setShowTransitionScreen(true);
-      } else {
-        setStatus("completed");
+    // PA per-question expiry: auto-advance to next question (not last question)
+    if (isPA) {
+      const isLastQuestion = currentIndex >= questions.length - 1;
+      if (!isLastQuestion) {
+        if (paQuestionAdvancingRef.current) return; // Prevent double-advance
+        paQuestionAdvancingRef.current = true;
+        setShowTimesUp(true);
+        setTimeout(() => {
+          setShowTimesUp(false);
+          paQuestionAdvancingRef.current = false; // Reset after advance completes
+          navigationDirectionRef.current = 'forward';
+          saveProgressImmediately(currentIndex + 1);
+          setCurrentIndex((prev) => prev + 1);
+          if (window.innerWidth < 768) {
+            window.scrollTo({ top: 0, behavior: "instant" });
+          }
+        }, 1500);
+        return;
       }
+      // Last PA question: fall through to full assessment submit below
+    }
+
+    // Full assessment expiry: show overlay, submit, and transition
+    timerExpiredHandledRef.current = true;
+    setShowTimesUp(true);
+    setIsSubmitting(true);
+
+    const proceedAfterSubmit = (data?: any) => {
+      setTimeout(() => {
+        setShowTimesUp(false);
+        setIsSubmitting(false);
+        if (data) setCompletedScores(data);
+
+        if (window.parent !== window && data) {
+          window.parent.postMessage(
+            {
+              type: isMulti && !isLast ? "humanmetrix:assessment_completed" : "humanmetrix:completed",
+              sessionId,
+              assessmentType: assessmentQueue[currentAssessmentIndex],
+              scores: data.scores,
+              totalScore: data.totalScore,
+              percentile: data.percentile,
+              isLastAssessment: isLast,
+              completedCount: currentAssessmentIndex + 1,
+              totalCount: assessmentQueue.length,
+            },
+            "*"
+          );
+        }
+
+        if (isMulti && !isLast) {
+          pendingScoresRef.current = data || null;
+          setShowTransitionScreen(true);
+        } else {
+          setStatus("completed");
+        }
+      }, 2000);
+    };
+
+    if (Object.keys(answersRef.current).length === 0) {
+      proceedAfterSubmit();
       return;
     }
 
@@ -989,39 +1056,12 @@ export default function EmbedAssessment() {
     })
       .then((res) => res.json())
       .then((data) => {
-        setCompletedScores(data);
-        setIsSubmitting(false);
-
-        if (window.parent !== window) {
-          window.parent.postMessage(
-            {
-              type: isMulti && !isLast ? "humanmetrix:assessment_completed" : "humanmetrix:completed",
-              sessionId,
-              assessmentType: assessmentQueue[currentAssessmentIndex],
-              scores: data.scores,
-              totalScore: data.totalScore,
-              percentile: data.percentile,
-              isLastAssessment: isLast,
-              completedCount: currentAssessmentIndex + 1,
-              totalCount: assessmentQueue.length,
-            },
-            "*"
-          );
-        }
-
-        if (isMulti && !isLast) {
-          pendingScoresRef.current = data;
-          setShowTransitionScreen(true);
-        } else {
-          setStatus("completed");
-        }
+        proceedAfterSubmit(data);
       })
       .catch(() => {
-        setIsSubmitting(false);
-        setStatus("error");
-        setErrorMessage("Failed to submit assessment on time expiry");
+        proceedAfterSubmit();
       });
-  }, [sessionId, assessmentQueue, currentAssessmentIndex, completedAssessments]);
+  }, [sessionId, assessmentQueue, currentAssessmentIndex, completedAssessments, session, currentIndex, questions, saveProgressImmediately]);
 
   // Track if timer has expired from server (prevents client-side reset from overriding)
   const timerExpiredFromServerRef = useRef<boolean>(false);
@@ -1190,6 +1230,7 @@ export default function EmbedAssessment() {
     setStatus("ready");
     setAwaitingNextStart(true); // Require user to click Start for next assessment
     hasSubmittedRef.current = false;
+    timerExpiredHandledRef.current = false; // Reset expiry guard for new assessment
     
     // Reset timer for next assessment (20 min for regular, 14 min for prompt architecture)
     setTimeRemaining(nextType === "prompt_architecture" ? 840 : 1200);
@@ -2124,7 +2165,7 @@ export default function EmbedAssessment() {
                 <li>Answer each question honestly and thoughtfully</li>
                 <li>There are no right or wrong answers</li>
                 <li>Your progress will be saved automatically</li>
-                <li>You have {isCurrentPromptArchitecture ? "14" : "20"} minutes to complete {isMultiAssessment ? "each assessment" : "the assessment"}</li>
+                <li>{isCurrentPromptArchitecture ? "You have 2 minutes per question (7 levels)" : "You have 14-20 minutes to complete " + (isMultiAssessment ? "each assessment" : "the assessment")}</li>
               </ul>
             </div>
 
@@ -2464,7 +2505,7 @@ export default function EmbedAssessment() {
                 Assessment {currentAssessmentIndex + 1} of {assessmentQueue.length}
               </span>
               <span className={`text-xs ${isLight ? 'text-blue-600' : 'text-blue-400'}`}>
-                {completedAssessments.length} completed
+                {currentAssessmentIndex} completed
               </span>
             </div>
             <div className="flex gap-1.5">
@@ -2519,6 +2560,22 @@ export default function EmbedAssessment() {
           )}
         </div>
 
+        {showTimesUp && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" data-testid="overlay-times-up">
+            <div className="text-center animate-in fade-in zoom-in duration-300">
+              <div className="bg-red-500 rounded-full p-6 mx-auto mb-4 w-24 h-24 flex items-center justify-center">
+                <Clock className="h-12 w-12 text-white" />
+              </div>
+              <h2 className="text-3xl font-bold text-white mb-2">Time's Up!</h2>
+              <p className="text-slate-300 text-lg">
+                {session?.assessmentType?.replace(/-/g, '_') === 'prompt_architecture'
+                  ? "Moving to next question..."
+                  : "Auto-submitting your answers..."}
+              </p>
+            </div>
+          </div>
+        )}
+
         <Card className={bgCard}>
           <CardContent className="pt-6">
             {isPromptArchitecture && currentQ?.type === "text-input" ? (
@@ -2543,10 +2600,16 @@ export default function EmbedAssessment() {
                 <Textarea
                   value={answers[currentQ.id] || ""}
                   onChange={(e) => handleAnswerChange(e.target.value)}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                  }}
                   placeholder="Write your prompt here..."
                   className={`min-h-[150px] ${inputBg}`}
                   data-testid="textarea-prompt-response"
                 />
+                <p className={`text-xs ${isLight ? 'text-red-500' : 'text-red-400'} mt-1`}>
+                  Pasting is disabled. Copied content will score zero.
+                </p>
               </div>
             ) : (
               <div>
@@ -2584,16 +2647,20 @@ export default function EmbedAssessment() {
         </Card>
 
         <div className="flex justify-between mt-6 gap-3">
-          <Button
-            variant="outline"
-            onClick={handlePrevious}
-            disabled={currentIndex === 0}
-            className={`${borderColor} ${textSecondary}`}
-            data-testid="button-previous"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Previous
-          </Button>
+          {isPromptArchitecture ? (
+            <div />
+          ) : (
+            <Button
+              variant="outline"
+              onClick={handlePrevious}
+              disabled={currentIndex === 0}
+              className={`${borderColor} ${textSecondary}`}
+              data-testid="button-previous"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Previous
+            </Button>
+          )}
 
           {isLastQuestion ? (
             <>

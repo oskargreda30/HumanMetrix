@@ -929,7 +929,7 @@ export default function Assessment() {
 
               {/* Navigation */}
               <div className="flex flex-wrap gap-3 justify-between">
-                {!submitMutation.isPending && (
+                {!submitMutation.isPending && !isPromptArchitecture && (
                   <Button
                     variant="outline"
                     onClick={handlePrevious}
@@ -939,6 +939,7 @@ export default function Assessment() {
                     Previous
                   </Button>
                 )}
+                {!submitMutation.isPending && isPromptArchitecture && <div />}
                 
                 {currentQuestion === questions.length - 1 ? (
                   submitMutation.isPending ? (

@@ -5571,16 +5571,21 @@ export function registerGuestAssessmentRoutes(app: Express) {
         role: 'user',
       });
       
-      // Send welcome email with password (post-assessment context)
-      const { sendWelcomeEmailWithPassword } = await import('./email');
-      await sendWelcomeEmailWithPassword(
-        invitation.email,
-        firstName,
-        temporaryPassword,
-        "You've completed your assessments and can now access your results anytime.",
-        'post_payment'
-      );
-      console.log(`[GuestInvite] New account created for ${invitation.email}, credentials sent`);
+      // Send welcome email with password (post-assessment context) - non-blocking to avoid delaying redirect
+      import('./email').then(({ sendWelcomeEmailWithPassword }) => {
+        sendWelcomeEmailWithPassword(
+          invitation.email!,
+          firstName,
+          temporaryPassword,
+          "You've completed your assessments and can now access your results anytime.",
+          'post_payment'
+        ).then(() => {
+          console.log(`[GuestInvite] Credentials email sent to ${invitation.email}`);
+        }).catch((emailErr) => {
+          console.error(`[GuestInvite] Failed to send credentials email to ${invitation.email}:`, emailErr);
+        });
+      });
+      console.log(`[GuestInvite] New account created for ${invitation.email}`);
       
       // Auto-login the new user
       req.session.userId = newUser.id;
