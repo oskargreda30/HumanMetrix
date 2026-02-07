@@ -957,36 +957,71 @@ export default function EmbedAssessment() {
   const handleTimerExpiry = useCallback(() => {
     setIsSubmitting(true);
 
-    if (Object.keys(answersRef.current).length > 0 && !hasSubmittedRef.current) {
-      hasSubmittedRef.current = true;
-      fetch(`/api/embed/session/${sessionId}/submit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers: answersRef.current }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          setCompletedScores(data);
-          setStatus("completed");
-          if (window.parent !== window) {
-            window.parent.postMessage(
-              {
-                type: "humanmetrix:completed",
-                sessionId,
-                scores: data.scores,
-                totalScore: data.totalScore,
-                percentile: data.percentile,
-              },
-              "*"
-            );
-          }
-        })
-        .catch(() => {
-          setStatus("error");
-          setErrorMessage("Failed to submit assessment on time expiry");
-        });
+    const isMulti = assessmentQueue.length > 1;
+    const isLast = currentAssessmentIndex >= assessmentQueue.length - 1;
+
+    if (Object.keys(answersRef.current).length === 0 || hasSubmittedRef.current) {
+      setIsSubmitting(false);
+      if (isMulti && !isLast) {
+        pendingScoresRef.current = null;
+        setShowTransitionScreen(true);
+      } else {
+        setStatus("completed");
+      }
+      return;
     }
-  }, [sessionId]);
+
+    hasSubmittedRef.current = true;
+    const multiAssessmentContext = isMulti ? {
+      assessmentTypes: assessmentQueue,
+      currentIndex: currentAssessmentIndex,
+      isLastInSeries: isLast,
+      completedInSession: completedAssessments.map(a => a.type),
+    } : null;
+
+    fetch(`/api/embed/session/${sessionId}/submit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        answers: answersRef.current,
+        multiAssessmentContext,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setCompletedScores(data);
+        setIsSubmitting(false);
+
+        if (window.parent !== window) {
+          window.parent.postMessage(
+            {
+              type: isMulti && !isLast ? "humanmetrix:assessment_completed" : "humanmetrix:completed",
+              sessionId,
+              assessmentType: assessmentQueue[currentAssessmentIndex],
+              scores: data.scores,
+              totalScore: data.totalScore,
+              percentile: data.percentile,
+              isLastAssessment: isLast,
+              completedCount: currentAssessmentIndex + 1,
+              totalCount: assessmentQueue.length,
+            },
+            "*"
+          );
+        }
+
+        if (isMulti && !isLast) {
+          pendingScoresRef.current = data;
+          setShowTransitionScreen(true);
+        } else {
+          setStatus("completed");
+        }
+      })
+      .catch(() => {
+        setIsSubmitting(false);
+        setStatus("error");
+        setErrorMessage("Failed to submit assessment on time expiry");
+      });
+  }, [sessionId, assessmentQueue, currentAssessmentIndex, completedAssessments]);
 
   // Track if timer has expired from server (prevents client-side reset from overriding)
   const timerExpiredFromServerRef = useRef<boolean>(false);
