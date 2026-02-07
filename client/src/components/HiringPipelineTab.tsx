@@ -402,7 +402,7 @@ export function HiringPipelineTab() {
       </div>
 
       {/* Desktop: Horizontal kanban grid */}
-      <div className="hidden md:flex gap-2 overflow-x-auto pb-4">
+      <div className="hidden md:grid gap-2 pb-4" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(0, 1fr))` }}>
         {stages.map((stage) => {
           const config = stageConfig[stage.id];
           const Icon = config?.icon || User;
@@ -412,7 +412,7 @@ export function HiringPipelineTab() {
           return (
             <div
               key={stage.id}
-              className={`flex-1 min-w-[180px] max-w-[220px] rounded-lg border ${
+              className={`min-w-0 rounded-lg border ${
                 isDropTarget ? "border-primary border-2 bg-primary/5" : "border-border"
               } transition-all`}
               onDragOver={(e) => handleDragOver(e, stage.id)}
