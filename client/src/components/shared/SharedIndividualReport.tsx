@@ -437,29 +437,29 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
 
           <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20" data-testid="card-candidate-summary">
             <CardContent className="pt-4 md:pt-6 p-3 md:p-6">
-              <div className="grid gap-3 md:gap-4 md:grid-cols-5">
-                <div className="md:col-span-1">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
+                <div className="shrink-0">
                   <div className="flex items-center gap-2 md:gap-3">
-                    <div className="h-10 w-10 md:h-14 md:w-14 rounded-full bg-primary/20 flex items-center justify-center">
-                      <User className="h-5 w-5 md:h-7 md:w-7 text-primary" />
+                    <div className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                      <User className="h-5 w-5 md:h-6 md:w-6 text-primary" />
                     </div>
-                    <div>
-                      <h2 className="text-base md:text-xl font-bold text-foreground">{getCandidateName(selectedCandidateData)}</h2>
-                      <p className="text-xs md:text-sm text-muted-foreground truncate max-w-[180px] md:max-w-none">{selectedCandidateData.user.email}</p>
+                    <div className="min-w-0">
+                      <h2 className="text-sm md:text-lg font-bold text-foreground truncate">{getCandidateName(selectedCandidateData)}</h2>
+                      <p className="text-[11px] md:text-xs text-muted-foreground break-all leading-tight">{selectedCandidateData.user.email}</p>
                     </div>
                   </div>
                 </div>
-                <div className="md:col-span-4">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 md:gap-2">
                     {(() => {
                       const topFitSkill = fitData 
                         ? Object.entries(fitData.scores).sort((a, b) => (b[1] as number) - (a[1] as number))[0] 
                         : null;
                       return (
-                        <div className="text-center p-2 md:p-4 rounded-lg border bg-card">
-                          <div className="text-[10px] md:text-sm text-muted-foreground mb-0.5 md:mb-1">FIT Top Skill</div>
-                          <div className="text-xs md:text-base font-medium text-foreground mb-0.5 md:mb-1">{topFitSkill ? topFitSkill[0] : '-'}</div>
-                          <div className={`text-lg md:text-2xl font-bold ${topFitSkill ? getScoreColor(topFitSkill[1] as number) : 'text-muted-foreground'}`}>
+                        <div className="text-center p-1.5 md:p-2.5 rounded-lg border bg-card">
+                          <div className="text-[9px] md:text-xs text-muted-foreground mb-0.5">FIT Top Skill</div>
+                          <div className="text-[10px] md:text-sm font-medium text-foreground mb-0.5 truncate">{topFitSkill ? topFitSkill[0] : '-'}</div>
+                          <div className={`text-base md:text-xl font-bold ${topFitSkill ? getScoreColor(topFitSkill[1] as number) : 'text-muted-foreground'}`}>
                             {topFitSkill ? `${topFitSkill[1]}%` : '-'}
                           </div>
                         </div>
@@ -470,26 +470,26 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                         ? Object.entries(normalizedAIScores).sort((a, b) => (b[1] as number) - (a[1] as number))[0]
                         : null;
                       return (
-                        <div className="text-center p-2 md:p-4 rounded-lg border bg-card">
-                          <div className="text-[10px] md:text-sm text-muted-foreground mb-0.5 md:mb-1">AI Readiness Top</div>
-                          <div className="text-xs md:text-base font-medium text-foreground mb-0.5 md:mb-1">{topAISkill ? topAISkill[0] : '-'}</div>
-                          <div className={`text-lg md:text-2xl font-bold ${topAISkill ? getScoreColor(topAISkill[1] as number) : 'text-muted-foreground'}`}>
+                        <div className="text-center p-1.5 md:p-2.5 rounded-lg border bg-card">
+                          <div className="text-[9px] md:text-xs text-muted-foreground mb-0.5">AI Readiness Top</div>
+                          <div className="text-[10px] md:text-sm font-medium text-foreground mb-0.5 truncate">{topAISkill ? topAISkill[0] : '-'}</div>
+                          <div className={`text-base md:text-xl font-bold ${topAISkill ? getScoreColor(topAISkill[1] as number) : 'text-muted-foreground'}`}>
                             {topAISkill ? `${topAISkill[1]}%` : '-'}
                           </div>
                         </div>
                       );
                     })()}
-                    <div className="text-center p-2 md:p-4 rounded-lg border bg-card">
-                      <div className="text-[10px] md:text-sm text-muted-foreground mb-0.5 md:mb-1">Prompt Architecture</div>
-                      <div className="text-xs md:text-base font-medium text-foreground mb-0.5 md:mb-1">&nbsp;</div>
-                      <div className={`text-lg md:text-2xl font-bold ${promptData ? getScoreColor(promptData.totalScore) : 'text-muted-foreground'}`}>
+                    <div className="text-center p-1.5 md:p-2.5 rounded-lg border bg-card">
+                      <div className="text-[9px] md:text-xs text-muted-foreground mb-0.5">Prompt Architecture</div>
+                      <div className="text-[10px] md:text-sm font-medium text-foreground mb-0.5">&nbsp;</div>
+                      <div className={`text-base md:text-xl font-bold ${promptData ? getScoreColor(promptData.totalScore) : 'text-muted-foreground'}`}>
                         {promptData ? `${promptData.totalScore}%` : '-'}
                       </div>
                     </div>
-                    <div className="text-center p-2 md:p-4 rounded-lg border bg-card">
-                      <div className="text-[10px] md:text-sm text-muted-foreground mb-0.5 md:mb-1">AIQ (Ethics)</div>
-                      <div className="text-xs md:text-base font-medium text-foreground mb-0.5 md:mb-1">&nbsp;</div>
-                      <div className={`text-lg md:text-2xl font-bold ${aiqData ? getScoreColor(aiqData.totalScore) : 'text-muted-foreground'}`}>
+                    <div className="text-center p-1.5 md:p-2.5 rounded-lg border bg-card">
+                      <div className="text-[9px] md:text-xs text-muted-foreground mb-0.5">AIQ (Ethics)</div>
+                      <div className="text-[10px] md:text-sm font-medium text-foreground mb-0.5">&nbsp;</div>
+                      <div className={`text-base md:text-xl font-bold ${aiqData ? getScoreColor(aiqData.totalScore) : 'text-muted-foreground'}`}>
                         {aiqData ? `${aiqData.totalScore}%` : '-'}
                       </div>
                     </div>

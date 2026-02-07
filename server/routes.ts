@@ -14934,19 +14934,19 @@ IMPORTANT: FIT and AI Readiness are TRAIT-BASED assessments. High scores mean th
 Generate a structured analysis with EXACTLY these 5 sections. Use the headers exactly as shown:
 
 **ROLE SUITABILITY**
-Based on the trait profile, describe 2-3 types of roles or work environments where this candidate would excel. Be specific about role characteristics.
+Based on the trait profile, describe 2-3 types of roles or work environments where this candidate would excel. Be specific about role characteristics and job titles.
+
+**OPTIMAL ENVIRONMENT**
+Describe the ideal work environment, company culture, and team dynamics where this candidate would thrive. Consider factors like pace, structure, team size, and management style.
 
 **KEY STRENGTHS**
-List the top 3 standout traits and explain how they benefit the workplace. Reference specific scores.
+List the top 3 standout traits and explain how they benefit the workplace. Reference specific assessment scores.
 
-**DEVELOPMENT AREAS**
-Identify 2-3 areas for growth based on lower-scoring traits. Frame constructively with actionable suggestions.
+**DEVELOPMENT FOCUS**
+Identify 2-3 priority areas for professional development based on lower-scoring traits. Be specific about what training, mentoring, or experiences would benefit this candidate most. Frame constructively with actionable suggestions.
 
-**TEAM DYNAMICS**
-Describe how this candidate would likely interact with teams, their communication style, and collaboration approach.
-
-**HIRING RECOMMENDATION**
-Provide a concise recommendation for hiring managers, including ideal role types and potential concerns.
+**OVERALL ASSESSMENT AND RECOMMENDATION**
+Provide a concise overall assessment and recommendation for hiring managers, including ideal role types, team fit, and any potential concerns to be aware of.
 
 Keep each section concise (2-3 sentences). Use professional but accessible language.`;
 
@@ -14956,7 +14956,7 @@ Keep each section concise (2-3 sentences). Use professional but accessible langu
                 { role: "system", content: "You are an expert HR analyst specializing in candidate assessments. Provide insightful, balanced profile analyses." },
                 { role: "user", content: prompt }
               ],
-              max_tokens: 600,
+              max_tokens: 800,
               temperature: 0.7,
             });
 
