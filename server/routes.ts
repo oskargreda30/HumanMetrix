@@ -324,6 +324,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register Ecosystem Index routes (team diagnostic tool)
   const { registerEcosystemRoutes } = await import("./ecosystem-routes");
   registerEcosystemRoutes(app);
+  
+  // Register Bug Report routes
+  const { registerBugReportRoutes } = await import("./bug-report-routes");
+  registerBugReportRoutes(app);
 
   // Initialize Stripe discount codes (runs in background)
   initializeStripeCoupons().catch(err => {

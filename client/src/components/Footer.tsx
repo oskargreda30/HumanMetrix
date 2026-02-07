@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Mail, MessageSquare, Loader2, Send, X } from "lucide-react";
+import { Mail, MessageSquare, Loader2, Send, X, Bug, Upload, Image } from "lucide-react";
 import { SiLinkedin, SiFacebook, SiInstagram } from "react-icons/si";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -21,13 +21,24 @@ type FooterLink = {
 export default function Footer() {
   const [location, setLocation] = useLocation();
   const [showContactForm, setShowContactForm] = useState(false);
+  const [showBugReport, setShowBugReport] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isBugSubmitting, setIsBugSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     subject: "",
     message: ""
   });
+  const [bugData, setBugData] = useState({
+    title: "",
+    description: "",
+    reporterName: "",
+    reporterEmail: "",
+  });
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   
   const footerLinks: { company: FooterLink[]; resources: FooterLink[] } = {
@@ -106,6 +117,111 @@ export default function Footer() {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file",
+        description: "Please select an image file (PNG, JPG, etc.)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Screenshot must be under 10MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setScreenshotFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setScreenshotPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleBugSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!bugData.title || !bugData.description || !bugData.reporterName || !bugData.reporterEmail) {
+      toast({
+        title: "Missing fields",
+        description: "Please fill in all fields",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!isValidName(bugData.reporterName)) {
+      toast({
+        title: "Invalid name",
+        description: "Please enter a valid name",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!isValidEmail(bugData.reporterEmail)) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!screenshotFile) {
+      toast({
+        title: "Screenshot required",
+        description: "Please attach a screenshot of the issue",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsBugSubmitting(true);
+    try {
+      const formDataObj = new FormData();
+      formDataObj.append('title', bugData.title);
+      formDataObj.append('description', bugData.description);
+      formDataObj.append('reporterName', bugData.reporterName);
+      formDataObj.append('reporterEmail', bugData.reporterEmail);
+      formDataObj.append('screenshot', screenshotFile);
+
+      const response = await fetch('/api/bug-reports', {
+        method: 'POST',
+        body: formDataObj,
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || 'Failed to submit bug report');
+      }
+
+      toast({
+        title: "Bug report submitted",
+        description: "Thank you for reporting this issue. Our team has been notified."
+      });
+      setShowBugReport(false);
+      setBugData({ title: "", description: "", reporterName: "", reporterEmail: "" });
+      setScreenshotFile(null);
+      setScreenshotPreview(null);
+    } catch (error: any) {
+      toast({
+        title: "Failed to submit",
+        description: error.message || "Please try again later",
+        variant: "destructive"
+      });
+    } finally {
+      setIsBugSubmitting(false);
     }
   };
 
@@ -222,6 +338,14 @@ export default function Footer() {
                     <MessageSquare className="h-4 w-4 flex-shrink-0" />
                     <span>Contact Form</span>
                   </button>
+                  <button
+                    onClick={() => setShowBugReport(true)}
+                    className="flex items-center gap-2 text-xs text-blue-100/60 hover:text-cyan-300 transition-colors cursor-pointer"
+                    data-testid="button-report-bug-mobile"
+                  >
+                    <Bug className="h-4 w-4 flex-shrink-0" />
+                    <span>Report a Bug</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -283,6 +407,14 @@ export default function Footer() {
                 >
                   <MessageSquare className="h-4 w-4 flex-shrink-0 mt-0.5" />
                   <span>Contact Form</span>
+                </button>
+                <button
+                  onClick={() => setShowBugReport(true)}
+                  className="flex items-start gap-2 text-sm text-blue-100/60 hover:text-cyan-300 transition-colors cursor-pointer"
+                  data-testid="button-report-bug"
+                >
+                  <Bug className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  <span>Report a Bug</span>
                 </button>
               </div>
             </div>
@@ -388,6 +520,153 @@ export default function Footer() {
                   <Send className="h-4 w-4 mr-2" />
                 )}
                 {isSubmitting ? "Sending..." : "Send Message"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bug Report Dialog */}
+      <Dialog open={showBugReport} onOpenChange={(open) => {
+        setShowBugReport(open);
+        if (!open) {
+          setBugData({ title: "", description: "", reporterName: "", reporterEmail: "" });
+          setScreenshotFile(null);
+          setScreenshotPreview(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bug className="h-5 w-5 text-red-500" />
+              Report a Bug
+            </DialogTitle>
+            <DialogDescription>
+              Found something that isn't working right? Let us know and we'll fix it as soon as possible.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleBugSubmit} className="space-y-4 mt-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="bug-name">Your Name</Label>
+                <Input
+                  id="bug-name"
+                  placeholder="Your name"
+                  value={bugData.reporterName}
+                  onChange={(e) => setBugData(prev => ({ ...prev, reporterName: e.target.value }))}
+                  data-testid="input-bug-name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bug-email">Your Email</Label>
+                <Input
+                  id="bug-email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={bugData.reporterEmail}
+                  onChange={(e) => setBugData(prev => ({ ...prev, reporterEmail: e.target.value }))}
+                  data-testid="input-bug-email"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bug-title">Bug Title</Label>
+              <Input
+                id="bug-title"
+                placeholder="Brief summary of the issue"
+                value={bugData.title}
+                onChange={(e) => setBugData(prev => ({ ...prev, title: e.target.value }))}
+                data-testid="input-bug-title"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bug-description">Description</Label>
+              <Textarea
+                id="bug-description"
+                placeholder="What happened? What did you expect? Steps to reproduce..."
+                rows={4}
+                value={bugData.description}
+                onChange={(e) => setBugData(prev => ({ ...prev, description: e.target.value }))}
+                data-testid="input-bug-description"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Screenshot <span className="text-red-500">*</span></Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleScreenshotChange}
+                className="hidden"
+                data-testid="input-bug-screenshot"
+              />
+              {screenshotPreview ? (
+                <div className="relative border border-border rounded-md overflow-hidden">
+                  <img
+                    src={screenshotPreview}
+                    alt="Screenshot preview"
+                    className="w-full max-h-48 object-contain bg-muted"
+                    data-testid="img-bug-screenshot-preview"
+                  />
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="secondary"
+                      onClick={() => fileInputRef.current?.click()}
+                      data-testid="button-change-screenshot"
+                    >
+                      <Image className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="secondary"
+                      onClick={() => {
+                        setScreenshotFile(null);
+                        setScreenshotPreview(null);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }}
+                      data-testid="button-remove-screenshot"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full flex flex-col items-center gap-2 py-8 border-2 border-dashed border-border rounded-md text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors cursor-pointer"
+                  data-testid="button-upload-screenshot"
+                >
+                  <Upload className="h-6 w-6" />
+                  <span className="text-sm">Click to upload a screenshot</span>
+                  <span className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB</span>
+                </button>
+              )}
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowBugReport(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isBugSubmitting}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                data-testid="button-submit-bug"
+              >
+                {isBugSubmitting ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Bug className="h-4 w-4 mr-2" />
+                )}
+                {isBugSubmitting ? "Submitting..." : "Submit Report"}
               </Button>
             </div>
           </form>

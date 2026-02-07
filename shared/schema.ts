@@ -2386,3 +2386,69 @@ export const appLogs = pgTable("app_logs", {
 
 export type AppLog = typeof appLogs.$inferSelect;
 export type InsertAppLog = typeof appLogs.$inferInsert;
+
+// Bug report severity levels
+export const BUG_SEVERITY = {
+  CRITICAL: "critical",
+  HIGH: "high",
+  MEDIUM: "medium",
+  LOW: "low",
+} as const;
+
+export type BugSeverity = typeof BUG_SEVERITY[keyof typeof BUG_SEVERITY];
+
+// Bug report Kanban status stages
+export const BUG_STATUS = {
+  NEW: "new",
+  IN_PROGRESS: "in_progress",
+  UNDER_REVIEW: "under_review",
+  RESOLVED: "resolved",
+  CLOSED: "closed",
+} as const;
+
+export type BugStatus = typeof BUG_STATUS[keyof typeof BUG_STATUS];
+
+export const BUG_STATUS_ORDER: BugStatus[] = [
+  "new",
+  "in_progress",
+  "under_review",
+  "resolved",
+  "closed",
+];
+
+export const BUG_STATUS_LABELS: Record<BugStatus, string> = {
+  new: "New",
+  in_progress: "In Progress",
+  under_review: "Under Review",
+  resolved: "Resolved",
+  closed: "Closed",
+};
+
+// Bug reports table
+export const bugReports = pgTable("bug_reports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title").notNull(),
+  description: text("description").notNull(),
+  screenshotUrl: text("screenshot_url").notNull(),
+  severity: varchar("severity").notNull().default("medium"),
+  status: varchar("status").notNull().default("new"),
+  reporterUserId: varchar("reporter_user_id"),
+  reporterEmail: varchar("reporter_email").notNull(),
+  reporterName: varchar("reporter_name").notNull(),
+  adminNotes: text("admin_notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_bug_reports_status").on(table.status),
+  index("idx_bug_reports_severity").on(table.severity),
+  index("idx_bug_reports_created").on(table.createdAt),
+]);
+
+export const insertBugReportSchema = createInsertSchema(bugReports).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertBugReport = z.infer<typeof insertBugReportSchema>;
+export type BugReport = typeof bugReports.$inferSelect;

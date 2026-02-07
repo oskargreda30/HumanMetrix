@@ -35,6 +35,7 @@ import AppLogsTab from "@/components/admin/AppLogsTab";
 import SecurityTab from "@/components/admin/SecurityTab";
 import RevenueDashboardTab from "@/components/admin/RevenueDashboardTab";
 import ProfitAnalyticsTab from "@/components/admin/ProfitAnalyticsTab";
+import BugReportsTab from "@/components/admin/BugReportsTab";
 import dashboardBg from "@assets/image_1763608498774.png";
 
 export default function AdminDashboard() {
@@ -211,6 +212,11 @@ export default function AdminDashboard() {
                 </>
               )}
               {isSuperAdmin && (
+                <TabsTrigger value="bug-reports" data-testid="tab-bug-reports" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  Bug Reports
+                </TabsTrigger>
+              )}
+              {isSuperAdmin && (
                 <TabsTrigger value="widget-test" data-testid="tab-widget-test" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                   Widget Test
                 </TabsTrigger>
@@ -337,6 +343,12 @@ export default function AdminDashboard() {
             {isSuperAdmin && (
               <TabsContent value="widget-test" className="space-y-4">
                 <WidgetTestTab />
+              </TabsContent>
+            )}
+
+            {isSuperAdmin && (
+              <TabsContent value="bug-reports" className="space-y-4">
+                <BugReportsTab />
               </TabsContent>
             )}
 

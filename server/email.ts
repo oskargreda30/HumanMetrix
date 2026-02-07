@@ -5173,3 +5173,99 @@ export async function sendBroadcastEmail(recipientEmail: string, title: string, 
     return { success: false };
   }
 }
+
+export async function sendBugReportNotificationEmail(details: {
+  bugId: string;
+  title: string;
+  description: string;
+  severity: string;
+  reporterName: string;
+  reporterEmail: string;
+}): Promise<{ success: boolean }> {
+  const { bugId, title, description, severity, reporterName, reporterEmail } = details;
+  
+  const severityColors: Record<string, string> = {
+    critical: '#dc2626',
+    high: '#ea580c',
+    medium: '#d97706',
+    low: '#2563eb',
+  };
+  
+  const severityColor = severityColors[severity] || '#6b7280';
+  
+  const emailHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #0a1628 0%, #1a2744 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+          .field { margin-bottom: 16px; }
+          .label { font-weight: 600; color: #374151; margin-bottom: 4px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+          .value { color: #1f2937; }
+          .severity-badge { display: inline-block; color: white; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+          .description-box { background: #f9fafb; border-left: 4px solid ${severityColor}; padding: 15px; margin: 16px 0; white-space: pre-wrap; }
+          .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 13px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 22px;">New Bug Report</h1>
+            <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 14px;">HumanMetrix Platform</p>
+          </div>
+          <div class="content">
+            <div style="margin-bottom: 20px;">
+              <span class="severity-badge" style="background: ${severityColor};">${severity.toUpperCase()} SEVERITY</span>
+            </div>
+            
+            <div class="field">
+              <div class="label">Bug Title</div>
+              <div class="value" style="font-size: 18px; font-weight: 600;">${title}</div>
+            </div>
+            
+            <div class="field">
+              <div class="label">Description</div>
+              <div class="description-box">${description.replace(/\n/g, '<br>')}</div>
+            </div>
+            
+            <div class="field">
+              <div class="label">Reported By</div>
+              <div class="value">${reporterName} (<a href="mailto:${reporterEmail}" style="color: #06b6d4;">${reporterEmail}</a>)</div>
+            </div>
+            
+            <div class="field">
+              <div class="label">Report ID</div>
+              <div class="value" style="font-family: monospace; font-size: 13px; color: #6b7280;">${bugId}</div>
+            </div>
+            
+            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; font-size: 13px; margin: 0;">A screenshot has been attached to this report. View the full details in the Admin Dashboard under Bug Reports.</p>
+            </div>
+          </div>
+          <div class="footer">
+            <p style="margin: 0;">HumanMetrix &mdash; AI Assessment Platform</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  try {
+    const recipients = ['daena@humanmetrix.co.uk', 'oskar@humanmetrix.co.uk'];
+    
+    await sendEmail({
+      to: recipients,
+      subject: `[${severity.toUpperCase()}] Bug Report: ${title}`,
+      html: emailHtml,
+      text: `New Bug Report\n\nSeverity: ${severity.toUpperCase()}\nTitle: ${title}\nDescription: ${description}\nReported by: ${reporterName} (${reporterEmail})\nReport ID: ${bugId}\n\nView details in the Admin Dashboard.`,
+    });
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error('[Bug Report] Failed to send notification email:', error.message);
+    return { success: false };
+  }
+}
