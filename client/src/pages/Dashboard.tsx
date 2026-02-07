@@ -1014,7 +1014,7 @@ export default function Dashboard() {
             <section className="mb-12">
               <h2 className="text-xl md:text-2xl font-semibold mb-4 text-white">Your Results</h2>
               <div className="space-y-6">
-                {purchasesWithCompletedResults.map((purchase: any, index: number) => {
+                {[...purchasesWithCompletedResults].reverse().map((purchase: any, index: number) => {
                   // For progress: show consumed (completed + abandoned) / total
                   const consumedCount = (purchase.completedCount || 0) + (purchase.abandonedCount || 0);
                   const progressPercentage = Math.round((consumedCount / purchase.totalCount) * 100);
@@ -1074,7 +1074,7 @@ export default function Dashboard() {
                             <div className="flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <h3 className="text-lg font-semibold">
-                                  Testing Series #{purchasesWithCompletedResults.length - index}
+                                  Testing Series #{index + 1}
                                 </h3>
                                 {purchase.hasOnlyAbandonedResults ? (
                                   <Badge className="bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20">

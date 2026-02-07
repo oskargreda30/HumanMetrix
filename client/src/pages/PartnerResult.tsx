@@ -10,7 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import SkillsLegend from "@/components/SkillsLegend";
 import { normalizeAIReadinessScores } from "@/lib/assessmentSkills";
-import { exportResultsPDF } from "@/lib/pdfScreenCapture";
+import { useState, useRef } from "react";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import {
   ResponsiveContainer,
@@ -225,6 +225,8 @@ export default function PartnerResult() {
   const [, params] = useRoute("/partner/results/:sessionId");
   const sessionId = params?.sessionId;
   const { toast } = useToast();
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, error } = useQuery<PartnerResultData>({
     queryKey: ['/api/partner/me/results', sessionId],
@@ -236,7 +238,7 @@ export default function PartnerResult() {
   });
 
   const handleDownloadPDF = async () => {
-    if (!data) {
+    if (!reportRef.current || !data) {
       toast({
         title: "Error",
         description: "Unable to generate PDF. Please try again.",
@@ -245,24 +247,44 @@ export default function PartnerResult() {
       return;
     }
 
+    setIsExportingPDF(true);
     try {
-      toast({
-        title: "Generating PDF",
-        description: "Please wait while we capture the results...",
+      const { jsPDF } = await import('jspdf');
+      const html2canvas = (await import('html2canvas')).default;
+
+      const element = reportRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
       });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+
+      let heightLeft = imgHeight * ratio;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', imgX, position, imgWidth * ratio, imgHeight * ratio);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight * ratio;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', imgX, position, imgWidth * ratio, imgHeight * ratio);
+        heightLeft -= pdfHeight;
+      }
 
       const candidateName = data.externalEmail || data.externalUserId || 'Candidate';
       const filename = `${candidateName.replace(/[^a-zA-Z0-9]/g, '_')}_${getAssessmentLabel(data.assessmentType).replace(/\s+/g, '_')}_Results.pdf`;
-
-      await exportResultsPDF({
-        elementId: 'partner-results-content',
-        filename,
-        candidateName,
-        assessmentType: data.assessmentType,
-        onProgress: (message) => {
-          console.log('PDF Progress:', message);
-        },
-      });
+      pdf.save(filename);
 
       toast({
         title: "Success",
@@ -275,6 +297,8 @@ export default function PartnerResult() {
         description: "Failed to generate PDF. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsExportingPDF(false);
     }
   };
 
@@ -393,16 +417,26 @@ export default function PartnerResult() {
                 size="default"
                 data-testid="button-download-pdf"
                 className="gap-2"
+                disabled={isExportingPDF}
               >
-                <Download className="h-4 w-4" />
-                Download PDF
+                {isExportingPDF ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4" />
+                    Download Full Report
+                  </>
+                )}
               </Button>
             </div>
           </div>
         </div>
 
         {/* PDF Capture Container - contains all content to be captured */}
-        <div id="partner-results-content" className="bg-background">
+        <div id="partner-results-content" ref={reportRef} className="bg-background">
           {/* Summary Section - Page 1 of PDF */}
           <div data-pdf-section className="space-y-6 bg-background mb-8">
             {/* Header Section for PDF */}
