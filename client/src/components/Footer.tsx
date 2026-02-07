@@ -248,9 +248,11 @@ export default function Footer() {
         formDataObj.append('screenshots', file);
       });
 
+      const csrfToken = document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith('csrf_token='))?.split('=')[1];
       const response = await fetch('/api/bug-reports', {
         method: 'POST',
         body: formDataObj,
+        headers: csrfToken ? { 'x-csrf-token': csrfToken } : {},
       });
 
       if (!response.ok) {
