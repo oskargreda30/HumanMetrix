@@ -607,49 +607,83 @@ export function registerPartnerRoutes(app: Express) {
         // Get all non-expired sessions for this partner
         const sessions = await storage.getPipelineSessions(partnerId, organisationId);
         
-        // Group by pipeline stage
-        const stages = ["new", "in_progress", "completed", "reviewing", "shortlisted", "hired", "rejected"];
-        const pipeline: Record<string, any[]> = {};
+        const stageOrder = ["new", "in_progress", "completed", "reviewing", "shortlisted", "hired", "rejected"];
+        const stageRank: Record<string, number> = {};
+        stageOrder.forEach((s, i) => { stageRank[s] = i; });
         
-        for (const stage of stages) {
-          pipeline[stage] = [];
-        }
+        // First, derive stage for each session and group by candidate email
+        const candidateMap: Record<string, { sessions: any[]; stage: string; email: string; userId: string | null }> = {};
         
         for (const session of sessions) {
-          // Auto-derive stage from session status if pipeline stage not set
           let stage = session.pipelineStage || "new";
           if (!session.pipelineStage) {
             if (session.status === "started") stage = "in_progress";
             else if (session.status === "completed") stage = "completed";
-            else if (session.status === "expired") continue; // Skip expired
+            else if (session.status === "expired") continue;
           }
           
+          const email = (session.externalEmail || session.externalUserId || session.id).toLowerCase().trim();
+          
+          if (!candidateMap[email]) {
+            candidateMap[email] = {
+              sessions: [],
+              stage: stage,
+              email: email,
+              userId: session.externalUserId,
+            };
+          }
+          
+          candidateMap[email].sessions.push({
+            sessionId: session.id,
+            assessmentType: session.assessmentType,
+            status: session.status,
+            pipelineStage: stage,
+            pipelineNotes: session.pipelineNotes,
+            totalScore: session.totalScore,
+            percentile: session.percentile,
+            createdAt: session.createdAt,
+            completedAt: session.completedAt,
+            pipelineStageUpdatedAt: session.pipelineStageUpdatedAt,
+            metadata: session.metadata,
+          });
+          
+          // Use the most advanced pipeline stage among all sessions for this candidate
+          if ((stageRank[stage] ?? 0) > (stageRank[candidateMap[email].stage] ?? 0)) {
+            candidateMap[email].stage = stage;
+          }
+        }
+        
+        // Group candidates by their derived pipeline stage
+        const pipeline: Record<string, any[]> = {};
+        for (const stage of stageOrder) {
+          pipeline[stage] = [];
+        }
+        
+        for (const candidate of Object.values(candidateMap)) {
+          const stage = candidate.stage;
           if (pipeline[stage]) {
             pipeline[stage].push({
-              sessionId: session.id,
-              externalUserId: session.externalUserId,
-              externalEmail: session.externalEmail,
-              assessmentType: session.assessmentType,
-              status: session.status,
+              candidateEmail: candidate.email,
+              externalUserId: candidate.userId,
               pipelineStage: stage,
-              pipelineNotes: session.pipelineNotes,
-              totalScore: session.totalScore,
-              percentile: session.percentile,
-              createdAt: session.createdAt,
-              completedAt: session.completedAt,
-              pipelineStageUpdatedAt: session.pipelineStageUpdatedAt,
-              metadata: session.metadata,
+              sessions: candidate.sessions,
+              sessionCount: candidate.sessions.length,
+              completedCount: candidate.sessions.filter((s: any) => s.status === 'completed').length,
+              latestActivity: candidate.sessions.reduce((latest: string, s: any) => {
+                const d = s.completedAt || s.createdAt;
+                return d > latest ? d : latest;
+              }, candidate.sessions[0]?.createdAt || ''),
             });
           }
         }
         
-        // Count totals
+        // Count totals (now counting candidates, not sessions)
         const totalCount = Object.values(pipeline).reduce((sum, arr) => sum + arr.length, 0);
         
         res.json({
           pipeline,
           totalCount,
-          stages: stages.map(s => ({
+          stages: stageOrder.map(s => ({
             id: s,
             label: {
               new: "New",

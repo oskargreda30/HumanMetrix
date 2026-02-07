@@ -44,10 +44,8 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 
-interface PipelineSession {
+interface CandidateSession {
   sessionId: string;
-  externalUserId: string | null;
-  externalEmail: string | null;
   assessmentType: string;
   status: string;
   pipelineStage: string;
@@ -60,8 +58,18 @@ interface PipelineSession {
   metadata: Record<string, any> | null;
 }
 
+interface PipelineCandidate {
+  candidateEmail: string;
+  externalUserId: string | null;
+  pipelineStage: string;
+  sessions: CandidateSession[];
+  sessionCount: number;
+  completedCount: number;
+  latestActivity: string;
+}
+
 interface PipelineData {
-  pipeline: Record<string, PipelineSession[]>;
+  pipeline: Record<string, PipelineCandidate[]>;
   totalCount: number;
   stages: { id: string; label: string; count: number }[];
 }
@@ -78,19 +86,29 @@ const stageConfig: Record<string, { icon: typeof User; color: string; bgColor: s
 
 const assessmentLabels: Record<string, string> = {
   fit: "FIT",
-  aiReadiness: "AI Readiness",
-  promptArchitecture: "Prompt Arch.",
+  aiReadiness: "AI Ready",
+  ai_readiness: "AI Ready",
+  promptArchitecture: "Prompt",
+  prompt_architecture: "Prompt",
   aiq: "AIQ",
+};
+
+const getScoreBadgeClass = (score: number | null) => {
+  if (score === null) return "";
+  if (score >= 80) return "bg-green-500/10 text-green-700 border-green-500/30";
+  if (score >= 60) return "bg-amber-500/10 text-amber-700 border-amber-500/30";
+  return "bg-red-500/10 text-red-700 border-red-500/30";
 };
 
 export function HiringPipelineTab() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedSession, setSelectedSession] = useState<PipelineSession | null>(null);
+  const [selectedCandidate, setSelectedCandidate] = useState<PipelineCandidate | null>(null);
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [notes, setNotes] = useState("");
-  const [draggedSession, setDraggedSession] = useState<PipelineSession | null>(null);
+  const [notesSessionId, setNotesSessionId] = useState<string | null>(null);
+  const [draggedCandidate, setDraggedCandidate] = useState<PipelineCandidate | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [expandedStages, setExpandedStages] = useState<Set<string>>(new Set(["new", "reviewing", "shortlisted"]));
   
@@ -106,77 +124,86 @@ export function HiringPipelineTab() {
     });
   }, []);
 
-  const { data: pipelineData, isLoading, isFetching, refetch } = useQuery<PipelineData>({
+  const { data: pipelineData, isLoading } = useQuery<PipelineData>({
     queryKey: ["/api/partner/pipeline"],
   });
 
+  const updateSessionStage = useCallback(async (sessionId: string, pipelineStage?: string, pipelineNotes?: string) => {
+    return await apiRequest("PATCH", `/api/partner/sessions/${sessionId}/pipeline`, {
+      pipelineStage,
+      pipelineNotes,
+    });
+  }, []);
+
   const updateStageMutation = useMutation({
-    mutationFn: async ({ sessionId, pipelineStage, pipelineNotes }: { sessionId: string; pipelineStage?: string; pipelineNotes?: string }) => {
+    mutationFn: async ({ sessionId, pipelineNotes }: { sessionId: string; pipelineNotes: string }) => {
       return await apiRequest("PATCH", `/api/partner/sessions/${sessionId}/pipeline`, {
-        pipelineStage,
         pipelineNotes,
       });
     },
-    onMutate: async ({ sessionId, pipelineStage }) => {
-      // Only do optimistic updates for stage changes
-      if (!pipelineStage) return;
-      
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ["/api/partner/pipeline"] });
-      
-      // Snapshot previous value
-      const previousData = queryClient.getQueryData<PipelineData>(["/api/partner/pipeline"]);
-      
-      // Optimistically update the cache
-      if (previousData) {
-        const newPipeline = { ...previousData.pipeline };
-        let movedSession: PipelineSession | undefined;
-        
-        // Find and remove session from its current stage
-        for (const stageId of Object.keys(newPipeline)) {
-          const idx = newPipeline[stageId].findIndex(s => s.sessionId === sessionId);
-          if (idx !== -1) {
-            movedSession = { ...newPipeline[stageId][idx], pipelineStage };
-            newPipeline[stageId] = newPipeline[stageId].filter(s => s.sessionId !== sessionId);
-            break;
-          }
-        }
-        
-        // Add to target stage
-        if (movedSession && newPipeline[pipelineStage]) {
-          newPipeline[pipelineStage] = [movedSession, ...newPipeline[pipelineStage]];
-        }
-        
-        // Update stages counts
-        const newStages = previousData.stages.map(stage => ({
-          ...stage,
-          count: newPipeline[stage.id]?.length || 0
-        }));
-        
-        queryClient.setQueryData<PipelineData>(["/api/partner/pipeline"], {
-          ...previousData,
-          pipeline: newPipeline,
-          stages: newStages
-        });
-      }
-      
-      return { previousData };
-    },
-    onError: (_err, _variables, context) => {
-      // Rollback on error
-      if (context?.previousData) {
-        queryClient.setQueryData(["/api/partner/pipeline"], context.previousData);
-      }
-      toast({ title: "Error", description: "Failed to update pipeline", variant: "destructive" });
-    },
     onSettled: () => {
-      // Refetch to ensure consistency
       queryClient.invalidateQueries({ queryKey: ["/api/partner/pipeline"] });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to save notes", variant: "destructive" });
     },
   });
 
-  const handleDragStart = (e: React.DragEvent, session: PipelineSession) => {
-    setDraggedSession(session);
+  const moveCandidateToStage = useCallback(async (candidate: PipelineCandidate, targetStage: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    await queryClient.cancelQueries({ queryKey: ["/api/partner/pipeline"] });
+    
+    const previousData = queryClient.getQueryData<PipelineData>(["/api/partner/pipeline"]);
+    if (previousData) {
+      const newPipeline = { ...previousData.pipeline };
+      
+      const currentStage = candidate.pipelineStage;
+      if (newPipeline[currentStage]) {
+        newPipeline[currentStage] = newPipeline[currentStage].filter(c => c.candidateEmail !== candidate.candidateEmail);
+      }
+      
+      const movedCandidate = { ...candidate, pipelineStage: targetStage };
+      if (newPipeline[targetStage]) {
+        newPipeline[targetStage] = [movedCandidate, ...newPipeline[targetStage]];
+      }
+      
+      const newStages = previousData.stages.map(stage => ({
+        ...stage,
+        count: newPipeline[stage.id]?.length || 0
+      }));
+      
+      queryClient.setQueryData<PipelineData>(["/api/partner/pipeline"], {
+        ...previousData,
+        pipeline: newPipeline,
+        stages: newStages,
+        totalCount: Object.values(newPipeline).reduce((sum, arr) => sum + arr.length, 0),
+      });
+    }
+    
+    try {
+      await Promise.all(
+        candidate.sessions.map(session =>
+          updateSessionStage(session.sessionId, targetStage)
+        )
+      );
+      toast({ title: "Success", description: `Moved to ${targetStage.replace('_', ' ')}` });
+    } catch (error) {
+      if (previousData) {
+        queryClient.setQueryData(["/api/partner/pipeline"], previousData);
+      }
+      toast({ title: "Error", description: "Failed to move candidate", variant: "destructive" });
+      console.error("Move failed:", error);
+    } finally {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/pipeline"] });
+    }
+  }, [updateSessionStage, toast]);
+
+  const handleDragStart = (e: React.DragEvent, candidate: PipelineCandidate) => {
+    setDraggedCandidate(candidate);
     e.dataTransfer.effectAllowed = "move";
   };
 
@@ -193,25 +220,22 @@ export function HiringPipelineTab() {
     e.preventDefault();
     setDragOverStage(null);
     
-    if (draggedSession && draggedSession.pipelineStage !== targetStage) {
-      await updateStageMutation.mutateAsync({
-        sessionId: draggedSession.sessionId,
-        pipelineStage: targetStage,
-      });
+    if (draggedCandidate && draggedCandidate.pipelineStage !== targetStage) {
+      await moveCandidateToStage(draggedCandidate, targetStage);
     }
-    setDraggedSession(null);
+    setDraggedCandidate(null);
   };
 
   const handleSaveNotes = async () => {
-    if (selectedSession) {
+    if (notesSessionId) {
       try {
         await updateStageMutation.mutateAsync({
-          sessionId: selectedSession.sessionId,
+          sessionId: notesSessionId,
           pipelineNotes: notes,
         });
         toast({ title: "Notes saved", description: "Candidate notes have been updated" });
         setNotesDialogOpen(false);
-        setSelectedSession(null);
+        setNotesSessionId(null);
       } catch (error) {
         console.error("Failed to save notes:", error);
         toast({ title: "Error", description: "Failed to save notes. Please try again.", variant: "destructive" });
@@ -219,41 +243,25 @@ export function HiringPipelineTab() {
     }
   };
 
-  const openNotesDialog = (session: PipelineSession) => {
-    setSelectedSession(session);
-    setNotes(session.pipelineNotes || "");
+  const openNotesDialog = (candidate: PipelineCandidate) => {
+    const firstSession = candidate.sessions[0];
+    setNotesSessionId(firstSession?.sessionId || null);
+    setNotes(firstSession?.pipelineNotes || "");
     setNotesDialogOpen(true);
   };
 
-  const openDetailsDialog = (session: PipelineSession) => {
-    setSelectedSession(session);
+  const openDetailsDialog = (candidate: PipelineCandidate) => {
+    setSelectedCandidate(candidate);
     setDetailsDialogOpen(true);
   };
 
-  const moveToStage = useCallback(async (session: PipelineSession, targetStage: string, e?: React.MouseEvent) => {
-    // Stop event propagation to prevent card click from opening details
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    try {
-      await updateStageMutation.mutateAsync({
-        sessionId: session.sessionId,
-        pipelineStage: targetStage,
-      });
-      toast({ title: "Success", description: `Moved to ${targetStage.replace('_', ' ')}` });
-    } catch (error) {
-      console.error("Move failed:", error);
-    }
-  }, [updateStageMutation, toast]);
-
-  const filterSessions = (sessions: PipelineSession[]) => {
-    if (!searchQuery.trim()) return sessions;
+  const filterCandidates = (candidates: PipelineCandidate[]) => {
+    if (!searchQuery.trim()) return candidates;
     const query = searchQuery.toLowerCase();
-    return sessions.filter(s => 
-      s.externalEmail?.toLowerCase().includes(query) ||
-      s.externalUserId?.toLowerCase().includes(query) ||
-      s.assessmentType.toLowerCase().includes(query)
+    return candidates.filter(c => 
+      c.candidateEmail?.toLowerCase().includes(query) ||
+      c.externalUserId?.toLowerCase().includes(query) ||
+      c.sessions.some(s => (assessmentLabels[s.assessmentType] || s.assessmentType).toLowerCase().includes(query))
     );
   };
 
@@ -267,6 +275,105 @@ export function HiringPipelineTab() {
 
   const stages = pipelineData?.stages || [];
   const pipeline = pipelineData?.pipeline || {};
+
+  const renderCandidateCard = (candidate: PipelineCandidate, isMobile: boolean = false) => {
+    const hasNotes = candidate.sessions.some(s => s.pipelineNotes);
+    
+    return (
+      <Card
+        key={candidate.candidateEmail}
+        className="cursor-pointer hover-elevate"
+        draggable
+        onDragStart={(e) => handleDragStart(e, candidate)}
+        onClick={() => openDetailsDialog(candidate)}
+        data-testid={`pipeline-card-${isMobile ? 'mobile-' : ''}${candidate.candidateEmail}`}
+      >
+        <CardContent className={isMobile ? "p-3" : "p-2"}>
+          <div className="flex items-start justify-between gap-1">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start gap-1 mb-1">
+                <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0 cursor-grab mt-0.5" />
+                <span className={`font-medium ${isMobile ? 'text-sm truncate' : 'text-xs break-all leading-tight'}`} title={candidate.candidateEmail} data-testid={`text-candidate-${candidate.candidateEmail}`}>
+                  {candidate.candidateEmail}
+                </span>
+              </div>
+              <div className="flex items-center gap-1 flex-wrap mb-1">
+                {candidate.sessions.map((session) => (
+                  <Badge 
+                    key={session.sessionId}
+                    variant="outline" 
+                    className={`text-[10px] px-1.5 py-0 ${
+                      session.status === 'completed' && session.totalScore !== null 
+                        ? getScoreBadgeClass(session.totalScore)
+                        : ''
+                    }`}
+                    data-testid={`badge-assessment-${session.sessionId}`}
+                  >
+                    {assessmentLabels[session.assessmentType] || session.assessmentType}
+                    {session.status === 'completed' && session.totalScore !== null && (
+                      <span className="ml-1 font-semibold">{session.totalScore}%</span>
+                    )}
+                  </Badge>
+                ))}
+              </div>
+              <div className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+                <span>{format(new Date(candidate.latestActivity), "MMM d, yyyy")}</span>
+                {candidate.completedCount > 0 && (
+                  <span className="text-green-600">{candidate.completedCount}/{candidate.sessionCount} done</span>
+                )}
+              </div>
+              {hasNotes && (
+                <div className="mt-1 text-[10px] text-muted-foreground truncate flex items-center gap-1">
+                  <FileText className="h-2.5 w-2.5" />
+                  {candidate.sessions.find(s => s.pipelineNotes)?.pipelineNotes?.substring(0, 25)}...
+                </div>
+              )}
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()} data-testid={`button-card-menu-${candidate.candidateEmail}`}>
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem 
+                  onClick={(e) => { e.stopPropagation(); openNotesDialog(candidate); }} 
+                  data-testid={`menu-item-notes-${candidate.candidateEmail}`}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  {hasNotes ? "Edit Notes" : "Add Notes"}
+                </DropdownMenuItem>
+                {candidate.sessions.filter(s => s.status === 'completed').length > 0 && (
+                  <DropdownMenuItem asChild>
+                    <a 
+                      href={`/partner/results/${candidate.sessions.find(s => s.status === 'completed')?.sessionId}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      data-testid={`menu-item-results-${candidate.candidateEmail}`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Results
+                    </a>
+                  </DropdownMenuItem>
+                )}
+                {stages.filter(s => s.id !== candidate.pipelineStage).map(targetStage => (
+                  <DropdownMenuItem
+                    key={targetStage.id}
+                    onClick={(e) => moveCandidateToStage(candidate, targetStage.id, e)}
+                    data-testid={`menu-item-move-${candidate.candidateEmail}-${targetStage.id}`}
+                  >
+                    <ChevronRight className="h-4 w-4 mr-2" />
+                    Move to {targetStage.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -294,13 +401,13 @@ export function HiringPipelineTab() {
         {stages.map((stage) => {
           const config = stageConfig[stage.id];
           const Icon = config?.icon || User;
-          const sessions = filterSessions(pipeline[stage.id] || []);
+          const candidates = filterCandidates(pipeline[stage.id] || []);
           const isDropTarget = dragOverStage === stage.id;
 
           return (
             <div
               key={stage.id}
-              className={`flex-1 min-w-[160px] max-w-[200px] rounded-lg border ${
+              className={`flex-1 min-w-[180px] max-w-[220px] rounded-lg border ${
                 isDropTarget ? "border-primary border-2 bg-primary/5" : "border-border"
               } transition-all`}
               onDragOver={(e) => handleDragOver(e, stage.id)}
@@ -313,96 +420,14 @@ export function HiringPipelineTab() {
                   <Icon className={`h-4 w-4 flex-shrink-0 ${config?.color || "text-foreground"}`} />
                   <span className="font-medium text-xs truncate" data-testid={`text-stage-label-${stage.id}`}>{stage.label}</span>
                   <span className="text-[10px] text-muted-foreground flex-shrink-0" data-testid={`badge-stage-count-${stage.id}`}>
-                    ({sessions.length})
+                    ({candidates.length})
                   </span>
                 </div>
               </div>
               <ScrollArea className="h-[500px] p-2">
                 <div className="space-y-2">
-                  {sessions.map((session) => (
-                    <Card
-                      key={session.sessionId}
-                      className="cursor-pointer hover-elevate"
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, session)}
-                      onClick={() => openDetailsDialog(session)}
-                      data-testid={`pipeline-card-${session.sessionId}`}
-                    >
-                      <CardContent className="p-2">
-                        <div className="flex items-start justify-between gap-1">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start gap-1 mb-1">
-                              <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0 cursor-grab mt-0.5" />
-                              <span className="font-medium text-xs break-all leading-tight" title={session.externalEmail || session.externalUserId || "Unknown"} data-testid={`text-candidate-${session.sessionId}`}>
-                                {session.externalEmail || session.externalUserId || "Unknown"}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1 flex-wrap mb-1">
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                                {assessmentLabels[session.assessmentType] || session.assessmentType}
-                              </Badge>
-                              {session.status === "completed" && session.totalScore !== null && (
-                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                  {session.totalScore}%
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="text-[10px] text-muted-foreground">
-                              {session.completedAt
-                                ? format(new Date(session.completedAt), "MMM d, yyyy")
-                                : format(new Date(session.createdAt), "MMM d, yyyy")
-                              }
-                            </div>
-                            {session.pipelineNotes && (
-                              <div className="mt-1 text-[10px] text-muted-foreground truncate flex items-center gap-1">
-                                <FileText className="h-2.5 w-2.5" />
-                                {session.pipelineNotes.substring(0, 20)}...
-                              </div>
-                            )}
-                          </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()} data-testid={`button-card-menu-${session.sessionId}`}>
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem 
-                                onClick={(e) => { e.stopPropagation(); openNotesDialog(session); }} 
-                                data-testid={`menu-item-notes-${session.sessionId}`}
-                              >
-                                <FileText className="h-4 w-4 mr-2" />
-                                {session.pipelineNotes ? "Edit Notes" : "Add Notes"}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem asChild>
-                                <a 
-                                  href={`/partner/results/${session.sessionId}`} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer" 
-                                  data-testid={`menu-item-results-${session.sessionId}`}
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Results
-                                </a>
-                              </DropdownMenuItem>
-                              {stages.filter(s => s.id !== session.pipelineStage).map(targetStage => (
-                                <DropdownMenuItem
-                                  key={targetStage.id}
-                                  onClick={(e) => moveToStage(session, targetStage.id, e)}
-                                  data-testid={`menu-item-move-${session.sessionId}-${targetStage.id}`}
-                                >
-                                  <ChevronRight className="h-4 w-4 mr-2" />
-                                  Move to {targetStage.label}
-                                </DropdownMenuItem>
-                              ))}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  {sessions.length === 0 && (
+                  {candidates.map((candidate) => renderCandidateCard(candidate, false))}
+                  {candidates.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground text-sm" data-testid={`empty-state-${stage.id}`}>
                       No candidates
                     </div>
@@ -419,7 +444,7 @@ export function HiringPipelineTab() {
         {stages.map((stage) => {
           const config = stageConfig[stage.id];
           const Icon = config?.icon || User;
-          const sessions = filterSessions(pipeline[stage.id] || []);
+          const candidates = filterCandidates(pipeline[stage.id] || []);
           const isDropTarget = dragOverStage === stage.id;
           const isExpanded = expandedStages.has(stage.id);
 
@@ -448,7 +473,7 @@ export function HiringPipelineTab() {
                         <Icon className={`h-5 w-5 flex-shrink-0 ${config?.color || "text-foreground"}`} />
                         <span className="font-medium text-sm">{stage.label}</span>
                         <Badge variant="secondary" className="text-xs">
-                          {sessions.length}
+                          {candidates.length}
                         </Badge>
                       </div>
                       <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
@@ -456,81 +481,9 @@ export function HiringPipelineTab() {
                   </button>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  {sessions.length > 0 ? (
+                  {candidates.length > 0 ? (
                     <div className="p-3 space-y-2 bg-card">
-                      {sessions.map((session) => (
-                        <Card
-                          key={session.sessionId}
-                          className="cursor-pointer hover-elevate"
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, session)}
-                          onClick={() => openDetailsDialog(session)}
-                          data-testid={`pipeline-card-mobile-${session.sessionId}`}
-                        >
-                          <CardContent className="p-3">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1 mb-1">
-                                  <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0 cursor-grab" />
-                                  <span className="font-medium text-sm truncate">
-                                    {session.externalEmail || session.externalUserId || "Unknown"}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2 mb-2">
-                                  <Badge variant="outline" className="text-xs">
-                                    {assessmentLabels[session.assessmentType] || session.assessmentType}
-                                  </Badge>
-                                  {session.status === "completed" && session.totalScore !== null && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      {session.totalScore}%
-                                    </Badge>
-                                  )}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {session.completedAt
-                                    ? format(new Date(session.completedAt), "MMM d, yyyy")
-                                    : format(new Date(session.createdAt), "MMM d, yyyy")
-                                  }
-                                </div>
-                              </div>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openNotesDialog(session); }}>
-                                    <FileText className="h-4 w-4 mr-2" />
-                                    {session.pipelineNotes ? "Edit Notes" : "Add Notes"}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem asChild>
-                                    <a 
-                                      href={`/partner/results/${session.sessionId}`} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      <Eye className="h-4 w-4 mr-2" />
-                                      View Results
-                                    </a>
-                                  </DropdownMenuItem>
-                                  {stages.filter(s => s.id !== session.pipelineStage).map(targetStage => (
-                                    <DropdownMenuItem
-                                      key={targetStage.id}
-                                      onClick={(e) => moveToStage(session, targetStage.id, e)}
-                                      data-testid={`menu-item-move-mobile-${session.sessionId}-${targetStage.id}`}
-                                    >
-                                      <ChevronRight className="h-4 w-4 mr-2" />
-                                      Move to {targetStage.label}
-                                    </DropdownMenuItem>
-                                  ))}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                      {candidates.map((candidate) => renderCandidateCard(candidate, true))}
                     </div>
                   ) : (
                     <div className="p-4 text-center text-muted-foreground text-sm bg-card">
@@ -544,15 +497,13 @@ export function HiringPipelineTab() {
         })}
       </div>
 
+      {/* Notes Dialog */}
       <Dialog open={notesDialogOpen} onOpenChange={setNotesDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Candidate Notes</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="text-sm text-muted-foreground">
-              {selectedSession?.externalEmail || selectedSession?.externalUserId || "Unknown Candidate"}
-            </div>
             <Textarea
               placeholder="Add notes about this candidate..."
               value={notes}
@@ -585,56 +536,66 @@ export function HiringPipelineTab() {
           <DialogHeader>
             <DialogTitle>Candidate Details</DialogTitle>
           </DialogHeader>
-          {selectedSession && (
+          {selectedCandidate && (
             <div className="space-y-4 py-2">
               <div className="space-y-3">
                 <div>
                   <p className="text-xs text-muted-foreground">Email</p>
-                  <p className="font-medium">{selectedSession.externalEmail || "Not provided"}</p>
+                  <p className="font-medium">{selectedCandidate.candidateEmail || "Not provided"}</p>
                 </div>
-                {selectedSession.externalUserId && (
+                {selectedCandidate.externalUserId && (
                   <div>
                     <p className="text-xs text-muted-foreground">User ID</p>
-                    <p className="font-medium">{selectedSession.externalUserId}</p>
-                  </div>
-                )}
-                <div>
-                  <p className="text-xs text-muted-foreground">Assessment</p>
-                  <Badge variant="outline">
-                    {assessmentLabels[selectedSession.assessmentType] || selectedSession.assessmentType}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Status</p>
-                  <Badge variant={selectedSession.status === "completed" ? "default" : "secondary"}>
-                    {selectedSession.status}
-                  </Badge>
-                </div>
-                {selectedSession.status === "completed" && selectedSession.totalScore !== null && (
-                  <div>
-                    <p className="text-xs text-muted-foreground">Score</p>
-                    <p className="text-2xl font-bold">{selectedSession.totalScore}%</p>
+                    <p className="font-medium text-sm">{selectedCandidate.externalUserId}</p>
                   </div>
                 )}
                 <div>
                   <p className="text-xs text-muted-foreground">Pipeline Stage</p>
                   <Badge variant="outline">
-                    {stages.find(s => s.id === selectedSession.pipelineStage)?.label || selectedSession.pipelineStage}
+                    {stages.find(s => s.id === selectedCandidate.pipelineStage)?.label || selectedCandidate.pipelineStage}
                   </Badge>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Date</p>
+                  <p className="text-xs text-muted-foreground mb-2">Assessments ({selectedCandidate.sessionCount})</p>
+                  <div className="space-y-2">
+                    {selectedCandidate.sessions.map((session) => (
+                      <div key={session.sessionId} className="flex items-center justify-between p-2 bg-muted/50 rounded-md">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">
+                            {assessmentLabels[session.assessmentType] || session.assessmentType}
+                          </Badge>
+                          <Badge variant={session.status === "completed" ? "default" : "secondary"} className="text-[10px]">
+                            {session.status}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {session.status === "completed" && session.totalScore !== null && (
+                            <span className="text-sm font-bold">{session.totalScore}%</span>
+                          )}
+                          {session.status === "completed" && (
+                            <Button variant="ghost" size="sm" className="h-6 px-2" asChild>
+                              <a href={`/partner/results/${session.sessionId}`} target="_blank" rel="noopener noreferrer" data-testid={`button-view-session-${session.sessionId}`}>
+                                <Eye className="h-3 w-3" />
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Latest Activity</p>
                   <p className="text-sm">
-                    {selectedSession.completedAt
-                      ? `Completed: ${format(new Date(selectedSession.completedAt), "MMM d, yyyy 'at' h:mm a")}`
-                      : `Started: ${format(new Date(selectedSession.createdAt), "MMM d, yyyy 'at' h:mm a")}`
-                    }
+                    {format(new Date(selectedCandidate.latestActivity), "MMM d, yyyy 'at' h:mm a")}
                   </p>
                 </div>
-                {selectedSession.pipelineNotes && (
+                {selectedCandidate.sessions.some(s => s.pipelineNotes) && (
                   <div>
                     <p className="text-xs text-muted-foreground">Notes</p>
-                    <p className="text-sm bg-muted p-2 rounded">{selectedSession.pipelineNotes}</p>
+                    <p className="text-sm bg-muted p-2 rounded">
+                      {selectedCandidate.sessions.find(s => s.pipelineNotes)?.pipelineNotes}
+                    </p>
                   </div>
                 )}
               </div>
@@ -644,14 +605,6 @@ export function HiringPipelineTab() {
             <Button variant="outline" onClick={() => setDetailsDialogOpen(false)} data-testid="button-close-details">
               Close
             </Button>
-            {selectedSession?.status === "completed" && (
-              <Button asChild data-testid="button-view-results">
-                <a href={`/partner/results/${selectedSession.sessionId}`} target="_blank" rel="noopener noreferrer">
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Results
-                </a>
-              </Button>
-            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
