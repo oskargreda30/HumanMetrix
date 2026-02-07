@@ -36,9 +36,11 @@ export default function Footer() {
     reporterName: "",
     reporterEmail: "",
   });
-  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
-  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const [screenshotFiles, setScreenshotFiles] = useState<File[]>([]);
+  const [screenshotPreviews, setScreenshotPreviews] = useState<string[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   
   const footerLinks: { company: FooterLink[]; resources: FooterLink[] } = {
@@ -120,32 +122,80 @@ export default function Footer() {
     }
   };
 
+  const addScreenshotFiles = (newFiles: File[]) => {
+    const validFiles: File[] = [];
+    for (const file of newFiles) {
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid file",
+          description: `"${file.name}" is not an image file. Only PNG, JPG, GIF are accepted.`,
+          variant: "destructive"
+        });
+        continue;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: `"${file.name}" exceeds the 10MB limit.`,
+          variant: "destructive"
+        });
+        continue;
+      }
+      validFiles.push(file);
+    }
+
+    if (screenshotFiles.length + validFiles.length > 10) {
+      toast({
+        title: "Too many files",
+        description: "You can upload a maximum of 10 screenshots.",
+        variant: "destructive"
+      });
+      validFiles.splice(10 - screenshotFiles.length);
+    }
+
+    if (validFiles.length === 0) return;
+
+    setScreenshotFiles(prev => [...prev, ...validFiles]);
+    validFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setScreenshotPreviews(prev => [...prev, ev.target?.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeScreenshot = (index: number) => {
+    setScreenshotFiles(prev => prev.filter((_, i) => i !== index));
+    setScreenshotPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: "Invalid file",
-        description: "Please select an image file (PNG, JPG, etc.)",
-        variant: "destructive"
-      });
-      return;
-    }
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) addScreenshotFiles(files);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
-    if (file.size > 10 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: "Screenshot must be under 10MB",
-        variant: "destructive"
-      });
-      return;
-    }
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
 
-    setScreenshotFile(file);
-    const reader = new FileReader();
-    reader.onload = (ev) => setScreenshotPreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (dropZoneRef.current && !dropZoneRef.current.contains(e.relatedTarget as Node)) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) addScreenshotFiles(files);
   };
 
   const handleBugSubmit = async (e: React.FormEvent) => {
@@ -178,10 +228,10 @@ export default function Footer() {
       return;
     }
 
-    if (!screenshotFile) {
+    if (screenshotFiles.length === 0) {
       toast({
         title: "Screenshot required",
-        description: "Please attach a screenshot of the issue",
+        description: "Please attach at least one screenshot of the issue",
         variant: "destructive"
       });
       return;
@@ -194,7 +244,9 @@ export default function Footer() {
       formDataObj.append('description', bugData.description);
       formDataObj.append('reporterName', bugData.reporterName);
       formDataObj.append('reporterEmail', bugData.reporterEmail);
-      formDataObj.append('screenshot', screenshotFile);
+      screenshotFiles.forEach(file => {
+        formDataObj.append('screenshots', file);
+      });
 
       const response = await fetch('/api/bug-reports', {
         method: 'POST',
@@ -212,8 +264,8 @@ export default function Footer() {
       });
       setShowBugReport(false);
       setBugData({ title: "", description: "", reporterName: "", reporterEmail: "" });
-      setScreenshotFile(null);
-      setScreenshotPreview(null);
+      setScreenshotFiles([]);
+      setScreenshotPreviews([]);
     } catch (error: any) {
       toast({
         title: "Failed to submit",
@@ -531,8 +583,9 @@ export default function Footer() {
         setShowBugReport(open);
         if (!open) {
           setBugData({ title: "", description: "", reporterName: "", reporterEmail: "" });
-          setScreenshotFile(null);
-          setScreenshotPreview(null);
+          setScreenshotFiles([]);
+          setScreenshotPreviews([]);
+          setIsDragging(false);
         }
       }}>
         <DialogContent className="sm:max-w-lg">
@@ -591,60 +644,77 @@ export default function Footer() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Screenshot <span className="text-red-500">*</span></Label>
+              <Label>Screenshots <span className="text-red-500">*</span> <span className="text-xs text-muted-foreground ml-1">({screenshotFiles.length}/10)</span></Label>
               <input
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
+                multiple
                 onChange={handleScreenshotChange}
                 className="hidden"
                 data-testid="input-bug-screenshot"
               />
-              {screenshotPreview ? (
-                <div className="relative border border-border rounded-md overflow-hidden">
-                  <img
-                    src={screenshotPreview}
-                    alt="Screenshot preview"
-                    className="w-full max-h-48 object-contain bg-muted"
-                    data-testid="img-bug-screenshot-preview"
-                  />
-                  <div className="absolute top-2 right-2 flex gap-1">
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="secondary"
-                      onClick={() => fileInputRef.current?.click()}
-                      data-testid="button-change-screenshot"
-                    >
-                      <Image className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="secondary"
-                      onClick={() => {
-                        setScreenshotFile(null);
-                        setScreenshotPreview(null);
-                        if (fileInputRef.current) fileInputRef.current.value = '';
-                      }}
-                      data-testid="button-remove-screenshot"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+              <div
+                ref={dropZoneRef}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`w-full border-2 border-dashed rounded-md transition-colors ${
+                  isDragging
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border'
+                }`}
+              >
+                {screenshotPreviews.length > 0 ? (
+                  <div className="p-3">
+                    <div className="grid grid-cols-3 gap-2 mb-2">
+                      {screenshotPreviews.map((preview, index) => (
+                        <div
+                          key={index}
+                          className="relative group aspect-video border border-border rounded-md overflow-visible bg-muted"
+                          data-testid={`img-bug-screenshot-preview-${index}`}
+                        >
+                          <img
+                            src={preview}
+                            alt={`Screenshot ${index + 1}`}
+                            className="w-full h-full object-cover rounded-md"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeScreenshot(index)}
+                            className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                            data-testid={`button-remove-screenshot-${index}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    {screenshotFiles.length < 10 && (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                        data-testid="button-add-more-screenshots"
+                      >
+                        <Upload className="h-4 w-4" />
+                        <span>Add more screenshots</span>
+                      </button>
+                    )}
                   </div>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full flex flex-col items-center gap-2 py-8 border-2 border-dashed border-border rounded-md text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors cursor-pointer"
-                  data-testid="button-upload-screenshot"
-                >
-                  <Upload className="h-6 w-6" />
-                  <span className="text-sm">Click to upload a screenshot</span>
-                  <span className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB</span>
-                </button>
-              )}
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full flex flex-col items-center gap-2 py-8 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    data-testid="button-upload-screenshot"
+                  >
+                    <Upload className="h-6 w-6" />
+                    <span className="text-sm">Click or drag images here to upload</span>
+                    <span className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB each (max 10)</span>
+                  </button>
+                )}
+              </div>
             </div>
             <div className="flex gap-3 pt-2">
               <Button

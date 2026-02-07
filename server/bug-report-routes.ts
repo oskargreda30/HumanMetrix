@@ -61,17 +61,17 @@ Respond with ONLY the severity word, nothing else.`,
 }
 
 export function registerBugReportRoutes(app: Express) {
-  app.post("/api/bug-reports", screenshotUpload.single("screenshot"), async (req: Request, res: Response) => {
+  app.post("/api/bug-reports", screenshotUpload.array("screenshots", 10), async (req: Request, res: Response) => {
     try {
       const { title, description, reporterEmail, reporterName } = req.body;
-      const file = (req as any).file;
+      const files = (req as any).files as Express.Multer.File[] | undefined;
 
       if (!title || !description || !reporterEmail || !reporterName) {
         return res.status(400).json({ message: "Title, description, email, and name are required" });
       }
 
-      if (!file) {
-        return res.status(400).json({ message: "Screenshot is required" });
+      if (!files || files.length === 0) {
+        return res.status(400).json({ message: "At least one screenshot is required" });
       }
 
       const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
@@ -79,19 +79,23 @@ export function registerBugReportRoutes(app: Express) {
         return res.status(500).json({ message: "Object storage not configured" });
       }
 
-      const timestamp = Date.now();
-      const ext = file.originalname.split(".").pop() || "png";
-      const objectName = `.private/bug-screenshots/${timestamp}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const uploadedPaths: string[] = [];
 
-      const bucket = objectStorageClient.bucket(bucketId);
-      const gcsFile = bucket.file(objectName);
-      await gcsFile.save(file.buffer, {
-        metadata: {
-          contentType: file.mimetype,
-        },
-      });
+      for (const file of files) {
+        const timestamp = Date.now();
+        const ext = file.originalname.split(".").pop() || "png";
+        const objectName = `.private/bug-screenshots/${timestamp}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
-      const screenshotPath = `/${bucketId}/${objectName}`;
+        const bucket = objectStorageClient.bucket(bucketId);
+        const gcsFile = bucket.file(objectName);
+        await gcsFile.save(file.buffer, {
+          metadata: {
+            contentType: file.mimetype,
+          },
+        });
+
+        uploadedPaths.push(`/${bucketId}/${objectName}`);
+      }
 
       const severity = await classifySeverity(title, description);
 
@@ -102,7 +106,8 @@ export function registerBugReportRoutes(app: Express) {
         .values({
           title,
           description,
-          screenshotUrl: screenshotPath,
+          screenshotUrl: uploadedPaths[0],
+          screenshotUrls: uploadedPaths,
           severity,
           status: "new",
           reporterUserId: userId,
@@ -149,6 +154,55 @@ export function registerBugReportRoutes(app: Express) {
       }
 
       const screenshotUrl = bugReport.screenshotUrl;
+      const parts = screenshotUrl.startsWith("/") ? screenshotUrl.slice(1).split("/") : screenshotUrl.split("/");
+      const bucketName = parts[0];
+      const objectName = parts.slice(1).join("/");
+
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectName);
+      const [exists] = await file.exists();
+      if (!exists) {
+        return res.status(404).json({ message: "Screenshot not found" });
+      }
+
+      const [metadata] = await file.getMetadata();
+      res.setHeader("Content-Type", (metadata as any).contentType || "image/png");
+      res.setHeader("Cache-Control", "private, max-age=3600");
+      file.createReadStream().pipe(res);
+    } catch (error: any) {
+      console.error("[Bug Report] Error fetching screenshot:", error);
+      res.status(500).json({ message: "Failed to fetch screenshot" });
+    }
+  });
+
+  app.get("/api/bug-reports/screenshot/:id/:index", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      const user = await storage.getUser(userId);
+      if (user?.role !== "super_admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const index = parseInt(req.params.index, 10);
+
+      const [bugReport] = await db
+        .select()
+        .from(bugReports)
+        .where(eq(bugReports.id, req.params.id));
+
+      if (!bugReport) {
+        return res.status(404).json({ message: "Bug report not found" });
+      }
+
+      const urls = bugReport.screenshotUrls && bugReport.screenshotUrls.length > 0
+        ? bugReport.screenshotUrls
+        : [bugReport.screenshotUrl];
+
+      if (index < 0 || index >= urls.length) {
+        return res.status(404).json({ message: "Screenshot index out of range" });
+      }
+
+      const screenshotUrl = urls[index];
       const parts = screenshotUrl.startsWith("/") ? screenshotUrl.slice(1).split("/") : screenshotUrl.split("/");
       const bucketName = parts[0];
       const objectName = parts.slice(1).join("/");
@@ -238,11 +292,15 @@ export function registerBugReportRoutes(app: Express) {
         return res.status(404).json({ message: "Bug report not found" });
       }
 
-      if (deleted.screenshotUrl) {
+      const allUrls = deleted.screenshotUrls && deleted.screenshotUrls.length > 0
+        ? deleted.screenshotUrls
+        : deleted.screenshotUrl ? [deleted.screenshotUrl] : [];
+
+      for (const url of allUrls) {
         try {
-          const parts = deleted.screenshotUrl.startsWith("/")
-            ? deleted.screenshotUrl.slice(1).split("/")
-            : deleted.screenshotUrl.split("/");
+          const parts = url.startsWith("/")
+            ? url.slice(1).split("/")
+            : url.split("/");
           const bucketName = parts[0];
           const objectName = parts.slice(1).join("/");
           const bucket = objectStorageClient.bucket(bucketName);

@@ -125,6 +125,7 @@ function BugCard({ bug, onView, onMove }: {
 export default function BugReportsTab() {
   const [selectedBug, setSelectedBug] = useState<BugReport | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
+  const [screenshotIndex, setScreenshotIndex] = useState(0);
   const { toast } = useToast();
 
   const { data: bugs = [], isLoading } = useQuery<BugReport[]>({
@@ -262,6 +263,7 @@ export default function BugReportsTab() {
                     onView={() => {
                       setSelectedBug(bug);
                       setAdminNotes(bug.adminNotes || "");
+                      setScreenshotIndex(0);
                     }}
                     onMove={(newStatus) => handleMoveStatus(bug.id, newStatus)}
                   />
@@ -272,7 +274,7 @@ export default function BugReportsTab() {
         ))}
       </div>
 
-      <Dialog open={!!selectedBug} onOpenChange={(open) => { if (!open) setSelectedBug(null); }}>
+      <Dialog open={!!selectedBug} onOpenChange={(open) => { if (!open) { setSelectedBug(null); setScreenshotIndex(0); } }}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -316,15 +318,80 @@ export default function BugReportsTab() {
               </div>
 
               <div>
-                <p className="text-sm font-medium mb-2">Screenshot</p>
-                <div className="border border-border rounded-md overflow-hidden bg-muted">
-                  <img
-                    src={`/api/bug-reports/screenshot/${selectedBug.id}`}
-                    alt="Bug screenshot"
-                    className="w-full max-h-96 object-contain"
-                    data-testid="img-detail-screenshot"
-                  />
-                </div>
+                <p className="text-sm font-medium mb-2">
+                  Screenshots
+                  {selectedBug.screenshotUrls && selectedBug.screenshotUrls.length > 1 && (
+                    <span className="text-xs text-muted-foreground ml-1">
+                      ({screenshotIndex + 1} of {selectedBug.screenshotUrls.length})
+                    </span>
+                  )}
+                </p>
+                {selectedBug.screenshotUrls && selectedBug.screenshotUrls.length > 1 ? (
+                  <div className="space-y-2">
+                    <div className="relative border border-border rounded-md overflow-hidden bg-muted">
+                      <img
+                        src={`/api/bug-reports/screenshot/${selectedBug.id}/${screenshotIndex}`}
+                        alt={`Bug screenshot ${screenshotIndex + 1}`}
+                        className="w-full max-h-96 object-contain"
+                        data-testid={`img-detail-screenshot-${screenshotIndex}`}
+                      />
+                      <div className="absolute inset-y-0 left-0 flex items-center">
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="secondary"
+                          className="ml-1 opacity-80"
+                          disabled={screenshotIndex === 0}
+                          onClick={() => setScreenshotIndex(prev => Math.max(0, prev - 1))}
+                          data-testid="button-prev-screenshot"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="absolute inset-y-0 right-0 flex items-center">
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="secondary"
+                          className="mr-1 opacity-80"
+                          disabled={screenshotIndex >= (selectedBug.screenshotUrls?.length || 1) - 1}
+                          onClick={() => setScreenshotIndex(prev => Math.min((selectedBug.screenshotUrls?.length || 1) - 1, prev + 1))}
+                          data-testid="button-next-screenshot"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex gap-1.5 overflow-x-auto pb-1">
+                      {selectedBug.screenshotUrls.map((_, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setScreenshotIndex(idx)}
+                          className={`flex-shrink-0 w-16 h-12 rounded-md overflow-hidden border-2 transition-colors ${
+                            idx === screenshotIndex ? 'border-primary' : 'border-transparent opacity-60 hover:opacity-100'
+                          }`}
+                          data-testid={`button-screenshot-thumb-${idx}`}
+                        >
+                          <img
+                            src={`/api/bug-reports/screenshot/${selectedBug.id}/${idx}`}
+                            alt={`Thumbnail ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="border border-border rounded-md overflow-hidden bg-muted">
+                    <img
+                      src={`/api/bug-reports/screenshot/${selectedBug.id}`}
+                      alt="Bug screenshot"
+                      className="w-full max-h-96 object-contain"
+                      data-testid="img-detail-screenshot"
+                    />
+                  </div>
+                )}
               </div>
 
               <div>

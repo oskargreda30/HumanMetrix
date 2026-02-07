@@ -2430,6 +2430,7 @@ export const bugReports = pgTable("bug_reports", {
   title: varchar("title").notNull(),
   description: text("description").notNull(),
   screenshotUrl: text("screenshot_url").notNull(),
+  screenshotUrls: text("screenshot_urls").array().default([]),
   severity: varchar("severity").notNull().default("medium"),
   status: varchar("status").notNull().default("new"),
   reporterUserId: varchar("reporter_user_id"),
