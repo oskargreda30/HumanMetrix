@@ -148,16 +148,28 @@ export default function BugReportsTab() {
       const response = await apiRequest("PATCH", `/api/admin/bug-reports/${id}`, { status, adminNotes });
       return await response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/bug-reports"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/bug-reports/new-count"] });
+    onMutate: async ({ id, status }) => {
+      if (!status) return;
+      await queryClient.cancelQueries({ queryKey: ["/api/admin/bug-reports"] });
+      const previousBugs = queryClient.getQueryData<BugReport[]>(["/api/admin/bug-reports"]);
+      queryClient.setQueryData<BugReport[]>(["/api/admin/bug-reports"], (old) =>
+        old?.map((bug) => (bug.id === id ? { ...bug, status } : bug))
+      );
+      return { previousBugs };
     },
-    onError: (error: any) => {
+    onError: (error: any, _variables, context) => {
+      if (context?.previousBugs) {
+        queryClient.setQueryData(["/api/admin/bug-reports"], context.previousBugs);
+      }
       toast({
         title: "Update failed",
         description: error.message || "Failed to update bug report",
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/bug-reports"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/bug-reports/new-count"] });
     },
   });
 
@@ -480,15 +492,19 @@ export default function BugReportsTab() {
                       variant={selectedBug.status === status ? "default" : "outline"}
                       disabled={selectedBug.status === status || updateMutation.isPending}
                       onClick={() => {
+                        setSelectedBug({ ...selectedBug, status });
                         updateMutation.mutate(
                           { id: selectedBug.id, status },
                           {
                             onSuccess: (updated) => {
                               setSelectedBug(updated);
-                              toast({ title: `Moved to ${BUG_STATUS_LABELS[status as BugStatus]}` });
+                            },
+                            onError: () => {
+                              setSelectedBug(selectedBug);
                             },
                           }
                         );
+                        toast({ title: `Moved to ${BUG_STATUS_LABELS[status as BugStatus]}` });
                       }}
                       data-testid={`button-status-${status}`}
                     >
