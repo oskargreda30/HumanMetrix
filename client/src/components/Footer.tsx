@@ -682,7 +682,7 @@ export default function Footer() {
                           <button
                             type="button"
                             onClick={() => removeScreenshot(index)}
-                            className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                            className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center z-10"
                             data-testid={`button-remove-screenshot-${index}`}
                           >
                             <X className="h-3 w-3" />
