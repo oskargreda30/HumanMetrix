@@ -243,7 +243,7 @@ app.use((req, res, next) => {
     startDatabaseSizeScheduler();
     
     // Sync canonical job roles (ensures dev and prod have identical role data)
-    syncCanonicalRoles();
+    syncCanonicalRoles().catch(err => console.error('[Role Sync] Failed:', err));
     
     // Preload heavy modules in production
     preloadModules();
