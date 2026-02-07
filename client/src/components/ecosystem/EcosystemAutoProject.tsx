@@ -734,15 +734,7 @@ export function EcosystemAutoProject({
               <div className="text-center py-8 text-muted-foreground">
                 <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No completed analyses yet</p>
-                <p className="text-sm mt-1">Complete a team diagnostic to see it here</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  onClick={() => setActiveView('new')}
-                  data-testid="button-start-new-analysis-empty"
-                >
-                  Start New Analysis
-                </Button>
+                <p className="text-sm mt-1">Complete a team diagnostic from the New Analysis tab to see it here</p>
               </div>
             )}
           </CardContent>

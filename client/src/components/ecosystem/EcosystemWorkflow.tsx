@@ -1750,12 +1750,26 @@ export function EcosystemWorkflow({
               </div>
 
               {/* Validation Messages */}
-              {(!missionStatement || !hasMembersWithValidScores) && (
+              {(!missionStatement || !hasMembersWithValidScores || isPaygRestricted) && (
                 <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
                   <p className="text-sm font-medium text-amber-700 dark:text-amber-300">Please complete the following before generating:</p>
                   <ul className="text-sm text-amber-600 dark:text-amber-400 mt-2 space-y-1">
                     {!missionStatement && <li>• Enter your mission statement</li>}
                     {!hasMembersWithValidScores && <li>• Add at least one team member with FIT scores (scores must be greater than 0)</li>}
+                    {isPaygRestricted && (
+                      <li>
+                        • You need at least {ECOSYSTEM_CREDITS_REQUIRED} credits to generate a report. 
+                        {onNavigateToBilling && (
+                          <button 
+                            className="underline font-medium ml-1" 
+                            onClick={onNavigateToBilling}
+                            data-testid="link-billing-from-generate"
+                          >
+                            Go to Billing to top up
+                          </button>
+                        )}
+                      </li>
+                    )}
                   </ul>
                 </div>
               )}
