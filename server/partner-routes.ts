@@ -4782,7 +4782,13 @@ export function registerPartnerRoutes(app: Express) {
       });
       
       if (lockedSessions.length === 0) {
-        return res.status(404).json({ error: "All assessments have already been unlocked" });
+        const existingUser = await storage.getUserByEmail(email as string);
+        return res.status(200).json({ 
+          alreadyUnlocked: true,
+          email,
+          partnerName: partnerAccount.companyName || partnerAccount.name,
+          hasExistingAccount: !!existingUser,
+        });
       }
       
       // Filter to requested types if specified

@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle, Clock, Lock, CreditCard, Package } from "lucide-react";
+import { Loader2, CheckCircle, Clock, Lock, CreditCard, Package, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 
 interface BundleResultsData {
@@ -12,6 +13,8 @@ interface BundleResultsData {
   partnerName: string;
   countryCode: string;
   currencyCode: string;
+  alreadyUnlocked?: boolean;
+  hasExistingAccount?: boolean;
   completedAssessments: Array<{
     type: string;
     displayName: string;
@@ -42,6 +45,7 @@ function formatAssessmentName(type: string): string {
 }
 
 export default function B2BResultsBundle() {
+  const [, setLocation] = useLocation();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   const params = new URLSearchParams(window.location.search);
@@ -133,6 +137,33 @@ export default function B2BResultsBundle() {
             <p className="text-muted-foreground">
               {error?.message || 'Please try again or contact support.'}
             </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (data.alreadyUnlocked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-background to-muted/20">
+        <Card className="max-w-lg w-full">
+          <CardContent className="pt-8 pb-8 text-center space-y-4">
+            <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+              <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+            </div>
+            <h2 className="text-2xl font-bold">Results Already Unlocked</h2>
+            <p className="text-muted-foreground">
+              All your assessment results{data.partnerName ? ` with ${data.partnerName}` : ''} have already been unlocked. You can view them from your dashboard.
+            </p>
+            <div className="pt-2">
+              <Button 
+                onClick={() => setLocation(data.hasExistingAccount ? '/dashboard?view=candidate' : '/login')}
+                data-testid="button-go-to-dashboard"
+              >
+                {data.hasExistingAccount ? 'Go to Dashboard' : 'Sign In to View Results'}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
