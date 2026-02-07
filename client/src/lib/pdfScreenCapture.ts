@@ -75,24 +75,18 @@ export interface UnifiedPDFResult {
   saved: boolean;
 }
 
-export async function exportResultsPDF(options: UnifiedPDFOptions): Promise<UnifiedPDFResult> {
-  const { 
-    elementId, 
-    filename = 'assessment-results.pdf', 
-    onProgress,
-    returnBlob = false 
-  } = options;
+function isMobileDevice(): boolean {
+  const ua = navigator.userAgent.toLowerCase();
+  return /iphone|ipad|ipod|android/.test(ua);
+}
 
-  onProgress?.('Preparing results view...');
-
-  const reportElement = document.getElementById(elementId);
-  if (!reportElement) {
-    throw new Error('Results element not found');
-  }
-
-  await document.fonts.ready;
-  await new Promise(resolve => setTimeout(resolve, 300));
-
+async function captureAndBuildPDF(
+  reportElement: HTMLElement,
+  scale: number,
+  returnBlob: boolean,
+  filename: string,
+  onProgress?: (message: string) => void,
+): Promise<UnifiedPDFResult> {
   onProgress?.('Capturing results...');
 
   const convertedSvgs = await convertSvgsToCanvas(reportElement);
@@ -100,7 +94,7 @@ export async function exportResultsPDF(options: UnifiedPDFOptions): Promise<Unif
   let canvas: HTMLCanvasElement;
   try {
     canvas = await html2canvas(reportElement, {
-      scale: 2,
+      scale,
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff',
@@ -109,6 +103,10 @@ export async function exportResultsPDF(options: UnifiedPDFOptions): Promise<Unif
     });
   } finally {
     restoreSvgs(convertedSvgs);
+  }
+
+  if (!canvas || canvas.width === 0 || canvas.height === 0) {
+    throw new Error('Canvas capture produced empty result');
   }
 
   onProgress?.('Generating PDF...');
@@ -145,6 +143,44 @@ export async function exportResultsPDF(options: UnifiedPDFOptions): Promise<Unif
   return { saved: true };
 }
 
+export async function exportResultsPDF(options: UnifiedPDFOptions): Promise<UnifiedPDFResult> {
+  const { 
+    elementId, 
+    filename = 'assessment-results.pdf', 
+    onProgress,
+    returnBlob = false 
+  } = options;
+
+  onProgress?.('Preparing results view...');
+
+  const reportElement = document.getElementById(elementId);
+  if (!reportElement) {
+    throw new Error('Results element not found');
+  }
+
+  await document.fonts.ready;
+  await new Promise(resolve => setTimeout(resolve, 300));
+
+  const mobile = isMobileDevice();
+  const primaryScale = mobile ? 1 : 2;
+
+  try {
+    return await captureAndBuildPDF(reportElement, primaryScale, returnBlob, filename, onProgress);
+  } catch (firstError: any) {
+    console.warn('PDF generation failed with scale', primaryScale, firstError?.message);
+    if (mobile) {
+      throw firstError;
+    }
+    onProgress?.('Retrying with optimized settings...');
+    try {
+      return await captureAndBuildPDF(reportElement, 1, returnBlob, filename, onProgress);
+    } catch (retryError: any) {
+      console.error('PDF generation retry also failed:', retryError?.message);
+      throw retryError;
+    }
+  }
+}
+
 export async function exportScreenCapturePDF(options: { reportElementId: string; filename?: string; onProgress?: (message: string) => void }): Promise<void> {
   await exportResultsPDF({
     elementId: options.reportElementId,
@@ -163,6 +199,9 @@ export async function exportElementAsPDF(
   await document.fonts.ready;
   await new Promise(resolve => setTimeout(resolve, 300));
 
+  const mobile = isMobileDevice();
+  const scale = mobile ? 1 : 2;
+
   onProgress?.('Capturing report...');
 
   const convertedSvgs2 = await convertSvgsToCanvas(element);
@@ -170,7 +209,7 @@ export async function exportElementAsPDF(
   let canvas: HTMLCanvasElement;
   try {
     canvas = await html2canvas(element, {
-      scale: 2,
+      scale,
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff',
@@ -229,6 +268,9 @@ export async function getBase64FromPDF(options: Base64PDFOptions): Promise<strin
   await document.fonts.ready;
   await new Promise(resolve => setTimeout(resolve, 300));
 
+  const mobile = isMobileDevice();
+  const scale = mobile ? 1 : 2;
+
   onProgress?.('Capturing results...');
 
   const convertedSvgs3 = await convertSvgsToCanvas(reportElement);
@@ -236,7 +278,7 @@ export async function getBase64FromPDF(options: Base64PDFOptions): Promise<strin
   let canvas: HTMLCanvasElement;
   try {
     canvas = await html2canvas(reportElement, {
-      scale: 2,
+      scale,
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff',

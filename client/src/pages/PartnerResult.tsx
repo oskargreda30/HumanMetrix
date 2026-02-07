@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import SkillsLegend from "@/components/SkillsLegend";
 import { normalizeAIReadinessScores } from "@/lib/assessmentSkills";
 import { useState, useRef } from "react";
+import { savePdfMobile } from "@/lib/pdfStyles";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import {
   ResponsiveContainer,
@@ -253,8 +254,10 @@ export default function PartnerResult() {
       const html2canvas = (await import('html2canvas')).default;
 
       const element = reportRef.current;
+      const ua = navigator.userAgent.toLowerCase();
+      const isMobile = /iphone|ipad|ipod|android/.test(ua);
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: isMobile ? 1 : 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
@@ -284,7 +287,7 @@ export default function PartnerResult() {
 
       const candidateName = data.externalEmail || data.externalUserId || 'Candidate';
       const filename = `${candidateName.replace(/[^a-zA-Z0-9]/g, '_')}_${getAssessmentLabel(data.assessmentType).replace(/\s+/g, '_')}_Results.pdf`;
-      pdf.save(filename);
+      savePdfMobile(pdf, filename);
 
       toast({
         title: "Success",
