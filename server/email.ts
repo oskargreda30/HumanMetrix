@@ -748,11 +748,18 @@ Log in at: ${loginUrl}
     `.trim(),
   };
 
-  const result = await sendEmail(msg);
+  const logContext: EmailLogContext = {
+    recipientName: name,
+    recipientType: context === 'post_payment' ? 'b2b_test_taker' : 'b2c_customer',
+    emailType: 'welcome',
+    metadata: { context },
+  };
+
+  const result = await sendEmail(msg, logContext);
   if (result.success) {
     console.log(`[Email] Welcome email sent to ${email} (ID: ${result.messageId})`);
   } else {
-    throw new Error(`Failed to send welcome email`);
+    throw new Error(`Failed to send welcome email to ${email}`);
   }
 }
 

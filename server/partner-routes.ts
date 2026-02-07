@@ -4384,15 +4384,16 @@ export function registerPartnerRoutes(app: Express) {
       let user = await storage.getUserByEmail(email);
       let isNewUser = false;
       
+      let emailSent = false;
+      
       if (!user) {
         isNewUser = true;
         try {
-          // Generate random password
           const bcrypt = await import('bcryptjs');
-          const randomPassword = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12);
+          const { generateTemporaryPassword } = await import('./passwordUtils');
+          const randomPassword = generateTemporaryPassword();
           const hashedPassword = await bcrypt.hash(randomPassword, 10);
           
-          // Create new user with email confirmation already verified (they paid)
           user = await storage.createUser({
             email: email.toLowerCase(),
             passwordHash: hashedPassword,
@@ -4400,11 +4401,9 @@ export function registerPartnerRoutes(app: Express) {
           
           console.log(`[B2B Create Account] Created new user: ${user.id} for ${email}`);
           
-          // Send welcome email with the generated password
           try {
             const { sendWelcomeEmailWithPassword } = await import('./email');
             
-            // Send email with the temporary password
             await sendWelcomeEmailWithPassword(
               user.email, 
               email.split('@')[0], 
@@ -4412,10 +4411,10 @@ export function registerPartnerRoutes(app: Express) {
               "Thank you for completing your assessment! You can use these credentials to log in and view your results anytime.",
               'post_payment'
             );
+            emailSent = true;
             console.log(`[B2B Create Account] Welcome email with credentials sent to ${email}`);
           } catch (emailError: any) {
-            console.error('[B2B Create Account] Failed to send welcome email:', emailError.message);
-            // Continue even if email fails - user can use forgot password later
+            console.error('[B2B Create Account] Failed to send welcome email:', emailError.message, emailError.stack);
           }
         } catch (createError: any) {
           console.error('[B2B Create Account] Failed to create user:', createError.message);
@@ -4520,6 +4519,7 @@ export function registerPartnerRoutes(app: Express) {
           redirectTo: "/dashboard",
           userId: user!.id,
           isNewUser,
+          emailSent,
         });
       });
     } catch (error: any) {

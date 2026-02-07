@@ -124,10 +124,20 @@ export default function B2BResults() {
       
       const result = await res.json();
       
-      toast({
-        title: data.hasExistingAccount ? "Welcome back!" : "Account created!",
-        description: "Redirecting to your dashboard...",
-      });
+      if (result.isNewUser && result.emailSent === false) {
+        toast({
+          title: "Account created!",
+          description: "We couldn't send the credentials email. You can use 'Forgot Password' on the login page if needed.",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: data.hasExistingAccount ? "Welcome back!" : "Account created!",
+          description: data.hasExistingAccount 
+            ? "Redirecting to your dashboard..." 
+            : "Your login credentials have been sent to your email. Redirecting to your dashboard...",
+        });
+      }
       
       queryClient.clear();
       
