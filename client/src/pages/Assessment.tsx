@@ -56,10 +56,14 @@ export default function Assessment() {
   const [evaluationProgress, setEvaluationProgress] = useState(0); // Displayed progress 0-100 for evaluation
   const [isEvaluating, setIsEvaluating] = useState(false); // Track if currently evaluating (for time-based progress)
   const [showLeaveDialog, setShowLeaveDialog] = useState(false); // Show leave confirmation dialog
+  const [showTimesUp, setShowTimesUp] = useState(false); // "Time's Up" overlay
+  const paQuestionAdvancingRef = useRef<boolean>(false); // Re-entry guard for PA per-question auto-advance
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
   const hasSubmittedRef = useRef<boolean>(false); // Synchronous flag to prevent abandon after submit
   const progressAnimationRef = useRef<NodeJS.Timeout | null>(null); // For smooth progress animation
+  const answersRef = useRef<Record<string, string>>({}); // Stable ref for timer expiry access
+  const currentQuestionRef = useRef<number>(0); // Stable ref for timer expiry access
 
   const { data: availableAssessments, isLoading: loadingAssessments } = useQuery({
     queryKey: ["/api/available-assessments"],
@@ -102,6 +106,10 @@ export default function Assessment() {
   const questions = getQuestions();
   const currentQ = questions[currentQuestion];
   const isPromptArchitecture = assessment?.assessmentType === 'prompt_architecture';
+
+  // Keep refs in sync with state for stable timer callback access
+  answersRef.current = answers;
+  currentQuestionRef.current = currentQuestion;
 
   const startMutation = useMutation({
     mutationFn: async () => {
@@ -511,6 +519,19 @@ export default function Assessment() {
     };
   }, [resultId, submitMutation.isSuccess, isSubmitting]);
 
+  // Handle PA last question timer expiry - submit the full assessment
+  const handlePALastQuestionExpiry = useCallback(() => {
+    setShowTimesUp(true);
+    setIsSubmitting(true);
+    setTimeout(() => {
+      setShowTimesUp(false);
+      if (Object.keys(answersRef.current).length > 0 && !hasSubmittedRef.current) {
+        hasSubmittedRef.current = true;
+        submitMutation.mutate();
+      }
+    }, 2000);
+  }, [submitMutation]);
+
   // Timer effect
   useEffect(() => {
     if (!resultId || isSubmitting || submitMutation.isPending) return; // Don't run timer if submitting
@@ -519,54 +540,71 @@ export default function Assessment() {
       setTimeRemaining((prev) => {
         const newTime = prev - 1;
         
-        // Show warning at 5 minutes
-        if (newTime === 300 && !showTimeWarning) {
+        // Show warning: 30 seconds for PA per-question, 5 minutes for other assessments
+        const warningThreshold = isPromptArchitecture ? 30 : 300;
+        const warningTitle = isPromptArchitecture ? "30 Seconds Remaining" : "5 Minutes Remaining";
+        const warningDesc = isPromptArchitecture 
+          ? "You have 30 seconds left for this question"
+          : "You have 5 minutes left to complete this assessment";
+        if (newTime === warningThreshold && !showTimeWarning) {
           setShowTimeWarning(true);
           toast({
-            title: "5 Minutes Remaining",
-            description: "You have 5 minutes left to complete this assessment",
+            title: warningTitle,
+            description: warningDesc,
             variant: "destructive",
           });
         }
         
-        // Auto-submit when time runs out
+        // Auto-advance or submit when time runs out
         if (newTime <= 0) {
           if (timerRef.current) {
             clearInterval(timerRef.current);
             timerRef.current = null;
           }
           
-          // Set submitting flag to prevent timer restart
+          // PA per-question expiry: auto-advance to next question (not last question)
+          if (isPromptArchitecture) {
+            const curQ = currentQuestionRef.current;
+            if (curQ < questions.length - 1) {
+              if (paQuestionAdvancingRef.current) return 0;
+              paQuestionAdvancingRef.current = true;
+              setShowTimesUp(true);
+              setTimeout(() => {
+                setShowTimesUp(false);
+                paQuestionAdvancingRef.current = false;
+                setCurrentQuestion(curQ + 1);
+                setTimeRemaining(120);
+                setShowTimeWarning(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }, 1500);
+            } else {
+              handlePALastQuestionExpiry();
+            }
+            return 0;
+          }
+          
+          // Full assessment expiry for non-PA types
+          setShowTimesUp(true);
           setIsSubmitting(true);
           
-          // Only auto-submit if user has answered at least one question
-          // This prevents submitting an empty assessment
-          if (Object.keys(answers).length > 0) {
-            toast({
-              title: "Time's Up!",
-              description: "Assessment will be auto-submitted with current answers",
-              variant: "destructive",
-            });
-            
-            // Set synchronous flag before calling mutate to prevent race condition
-            hasSubmittedRef.current = true;
-            // Submit even if incomplete
-            submitMutation.mutate();
-          } else {
-            // No answers provided - mark as abandoned (only if not already submitted)
-            // Use synchronous ref to avoid race condition with async mutation state
-            if (!hasSubmittedRef.current) {
-              toast({
-                title: "Time Expired",
-                description: "Your assessment has been marked as incomplete.",
-                variant: "destructive",
-              });
-              // Call abandon API
-              apiRequest("POST", `/api/assessments/${resultId}/abandon`).finally(() => {
-                setLocation("/dashboard?refresh=" + Date.now());
-              });
+          setTimeout(() => {
+            setShowTimesUp(false);
+            if (Object.keys(answersRef.current).length > 0) {
+              hasSubmittedRef.current = true;
+              submitMutation.mutate();
+            } else {
+              if (!hasSubmittedRef.current) {
+                toast({
+                  title: "Time Expired",
+                  description: "Your assessment has been marked as incomplete.",
+                  variant: "destructive",
+                });
+                apiRequest("POST", `/api/assessments/${resultId}/abandon`).finally(() => {
+                  setLocation("/dashboard?refresh=" + Date.now());
+                });
+              }
             }
-          }
+          }, 2000);
           return 0;
         }
         
@@ -580,7 +618,7 @@ export default function Assessment() {
         timerRef.current = null;
       }
     };
-  }, [resultId, showTimeWarning, submitMutation, isSubmitting]);
+  }, [resultId, showTimeWarning, submitMutation, isSubmitting, isPromptArchitecture, handlePALastQuestionExpiry, questions.length, toast, setLocation]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -824,7 +862,7 @@ export default function Assessment() {
                     </p>
                   </div>
                   <div className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-lg border-2 ${
-                    timeRemaining <= 300 
+                    timeRemaining <= (isPromptArchitecture ? 30 : 300) 
                       ? 'bg-destructive/10 text-destructive border-destructive/50 animate-pulse' 
                       : 'bg-primary/10 border-primary/30'
                   }`}>
@@ -842,6 +880,22 @@ export default function Assessment() {
                 </div>
               </div>
 
+
+              {showTimesUp && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" data-testid="overlay-times-up">
+                  <div className="text-center animate-in fade-in zoom-in duration-300">
+                    <div className="bg-destructive rounded-full p-6 mx-auto mb-4 w-24 h-24 flex items-center justify-center">
+                      <Clock className="h-12 w-12 text-white" />
+                    </div>
+                    <h2 className="text-3xl font-bold text-white mb-2">Time's Up!</h2>
+                    <p className="text-slate-300 text-lg">
+                      {isPromptArchitecture && currentQuestion < questions.length - 1
+                        ? "Moving to next question..."
+                        : "Auto-submitting your answers..."}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Question */}
               <Card className="p-8 mb-6">
@@ -885,6 +939,9 @@ export default function Assessment() {
                         className="min-h-[200px] text-base disabled:opacity-60 disabled:cursor-not-allowed"
                         data-testid={`input-prompt-${currentQ.id}`}
                       />
+                      <p className="text-xs text-destructive mt-1">
+                        Pasting is disabled. Copied content will score zero.
+                      </p>
                       <p className="text-xs text-muted-foreground mt-2">
                         Your prompt will be evaluated by an AI model on clarity, structure, context relevance, creativity, and iterative improvement.
                       </p>
