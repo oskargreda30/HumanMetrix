@@ -1544,12 +1544,38 @@ export default function PartnerDashboard() {
     mutationFn: async (packageSize: number) => {
       const response = await apiRequest("POST", "/api/partner/purchase/checkout", { 
         packageSize,
-        countryCode, // Server computes PPP from this
+        countryCode,
         promoCode: promoCode.trim() || undefined,
       });
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      if (data.paymentProvider === 'airwallex' && data.intentId && data.clientSecret) {
+        try {
+          const { init } = await import('@airwallex/components-sdk');
+          const { payments } = await init({
+            env: 'prod',
+            enabledElements: ['payments'],
+          });
+          payments.redirectToCheckout({
+            mode: 'payment',
+            intent_id: data.intentId,
+            client_secret: data.clientSecret,
+            currency: data.currency || 'GBP',
+            successUrl: `${window.location.origin}/partner-package-success?provider=airwallex&packageId=${data.packageId}`,
+            failUrl: `${window.location.origin}/partner?tab=billing&purchase_cancelled=true`,
+          });
+        } catch (err: any) {
+          console.error('Airwallex redirect failed:', err);
+          toast({
+            title: "Payment redirect failed",
+            description: "Unable to open payment page. Please try again.",
+            variant: "destructive",
+          });
+          setPurchasingPackageSize(null);
+        }
+        return;
+      }
       if (data.sessionUrl) {
         window.location.replace(data.sessionUrl);
       }

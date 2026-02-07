@@ -70,20 +70,36 @@ export default function PartnerPackageSuccess() {
     const processPayment = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const sessionId = urlParams.get("session_id");
+      const provider = urlParams.get("provider");
+      const intentId = urlParams.get("intentId");
 
-      if (!sessionId) {
+      if (!sessionId && provider !== 'airwallex') {
         setStatus("error");
         setMessage("No session ID found. Payment may not have completed.");
         return;
       }
 
       try {
+        const body: Record<string, string> = {};
+        if (provider === 'airwallex') {
+          const pkgId = urlParams.get("packageId") || intentId;
+          if (!pkgId) {
+            setStatus("error");
+            setMessage("No payment reference found. Payment may not have completed.");
+            return;
+          }
+          body.provider = 'airwallex';
+          body.packageId = pkgId;
+        } else {
+          body.sessionId = sessionId!;
+        }
+
         const response = await fetch("/api/partner/package/callback", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ sessionId }),
+          body: JSON.stringify(body),
         });
 
         const data = await response.json();

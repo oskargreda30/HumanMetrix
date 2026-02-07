@@ -11855,42 +11855,23 @@ Return valid JSON with only the requested fields.`;
       
       console.log(`[Partner Purchase] Partner: ${matchingPartner.id}, Partner Currency: ${displayCurrency}, PPP: 1 (no adjustment), Price: ${totalPrice}, Promo: ${promoCode || 'none'}`);
       
-      // Create Stripe checkout session
-      const stripe = (await import("stripe")).default;
-      const stripeClient = new stripe(process.env.STRIPE_SECRET_KEY!);
-      
-      // Ensure partner has a Stripe customer ID
-      let customerId = matchingPartner.stripeCustomerId;
-      if (!customerId) {
-        const customer = await stripeClient.customers.create({
-          email: matchingPartner.billingEmail || matchingPartner.email,
-          name: matchingPartner.companyName || matchingPartner.name,
-          metadata: {
-            partnerId: matchingPartner.id,
-            partnerName: matchingPartner.name,
-          },
-        });
-        customerId = customer.id;
-        await storage.updatePartnerAccount(matchingPartner.id, {
-          stripeCustomerId: customerId,
-        });
-      }
-      
-      const baseUrl = getRoutesBaseUrl(req);
+      // Route through payment provider system
+      const { primary, fallback } = getPaymentProviders(matchingPartner.paymentProvider);
       
       // Get currency symbol for description
       const currencySymbols: Record<string, string> = {
-        gbp: '£', usd: '$', eur: '€', aud: 'A$', cad: 'C$', sgd: 'S$', hkd: 'HK$',
-        inr: '₹', myr: 'RM', thb: '฿', php: '₱', jpy: '¥',
+        gbp: '\u00a3', usd: '\u0024', eur: '\u20ac', aud: 'A\u0024', cad: 'C\u0024', sgd: 'S\u0024', hkd: 'HK\u0024',
+        inr: '\u20b9', myr: 'RM', thb: '\u0e3f', php: '\u20b1', jpy: '\u00a5',
       };
       const currSymbol = currencySymbols[displayCurrency] || displayCurrency.toUpperCase() + ' ';
       const isZeroDecimal = ['jpy', 'krw', 'vnd', 'idr', 'clp', 'pyg', 'ugx', 'gnf', 'kmf', 'rwf', 'xof', 'xaf', 'xpf', 'djf', 'bif', 'mga', 'vuv'].includes(displayCurrency);
       const displayPriceAmount = isZeroDecimal ? pricePerTest : (pricePerTest / 100);
       
-      // Check if promo code is valid (if provided)
+      // Check promo code (used for Stripe checkout)
       let promoCodeId: string | undefined;
       if (promoCode && promoCode.trim()) {
         try {
+          const stripeClient = new (await import("stripe")).default(process.env.STRIPE_SECRET_KEY!);
           const promoCodes = await stripeClient.promotionCodes.list({
             code: promoCode.trim().toUpperCase(),
             active: true,
@@ -11907,50 +11888,127 @@ Return valid JSON with only the requested fields.`;
         }
       }
       
-      const session = await stripeClient.checkout.sessions.create({
-        mode: 'payment',
-        adaptive_pricing: { enabled: false }, // Disable currency selection - partners pay in their assigned currency only
-        customer: customerId,
-        allow_promotion_codes: !promoCodeId, // Allow manual entry only if we don't have a pre-applied code
-        ...(promoCodeId ? { discounts: [{ promotion_code: promoCodeId }] } : {}),
-        line_items: [{
-          price_data: {
-            currency: displayCurrency,
-            product_data: {
-              name: `HumanMetrix Test Package - ${packageSize} Tests`,
-              description: `${tier?.name || 'Custom'} package: ${packageSize} assessment credits at ${currSymbol}${displayPriceAmount.toFixed(isZeroDecimal ? 0 : 2)} per test${discountPercent > 0 ? ` (${discountPercent}% volume discount)` : ''}`,
-            },
-            unit_amount: totalPrice,
+      const baseUrl = getRoutesBaseUrl(req);
+      
+      const airwallexPurchaseFn = async (): Promise<PaymentCheckoutResult> => {
+        const airwallexAmount = formatAmountForAirwallex(totalPrice);
+        const merchantOrderId = `partner_pkg_${pkg.id}_${Date.now()}`;
+        
+        const intent = await createPaymentIntent({
+          amount: airwallexAmount,
+          currency: displayCurrency.toUpperCase(),
+          merchantOrderId,
+          returnUrl: `${baseUrl}/partner-package-success?provider=airwallex&packageId=${pkg.id}`,
+          customerEmail: matchingPartner.billingEmail || matchingPartner.email,
+          description: `HumanMetrix Test Package - ${packageSize} Tests`,
+          metadata: {
+            type: 'partner_package',
+            partnerId: matchingPartner.id,
+            packageId: pkg.id,
+            packageSize: packageSize.toString(),
+            selfService: 'true',
           },
-          quantity: 1,
-        }],
-        metadata: {
-          type: 'partner_package',
-          partnerId: matchingPartner.id,
+        });
+        
+        await storage.updatePartnerTestPackage(pkg.id, {
+          airwallexPaymentIntentId: intent.id,
+          paymentProvider: 'airwallex',
+        });
+        
+        return {
+          provider: 'airwallex',
+          intentId: intent.id,
+          clientSecret: intent.clientSecret,
+          amount: airwallexAmount,
+          currency: displayCurrency.toUpperCase(),
+          returnUrl: `${baseUrl}/partner-package-success?provider=airwallex&packageId=${pkg.id}`,
           packageId: pkg.id,
-          packageSize: packageSize.toString(),
-          selfService: 'true',
-          discountPercent: discountPercent.toString(),
-        },
-        success_url: `${baseUrl}/partner-package-success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${baseUrl}/partner?tab=billing&purchase_cancelled=true`,
-      });
+        };
+      };
       
-      // Update package with Stripe session ID
-      await storage.updatePartnerTestPackage(pkg.id, {
-        stripeCheckoutSessionId: session.id,
-      });
+      const stripePurchaseFn = async (): Promise<PaymentCheckoutResult> => {
+        const stripeClient = new (await import("stripe")).default(process.env.STRIPE_SECRET_KEY!);
+        
+        let customerId = matchingPartner.stripeCustomerId;
+        if (!customerId) {
+          const customer = await stripeClient.customers.create({
+            email: matchingPartner.billingEmail || matchingPartner.email,
+            name: matchingPartner.companyName || matchingPartner.name,
+            metadata: {
+              partnerId: matchingPartner.id,
+              partnerName: matchingPartner.name,
+            },
+          });
+          customerId = customer.id;
+          await storage.updatePartnerAccount(matchingPartner.id, {
+            stripeCustomerId: customerId,
+          });
+        }
+        
+        const session = await stripeClient.checkout.sessions.create({
+          mode: 'payment',
+          adaptive_pricing: { enabled: false },
+          customer: customerId,
+          allow_promotion_codes: !promoCodeId,
+          ...(promoCodeId ? { discounts: [{ promotion_code: promoCodeId }] } : {}),
+          line_items: [{
+            price_data: {
+              currency: displayCurrency,
+              product_data: {
+                name: `HumanMetrix Test Package - ${packageSize} Tests`,
+                description: `${tier?.name || 'Custom'} package: ${packageSize} assessment credits at ${currSymbol}${displayPriceAmount.toFixed(isZeroDecimal ? 0 : 2)} per test${discountPercent > 0 ? ` (${discountPercent}% volume discount)` : ''}`,
+              },
+              unit_amount: totalPrice,
+            },
+            quantity: 1,
+          }],
+          metadata: {
+            type: 'partner_package',
+            partnerId: matchingPartner.id,
+            packageId: pkg.id,
+            packageSize: packageSize.toString(),
+            selfService: 'true',
+            discountPercent: discountPercent.toString(),
+          },
+          success_url: `${baseUrl}/partner-package-success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${baseUrl}/partner?tab=billing&purchase_cancelled=true`,
+        });
+        
+        await storage.updatePartnerTestPackage(pkg.id, {
+          stripeCheckoutSessionId: session.id,
+          paymentProvider: 'stripe',
+        });
+        
+        return { provider: 'stripe', url: session.url, packageId: pkg.id };
+      };
       
-      res.json({ 
-        success: true, 
-        sessionUrl: session.url,
-        packageId: pkg.id,
-      });
+      const purchaseResult = await createCheckoutWithFallback(primary, fallback, airwallexPurchaseFn, stripePurchaseFn);
+      
+      if (purchaseResult.provider === 'airwallex') {
+        res.json({
+          success: true,
+          paymentProvider: 'airwallex',
+          intentId: purchaseResult.intentId,
+          clientSecret: purchaseResult.clientSecret,
+          amount: purchaseResult.amount,
+          currency: purchaseResult.currency,
+          returnUrl: purchaseResult.returnUrl,
+          packageId: purchaseResult.packageId,
+        });
+      } else {
+        res.json({
+          success: true,
+          paymentProvider: 'stripe',
+          sessionUrl: purchaseResult.url,
+          packageId: purchaseResult.packageId,
+        });
+      }
     } catch (error) {
       console.error("Error creating partner self-service checkout:", error);
       res.status(500).json({ message: "Failed to create checkout session" });
     }
   });
+
 
   // ==================== PARTNER INTEGRATION MANAGEMENT ====================
   
@@ -18922,68 +18980,102 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
   // Security is ensured by validating the Stripe session instead
   app.post("/api/partner/package/callback", async (req: any, res) => {
     try {
-      const { sessionId } = req.body;
+      const { sessionId, provider, intentId, packageId: airwallexPackageId } = req.body;
       
-      if (!sessionId) {
-        return res.status(400).json({ success: false, message: "Session ID required" });
+      let partnerId: string;
+      let packageId: string;
+      let packageSize: string;
+      let actualAmountPaid: number = 0;
+      let paymentIntentId: string | undefined;
+      
+      if (provider === 'airwallex' && airwallexPackageId) {
+        // Airwallex payment verification
+        const pkg = await storage.getPartnerTestPackage(airwallexPackageId);
+        if (!pkg) {
+          return res.status(404).json({ success: false, message: "Package not found" });
+        }
+        
+        if (pkg.status === 'completed') {
+          console.log(`[Partner Package] Package ${airwallexPackageId} already processed, skipping`);
+          return res.json({ success: true, message: "Package already credited", alreadyProcessed: true });
+        }
+        
+        if (!pkg.airwallexPaymentIntentId) {
+          return res.status(400).json({ success: false, message: "No Airwallex payment intent found for this package" });
+        }
+        
+        // Verify the Airwallex payment intent status
+        const awxIntent = await getPaymentIntent(pkg.airwallexPaymentIntentId);
+        console.log(`[Partner Package] Airwallex intent ${pkg.airwallexPaymentIntentId} status: ${awxIntent.status}`);
+        
+        if (awxIntent.status !== 'SUCCEEDED') {
+          return res.status(400).json({ success: false, message: "Payment not completed" });
+        }
+        
+        partnerId = pkg.partnerId;
+        packageId = pkg.id;
+        packageSize = String(pkg.packageSize);
+        actualAmountPaid = pkg.totalPrice || 0;
+        paymentIntentId = pkg.airwallexPaymentIntentId;
+        
+        await storage.updatePartnerTestPackage(packageId, {
+          status: 'completed',
+        } as any);
+      } else if (sessionId) {
+        // Stripe payment verification
+        const stripe = (await import("stripe")).default;
+        const stripeClient = new stripe(process.env.STRIPE_SECRET_KEY!);
+        
+        const session = await stripeClient.checkout.sessions.retrieve(sessionId);
+        
+        if (!session || (session.payment_status !== "paid" && session.payment_status !== "no_payment_required")) {
+          return res.status(400).json({ success: false, message: "Payment not completed" });
+        }
+        
+        const metadata = session.metadata;
+        if (!metadata || metadata.type !== 'partner_package') {
+          return res.status(400).json({ success: false, message: "Invalid session type" });
+        }
+        
+        partnerId = metadata.partnerId!;
+        packageId = metadata.packageId!;
+        packageSize = metadata.packageSize!;
+        
+        if (!partnerId || !packageId || !packageSize) {
+          return res.status(400).json({ success: false, message: "Invalid session metadata" });
+        }
+        
+        const pkg = await storage.getPartnerTestPackage(packageId);
+        if (!pkg) {
+          return res.status(404).json({ success: false, message: "Package not found" });
+        }
+        
+        if (pkg.partnerId !== partnerId) {
+          console.warn(`[Partner Package] Package ${packageId} partner mismatch: expected ${pkg.partnerId}, got ${partnerId}`);
+          return res.status(403).json({ success: false, message: "Package does not belong to this partner" });
+        }
+        
+        if (pkg.stripeCheckoutSessionId && pkg.stripeCheckoutSessionId !== sessionId) {
+          console.warn(`[Partner Package] Session mismatch for package ${packageId}: expected ${pkg.stripeCheckoutSessionId}, got ${sessionId}`);
+          return res.status(403).json({ success: false, message: "Invalid session for this package" });
+        }
+        
+        if (pkg.status === 'completed') {
+          console.log(`[Partner Package] Package ${packageId} already processed, skipping`);
+          return res.json({ success: true, message: "Package already credited", alreadyProcessed: true });
+        }
+        
+        actualAmountPaid = session.amount_total ?? 0;
+        paymentIntentId = session.payment_intent as string;
+        
+        await storage.updatePartnerTestPackage(packageId, {
+          status: 'completed',
+          stripePaymentIntentId: paymentIntentId,
+          totalPrice: actualAmountPaid,
+        } as any);
+      } else {
+        return res.status(400).json({ success: false, message: "Session ID or Airwallex intent ID required" });
       }
-      
-      // Retrieve and validate Stripe session
-      const stripe = (await import("stripe")).default;
-      const stripeClient = new stripe(process.env.STRIPE_SECRET_KEY!);
-      
-      const session = await stripeClient.checkout.sessions.retrieve(sessionId);
-      
-      if (!session || (session.payment_status !== "paid" && session.payment_status !== "no_payment_required")) {
-        return res.status(400).json({ success: false, message: "Payment not completed" });
-      }
-      
-      const metadata = session.metadata;
-      if (!metadata || metadata.type !== 'partner_package') {
-        return res.status(400).json({ success: false, message: "Invalid session type" });
-      }
-      
-      const { partnerId, packageId, packageSize } = metadata;
-      
-      if (!partnerId || !packageId || !packageSize) {
-        return res.status(400).json({ success: false, message: "Invalid session metadata" });
-      }
-      
-      // Verify package exists and belongs to the partner from the session
-      const pkg = await storage.getPartnerTestPackage(packageId);
-      if (!pkg) {
-        return res.status(404).json({ success: false, message: "Package not found" });
-      }
-      
-      // Security: Verify package belongs to the partner in the session metadata
-      if (pkg.partnerId !== partnerId) {
-        console.warn(`[Partner Package] Package ${packageId} partner mismatch: expected ${pkg.partnerId}, got ${partnerId}`);
-        return res.status(403).json({ success: false, message: "Package does not belong to this partner" });
-      }
-      
-      // Additional security: Verify Stripe session matches the package
-      if (pkg.stripeCheckoutSessionId && pkg.stripeCheckoutSessionId !== sessionId) {
-        console.warn(`[Partner Package] Session mismatch for package ${packageId}: expected ${pkg.stripeCheckoutSessionId}, got ${sessionId}`);
-        return res.status(403).json({ success: false, message: "Invalid session for this package" });
-      }
-      
-      if (pkg.status === 'completed') {
-        console.log(`[Partner Package] Package ${packageId} already processed, skipping`);
-        return res.json({ 
-          success: true, 
-          message: "Package already credited",
-          alreadyProcessed: true
-        });
-      }
-      
-      // Update package status with actual amount paid from Stripe
-      // session.amount_total reflects the real charge after discounts/promo codes
-      const actualAmountPaid = session.amount_total ?? 0;
-      await storage.updatePartnerTestPackage(packageId, {
-        status: 'completed',
-        stripePaymentIntentId: session.payment_intent as string,
-        totalPrice: actualAmountPaid,
-      } as any);
       
       // Get the current balance BEFORE crediting (for animation)
       const partnerBeforeCredit = await storage.getPartnerAccount(partnerId);
