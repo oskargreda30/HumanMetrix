@@ -20,17 +20,27 @@ export function getPaymentProviders(partnerPaymentProvider?: string): PaymentPro
   const airwallexAvailable = isAirwallexConfigured();
   const stripeAvailable = isStripeConfigured();
 
+  if (!airwallexAvailable && !stripeAvailable) {
+    throw new Error('No payment provider is configured. Please set up Airwallex or Stripe credentials.');
+  }
+
   if (partnerPaymentProvider === 'stripe') {
+    if (!stripeAvailable) {
+      return { primary: 'airwallex', fallback: null };
+    }
     return {
       primary: 'stripe',
       fallback: airwallexAvailable ? 'airwallex' : null,
     };
   }
 
-  if (partnerPaymentProvider === 'airwallex' || !partnerPaymentProvider) {
+  if (partnerPaymentProvider === 'airwallex') {
+    if (!airwallexAvailable) {
+      return { primary: 'stripe', fallback: null };
+    }
     return {
-      primary: airwallexAvailable ? 'airwallex' : 'stripe',
-      fallback: airwallexAvailable && stripeAvailable ? 'stripe' : null,
+      primary: 'airwallex',
+      fallback: stripeAvailable ? 'stripe' : null,
     };
   }
 
@@ -38,6 +48,10 @@ export function getPaymentProviders(partnerPaymentProvider?: string): PaymentPro
     primary: airwallexAvailable ? 'airwallex' : 'stripe',
     fallback: airwallexAvailable && stripeAvailable ? 'stripe' : null,
   };
+}
+
+export function supportsOffSessionBilling(provider: PaymentProvider): boolean {
+  return provider === 'stripe';
 }
 
 export function getStripeClient(): Stripe {
