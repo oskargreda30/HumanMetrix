@@ -161,7 +161,7 @@ export default function B2BResults() {
       
       toast({
         title: "Email sent!",
-        description: "Your results PDF has been resent to your email address.",
+        description: "A link to your results has been resent to your email address.",
       });
     } catch (err: any) {
       toast({
@@ -219,12 +219,12 @@ export default function B2BResults() {
 
   if (!data) return null;
 
-  // Check if we need to generate and email the PDF (pending_client_pdf status)
-  const needsPdfEmail = data.alreadyPaid && data.resultsDeliveryStatus === 'pending_client_pdf';
+  // Check if we need to send the results email (pending_client_pdf status)
+  const needsResultsEmail = data.alreadyPaid && data.resultsDeliveryStatus === 'pending_client_pdf';
 
   if (data.alreadyPaid) {
-    // If PDF hasn't been sent yet, redirect to PDF generation page
-    if (needsPdfEmail) {
+    // If results email hasn't been sent yet, redirect to results page
+    if (needsResultsEmail) {
       return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
           <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10" />
@@ -238,10 +238,10 @@ export default function B2BResults() {
               </div>
               <h1 className="text-2xl font-bold text-slate-900">Payment Successful!</h1>
               <p className="text-slate-600">
-                We're preparing your {ASSESSMENT_NAMES[data.assessmentType] || data.assessmentType} results PDF.
+                We're preparing your {ASSESSMENT_NAMES[data.assessmentType] || data.assessmentType} results.
               </p>
               <p className="text-sm text-slate-500">
-                Click below to view your results and receive your PDF report via email.
+                Click below to view your results and receive a link via email.
               </p>
               
               <div className="pt-4">
@@ -250,7 +250,7 @@ export default function B2BResults() {
                   className="w-full bg-gradient-to-r from-cyan-500 to-blue-600"
                   data-testid="button-generate-pdf"
                 >
-                  View Results & Send PDF
+                  View Results & Send Email
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               </div>
@@ -260,7 +260,7 @@ export default function B2BResults() {
       );
     }
 
-    // PDF already sent - show success view
+    // Results email already sent - show success view
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10" />
@@ -281,9 +281,9 @@ export default function B2BResults() {
               <div className="flex items-start gap-3">
                 <Mail className="h-5 w-5 text-cyan-600 mt-0.5 flex-shrink-0" />
                 <div className="text-left flex-1">
-                  <p className="font-medium text-slate-900">Results sent to your email</p>
+                  <p className="font-medium text-slate-900">Results link sent to your email</p>
                   <p className="text-sm text-slate-600 mt-1">
-                    Your results PDF was sent to <strong>{data.email}</strong>
+                    A link to your results was sent to <strong>{data.email}</strong>
                   </p>
                 </div>
               </div>
@@ -378,7 +378,7 @@ export default function B2BResults() {
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />
-                Comprehensive PDF report
+                Comprehensive results report
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-green-500" />

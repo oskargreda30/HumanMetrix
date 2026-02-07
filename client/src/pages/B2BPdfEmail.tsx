@@ -184,18 +184,18 @@ export default function B2BPdfEmail() {
           
           if (!res.ok) {
             const errorData = await res.json();
-            throw new Error(errorData.error || 'Failed to generate and send PDF');
+            throw new Error(errorData.error || 'Failed to send results email');
           }
           
           setPdfStatus('success');
           
           toast({
-            title: "PDF Sent!",
-            description: `Your results PDF has been sent to ${data.email}`,
+            title: "Results Email Sent!",
+            description: `A link to your results has been sent to ${data.email}`,
           });
         } catch (err: any) {
           console.error('Server-side PDF generation error:', err);
-          setErrorMessage(err.message || 'Failed to generate or send PDF');
+          setErrorMessage(err.message || 'Failed to send results email');
           setPdfStatus('error');
         }
       };
@@ -278,9 +278,9 @@ export default function B2BPdfEmail() {
             <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
               <CheckCircle className="h-8 w-8 text-green-600" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">PDF Sent Successfully!</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Results Email Sent!</h1>
             <p className="text-slate-600">
-              Your {getAssessmentLabel(data.assessmentType)} results have been sent to your email.
+              A link to your {getAssessmentLabel(data.assessmentType)} results has been sent to your email.
             </p>
             
             <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 mt-4">
@@ -320,7 +320,7 @@ export default function B2BPdfEmail() {
             </div>
             <h1 className="text-2xl font-bold text-slate-900">Something Went Wrong</h1>
             <p className="text-slate-600">
-              {errorMessage || 'We couldn\'t generate or send your PDF. Please try again.'}
+              {errorMessage || 'We couldn\'t send your results email. Please try again.'}
             </p>
             
             <div className="pt-4 space-y-2">
@@ -357,8 +357,8 @@ export default function B2BPdfEmail() {
             <Loader2 className="h-5 w-5 animate-spin" />
             <span className="font-medium">
               {pdfStatus === 'loading' && 'Loading your results...'}
-              {pdfStatus === 'generating' && 'Generating your PDF report (this may take a moment)...'}
-              {pdfStatus === 'sending' && 'Sending to your email...'}
+              {pdfStatus === 'generating' && 'Preparing your results (this may take a moment)...'}
+              {pdfStatus === 'sending' && 'Sending results link to your email...'}
             </span>
           </div>
         </div>
