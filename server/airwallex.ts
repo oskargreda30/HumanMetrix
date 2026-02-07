@@ -1,35 +1,53 @@
-import { Airwallex } from '@airwallex/node-sdk';
+import crypto from 'crypto';
 
-let airwallexClient: Airwallex | null = null;
+const AIRWALLEX_BASE_URL = (process.env.AIRWALLEX_ENVIRONMENT || 'prod') === 'demo'
+  ? 'https://api-demo.airwallex.com'
+  : 'https://api.airwallex.com';
 
-export function getAirwallexClient(): Airwallex {
-  if (!airwallexClient) {
-    const clientId = process.env.AIRWALLEX_CLIENT_ID;
-    const apiKey = process.env.AIRWALLEX_API_KEY;
-
-    if (!clientId || !apiKey) {
-      throw new Error('Airwallex credentials not configured. Please set AIRWALLEX_CLIENT_ID and AIRWALLEX_API_KEY environment variables.');
-    }
-
-    const env = process.env.AIRWALLEX_ENVIRONMENT || 'prod';
-
-    airwallexClient = new Airwallex({
-      clientId,
-      apiKey,
-      env,
-      apiVersion: '2025-02-14',
-      timeout: 30000,
-      retry: 3,
-    });
-
-    console.log(`[Airwallex] Client initialized in ${env} mode`);
-  }
-
-  return airwallexClient;
-}
+let cachedToken: { token: string; expiresAt: number } | null = null;
 
 export function isAirwallexConfigured(): boolean {
   return !!(process.env.AIRWALLEX_CLIENT_ID && process.env.AIRWALLEX_API_KEY);
+}
+
+async function getAuthToken(): Promise<string> {
+  if (cachedToken && cachedToken.expiresAt > Date.now() + 60000) {
+    return cachedToken.token;
+  }
+
+  const clientId = process.env.AIRWALLEX_CLIENT_ID;
+  const apiKey = process.env.AIRWALLEX_API_KEY;
+
+  if (!clientId || !apiKey) {
+    throw new Error('Airwallex credentials not configured');
+  }
+
+  const env = process.env.AIRWALLEX_ENVIRONMENT || 'prod';
+  console.log(`[Airwallex] Authenticating with ${env} API at ${AIRWALLEX_BASE_URL}`);
+
+  const response = await fetch(`${AIRWALLEX_BASE_URL}/api/v1/authentication/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-client-id': clientId,
+      'x-api-key': apiKey,
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`[Airwallex] Auth failed: ${response.status} ${errorText}`);
+    throw new Error(`Airwallex authentication failed: ${response.status} ${errorText}`);
+  }
+
+  const data = await response.json();
+  const token = data.token;
+  const expiresAt = Date.now() + (data.expires_in ? data.expires_in * 1000 : 1800000);
+
+  cachedToken = { token, expiresAt };
+  console.log(`[Airwallex] Authenticated successfully, token expires in ${Math.round((expiresAt - Date.now()) / 1000)}s`);
+
+  return token;
 }
 
 interface CreatePaymentIntentParams {
@@ -51,11 +69,10 @@ interface PaymentIntentResult {
 }
 
 export async function createPaymentIntent(params: CreatePaymentIntentParams): Promise<PaymentIntentResult> {
-  const client = getAirwallexClient();
-
+  const token = await getAuthToken();
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
 
-  const paymentIntentParams: any = {
+  const body: any = {
     request_id: requestId,
     amount: params.amount,
     currency: params.currency.toUpperCase(),
@@ -65,16 +82,35 @@ export async function createPaymentIntent(params: CreatePaymentIntentParams): Pr
   };
 
   if (params.customerEmail) {
-    paymentIntentParams.customer = {
-      email: params.customerEmail,
+    body.order = {
+      type: 'physical_goods',
     };
   }
 
   if (params.metadata) {
-    paymentIntentParams.metadata = params.metadata;
+    body.metadata = params.metadata;
   }
 
-  const paymentIntent = await client.paymentAcceptance.paymentIntents.createPaymentIntent(paymentIntentParams);
+  console.log(`[Airwallex] Creating payment intent: amount=${body.amount}, currency=${body.currency}, merchantOrderId=${body.merchant_order_id}`);
+
+  const response = await fetch(`${AIRWALLEX_BASE_URL}/api/v1/pa/payment_intents/create`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`[Airwallex] createPaymentIntent failed: ${response.status} ${errorText}`);
+    throw new Error(`Airwallex createPaymentIntent failed: ${response.status} ${errorText}`);
+  }
+
+  const paymentIntent = await response.json();
+
+  console.log(`[Airwallex] Payment intent created: ${paymentIntent.id}, status=${paymentIntent.status}`);
 
   return {
     id: paymentIntent.id || '',
@@ -86,29 +122,46 @@ export async function createPaymentIntent(params: CreatePaymentIntentParams): Pr
 }
 
 export async function getPaymentIntent(paymentIntentId: string): Promise<any> {
-  const client = getAirwallexClient();
-  // Use the list endpoint and filter by ID as a workaround
-  const result = await client.paymentAcceptance.paymentIntents.listPaymentIntents({
-    page_num: 0,
-    page_size: 100,
+  const token = await getAuthToken();
+
+  const response = await fetch(`${AIRWALLEX_BASE_URL}/api/v1/pa/payment_intents/${paymentIntentId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
   });
-  // Find the specific payment intent by ID from the list
-  const items = (result as any).items || [];
-  return items.find((item: any) => item.id === paymentIntentId) || result;
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`[Airwallex] getPaymentIntent failed: ${response.status} ${errorText}`);
+    throw new Error(`Airwallex getPaymentIntent failed: ${response.status} ${errorText}`);
+  }
+
+  return response.json();
 }
 
 export async function confirmPaymentIntent(paymentIntentId: string, returnUrl: string): Promise<any> {
-  const client = getAirwallexClient();
+  const token = await getAuthToken();
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-  
-  // Use the correct form for confirmPaymentIntent - first arg is the intent ID as string
-  return client.paymentAcceptance.paymentIntents.confirmPaymentIntent(
-    paymentIntentId,
-    {
+
+  const response = await fetch(`${AIRWALLEX_BASE_URL}/api/v1/pa/payment_intents/${paymentIntentId}/confirm`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({
       request_id: requestId,
       return_url: returnUrl,
-    }
-  );
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Airwallex confirmPaymentIntent failed: ${response.status} ${errorText}`);
+  }
+
+  return response.json();
 }
 
 export function formatAmountForAirwallex(amountInPence: number): number {
@@ -118,8 +171,6 @@ export function formatAmountForAirwallex(amountInPence: number): number {
 export function formatAmountFromAirwallex(amount: number): number {
   return Math.round(amount * 100);
 }
-
-import crypto from 'crypto';
 
 export function verifyAirwallexWebhookSignature(
   payload: string,
@@ -167,31 +218,44 @@ interface CustomerResult {
 }
 
 export async function createCustomer(params: CreateCustomerParams): Promise<CustomerResult> {
-  const client = getAirwallexClient();
-  
+  const token = await getAuthToken();
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-  
-  const customerParams: any = {
+
+  const body: any = {
     request_id: requestId,
     email: params.email,
     merchant_customer_id: `cust_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`,
   };
-  
+
   if (params.businessName) {
-    customerParams.business_name = params.businessName;
+    body.business_name = params.businessName;
   }
-  
+
   if (params.firstName || params.lastName) {
-    customerParams.first_name = params.firstName || '';
-    customerParams.last_name = params.lastName || '';
+    body.first_name = params.firstName || '';
+    body.last_name = params.lastName || '';
   }
-  
+
   if (params.metadata) {
-    customerParams.metadata = params.metadata;
+    body.metadata = params.metadata;
   }
-  
-  const customer = await client.paymentAcceptance.customers.createCustomer(customerParams);
-  
+
+  const response = await fetch(`${AIRWALLEX_BASE_URL}/api/v1/pa/customers/create`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Airwallex createCustomer failed: ${response.status} ${errorText}`);
+  }
+
+  const customer = await response.json();
+
   return {
     id: customer.id || '',
     email: customer.email || params.email,
@@ -199,8 +263,21 @@ export async function createCustomer(params: CreateCustomerParams): Promise<Cust
 }
 
 export async function getCustomer(customerId: string): Promise<any> {
-  const client = getAirwallexClient();
-  return client.paymentAcceptance.customers.getCustomer(customerId);
+  const token = await getAuthToken();
+
+  const response = await fetch(`${AIRWALLEX_BASE_URL}/api/v1/pa/customers/${customerId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Airwallex getCustomer failed: ${response.status} ${errorText}`);
+  }
+
+  return response.json();
 }
 
 interface CreatePaymentLinkParams {
@@ -219,32 +296,44 @@ interface PaymentLinkResult {
 }
 
 export async function createPaymentLink(params: CreatePaymentLinkParams): Promise<PaymentLinkResult> {
-  const client = getAirwallexClient();
-  
+  const token = await getAuthToken();
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-  
-  const linkParams: any = {
+
+  const body: any = {
     request_id: requestId,
     amount: params.amount,
     currency: params.currency.toUpperCase(),
     title: params.title,
   };
-  
+
   if (params.description) {
-    linkParams.description = params.description;
+    body.description = params.description;
   }
-  
+
   if (params.expiresAt) {
-    linkParams.expires_at = params.expiresAt.toISOString();
+    body.expires_at = params.expiresAt.toISOString();
   }
-  
+
   if (params.metadata) {
-    linkParams.metadata = params.metadata;
+    body.metadata = params.metadata;
   }
-  
-  // Create payment link via Airwallex API
-  const paymentLink = await (client as any).paymentAcceptance.paymentLinks.createPaymentLink(linkParams);
-  
+
+  const response = await fetch(`${AIRWALLEX_BASE_URL}/api/v1/pa/payment_links/create`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Airwallex createPaymentLink failed: ${response.status} ${errorText}`);
+  }
+
+  const paymentLink = await response.json();
+
   return {
     id: paymentLink.id || '',
     url: paymentLink.url || '',
