@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Download, CheckCircle2, FileText, TrendingUp, Brain, Shield, Zap, Star, Target, Users, MessageSquare, Rocket, Mail } from "lucide-react";
+import { Loader2, ArrowLeft, ArrowUp, Download, CheckCircle2, FileText, TrendingUp, Brain, Shield, Zap, Star, Target, Users, MessageSquare, Rocket, Mail, Send } from "lucide-react";
 import { exportEnhancedCandidatePDF, captureRadarChart } from "@/lib/enhancedPdfExport";
 import { useToast } from "@/hooks/use-toast";
 import { formatAssessmentName } from "@/lib/assessmentHelpers";
@@ -790,18 +790,6 @@ export default function MyResults() {
                       <div className="text-sm font-medium text-muted-foreground mb-2">Score Interpretation</div>
                       <p className="text-sm leading-relaxed">{bandInfo.description}</p>
                     </div>
-                    <div>
-                      <div className="text-sm font-medium text-muted-foreground mb-2">Score Progress</div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-green-500 rounded-full transition-all"
-                            style={{ width: `${aiqScore}%` }}
-                          />
-                        </div>
-                        <span className="text-sm font-medium">{aiqScore}%</span>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </Card>
@@ -810,6 +798,25 @@ export default function MyResults() {
 
           {/* Skills Legend */}
           <SkillsLegend className="mb-8" compact data-testid="section-skills-legend" />
+
+          {/* Back to Top and Export PDF buttons */}
+          <div className="flex justify-end gap-3 mb-8" data-testid="container-bottom-actions">
+            <Button
+              variant="outline"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              data-testid="button-back-to-top"
+            >
+              <ArrowUp className="mr-2 h-4 w-4" />
+              Back to Top
+            </Button>
+            <Button
+              onClick={handleDownloadPDF}
+              data-testid="button-export-pdf-bottom"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download Full Report
+            </Button>
+          </div>
 
           {/* Additional Services Section */}
           <Card className="mb-8" data-testid="section-additional-services">
@@ -868,11 +875,22 @@ export default function MyResults() {
                   </p>
                 </div>
               </div>
-              <div className="mt-6 p-4 bg-primary/5 rounded-lg flex items-center gap-3" data-testid="container-contact-email">
-                <Mail className="h-5 w-5 text-primary" />
-                <p className="text-sm" data-testid="text-contact-email">
-                  Contact us at <a href="mailto:hello@humanmetrix.co.uk" className="font-semibold text-primary underline" data-testid="link-contact-email">hello@humanmetrix.co.uk</a> to learn more about our career development services.
-                </p>
+              <div className="mt-6 p-4 bg-primary/5 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" data-testid="container-contact-email">
+                <div className="flex items-center gap-3">
+                  <Mail className="h-5 w-5 text-primary flex-shrink-0" />
+                  <p className="text-sm" data-testid="text-contact-email">
+                    Interested in any of these services? Get in touch and we'll help you take the next step.
+                  </p>
+                </div>
+                <Button
+                  asChild
+                  data-testid="button-contact-enquiry"
+                >
+                  <a href={`mailto:hello@humanmetrix.co.uk?subject=${encodeURIComponent('Career Development Services Enquiry')}&body=${encodeURIComponent(`Hi HumanMetrix,\n\nI've completed my assessments and I'm interested in learning more about your career development services.\n\nPlease let me know what options are available.\n\nThank you`)}`}>
+                    <Send className="mr-2 h-4 w-4" />
+                    Send Enquiry
+                  </a>
+                </Button>
               </div>
             </div>
           </Card>
