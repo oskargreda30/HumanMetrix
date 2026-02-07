@@ -11,7 +11,7 @@ export function getAirwallexClient(): Airwallex {
       throw new Error('Airwallex credentials not configured. Please set AIRWALLEX_CLIENT_ID and AIRWALLEX_API_KEY environment variables.');
     }
 
-    const env = process.env.NODE_ENV === 'production' ? 'prod' : 'demo';
+    const env = process.env.AIRWALLEX_ENVIRONMENT || 'prod';
 
     airwallexClient = new Airwallex({
       clientId,

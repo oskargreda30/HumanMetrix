@@ -11856,7 +11856,9 @@ Return valid JSON with only the requested fields.`;
       console.log(`[Partner Purchase] Partner: ${matchingPartner.id}, Partner Currency: ${displayCurrency}, PPP: 1 (no adjustment), Price: ${totalPrice}, Promo: ${promoCode || 'none'}`);
       
       // Route through payment provider system
+      console.log(`[Partner Purchase] Partner paymentProvider field: '${matchingPartner.paymentProvider}', type: ${typeof matchingPartner.paymentProvider}`);
       const { primary, fallback } = getPaymentProviders(matchingPartner.paymentProvider);
+      console.log(`[Partner Purchase] Routing decision: primary=${primary}, fallback=${fallback}`);
       
       // Get currency symbol for description
       const currencySymbols: Record<string, string> = {
