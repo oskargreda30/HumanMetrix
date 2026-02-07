@@ -313,11 +313,13 @@ export default function StartAssessment() {
           </CardContent>
         </Card>
 
-        <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
-          <span>Powered by</span>
-          <img src={logoSymbol} alt="HumanMetrix Logo" className="h-8 w-8" />
-          <span className="text-cyan-500">HumanMetrix</span>
-          <span>- AI Assessment Platform</span>
+        <div className="flex flex-col items-center justify-center gap-1 text-sm text-slate-500" data-testid="footer-branding">
+          <div className="flex items-center gap-2">
+            <span>Powered by</span>
+            <img src={logoSymbol} alt="HumanMetrix Logo" className="h-8 w-8" />
+            <span className="text-cyan-500">HumanMetrix</span>
+          </div>
+          <span>AI Assessment Platform</span>
         </div>
       </div>
     </div>
