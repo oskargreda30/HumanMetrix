@@ -106,19 +106,17 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { countryCode, currency, formatLocalCurrency, getLocalPriceNumber } = useCurrency();
   
-  // Redirect based on role
+  const candidateView = new URLSearchParams(window.location.search).get('view') === 'candidate';
+
   if (!authLoading && user) {
-    // Super admins always go to admin dashboard (Platform Admin Hub)
     if (user.role === 'super_admin') {
       return <Redirect to="/admin/dashboard" />;
     }
     
-    // Partner admins go directly to Partner Dashboard
-    if (user.role === 'partner_admin') {
+    if (user.role === 'partner_admin' && !candidateView) {
       return <Redirect to="/partner" />;
     }
     
-    // Organization admins go to Admin Dashboard
     if (user.role === 'organization_admin') {
       return <Redirect to="/admin/dashboard" />;
     }

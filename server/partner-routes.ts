@@ -4514,9 +4514,12 @@ export function registerPartnerRoutes(app: Express) {
         }
         
         console.log(`[B2B Create Account] User ${email} logged in successfully`);
+        
+        const isPartnerAdmin = user!.role === 'partner_admin';
+        
         res.json({
           success: true,
-          redirectTo: "/dashboard",
+          redirectTo: isPartnerAdmin ? "/dashboard?view=candidate" : "/dashboard",
           userId: user!.id,
           isNewUser,
           emailSent,

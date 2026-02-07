@@ -2369,6 +2369,14 @@ export default function PartnerDashboard() {
                       Activity Log
                     </DropdownMenuItem>
                   )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => setLocation('/dashboard?view=candidate')}
+                    data-testid="dropdown-item-my-results"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    My Results
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </TabsList>
