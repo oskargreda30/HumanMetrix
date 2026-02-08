@@ -64,6 +64,7 @@ export default function Assessment() {
   const progressAnimationRef = useRef<NodeJS.Timeout | null>(null); // For smooth progress animation
   const answersRef = useRef<Record<string, string>>({}); // Stable ref for timer expiry access
   const currentQuestionRef = useRef<number>(0); // Stable ref for timer expiry access
+  const timeRemainingRef = useRef<number>(1200); // Stable ref for timer value during sendBeacon
 
   const { data: availableAssessments, isLoading: loadingAssessments } = useQuery({
     queryKey: ["/api/available-assessments"],
@@ -110,20 +111,33 @@ export default function Assessment() {
   // Keep refs in sync with state for stable timer callback access
   answersRef.current = answers;
   currentQuestionRef.current = currentQuestion;
+  timeRemainingRef.current = timeRemaining;
 
   const startMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/assessments/start", { purchaseItemId, questionLocale });
-      return await response.json();
+      const data = await response.json();
+      
+      if (data.isPaused) {
+        const resumeResponse = await apiRequest("POST", `/api/assessments/${data.id}/resume`);
+        const resumeData = await resumeResponse.json();
+        return {
+          ...data,
+          timeRemaining: Math.floor((resumeData.timeRemainingMs || 0) / 1000),
+          isPaused: false,
+          resumed: true,
+        };
+      }
+      
+      return data;
     },
     onSuccess: (data: any) => {
       setResultId(data.id);
-      setShowInstructions(false); // Only close instructions AFTER successful start
+      setShowInstructions(false);
       
-      // For Prompt Architecture, set 2 minutes per question instead of total time
       const isPromptArch = assessment?.assessmentType === 'prompt_architecture';
       if (isPromptArch) {
-        setTimeRemaining(120); // 2 minutes per question
+        setTimeRemaining(120);
       } else if (data.timeRemaining !== undefined) {
         setTimeRemaining(data.timeRemaining);
       }
@@ -434,12 +448,16 @@ export default function Assessment() {
     
     if (!resultId) return;
 
-    // Send initial heartbeat
-    apiRequest("POST", `/api/assessments/${resultId}/heartbeat`).catch(() => {});
+    // Send initial heartbeat with timer state (convert seconds to ms)
+    apiRequest("POST", `/api/assessments/${resultId}/heartbeat`, {
+      timeRemainingMs: timeRemainingRef.current * 1000,
+    }).catch(() => {});
 
-    // Set up heartbeat interval (every 30 seconds)
+    // Set up heartbeat interval (every 30 seconds) - saves timer state as backup
     heartbeatRef.current = setInterval(() => {
-      apiRequest("POST", `/api/assessments/${resultId}/heartbeat`).catch(() => {});
+      apiRequest("POST", `/api/assessments/${resultId}/heartbeat`, {
+        timeRemainingMs: timeRemainingRef.current * 1000,
+      }).catch(() => {});
     }, 30000);
 
     return () => {
@@ -481,43 +499,50 @@ export default function Assessment() {
     };
   }, [resultId, submitMutation.isSuccess, isSubmitting]);
 
-  // Show warning and auto-abandon when user tries to leave during assessment (browser close/refresh)
+  // Save timer state and pause assessment when user closes tab/browser
   useEffect(() => {
     if (!resultId || submitMutation.isSuccess || isSubmitting || hasSubmittedRef.current) {
-      return; // No active assessment to protect
+      return;
     }
 
+    const sendPauseBeacon = () => {
+      if (hasSubmittedRef.current) return;
+      navigator.sendBeacon(
+        `/api/assessments/${resultId}/pause`,
+        new Blob([JSON.stringify({ timeRemainingMs: timeRemainingRef.current * 1000 })], { type: 'application/json' })
+      );
+      console.log(`[Assessment] Sent pause beacon with ${timeRemainingRef.current}s remaining`);
+    };
+
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasSubmittedRef.current) return; // Already submitted
-      
-      // Show browser's native "are you sure" dialog
+      if (hasSubmittedRef.current) return;
+      sendPauseBeacon();
       e.preventDefault();
-      e.returnValue = 'Your test will NOT be submitted if you leave. Are you sure?';
+      e.returnValue = 'Your assessment progress will be saved. You can resume within 30 minutes.';
       return e.returnValue;
     };
 
-    // Use pagehide to abandon assessment when user actually leaves (more reliable than unload)
-    const handlePageHide = (e: PageTransitionEvent) => {
-      if (hasSubmittedRef.current) return; // Already submitted
-      
-      // Use sendBeacon to reliably send abandon request even during page unload
-      // The endpoint is CSRF-exempt but still requires session auth (cookies are sent automatically)
-      const abandonUrl = `/api/assessments/${resultId}/abandon`;
-      const data = JSON.stringify({ abandoned: true });
-      const blob = new Blob([data], { type: 'application/json' });
-      
-      navigator.sendBeacon(abandonUrl, blob);
-      console.log('[Assessment] Sent abandon beacon on page hide');
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && !hasSubmittedRef.current) {
+        sendPauseBeacon();
+      }
+    };
+
+    const handlePageHide = () => {
+      sendPauseBeacon();
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('pagehide', handlePageHide);
     
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('pagehide', handlePageHide);
     };
   }, [resultId, submitMutation.isSuccess, isSubmitting]);
+
 
   // Handle PA last question timer expiry - submit the full assessment
   const handlePALastQuestionExpiry = useCallback(() => {
@@ -532,91 +557,109 @@ export default function Assessment() {
     }, 2000);
   }, [submitMutation]);
 
-  // Timer effect
+  // Timer effect - pauses when tab is hidden, resumes when visible
   useEffect(() => {
-    if (!resultId || isSubmitting || submitMutation.isPending) return; // Don't run timer if submitting
+    if (!resultId || isSubmitting || submitMutation.isPending) return;
 
-    timerRef.current = setInterval(() => {
-      setTimeRemaining((prev) => {
-        const newTime = prev - 1;
-        
-        // Show warning: 30 seconds for PA per-question, 5 minutes for other assessments
-        const warningThreshold = isPromptArchitecture ? 30 : 300;
-        const warningTitle = isPromptArchitecture ? "30 Seconds Remaining" : "5 Minutes Remaining";
-        const warningDesc = isPromptArchitecture 
-          ? "You have 30 seconds left for this question"
-          : "You have 5 minutes left to complete this assessment";
-        if (newTime === warningThreshold && !showTimeWarning) {
-          setShowTimeWarning(true);
-          toast({
-            title: warningTitle,
-            description: warningDesc,
-            variant: "destructive",
-          });
-        }
-        
-        // Auto-advance or submit when time runs out
-        if (newTime <= 0) {
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
+    const startTimer = () => {
+      if (timerRef.current) return;
+      timerRef.current = setInterval(() => {
+        setTimeRemaining((prev) => {
+          const newTime = prev - 1;
+          
+          const warningThreshold = isPromptArchitecture ? 30 : 300;
+          const warningTitle = isPromptArchitecture ? "30 Seconds Remaining" : "5 Minutes Remaining";
+          const warningDesc = isPromptArchitecture 
+            ? "You have 30 seconds left for this question"
+            : "You have 5 minutes left to complete this assessment";
+          if (newTime === warningThreshold && !showTimeWarning) {
+            setShowTimeWarning(true);
+            toast({
+              title: warningTitle,
+              description: warningDesc,
+              variant: "destructive",
+            });
           }
           
-          // PA per-question expiry: auto-advance to next question (not last question)
-          if (isPromptArchitecture) {
-            const curQ = currentQuestionRef.current;
-            if (curQ < questions.length - 1) {
-              if (paQuestionAdvancingRef.current) return 0;
-              paQuestionAdvancingRef.current = true;
-              setShowTimesUp(true);
-              setTimeout(() => {
-                setShowTimesUp(false);
-                paQuestionAdvancingRef.current = false;
-                setCurrentQuestion(curQ + 1);
-                setTimeRemaining(120);
-                setShowTimeWarning(false);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }, 1500);
-            } else {
-              handlePALastQuestionExpiry();
+          if (newTime <= 0) {
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+              timerRef.current = null;
             }
+            
+            if (isPromptArchitecture) {
+              const curQ = currentQuestionRef.current;
+              if (curQ < questions.length - 1) {
+                if (paQuestionAdvancingRef.current) return 0;
+                paQuestionAdvancingRef.current = true;
+                setShowTimesUp(true);
+                setTimeout(() => {
+                  setShowTimesUp(false);
+                  paQuestionAdvancingRef.current = false;
+                  setCurrentQuestion(curQ + 1);
+                  setTimeRemaining(120);
+                  setShowTimeWarning(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }, 1500);
+              } else {
+                handlePALastQuestionExpiry();
+              }
+              return 0;
+            }
+            
+            setShowTimesUp(true);
+            setIsSubmitting(true);
+            
+            setTimeout(() => {
+              setShowTimesUp(false);
+              if (Object.keys(answersRef.current).length > 0) {
+                hasSubmittedRef.current = true;
+                submitMutation.mutate();
+              } else {
+                if (!hasSubmittedRef.current) {
+                  toast({
+                    title: "Time Expired",
+                    description: "Your assessment has been marked as incomplete.",
+                    variant: "destructive",
+                  });
+                  apiRequest("POST", `/api/assessments/${resultId}/abandon`).finally(() => {
+                    setLocation("/dashboard?refresh=" + Date.now());
+                  });
+                }
+              }
+            }, 2000);
             return 0;
           }
           
-          // Full assessment expiry for non-PA types
-          setShowTimesUp(true);
-          setIsSubmitting(true);
-          
-          setTimeout(() => {
-            setShowTimesUp(false);
-            if (Object.keys(answersRef.current).length > 0) {
-              hasSubmittedRef.current = true;
-              submitMutation.mutate();
-            } else {
-              if (!hasSubmittedRef.current) {
-                toast({
-                  title: "Time Expired",
-                  description: "Your assessment has been marked as incomplete.",
-                  variant: "destructive",
-                });
-                apiRequest("POST", `/api/assessments/${resultId}/abandon`).finally(() => {
-                  setLocation("/dashboard?refresh=" + Date.now());
-                });
-              }
-            }
-          }, 2000);
-          return 0;
-        }
-        
-        return newTime;
-      });
-    }, 1000);
+          return newTime;
+        });
+      }, 1000);
+    };
 
-    return () => {
+    const stopTimer = () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        stopTimer();
+      } else {
+        startTimer();
+      }
+    };
+
+    if (document.visibilityState === 'visible') {
+      startTimer();
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      stopTimer();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [resultId, showTimeWarning, submitMutation, isSubmitting, isPromptArchitecture, handlePALastQuestionExpiry, questions.length, toast, setLocation]);
 

@@ -4758,6 +4758,40 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
     }
   });
 
+  // Heartbeat endpoint - saves timer state periodically as backup
+  app.post("/api/assessments/:id/heartbeat", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { timeRemainingMs } = req.body;
+      const userId = req.user.id;
+      
+      const result = await storage.getAssessmentResult(id);
+      
+      if (!result) {
+        return res.status(404).json({ message: "Assessment not found" });
+      }
+      
+      if (result.userId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      if (result.status !== "in_progress") {
+        return res.json({ success: true });
+      }
+      
+      if (typeof timeRemainingMs === 'number' && timeRemainingMs >= 0 && !result.pausedAt && (!result.pausedTimeRemainingMs || timeRemainingMs <= result.pausedTimeRemainingMs)) {
+        await storage.updateAssessmentResult(id, {
+          pausedTimeRemainingMs: Math.max(0, Math.floor(timeRemainingMs)),
+        });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error in heartbeat:", error);
+      res.json({ success: true });
+    }
+  });
+
   // Pause assessment endpoint - called when window is closed/hidden
   // Allows one 30-minute grace period to return and resume
   app.post("/api/assessments/:id/pause", isAuthenticated, async (req: any, res) => {
@@ -4787,22 +4821,20 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
       
-      // Check if already used their one grace period (resumeCount >= 1)
-      if ((result.resumeCount || 0) >= 1) {
-        // Already used grace period - expire the assessment immediately
-        await storage.updateAssessmentResult(id, { 
-          status: "expired",
-          pausedAt: new Date(),
-        });
-        return res.status(400).json({ 
-          message: "You have already used your one-time resume. The assessment has expired.",
-        });
-      }
+      // Allow multiple pauses - timer only runs while assessment is active
+      // Grace period is refreshed on each pause to prevent abandoned assessments
       
-      // Check if already paused
+      // If already paused, update the timer value (idempotent - supports visibilitychange multiple fires)
       if (result.pausedAt) {
-        return res.status(400).json({
-          message: "Assessment is already paused. Use the resume endpoint to continue.",
+        const clampedMs = Math.min(Math.floor(timeRemainingMs), result.pausedTimeRemainingMs || Infinity);
+        await storage.updateAssessmentResult(id, {
+          pausedTimeRemainingMs: Math.max(0, clampedMs),
+        });
+        return res.json({
+          success: true,
+          pausedAt: result.pausedAt,
+          graceExpiresAt: result.pauseGraceExpiresAt,
+          timeRemainingMs: Math.max(0, clampedMs),
         });
       }
       

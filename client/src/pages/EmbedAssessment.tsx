@@ -139,34 +139,56 @@ const AssessmentTimerDisplay = memo(function AssessmentTimerDisplay({
 
     if (!isActive) return;
 
-    intervalRef.current = setInterval(() => {
-      setLocalTime((prev) => {
-        const newTime = prev - 1;
-        timeRemainingRef.current = newTime;
+    const startTimer = () => {
+      if (intervalRef.current) return;
+      intervalRef.current = setInterval(() => {
+        setLocalTime((prev) => {
+          const newTime = prev - 1;
+          timeRemainingRef.current = newTime;
 
-        if (newTime === warningThreshold && !warningFiredRef.current) {
-          warningFiredRef.current = true;
-          onWarningRef.current();
-        }
-
-        if (newTime <= 0) {
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
+          if (newTime === warningThreshold && !warningFiredRef.current) {
+            warningFiredRef.current = true;
+            onWarningRef.current();
           }
-          onExpiryRef.current();
-          return 0;
-        }
 
-        return newTime;
-      });
-    }, 1000);
+          if (newTime <= 0) {
+            if (intervalRef.current) {
+              clearInterval(intervalRef.current);
+              intervalRef.current = null;
+            }
+            onExpiryRef.current();
+            return 0;
+          }
 
-    return () => {
+          return newTime;
+        });
+      }, 1000);
+    };
+
+    const stopTimer = () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        stopTimer();
+      } else {
+        startTimer();
+      }
+    };
+
+    if (document.visibilityState === 'visible') {
+      startTimer();
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      stopTimer();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [isActive, warningThreshold, timeRemainingRef]);
 
@@ -1101,24 +1123,33 @@ export default function EmbedAssessment() {
       return;
     }
 
+    const saveTimerProgress = () => {
+      if (sessionId && !isDemo && !isSubmitting && !allowNavigationRef.current) {
+        const payload = {
+          answers: answersRef.current,
+          lastAnsweredIndex: currentIndex,
+          timeRemainingMs: timeRemainingRef.current * 1000,
+        };
+        navigator.sendBeacon(
+          `/api/embed/session/${sessionId}/progress`,
+          new Blob([JSON.stringify(payload)], { type: 'application/json' })
+        );
+        console.log(`[EmbedAssessment] Saved timer: ${timeRemainingRef.current}s remaining`);
+      }
+    };
+
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (!isSubmitting && !allowNavigationRef.current) {
-        // Save progress with timer state using sendBeacon for reliable delivery during page unload
-        if (sessionId && !isDemo) {
-          const payload = {
-            answers: answersRef.current,
-            lastAnsweredIndex: currentIndex,
-            timeRemainingMs: timeRemainingRef.current * 1000,
-          };
-          navigator.sendBeacon(
-            `/api/embed/session/${sessionId}/progress`,
-            new Blob([JSON.stringify(payload)], { type: 'application/json' })
-          );
-        }
-        
+        saveTimerProgress();
         e.preventDefault();
         e.returnValue = 'You have an assessment in progress. Are you sure you want to leave?';
         return e.returnValue;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && !isSubmitting && !allowNavigationRef.current) {
+        saveTimerProgress();
       }
     };
 
@@ -1143,10 +1174,12 @@ export default function EmbedAssessment() {
     }
 
     window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('popstate', handlePopState);
 
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('popstate', handlePopState);
     };
   }, [status, isSubmitting, sessionId, currentIndex, isDemo]);
