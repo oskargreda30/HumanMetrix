@@ -5110,25 +5110,18 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     yPos = ensurePageSpace(pdf, yPos, 80, pageHeight, pageWidth);
     yPos += 10;
 
-    // Blue header for Prompt Architecture
-    pdf.setFillColor(59, 130, 246);
-    pdf.roundedRect(20, yPos, pageWidth - 40, 18, 2, 2, 'F');
+    yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE COMPARISON', yPos, pageWidth);
 
-    pdf.setFontSize(11);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(255, 255, 255);
-    pdf.text('PROMPT ARCHITECTURE COMPARISON', 26, yPos + 11);
-
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(`Required: ${promptReq}/100`, pageWidth - 60, yPos + 11);
-
-    yPos += 22;
-
-    pdf.setFontSize(8);
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('Multi-candidate comparison of prompt engineering skills across complexity levels', 20, yPos);
-    yPos += 8;
+    const paDesc = `Multi-candidate comparison of prompt engineering skills across 7 progressive difficulty levels, measuring clarity, structure, context relevance, creativity, and iterative improvement. Required score: ${promptReq}/100.`;
+    applySmallText(pdf);
+    const paDescLines = pdf.splitTextToSize(paDesc, pageWidth - 48);
+    const paDescBoxH = Math.max(10, paDescLines.length * 4 + 4);
+    pdf.setFillColor(240, 249, 255);
+    pdf.setDrawColor(240, 249, 255);
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, paDescBoxH, 2, 2, 'F');
+    pdf.setTextColor(71, 85, 105);
+    pdf.text(paDescLines, 24, yPos + 4);
+    yPos += paDescBoxH + 3;
 
     const sortedForPrompt = [...data.candidateEntries].sort((a, b) => {
       const aScore = (a as any).promptArchitectureScore || 0;
@@ -5185,12 +5178,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       yPos += 10;
     });
 
-    yPos += 3;
-    pdf.setFontSize(7);
-    pdf.setFont('helvetica', 'italic');
-    pdf.setTextColor(75, 85, 99);
-    pdf.text('Why it matters: Prompt Architecture measures ability to construct effective AI prompts across increasing complexity levels.', 22, yPos);
-    yPos += 10;
+    yPos += 5;
   }
 
   // ========== AIQ COMPARISON ==========
@@ -5199,25 +5187,18 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     yPos = ensurePageSpace(pdf, yPos, 80, pageHeight, pageWidth);
     yPos += 10;
 
-    // Blue header for AIQ
-    pdf.setFillColor(59, 130, 246);
-    pdf.roundedRect(20, yPos, pageWidth - 40, 18, 2, 2, 'F');
+    yPos = addSectionHeader(pdf, 'AIQ (ALGORITHMIC INTEGRITY QUOTIENT) COMPARISON', yPos, pageWidth);
 
-    pdf.setFontSize(11);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(255, 255, 255);
-    pdf.text('AIQ (ALGORITHMIC INTEGRITY QUOTIENT) COMPARISON', 26, yPos + 11);
-
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(`Required: ${aiqReq}/100`, pageWidth - 60, yPos + 11);
-
-    yPos += 22;
-
-    pdf.setFontSize(8);
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('Multi-candidate comparison of ethical AI awareness and responsible AI deployment', 20, yPos);
-    yPos += 8;
+    const aiqDesc = `Multi-candidate comparison of ethical AI awareness, bias recognition, and responsible AI deployment capabilities. Required score: ${aiqReq}/100.`;
+    applySmallText(pdf);
+    const aiqDescLines = pdf.splitTextToSize(aiqDesc, pageWidth - 48);
+    const aiqDescBoxH = Math.max(10, aiqDescLines.length * 4 + 4);
+    pdf.setFillColor(240, 249, 255);
+    pdf.setDrawColor(240, 249, 255);
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, aiqDescBoxH, 2, 2, 'F');
+    pdf.setTextColor(71, 85, 105);
+    pdf.text(aiqDescLines, 24, yPos + 4);
+    yPos += aiqDescBoxH + 3;
 
     const sortedForAiq = [...data.candidateEntries].sort((a, b) => {
       const aScore = (a as any).aiqScore || 0;
@@ -5274,12 +5255,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       yPos += 10;
     });
 
-    yPos += 3;
-    pdf.setFontSize(7);
-    pdf.setFont('helvetica', 'italic');
-    pdf.setTextColor(75, 85, 99);
-    pdf.text('Why it matters: AIQ measures understanding of AI ethics, bias recognition, and responsible AI deployment.', 22, yPos);
-    yPos += 10;
+    yPos += 5;
   }
 
   // ========== HIRING DECISION MATRIX ==========
