@@ -311,7 +311,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
   };
 
   return (
-    <div className="space-y-8 md:space-y-10">
+    <div className="space-y-4 md:space-y-6">
       {config.contextType === 'partner' && (
         <div className="p-3 md:p-4 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800">
           <div className="flex items-start gap-2 md:gap-3">
@@ -392,7 +392,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
       )}
 
       {selectedCandidate && reportTriggered && loadingTransitionComplete && !isRerunning && candidateReport && selectedCandidateData && (
-        <div id="individual-report-content">
+        <div id="individual-report-content" className="space-y-8 md:space-y-10">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3 md:mb-4">
             <div className="flex items-center gap-2">
               <h2 className="text-base md:text-2xl font-bold text-white flex items-center gap-1.5 md:gap-2">
