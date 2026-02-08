@@ -8227,16 +8227,11 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
       // Calculate weighted average
       let overallFit = weightSum > 0 ? weightedTotal / weightSum : 0;
       
-      // Apply critical gap penalty: 15% reduction per critical gap (capped at 60%)
-      // IMPORTANT: Only apply if we actually ASSESSED critical skills - don't penalize for missing data
+      // Apply critical gap penalty and hard cap
+      // Any critical skill gap caps the score at 75% max (prevents misleading "Strong Fit" scores)
       if (criticalGaps > 0 && assessedCriticalSkills > 0) {
-        const criticalPenalty = criticalGaps * 0.15;
-        overallFit = overallFit * (1 - Math.min(criticalPenalty, 0.6));
-      }
-      
-      // Hard cap: if candidate fails more than half their assessed critical skills,
-      // overall fit cannot exceed 74% (prevents "Strong Fit" tier for critically deficient candidates)
-      if (assessedCriticalSkills > 0 && criticalGaps > assessedCriticalSkills / 2) {
+        const criticalPenalty = criticalGaps * 0.12;
+        overallFit = overallFit * (1 - Math.min(criticalPenalty, 0.5));
         overallFit = Math.min(overallFit, 74);
       }
       
@@ -9947,16 +9942,11 @@ Return valid JSON with only the requested fields.`;
         
         let overallFit = weightSum > 0 ? weightedTotal / weightSum : 0;
         
-        // Apply critical gap penalty: 15% reduction per critical gap (capped at 60%)
-        // IMPORTANT: Only apply penalty if we actually ASSESSED critical skills - don't penalize for missing data
+        // Apply critical gap penalty and hard cap
+        // Any critical skill gap caps the score at 75% max (prevents misleading "Strong Fit" scores)
         if (criticalGaps > 0 && assessedCriticalSkills > 0) {
-          const criticalPenalty = criticalGaps * 0.15;
-          overallFit = overallFit * (1 - Math.min(criticalPenalty, 0.6));
-        }
-        
-        // Hard cap: if candidate fails more than half their assessed critical skills,
-        // overall fit cannot exceed 74% (prevents "Strong Fit" tier for critically deficient candidates)
-        if (assessedCriticalSkills > 0 && criticalGaps > assessedCriticalSkills / 2) {
+          const criticalPenalty = criticalGaps * 0.12;
+          overallFit = overallFit * (1 - Math.min(criticalPenalty, 0.5));
           overallFit = Math.min(overallFit, 74);
         }
         
