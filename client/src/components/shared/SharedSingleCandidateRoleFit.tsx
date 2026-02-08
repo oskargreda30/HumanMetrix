@@ -644,103 +644,92 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
             </Card>
           </div>
 
-          {/* FIT Skill Alignments */}
-          {alignment.fitSkillAlignments && alignment.fitSkillAlignments.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Award className="h-5 w-5 text-blue-500" />
-                  FIT Assessment Alignment
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {alignment.fitSkillAlignments.slice(0, 6).map((skill, index) => {
-                    const hasData = skill.dataAvailable !== false && skill.candidateScore !== null;
-                    const meetsThreshold = hasData && (skill.candidateScore ?? 0) >= skill.requiredScore;
-                    return (
-                      <div key={index} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            {getAlignmentIcon(skill.alignment)}
-                            <span className="font-medium">{skill.skillName}</span>
-                            {getCriticalityBadge(skill.criticality)}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className={`font-medium ${!hasData ? 'text-muted-foreground' : meetsThreshold ? 'text-green-600' : 'text-amber-500'}`}>
-                              {hasData ? `${skill.candidateScore}%` : 'No data'}
-                            </span>
-                            <span className="text-muted-foreground">/ {skill.requiredScore}% required</span>
-                          </div>
-                        </div>
-                        <div className="relative h-2 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className={`absolute left-0 top-0 h-full rounded-full transition-all ${!hasData ? 'bg-gray-300' : meetsThreshold ? 'bg-green-500' : 'bg-amber-400'}`}
-                            style={{ width: `${hasData ? (skill.candidateScore || 0) : 0}%` }}
-                          />
-                          <div 
-                            className={`absolute top-0 h-full w-0.5 ${!hasData ? 'bg-gray-400' : meetsThreshold ? 'bg-green-700' : 'bg-amber-600'}`}
-                            style={{ left: `${skill.requiredScore}%` }}
-                            title={`Required: ${skill.requiredScore}%`}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <CriticalityLegend />
-              </CardContent>
-            </Card>
-          )}
+          {/* FIT and AI Readiness Skill Alignments - cap critical badges to top 6 */}
+          {(() => {
+            const allAlignmentSkills = [
+              ...(alignment.fitSkillAlignments || []),
+              ...(alignment.aiReadinessSkillAlignments || [])
+            ];
+            const top6CriticalNames = new Set(
+              allAlignmentSkills
+                .filter((s: any) => s.criticality === 'critical')
+                .sort((a: any, b: any) => (b.requiredScore ?? 0) - (a.requiredScore ?? 0))
+                .slice(0, 6)
+                .map((s: any) => s.skillName)
+            );
 
-          {/* AI Readiness Skill Alignments */}
-          {alignment.aiReadinessSkillAlignments && alignment.aiReadinessSkillAlignments.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-purple-500" />
-                  AI Readiness Alignment
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {alignment.aiReadinessSkillAlignments.slice(0, 6).map((skill, index) => {
-                    const hasData = skill.dataAvailable !== false && skill.candidateScore !== null;
-                    const meetsThreshold = hasData && (skill.candidateScore ?? 0) >= skill.requiredScore;
-                    return (
-                      <div key={index} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            {getAlignmentIcon(skill.alignment)}
-                            <span className="font-medium">{skill.skillName}</span>
-                            {getCriticalityBadge(skill.criticality)}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className={`font-medium ${!hasData ? 'text-muted-foreground' : meetsThreshold ? 'text-green-600' : 'text-amber-500'}`}>
-                              {hasData ? `${skill.candidateScore}%` : 'No data'}
-                            </span>
-                            <span className="text-muted-foreground">/ {skill.requiredScore}% required</span>
-                          </div>
-                        </div>
-                        <div className="relative h-2 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className={`absolute left-0 top-0 h-full rounded-full transition-all ${!hasData ? 'bg-gray-300' : meetsThreshold ? 'bg-green-500' : 'bg-amber-400'}`}
-                            style={{ width: `${hasData ? (skill.candidateScore || 0) : 0}%` }}
-                          />
-                          <div 
-                            className={`absolute top-0 h-full w-0.5 ${!hasData ? 'bg-gray-400' : meetsThreshold ? 'bg-green-700' : 'bg-amber-600'}`}
-                            style={{ left: `${skill.requiredScore}%` }}
-                            title={`Required: ${skill.requiredScore}%`}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
+            const renderSkillBar = (skill: any, index: number) => {
+              const hasData = skill.dataAvailable !== false && skill.candidateScore !== null;
+              const meetsThreshold = hasData && (skill.candidateScore ?? 0) >= skill.requiredScore;
+              const effectiveCriticality = top6CriticalNames.has(skill.skillName) ? skill.criticality : 'standard';
+              return (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {getAlignmentIcon(skill.alignment)}
+                      <span className="font-medium">{skill.skillName}</span>
+                      {getCriticalityBadge(effectiveCriticality)}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`font-medium ${!hasData ? 'text-muted-foreground' : meetsThreshold ? 'text-green-600' : 'text-amber-500'}`}>
+                        {hasData ? `${skill.candidateScore}%` : 'No data'}
+                      </span>
+                      <span className="text-muted-foreground">/ {skill.requiredScore}% required</span>
+                    </div>
+                  </div>
+                  <div className="relative h-2 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className={`absolute left-0 top-0 h-full rounded-full transition-all ${!hasData ? 'bg-gray-300' : meetsThreshold ? 'bg-green-500' : 'bg-amber-400'}`}
+                      style={{ width: `${hasData ? (skill.candidateScore || 0) : 0}%` }}
+                    />
+                    <div 
+                      className={`absolute top-0 h-full w-0.5 ${!hasData ? 'bg-gray-400' : meetsThreshold ? 'bg-green-700' : 'bg-amber-600'}`}
+                      style={{ left: `${skill.requiredScore}%` }}
+                      title={`Required: ${skill.requiredScore}%`}
+                    />
+                  </div>
                 </div>
-                <CriticalityLegend />
-              </CardContent>
-            </Card>
-          )}
+              );
+            };
+
+            return (
+              <>
+                {alignment.fitSkillAlignments && alignment.fitSkillAlignments.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Award className="h-5 w-5 text-blue-500" />
+                        FIT Assessment Alignment
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {alignment.fitSkillAlignments.slice(0, 6).map(renderSkillBar)}
+                      </div>
+                      <CriticalityLegend />
+                    </CardContent>
+                  </Card>
+                )}
+
+                {alignment.aiReadinessSkillAlignments && alignment.aiReadinessSkillAlignments.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Brain className="h-5 w-5 text-purple-500" />
+                        AI Readiness Alignment
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {alignment.aiReadinessSkillAlignments.slice(0, 9).map(renderSkillBar)}
+                      </div>
+                      <CriticalityLegend />
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            );
+          })()}
 
           {/* Critical Skills Analysis */}
           {(() => {
