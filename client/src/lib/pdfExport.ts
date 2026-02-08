@@ -4091,212 +4091,240 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   yPos = 72;
 
   const CARD_PADDING = 6;
-  const BLOCK_SPACING = 12;
+  const BLOCK_SPACING = 8;
+  const MARGIN = 20;
+  const contentWidth = pageWidth - MARGIN * 2;
+
+  // Helper: extract string from strength/gap items (may be string or {skill, summary} object)
+  const extractText = (item: any): string => typeof item === 'string' ? item : (item.skill || item.summary || String(item));
+
+  // Helper: draw a styled section title with blue accent bar
+  const drawSectionTitle = (title: string, y: number): number => {
+    pdf.setFillColor(59, 130, 246);
+    pdf.roundedRect(MARGIN, y, 3, 10, 1, 1, 'F');
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text(title, MARGIN + 7, y + 7);
+    return y + 14;
+  };
 
   // ========== SUMMARY CARDS ==========
-  const cardWidth = (pageWidth - 50) / 3;
-  const cardHeight = 34;
-  const cardGap = 5;
+  const cardWidth = (contentWidth - 8) / 3;
+  const cardHeight = 36;
+  const cardGap = 4;
+
+  // Unified card style helper
+  const drawSummaryCard = (x: number, borderColor: [number, number, number]) => {
+    pdf.setFillColor(255, 255, 255);
+    pdf.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+    pdf.setLineWidth(0.5);
+    pdf.roundedRect(x, yPos, cardWidth, cardHeight, 3, 3, 'FD');
+    // Thin top accent line
+    pdf.setFillColor(borderColor[0], borderColor[1], borderColor[2]);
+    pdf.roundedRect(x + 8, yPos, cardWidth - 16, 1.5, 0.5, 0.5, 'F');
+  };
 
   // Card 1: Top Performer
   const topPerformerName = String(data.summaryInsights.topPerformer?.userName || 'N/A');
   const topPerformerFitVal = data.summaryInsights.topPerformer?.overallFit ?? 0;
-  const topTierBorderColor: [number, number, number] = topPerformerFitVal >= 80 ? [34, 197, 94] : topPerformerFitVal >= 60 ? [234, 179, 8] : [239, 68, 68];
+  const topTierColor: [number, number, number] = topPerformerFitVal >= 80 ? [34, 197, 94] : topPerformerFitVal >= 60 ? [234, 179, 8] : [239, 68, 68];
 
-  pdf.setFillColor(249, 250, 251);
-  pdf.setDrawColor(topTierBorderColor[0], topTierBorderColor[1], topTierBorderColor[2]);
-  pdf.setLineWidth(0.8);
-  pdf.roundedRect(20, yPos, cardWidth, cardHeight, 2, 2, 'FD');
-
-  applyLabelText(pdf);
-  pdf.text('TOP PERFORMER', 20 + CARD_PADDING, yPos + CARD_PADDING + 2);
+  drawSummaryCard(MARGIN, topTierColor);
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('TOP PERFORMER', MARGIN + CARD_PADDING, yPos + 8);
 
   const topName = topPerformerName.length > 20 ? topPerformerName.slice(0, 18) + '...' : topPerformerName;
-  applySubheading(pdf);
-  pdf.setTextColor(17, 24, 39);
-  pdf.text(topName, 20 + CARD_PADDING, yPos + CARD_PADDING + 13);
-
-  pdf.setFontSize(16);
+  pdf.setFontSize(11);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(topTierBorderColor[0], topTierBorderColor[1], topTierBorderColor[2]);
-  pdf.text(`${topPerformerFitVal}%`, 20 + CARD_PADDING, yPos + CARD_PADDING + 26);
+  pdf.setTextColor(17, 24, 39);
+  pdf.text(topName, MARGIN + CARD_PADDING, yPos + 17);
+
+  pdf.setFontSize(18);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(topTierColor[0], topTierColor[1], topTierColor[2]);
+  pdf.text(`${topPerformerFitVal}%`, MARGIN + CARD_PADDING, yPos + 29);
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('Role Fit Score', MARGIN + CARD_PADDING + 22, yPos + 29);
 
   // Card 2: Candidates Assessed
-  const card2X = 20 + cardWidth + cardGap;
-  pdf.setFillColor(249, 250, 251);
-  pdf.setDrawColor(229, 231, 235);
-  pdf.setLineWidth(0.3);
-  pdf.roundedRect(card2X, yPos, cardWidth, cardHeight, 2, 2, 'FD');
+  const card2X = MARGIN + cardWidth + cardGap;
+  drawSummaryCard(card2X, [59, 130, 246]);
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('CANDIDATES ASSESSED', card2X + CARD_PADDING, yPos + 8);
 
-  applyLabelText(pdf);
-  pdf.text('CANDIDATES ASSESSED', card2X + CARD_PADDING, yPos + CARD_PADDING + 2);
-
-  pdf.setFontSize(22);
+  pdf.setFontSize(24);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(59, 130, 246);
-  pdf.text(`${data.candidateEntries.length}`, card2X + CARD_PADDING, yPos + CARD_PADDING + 22);
+  pdf.text(`${data.candidateEntries.length}`, card2X + CARD_PADDING, yPos + 26);
 
   // Card 3: Fit Distribution
   const card3X = card2X + cardWidth + cardGap;
-  pdf.setFillColor(249, 250, 251);
-  pdf.setDrawColor(229, 231, 235);
-  pdf.roundedRect(card3X, yPos, cardWidth, cardHeight, 2, 2, 'FD');
-
-  applyLabelText(pdf);
-  pdf.text('FIT DISTRIBUTION', card3X + CARD_PADDING, yPos + CARD_PADDING + 2);
-
-  const distY = yPos + CARD_PADDING + 14;
-  const distSpacing = (cardWidth - CARD_PADDING * 2) / 3;
-
-  pdf.setFillColor(34, 197, 94);
-  pdf.circle(card3X + CARD_PADDING + 3, distY, 2, 'F');
-  pdf.setFontSize(9);
+  drawSummaryCard(card3X, [59, 130, 246]);
+  pdf.setFontSize(7);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(22, 101, 52);
-  pdf.text(`${data.summaryInsights.fitDistribution.strong}`, card3X + CARD_PADDING + 8, distY + 1);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(6);
-  pdf.setTextColor(55, 65, 81);
-  pdf.text('Strong', card3X + CARD_PADDING + 1, distY + 8);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('FIT DISTRIBUTION', card3X + CARD_PADDING, yPos + 8);
 
-  const modX = card3X + CARD_PADDING + distSpacing;
-  pdf.setFillColor(234, 179, 8);
-  pdf.circle(modX + 3, distY, 2, 'F');
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(133, 77, 14);
-  pdf.text(`${data.summaryInsights.fitDistribution.moderate}`, modX + 8, distY + 1);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(6);
-  pdf.setTextColor(55, 65, 81);
-  pdf.text('Moderate', modX, distY + 8);
+  // Distribution badges - colored rounded rectangles with count
+  const badgeY = yPos + 14;
+  const badgeW = (cardWidth - CARD_PADDING * 2 - 6) / 3;
+  const distributionData = [
+    { count: data.summaryInsights.fitDistribution.strong, label: 'Strong', bg: [220, 252, 231] as [number, number, number], text: [22, 101, 52] as [number, number, number] },
+    { count: data.summaryInsights.fitDistribution.moderate, label: 'Moderate', bg: [254, 249, 195] as [number, number, number], text: [133, 77, 14] as [number, number, number] },
+    { count: data.summaryInsights.fitDistribution.developmentNeeded, label: 'Needs Dev', bg: [254, 226, 226] as [number, number, number], text: [153, 27, 27] as [number, number, number] },
+  ];
 
-  const devX = card3X + CARD_PADDING + distSpacing * 2;
-  pdf.setFillColor(239, 68, 68);
-  pdf.circle(devX + 3, distY, 2, 'F');
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(153, 27, 27);
-  pdf.text(`${data.summaryInsights.fitDistribution.developmentNeeded}`, devX + 8, distY + 1);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(6);
-  pdf.setTextColor(55, 65, 81);
-  pdf.text('Develop', devX + 1, distY + 8);
+  distributionData.forEach((d, i) => {
+    const bx = card3X + CARD_PADDING + i * (badgeW + 3);
+    pdf.setFillColor(d.bg[0], d.bg[1], d.bg[2]);
+    pdf.roundedRect(bx, badgeY, badgeW, 16, 2, 2, 'F');
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(d.text[0], d.text[1], d.text[2]);
+    pdf.text(`${d.count}`, bx + badgeW / 2, badgeY + 7, { align: 'center' });
+    pdf.setFontSize(6);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(d.text[0], d.text[1], d.text[2]);
+    pdf.text(d.label, bx + badgeW / 2, badgeY + 13, { align: 'center' });
+  });
 
   pdf.setTextColor(0, 0, 0);
-  yPos += cardHeight + BLOCK_SPACING;
+  yPos += cardHeight + BLOCK_SPACING + 2;
 
   // ========== COHORT INSIGHTS ==========
-  yPos = addSectionHeader(pdf, 'COHORT INSIGHTS', yPos, pageWidth);
-  yPos += CARD_PADDING;
+  yPos = drawSectionTitle('Cohort Insights', yPos);
 
-  const halfWidth = (pageWidth - 50) / 2;
-  const insightBoxHeight = 38;
+  const halfWidth = (contentWidth - 6) / 2;
+  const insightBoxHeight = 36;
 
-  // Common Strengths - Light green
-  pdf.setFillColor(250, 255, 250);
-  pdf.setDrawColor(134, 197, 134);
+  // Common Strengths
+  pdf.setFillColor(240, 249, 255);
+  pdf.setDrawColor(191, 219, 254);
   pdf.setLineWidth(0.3);
-  pdf.roundedRect(20, yPos, halfWidth, insightBoxHeight, 2, 2, 'FD');
+  pdf.roundedRect(MARGIN, yPos, halfWidth, insightBoxHeight, 3, 3, 'FD');
+
+  // Green accent bar on left
+  pdf.setFillColor(34, 197, 94);
+  pdf.roundedRect(MARGIN, yPos, 2.5, insightBoxHeight, 1, 1, 'F');
+
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(34, 84, 52);
-  pdf.text('Common Strengths', 20 + CARD_PADDING, yPos + CARD_PADDING + 2);
+  pdf.setTextColor(17, 24, 39);
+  pdf.text('Common Strengths', MARGIN + CARD_PADDING + 2, yPos + CARD_PADDING + 2);
   pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(8);
-  pdf.setTextColor(34, 84, 52);
+  pdf.setFontSize(7.5);
+  pdf.setTextColor(55, 65, 81);
   if (data.summaryInsights.commonStrengths.length > 0) {
-    data.summaryInsights.commonStrengths.slice(0, 4).forEach((s, i) => {
-      const truncated = s.length > 35 ? s.slice(0, 33) + '...' : s;
-      pdf.text(`\u2022 ${truncated}`, 20 + CARD_PADDING, yPos + CARD_PADDING + 10 + (i * 6));
+    data.summaryInsights.commonStrengths.slice(0, 4).forEach((s: any, i: number) => {
+      const sText = extractText(s);
+      const truncated = sText.length > 38 ? sText.slice(0, 36) + '...' : sText;
+      pdf.text(`\u2022  ${truncated}`, MARGIN + CARD_PADDING + 2, yPos + CARD_PADDING + 9 + (i * 6));
     });
   } else {
-    pdf.text('No common strengths identified', 20 + CARD_PADDING, yPos + CARD_PADDING + 12);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('No common strengths identified', MARGIN + CARD_PADDING + 2, yPos + CARD_PADDING + 12);
   }
 
-  // Common Gaps - Light amber
-  pdf.setFillColor(255, 251, 235);
-  pdf.setDrawColor(217, 166, 76);
-  pdf.roundedRect(25 + halfWidth, yPos, halfWidth, insightBoxHeight, 2, 2, 'FD');
+  // Common Development Areas
+  const rightX = MARGIN + halfWidth + 6;
+  pdf.setFillColor(240, 249, 255);
+  pdf.setDrawColor(191, 219, 254);
+  pdf.roundedRect(rightX, yPos, halfWidth, insightBoxHeight, 3, 3, 'FD');
+
+  // Amber accent bar on left
+  pdf.setFillColor(234, 179, 8);
+  pdf.roundedRect(rightX, yPos, 2.5, insightBoxHeight, 1, 1, 'F');
+
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(133, 77, 14);
-  pdf.text('Common Development Areas', 25 + halfWidth + CARD_PADDING, yPos + CARD_PADDING + 2);
+  pdf.setTextColor(17, 24, 39);
+  pdf.text('Common Development Areas', rightX + CARD_PADDING + 2, yPos + CARD_PADDING + 2);
   pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(8);
-  pdf.setTextColor(133, 77, 14);
+  pdf.setFontSize(7.5);
+  pdf.setTextColor(55, 65, 81);
   if (data.summaryInsights.commonGaps.length > 0) {
-    data.summaryInsights.commonGaps.slice(0, 4).forEach((g, i) => {
-      const truncated = g.length > 35 ? g.slice(0, 33) + '...' : g;
-      pdf.text(`\u2022 ${truncated}`, 25 + halfWidth + CARD_PADDING, yPos + CARD_PADDING + 10 + (i * 6));
+    data.summaryInsights.commonGaps.slice(0, 4).forEach((g: any, i: number) => {
+      const gText = extractText(g);
+      const truncated = gText.length > 38 ? gText.slice(0, 36) + '...' : gText;
+      pdf.text(`\u2022  ${truncated}`, rightX + CARD_PADDING + 2, yPos + CARD_PADDING + 9 + (i * 6));
     });
   } else {
-    pdf.text('No common gaps identified', 25 + halfWidth + CARD_PADDING, yPos + CARD_PADDING + 12);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('No common development areas identified', rightX + CARD_PADDING + 2, yPos + CARD_PADDING + 12);
   }
 
   yPos += insightBoxHeight + BLOCK_SPACING;
 
-  // Key Differentiators - Blue-tinted
+  // Key Differentiators
   if (data.summaryInsights.keyDifferentiators.length > 0) {
-    pdf.setFillColor(240, 249, 255);
+    yPos = drawSectionTitle('Key Differentiators', yPos);
+    const diffItems = data.summaryInsights.keyDifferentiators.slice(0, 3);
+    const diffBoxHeight = 8 + diffItems.length * 6;
+    pdf.setFillColor(255, 255, 255);
     pdf.setDrawColor(191, 219, 254);
     pdf.setLineWidth(0.3);
-    pdf.roundedRect(20, yPos, pageWidth - 40, 26, 2, 2, 'FD');
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(30, 64, 175);
-    pdf.text('Key Differentiators', 20 + CARD_PADDING, yPos + CARD_PADDING + 2);
+    pdf.roundedRect(MARGIN, yPos, contentWidth, diffBoxHeight, 3, 3, 'FD');
+    pdf.setFontSize(7.5);
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(8);
-    pdf.setTextColor(30, 64, 175);
-    data.summaryInsights.keyDifferentiators.slice(0, 3).forEach((d, i) => {
-      const truncated = d.length > 90 ? d.slice(0, 88) + '...' : d;
-      pdf.text(`\u2022 ${truncated}`, 20 + CARD_PADDING, yPos + CARD_PADDING + 10 + (i * 5));
+    pdf.setTextColor(55, 65, 81);
+    diffItems.forEach((d, i) => {
+      const truncated = d.length > 100 ? d.slice(0, 98) + '...' : d;
+      pdf.text(`\u2022  ${truncated}`, MARGIN + CARD_PADDING, yPos + 5 + (i * 6));
     });
-    yPos += 26 + BLOCK_SPACING;
+    yPos += diffBoxHeight + BLOCK_SPACING;
   }
 
-  // AI Hiring Suggestions Box - Blue-tinted
-  pdf.setFillColor(240, 249, 255);
-  pdf.setDrawColor(191, 219, 254);
-  pdf.setLineWidth(0.3);
-  pdf.roundedRect(20, yPos, pageWidth - 40, 30, 2, 2, 'FD');
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(30, 64, 175);
-  pdf.text('AI Hiring Suggestions', 20 + CARD_PADDING, yPos + CARD_PADDING + 2);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(8);
-  pdf.setTextColor(55, 65, 81);
+  // AI Hiring Suggestions
+  yPos = drawSectionTitle('AI Hiring Suggestions', yPos);
 
   const strongCount = data.summaryInsights.fitDistribution?.strong ?? 0;
   const topPerformerFit = data.summaryInsights.topPerformer?.overallFit ?? 0;
 
   const aiSuggestions: string[] = [];
   if (strongCount >= 2) {
-    aiSuggestions.push(`${strongCount} candidates show strong fit (80%+). Prioritize interviews for top performers.`);
+    aiSuggestions.push(`${strongCount} candidates show strong role fit (80%+). Prioritize structured interviews for top performers.`);
   } else if (strongCount === 1) {
-    aiSuggestions.push(`Only 1 candidate shows strong fit. Consider expanding candidate pool.`);
+    aiSuggestions.push(`Only 1 candidate shows strong fit. Consider expanding your candidate pool for better comparison.`);
   } else {
-    aiSuggestions.push(`No candidates meet 80% threshold. Review role requirements or source more.`);
+    aiSuggestions.push(`No candidates meet the 80% strong fit threshold. Consider reviewing role requirements or sourcing additional candidates.`);
   }
 
   if (topPerformerFit >= 85) {
-    aiSuggestions.push(`Top performer (${topPerformerFit}%) is excellent match. Fast-track to final stage.`);
+    aiSuggestions.push(`Top performer (${topPerformerFit}% fit) is an excellent match for this role. Consider fast-tracking to final interview stage.`);
   } else if (topPerformerFit >= 70) {
-    aiSuggestions.push(`Top performer (${topPerformerFit}%) shows good potential with targeted development.`);
+    aiSuggestions.push(`Top performer (${topPerformerFit}% fit) shows good potential. Targeted development can close remaining skill gaps.`);
+  } else if (topPerformerFit > 0) {
+    aiSuggestions.push(`Top performer scored ${topPerformerFit}% fit. Significant development investment may be needed for this role.`);
   }
 
   if (data.summaryInsights.commonGaps.length > 0) {
-    aiSuggestions.push(`Common gap: Consider training for "${data.summaryInsights.commonGaps[0]}".`);
+    const firstGap = data.summaryInsights.commonGaps[0];
+    const gapText = extractText(firstGap);
+    aiSuggestions.push(`Common gap across candidates: "${gapText}". Consider team training or adjusted role expectations.`);
   }
 
+  const suggBoxHeight = 8 + aiSuggestions.slice(0, 3).length * 6;
+  pdf.setFillColor(255, 255, 255);
+  pdf.setDrawColor(191, 219, 254);
+  pdf.setLineWidth(0.3);
+  pdf.roundedRect(MARGIN, yPos, contentWidth, suggBoxHeight, 3, 3, 'FD');
+
+  pdf.setFontSize(7.5);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(55, 65, 81);
   aiSuggestions.slice(0, 3).forEach((suggestion, i) => {
-    const truncated = suggestion.length > 95 ? suggestion.slice(0, 93) + '...' : suggestion;
-    pdf.text(`\u2022 ${truncated}`, 20 + CARD_PADDING, yPos + CARD_PADDING + 10 + (i * 6));
+    const truncated = suggestion.length > 105 ? suggestion.slice(0, 103) + '...' : suggestion;
+    pdf.text(`\u2022  ${truncated}`, MARGIN + CARD_PADDING, yPos + 5 + (i * 6));
   });
 
-  yPos += 35;
+  yPos += suggBoxHeight + BLOCK_SPACING;
 
   // ========== PROMPT ARCHITECTURE AI ANALYSIS (if available) ==========
   if (data.promptArchitectureAnalysis) {
@@ -4307,14 +4335,13 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       yPos = 35;
     }
 
-    yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE ANALYSIS', yPos, pageWidth);
-    yPos += 5;
+    yPos = drawSectionTitle('Prompt Architecture Analysis', yPos);
 
-    pdf.setFillColor(240, 249, 255);
+    pdf.setFillColor(255, 255, 255);
     pdf.setDrawColor(191, 219, 254);
     pdf.setLineWidth(0.3);
 
-    const maxWidthPA = pageWidth - 52;
+    const maxWidthPA = contentWidth - 12;
     const paragraphsPA = data.promptArchitectureAnalysis.split('\n\n');
     let totalHeightPA = 8;
     const allLinesPA: string[] = [];
@@ -4327,9 +4354,9 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     totalHeightPA += allLinesPA.length * 4;
     const boxHeightPA = Math.min(totalHeightPA, 60);
 
-    pdf.roundedRect(20, yPos, pageWidth - 40, boxHeightPA, 2, 2, 'FD');
+    pdf.roundedRect(MARGIN, yPos, contentWidth, boxHeightPA, 3, 3, 'FD');
 
-    pdf.setFontSize(8);
+    pdf.setFontSize(7.5);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(55, 65, 81);
 
@@ -4339,7 +4366,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       if (line === '') {
         textYPA += 2;
       } else {
-        pdf.text(line, 26, textYPA);
+        pdf.text(line, MARGIN + CARD_PADDING, textYPA);
         textYPA += 4;
       }
     });
@@ -4356,14 +4383,13 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       yPos = 35;
     }
 
-    yPos = addSectionHeader(pdf, 'AIQ ETHICAL ASSESSMENT', yPos, pageWidth);
-    yPos += 5;
+    yPos = drawSectionTitle('AIQ Assessment', yPos);
 
-    pdf.setFillColor(240, 249, 255);
+    pdf.setFillColor(255, 255, 255);
     pdf.setDrawColor(191, 219, 254);
     pdf.setLineWidth(0.3);
 
-    const maxWidthAIQ = pageWidth - 52;
+    const maxWidthAIQ = contentWidth - 12;
     const paragraphsAIQ = data.aiqAnalysis.split('\n\n');
     let totalHeightAIQ = 8;
     const allLinesAIQ: string[] = [];
@@ -4376,9 +4402,9 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     totalHeightAIQ += allLinesAIQ.length * 4;
     const boxHeightAIQ = Math.min(totalHeightAIQ, 60);
 
-    pdf.roundedRect(20, yPos, pageWidth - 40, boxHeightAIQ, 2, 2, 'FD');
+    pdf.roundedRect(MARGIN, yPos, contentWidth, boxHeightAIQ, 3, 3, 'FD');
 
-    pdf.setFontSize(8);
+    pdf.setFontSize(7.5);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(55, 65, 81);
 
@@ -4388,7 +4414,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       if (line === '') {
         textYAIQ += 2;
       } else {
-        pdf.text(line, 26, textYAIQ);
+        pdf.text(line, MARGIN + CARD_PADDING, textYAIQ);
         textYAIQ += 4;
       }
     });

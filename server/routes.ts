@@ -10262,11 +10262,13 @@ Return valid JSON with only the requested fields.`;
       const gapCounts: Record<string, number> = {};
       
       comparableCandidates.forEach(entry => {
-        entry.strengths.forEach((s: string) => {
-          strengthCounts[s] = (strengthCounts[s] || 0) + 1;
+        entry.strengths.forEach((s: any) => {
+          const key = typeof s === 'string' ? s : (s.skill || s.summary || String(s));
+          strengthCounts[key] = (strengthCounts[key] || 0) + 1;
         });
-        entry.gaps.forEach((g: string) => {
-          gapCounts[g] = (gapCounts[g] || 0) + 1;
+        entry.gaps.forEach((g: any) => {
+          const key = typeof g === 'string' ? g : (g.skill || g.summary || String(g));
+          gapCounts[key] = (gapCounts[key] || 0) + 1;
         });
       });
 
@@ -17322,11 +17324,13 @@ Return valid JSON with only the requested fields.`;
       const gapCounts: Record<string, number> = {};
       
       comparableCandidates.forEach(entry => {
-        entry.strengths.forEach((s: string) => {
-          strengthCounts[s] = (strengthCounts[s] || 0) + 1;
+        entry.strengths.forEach((s: any) => {
+          const key = typeof s === 'string' ? s : (s.skill || s.summary || String(s));
+          strengthCounts[key] = (strengthCounts[key] || 0) + 1;
         });
-        entry.gaps.forEach((g: string) => {
-          gapCounts[g] = (gapCounts[g] || 0) + 1;
+        entry.gaps.forEach((g: any) => {
+          const key = typeof g === 'string' ? g : (g.skill || g.summary || String(g));
+          gapCounts[key] = (gapCounts[key] || 0) + 1;
         });
       });
 
