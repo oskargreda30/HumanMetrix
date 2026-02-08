@@ -4098,31 +4098,17 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   // Helper: extract string from strength/gap items (may be string or {skill, summary} object)
   const extractText = (item: any): string => typeof item === 'string' ? item : (item.skill || item.summary || String(item));
 
-  // Helper: draw a styled section title with blue accent bar
-  const drawSectionTitle = (title: string, y: number): number => {
-    pdf.setFillColor(59, 130, 246);
-    pdf.roundedRect(MARGIN, y, 3, 10, 1, 1, 'F');
-    pdf.setFontSize(11);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(17, 24, 39);
-    pdf.text(title, MARGIN + 7, y + 7);
-    return y + 14;
-  };
-
   // ========== SUMMARY CARDS ==========
-  const cardWidth = (contentWidth - 8) / 3;
+  const cardWidth = (contentWidth - 10) / 3;
   const cardHeight = 36;
-  const cardGap = 4;
+  const cardGap = 5;
 
-  // Unified card style helper
+  // Unified card style helper - matches other PDF exports (light gray bg, rounded-2)
   const drawSummaryCard = (x: number, borderColor: [number, number, number]) => {
-    pdf.setFillColor(255, 255, 255);
+    pdf.setFillColor(249, 250, 251);
     pdf.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
     pdf.setLineWidth(0.5);
-    pdf.roundedRect(x, yPos, cardWidth, cardHeight, 3, 3, 'FD');
-    // Thin top accent line
-    pdf.setFillColor(borderColor[0], borderColor[1], borderColor[2]);
-    pdf.roundedRect(x + 8, yPos, cardWidth - 16, 1.5, 0.5, 0.5, 'F');
+    pdf.roundedRect(x, yPos, cardWidth, cardHeight, 2, 2, 'FD');
   };
 
   // Card 1: Top Performer
@@ -4199,90 +4185,79 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   yPos += cardHeight + BLOCK_SPACING + 2;
 
   // ========== COHORT INSIGHTS ==========
-  yPos = drawSectionTitle('Cohort Insights', yPos);
+  yPos = addSectionHeader(pdf, 'COHORT INSIGHTS', yPos, pageWidth);
+  yPos += CARD_PADDING;
 
-  const halfWidth = (contentWidth - 6) / 2;
-  const insightBoxHeight = 36;
+  const halfWidth = (contentWidth - 10) / 2;
+  const insightBoxHeight = 38;
 
-  // Common Strengths
+  // Common Strengths - Light green tint
   pdf.setFillColor(240, 249, 255);
-  pdf.setDrawColor(191, 219, 254);
+  pdf.setDrawColor(134, 197, 134);
   pdf.setLineWidth(0.3);
-  pdf.roundedRect(MARGIN, yPos, halfWidth, insightBoxHeight, 3, 3, 'FD');
-
-  // Green accent bar on left
-  pdf.setFillColor(34, 197, 94);
-  pdf.roundedRect(MARGIN, yPos, 2.5, insightBoxHeight, 1, 1, 'F');
-
+  pdf.roundedRect(MARGIN, yPos, halfWidth, insightBoxHeight, 2, 2, 'FD');
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(17, 24, 39);
-  pdf.text('Common Strengths', MARGIN + CARD_PADDING + 2, yPos + CARD_PADDING + 2);
+  pdf.setTextColor(34, 84, 52);
+  pdf.text('Common Strengths', MARGIN + CARD_PADDING, yPos + CARD_PADDING + 2);
   pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(7.5);
+  pdf.setFontSize(8);
   pdf.setTextColor(55, 65, 81);
   if (data.summaryInsights.commonStrengths.length > 0) {
     data.summaryInsights.commonStrengths.slice(0, 4).forEach((s: any, i: number) => {
       const sText = extractText(s);
-      const truncated = sText.length > 38 ? sText.slice(0, 36) + '...' : sText;
-      pdf.text(`\u2022  ${truncated}`, MARGIN + CARD_PADDING + 2, yPos + CARD_PADDING + 9 + (i * 6));
+      const truncated = sText.length > 35 ? sText.slice(0, 33) + '...' : sText;
+      pdf.text(`\u2022 ${truncated}`, MARGIN + CARD_PADDING, yPos + CARD_PADDING + 10 + (i * 6));
     });
   } else {
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('No common strengths identified', MARGIN + CARD_PADDING + 2, yPos + CARD_PADDING + 12);
+    pdf.text('No common strengths identified', MARGIN + CARD_PADDING, yPos + CARD_PADDING + 12);
   }
 
-  // Common Development Areas
-  const rightX = MARGIN + halfWidth + 6;
-  pdf.setFillColor(240, 249, 255);
-  pdf.setDrawColor(191, 219, 254);
-  pdf.roundedRect(rightX, yPos, halfWidth, insightBoxHeight, 3, 3, 'FD');
-
-  // Amber accent bar on left
-  pdf.setFillColor(234, 179, 8);
-  pdf.roundedRect(rightX, yPos, 2.5, insightBoxHeight, 1, 1, 'F');
-
+  // Common Development Areas - Light amber tint
+  const rightX = MARGIN + halfWidth + 10;
+  pdf.setFillColor(255, 251, 235);
+  pdf.setDrawColor(217, 166, 76);
+  pdf.roundedRect(rightX, yPos, halfWidth, insightBoxHeight, 2, 2, 'FD');
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(17, 24, 39);
-  pdf.text('Common Development Areas', rightX + CARD_PADDING + 2, yPos + CARD_PADDING + 2);
+  pdf.setTextColor(133, 77, 14);
+  pdf.text('Common Development Areas', rightX + CARD_PADDING, yPos + CARD_PADDING + 2);
   pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(7.5);
+  pdf.setFontSize(8);
   pdf.setTextColor(55, 65, 81);
   if (data.summaryInsights.commonGaps.length > 0) {
     data.summaryInsights.commonGaps.slice(0, 4).forEach((g: any, i: number) => {
       const gText = extractText(g);
-      const truncated = gText.length > 38 ? gText.slice(0, 36) + '...' : gText;
-      pdf.text(`\u2022  ${truncated}`, rightX + CARD_PADDING + 2, yPos + CARD_PADDING + 9 + (i * 6));
+      const truncated = gText.length > 35 ? gText.slice(0, 33) + '...' : gText;
+      pdf.text(`\u2022 ${truncated}`, rightX + CARD_PADDING, yPos + CARD_PADDING + 10 + (i * 6));
     });
   } else {
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('No common development areas identified', rightX + CARD_PADDING + 2, yPos + CARD_PADDING + 12);
+    pdf.text('No common gaps identified', rightX + CARD_PADDING, yPos + CARD_PADDING + 12);
   }
 
   yPos += insightBoxHeight + BLOCK_SPACING;
 
-  // Key Differentiators
+  // Key Differentiators - Blue-tinted
   if (data.summaryInsights.keyDifferentiators.length > 0) {
-    yPos = drawSectionTitle('Key Differentiators', yPos);
-    const diffItems = data.summaryInsights.keyDifferentiators.slice(0, 3);
-    const diffBoxHeight = 8 + diffItems.length * 6;
-    pdf.setFillColor(255, 255, 255);
+    yPos = addSectionHeader(pdf, 'KEY DIFFERENTIATORS', yPos, pageWidth);
+    pdf.setFillColor(240, 249, 255);
     pdf.setDrawColor(191, 219, 254);
     pdf.setLineWidth(0.3);
-    pdf.roundedRect(MARGIN, yPos, contentWidth, diffBoxHeight, 3, 3, 'FD');
-    pdf.setFontSize(7.5);
+    const diffItems = data.summaryInsights.keyDifferentiators.slice(0, 3);
+    const diffBoxHeight = 6 + diffItems.length * 5;
+    pdf.roundedRect(MARGIN, yPos, contentWidth, diffBoxHeight, 2, 2, 'FD');
+    pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(55, 65, 81);
+    pdf.setTextColor(30, 64, 175);
     diffItems.forEach((d, i) => {
-      const truncated = d.length > 100 ? d.slice(0, 98) + '...' : d;
-      pdf.text(`\u2022  ${truncated}`, MARGIN + CARD_PADDING, yPos + 5 + (i * 6));
+      const truncated = d.length > 90 ? d.slice(0, 88) + '...' : d;
+      pdf.text(`\u2022 ${truncated}`, MARGIN + CARD_PADDING, yPos + 4 + (i * 5));
     });
     yPos += diffBoxHeight + BLOCK_SPACING;
   }
 
-  // AI Hiring Suggestions
-  yPos = drawSectionTitle('AI Hiring Suggestions', yPos);
+  // AI Hiring Suggestions - Blue-tinted
+  yPos = addSectionHeader(pdf, 'AI HIRING SUGGESTIONS', yPos, pageWidth);
 
   const strongCount = data.summaryInsights.fitDistribution?.strong ?? 0;
   const topPerformerFit = data.summaryInsights.topPerformer?.overallFit ?? 0;
@@ -4310,18 +4285,18 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     aiSuggestions.push(`Common gap across candidates: "${gapText}". Consider team training or adjusted role expectations.`);
   }
 
-  const suggBoxHeight = 8 + aiSuggestions.slice(0, 3).length * 6;
-  pdf.setFillColor(255, 255, 255);
+  pdf.setFillColor(240, 249, 255);
   pdf.setDrawColor(191, 219, 254);
   pdf.setLineWidth(0.3);
-  pdf.roundedRect(MARGIN, yPos, contentWidth, suggBoxHeight, 3, 3, 'FD');
+  const suggBoxHeight = 6 + aiSuggestions.slice(0, 3).length * 6;
+  pdf.roundedRect(MARGIN, yPos, contentWidth, suggBoxHeight, 2, 2, 'FD');
 
-  pdf.setFontSize(7.5);
+  pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(55, 65, 81);
   aiSuggestions.slice(0, 3).forEach((suggestion, i) => {
-    const truncated = suggestion.length > 105 ? suggestion.slice(0, 103) + '...' : suggestion;
-    pdf.text(`\u2022  ${truncated}`, MARGIN + CARD_PADDING, yPos + 5 + (i * 6));
+    const truncated = suggestion.length > 95 ? suggestion.slice(0, 93) + '...' : suggestion;
+    pdf.text(`\u2022 ${truncated}`, MARGIN + CARD_PADDING, yPos + 5 + (i * 6));
   });
 
   yPos += suggBoxHeight + BLOCK_SPACING;
@@ -4335,13 +4310,14 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       yPos = 35;
     }
 
-    yPos = drawSectionTitle('Prompt Architecture Analysis', yPos);
+    yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE ANALYSIS', yPos, pageWidth);
+    yPos += 5;
 
-    pdf.setFillColor(255, 255, 255);
+    pdf.setFillColor(240, 249, 255);
     pdf.setDrawColor(191, 219, 254);
     pdf.setLineWidth(0.3);
 
-    const maxWidthPA = contentWidth - 12;
+    const maxWidthPA = pageWidth - 52;
     const paragraphsPA = data.promptArchitectureAnalysis.split('\n\n');
     let totalHeightPA = 8;
     const allLinesPA: string[] = [];
@@ -4354,9 +4330,9 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     totalHeightPA += allLinesPA.length * 4;
     const boxHeightPA = Math.min(totalHeightPA, 60);
 
-    pdf.roundedRect(MARGIN, yPos, contentWidth, boxHeightPA, 3, 3, 'FD');
+    pdf.roundedRect(MARGIN, yPos, contentWidth, boxHeightPA, 2, 2, 'FD');
 
-    pdf.setFontSize(7.5);
+    pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(55, 65, 81);
 
@@ -4366,7 +4342,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       if (line === '') {
         textYPA += 2;
       } else {
-        pdf.text(line, MARGIN + CARD_PADDING, textYPA);
+        pdf.text(line, 26, textYPA);
         textYPA += 4;
       }
     });
@@ -4383,13 +4359,14 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       yPos = 35;
     }
 
-    yPos = drawSectionTitle('AIQ Assessment', yPos);
+    yPos = addSectionHeader(pdf, 'AIQ ASSESSMENT', yPos, pageWidth);
+    yPos += 5;
 
-    pdf.setFillColor(255, 255, 255);
+    pdf.setFillColor(240, 249, 255);
     pdf.setDrawColor(191, 219, 254);
     pdf.setLineWidth(0.3);
 
-    const maxWidthAIQ = contentWidth - 12;
+    const maxWidthAIQ = pageWidth - 52;
     const paragraphsAIQ = data.aiqAnalysis.split('\n\n');
     let totalHeightAIQ = 8;
     const allLinesAIQ: string[] = [];
@@ -4402,9 +4379,9 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     totalHeightAIQ += allLinesAIQ.length * 4;
     const boxHeightAIQ = Math.min(totalHeightAIQ, 60);
 
-    pdf.roundedRect(MARGIN, yPos, contentWidth, boxHeightAIQ, 3, 3, 'FD');
+    pdf.roundedRect(MARGIN, yPos, contentWidth, boxHeightAIQ, 2, 2, 'FD');
 
-    pdf.setFontSize(7.5);
+    pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(55, 65, 81);
 
@@ -4414,7 +4391,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       if (line === '') {
         textYAIQ += 2;
       } else {
-        pdf.text(line, MARGIN + CARD_PADDING, textYAIQ);
+        pdf.text(line, 26, textYAIQ);
         textYAIQ += 4;
       }
     });
