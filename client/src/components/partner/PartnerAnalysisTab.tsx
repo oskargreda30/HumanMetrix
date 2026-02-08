@@ -16,15 +16,20 @@ interface PartnerAnalysisTabProps {
   creditsRemaining?: number;
   onNavigateToEcosystem?: () => void;
   initialSubTab?: string | null;
+  onSubTabChange?: (subtab: string | null) => void;
 }
 
-export default function PartnerAnalysisTab({ creditsRemaining, onNavigateToEcosystem, initialSubTab = null }: PartnerAnalysisTabProps) {
-  const [subTab, setSubTab] = useState<string | null>(initialSubTab);
+export default function PartnerAnalysisTab({ creditsRemaining, onNavigateToEcosystem, initialSubTab = null, onSubTabChange }: PartnerAnalysisTabProps) {
+  const [subTab, setSubTabRaw] = useState<string | null>(initialSubTab);
 
-  // Update subtab when initialSubTab prop changes
+  const setSubTab = (value: string | null) => {
+    setSubTabRaw(value);
+    onSubTabChange?.(value);
+  };
+
   useEffect(() => {
     if (initialSubTab) {
-      setSubTab(initialSubTab);
+      setSubTabRaw(initialSubTab);
     }
   }, [initialSubTab]);
 

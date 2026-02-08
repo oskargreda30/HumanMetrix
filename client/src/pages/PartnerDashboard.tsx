@@ -1007,8 +1007,38 @@ const PACKAGE_OPTIONS = [
 
 export default function PartnerDashboard() {
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState("home");
-  const [analysisSubTab, setAnalysisSubTab] = useState<string | null>(null);
+  const [activeTab, setActiveTabRaw] = useState("home");
+  const [analysisSubTab, setAnalysisSubTabRaw] = useState<string | null>(null);
+  const isInitialMount = useRef(true);
+
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    const params = new URLSearchParams();
+    if (activeTab !== 'home') {
+      params.set('tab', activeTab);
+    }
+    if (activeTab === 'analysis' && analysisSubTab) {
+      params.set('subtab', analysisSubTab);
+    }
+    const search = params.toString();
+    window.history.replaceState({}, '', search ? `${window.location.pathname}?${search}` : window.location.pathname);
+  }, [activeTab, analysisSubTab]);
+
+  const setActiveTab = (tab: string, subtab?: string | null) => {
+    setActiveTabRaw(tab);
+    if (tab === 'analysis' && subtab !== undefined) {
+      setAnalysisSubTabRaw(subtab);
+    } else if (tab !== 'analysis') {
+      setAnalysisSubTabRaw(null);
+    }
+  };
+
+  const setAnalysisSubTab = (subtab: string | null) => {
+    setAnalysisSubTabRaw(subtab);
+  };
   const { toast } = useToast();
   
   // Helper function to scroll to the dashboard tabs area after tab navigation
@@ -1026,13 +1056,17 @@ export default function PartnerDashboard() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
+    const subtab = params.get('subtab');
     const purchaseCancelled = params.get('purchase_cancelled');
     
-    if (tab && ['home', 'billing', 'results', 'invitations', 'team', 'api-keys', 'settings', 'ecosystem', 'usage', 'developer', 'analytics', 'notifications', 'activity', 'pipeline'].includes(tab)) {
-      setActiveTab(tab);
+    if (tab && ['home', 'billing', 'results', 'invitations', 'team', 'api-keys', 'settings', 'ecosystem', 'usage', 'developer', 'analytics', 'notifications', 'activity', 'pipeline', 'analysis'].includes(tab)) {
+      setActiveTabRaw(tab);
       // Auto-select Credit Balance when navigating to billing tab
       if (tab === 'billing') {
         setBillingExpandedSection('credits');
+      }
+      if (tab === 'analysis' && subtab && ['individual', 'compare', 'role-fit'].includes(subtab)) {
+        setAnalysisSubTabRaw(subtab);
       }
     }
     
@@ -2530,14 +2564,14 @@ export default function PartnerDashboard() {
                     <p className="text-sm text-muted-foreground">Track hiring progress</p>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("analysis"); setAnalysisSubTab("compare"); scrollToContent(); }} data-testid="card-quick-compare">
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("analysis", "compare"); scrollToContent(); }} data-testid="card-quick-compare">
                   <CardContent className="pt-6 text-center">
                     <Users className="h-8 w-8 mx-auto mb-2 text-primary" />
                     <h3 className="font-semibold">Compare Candidates</h3>
                     <p className="text-sm text-muted-foreground">Side-by-side analysis</p>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("analysis"); setAnalysisSubTab("role-fit"); scrollToContent(); }} data-testid="card-quick-rolefit">
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setActiveTab("analysis", "role-fit"); scrollToContent(); }} data-testid="card-quick-rolefit">
                   <CardContent className="pt-6 text-center">
                     <Target className="h-8 w-8 mx-auto mb-2 text-primary" />
                     <h3 className="font-semibold">Role Fit Analysis</h3>
@@ -4886,6 +4920,7 @@ export default function PartnerDashboard() {
                 creditsRemaining={partner.remaining} 
                 onNavigateToEcosystem={() => { setActiveTab('ecosystem'); scrollToContent(); }}
                 initialSubTab={analysisSubTab}
+                onSubTabChange={setAnalysisSubTab}
               />
             </TabsContent>
 
