@@ -317,19 +317,16 @@ function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, r
     yPos = addGuideItem(2, 'Cohort Insights', 
       'Common strengths shared by multiple candidates and common development areas where the cohort may need improvement. Key differentiators highlight what sets candidates apart.', yPos);
     
-    yPos = addGuideItem(3, 'AI Hiring Suggestions', 
-      'Contextual recommendations based on fit distribution, top performer potential, and common development gaps. Provides actionable hiring guidance.', yPos);
-    
-    yPos = addGuideItem(4, 'AI Comparative Analyses', 
+    yPos = addGuideItem(3, 'AI Comparative Analyses', 
       'AI-powered assessment of Prompt Architecture and AIQ skills across candidates (when applicable), with insights on relative strengths and areas for development.', yPos);
     
-    yPos = addGuideItem(5, 'Candidate Rankings Table', 
+    yPos = addGuideItem(4, 'Candidate Rankings Table', 
       'Sortable table with rank, fit percentage, fit tier, and key notes. Top 3 candidates are highlighted with gold, silver, and bronze indicators.', yPos);
     
-    yPos = addGuideItem(6, 'Critical Skills Dashboard', 
+    yPos = addGuideItem(5, 'Critical Skills Dashboard', 
       'Table showing performance on must-have skills for this role. Each critical skill displays candidate scores with color coding and pass/fail indicators.', yPos);
     
-    yPos = addGuideItem(7, 'Skill Score Interpretation', 
+    yPos = addGuideItem(6, 'Skill Score Interpretation', 
       'For each skill: Green = meets/exceeds requirement, Yellow = close to requirement (within 80%), Red = significant gap. "C" badge indicates critical skills.', yPos);
   } else {
     // Comparison Report Guide - matches CompareTab.tsx exactly
@@ -4276,62 +4273,6 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     });
     yPos += diffBoxHeight + BLOCK_SPACING;
   }
-
-  // AI Hiring Suggestions - Blue-tinted
-  yPos = addSectionHeader(pdf, 'AI HIRING SUGGESTIONS', yPos, pageWidth);
-  yPos += 2;
-  const hiringDesc = 'AI-generated recommendations based on comparative analysis of all candidates for this role.';
-  pdf.setFontSize(7);
-  pdf.setFont('helvetica', 'normal');
-  const hiringDescLines = pdf.splitTextToSize(hiringDesc, contentWidth - 8);
-  const hiringDescH = Math.max(10, hiringDescLines.length * 4 + 4);
-  pdf.setFillColor(240, 249, 255);
-  pdf.roundedRect(MARGIN, yPos - 2, contentWidth, hiringDescH, 2, 2, 'F');
-  pdf.setTextColor(71, 85, 105);
-  pdf.text(hiringDescLines, MARGIN + 4, yPos + 4);
-  yPos += hiringDescH + 3;
-
-  const strongCount = data.summaryInsights.fitDistribution?.strong ?? 0;
-  const topPerformerFit = data.summaryInsights.topPerformer?.overallFit ?? 0;
-
-  const aiSuggestions: string[] = [];
-  if (strongCount >= 2) {
-    aiSuggestions.push(`${strongCount} candidates show strong role fit (80%+). Prioritize structured interviews for top performers.`);
-  } else if (strongCount === 1) {
-    aiSuggestions.push(`Only 1 candidate shows strong fit. Consider expanding your candidate pool for better comparison.`);
-  } else {
-    aiSuggestions.push(`No candidates meet the 80% strong fit threshold. Consider reviewing role requirements or sourcing additional candidates.`);
-  }
-
-  if (topPerformerFit >= 85) {
-    aiSuggestions.push(`Top performer (${topPerformerFit}% fit) is an excellent match for this role. Consider fast-tracking to final interview stage.`);
-  } else if (topPerformerFit >= 70) {
-    aiSuggestions.push(`Top performer (${topPerformerFit}% fit) shows good potential. Targeted development can close remaining skill gaps.`);
-  } else if (topPerformerFit > 0) {
-    aiSuggestions.push(`Top performer scored ${topPerformerFit}% fit. Significant development investment may be needed for this role.`);
-  }
-
-  if (data.summaryInsights.commonGaps.length > 0) {
-    const firstGap = data.summaryInsights.commonGaps[0];
-    const gapText = extractText(firstGap);
-    aiSuggestions.push(`Common gap across candidates: "${gapText}". Consider team training or adjusted role expectations.`);
-  }
-
-  pdf.setFillColor(240, 249, 255);
-  pdf.setDrawColor(191, 219, 254);
-  pdf.setLineWidth(0.3);
-  const suggBoxHeight = 6 + aiSuggestions.slice(0, 3).length * 6;
-  pdf.roundedRect(MARGIN, yPos, contentWidth, suggBoxHeight, 2, 2, 'FD');
-
-  pdf.setFontSize(8);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(55, 65, 81);
-  aiSuggestions.slice(0, 3).forEach((suggestion, i) => {
-    const truncated = suggestion.length > 95 ? suggestion.slice(0, 93) + '...' : suggestion;
-    pdf.text(`\u2022 ${truncated}`, MARGIN + CARD_PADDING, yPos + 5 + (i * 6));
-  });
-
-  yPos += suggBoxHeight + BLOCK_SPACING;
 
   // ========== PROMPT ARCHITECTURE AI ANALYSIS (if available) ==========
   if (data.promptArchitectureAnalysis) {
