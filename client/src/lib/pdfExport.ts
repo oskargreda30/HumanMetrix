@@ -4505,7 +4505,10 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     });
   }
   
-  if (criticalSkillsWithRequirements.length > 0) {
+  criticalSkillsWithRequirements.sort((a, b) => b.requiredScore - a.requiredScore);
+  const cappedCriticalSkills = criticalSkillsWithRequirements.slice(0, 6);
+
+  if (cappedCriticalSkills.length > 0) {
     // Check page space - need new page for critical skills table
     pdf.addPage();
     addBackgroundPattern(pdf, pageWidth, pageHeight);
@@ -4567,7 +4570,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     yPos += 14;
     
     // Table rows for each critical skill
-    criticalSkillsWithRequirements.forEach((criticalSkill, skillIdx) => {
+    cappedCriticalSkills.forEach((criticalSkill, skillIdx) => {
       if (yPos > pageHeight - 25) {
         pdf.addPage();
         addBackgroundPattern(pdf, pageWidth, pageHeight);
@@ -4642,12 +4645,12 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     sortedCandidates.slice(0, candidateCount).forEach((candidateForFooter, idx) => {
       const colX = 20 + skillColWidth + reqColWidth + (idx * candidateColWidth);
       
-      const criticalSkillsMet = criticalSkillsWithRequirements.filter(cs => {
+      const criticalSkillsMet = cappedCriticalSkills.filter(cs => {
         const skill = findSkillInScores(candidateForFooter.skillScores, cs.skillName);
         return skill?.dataAvailable !== false && skill?.score != null && (skill.score || 0) >= cs.requiredScore;
       }).length;
       
-      const assessedCritical = criticalSkillsWithRequirements.filter(cs => {
+      const assessedCritical = cappedCriticalSkills.filter(cs => {
         const skill = findSkillInScores(candidateForFooter.skillScores, cs.skillName);
         return skill?.dataAvailable !== false && skill?.score != null;
       }).length;
@@ -4656,7 +4659,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
         pdf.setTextColor(156, 163, 175);
         pdf.text('No data', colX + 2, yPos + 5);
       } else {
-        const allMet = criticalSkillsMet === criticalSkillsWithRequirements.length;
+        const allMet = criticalSkillsMet === cappedCriticalSkills.length;
         pdf.setTextColor(allMet ? 34 : 239, allMet ? 197 : 68, allMet ? 94 : 68);
         pdf.text(`${criticalSkillsMet}/${assessedCritical}`, colX + 2, yPos + 5);
       }
@@ -4700,7 +4703,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     pdf.text('AI-identified must-have skills for this role with detailed analysis of why each matters', 20, yPos);
     yPos += 10;
     
-    criticalSkillsWithRequirements.forEach((criticalSkill, idx) => {
+    cappedCriticalSkills.forEach((criticalSkill, idx) => {
       // Check page space for each skill entry
       if (yPos > pageHeight - 45) {
         pdf.addPage();
@@ -4776,12 +4779,12 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     sortedCandidates.slice(0, 4).forEach((candidate, idx) => {
       const colX = 26 + (idx * summaryColWidth);
       
-      const criticalMet = criticalSkillsWithRequirements.filter(cs => {
+      const criticalMet = cappedCriticalSkills.filter(cs => {
         const skill = findSkillInScores(candidate.skillScores, cs.skillName);
         return skill?.dataAvailable !== false && skill?.score != null && (skill.score || 0) >= cs.requiredScore;
       }).length;
       
-      const criticalAssessed = criticalSkillsWithRequirements.filter(cs => {
+      const criticalAssessed = cappedCriticalSkills.filter(cs => {
         const skill = findSkillInScores(candidate.skillScores, cs.skillName);
         return skill?.dataAvailable !== false && skill?.score != null;
       }).length;

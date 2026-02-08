@@ -1005,7 +1005,10 @@ export default function PartnerMultiCandidateRoleFitTab() {
                   });
                 }
                 
-                if (criticalSkillsWithRequirements.length === 0) {
+                criticalSkillsWithRequirements.sort((a, b) => b.requiredScore - a.requiredScore);
+                const cappedCriticalSkills = criticalSkillsWithRequirements.slice(0, 6);
+
+                if (cappedCriticalSkills.length === 0) {
                   return (
                     <div className="text-center py-6 text-muted-foreground">
                       <p>No critical skills defined for this role.</p>
@@ -1058,7 +1061,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                         </tr>
                       </thead>
                       <tbody>
-                        {criticalSkillsWithRequirements.map((criticalSkill, skillIdx) => {
+                        {cappedCriticalSkills.map((criticalSkill, skillIdx) => {
                           return (
                             <tr key={criticalSkill.skillName} className={skillIdx % 2 === 0 ? 'bg-muted/20' : ''}>
                               <td className="p-2 md:p-3 font-medium text-xs md:text-sm">{criticalSkill.skillName}</td>
@@ -1112,12 +1115,12 @@ export default function PartnerMultiCandidateRoleFitTab() {
                               candidate.dataCoverage?.hasSufficientData === false || 
                               candidate.fitTier === 'insufficient-data' || 
                               candidate.overallFit == null;
-                            const criticalSkillsMet = criticalSkillsWithRequirements.filter(cs => {
+                            const criticalSkillsMet = cappedCriticalSkills.filter(cs => {
                               const skill = findSkillInScores(candidate.skillScores, cs.skillName);
                               return skill?.dataAvailable !== false && skill?.score != null && (skill.score || 0) >= cs.requiredScore;
                             }).length;
-                            const totalCritical = criticalSkillsWithRequirements.length;
-                            const assessedCritical = criticalSkillsWithRequirements.filter(cs => {
+                            const totalCritical = cappedCriticalSkills.length;
+                            const assessedCritical = cappedCriticalSkills.filter(cs => {
                               const skill = findSkillInScores(candidate.skillScores, cs.skillName);
                               return skill?.dataAvailable !== false && skill?.score != null;
                             }).length;
@@ -1228,11 +1231,14 @@ export default function PartnerMultiCandidateRoleFitTab() {
               });
             }
             
-            if (criticalSkillsData.length === 0) return null;
+            criticalSkillsData.sort((a, b) => b.requiredScore - a.requiredScore);
+            const cappedCriticalSkillsData = criticalSkillsData.slice(0, 6);
+
+            if (cappedCriticalSkillsData.length === 0) return null;
             
             return (
               <MultiCandidateCriticalSkillsAnalysis 
-                skills={criticalSkillsData}
+                skills={cappedCriticalSkillsData}
                 roleName={comparison.roleSnapshot.roleName}
               />
             );
