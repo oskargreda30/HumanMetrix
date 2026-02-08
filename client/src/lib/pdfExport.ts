@@ -2483,7 +2483,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   // Render FIT skills if available
   if (data.alignment.fitSkillAlignments && data.alignment.fitSkillAlignments.length > 0) {
-    renderSkillSection(data.alignment.fitSkillAlignments, 'FIT ASSESSMENT SKILLS (Behavioral)', [59, 130, 246]);
+    renderSkillSection(data.alignment.fitSkillAlignments.slice(0, 6), 'FIT ASSESSMENT SKILLS (Behavioral)', [59, 130, 246]);
   }
   
   // Add spacing between sections
@@ -2491,7 +2491,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   // Render AI Readiness skills if available
   if (data.alignment.aiReadinessSkillAlignments && data.alignment.aiReadinessSkillAlignments.length > 0) {
-    renderSkillSection(data.alignment.aiReadinessSkillAlignments, 'AI READINESS SKILLS (Technical)', [59, 130, 246]);
+    renderSkillSection(data.alignment.aiReadinessSkillAlignments.slice(0, 6), 'AI READINESS SKILLS (Technical)', [59, 130, 246]);
   }
   
   // ========== CRITICAL SKILLS ANALYSIS ==========

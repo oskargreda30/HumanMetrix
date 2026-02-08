@@ -655,7 +655,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {alignment.fitSkillAlignments.map((skill, index) => {
+                  {alignment.fitSkillAlignments.slice(0, 6).map((skill, index) => {
                     const hasData = skill.dataAvailable !== false && skill.candidateScore !== null;
                     const meetsThreshold = hasData && (skill.candidateScore ?? 0) >= skill.requiredScore;
                     return (
@@ -704,7 +704,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {alignment.aiReadinessSkillAlignments.map((skill, index) => {
+                  {alignment.aiReadinessSkillAlignments.slice(0, 6).map((skill, index) => {
                     const hasData = skill.dataAvailable !== false && skill.candidateScore !== null;
                     const meetsThreshold = hasData && (skill.candidateScore ?? 0) >= skill.requiredScore;
                     return (
