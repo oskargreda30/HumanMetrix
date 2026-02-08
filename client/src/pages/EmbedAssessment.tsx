@@ -2539,7 +2539,7 @@ export default function EmbedAssessment() {
             >
               {session && getAssessmentDisplayName(session.assessmentType)}
             </Badge>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-1 justify-between">
               <span className={`text-sm ${textMuted}`}>
                 Question {currentIndex + 1} of {questions.length}
               </span>
