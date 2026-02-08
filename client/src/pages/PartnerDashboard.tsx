@@ -2577,7 +2577,13 @@ export default function PartnerDashboard() {
                   billingType={partner.billingType}
                   hasCardOnFile={dashboardCardStatus?.hasCard}
                   testsRemaining={partner.remaining}
-                  onNavigateToBilling={() => setActiveTab('billing')}
+                  onNavigateToBilling={() => {
+                    setActiveTab('billing');
+                    setBillingExpandedSection('purchase');
+                    setTimeout(() => {
+                      document.querySelector('[data-testid="text-buy-credits-title"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 200);
+                  }}
                 />
               ) : (
                 <Card>
@@ -4819,7 +4825,13 @@ export default function PartnerDashboard() {
                 billingType={partner?.billingType}
                 hasCardOnFile={dashboardCardStatus?.hasCard}
                 creditsRemaining={partner?.remaining}
-                onNavigateToBilling={() => setActiveTab('billing')}
+                onNavigateToBilling={() => {
+                  setActiveTab('billing');
+                  setBillingExpandedSection('purchase');
+                  setTimeout(() => {
+                    document.querySelector('[data-testid="text-buy-credits-title"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }, 200);
+                }}
                 onNavigateToAnalysis={() => { setActiveTab('analysis'); scrollToContent(); }}
               />
             </TabsContent>
