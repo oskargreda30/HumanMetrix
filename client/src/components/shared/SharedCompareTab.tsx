@@ -2166,7 +2166,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                               skill: getSkillAcronym(skill.displayName),
                               fullName: skill.displayName,
                               score: fitData.scores[skill.key] || 0,
-                            }));
+                            })).sort((a, b) => b.score - a.score);
 
                             return (
                               <div key={candidate.user.id} className="space-y-4">
@@ -2307,7 +2307,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                               skill: getSkillAcronym(skill.displayName),
                               fullName: skill.displayName,
                               score: aiReadinessData.scores[skill.key] || 0,
-                            }));
+                            })).sort((a, b) => b.score - a.score);
 
                             return (
                               <div key={candidate.user.id} className="space-y-4">
