@@ -4076,6 +4076,9 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(400).json({ error: "Results already paid for" });
       }
       
+      // Get partner for payment provider preference
+      const partner = session.partnerId ? await storage.getPartnerAccount(session.partnerId) : null;
+      
       // Calculate pricing
       const normalizedType = normalizeAssessmentId(session.assessmentType);
       const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
