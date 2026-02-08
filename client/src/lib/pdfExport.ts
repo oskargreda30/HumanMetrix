@@ -1,5 +1,4 @@
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { FIT_SKILLS, AI_READINESS_SKILLS, ROLE_DEFINITIONS, normalizeAIReadinessScores, getAIReadinessScore } from './assessmentSkills';
 import { HUMANMETRIX_LOGO_BASE64 } from './pdfAssets';
 import { applyBodyText, applySubheading, applyHeading, applySmallText, applyLabelText, PDF_SPACING, savePdfMobile } from './pdfStyles';
