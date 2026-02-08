@@ -3278,7 +3278,8 @@ export function registerPartnerRoutes(app: Express) {
       const baseUrl = getBaseUrl(req);
       const sessionIds = isBundle ? unpaidSessions.map(s => s.id) : [unpaidSessions[0].id];
       
-      const { primary, fallback } = getPaymentProviders(partner?.paymentProvider);
+      // Candidate-facing payments always use Airwallex as primary (partner preference only applies to partner's own payments)
+      const { primary, fallback } = getPaymentProviders('airwallex');
 
       const airwallexFn = async (): Promise<PaymentCheckoutResult> => {
         const airwallexAmount = formatAmountForAirwallex(totalPrice);
@@ -4110,7 +4111,8 @@ export function registerPartnerRoutes(app: Express) {
       // Get base URL
       const baseUrl = getBaseUrl(req);
       
-      const { primary, fallback } = getPaymentProviders(partner?.paymentProvider);
+      // Candidate-facing payments always use Airwallex as primary (partner preference only applies to partner's own payments)
+      const { primary, fallback } = getPaymentProviders('airwallex');
 
       const airwallexFn = async (): Promise<PaymentCheckoutResult> => {
         const airwallexAmount = formatAmountForAirwallex(stripeAmount);
@@ -5109,7 +5111,8 @@ export function registerPartnerRoutes(app: Express) {
       // Use unique assessment count for description
       const uniqueAssessmentCount = new Set(filteredSessions.map((s: any) => normalizeAssessmentId(s.assessmentType))).size;
       
-      const { primary, fallback: fallbackProvider } = getPaymentProviders(partnerAccount?.paymentProvider);
+      // Candidate-facing payments always use Airwallex as primary (partner preference only applies to partner's own payments)
+      const { primary, fallback: fallbackProvider } = getPaymentProviders('airwallex');
 
       const airwallexFn = async (): Promise<PaymentCheckoutResult> => {
         const airwallexAmount = formatAmountForAirwallex(stripeAmount);
