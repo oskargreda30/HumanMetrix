@@ -17,7 +17,7 @@ export default function PurchaseSuccess() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const processPayment = async (session: string) => {
+  const processPayment = async (session: string, provider?: string, intentId?: string) => {
     try {
       setIsProcessing(true);
       setError(null);
@@ -27,7 +27,11 @@ export default function PurchaseSuccess() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ sessionId: session }),
+        body: JSON.stringify(
+          provider === 'airwallex' && intentId
+            ? { intentId, provider: 'airwallex' }
+            : { sessionId: session }
+        ),
       });
 
       const data = await res.json();
@@ -74,10 +78,13 @@ export default function PurchaseSuccess() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const session = params.get("session_id");
-    setSessionId(session);
+    const provider = params.get("provider");
+    const intentId = params.get("intent_id");
+    const paymentRef = session || intentId;
+    setSessionId(paymentRef);
 
-    if (session) {
-      processPayment(session);
+    if (paymentRef) {
+      processPayment(paymentRef, provider || undefined, intentId || undefined);
     } else {
       setIsProcessing(false);
     }
@@ -131,7 +138,12 @@ export default function PurchaseSuccess() {
                   <Button
                     size="lg"
                     className="w-full"
-                    onClick={() => sessionId && processPayment(sessionId)}
+                    onClick={() => {
+                      if (sessionId) {
+                        const params = new URLSearchParams(window.location.search);
+                        processPayment(sessionId, params.get("provider") || undefined, params.get("intent_id") || undefined);
+                      }
+                    }}
                     disabled={!sessionId}
                     data-testid="button-retry-processing"
                   >

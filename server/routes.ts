@@ -774,54 +774,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Process payment success and create user account
   app.post("/api/process-payment-success", async (req, res) => {
     try {
-      const { sessionId } = req.body;
+      const { sessionId, intentId, provider } = req.body;
       
-      if (!sessionId) {
-        return res.status(400).json({ message: "Session ID required" });
+      if (!sessionId && !intentId) {
+        return res.status(400).json({ message: "Payment reference required" });
       }
 
-      // Retrieve the checkout session from Stripe
-      let session;
-      try {
-        session = await stripe.checkout.sessions.retrieve(sessionId);
-      } catch (stripeError: any) {
-        console.error('[B2C Payment] Stripe session retrieval failed:', stripeError.message);
-        // Notify super admins of Stripe API error
+      let metadata: any = null;
+      let stripePaymentIntentId: string | null = null;
+      let amountTotal: number = 0;
+      let paymentCurrency: string = 'gbp';
+      let customerEmail: string | null = null;
+      let sessionRef: string = sessionId || intentId;
+      let stripeSession: any = null;
+
+      if (provider === 'airwallex' && intentId) {
+        // Verify Airwallex payment intent
         try {
-          const { notifyB2CPaymentFailure } = await import('./email');
-          await notifyB2CPaymentFailure({
-            userEmail: 'Unknown',
-            amountDue: 0,
-            currency: 'GBP',
-            failureReason: `Stripe API error: ${stripeError.message}`,
-            stripeSessionId: sessionId,
-          });
-        } catch (notifyError: any) {
-          console.error('[B2C Payment] Failed to notify super admin:', notifyError.message);
+          const paymentIntent = await getPaymentIntent(intentId);
+          
+          if (paymentIntent.status !== 'SUCCEEDED') {
+            return res.status(400).json({ message: "Payment not completed" });
+          }
+          
+          metadata = paymentIntent.metadata;
+          stripePaymentIntentId = null;
+          amountTotal = Math.round((paymentIntent.amount || 0) * 100);
+          paymentCurrency = (paymentIntent.currency || 'gbp').toLowerCase();
+          customerEmail = paymentIntent.order?.shipping?.email || metadata?.email || null;
+          sessionRef = intentId;
+        } catch (err: any) {
+          console.error('[B2C Payment] Airwallex intent retrieval failed:', err.message);
+          return res.status(400).json({ message: "Failed to verify payment" });
         }
-        return res.status(400).json({ message: "Failed to verify payment" });
-      }
-      
-      if (!session || session.payment_status !== "paid") {
-        // Notify super admins of payment failure
+      } else {
+        // Retrieve the checkout session from Stripe
+        let session;
         try {
-          const { notifyB2CPaymentFailure } = await import('./email');
-          await notifyB2CPaymentFailure({
-            userEmail: session?.customer_email || session?.metadata?.email || 'Unknown',
-            userName: session?.metadata?.firstName ? `${session.metadata.firstName} ${session.metadata.lastName || ''}` : undefined,
-            userId: session?.metadata?.userId,
-            amountDue: session?.amount_total || 0,
-            currency: session?.currency?.toUpperCase() || 'GBP',
-            failureReason: !session ? 'Session not found' : (session.payment_status === 'unpaid' ? 'Payment not completed' : 'Checkout expired or cancelled'),
-            stripeSessionId: sessionId,
-          });
-        } catch (notifyError: any) {
-          console.error('[B2C Payment] Failed to notify super admin:', notifyError.message);
+          session = await stripe.checkout.sessions.retrieve(sessionId);
+        } catch (stripeError: any) {
+          console.error('[B2C Payment] Stripe session retrieval failed:', stripeError.message);
+          try {
+            const { notifyB2CPaymentFailure } = await import('./email');
+            await notifyB2CPaymentFailure({
+              userEmail: 'Unknown',
+              amountDue: 0,
+              currency: 'GBP',
+              failureReason: `Stripe API error: ${stripeError.message}`,
+              stripeSessionId: sessionId,
+            });
+          } catch (notifyError: any) {
+            console.error('[B2C Payment] Failed to notify super admin:', notifyError.message);
+          }
+          return res.status(400).json({ message: "Failed to verify payment" });
         }
-        return res.status(400).json({ message: "Payment not completed" });
+        
+        if (!session || session.payment_status !== "paid") {
+          try {
+            const { notifyB2CPaymentFailure } = await import('./email');
+            await notifyB2CPaymentFailure({
+              userEmail: session?.customer_email || session?.metadata?.email || 'Unknown',
+              userName: session?.metadata?.firstName ? `${session.metadata.firstName} ${session.metadata.lastName || ''}` : undefined,
+              userId: session?.metadata?.userId,
+              amountDue: session?.amount_total || 0,
+              currency: session?.currency?.toUpperCase() || 'GBP',
+              failureReason: !session ? 'Session not found' : (session.payment_status === 'unpaid' ? 'Payment not completed' : 'Checkout expired or cancelled'),
+              stripeSessionId: sessionId,
+            });
+          } catch (notifyError: any) {
+            console.error('[B2C Payment] Failed to notify super admin:', notifyError.message);
+          }
+          return res.status(400).json({ message: "Payment not completed" });
+        }
+
+        metadata = session.metadata;
+        stripePaymentIntentId = session.payment_intent as string || null;
+        amountTotal = session.amount_total || 0;
+        paymentCurrency = (session.currency || 'gbp').toLowerCase();
+        customerEmail = session.customer_email || null;
+        sessionRef = session.id;
+        stripeSession = session;
       }
 
-      const metadata = session.metadata;
+      const paymentMethod = provider === 'airwallex' ? 'Airwallex' : 'Stripe';
       
       if (!metadata) {
         return res.status(400).json({ message: "Missing session metadata" });
@@ -839,9 +874,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create purchase record
         const purchase = await storage.createPurchase({
           userId: userId,
-          stripeSessionId: session.id,
-          stripePaymentIntentId: session.payment_intent as string || null,
-          totalAmount: session.amount_total || 0,
+          stripeSessionId: sessionRef,
+          stripePaymentIntentId: stripePaymentIntentId,
+          totalAmount: amountTotal,
           baseFee: BASE_FEE,
           status: "completed",
           resultsAccessPaid: true, // Paid users can view results
@@ -881,12 +916,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ? `${user.firstName} ${user.lastName}` 
             : user.firstName || user.email;
           
-          const totalAmount = session.amount_total || 0;
-          const currency = (session.currency || 'gbp').toUpperCase();
+          const totalAmount = amountTotal;
+          const currency = paymentCurrency.toUpperCase();
           
           try {
             // Retrieve actual line items from Stripe to get exact charged amounts
-            const stripeLineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 20 });
+            const stripeLineItems = stripeSession ? await stripe.checkout.sessions.listLineItems(stripeSession.id, { limit: 20 }) : { data: [] };
             const receiptItems = stripeLineItems.data.map(item => {
               const qty = item.quantity || 1;
               const amount = item.amount_total || 0;
@@ -907,8 +942,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               subtotal: totalAmount,
               total: totalAmount,
               currency,
-              transactionId: session.id,
-              paymentMethod: 'Stripe',
+              transactionId: sessionRef,
+              paymentMethod: paymentMethod,
             };
             await sendPaymentReceiptWithPdf(receiptDetails);
           } catch (receiptError: any) {
@@ -928,7 +963,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid checkout session" });
       }
 
-      const { customerEmail, firstName, lastName, assessmentIds } = metadata;
+      const { customerEmail: metaCustomerEmail, firstName, lastName, assessmentIds } = metadata;
+      customerEmail = metaCustomerEmail;
       
       if (!customerEmail || !firstName || !lastName) {
         return res.status(400).json({ message: "Missing customer information" });
@@ -941,9 +977,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // User already exists, just grant access to assessments
         const purchase = await storage.createPurchase({
           userId: existingUser.id,
-          stripeSessionId: session.id,
-          stripePaymentIntentId: session.payment_intent as string || null,
-          totalAmount: session.amount_total || 0,
+          stripeSessionId: sessionRef,
+          stripePaymentIntentId: stripePaymentIntentId,
+          totalAmount: amountTotal,
           baseFee: BASE_FEE,
           status: "completed",
           resultsAccessPaid: true, // Paid users can view results
@@ -981,12 +1017,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ? `${existingUser.firstName} ${existingUser.lastName}`
           : existingUser.firstName || `${firstName} ${lastName}`;
         
-        const totalAmount = session.amount_total || 0;
-        const currency = (session.currency || 'gbp').toUpperCase();
+        const totalAmount = amountTotal;
+        const currency = paymentCurrency.toUpperCase();
         
         try {
           // Retrieve actual line items from Stripe to get exact charged amounts
-          const stripeLineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 20 });
+          const stripeLineItems = stripeSession ? await stripe.checkout.sessions.listLineItems(stripeSession.id, { limit: 20 }) : { data: [] };
           const receiptItems = stripeLineItems.data.map(item => {
             const qty = item.quantity || 1;
             const amount = item.amount_total || 0;
@@ -1007,8 +1043,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             subtotal: totalAmount,
             total: totalAmount,
             currency,
-            transactionId: session.id,
-            paymentMethod: 'Stripe',
+            transactionId: sessionRef,
+            paymentMethod: paymentMethod,
           };
           await sendPaymentReceiptWithPdf(receiptDetails);
         } catch (receiptError: any) {
@@ -1059,9 +1095,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create purchase record and grant assessment access
       const purchase = await storage.createPurchase({
         userId: newUser.id,
-        stripeSessionId: session.id,
-        stripePaymentIntentId: session.payment_intent as string || null,
-        totalAmount: session.amount_total || 0,
+        stripeSessionId: sessionRef,
+        stripePaymentIntentId: stripePaymentIntentId,
+        totalAmount: amountTotal,
         baseFee: BASE_FEE,
         status: "completed",
         resultsAccessPaid: true, // Paid users can view results
@@ -1091,11 +1127,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Send PDF payment receipt email
       try {
-        const totalAmount = session.amount_total || 0;
-        const currency = (session.currency || 'gbp').toUpperCase();
+        const totalAmount = amountTotal;
+        const currency = paymentCurrency.toUpperCase();
         
         // Retrieve actual line items from Stripe to get exact charged amounts
-        const stripeLineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 20 });
+        const stripeLineItems = stripeSession ? await stripe.checkout.sessions.listLineItems(stripeSession.id, { limit: 20 }) : { data: [] };
         const receiptItems = stripeLineItems.data.map(item => {
           const qty = item.quantity || 1;
           const amount = item.amount_total || 0;
@@ -1116,8 +1152,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           subtotal: totalAmount,
           total: totalAmount,
           currency,
-          transactionId: session.id,
-          paymentMethod: 'Stripe',
+          transactionId: sessionRef,
+          paymentMethod: paymentMethod,
         };
         await sendPaymentReceiptWithPdf(receiptDetails);
         console.log(`✓ PDF receipt sent successfully to ${customerEmail}`);
@@ -1487,6 +1523,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json({
           success: true,
           provider: 'airwallex',
+          airwallexEnv,
           intentId: checkoutResult.intentId,
           clientSecret: checkoutResult.clientSecret,
           amount: checkoutResult.amount,
@@ -2854,6 +2891,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       if (guestResult.provider === 'airwallex') {
         res.json({
           provider: 'airwallex',
+          airwallexEnv,
           intentId: guestResult.intentId,
           clientSecret: guestResult.clientSecret,
           currency: guestResult.currency,
@@ -3120,6 +3158,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       if (checkoutResult.provider === 'airwallex') {
         res.json({
           provider: 'airwallex',
+          airwallexEnv,
           intentId: checkoutResult.intentId,
           clientSecret: checkoutResult.clientSecret,
           amount: checkoutResult.amount,
@@ -3411,6 +3450,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       if (prResult.provider === 'airwallex') {
         res.json({
           provider: 'airwallex',
+          airwallexEnv,
           intentId: prResult.intentId,
           clientSecret: prResult.clientSecret,
           amount: prResult.amount,
@@ -3429,42 +3469,62 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
   // Confirm partner result purchase (called after successful Stripe checkout)
   app.post("/api/confirm-partner-results-purchase", isAuthenticated, async (req: any, res) => {
     try {
-      const { sessionId } = req.body;
+      const { sessionId, intentId, provider } = req.body;
       
-      if (!sessionId) {
-        return res.status(400).json({ message: "Session ID is required" });
+      if (!sessionId && !intentId) {
+        return res.status(400).json({ message: "Payment reference is required" });
       }
 
       const userId = req.user.id;
+      let metadata: any = null;
+      let paymentIntentRef: string | null = null;
 
-      // Retrieve the Stripe session
-      const session = await stripe.checkout.sessions.retrieve(sessionId);
-      
-      if (!session) {
-        return res.status(404).json({ message: "Session not found" });
-      }
-
-      // Verify this is a partner result purchase
-      if (session.metadata?.type !== 'partner_result_purchase') {
-        return res.status(400).json({ message: "Invalid session type" });
-      }
-
-      // Verify session belongs to this user
-      if (session.metadata?.userId !== userId) {
-        return res.status(403).json({ message: "Unauthorized" });
-      }
-
-      // Check if payment was successful
-      if (session.payment_status !== 'paid') {
-        return res.status(400).json({ message: "Payment not completed" });
+      if (provider === 'airwallex' && intentId) {
+        const paymentIntent = await getPaymentIntent(intentId);
+        
+        if (paymentIntent.status !== 'SUCCEEDED') {
+          return res.status(400).json({ message: "Payment not completed" });
+        }
+        
+        metadata = paymentIntent.metadata;
+        paymentIntentRef = intentId;
+        
+        if (metadata?.type !== 'partner_result_purchase') {
+          return res.status(400).json({ message: "Invalid payment type" });
+        }
+        
+        if (metadata?.userId !== userId) {
+          return res.status(403).json({ message: "Unauthorized" });
+        }
+      } else {
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        
+        if (!session) {
+          return res.status(404).json({ message: "Session not found" });
+        }
+        
+        if (session.metadata?.type !== 'partner_result_purchase') {
+          return res.status(400).json({ message: "Invalid session type" });
+        }
+        
+        if (session.metadata?.userId !== userId) {
+          return res.status(403).json({ message: "Unauthorized" });
+        }
+        
+        if (session.payment_status !== 'paid') {
+          return res.status(400).json({ message: "Payment not completed" });
+        }
+        
+        metadata = session.metadata;
+        paymentIntentRef = session.payment_intent as string;
       }
 
       // Update purchase record
-      const purchaseId = session.metadata?.purchaseId;
+      const purchaseId = metadata?.purchaseId;
       if (purchaseId) {
         await storage.updatePartnerResultPurchase(purchaseId, {
           status: 'completed',
-          stripePaymentIntentId: session.payment_intent as string,
+          stripePaymentIntentId: paymentIntentRef,
           purchasedAt: new Date(),
         });
         

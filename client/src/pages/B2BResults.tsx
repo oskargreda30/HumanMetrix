@@ -96,6 +96,25 @@ export default function B2BResults() {
         throw new Error(result.error || 'Failed to create checkout');
       }
       
+      if (result.provider === 'airwallex' && result.intentId && result.clientSecret) {
+        try {
+          const { redirectToAirwallexCheckout } = await import('@/lib/airwallexCheckout');
+          await redirectToAirwallexCheckout({
+            intentId: result.intentId,
+            clientSecret: result.clientSecret,
+            currency: result.currency || 'GBP',
+            airwallexEnv: result.airwallexEnv,
+            successUrl: `${window.location.origin}/b2b-payment-callback?provider=airwallex&b2b_session=${sessionId}`,
+            failUrl: `${window.location.origin}/b2b-results?session=${sessionId}&country=${countryCode}`,
+          });
+          return;
+        } catch (err) {
+          console.error('Airwallex redirect failed:', err);
+          setIsCheckingOut(false);
+          setCheckoutType(null);
+          return;
+        }
+      }
       if (result.checkoutUrl) {
         window.location.href = result.checkoutUrl;
       }

@@ -385,7 +385,23 @@ export default function Dashboard() {
       });
       return res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      if (data.provider === 'airwallex' && data.intentId && data.clientSecret) {
+        try {
+          const { redirectToAirwallexCheckout } = await import('@/lib/airwallexCheckout');
+          await redirectToAirwallexCheckout({
+            intentId: data.intentId,
+            clientSecret: data.clientSecret,
+            currency: data.currency || 'GBP',
+            airwallexEnv: data.airwallexEnv,
+            successUrl: `${window.location.origin}/dashboard?partner_purchase=success&provider=airwallex`,
+            failUrl: `${window.location.origin}/dashboard?partner_purchase=cancelled`,
+          });
+          return;
+        } catch (err) {
+          console.error('Airwallex redirect failed:', err);
+        }
+      }
       if (data.url) {
         window.location.replace(data.url);
       }
@@ -464,10 +480,15 @@ export default function Dashboard() {
       const params = new URLSearchParams(window.location.search);
       const partnerPurchase = params.get("partner_purchase");
       const sessionId = params.get("session_id");
+      const provider = params.get("provider");
+      const intentId = params.get("intent_id");
 
-      if (partnerPurchase === "success" && sessionId) {
+      if (partnerPurchase === "success" && (sessionId || intentId)) {
         try {
-          const res = await apiRequest("POST", "/api/confirm-partner-results-purchase", { sessionId });
+          const body = provider === 'airwallex' && intentId
+            ? { intentId, provider: 'airwallex' }
+            : { sessionId };
+          const res = await apiRequest("POST", "/api/confirm-partner-results-purchase", body);
           if (res.ok) {
             toast({
               title: "Results Unlocked!",

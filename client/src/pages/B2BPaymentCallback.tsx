@@ -36,8 +36,10 @@ export default function B2BPaymentCallback() {
         const stripeSessionId = params.get("session_id");
         const b2bSessionId = params.get("b2b_session");
         const isBundle = params.get("bundle") === "true";
+        const provider = params.get("provider");
+        const intentId = params.get("intent_id");
 
-        if (!stripeSessionId) {
+        if (!stripeSessionId && !(provider === 'airwallex' && intentId)) {
           throw new Error("Missing session information");
         }
 
@@ -47,22 +49,31 @@ export default function B2BPaymentCallback() {
           res = await fetch("/api/b2b/results-bundle/process-payment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ stripeSessionId }),
+            body: JSON.stringify(
+              provider === 'airwallex' && intentId
+                ? { intentId, provider: 'airwallex' }
+                : { stripeSessionId }
+            ),
           });
         } else if (b2bSessionId) {
           res = await fetch("/api/b2b/process-payment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-              stripeSessionId, 
-              b2bSessionId 
-            }),
+            body: JSON.stringify(
+              provider === 'airwallex' && intentId
+                ? { intentId, provider: 'airwallex', b2bSessionId }
+                : { stripeSessionId, b2bSessionId }
+            ),
           });
         } else {
           res = await fetch("/api/unlock-results/process-payment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ stripeSessionId }),
+            body: JSON.stringify(
+              provider === 'airwallex' && intentId
+                ? { intentId, provider: 'airwallex' }
+                : { stripeSessionId }
+            ),
           });
         }
 
