@@ -41,9 +41,15 @@ export default function GuestInvite() {
   const { toast } = useToast();
   useDarkBody();
   
-  // Check if user is already logged in
+  // Check if user is already logged in (use returnNull on 401 to avoid error flash for guests)
   const { data: currentUser, isLoading: authLoading } = useQuery<{ id: number; email: string } | null>({
     queryKey: ["/api/auth/user"],
+    queryFn: async () => {
+      const res = await fetch("/api/auth/user", { credentials: "include" });
+      if (res.status === 401) return null;
+      if (!res.ok) return null;
+      return res.json();
+    },
     retry: false,
     staleTime: 0,
   });

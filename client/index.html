@@ -136,6 +136,13 @@
           50% { opacity: 0.7; transform: scale(0.95); }
         }
       </style>
+      <style id="hide-dev-banner">
+        /* Hide Replit development preview banner immediately to prevent flash */
+        body > div[style*="position: fixed"][style*="z-index"],
+        body > div[style*="position:fixed"][style*="z-index"] {
+          display: none !important;
+        }
+      </style>
       <script>
         (function() {
           var darkPaths = ['/start-assessment', '/embed/assessment', '/invite/', '/b2b-payment-callback', '/guest-invite/'];
