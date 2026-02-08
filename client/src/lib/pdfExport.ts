@@ -4406,43 +4406,75 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   yPos = 35;
 
   yPos = addSectionHeader(pdf, 'CANDIDATE RANKINGS', yPos, pageWidth);
-  yPos += 5;
+  yPos += 4;
 
-  const colWidths = { rank: 15, name: 55, fit: 25, tier: 30, strengths: 35, gaps: 30 };
-  const tableX = 20;
+  const tableX = MARGIN;
+  const tableWidth = contentWidth;
+  const col = {
+    rank: 14,
+    name: 48,
+    fit: 18,
+    tier: 28,
+    notes: tableWidth - 14 - 48 - 18 - 28,
+  };
 
-  // Blue-tinted header row
+  // Header row
   pdf.setFillColor(239, 246, 255);
-  pdf.rect(tableX, yPos, pageWidth - 40, 8, 'F');
+  pdf.roundedRect(tableX, yPos, tableWidth, 9, 2, 2, 'F');
+  pdf.setDrawColor(191, 219, 254);
+  pdf.setLineWidth(0.3);
+  pdf.line(tableX, yPos + 9, tableX + tableWidth, yPos + 9);
 
-  pdf.setFontSize(8);
+  pdf.setFontSize(7);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(59, 130, 246);
-  pdf.text('RANK', tableX + 2, yPos + 5);
-  pdf.text('CANDIDATE', tableX + colWidths.rank + 2, yPos + 5);
-  pdf.text('FIT %', tableX + colWidths.rank + colWidths.name + 2, yPos + 5);
-  pdf.text('TIER', tableX + colWidths.rank + colWidths.name + colWidths.fit + 2, yPos + 5);
-  pdf.text('KEY NOTES', tableX + colWidths.rank + colWidths.name + colWidths.fit + colWidths.tier + 2, yPos + 5);
+  let hx = tableX;
+  pdf.text('RANK', hx + 3, yPos + 6);
+  hx += col.rank;
+  pdf.text('CANDIDATE', hx + 3, yPos + 6);
+  hx += col.name;
+  pdf.text('FIT %', hx + 2, yPos + 6);
+  hx += col.fit;
+  pdf.text('TIER', hx + 3, yPos + 6);
+  hx += col.tier;
+  pdf.text('KEY NOTES', hx + 3, yPos + 6);
 
-  yPos += 10;
+  yPos += 11;
 
   data.candidateEntries.forEach((candidate, idx) => {
-    if (yPos > pageHeight - 40) {
+    if (yPos > pageHeight - 30) {
       pdf.addPage();
       addBackgroundPattern(pdf, pageWidth, pageHeight);
       addHeader(pdf, pageWidth);
       yPos = 35;
     }
 
-    const rowHeight = 16;
+    const firstStrength = candidate.strengths.length > 0
+      ? (typeof candidate.strengths[0] === 'string' ? candidate.strengths[0] : candidate.strengths[0].skill)
+      : '';
+    const notesRaw = candidate.riskFlags.length > 0
+      ? candidate.riskFlags[0]
+      : firstStrength.replace('Strong ', '');
+    const notesLines = pdf.splitTextToSize(notesRaw, col.notes - 6);
+    const displayLines = notesLines.slice(0, 2);
+    const rowHeight = Math.max(16, 6 + displayLines.length * 4.5);
 
+    // Alternating row background
     if (idx % 2 === 0) {
       pdf.setFillColor(249, 250, 251);
-      pdf.rect(tableX, yPos - 2, pageWidth - 40, rowHeight, 'F');
+      pdf.rect(tableX, yPos, tableWidth, rowHeight, 'F');
     }
 
-    // Rank with medal colors for top 3
-    pdf.setFontSize(10);
+    // Bottom border line
+    pdf.setDrawColor(229, 231, 235);
+    pdf.setLineWidth(0.2);
+    pdf.line(tableX, yPos + rowHeight, tableX + tableWidth, yPos + rowHeight);
+
+    let cx = tableX;
+    const rowMidY = yPos + rowHeight / 2;
+
+    // Rank - medal colors for top 3
+    pdf.setFontSize(11);
     pdf.setFont('helvetica', 'bold');
     if (idx === 0) {
       pdf.setTextColor(234, 179, 8);
@@ -4453,53 +4485,55 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     } else {
       pdf.setTextColor(107, 114, 128);
     }
-    pdf.text(`${candidate.rank}`, tableX + 5, yPos + 5);
+    pdf.text(`${candidate.rank}`, cx + col.rank / 2, rowMidY + 1, { align: 'center' });
+    cx += col.rank;
 
-    // Name and email
+    // Candidate name + email
     pdf.setTextColor(17, 24, 39);
     pdf.setFont('helvetica', 'bold');
-    const truncName = candidate.userName.length > 22 ? candidate.userName.slice(0, 20) + '...' : candidate.userName;
-    pdf.text(truncName, tableX + colWidths.rank + 2, yPos + 4);
+    pdf.setFontSize(8);
+    const truncName = candidate.userName.length > 20 ? candidate.userName.slice(0, 18) + '...' : candidate.userName;
+    pdf.text(truncName, cx + 3, yPos + 6);
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(7);
+    pdf.setFontSize(6.5);
     pdf.setTextColor(107, 114, 128);
-    const truncEmail = candidate.email.length > 30 ? candidate.email.slice(0, 28) + '...' : candidate.email;
-    pdf.text(truncEmail, tableX + colWidths.rank + 2, yPos + 10);
+    const truncEmail = candidate.email.length > 28 ? candidate.email.slice(0, 26) + '...' : candidate.email;
+    pdf.text(truncEmail, cx + 3, yPos + 11);
+    cx += col.name;
 
-    // Fit percentage with color coding
-    pdf.setFontSize(11);
-    pdf.setFont('helvetica', 'bold');
+    // Fit percentage
     const fitVal = candidate.overallFit ?? 0;
     const fitColor: [number, number, number] = fitVal >= 80 ? [34, 197, 94] : fitVal >= 60 ? [234, 179, 8] : [239, 68, 68];
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(fitColor[0], fitColor[1], fitColor[2]);
-    pdf.text(`${candidate.overallFit}%`, tableX + colWidths.rank + colWidths.name + 2, yPos + 6);
+    pdf.text(`${candidate.overallFit}%`, cx + 2, rowMidY + 1);
+    cx += col.fit;
 
-    // Tier badge with small colored background
+    // Tier badge
     const tierLabel = candidate.fitTier === 'strong' ? 'Strong' :
                       candidate.fitTier === 'moderate' ? 'Moderate' :
                       candidate.fitTier === 'insufficient-data' ? 'No Data' : 'Dev Needed';
-    const tierBadgeColor: [number, number, number] = candidate.fitTier === 'strong' ? [220, 252, 231] :
+    const tierBgColor: [number, number, number] = candidate.fitTier === 'strong' ? [220, 252, 231] :
                           candidate.fitTier === 'moderate' ? [254, 249, 195] : [254, 226, 226];
-    const tierBadgeX = tableX + colWidths.rank + colWidths.name + colWidths.fit + 2;
-    pdf.setFillColor(tierBadgeColor[0], tierBadgeColor[1], tierBadgeColor[2]);
-    pdf.roundedRect(tierBadgeX - 1, yPos + 1, 26, 7, 1, 1, 'F');
+    const tierTextColor: [number, number, number] = candidate.fitTier === 'strong' ? [22, 101, 52] :
+                          candidate.fitTier === 'moderate' ? [133, 77, 14] : [153, 27, 27];
+    const badgeW = pdf.getStringUnitWidth(tierLabel) * 7 * 0.352778 + 6;
+    pdf.setFillColor(tierBgColor[0], tierBgColor[1], tierBgColor[2]);
+    pdf.roundedRect(cx + 2, rowMidY - 4, badgeW, 8, 2, 2, 'F');
     pdf.setFontSize(7);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(fitColor[0], fitColor[1], fitColor[2]);
-    pdf.text(tierLabel, tierBadgeX + 1, yPos + 6);
+    pdf.setTextColor(tierTextColor[0], tierTextColor[1], tierTextColor[2]);
+    pdf.text(tierLabel, cx + 5, rowMidY + 1);
+    cx += col.tier;
 
-    // Key notes
+    // Key notes - multi-line with wrapping
     pdf.setFontSize(7);
     pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(107, 114, 128);
-    const firstStrength = candidate.strengths.length > 0
-      ? (typeof candidate.strengths[0] === 'string' ? candidate.strengths[0] : candidate.strengths[0].skill)
-      : '';
-    const notes = candidate.riskFlags.length > 0
-      ? candidate.riskFlags[0]
-      : firstStrength.replace('Strong ', '');
-    const truncNotes = notes.length > 25 ? notes.slice(0, 23) + '...' : notes;
-    pdf.text(truncNotes, tableX + colWidths.rank + colWidths.name + colWidths.fit + colWidths.tier + 2, yPos + 6);
+    pdf.setTextColor(55, 65, 81);
+    displayLines.forEach((line: string, li: number) => {
+      pdf.text(line, cx + 3, yPos + 6 + (li * 4.5));
+    });
 
     yPos += rowHeight;
   });
