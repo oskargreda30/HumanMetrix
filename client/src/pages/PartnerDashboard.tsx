@@ -6297,8 +6297,37 @@ export default function PartnerDashboard() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Your Message</label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Name</label>
+                <Input
+                  value={account?.user?.name || ''}
+                  disabled
+                  className="bg-muted"
+                  data-testid="input-subscription-name"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Email</label>
+                <Input
+                  value={account?.user?.email || ''}
+                  disabled
+                  className="bg-muted"
+                  data-testid="input-subscription-email"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Company</label>
+              <Input
+                value={account?.partner?.companyName || ''}
+                disabled
+                className="bg-muted"
+                data-testid="input-subscription-company"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Your Message *</label>
               <Textarea
                 value={subscriptionMessage}
                 onChange={(e) => setSubscriptionMessage(e.target.value)}
