@@ -25,6 +25,7 @@ import { PROMPT_ARCHITECTURE_LEVELS } from "../data/prompt-architecture-question
 import { getHumanReadableError } from "@/lib/queryClient";
 import { isValidEmail } from "@/lib/validation";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
+import { useDarkBody } from "@/hooks/use-dark-body";
 
 interface PartnerBranding {
   enabled: boolean;
@@ -342,6 +343,7 @@ export default function EmbedAssessment() {
   // Support both single type and comma-separated types (for both demo and real sessions)
   const urlTypes = params.get("types")?.split(",").filter(Boolean) || [singleType];
   const isLight = theme === "light";
+  useDarkBody(isLight ? "#f9fafb" : "#0f172a");
 
   const [session, setSession] = useState<SessionData | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "started" | "completed" | "error" | "expired">("loading");

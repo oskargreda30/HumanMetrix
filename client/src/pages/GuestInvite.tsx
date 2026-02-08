@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, XCircle, AlertCircle, User, ArrowRight, Mail, PartyPopper, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useDarkBody } from "@/hooks/use-dark-body";
 
 interface AssessmentStatus {
   type: string;
@@ -38,6 +39,7 @@ export default function GuestInvite() {
   const { token } = useParams<{ token: string }>();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  useDarkBody();
   
   // Check if user is already logged in
   const { data: currentUser, isLoading: authLoading } = useQuery<{ id: number; email: string } | null>({

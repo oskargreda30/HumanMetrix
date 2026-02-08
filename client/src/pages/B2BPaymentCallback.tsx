@@ -5,9 +5,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useDarkBody } from "@/hooks/use-dark-body";
 
 export default function B2BPaymentCallback() {
   const [, setLocation] = useLocation();
+  useDarkBody();
   const [status, setStatus] = useState<"processing" | "success" | "error">("processing");
   const [message, setMessage] = useState("Processing your payment...");
   const [email, setEmail] = useState<string | null>(null);

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle, AlertCircle, Clock, ClipboardList, PlayCircle, RotateCcw } from "lucide-react";
 import { apiRequest, getHumanReadableError } from "@/lib/queryClient";
 import logoSymbol from "@assets/Gemini_Generated_Image_misel3misel3mise-removebg-preview_1762775600899.png";
+import { useDarkBody } from "@/hooks/use-dark-body";
 
 interface InvitationData {
   id: string;
@@ -57,11 +58,7 @@ export default function StartAssessment() {
   const [invitation, setInvitation] = useState<InvitationData | null>(null);
   const [startingType, setStartingType] = useState<string | null>(null);
 
-  useEffect(() => {
-    const originalBg = document.body.style.backgroundColor;
-    document.body.style.backgroundColor = '#0f172a';
-    return () => { document.body.style.backgroundColor = originalBg; };
-  }, []);
+  useDarkBody();
 
   useEffect(() => {
     if (!token) {
