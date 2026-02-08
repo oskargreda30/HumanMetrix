@@ -15596,7 +15596,9 @@ Use the candidates' actual names. Be specific and actionable.`;
           const hasAiInsights = resultData && (resultData.promptRoleFitAnalysis || resultData.aiqRoleFitAnalysis);
           const hasOldCriticality = (resultData?.fitSkillAlignments || []).some((s: any) => s.criticality === 'important') ||
             (resultData?.aiReadinessSkillAlignments || []).some((s: any) => s.criticality === 'important');
-          if (hasAiInsights && !hasOldCriticality) {
+          const hasFinalRecommendation = resultData && resultData.finalRecommendation && resultData.nextSteps;
+          const hasCurrentScoring = resultData && resultData.scoringVersion >= 2;
+          if (hasAiInsights && !hasOldCriticality && hasFinalRecommendation && hasCurrentScoring) {
             return res.json({
               ...resultData,
               cached: true,
@@ -15605,7 +15607,7 @@ Use the candidates' actual names. Be specific and actionable.`;
               reportId: existingReport.id,
             });
           }
-          if (hasOldCriticality) {
+          if (hasOldCriticality || !hasFinalRecommendation || !hasCurrentScoring) {
             await storage.deletePartnerAnalysisReport(existingReport.id);
             hadInvalidatedOldReport = true;
           }
@@ -16112,6 +16114,107 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
 
       const topAlternativeRoles = roleFlexibilityResults.slice(0, 5);
 
+      // Generate Final Recommendation
+      let finalRecommendation = '';
+      
+      // Critical Skills Analysis
+      const criticalGapSkills = scoredAlignments
+        .filter(a => a.criticality === 'critical' && (a.gap || 0) < 0)
+        .sort((a, b) => (a.gap || 0) - (b.gap || 0));
+      const criticalStrengthSkills = scoredAlignments
+        .filter(a => (a.gap || 0) >= 10)
+        .sort((a, b) => (b.gap || 0) - (a.gap || 0));
+      
+      if (criticalGapSkills.length > 0 || criticalStrengthSkills.length > 0) {
+        finalRecommendation += 'Critical Skills Analysis:\n';
+        if (criticalStrengthSkills.length > 0) {
+          finalRecommendation += `The candidate demonstrates notable strength in ${criticalStrengthSkills.slice(0, 3).map(s => s.skillName).join(', ')}, exceeding role requirements in these areas. `;
+        }
+        if (criticalGapSkills.length > 0) {
+          finalRecommendation += `However, there are gaps in ${criticalGapSkills.slice(0, 3).map(s => s.skillName).join(', ')} that require attention, as these are designated as critical competencies for this role.`;
+        }
+      } else {
+        finalRecommendation += 'Critical Skills Analysis:\n';
+        finalRecommendation += `The candidate's skill profile shows ${(overallFit || 0) >= 70 ? 'solid' : 'moderate'} alignment across the assessed competencies for the ${role?.name || 'target'} role.`;
+      }
+
+      // Cohort Context
+      const overallCohort = cohortBenchmarks?.overall;
+      if (overallCohort) {
+        finalRecommendation += '\n\nCohort Context:\n';
+        const percentile = overallCohort.percentile;
+        if (percentile >= 75) {
+          finalRecommendation += `This candidate ranks in the top quartile (${percentile}th percentile) compared to ${overallCohort.totalCandidates} other candidates assessed for this role, indicating above-average performance relative to the talent pool.`;
+        } else if (percentile >= 50) {
+          finalRecommendation += `This candidate performs at or above the median (${percentile}th percentile) compared to ${overallCohort.totalCandidates} other candidates assessed for this role.`;
+        } else if (percentile >= 25) {
+          finalRecommendation += `This candidate ranks in the ${percentile}th percentile compared to ${overallCohort.totalCandidates} other candidates, performing below the median of the talent pool.`;
+        } else {
+          finalRecommendation += `This candidate ranks in the lower quartile (${percentile}th percentile) compared to ${overallCohort.totalCandidates} other assessed candidates for this role.`;
+        }
+      }
+      
+      // Hiring Recommendation
+      finalRecommendation += '\n\nHiring Recommendation:\n';
+      if ((overallFit || 0) >= 85) {
+        finalRecommendation += `Strongly recommend advancing to final interview stages. This candidate shows readiness to contribute immediately with minimal ramp-up time. Their skill profile aligns well with role requirements and they would likely be a valuable addition to the team.`;
+      } else if ((overallFit || 0) >= 70) {
+        finalRecommendation += `Recommend advancing with targeted interview focus on development areas. This candidate meets most key requirements and demonstrates good potential. With appropriate onboarding support in identified gap areas, they could become a strong contributor.`;
+      } else if ((overallFit || 0) >= 55) {
+        finalRecommendation += `Consider for advancement if comprehensive training resources are available. This candidate shows promise in certain competencies but would require significant development in key areas. Best suited for organizations with robust mentorship programs or roles with extended ramp-up periods.`;
+      } else {
+        finalRecommendation += `Recommend exploring alternative roles or deferring this candidacy. Significant skill gaps across multiple required competencies suggest this may not be an optimal match at this time. Consider entry-level positions or roles with different skill requirements that better align with current capabilities.`;
+      }
+      
+      // Alternative Role Insight
+      if (topAlternativeRoles.length > 0) {
+        const betterFits = topAlternativeRoles.filter(r => r.fitScore > (overallFit || 0));
+        if (betterFits.length > 0) {
+          const bestAlt = betterFits[0];
+          finalRecommendation += `
+
+Alternative Role Insight:
+Based on skill alignment analysis, this candidate may show stronger fit for the ${bestAlt.roleName} role (${bestAlt.fitScore}/100 fit score). Consider evaluating for this alternative if the primary role is not an ideal match.`;
+        }
+      }
+
+      // Generate Recommended Next Steps
+      const missingAssessmentsList = [
+        ...(fitScores ? [] : ['FIT Assessment']),
+        ...(aiReadinessScores ? [] : ['AI Readiness Assessment']),
+        ...(promptArchitectureScore !== null ? [] : ['Prompt Architecture']),
+        ...(aiqScore !== null ? [] : ['AIQ Assessment']),
+      ];
+      const assessmentCompletionStep = missingAssessmentsList.length > 0
+        ? [`Have candidate complete ${missingAssessmentsList.join(' and ')} assessment${missingAssessmentsList.length > 1 ? 's' : ''} for a complete capability picture`]
+        : [];
+      
+      const recGapNames = criticalGapSkills.map(s => s.skillName).slice(0, 3);
+      const recStrengthNames = strengths.slice(0, 3);
+      
+      const nextSteps = [
+        ...assessmentCompletionStep,
+        ...((overallFit || 0) >= 70 
+          ? [
+              `Conduct a structured technical interview focusing on the candidate's practical application of ${recStrengthNames.length > 0 ? recStrengthNames.join(', ') : 'their core competencies'}. Use scenario-based questions to validate real-world capability beyond assessment scores.`,
+              'Schedule a behavioral interview to explore team dynamics, leadership potential, and cultural alignment. Pay attention to how they approach collaboration and conflict resolution in cross-functional settings.',
+              "Perform a team composition analysis to understand how this candidate's strengths complement existing team capabilities and identify potential synergies or overlaps with current team members.",
+              criticalGapSkills.length > 0
+                ? `Design a targeted 30-60-90 day development plan addressing identified gaps in ${recGapNames.join(' and ')}. Include specific training resources, mentorship pairing, and measurable milestones.`
+                : "Prepare an onboarding acceleration plan that leverages the candidate's strong skill alignment to achieve rapid time-to-productivity, with clear 30-60-90 day milestones.",
+              `Request professional references with specific emphasis on ${recStrengthNames.length > 0 ? recStrengthNames[0] : 'their primary strengths'} and ability to deliver results in fast-paced, evolving environments.`,
+              `Advance to final decision stage — the candidate's overall alignment score of ${overallFit}/100 indicates strong readiness for the role.`
+            ]
+          : [
+              `Schedule a combined technical and behavioral screening interview. Focus on exploring the candidate's approach to ${recGapNames.length > 0 ? recGapNames.join(' and ') : 'development areas'} through practical scenarios and case studies.`,
+              "Conduct a skills gap assessment to determine the candidate's learning velocity and potential for rapid skill acquisition in areas where they currently score below requirements.",
+              'Evaluate team fit through a collaborative exercise or shadow session to understand how the candidate would integrate with existing team dynamics and workflows.',
+              `Create a comprehensive development roadmap if proceeding — identify specific training programs, certification paths, and mentorship opportunities to bridge the ${criticalGapSkills.length} identified skill gap${criticalGapSkills.length !== 1 ? 's' : ''}.`,
+              "Consider alternative roles within the organization that better align with the candidate's current skill profile. The Role Flexibility Analysis in this report identifies potential matches.",
+              'If proceeding with this role, ensure robust onboarding support is available including extended ramp-up periods, dedicated mentorship, and regular performance check-ins during the first 90 days.'
+            ])
+      ];
+
       const resultData = {
         overallFit,
         fitSkillAlignments,
@@ -16122,6 +16225,8 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         aiqRoleFitAnalysis,
         strengths,
         gaps,
+        finalRecommendation,
+        nextSteps,
         cohortBenchmarks: Object.keys(cohortBenchmarks).length > 0 ? cohortBenchmarks : null,
         roleFlexibility: topAlternativeRoles,
         dataCoverage: {
