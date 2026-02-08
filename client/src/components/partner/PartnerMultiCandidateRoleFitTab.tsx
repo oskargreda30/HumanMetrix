@@ -1468,55 +1468,6 @@ export default function PartnerMultiCandidateRoleFitTab() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Overall Fit Comparison</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3" ref={chartRef} id="multi-candidate-bar-chart">
-                {prepareBarChartData().map((entry) => {
-                  const rankBadge = getRankBadge(entry.rank);
-                  return (
-                    <div key={entry.fullName} className="flex items-center gap-3">
-                      <span className={`flex-shrink-0 w-8 h-6 rounded text-xs font-bold flex items-center justify-center ${rankBadge.color}`}>
-                        {rankBadge.label}
-                      </span>
-                      <span className="w-28 text-sm font-medium truncate" title={entry.fullName}>
-                        {entry.name}
-                      </span>
-                      <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{ 
-                            width: `${entry['Overall Fit']}%`,
-                            backgroundColor: entry.tier === 'strong' ? '#22c55e' : entry.tier === 'moderate' ? '#f59e0b' : '#ef4444'
-                          }}
-                        />
-                      </div>
-                      <span className="w-12 text-sm font-bold text-right">
-                        {entry['Overall Fit']}%
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="flex justify-center gap-4 mt-4 text-sm">
-                <span className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full bg-green-500"></span>
-                  Strong (80%+)
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full bg-amber-500"></span>
-                  Moderate (60-79%)
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full bg-red-500"></span>
-                  Development (&lt;60%)
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Recommended Next Steps - Matching Individual Tab Style */}
           <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
             <CardHeader>
