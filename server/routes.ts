@@ -15981,18 +15981,15 @@ PROMPT ARCHITECTURE ASSESSMENT RESULTS:
 - Overall Score: ${promptScore}
 ${promptLevels ? `- Level Details:\n${promptLevels}` : '- No detailed level data available'}
 
-Analyze how the candidate's prompt engineering capabilities align with this role. Consider:
-1. Whether the role requires frequent AI interaction and prompt crafting
-2. How the candidate's prompt skills (clarity, structure, context awareness, creativity, iterative improvement) match role demands
-3. Potential risks or benefits of their current skill level for this role
-4. Recommendations for development if gaps exist
+In 1-2 short paragraphs (max 120 words total), address ONLY:
+1. How and why this specific role requires prompt engineering / AI interaction skills
+2. Whether the candidate's score and skill profile meet those requirements, and key risks if they don't
 
-Provide a concise 2-3 paragraph analysis focusing on practical implications for the hiring decision.`;
-
+Be direct and specific to the role. No general background on prompt engineering.`;
             const promptResponse = await openai.chat.completions.create({
               model: 'gpt-4o',
               messages: [{ role: 'user', content: promptAnalysisPrompt }],
-              max_tokens: 800,
+              max_tokens: 400,
               temperature: 0.7,
             });
             promptRoleFitAnalysis = promptResponse.choices[0]?.message?.content || null;
@@ -16030,18 +16027,15 @@ AIQ ASSESSMENT RESULTS:
 - Overall Score: ${aiqScoreStr}
 ${aiqBand ? `- Performance Band: ${aiqBand}` : ''}
 
-Analyze how the candidate's ethical AI understanding aligns with this role. Consider:
-1. The importance of AI ethics and responsible AI practices for this role
-2. How the candidate's ethical stance matches role demands
-3. Potential risks if there are ethical blind spots for AI-related decisions
-4. Recommendations for development if gaps exist
+In 1-2 short paragraphs (max 120 words total), address ONLY:
+1. How and why this specific role requires ethical AI understanding and responsible AI practices
+2. Whether the candidate's AIQ score meets those requirements, and key risks from any ethical blind spots
 
-Provide a concise 2-3 paragraph analysis focusing on practical implications for the hiring decision.`;
-
+Be direct and specific to the role. No general background on AI ethics.`;
             const aiqResponse = await openai.chat.completions.create({
               model: 'gpt-4o',
               messages: [{ role: 'user', content: aiqAnalysisPrompt }],
-              max_tokens: 800,
+              max_tokens: 400,
               temperature: 0.7,
             });
             aiqRoleFitAnalysis = aiqResponse.choices[0]?.message?.content || null;
@@ -16556,18 +16550,15 @@ PROMPT ARCHITECTURE ASSESSMENT RESULTS:
 - Overall Score: ${promptScore}
 ${promptLevels ? `- Level Details:\n${promptLevels}` : '- No detailed level data available'}
 
-Analyze how the candidate's prompt engineering capabilities align with this role. Consider:
-1. Whether the role requires frequent AI interaction and prompt crafting
-2. How the candidate's prompt skills (clarity, structure, context awareness, creativity, iterative improvement) match role demands
-3. Potential risks or benefits of their current skill level for this role
-4. Recommendations for development if gaps exist
+In 1-2 short paragraphs (max 120 words total), address ONLY:
+1. How and why this specific role requires prompt engineering / AI interaction skills
+2. Whether the candidate's score and skill profile meet those requirements, and key risks if they don't
 
-Provide a concise 2-3 paragraph analysis focusing on practical implications for the hiring decision.`;
-
+Be direct and specific to the role. No general background on prompt engineering.`;
       const response = await openai.chat.completions.create({
         model: 'gpt-4o',
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 800,
+        max_tokens: 400,
         temperature: 0.7,
       });
 
@@ -16658,18 +16649,15 @@ AIQ ASSESSMENT RESULTS:
 - Overall Score: ${aiqScore}
 ${aiqBand ? `- Performance Band: ${aiqBand}` : ''}
 
-Analyze how the candidate's ethical AI understanding aligns with this role. Consider:
-1. The importance of AI ethics and responsible AI practices for this role
-2. How the candidate's ethical stance matches role demands
-3. Potential risks if there are ethical blind spots for AI-related decisions
-4. Recommendations for development if gaps exist
+In 1-2 short paragraphs (max 120 words total), address ONLY:
+1. How and why this specific role requires ethical AI understanding and responsible AI practices
+2. Whether the candidate's AIQ score meets those requirements, and key risks from any ethical blind spots
 
-Provide a concise 2-3 paragraph analysis focusing on practical implications for the hiring decision.`;
-
+Be direct and specific to the role. No general background on AI ethics.`;
       const response = await openai.chat.completions.create({
         model: 'gpt-4o',
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 800,
+        max_tokens: 400,
         temperature: 0.7,
       });
 
