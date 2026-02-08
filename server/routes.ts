@@ -11924,7 +11924,7 @@ Return valid JSON with only the requested fields.`;
         await storage.updatePartnerTestPackage(pkg.id, {
           status: 'completed',
           totalPrice: 0,
-          paymentProvider: 'airwallex',
+          paymentProvider: matchingPartner.paymentProvider || 'airwallex',
         });
         await storage.creditPartnerTests(
           matchingPartner.id,

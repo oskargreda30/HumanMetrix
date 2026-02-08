@@ -1560,6 +1560,18 @@ export default function PartnerDashboard() {
       return response.json();
     },
     onSuccess: async (data) => {
+      if (data.free) {
+        toast({
+          title: "Credits added successfully",
+          description: data.message || "Your free credits have been applied.",
+        });
+        setPurchasingPackageSize(null);
+        setPromoCode("");
+        queryClient.invalidateQueries({ queryKey: ["/api/partner/me"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/partner/test-packages"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/partner/credits"] });
+        return;
+      }
       if (data.paymentProvider === 'airwallex' && data.intentId && data.clientSecret) {
         try {
           const { init } = await import('@airwallex/components-sdk');
