@@ -4944,11 +4944,11 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       pdf.text(meetText, cardX + cardW - meetTextW - 6, innerY + 3);
       innerY += 7;
 
-      const nameColW = 42;
-      const barStartX = cardX + nameColW + 4;
-      const scoreColW = 34;
+      const nameColW = 40;
+      const barStartX = cardX + nameColW + 2;
+      const scoreColW = 38;
       const barEndX = cardX + cardW - scoreColW;
-      const barW = barEndX - barStartX;
+      const barW = Math.max(20, barEndX - barStartX);
 
       candidatesWithScores.forEach((cand) => {
         pdf.setFontSize(7);
@@ -5013,7 +5013,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
 
           const meetsIcon = cand.meetsRequired;
           const iconColor: [number, number, number] = meetsIcon ? [34, 197, 94] : [234, 179, 8];
-          const iconX = barEndX + 3;
+          const iconX = barEndX + 2;
 
           pdf.setFillColor(iconColor[0], iconColor[1], iconColor[2]);
           pdf.circle(iconX + 1.5, innerY + 3.5, 1.8, 'F');
@@ -5030,19 +5030,20 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
             pdf.circle(iconX + 1.5, innerY + 4.5, 0.3, 'F');
           }
 
+          const scoreX = iconX + 5;
           pdf.setFontSize(7);
           pdf.setFont('helvetica', 'bold');
           pdf.setTextColor(55, 65, 81);
           const scoreStr = `${score}%`;
-          pdf.text(scoreStr, iconX + 5, innerY + 4.5);
+          pdf.text(scoreStr, scoreX, innerY + 4.5);
+          const scoreW = pdf.getTextWidth(scoreStr);
 
           const gap = cand.gap!;
           const gapStr = gap >= 0 ? `+${gap}` : `${gap}`;
           const gapColor: [number, number, number] = gap >= 0 ? [34, 197, 94] : [239, 68, 68];
           pdf.setTextColor(gapColor[0], gapColor[1], gapColor[2]);
           pdf.setFontSize(6.5);
-          const gapW = pdf.getTextWidth(gapStr);
-          pdf.text(gapStr, cardX + cardW - gapW - 4, innerY + 4.5);
+          pdf.text(gapStr, scoreX + scoreW + 2, innerY + 4.5);
         }
 
         innerY += barRowH;
