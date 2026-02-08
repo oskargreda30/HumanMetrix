@@ -4954,21 +4954,31 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
         pdf.setFontSize(7);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(55, 65, 81);
-        const displayName = cand.name.length > 18 ? cand.name.slice(0, 16) + '..' : cand.name;
+
+        const bestBadgeW = 12;
+        const bestBadgeGap = 2;
+        let maxNameW = nameColW - 6;
+        if (cand.isBest && cand.hasData) {
+          maxNameW = nameColW - 6 - bestBadgeW - bestBadgeGap;
+        }
+        let displayName = cand.name;
+        while (pdf.getTextWidth(displayName) > maxNameW && displayName.length > 3) {
+          displayName = displayName.slice(0, -1);
+        }
+        if (displayName !== cand.name) displayName = displayName.trim() + '..';
         pdf.text(displayName, cardX + 6, innerY + 4.5);
 
         if (cand.isBest && cand.hasData) {
           const nameW = pdf.getTextWidth(displayName);
           const bestBadgeX = cardX + 7 + nameW + 1;
-          const bestBadgeMaxX = barStartX - 2;
-          if (bestBadgeX + 12 < bestBadgeMaxX) {
-            pdf.setFillColor(34, 197, 94);
-            pdf.roundedRect(bestBadgeX, innerY + 0.5, 12, 5, 1, 1, 'F');
-            pdf.setFontSize(4.5);
-            pdf.setFont('helvetica', 'bold');
-            pdf.setTextColor(255, 255, 255);
-            pdf.text('Best', bestBadgeX + 1.5, innerY + 4);
-          }
+          pdf.setFillColor(34, 197, 94);
+          pdf.roundedRect(bestBadgeX, innerY + 0.5, bestBadgeW, 5, 1, 1, 'F');
+          pdf.setFontSize(4.5);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setTextColor(255, 255, 255);
+          pdf.text('Best', bestBadgeX + 1.5, innerY + 4);
+          pdf.setFontSize(7);
+          pdf.setFont('helvetica', 'normal');
         }
 
         if (!cand.hasData) {
@@ -5031,6 +5041,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
           }
 
           const scoreX = iconX + 5;
+          const cardRightEdge = cardX + cardW - 3;
           pdf.setFontSize(7);
           pdf.setFont('helvetica', 'bold');
           pdf.setTextColor(55, 65, 81);
@@ -5043,7 +5054,10 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
           const gapColor: [number, number, number] = gap >= 0 ? [34, 197, 94] : [239, 68, 68];
           pdf.setTextColor(gapColor[0], gapColor[1], gapColor[2]);
           pdf.setFontSize(6.5);
-          pdf.text(gapStr, scoreX + scoreW + 2, innerY + 4.5);
+          const gapTextX = scoreX + scoreW + 2;
+          const gapTextW = pdf.getTextWidth(gapStr);
+          const clampedGapX = Math.min(gapTextX, cardRightEdge - gapTextW);
+          pdf.text(gapStr, clampedGapX, innerY + 4.5);
         }
 
         innerY += barRowH;
@@ -5051,27 +5065,40 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
 
       innerY += 2;
       const legendY = innerY;
-      pdf.setFillColor(34, 197, 94);
-      pdf.roundedRect(cardX + 6, legendY, 6, 3, 0.5, 0.5, 'F');
       pdf.setFontSize(5.5);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(107, 114, 128);
-      pdf.text('Meets requirement', cardX + 14, legendY + 2.5);
 
-      pdf.setFillColor(252, 165, 165);
-      pdf.roundedRect(cardX + 50, legendY, 6, 3, 0.5, 0.5, 'F');
-      pdf.text('Below requirement', cardX + 58, legendY + 2.5);
+      const legendItems = [
+        { color: [34, 197, 94] as [number, number, number], type: 'rect' as const, label: 'Meets requirement' },
+        { color: [252, 165, 165] as [number, number, number], type: 'rect' as const, label: 'Below requirement' },
+        { color: [59, 130, 246] as [number, number, number], type: 'dash' as const, label: 'Required threshold' },
+      ];
 
-      pdf.setDrawColor(59, 130, 246);
-      pdf.setLineWidth(0.5);
-      let legDashY = legendY;
-      const legDashEnd = legendY + 3;
-      while (legDashY < legDashEnd) {
-        const segEnd = Math.min(legDashY + 1, legDashEnd);
-        pdf.line(cardX + 95, legDashY, cardX + 95, segEnd);
-        legDashY = segEnd + 0.8;
-      }
-      pdf.text('Required threshold', cardX + 98, legendY + 2.5);
+      const legendSpacing = (cardW - 12) / legendItems.length;
+      legendItems.forEach((item, idx) => {
+        const itemX = cardX + 6 + idx * legendSpacing;
+
+        if (item.type === 'rect') {
+          pdf.setFillColor(item.color[0], item.color[1], item.color[2]);
+          pdf.roundedRect(itemX, legendY, 6, 3, 0.5, 0.5, 'F');
+        } else {
+          pdf.setDrawColor(item.color[0], item.color[1], item.color[2]);
+          pdf.setLineWidth(0.5);
+          let legDashY2 = legendY;
+          const legDashEnd2 = legendY + 3;
+          while (legDashY2 < legDashEnd2) {
+            const segEnd = Math.min(legDashY2 + 1, legDashEnd2);
+            pdf.line(itemX + 3, legDashY2, itemX + 3, segEnd);
+            legDashY2 = segEnd + 0.8;
+          }
+        }
+
+        pdf.setFontSize(5.5);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(107, 114, 128);
+        pdf.text(item.label, itemX + 8, legendY + 2.5);
+      });
 
       yPos += totalCardH + 5;
     });
