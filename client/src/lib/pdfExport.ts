@@ -1293,13 +1293,17 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos += 8; // More breathing room before Prompt Architecture section
     yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE COMPARISON', yPos, pageWidth);
     
-    // Add description for Prompt Architecture section
+    const promptCompDesc = 'Evaluates ability to craft effective AI prompts across 7 progressive difficulty levels, measuring clarity, structure, context relevance, creativity, and iterative improvement skills.';
+    const splitPromptCompDesc = pdf.splitTextToSize(promptCompDesc, pageWidth - 48);
+    const promptCompDescBoxH = 8 + (splitPromptCompDesc.length * 4);
+    pdf.setFillColor(240, 249, 255);
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, promptCompDescBoxH, 2, 2, 'F');
     applySmallText(pdf);
-    pdf.setTextColor(107, 114, 128);
-    const promptDesc = 'Evaluates ability to craft effective AI prompts across 7 progressive difficulty levels, measuring clarity, structure, context relevance, creativity, and iterative improvement skills.';
-    const splitPromptDesc = pdf.splitTextToSize(promptDesc, pageWidth - 40);
-    pdf.text(splitPromptDesc, 20, yPos);
-    yPos += splitPromptDesc.length * 4 + 4;
+    pdf.setTextColor(71, 85, 105);
+    splitPromptCompDesc.forEach((line: string, i: number) => {
+      pdf.text(line, 24, yPos + 3 + (i * 4));
+    });
+    yPos += promptCompDescBoxH + 3;
     
     // Table header
     applySmallText(pdf);
@@ -1546,12 +1550,6 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   if (candidateProfiles.length >= 2 && candidateProfiles[0].topStrength) {
     yPos += 3;
-    pdf.setFillColor(248, 250, 252);
-    pdf.roundedRect(20, yPos, pageWidth - 40, 18, 2, 2, 'F');
-    
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(71, 85, 105);
     
     const topProfile = candidateProfiles[0];
     const secondProfile = candidateProfiles[1];
@@ -1564,8 +1562,15 @@ export async function exportComparisonPDF(data: ComparisonData) {
     }
     
     const splitProfileText = pdf.splitTextToSize(profileText, pageWidth - 48);
+    const profileBoxH = 8 + (splitProfileText.length * 4);
+    pdf.setFillColor(248, 250, 252);
+    pdf.roundedRect(20, yPos, pageWidth - 40, profileBoxH, 2, 2, 'F');
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(71, 85, 105);
     pdf.text(splitProfileText, 24, yPos + 6);
-    yPos += 18;
+    yPos += profileBoxH;
   }
   
   yPos += 8;
@@ -3475,7 +3480,7 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
     pdf.text('Level Breakdown', 20, yPos);
     yPos += 5;
 
-    const promptColWidths = [18, 22, 22, 22, 22, 22, 22];
+    const promptColWidths = [24, 20, 21, 21, 21, 21, 21];
     const promptHeaders = ['Level', 'Total', 'Clarity', 'Structure', 'Context', 'Creative', 'Iterative'];
     drawTableRow(pdf, 20, yPos, promptColWidths, promptHeaders, 7, {
       isBold: true,
@@ -3490,7 +3495,7 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
 
       if (levelData && !levelData.isMissing) {
         const rowTexts = [
-          `L${level}`,
+          `Level ${level}`,
           `${levelData.totalScore}`,
           `${levelData.scores.clarity}`,
           `${levelData.scores.structure}`,
@@ -3503,7 +3508,7 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
           textColor: [55, 65, 81]
         });
       } else {
-        const rowTexts = [`L${level}`, 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A'];
+        const rowTexts = [`Level ${level}`, 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A'];
         drawTableRow(pdf, 20, yPos, promptColWidths, rowTexts, 7, {
           fontSize: 7,
           textColor: [150, 150, 150]
@@ -3565,17 +3570,17 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
 
     yPos = addSectionHeader(pdf, 'AIQ ASSESSMENT', yPos, pageWidth);
 
-    const aiqDescText = 'Measures understanding of AI ethics, bias awareness, fairness, and responsible AI governance.';
-    const aiqDescLines = pdf.splitTextToSize(aiqDescText, pageWidth - 48);
-    const aiqDescBoxH = 8 + (aiqDescLines.length * 4);
+    const aiqSectionDescText = 'Measures understanding of AI ethics, bias awareness, fairness, and responsible AI governance.';
+    const aiqSectionDescLines = pdf.splitTextToSize(aiqSectionDescText, pageWidth - 48);
+    const aiqSectionDescBoxH = 8 + (aiqSectionDescLines.length * 4);
     pdf.setFillColor(240, 249, 255);
-    pdf.roundedRect(20, yPos - 2, pageWidth - 40, aiqDescBoxH, 2, 2, 'F');
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, aiqSectionDescBoxH, 2, 2, 'F');
     applySmallText(pdf);
     pdf.setTextColor(71, 85, 105);
-    aiqDescLines.forEach((line: string, i: number) => {
+    aiqSectionDescLines.forEach((line: string, i: number) => {
       pdf.text(line, 24, yPos + 3 + (i * 4));
     });
-    yPos += aiqDescBoxH + 3;
+    yPos += aiqSectionDescBoxH + 3;
 
     const aiqScore = data.aiqAssessment.totalScore;
     const aiqBand = getAIQBandInterpretation(aiqScore);
@@ -3639,7 +3644,7 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
     let parsedAny = false;
 
     insightSections.forEach(section => {
-      const regex = new RegExp(`\\*\\*${section.key}\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*[A-Z]|$)`);
+      const regex = new RegExp(`\\*\\*${section.key}\\*\\*[:\\s]*([\\s\\S]*?)(?=\\n\\s*\\*\\*[A-Z]|$)`, 'i');
       const match = data.aiInsights!.match(regex);
 
       if (match && match[1]?.trim()) {
