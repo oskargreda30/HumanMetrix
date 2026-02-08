@@ -644,7 +644,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
               </CardHeader>
               <CardContent>
                 <div className="grid gap-6 lg:grid-cols-2">
-                  <div ref={fitChartRef} className="h-72 bg-white dark:bg-gray-900 rounded-lg p-2">
+                  <div ref={fitChartRef} className="h-96 bg-white dark:bg-gray-900 rounded-lg p-4">
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart data={fitRadarData} cx="50%" cy="50%" outerRadius="70%">
                         <PolarGrid stroke="#e2e8f0" />

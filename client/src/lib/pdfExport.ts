@@ -3448,58 +3448,18 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
 
     yPos += 27;
 
-    applySubheading(pdf);
-    pdf.text('Level Breakdown', 20, yPos);
-    yPos += 5;
-
-    const promptColWidths = [24, 20, 21, 21, 21, 21, 21];
-    const promptHeaders = ['Level', 'Total', 'Clarity', 'Structure', 'Context', 'Creative', 'Iterative'];
-    drawTableRow(pdf, 20, yPos, promptColWidths, promptHeaders, 7, {
-      isBold: true,
-      fontSize: 7,
-      fillColor: [249, 250, 251],
-      textColor: [17, 24, 39]
-    });
-    yPos += 7;
-
-    for (let level = 1; level <= 7; level++) {
-      const levelData = data.promptArchitectureAssessment.levels.find(l => l.level === level);
-
-      if (levelData && !levelData.isMissing) {
-        const rowTexts = [
-          `Level ${level}`,
-          `${levelData.totalScore}`,
-          `${levelData.scores.clarity}`,
-          `${levelData.scores.structure}`,
-          `${levelData.scores.contextRelevance}`,
-          `${levelData.scores.creativity}`,
-          `${levelData.scores.iterativeImprovement}`
-        ];
-        drawTableRow(pdf, 20, yPos, promptColWidths, rowTexts, 7, {
-          fontSize: 7,
-          textColor: [55, 65, 81]
-        });
-      } else {
-        const rowTexts = [`Level ${level}`, 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A'];
-        drawTableRow(pdf, 20, yPos, promptColWidths, rowTexts, 7, {
-          fontSize: 7,
-          textColor: [150, 150, 150]
-        });
-      }
-
-      yPos += 7;
-    }
-
-    yPos += 3;
-
-    applySmallText(pdf);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(17, 24, 39);
-    pdf.text('Level Score Bars', 20, yPos);
-    yPos += 4;
-
     const promptBarMaxWidth = 90;
     const promptBarX = 40;
+
+    const levelColors: [number, number, number][] = [
+      [147, 197, 253],
+      [129, 186, 250],
+      [96, 165, 250],
+      [59, 130, 246],
+      [37, 99, 235],
+      [29, 78, 216],
+      [30, 64, 175],
+    ];
 
     for (let level = 1; level <= 7; level++) {
       const levelData = data.promptArchitectureAssessment.levels.find(l => l.level === level);
@@ -3507,30 +3467,31 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
       applySmallText(pdf);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(55, 65, 81);
-      pdf.text(`Level ${level}`, 20, yPos + 3);
+      pdf.text(`Level ${level}`, 20, yPos + 4.5);
 
       if (levelData && !levelData.isMissing) {
         const score = levelData.totalScore;
         pdf.setFillColor(229, 231, 235);
-        pdf.roundedRect(promptBarX, yPos, promptBarMaxWidth, 5, 1, 1, 'F');
-        pdf.setFillColor(59, 130, 246);
+        pdf.roundedRect(promptBarX, yPos, promptBarMaxWidth, 7, 1.5, 1.5, 'F');
+        const color = levelColors[level - 1];
+        pdf.setFillColor(color[0], color[1], color[2]);
         if (score > 0) {
-          pdf.roundedRect(promptBarX, yPos, (score / 100) * promptBarMaxWidth, 5, 1, 1, 'F');
+          pdf.roundedRect(promptBarX, yPos, (score / 100) * promptBarMaxWidth, 7, 1.5, 1.5, 'F');
         }
 
         pdf.setFontSize(8);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(17, 24, 39);
-        pdf.text(`${score}`, promptBarX + promptBarMaxWidth + 5, yPos + 3.5);
+        pdf.text(`${score}%`, promptBarX + promptBarMaxWidth + 5, yPos + 4.5);
       } else {
         pdf.setFillColor(229, 231, 235);
-        pdf.roundedRect(promptBarX, yPos, promptBarMaxWidth, 5, 1, 1, 'F');
+        pdf.roundedRect(promptBarX, yPos, promptBarMaxWidth, 7, 1.5, 1.5, 'F');
         pdf.setTextColor(150, 150, 150);
         pdf.setFontSize(8);
-        pdf.text('N/A', promptBarX + promptBarMaxWidth + 5, yPos + 3.5);
+        pdf.text('N/A', promptBarX + promptBarMaxWidth + 5, yPos + 4.5);
       }
 
-      yPos += 8;
+      yPos += 10;
     }
 
     yPos += 5;
