@@ -1908,7 +1908,7 @@ export default function EmbedAssessment() {
                     <Button
                       className="w-full"
                       style={{ backgroundColor: primaryColor }}
-                      onClick={() => window.location.href = '/dashboard'}
+                      onClick={() => { const target = window.top || window; target.location.href = '/dashboard'; }}
                       data-testid="button-go-to-dashboard"
                     >
                       Go to Dashboard
@@ -1916,7 +1916,7 @@ export default function EmbedAssessment() {
                     <Button
                       variant="outline"
                       className="w-full"
-                      onClick={() => window.location.href = invitationCompletionData.paymentUrl}
+                      onClick={() => { const target = window.top || window; target.location.href = invitationCompletionData.paymentUrl; }}
                       data-testid="button-unlock-results"
                     >
                       Unlock Results Now
@@ -1927,21 +1927,21 @@ export default function EmbedAssessment() {
                     <Button
                       className="w-full"
                       style={{ backgroundColor: primaryColor }}
-                      onClick={() => window.location.href = invitationCompletionData.createAccountUrl || '/register'}
+                      onClick={() => { const target = window.top || window; target.location.href = invitationCompletionData.createAccountUrl || '/register'; }}
                       data-testid="button-create-account"
                     >
                       Create Account to View Results
                     </Button>
                     <p className={`text-xs ${textMuted}`}>
                       Already have an account?{' '}
-                      <a href="/login" className="text-cyan-400 hover:underline">Log in</a>
+                      <a href="/login" className="text-cyan-400 hover:underline" target="_top">Log in</a>
                     </p>
                   </>
                 ) : (
                   <Button
                     className="w-full"
                     style={{ backgroundColor: primaryColor }}
-                    onClick={() => window.location.href = '/register'}
+                    onClick={() => { const target = window.top || window; target.location.href = '/register'; }}
                     data-testid="button-create-account"
                   >
                     Create Account
