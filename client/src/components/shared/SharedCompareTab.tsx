@@ -237,120 +237,56 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
       });
 
       // Wait for charts to render and fonts to load
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 200));
       await document.fonts.ready;
 
-      // Capture radar chart images
-      const fitChartImages: (string | null)[] = [];
-      const aiChartImages: (string | null)[] = [];
+      const captureOpts = { backgroundColor: '#ffffff', scale: 1.5, useCORS: true, logging: false };
+
+      const captureElement = async (id: string): Promise<string | null> => {
+        try {
+          const el = document.getElementById(id);
+          if (!el) return null;
+          const canvas = await html2canvas(el, captureOpts);
+          return canvas.toDataURL('image/jpeg', 0.7);
+        } catch (err) {
+          console.error(`Error capturing ${id}:`, err);
+          return null;
+        }
+      };
+
+      // Build all capture promises in parallel
+      const capturePromises: Promise<string | null>[] = [];
+      const captureKeys: string[] = [];
 
       for (let i = 0; i < selectedCandidateData.length; i++) {
-        // Capture FIT radar chart
-        if (comparison.fitAssessments?.[i]) {
-          try {
-            const element = document.getElementById(`pdf-comparison-fit-${i}`);
-            if (element) {
-              const canvas = await html2canvas(element, {
-                backgroundColor: '#ffffff',
-                scale: 2,
-                useCORS: true,
-                logging: false,
-              });
-              fitChartImages.push(canvas.toDataURL('image/jpeg', 0.7));
-            } else {
-              fitChartImages.push(null);
-            }
-          } catch (err) {
-            console.error('Error capturing FIT chart:', err);
-            fitChartImages.push(null);
-          }
-        } else {
-          fitChartImages.push(null);
-        }
-
-        // Capture AI Readiness radar chart
-        if (comparison.aiReadinessAssessments?.[i]) {
-          try {
-            const element = document.getElementById(`pdf-comparison-ai-${i}`);
-            if (element) {
-              const canvas = await html2canvas(element, {
-                backgroundColor: '#ffffff',
-                scale: 2,
-                useCORS: true,
-                logging: false,
-              });
-              aiChartImages.push(canvas.toDataURL('image/jpeg', 0.7));
-            } else {
-              aiChartImages.push(null);
-            }
-          } catch (err) {
-            console.error('Error capturing AI chart:', err);
-            aiChartImages.push(null);
-          }
-        } else {
-          aiChartImages.push(null);
-        }
-      }
-      
-      // Capture combined radar charts
-      let fitCombinedChartImage: string | null = null;
-      let aiCombinedChartImage: string | null = null;
-      
-      // Capture overlapping FIT chart if any candidates have it
-      if (comparison.fitAssessments?.some(a => a !== null)) {
-        try {
-          const element = document.getElementById('pdf-comparison-fit-overlapping');
-          if (element) {
-            const canvas = await html2canvas(element, {
-              backgroundColor: '#ffffff',
-              scale: 2,
-              useCORS: true,
-              logging: false,
-            });
-            fitCombinedChartImage = canvas.toDataURL('image/jpeg', 0.7);
-          }
-        } catch (err) {
-          console.error('Error capturing overlapping FIT chart:', err);
-        }
-      }
-      
-      // Capture overlapping AI Readiness chart if any candidates have it
-      if (comparison.aiReadinessAssessments?.some(a => a !== null)) {
-        try {
-          const element = document.getElementById('pdf-comparison-ai-overlapping');
-          if (element) {
-            const canvas = await html2canvas(element, {
-              backgroundColor: '#ffffff',
-              scale: 2,
-              useCORS: true,
-              logging: false,
-            });
-            aiCombinedChartImage = canvas.toDataURL('image/jpeg', 0.7);
-          }
-        } catch (err) {
-          console.error('Error capturing overlapping AI chart:', err);
-        }
+        captureKeys.push(`fit-${i}`);
+        capturePromises.push(comparison.fitAssessments?.[i] ? captureElement(`pdf-comparison-fit-${i}`) : Promise.resolve(null));
+        captureKeys.push(`ai-${i}`);
+        capturePromises.push(comparison.aiReadinessAssessments?.[i] ? captureElement(`pdf-comparison-ai-${i}`) : Promise.resolve(null));
       }
 
-      // Capture Overall Skills chart from hidden container
-      let overallSkillsChartImage: string | null = null;
-      if (comparison.hasSkillData) {
-        try {
-          // Use the hidden container with proper dimensions and padding
-          const element = document.getElementById('pdf-comparison-overall-skills-hidden');
-          if (element) {
-            const canvas = await html2canvas(element, {
-              backgroundColor: '#ffffff',
-              scale: 2,
-              useCORS: true,
-              logging: false,
-            });
-            overallSkillsChartImage = canvas.toDataURL('image/jpeg', 0.7);
-          }
-        } catch (err) {
-          console.error('Error capturing Overall Skills chart:', err);
-        }
+      captureKeys.push('fit-combined');
+      capturePromises.push(comparison.fitAssessments?.some(a => a !== null) ? captureElement('pdf-comparison-fit-overlapping') : Promise.resolve(null));
+      captureKeys.push('ai-combined');
+      capturePromises.push(comparison.aiReadinessAssessments?.some(a => a !== null) ? captureElement('pdf-comparison-ai-overlapping') : Promise.resolve(null));
+      captureKeys.push('overall');
+      capturePromises.push(comparison.hasSkillData ? captureElement('pdf-comparison-overall-skills-hidden') : Promise.resolve(null));
+
+      const captureResults = await Promise.all(capturePromises);
+
+      // Extract results by key
+      const resultMap = new Map<string, string | null>();
+      captureKeys.forEach((key, idx) => resultMap.set(key, captureResults[idx]));
+
+      const fitChartImages: (string | null)[] = [];
+      const aiChartImages: (string | null)[] = [];
+      for (let i = 0; i < selectedCandidateData.length; i++) {
+        fitChartImages.push(resultMap.get(`fit-${i}`) ?? null);
+        aiChartImages.push(resultMap.get(`ai-${i}`) ?? null);
       }
+      const fitCombinedChartImage = resultMap.get('fit-combined') ?? null;
+      const aiCombinedChartImage = resultMap.get('ai-combined') ?? null;
+      const overallSkillsChartImage = resultMap.get('overall') ?? null;
 
       // Generate employer recommendation and next steps for PDF using shared helper
       const recommendations = generateComparisonRecommendations();

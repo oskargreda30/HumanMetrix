@@ -2467,12 +2467,11 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     renderSkillSection(data.alignment.fitSkillAlignments, 'FIT ASSESSMENT SKILLS (Behavioral)', [59, 130, 246]);
   }
   
-  // Render AI Readiness skills on a new page (9 skills needs dedicated space)
+  // Render AI Readiness skills on same page (use ensurePageSpace as fallback)
   if (data.alignment.aiReadinessSkillAlignments && data.alignment.aiReadinessSkillAlignments.length > 0) {
-    pdf.addPage();
-    addBackgroundPattern(pdf, pageWidth, pageHeight);
-    addHeader(pdf, pageWidth);
-    yPos = 32;
+    yPos += 4;
+    const aiChartHeight = data.alignment.aiReadinessSkillAlignments.length * 8 + 25;
+    yPos = ensurePageSpace(pdf, yPos, aiChartHeight, pageHeight, pageWidth);
     renderSkillSection(data.alignment.aiReadinessSkillAlignments, 'AI READINESS SKILLS (Technical)', [59, 130, 246]);
   }
   
