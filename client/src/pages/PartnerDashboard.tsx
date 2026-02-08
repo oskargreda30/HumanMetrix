@@ -1603,8 +1603,9 @@ export default function PartnerDashboard() {
       if (data.paymentProvider === 'airwallex' && data.intentId && data.clientSecret) {
         try {
           const { init } = await import('@airwallex/components-sdk');
+          const sdkEnv = data.airwallexEnv === 'demo' ? 'demo' : 'prod';
           const { payments } = await init({
-            env: 'prod',
+            env: sdkEnv,
             enabledElements: ['payments'],
           });
           payments.redirectToCheckout({

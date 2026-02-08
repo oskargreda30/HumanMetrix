@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 
-const airwallexEnv = process.env.AIRWALLEX_ENVIRONMENT || 'prod';
+export const airwallexEnv = process.env.AIRWALLEX_ENVIRONMENT || 'prod';
 const AIRWALLEX_BASE_URL = airwallexEnv === 'demo'
   ? 'https://api-demo.airwallex.com'
   : 'https://api.airwallex.com';

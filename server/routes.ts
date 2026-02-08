@@ -21,7 +21,7 @@ import OpenAI from "openai";
 import Stripe from "stripe";
 import { z } from "zod";
 import { EMAIL_REGEX, isValidEmail, isValidName } from "@shared/validation";
-import { createPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured, getPaymentIntent, verifyAirwallexWebhookSignature, AirwallexWebhookEvent, getAirwallexWebhookSecret } from "./airwallex";
+import { createPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured, getPaymentIntent, verifyAirwallexWebhookSignature, AirwallexWebhookEvent, getAirwallexWebhookSecret, airwallexEnv } from "./airwallex";
 import { getPaymentProviders, createCheckoutWithFallback, type PaymentCheckoutResult } from "./payment-routing";
 import { logAiCost, extractUsage, AI_USAGE_OPERATION_TYPES } from "./ai-cost-tracker";
 import multer from "multer";
@@ -12067,6 +12067,7 @@ Return valid JSON with only the requested fields.`;
         res.json({
           success: true,
           paymentProvider: 'airwallex',
+          airwallexEnv,
           intentId: purchaseResult.intentId,
           clientSecret: purchaseResult.clientSecret,
           amount: purchaseResult.amount,
@@ -19009,6 +19010,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         res.json({
           success: true,
           paymentProvider: 'airwallex',
+          airwallexEnv,
           paymentIntentId: pkgResult.intentId,
           clientSecret: pkgResult.clientSecret,
           packageId: pkgResult.packageId,
@@ -19997,6 +19999,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         res.json({
           success: true,
           paymentProvider: 'airwallex',
+          airwallexEnv,
           paymentIntentId: invResult.intentId,
           clientSecret: invResult.clientSecret,
           message: "Airwallex payment intent created. Use the client secret for checkout.",
