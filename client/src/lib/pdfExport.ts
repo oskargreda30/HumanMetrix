@@ -1853,12 +1853,6 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   yPos = addSectionHeader(pdf, 'EMPLOYER RECOMMENDATION', yPos, pageWidth);
   
-  // Add description for employer recommendation
-  applySmallText(pdf);
-  pdf.setTextColor(107, 114, 128);
-  pdf.text('AI-generated hiring guidance based on composite assessment scores and role alignment analysis.', 20, yPos);
-  yPos += 10;
-  
   // Add Comparison Summary header for the selected role
   if (data.selectedRole && roleData) {
     const roleLabel = roleData.name ?? 'Selected Role';
@@ -1972,54 +1966,46 @@ export async function exportComparisonPDF(data: ComparisonData) {
     const candidateColor = CANDIDATE_COLORS[data.candidates.findIndex(c => getCandidateName(c) === candidate.name)] || [100, 100, 100];
     const perfLevel = getPerformanceLevel(candidate.compositeScore);
     
-    // Calculate box height based on content
     const scoreLine = `Composite Score: ${candidate.compositeScore}/100 (${perfLevel.label})`;
     const assessmentLine = candidate.completedCount === 4 
       ? 'Completed all 4 assessments'
       : `Completed ${candidate.completedCount}/4 assessments (${candidate.completedAssessments.join(', ')})`;
     const strengthsLine = `Key Strengths: ${candidate.topSkills.map(s => s.name).join(', ')}`;
     
-    const strengthsLines = pdf.splitTextToSize(strengthsLine, pageWidth - 70);
-    const boxHeight = 28 + (strengthsLines.length - 1) * 5;
+    const strengthsLines = pdf.splitTextToSize(strengthsLine, pageWidth - 50);
+    const contentHeight = 24 + (strengthsLines.length - 1) * 5;
     
-    yPos = ensurePageSpace(pdf, yPos, boxHeight + 8, pageHeight, pageWidth);
+    yPos = ensurePageSpace(pdf, yPos, contentHeight + 8, pageHeight, pageWidth);
     
-    // Draw box with light background and colored outline only
-    pdf.setFillColor(248, 250, 252);
-    pdf.setDrawColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.setLineWidth(0.5);
-    pdf.roundedRect(20, yPos, pageWidth - 40, boxHeight, 2, 2, 'FD');
-    
-    const textStartX = 26;
-    let textY = yPos + 6;
+    const textStartX = 22;
     
     // Candidate name
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.text(candidate.name, textStartX, textY);
-    textY += 6;
+    pdf.text(candidate.name, textStartX, yPos);
+    yPos += 6;
     
     // Composite score line
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(55, 65, 81);
-    pdf.text(scoreLine, textStartX, textY);
-    textY += 5;
+    pdf.text(scoreLine, textStartX, yPos);
+    yPos += 5;
     
     // Assessments completed line
     pdf.setTextColor(107, 114, 128);
-    pdf.text(assessmentLine, textStartX, textY);
-    textY += 5;
+    pdf.text(assessmentLine, textStartX, yPos);
+    yPos += 5;
     
     // Key strengths (may wrap)
     pdf.setTextColor(55, 65, 81);
     strengthsLines.forEach((line: string) => {
-      pdf.text(line, textStartX, textY);
-      textY += 5;
+      pdf.text(line, textStartX, yPos);
+      yPos += 5;
     });
     
-    yPos += boxHeight + 6; // Space between boxes
+    yPos += 6;
   });
   
   // ========== RECOMMENDED NEXT STEPS & ADDITIONAL SERVICES ==========

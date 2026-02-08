@@ -1114,6 +1114,16 @@ export default function PartnerDashboard() {
   // Purchase state
   const [purchasingPackageSize, setPurchasingPackageSize] = useState<number | null>(null);
 
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        setPurchasingPackageSize(null);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
   // Billing change request state
   const [showBillingChangeDialog, setShowBillingChangeDialog] = useState(false);
   const [selectedBillingType, setSelectedBillingType] = useState<string | null>(null);

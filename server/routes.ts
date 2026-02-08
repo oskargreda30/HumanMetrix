@@ -17055,7 +17055,7 @@ Return valid JSON with only the requested fields.`;
   Risk Flags: ${riskFlags}`;
         }).join('\n');
 
-        const prompt = `You are a senior talent acquisition analyst. Provide strategic hiring insights for this multi-candidate role fit comparison.
+        const prompt = `You are a senior talent acquisition analyst. Provide a comprehensive hiring report for this multi-candidate role fit comparison.
 
 ROLE: ${role.name || role.title}
 ${role.description ? 'Description: ' + role.description : ''}
@@ -17065,21 +17065,35 @@ ${candidateSummaries}
 
 TOP PERFORMER: ${summaryInsights.topPerformer?.userName || 'N/A'} (${summaryInsights.topPerformer?.overallFit || 0}% fit)
 
-Based on this data, provide a brief analysis (under 250 words) covering:
-1. **Hiring Recommendation**: Why the top performer stands out
-2. **Runner-Up Consideration**: When to consider the second choice
-3. **Team Dynamics**: How different candidates might complement each other
-4. **Risk Assessment**: Key concerns to address in interviews
+Generate a detailed employer recommendation report with the following sections. Use markdown headers (##) for each section. Be specific and reference candidates by name throughout.
 
-Be specific and reference the candidates by name.`;
+## Overall Ranking & Summary
+Rank all candidates by composite score with a brief 1-2 sentence assessment of each. Include their key differentiator.
+
+## Top Candidate Deep Dive
+Provide a detailed analysis of why the top-ranked candidate stands out. Cover their strongest assessment areas, specific skill highlights, and what makes them the strongest fit for this role.
+
+## Comparative Strengths Analysis
+Compare how each candidate performs across specific competency areas. Highlight where one candidate leads over others (e.g., "Candidate A leads in Critical Thinking while Candidate B shows stronger Growth Mindset"). Identify any areas where lower-ranked candidates outperform the top candidate.
+
+## Development Areas
+For each candidate, identify 2-3 specific areas where targeted improvement would have the most impact on their role effectiveness. Be constructive and actionable.
+
+## Role Fit Recommendation
+Provide a specific recommendation for this role, considering the role's key requirements. Explain which candidate is the best match and why, with consideration of both immediate readiness and growth potential.
+
+## Hiring Decision Guidance
+For each candidate, provide a clear actionable recommendation: "Strongly Recommend", "Recommend with Development Plan", "Consider for Alternative Role", or "Not Recommended at This Time". Include a brief justification for each rating.
+
+Be thorough, professional, and reference specific data points from the assessment results.`;
 
         const completion = await openai.chat.completions.create({
           model: "gpt-4o",
           messages: [
-            { role: "system", content: "You are a senior talent acquisition analyst specializing in role-fit assessments. Provide strategic, actionable insights." },
+            { role: "system", content: "You are a senior talent acquisition analyst specializing in role-fit assessments and psychometric evaluation. Provide comprehensive, strategic, and actionable hiring reports with structured sections. Use professional language suitable for C-suite and HR leadership audiences." },
             { role: "user", content: prompt }
           ],
-          max_tokens: 800,
+          max_tokens: 2500,
           temperature: 0.7,
         });
 
