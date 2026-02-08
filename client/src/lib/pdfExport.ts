@@ -5262,16 +5262,32 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   yPos = ensurePageSpace(pdf, yPos, 100, pageHeight, pageWidth);
   yPos += 10;
   yPos = addSectionHeader(pdf, 'HIRING DECISION MATRIX', yPos, pageWidth);
-  yPos += 5;
 
-  pdf.setFontSize(8);
-  pdf.setTextColor(107, 114, 128);
-  pdf.text('Individual candidate assessment summary with hiring recommendation', 20, yPos);
-  yPos += 10;
+  const matrixDesc = 'Individual candidate assessment summary with overall fit score, tier classification, key strengths, and development areas to inform your hiring decision.';
+  applySmallText(pdf);
+  const matrixDescLines = pdf.splitTextToSize(matrixDesc, pageWidth - 48);
+  const matrixDescBoxH = Math.max(10, matrixDescLines.length * 4 + 4);
+  pdf.setFillColor(240, 249, 255);
+  pdf.setDrawColor(240, 249, 255);
+  pdf.roundedRect(20, yPos - 2, pageWidth - 40, matrixDescBoxH, 2, 2, 'F');
+  pdf.setTextColor(71, 85, 105);
+  pdf.text(matrixDescLines, 24, yPos + 4);
+  yPos += matrixDescBoxH + 5;
 
-  const candidateCardWidth = (pageWidth - 50) / Math.min(4, data.candidateEntries.length);
-  const candidateCardHeight = 58;
+  const extractItemText = (item: any): string => typeof item === 'string' ? item : (item.skill || item.summary || item.description || '');
+
   const maxCandidatesPerRow = 4;
+  const candidateCardHeight = 68;
+
+  if (data.candidateEntries.length === 0) {
+    pdf.setFontSize(8);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('No candidates available for comparison.', 24, yPos);
+    yPos += 10;
+  }
+
+  const numCols = Math.min(maxCandidatesPerRow, data.candidateEntries.length || 1);
+  const candidateCardWidth = (pageWidth - 50) / numCols;
 
   const sortedForMatrix = [...data.candidateEntries].sort((a, b) => (b.overallFit ?? 0) - (a.overallFit ?? 0));
 
@@ -5279,86 +5295,125 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     const row = Math.floor(idx / maxCandidatesPerRow);
     const col = idx % maxCandidatesPerRow;
 
-    if (row === 1 && col === 0) {
-      yPos += candidateCardHeight + 10;
+    if (col === 0 && row > 0) {
+      yPos += candidateCardHeight + 8;
+    }
+    if (col === 0) {
+      yPos = ensurePageSpace(pdf, yPos, candidateCardHeight + 10, pageHeight, pageWidth);
     }
 
     const cardX = 20 + (col * (candidateCardWidth + 3));
     const cardY = yPos;
     const cardW = candidateCardWidth - 3;
 
-    const tierColors: Record<string, { fill: number[]; border: number[]; text: number[]; label: number[] }> = {
-      'strong': { fill: [236, 253, 245], border: [34, 197, 94], text: [22, 101, 52], label: [34, 197, 94] },
-      'moderate': { fill: [254, 252, 232], border: [234, 179, 8], text: [133, 77, 14], label: [161, 98, 7] },
-      'development-needed': { fill: [254, 242, 242], border: [239, 68, 68], text: [153, 27, 27], label: [239, 68, 68] },
-      'insufficient-data': { fill: [249, 250, 251], border: [156, 163, 175], text: [107, 114, 128], label: [107, 114, 128] }
+    const tierColors: Record<string, { fill: [number, number, number]; border: [number, number, number]; text: [number, number, number]; label: [number, number, number]; tierBg: [number, number, number] }> = {
+      'strong': { fill: [255, 255, 255], border: [209, 213, 219], text: [55, 65, 81], label: [22, 163, 74], tierBg: [220, 252, 231] },
+      'moderate': { fill: [255, 255, 255], border: [209, 213, 219], text: [55, 65, 81], label: [161, 98, 7], tierBg: [254, 249, 195] },
+      'development-needed': { fill: [255, 255, 255], border: [209, 213, 219], text: [55, 65, 81], label: [220, 38, 38], tierBg: [254, 226, 226] },
+      'insufficient-data': { fill: [255, 255, 255], border: [209, 213, 219], text: [107, 114, 128], label: [107, 114, 128], tierBg: [243, 244, 246] }
     };
     const colors = tierColors[candidate.fitTier] || tierColors['development-needed'];
 
     pdf.setFillColor(colors.fill[0], colors.fill[1], colors.fill[2]);
     pdf.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
-    pdf.setLineWidth(0.5);
+    pdf.setLineWidth(0.3);
     pdf.roundedRect(cardX, cardY, cardW, candidateCardHeight, 2, 2, 'FD');
-
-    // Blue accent bar at top
-    pdf.setFillColor(59, 130, 246);
-    pdf.rect(cardX, cardY, cardW, 3, 'F');
-
-    const userName = String(candidate.userName || 'Unknown');
-    const truncCardName = userName.length > 14 ? userName.slice(0, 12) + '...' : userName;
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(17, 24, 39);
-    pdf.text(truncCardName, cardX + 4, cardY + 12);
-
-    const fitPercent = candidate.overallFit ?? 0;
-    pdf.setFontSize(16);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(colors.label[0], colors.label[1], colors.label[2]);
-    pdf.text(`${fitPercent}%`, cardX + 4, cardY + 26);
 
     const fitTier = candidate.fitTier || 'insufficient-data';
     const tierLabel = fitTier === 'strong' ? 'STRONG FIT' :
                       fitTier === 'moderate' ? 'MODERATE' :
-                      fitTier === 'insufficient-data' ? 'INSUFFICIENT DATA' : 'DEV NEEDED';
+                      fitTier === 'insufficient-data' ? 'NO DATA' : 'DEV NEEDED';
+
+    const tierBarH = 5;
+    pdf.setFillColor(colors.label[0], colors.label[1], colors.label[2]);
+    pdf.roundedRect(cardX, cardY, cardW, tierBarH + 2, 2, 2, 'F');
+    pdf.rect(cardX, cardY + tierBarH - 1, cardW, 3, 'F');
+    pdf.setFontSize(5);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(255, 255, 255);
+    pdf.text(tierLabel, cardX + 3, cardY + tierBarH - 1.2);
+
+    const userName = String(candidate.userName || 'Unknown');
     pdf.setFontSize(7);
     pdf.setFont('helvetica', 'bold');
-    pdf.text(tierLabel, cardX + 4, cardY + 34);
+    const maxNameW = cardW - 8;
+    let truncCardName = userName;
+    while (pdf.getTextWidth(truncCardName) > maxNameW && truncCardName.length > 3) {
+      truncCardName = truncCardName.slice(0, -1);
+    }
+    if (truncCardName !== userName) truncCardName = truncCardName.trim() + '..';
+    pdf.setTextColor(17, 24, 39);
+    pdf.text(truncCardName, cardX + 4, cardY + tierBarH + 7);
 
-    pdf.setFontSize(6);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+    const fitPercent = Math.min(100, Math.max(0, candidate.overallFit ?? 0));
+    const progressBarY = cardY + tierBarH + 10;
+    const progressBarW = cardW - 8;
+    const progressBarH = 4;
+
+    pdf.setFillColor(229, 231, 235);
+    pdf.roundedRect(cardX + 4, progressBarY, progressBarW, progressBarH, 1, 1, 'F');
+    const fillW = Math.min(progressBarW, Math.max(1, (fitPercent / 100) * progressBarW));
+    pdf.setFillColor(colors.label[0], colors.label[1], colors.label[2]);
+    pdf.roundedRect(cardX + 4, progressBarY, fillW, progressBarH, 1, 1, 'F');
+
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(colors.label[0], colors.label[1], colors.label[2]);
+    pdf.text(`${fitPercent}%`, cardX + 4, progressBarY + progressBarH + 8);
+
+    const detailStartY = progressBarY + progressBarH + 13;
+
+    pdf.setDrawColor(229, 231, 235);
+    pdf.setLineWidth(0.2);
+    pdf.line(cardX + 4, detailStartY - 2, cardX + cardW - 4, detailStartY - 2);
 
     const strengthsArr = candidate.strengths || [];
     const risksArr = candidate.riskFlags || [];
     const gapsArr = candidate.gaps || [];
 
+    pdf.setFontSize(5.5);
+    pdf.setFont('helvetica', 'normal');
+
+    const maxTextW = cardW - 10;
+
     if (strengthsArr.length > 0 && strengthsArr[0]) {
-      const strengthText = String(strengthsArr[0]);
-      const strength = strengthText.replace('Strong ', '').slice(0, 20);
-      pdf.text(`\u2713 ${strength}...`, cardX + 4, cardY + 43);
+      const strengthText = extractItemText(strengthsArr[0]);
+      if (strengthText) {
+        pdf.setTextColor(22, 163, 74);
+        let sText = strengthText.replace('Strong ', '');
+        while (pdf.getTextWidth(`+ ${sText}`) > maxTextW && sText.length > 3) sText = sText.slice(0, -1);
+        if (sText !== strengthText.replace('Strong ', '')) sText = sText.trim() + '..';
+        pdf.text(`+ ${sText}`, cardX + 4, detailStartY + 3);
+      }
     } else {
       pdf.setTextColor(156, 163, 175);
-      pdf.text('No key strengths identified', cardX + 4, cardY + 43);
-      pdf.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+      pdf.text('No strengths data', cardX + 4, detailStartY + 3);
     }
 
-    if (risksArr.length > 0 && risksArr[0]) {
+    if (gapsArr.length > 0 && gapsArr[0]) {
+      const gapText = extractItemText(gapsArr[0]);
+      if (gapText) {
+        pdf.setTextColor(220, 38, 38);
+        let gText = gapText;
+        while (pdf.getTextWidth(`- ${gText}`) > maxTextW && gText.length > 3) gText = gText.slice(0, -1);
+        if (gText !== gapText) gText = gText.trim() + '..';
+        pdf.text(`- ${gText}`, cardX + 4, detailStartY + 9);
+      }
+    } else if (risksArr.length > 0 && risksArr[0]) {
       const riskText = String(risksArr[0]);
-      const risk = riskText.slice(0, 22);
-      pdf.text(`\u26A0 ${risk}...`, cardX + 4, cardY + 50);
-    } else if (gapsArr.length > 0 && gapsArr[0]) {
-      const gapText = String(gapsArr[0]);
-      const gap = gapText.slice(0, 22);
-      pdf.text(`Gap: ${gap}...`, cardX + 4, cardY + 50);
+      pdf.setTextColor(220, 38, 38);
+      let rText = riskText;
+      while (pdf.getTextWidth(`- ${rText}`) > maxTextW && rText.length > 3) rText = rText.slice(0, -1);
+      if (rText !== riskText) rText = rText.trim() + '..';
+      pdf.text(`- ${rText}`, cardX + 4, detailStartY + 9);
     } else {
       pdf.setTextColor(156, 163, 175);
-      pdf.text('No critical risks identified', cardX + 4, cardY + 50);
+      pdf.text('No gaps identified', cardX + 4, detailStartY + 9);
     }
   });
 
   const totalRows = Math.ceil(Math.min(8, data.candidateEntries.length) / maxCandidatesPerRow);
-  yPos += (candidateCardHeight * totalRows) + 15;
+  yPos += (candidateCardHeight * totalRows) + (totalRows > 1 ? (totalRows - 1) * 8 : 0) + 15;
 
   // ========== SKILLS LEGEND PAGE ==========
   const legendStartPage = pdf.getNumberOfPages() + 1;
