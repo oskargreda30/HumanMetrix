@@ -17076,15 +17076,6 @@ Provide a detailed analysis of why the top-ranked candidate stands out. Cover th
 ## Comparative Strengths Analysis
 Compare how each candidate performs across specific competency areas. Highlight where one candidate leads over others (e.g., "Candidate A leads in Critical Thinking while Candidate B shows stronger Growth Mindset"). Identify any areas where lower-ranked candidates outperform the top candidate.
 
-## Development Areas
-For each candidate, identify 2-3 specific areas where targeted improvement would have the most impact on their role effectiveness. Be constructive and actionable.
-
-## Role Fit Recommendation
-Provide a specific recommendation for this role, considering the role's key requirements. Explain which candidate is the best match and why, with consideration of both immediate readiness and growth potential.
-
-## Hiring Decision Guidance
-For each candidate, provide a clear actionable recommendation: "Strongly Recommend", "Recommend with Development Plan", "Consider for Alternative Role", or "Not Recommended at This Time". Include a brief justification for each rating.
-
 Be thorough, professional, and reference specific data points from the assessment results.`;
 
         const completion = await openai.chat.completions.create({
@@ -17093,7 +17084,7 @@ Be thorough, professional, and reference specific data points from the assessmen
             { role: "system", content: "You are a senior talent acquisition analyst specializing in role-fit assessments and psychometric evaluation. Provide comprehensive, strategic, and actionable hiring reports with structured sections. Use professional language suitable for C-suite and HR leadership audiences." },
             { role: "user", content: prompt }
           ],
-          max_tokens: 2500,
+          max_tokens: 1500,
           temperature: 0.7,
         });
 
