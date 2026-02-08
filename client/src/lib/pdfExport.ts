@@ -657,13 +657,15 @@ export async function exportComparisonPDF(data: ComparisonData) {
   yPos = addSectionHeader(pdf, 'CANDIDATE DETAILS', yPos, pageWidth);
   
   const candDetailsDesc = 'Overview of candidates included in this comparison report.';
+  applySmallText(pdf);
+  const candDetailsLines = pdf.splitTextToSize(candDetailsDesc, pageWidth - 48);
+  const candDetailsBoxH = Math.max(10, candDetailsLines.length * 4 + 4);
   pdf.setFillColor(240, 249, 255);
   pdf.setDrawColor(240, 249, 255);
-  pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 2, 2, 'F');
-  applySmallText(pdf);
+  pdf.roundedRect(20, yPos - 2, pageWidth - 40, candDetailsBoxH, 2, 2, 'F');
   pdf.setTextColor(71, 85, 105);
-  pdf.text(candDetailsDesc, 24, yPos + 4);
-  yPos += 13;
+  pdf.text(candDetailsLines, 24, yPos + 4);
+  yPos += candDetailsBoxH + 3;
   
   // Draw candidate details in boxes - compact horizontal layout
   const candidateBoxWidth = (pageWidth - 40 - (data.candidates.length - 1) * 5) / data.candidates.length;
@@ -713,13 +715,15 @@ export async function exportComparisonPDF(data: ComparisonData) {
   yPos = addSectionHeader(pdf, 'COMPLETION STATUS', yPos, pageWidth);
   
   const completionDesc = 'Tracks which of the four core assessments each candidate has completed.';
+  applySmallText(pdf);
+  const completionDescLines = pdf.splitTextToSize(completionDesc, pageWidth - 48);
+  const completionDescBoxH = Math.max(10, completionDescLines.length * 4 + 4);
   pdf.setFillColor(240, 249, 255);
   pdf.setDrawColor(240, 249, 255);
-  pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 2, 2, 'F');
-  applySmallText(pdf);
+  pdf.roundedRect(20, yPos - 2, pageWidth - 40, completionDescBoxH, 2, 2, 'F');
   pdf.setTextColor(71, 85, 105);
-  pdf.text(completionDesc, 24, yPos + 4);
-  yPos += 13;
+  pdf.text(completionDescLines, 24, yPos + 4);
+  yPos += completionDescBoxH + 3;
   
   const assessmentNames = ['FIT Assessment', 'AI Readiness', 'Prompt Architecture', 'AIQ'];
   const assessmentData = [
@@ -1287,13 +1291,15 @@ export async function exportComparisonPDF(data: ComparisonData) {
     yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE COMPARISON', yPos, pageWidth);
     
     const promptCompDesc = 'Evaluates ability to craft effective AI prompts across 7 progressive difficulty levels, measuring clarity, structure, context relevance, creativity, and iterative improvement skills.';
+    applySmallText(pdf);
+    const promptCompDescLines = pdf.splitTextToSize(promptCompDesc, pageWidth - 48);
+    const promptCompDescBoxH = Math.max(10, promptCompDescLines.length * 4 + 4);
     pdf.setFillColor(240, 249, 255);
     pdf.setDrawColor(240, 249, 255);
-    pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 2, 2, 'F');
-    applySmallText(pdf);
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, promptCompDescBoxH, 2, 2, 'F');
     pdf.setTextColor(71, 85, 105);
-    pdf.text(promptCompDesc, 24, yPos + 4);
-    yPos += 13;
+    pdf.text(promptCompDescLines, 24, yPos + 4);
+    yPos += promptCompDescBoxH + 3;
     
     // Table header
     applySmallText(pdf);
@@ -1410,13 +1416,15 @@ export async function exportComparisonPDF(data: ComparisonData) {
   yPos = addSectionHeader(pdf, 'STRENGTHS & DEVELOPMENT AREAS', yPos, pageWidth);
   
   const strengthsDesc = 'Highlights each candidate\'s top 3 strongest skills and areas requiring development, based on assessment scores across all completed evaluations.';
+  applySmallText(pdf);
+  const strengthsDescLines = pdf.splitTextToSize(strengthsDesc, pageWidth - 48);
+  const strengthsDescBoxH = Math.max(10, strengthsDescLines.length * 4 + 4);
   pdf.setFillColor(240, 249, 255);
   pdf.setDrawColor(240, 249, 255);
-  pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 2, 2, 'F');
-  applySmallText(pdf);
+  pdf.roundedRect(20, yPos - 2, pageWidth - 40, strengthsDescBoxH, 2, 2, 'F');
   pdf.setTextColor(71, 85, 105);
-  pdf.text(strengthsDesc, 24, yPos + 4);
-  yPos += 13;
+  pdf.text(strengthsDescLines, 24, yPos + 4);
+  yPos += strengthsDescBoxH + 3;
   
   // Helper to get candidate's top strengths and development areas
   const getCandidateStrengthsAndWeaknesses = (candidateIndex: number) => {
@@ -2150,13 +2158,15 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   yPos += 2;
   
   const rfStrengthsDescText = 'Areas where the candidate exceeds role requirements and demonstrates strong capability';
+  applySmallText(pdf);
+  const rfStrengthsDescLines = pdf.splitTextToSize(rfStrengthsDescText, pageWidth - 48);
+  const rfStrengthsDescBoxH = Math.max(10, rfStrengthsDescLines.length * 4 + 4);
   pdf.setFillColor(240, 249, 255);
   pdf.setDrawColor(240, 249, 255);
-  pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 2, 2, 'F');
-  applySmallText(pdf);
+  pdf.roundedRect(20, yPos - 2, pageWidth - 40, rfStrengthsDescBoxH, 2, 2, 'F');
   pdf.setTextColor(71, 85, 105);
-  pdf.text(rfStrengthsDescText, 24, yPos + 4);
-  yPos += 13;
+  pdf.text(rfStrengthsDescLines, 24, yPos + 4);
+  yPos += rfStrengthsDescBoxH + 3;
   
   // Use text descriptions from alignment.strengths
   const strengthDescriptions = data.alignment.strengths?.slice(0, 6) || [];
@@ -2216,13 +2226,15 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   yPos += 2;
   
   const rfDevDescText = 'Skill gaps requiring targeted development to meet role requirements';
+  applySmallText(pdf);
+  const rfDevDescLines = pdf.splitTextToSize(rfDevDescText, pageWidth - 48);
+  const rfDevDescBoxH = Math.max(10, rfDevDescLines.length * 4 + 4);
   pdf.setFillColor(240, 249, 255);
   pdf.setDrawColor(240, 249, 255);
-  pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 2, 2, 'F');
-  applySmallText(pdf);
+  pdf.roundedRect(20, yPos - 2, pageWidth - 40, rfDevDescBoxH, 2, 2, 'F');
   pdf.setTextColor(71, 85, 105);
-  pdf.text(rfDevDescText, 24, yPos + 4);
-  yPos += 13;
+  pdf.text(rfDevDescLines, 24, yPos + 4);
+  yPos += rfDevDescBoxH + 3;
   
   const devCompactCols = 3;
   const devCompactBoxGap = 4;
@@ -2272,13 +2284,15 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   yPos += 2;
   
   const rfAlignDescText = 'Detailed comparison of candidate skills against role requirements from FIT and AI Readiness assessments';
+  applySmallText(pdf);
+  const rfAlignDescLines = pdf.splitTextToSize(rfAlignDescText, pageWidth - 48);
+  const rfAlignDescBoxH = Math.max(10, rfAlignDescLines.length * 4 + 4);
   pdf.setFillColor(240, 249, 255);
   pdf.setDrawColor(240, 249, 255);
-  pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 2, 2, 'F');
-  applySmallText(pdf);
+  pdf.roundedRect(20, yPos - 2, pageWidth - 40, rfAlignDescBoxH, 2, 2, 'F');
   pdf.setTextColor(71, 85, 105);
-  pdf.text(rfAlignDescText, 24, yPos + 4);
-  yPos += 13;
+  pdf.text(rfAlignDescLines, 24, yPos + 4);
+  yPos += rfAlignDescBoxH + 3;
   
   // Helper function to render skill line chart
   const renderSkillSection = (skills: any[], sectionTitle: string, iconColor: [number, number, number]) => {
@@ -2465,13 +2479,15 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     yPos += 2;
     
     const rfCritDescText = 'Deep analysis of the most critical skills required for this role';
+    applySmallText(pdf);
+    const rfCritDescLines = pdf.splitTextToSize(rfCritDescText, pageWidth - 48);
+    const rfCritDescBoxH = Math.max(10, rfCritDescLines.length * 4 + 4);
     pdf.setFillColor(240, 249, 255);
     pdf.setDrawColor(240, 249, 255);
-    pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 2, 2, 'F');
-    applySmallText(pdf);
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, rfCritDescBoxH, 2, 2, 'F');
     pdf.setTextColor(71, 85, 105);
-    pdf.text(rfCritDescText, 24, yPos + 4);
-    yPos += 13;
+    pdf.text(rfCritDescLines, 24, yPos + 4);
+    yPos += rfCritDescBoxH + 3;
     
     // Critical skills explanations - specific to each skill
     const criticalSkillExplanations: Record<string, string> = {
@@ -2717,13 +2733,15 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     yPos += 2;
     
     const rfFlexDescText = 'Alternative roles this candidate might be suitable for (requires 50%+ skill coverage)';
+    applySmallText(pdf);
+    const rfFlexDescLines = pdf.splitTextToSize(rfFlexDescText, pageWidth - 48);
+    const rfFlexDescBoxH = Math.max(10, rfFlexDescLines.length * 4 + 4);
     pdf.setFillColor(240, 249, 255);
     pdf.setDrawColor(240, 249, 255);
-    pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 2, 2, 'F');
-    applySmallText(pdf);
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, rfFlexDescBoxH, 2, 2, 'F');
     pdf.setTextColor(71, 85, 105);
-    pdf.text(rfFlexDescText, 24, yPos + 4);
-    yPos += 13;
+    pdf.text(rfFlexDescLines, 24, yPos + 4);
+    yPos += rfFlexDescBoxH + 3;
     
     data.alignment.roleFlexibility.forEach((role) => {
       yPos = ensurePageSpace(pdf, yPos, 18, pageHeight, pageWidth);
@@ -2779,13 +2797,15 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     yPos += 2;
     
     const rfPromptDescText = 'AI-generated insights on candidate\'s prompt engineering capabilities for the target role';
+    applySmallText(pdf);
+    const rfPromptDescLines = pdf.splitTextToSize(rfPromptDescText, pageWidth - 48);
+    const rfPromptDescBoxH = Math.max(10, rfPromptDescLines.length * 4 + 4);
     pdf.setFillColor(240, 249, 255);
     pdf.setDrawColor(240, 249, 255);
-    pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 2, 2, 'F');
-    applySmallText(pdf);
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, rfPromptDescBoxH, 2, 2, 'F');
     pdf.setTextColor(71, 85, 105);
-    pdf.text(rfPromptDescText, 24, yPos + 4);
-    yPos += 13;
+    pdf.text(rfPromptDescLines, 24, yPos + 4);
+    yPos += rfPromptDescBoxH + 3;
     
     // Split analysis into paragraphs
     const promptAnalysisParagraphs = data.alignment.promptRoleFitAnalysis.split(/\n\n+/).filter(p => p.trim());
@@ -2815,13 +2835,15 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     yPos += 2;
     
     const rfAiqDescText = 'AI-generated insights on candidate\'s ethical AI judgment for the target role';
+    applySmallText(pdf);
+    const rfAiqDescLines = pdf.splitTextToSize(rfAiqDescText, pageWidth - 48);
+    const rfAiqDescBoxH = Math.max(10, rfAiqDescLines.length * 4 + 4);
     pdf.setFillColor(240, 249, 255);
     pdf.setDrawColor(240, 249, 255);
-    pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 2, 2, 'F');
-    applySmallText(pdf);
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, rfAiqDescBoxH, 2, 2, 'F');
     pdf.setTextColor(71, 85, 105);
-    pdf.text(rfAiqDescText, 24, yPos + 4);
-    yPos += 13;
+    pdf.text(rfAiqDescLines, 24, yPos + 4);
+    yPos += rfAiqDescBoxH + 3;
     
     // Split analysis into paragraphs
     const aiqAnalysisParagraphs = data.alignment.aiqRoleFitAnalysis.split(/\n\n+/).filter(p => p.trim());
@@ -2850,13 +2872,15 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   yPos += 2;
   
   const rfFinalDescText = 'AI-generated hiring guidance based on comprehensive assessment analysis';
+  applySmallText(pdf);
+  const rfFinalDescLines = pdf.splitTextToSize(rfFinalDescText, pageWidth - 48);
+  const rfFinalDescBoxH = Math.max(10, rfFinalDescLines.length * 4 + 4);
   pdf.setFillColor(240, 249, 255);
   pdf.setDrawColor(240, 249, 255);
-  pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 2, 2, 'F');
-  applySmallText(pdf);
+  pdf.roundedRect(20, yPos - 2, pageWidth - 40, rfFinalDescBoxH, 2, 2, 'F');
   pdf.setTextColor(71, 85, 105);
-  pdf.text(rfFinalDescText, 24, yPos + 4);
-  yPos += 13;
+  pdf.text(rfFinalDescLines, 24, yPos + 4);
+  yPos += rfFinalDescBoxH + 3;
   
   // Use passed-in recommendation text from dashboard (ensures consistency)
   const overallFit = data.alignment.overallFit;
@@ -3133,13 +3157,15 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
   yPos = addSectionHeader(pdf, 'COMPLETION STATUS', yPos, pageWidth);
 
   const completionIndvDesc = 'Tracks which of the four core assessments have been completed.';
+  applySmallText(pdf);
+  const completionIndvDescLines = pdf.splitTextToSize(completionIndvDesc, pageWidth - 48);
+  const completionIndvDescBoxH = Math.max(10, completionIndvDescLines.length * 4 + 4);
   pdf.setFillColor(240, 249, 255);
   pdf.setDrawColor(240, 249, 255);
-  pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 2, 2, 'F');
-  applySmallText(pdf);
+  pdf.roundedRect(20, yPos - 2, pageWidth - 40, completionIndvDescBoxH, 2, 2, 'F');
   pdf.setTextColor(71, 85, 105);
-  pdf.text(completionIndvDesc, 24, yPos + 4);
-  yPos += 13;
+  pdf.text(completionIndvDescLines, 24, yPos + 4);
+  yPos += completionIndvDescBoxH + 3;
 
   const assessmentNames = ['FIT Assessment', 'AI Readiness', 'Prompt Architecture', 'AIQ'];
   const assessmentCompleted = [
@@ -3192,13 +3218,15 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
   yPos = addSectionHeader(pdf, 'TRAIT PROFILE SUMMARY', yPos, pageWidth);
 
   const traitDescText = 'Top strengths and development areas based on all completed skill-based assessments.';
+  applySmallText(pdf);
+  const traitDescLines = pdf.splitTextToSize(traitDescText, pageWidth - 48);
+  const traitDescBoxH = Math.max(10, traitDescLines.length * 4 + 4);
   pdf.setFillColor(240, 249, 255);
   pdf.setDrawColor(240, 249, 255);
-  pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 2, 2, 'F');
-  applySmallText(pdf);
+  pdf.roundedRect(20, yPos - 2, pageWidth - 40, traitDescBoxH, 2, 2, 'F');
   pdf.setTextColor(71, 85, 105);
-  pdf.text(traitDescText, 24, yPos + 4);
-  yPos += 13;
+  pdf.text(traitDescLines, 24, yPos + 4);
+  yPos += traitDescBoxH + 3;
 
   const allSkills: Array<{ name: string; score: number; category: string }> = [];
 
@@ -3271,13 +3299,15 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
     yPos = addSectionHeader(pdf, 'FIT ASSESSMENT', yPos, pageWidth);
 
     const fitDescText = 'Behavioral assessment measuring core competencies: agency, curiosity, resilience, empathy, and collaboration.';
+    applySmallText(pdf);
+    const fitDescLines = pdf.splitTextToSize(fitDescText, pageWidth - 48);
+    const fitDescBoxH = Math.max(10, fitDescLines.length * 4 + 4);
     pdf.setFillColor(240, 249, 255);
     pdf.setDrawColor(240, 249, 255);
-    pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 2, 2, 'F');
-    applySmallText(pdf);
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, fitDescBoxH, 2, 2, 'F');
     pdf.setTextColor(71, 85, 105);
-    pdf.text(fitDescText, 24, yPos + 4);
-    yPos += 13;
+    pdf.text(fitDescLines, 24, yPos + 4);
+    yPos += fitDescBoxH + 3;
 
     if (data.fitChartImage) {
       const chartWidth = 85;
@@ -3343,13 +3373,15 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
     yPos = addSectionHeader(pdf, 'AI READINESS ASSESSMENT', yPos, pageWidth);
 
     const aiDescText = 'Evaluates preparedness for AI-augmented work across technical fluency, problem-solving, and human-AI collaboration.';
+    applySmallText(pdf);
+    const aiDescLines = pdf.splitTextToSize(aiDescText, pageWidth - 48);
+    const aiDescBoxH = Math.max(10, aiDescLines.length * 4 + 4);
     pdf.setFillColor(240, 249, 255);
     pdf.setDrawColor(240, 249, 255);
-    pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 2, 2, 'F');
-    applySmallText(pdf);
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, aiDescBoxH, 2, 2, 'F');
     pdf.setTextColor(71, 85, 105);
-    pdf.text(aiDescText, 24, yPos + 4);
-    yPos += 13;
+    pdf.text(aiDescLines, 24, yPos + 4);
+    yPos += aiDescBoxH + 3;
 
     if (data.aiChartImage) {
       const chartWidth = 85;
@@ -3415,13 +3447,15 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
     yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE ASSESSMENT', yPos, pageWidth);
 
     const promptDesc = 'Evaluates ability to craft effective AI prompts across 7 progressive difficulty levels, measuring clarity, structure, context relevance, creativity, and iterative improvement skills.';
+    applySmallText(pdf);
+    const promptDescLines = pdf.splitTextToSize(promptDesc, pageWidth - 48);
+    const promptDescBoxH = Math.max(10, promptDescLines.length * 4 + 4);
     pdf.setFillColor(240, 249, 255);
     pdf.setDrawColor(240, 249, 255);
-    pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 2, 2, 'F');
-    applySmallText(pdf);
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, promptDescBoxH, 2, 2, 'F');
     pdf.setTextColor(71, 85, 105);
-    pdf.text(promptDesc, 24, yPos + 4);
-    yPos += 13;
+    pdf.text(promptDescLines, 24, yPos + 4);
+    yPos += promptDescBoxH + 3;
 
     const promptScore = data.promptArchitectureAssessment.totalScore;
     const promptPerf = getBluePerformanceLevel(promptScore);
@@ -3504,13 +3538,15 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
     yPos = addSectionHeader(pdf, 'AIQ ASSESSMENT', yPos, pageWidth);
 
     const aiqSectionDescText = 'Measures understanding of AI ethics, bias awareness, fairness, and responsible AI governance.';
+    applySmallText(pdf);
+    const aiqSectionDescLines = pdf.splitTextToSize(aiqSectionDescText, pageWidth - 48);
+    const aiqSectionDescBoxH = Math.max(10, aiqSectionDescLines.length * 4 + 4);
     pdf.setFillColor(240, 249, 255);
     pdf.setDrawColor(240, 249, 255);
-    pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 2, 2, 'F');
-    applySmallText(pdf);
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, aiqSectionDescBoxH, 2, 2, 'F');
     pdf.setTextColor(71, 85, 105);
-    pdf.text(aiqSectionDescText, 24, yPos + 4);
-    yPos += 13;
+    pdf.text(aiqSectionDescLines, 24, yPos + 4);
+    yPos += aiqSectionDescBoxH + 3;
 
     const aiqScore = data.aiqAssessment.totalScore;
     const aiqBand = getAIQBandInterpretation(aiqScore);
@@ -3564,13 +3600,15 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
     yPos += 6;
 
     const profileInsightsDesc = 'AI-generated analysis of this candidate\'s assessment results, highlighting role fit, strengths, development areas, and overall recommendations for hiring managers.';
+    applySmallText(pdf);
+    const profileInsightsDescLines = pdf.splitTextToSize(profileInsightsDesc, pageWidth - 48);
+    const profileInsightsDescBoxH = Math.max(10, profileInsightsDescLines.length * 4 + 4);
     pdf.setFillColor(240, 249, 255);
     pdf.setDrawColor(240, 249, 255);
-    pdf.roundedRect(20, yPos - 2, pageWidth - 40, 10, 2, 2, 'F');
-    applySmallText(pdf);
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, profileInsightsDescBoxH, 2, 2, 'F');
     pdf.setTextColor(71, 85, 105);
-    pdf.text(profileInsightsDesc, 24, yPos + 4);
-    yPos += 13;
+    pdf.text(profileInsightsDescLines, 24, yPos + 4);
+    yPos += profileInsightsDescBoxH + 3;
 
     const insightSections = [
       { key: 'ROLE SUITABILITY', color: [30, 64, 175] as [number, number, number] },
