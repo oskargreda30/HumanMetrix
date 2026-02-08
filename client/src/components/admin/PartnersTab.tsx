@@ -1006,8 +1006,18 @@ export default function PartnersTab() {
                   <Building2 className="h-5 w-5 text-cyan-400" />
                   {detailPartner.companyName || detailPartner.name}
                 </CardTitle>
-                <CardDescription className="text-white/70 mt-1">
+                <CardDescription className="text-white/70 mt-1 flex items-center gap-2 flex-wrap">
                   {detailPartner.email}
+                  <span className="inline-flex items-center gap-1.5 bg-white/10 rounded px-2 py-0.5" data-testid="badge-payment-provider">
+                    <img
+                      src={detailPartner.paymentProvider === 'airwallex' ? airwallexLogo : stripeLogo}
+                      alt={detailPartner.paymentProvider === 'airwallex' ? 'Airwallex' : 'Stripe'}
+                      className="h-4 object-contain rounded-sm"
+                    />
+                    <span className="text-xs text-white/70">
+                      {detailPartner.paymentProvider === 'airwallex' ? 'Airwallex' : 'Stripe'}
+                    </span>
+                  </span>
                 </CardDescription>
               </div>
               <div className="flex gap-2">
@@ -1599,6 +1609,27 @@ export default function PartnersTab() {
                       <div>Email: {detailPartner.email}</div>
                       <div>Created: {formatDate(detailPartner.createdAt)}</div>
                       <div>Last API Activity: {formatDate(detailPartner.lastApiActivity)}</div>
+                    </div>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-4">
+                    <div className="text-white/60 text-sm mb-2">Payment Provider</div>
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={detailPartner.paymentProvider === 'airwallex' ? airwallexLogo : stripeLogo}
+                        alt={detailPartner.paymentProvider === 'airwallex' ? 'Airwallex' : 'Stripe'}
+                        className="h-8 object-contain rounded"
+                        data-testid="img-payment-provider-logo"
+                      />
+                      <div>
+                        <div className="text-white font-medium capitalize" data-testid="text-payment-provider-name">
+                          {detailPartner.paymentProvider === 'airwallex' ? 'Airwallex' : 'Stripe'}
+                        </div>
+                        <div className="text-white/50 text-xs">
+                          {detailPartner.paymentProvider === 'airwallex'
+                            ? 'Primary payment provider'
+                            : 'Payment provider'}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -3317,9 +3348,18 @@ export default function PartnersTab() {
                 {filteredPartners.map((partner) => (
                   <TableRow key={partner.id} className="border-white/10 hover:bg-white/5 cursor-pointer" onClick={() => setDetailPartner(partner)} data-testid={`row-partner-${partner.id}`}>
                     <TableCell className="text-white font-medium">
-                      <div>
-                        <div>{partner.companyName || partner.name}</div>
-                        {partner.companyName && <div className="text-sm text-white/60">{partner.name}</div>}
+                      <div className="flex items-center gap-2">
+                        <div>
+                          <div>{partner.companyName || partner.name}</div>
+                          {partner.companyName && <div className="text-sm text-white/60">{partner.name}</div>}
+                        </div>
+                        <img
+                          src={partner.paymentProvider === 'airwallex' ? airwallexLogo : stripeLogo}
+                          alt={partner.paymentProvider === 'airwallex' ? 'Airwallex' : 'Stripe'}
+                          className="h-5 w-5 object-contain rounded-sm shrink-0"
+                          title={partner.paymentProvider === 'airwallex' ? 'Airwallex' : 'Stripe'}
+                          data-testid={`img-provider-${partner.id}`}
+                        />
                       </div>
                     </TableCell>
                     <TableCell className="text-white/80 text-sm">
