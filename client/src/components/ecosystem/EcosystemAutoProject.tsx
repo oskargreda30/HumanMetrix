@@ -139,21 +139,8 @@ export function EcosystemAutoProject({
       return;
     }
     
-    if (creationAttemptedRef.current) return;
-    
-    creationAttemptedRef.current = true;
-    
-    createProject.mutateAsync({
-      name: DEFAULT_PROJECT_NAME,
-      partnerId,
-    }).then((project) => {
-      setProjectId(project.id);
-      refetch();
-    }).catch((err) => {
-      setError("Unable to set up team diagnostic. Please try again.");
-      creationAttemptedRef.current = false;
-    });
-  }, [projects, projectsLoading, createProject, partnerId, refetch, projectId, isCreatingProject]);
+    // No projects exist - don't auto-create. Let the user explicitly create one.
+  }, [projects, projectsLoading, projectId, isCreatingProject]);
 
   const handleRetry = () => {
     setError(null);
@@ -190,7 +177,7 @@ export function EcosystemAutoProject({
     );
   }
 
-  if (projectsLoading || createProject.isPending || !projectId) {
+  if (projectsLoading) {
     return (
       <Card>
         <CardHeader>
@@ -207,7 +194,7 @@ export function EcosystemAutoProject({
         <CardContent>
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
-            <span className="text-muted-foreground">Setting up your team diagnostic...</span>
+            <span className="text-muted-foreground">Loading your analyses...</span>
           </div>
         </CardContent>
       </Card>
