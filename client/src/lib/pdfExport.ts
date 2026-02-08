@@ -3640,7 +3640,7 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
     pdf.roundedRect(20, yPos - 2, pageWidth - 40, profileInsightsDescBoxH, 2, 2, 'F');
     pdf.setTextColor(71, 85, 105);
     pdf.text(profileInsightsDescLines, 24, yPos + 4);
-    yPos += profileInsightsDescBoxH + 3;
+    yPos += profileInsightsDescBoxH + 8;
 
     const insightSections = [
       { key: 'ROLE SUITABILITY', color: [30, 64, 175] as [number, number, number] },
@@ -3668,7 +3668,11 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
 
         applySmallText(pdf);
         pdf.setTextColor(55, 65, 81);
-        const bodyLines = pdf.splitTextToSize(match[1].trim(), pageWidth - 40);
+        const cleanedBody = match[1].trim()
+          .replace(/\*\*/g, '')
+          .replace(/^(\d+\.\s*)[-–—•]\s+/gm, '$1')
+          .replace(/^\s*[-–—•]\s+/gm, '');
+        const bodyLines = pdf.splitTextToSize(cleanedBody, pageWidth - 40);
         bodyLines.forEach((line: string) => {
           yPos = ensurePageSpace(pdf, yPos, 6, pageHeight, pageWidth);
           pdf.text(line, 20, yPos);
@@ -3682,7 +3686,11 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
     if (!parsedAny) {
       applySmallText(pdf);
       pdf.setTextColor(55, 65, 81);
-      const fullLines = pdf.splitTextToSize(data.aiInsights, pageWidth - 40);
+      const cleanedFull = data.aiInsights
+        .replace(/\*\*/g, '')
+        .replace(/^(\d+\.\s*)[-–—•]\s+/gm, '$1')
+        .replace(/^\s*[-–—•]\s+/gm, '');
+      const fullLines = pdf.splitTextToSize(cleanedFull, pageWidth - 40);
       fullLines.forEach((line: string) => {
         yPos = ensurePageSpace(pdf, yPos, 6, pageHeight, pageWidth);
         pdf.text(line, 20, yPos);
