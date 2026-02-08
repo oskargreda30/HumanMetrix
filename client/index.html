@@ -136,6 +136,19 @@
           50% { opacity: 0.7; transform: scale(0.95); }
         }
       </style>
+      <script>
+        (function() {
+          var darkPaths = ['/start-assessment', '/embed/assessment', '/invite/', '/b2b-payment-callback', '/guest-invite/'];
+          var p = window.location.pathname;
+          for (var i = 0; i < darkPaths.length; i++) {
+            if (p.indexOf(darkPaths[i]) === 0 || p.indexOf(darkPaths[i]) > -1) {
+              document.documentElement.style.backgroundColor = '#0f172a';
+              document.body.style.backgroundColor = '#0f172a';
+              break;
+            }
+          }
+        })();
+      </script>
     </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
