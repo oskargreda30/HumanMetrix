@@ -2162,10 +2162,17 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   yPos = addSectionHeader(pdf, 'KEY STRENGTHS', yPos, pageWidth);
   yPos += 2;
   
+  const rfStrengthsDescText = 'Areas where the candidate exceeds role requirements and demonstrates strong capability';
+  const rfStrengthsDescLines = pdf.splitTextToSize(rfStrengthsDescText, pageWidth - 48);
+  const rfStrengthsDescBoxH = 8 + (rfStrengthsDescLines.length * 4);
+  pdf.setFillColor(240, 249, 255);
+  pdf.roundedRect(20, yPos - 2, pageWidth - 40, rfStrengthsDescBoxH, 2, 2, 'F');
   applySmallText(pdf);
-  pdf.setTextColor(107, 114, 128);
-  pdf.text('Areas where the candidate exceeds role requirements and demonstrates strong capability', 20, yPos);
-  yPos += 6;
+  pdf.setTextColor(71, 85, 105);
+  rfStrengthsDescLines.forEach((line: string, i: number) => {
+    pdf.text(line, 24, yPos + 3 + (i * 4));
+  });
+  yPos += rfStrengthsDescBoxH + 3;
   
   // Use text descriptions from alignment.strengths
   const strengthDescriptions = data.alignment.strengths?.slice(0, 6) || [];
@@ -2241,10 +2248,17 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   yPos = addSectionHeader(pdf, 'DEVELOPMENT AREAS', yPos, pageWidth);
   yPos += 2;
   
+  const rfDevDescText = 'Skill gaps requiring targeted development to meet role requirements';
+  const rfDevDescLines = pdf.splitTextToSize(rfDevDescText, pageWidth - 48);
+  const rfDevDescBoxH = 8 + (rfDevDescLines.length * 4);
+  pdf.setFillColor(240, 249, 255);
+  pdf.roundedRect(20, yPos - 2, pageWidth - 40, rfDevDescBoxH, 2, 2, 'F');
   applySmallText(pdf);
-  pdf.setTextColor(107, 114, 128);
-  pdf.text('Skill gaps requiring targeted development to meet role requirements', 20, yPos);
-  yPos += 6;
+  pdf.setTextColor(71, 85, 105);
+  rfDevDescLines.forEach((line: string, i: number) => {
+    pdf.text(line, 24, yPos + 3 + (i * 4));
+  });
+  yPos += rfDevDescBoxH + 3;
   
   let gapLeftY = yPos;
   let gapRightY = yPos;
@@ -2308,10 +2322,17 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   yPos = addSectionHeader(pdf, 'SKILL ALIGNMENT ANALYSIS', yPos, pageWidth);
   yPos += 2;
   
+  const rfAlignDescText = 'Detailed comparison of candidate skills against role requirements from FIT and AI Readiness assessments';
+  const rfAlignDescLines = pdf.splitTextToSize(rfAlignDescText, pageWidth - 48);
+  const rfAlignDescBoxH = 8 + (rfAlignDescLines.length * 4);
+  pdf.setFillColor(240, 249, 255);
+  pdf.roundedRect(20, yPos - 2, pageWidth - 40, rfAlignDescBoxH, 2, 2, 'F');
   applySmallText(pdf);
-  pdf.setTextColor(107, 114, 128);
-  pdf.text('Detailed comparison of candidate skills against role requirements from FIT and AI Readiness assessments', 20, yPos);
-  yPos += 10;
+  pdf.setTextColor(71, 85, 105);
+  rfAlignDescLines.forEach((line: string, i: number) => {
+    pdf.text(line, 24, yPos + 3 + (i * 4));
+  });
+  yPos += rfAlignDescBoxH + 3;
   
   // Helper function to render skill line chart
   const renderSkillSection = (skills: any[], sectionTitle: string, iconColor: [number, number, number]) => {
@@ -2497,10 +2518,17 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     yPos = addSectionHeader(pdf, 'CRITICAL SKILLS ANALYSIS', yPos, pageWidth);
     yPos += 2;
     
+    const rfCritDescText = 'Deep analysis of the most critical skills required for this role';
+    const rfCritDescLines = pdf.splitTextToSize(rfCritDescText, pageWidth - 48);
+    const rfCritDescBoxH = 8 + (rfCritDescLines.length * 4);
+    pdf.setFillColor(240, 249, 255);
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, rfCritDescBoxH, 2, 2, 'F');
     applySmallText(pdf);
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('Deep analysis of the most critical skills required for this role', 20, yPos);
-    yPos += 8;
+    pdf.setTextColor(71, 85, 105);
+    rfCritDescLines.forEach((line: string, i: number) => {
+      pdf.text(line, 24, yPos + 3 + (i * 4));
+    });
+    yPos += rfCritDescBoxH + 3;
     
     // Critical skills explanations - specific to each skill
     const criticalSkillExplanations: Record<string, string> = {
@@ -2745,10 +2773,17 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     yPos = addSectionHeader(pdf, 'ROLE FLEXIBILITY ANALYSIS', yPos, pageWidth);
     yPos += 2;
     
+    const rfFlexDescText = 'Alternative roles this candidate might be suitable for (requires 50%+ skill coverage)';
+    const rfFlexDescLines = pdf.splitTextToSize(rfFlexDescText, pageWidth - 48);
+    const rfFlexDescBoxH = 8 + (rfFlexDescLines.length * 4);
+    pdf.setFillColor(240, 249, 255);
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, rfFlexDescBoxH, 2, 2, 'F');
     applySmallText(pdf);
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('Alternative roles this candidate might be suitable for (requires 50%+ skill coverage)', 20, yPos);
-    yPos += 8;
+    pdf.setTextColor(71, 85, 105);
+    rfFlexDescLines.forEach((line: string, i: number) => {
+      pdf.text(line, 24, yPos + 3 + (i * 4));
+    });
+    yPos += rfFlexDescBoxH + 3;
     
     data.alignment.roleFlexibility.forEach((role) => {
       yPos = ensurePageSpace(pdf, yPos, 18, pageHeight, pageWidth);
@@ -2803,10 +2838,17 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     yPos = addSectionHeader(pdf, 'PROMPT ENGINEERING ROLE FIT ANALYSIS', yPos, pageWidth);
     yPos += 2;
     
+    const rfPromptDescText = 'AI-generated insights on candidate\'s prompt engineering capabilities for the target role';
+    const rfPromptDescLines = pdf.splitTextToSize(rfPromptDescText, pageWidth - 48);
+    const rfPromptDescBoxH = 8 + (rfPromptDescLines.length * 4);
+    pdf.setFillColor(240, 249, 255);
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, rfPromptDescBoxH, 2, 2, 'F');
     applySmallText(pdf);
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('AI-generated insights on candidate\'s prompt engineering capabilities for the target role', 20, yPos);
-    yPos += PDF_SPACING.large;
+    pdf.setTextColor(71, 85, 105);
+    rfPromptDescLines.forEach((line: string, i: number) => {
+      pdf.text(line, 24, yPos + 3 + (i * 4));
+    });
+    yPos += rfPromptDescBoxH + 3;
     
     // Split analysis into paragraphs
     const promptAnalysisParagraphs = data.alignment.promptRoleFitAnalysis.split(/\n\n+/).filter(p => p.trim());
@@ -2835,10 +2877,17 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     yPos = addSectionHeader(pdf, 'AIQ (ETHICAL AI) ROLE FIT ANALYSIS', yPos, pageWidth);
     yPos += 2;
     
+    const rfAiqDescText = 'AI-generated insights on candidate\'s ethical AI judgment for the target role';
+    const rfAiqDescLines = pdf.splitTextToSize(rfAiqDescText, pageWidth - 48);
+    const rfAiqDescBoxH = 8 + (rfAiqDescLines.length * 4);
+    pdf.setFillColor(240, 249, 255);
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, rfAiqDescBoxH, 2, 2, 'F');
     applySmallText(pdf);
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('AI-generated insights on candidate\'s ethical AI judgment for the target role', 20, yPos);
-    yPos += PDF_SPACING.large;
+    pdf.setTextColor(71, 85, 105);
+    rfAiqDescLines.forEach((line: string, i: number) => {
+      pdf.text(line, 24, yPos + 3 + (i * 4));
+    });
+    yPos += rfAiqDescBoxH + 3;
     
     // Split analysis into paragraphs
     const aiqAnalysisParagraphs = data.alignment.aiqRoleFitAnalysis.split(/\n\n+/).filter(p => p.trim());
@@ -2866,10 +2915,17 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   yPos = addSectionHeader(pdf, 'FINAL RECOMMENDATION', yPos, pageWidth);
   yPos += 2;
   
+  const rfFinalDescText = 'AI-generated hiring guidance based on comprehensive assessment analysis';
+  const rfFinalDescLines = pdf.splitTextToSize(rfFinalDescText, pageWidth - 48);
+  const rfFinalDescBoxH = 8 + (rfFinalDescLines.length * 4);
+  pdf.setFillColor(240, 249, 255);
+  pdf.roundedRect(20, yPos - 2, pageWidth - 40, rfFinalDescBoxH, 2, 2, 'F');
   applySmallText(pdf);
-  pdf.setTextColor(107, 114, 128);
-  pdf.text('AI-generated hiring guidance based on comprehensive assessment analysis', 20, yPos);
-  yPos += PDF_SPACING.large; // Extra spacing between description and content
+  pdf.setTextColor(71, 85, 105);
+  rfFinalDescLines.forEach((line: string, i: number) => {
+    pdf.text(line, 24, yPos + 3 + (i * 4));
+  });
+  yPos += rfFinalDescBoxH + 3;
   
   // Use passed-in recommendation text from dashboard (ensures consistency)
   const overallFit = data.alignment.overallFit;
@@ -2883,14 +2939,14 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     .replace(/OVERALL ASSESSMENT:.*?\n/gi, '') // Remove OVERALL ASSESSMENT line
     .replace(/KEY STRENGTHS:[\s\S]*?(?=\n\n[A-Z]|DEVELOPMENT AREAS:|COHORT CONTEXT:|HIRING RECOMMENDATION:|ALTERNATIVE ROLE|$)/gi, '')
     .replace(/DEVELOPMENT AREAS:[\s\S]*?(?=\n\n[A-Z]|COHORT CONTEXT:|HIRING RECOMMENDATION:|ALTERNATIVE ROLE|$)/gi, '')
-    .replace(/HIRING RECOMMENDATION:[\s\S]*?(?=\n\n[A-Z]|ALTERNATIVE ROLE|$)/gi, '') // Remove Hiring Recommendation section
-    .replace(/\n{3,}/g, '\n\n') // Clean up extra newlines
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
   
   // Convert section titles from ALL CAPS to Title Case
   recommendationText = recommendationText
     .replace(/CRITICAL SKILLS ANALYSIS:/g, 'Critical Skills Analysis:')
     .replace(/COHORT CONTEXT:/g, 'Cohort Context:')
+    .replace(/HIRING RECOMMENDATION:/g, 'Hiring Recommendation:')
     .replace(/ALTERNATIVE ROLE INSIGHT:/g, 'Alternative Role Insight:');
   
   // Split recommendation into paragraphs (sections separated by double newlines)

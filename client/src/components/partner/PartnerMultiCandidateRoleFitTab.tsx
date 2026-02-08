@@ -778,9 +778,9 @@ export default function PartnerMultiCandidateRoleFitTab() {
                   <div>
                     <p className="font-medium text-sm">Role Alignment Tiers</p>
                     <p className="text-xs text-muted-foreground">
-                      <Badge className="bg-green-500 text-white mr-1 text-[10px] px-1 py-0">75%+</Badge> High alignment, 
-                      <Badge className="bg-amber-500 text-white mx-1 text-[10px] px-1 py-0">50-74%</Badge> Moderate, 
-                      <Badge className="bg-red-500 text-white mx-1 text-[10px] px-1 py-0">&lt;50%</Badge> Development needed
+                      <Badge variant="secondary" className="mr-1 text-[10px] px-1 py-0">75%+</Badge> High alignment, 
+                      <Badge variant="secondary" className="mx-1 text-[10px] px-1 py-0">50-74%</Badge> Moderate, 
+                      <Badge variant="secondary" className="mx-1 text-[10px] px-1 py-0">&lt;50%</Badge> Development needed
                     </p>
                   </div>
                 </div>
@@ -1437,27 +1437,98 @@ export default function PartnerMultiCandidateRoleFitTab() {
             </CardHeader>
             <CardContent>
               {comparison?.aiInsights ? (
-                <div className="prose prose-sm dark:prose-invert max-w-none" data-testid="text-ai-insights">
-                  {comparison.aiInsights.split('\n\n').map((paragraph: string, idx: number) => {
-                    // Check if this is a heading (starts with **)
-                    const headingMatch = paragraph.match(/^\*\*(.+?)\*\*/);
-                    if (headingMatch) {
-                      const heading = headingMatch[1];
-                      const content = paragraph.replace(/^\*\*.+?\*\*\n?/, '').trim();
-                      return (
-                        <div key={idx} className="mb-4">
-                          <h4 className="font-semibold text-foreground flex items-center gap-2 mb-2">
-                            <Sparkles className="h-4 w-4 text-purple-500" />
-                            {heading}
+                <div className="space-y-4" data-testid="text-ai-insights">
+                  {(() => {
+                    const lines = comparison.aiInsights.split('\n');
+                    const elements: JSX.Element[] = [];
+                    let bulletBuffer: string[] = [];
+                    let lineIdx = 0;
+
+                    const flushBullets = () => {
+                      if (bulletBuffer.length > 0) {
+                        elements.push(
+                          <ul key={`bullets-${lineIdx}`} className="space-y-1.5 ml-4">
+                            {bulletBuffer.map((b, bi) => (
+                              <li key={bi} className="text-sm text-muted-foreground leading-relaxed flex items-start gap-2">
+                                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-muted-foreground/50 flex-shrink-0" />
+                                <span dangerouslySetInnerHTML={{ __html: b.replace(/\*\*(.+?)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>') }} />
+                              </li>
+                            ))}
+                          </ul>
+                        );
+                        bulletBuffer = [];
+                      }
+                    };
+
+                    const renderInlineBold = (text: string) => {
+                      return text.replace(/\*\*(.+?)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>');
+                    };
+
+                    const stripEmoji = (text: string) => {
+                      return text.replace(/[^\x00-\x7F\u00C0-\u024F\u0370-\u03FF\u0400-\u04FF]/g, '').replace(/\s{2,}/g, ' ').trim();
+                    };
+
+                    lines.forEach((line, li) => {
+                      lineIdx = li;
+                      const trimmed = line.trim();
+                      if (!trimmed) {
+                        flushBullets();
+                        return;
+                      }
+
+                      const h3Match = trimmed.match(/^###\s+(.+)/);
+                      if (h3Match) {
+                        flushBullets();
+                        elements.push(
+                          <h5 key={`h3-${li}`} className="font-semibold text-foreground text-sm mt-3 mb-1">
+                            {stripEmoji(h3Match[1])}
+                          </h5>
+                        );
+                        return;
+                      }
+
+                      const h2Match = trimmed.match(/^#{1,2}\s+(.+)/);
+                      if (h2Match) {
+                        flushBullets();
+                        elements.push(
+                          <h4 key={`h-${li}`} className="font-bold text-foreground text-base mt-4 mb-1">
+                            {stripEmoji(h2Match[1])}
                           </h4>
-                          {content && <p className="text-muted-foreground text-sm leading-relaxed">{content}</p>}
-                        </div>
+                        );
+                        return;
+                      }
+
+                      const boldHeadingMatch = trimmed.match(/^\*\*(.+?)\*\*\s*$/);
+                      if (boldHeadingMatch) {
+                        flushBullets();
+                        elements.push(
+                          <h5 key={`bh-${li}`} className="font-semibold text-foreground text-sm mt-3 mb-1">
+                            {stripEmoji(boldHeadingMatch[1])}
+                          </h5>
+                        );
+                        return;
+                      }
+
+                      const bulletMatch = trimmed.match(/^[-*]\s+(.+)/);
+                      if (bulletMatch) {
+                        bulletBuffer.push(stripEmoji(bulletMatch[1]));
+                        return;
+                      }
+
+                      const numberedMatch = trimmed.match(/^\d+\.\s+(.+)/);
+                      if (numberedMatch) {
+                        bulletBuffer.push(stripEmoji(numberedMatch[1]));
+                        return;
+                      }
+
+                      flushBullets();
+                      elements.push(
+                        <p key={`p-${li}`} className="text-sm text-muted-foreground leading-relaxed" dangerouslySetInnerHTML={{ __html: renderInlineBold(stripEmoji(trimmed)) }} />
                       );
-                    }
-                    return (
-                      <p key={idx} className="text-muted-foreground text-sm leading-relaxed mb-3">{paragraph}</p>
-                    );
-                  })}
+                    });
+                    flushBullets();
+                    return elements;
+                  })()}
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">

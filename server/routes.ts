@@ -16856,6 +16856,8 @@ Return valid JSON with only the requested fields.`;
         // Calculate overall fit with weighting
         const assessedSkills = skillScores.filter(s => s.dataAvailable);
         let overallFit = 0;
+        let criticalGapsCount = 0;
+        let assessedCriticalCount = 0;
         if (assessedSkills.length > 0) {
           let totalWeight = 0;
           let weightedSum = 0;
@@ -16864,8 +16866,22 @@ Return valid JSON with only the requested fields.`;
             const skillFit = Math.max(0, Math.min(100, 100 - Math.max(0, skill.gap || 0)));
             weightedSum += skillFit * weight;
             totalWeight += weight;
+            if (skill.criticality === 'critical') {
+              assessedCriticalCount++;
+              if (skill.score !== null && skill.score < skill.requiredScore) {
+                criticalGapsCount++;
+              }
+            }
           });
           overallFit = Math.round(weightedSum / totalWeight);
+        }
+
+        // Apply critical gap penalty and hard cap (matches single-candidate logic)
+        // Any critical skill gap caps the score at 74% max
+        if (criticalGapsCount > 0 && assessedCriticalCount > 0) {
+          const criticalPenalty = criticalGapsCount * 0.12;
+          overallFit = Math.round(overallFit * (1 - Math.min(criticalPenalty, 0.5)));
+          overallFit = Math.min(overallFit, 74);
         }
 
         // Determine data coverage

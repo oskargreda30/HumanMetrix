@@ -748,7 +748,9 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
               ...(alignment.fitSkillAlignments || []),
               ...(alignment.aiReadinessSkillAlignments || [])
             ];
-            const criticalSkills = allSkills.filter((s: any) => s.criticality === 'critical');
+            const criticalSkills = allSkills.filter((s: any) => s.criticality === 'critical')
+              .sort((a: any, b: any) => (b.candidateScore ?? 0) - (a.candidateScore ?? 0))
+              .slice(0, 6);
             const hasData = (s: any) => s.dataAvailable !== false && s.candidateScore != null;
             const assessedCritical = criticalSkills.filter(hasData);
             const noDataCritical = criticalSkills.filter((s: any) => !hasData(s));
