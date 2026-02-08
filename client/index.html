@@ -136,22 +136,18 @@
           50% { opacity: 0.7; transform: scale(0.95); }
         }
       </style>
-      <style id="hide-dev-banner">
-        /* Hide Replit development preview banner immediately to prevent flash */
-        body > div:not(#root) {
-          display: none !important;
-        }
-      </style>
       <script>
-        /* Remove dev banner as soon as it appears */
+        /* Remove Replit dev banner as soon as it appears */
         new MutationObserver(function(mutations) {
           for (var i = 0; i < mutations.length; i++) {
             var nodes = mutations[i].addedNodes;
             for (var j = 0; j < nodes.length; j++) {
               var n = nodes[j];
-              if (n.nodeType === 1 && n.parentElement === document.body && n.id !== 'root') {
-                n.style.display = 'none';
-                n.remove();
+              if (n.nodeType === 1 && n.tagName === 'DIV' && n.parentElement === document.body && n.id !== 'root') {
+                var t = n.textContent || '';
+                if (t.indexOf('development') > -1 || t.indexOf('Deploy') > -1 || t.indexOf('preview') > -1) {
+                  n.remove();
+                }
               }
             }
           }
