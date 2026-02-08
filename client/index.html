@@ -36,7 +36,7 @@
     </script>
     
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5, viewport-fit=cover" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     
     <!-- Primary Meta Tags -->
@@ -60,7 +60,7 @@
     <meta name="theme-color" content="#0ea5e9" />
     <meta name="msapplication-TileColor" content="#0ea5e9" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="HumanMetrix" />
     <meta name="application-name" content="HumanMetrix" />
     <meta name="format-detection" content="telephone=no" />
@@ -144,6 +144,8 @@
             if (p.indexOf(darkPaths[i]) === 0 || p.indexOf(darkPaths[i]) > -1) {
               document.documentElement.style.backgroundColor = '#0f172a';
               document.body.style.backgroundColor = '#0f172a';
+              var tc = document.querySelector('meta[name="theme-color"]');
+              if (tc) tc.setAttribute('content', '#0f172a');
               break;
             }
           }
