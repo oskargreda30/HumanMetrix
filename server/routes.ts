@@ -8815,20 +8815,29 @@ Format your response as JSON with this structure:
         ? [`Have candidate complete ${missingAssessments.join(' and ')} assessment${missingAssessments.length > 1 ? 's' : ''} for a complete capability picture`]
         : [];
         
+      const recGapNamesForSteps = recCriticalGapSkills.map(s => s.skillName).slice(0, 3);
+      const recStrengthNamesForSteps = (insights.strengths || []).slice(0, 3).map((s: any) => typeof s === 'string' ? s : s.skill || s.summary || '').filter(Boolean);
+      
       const nextSteps = [
         ...assessmentCompletionStep,
         ...(overallFit >= 70 
           ? [
-              'Conduct combined technical and behavioral interviews to validate practical skills and assess development areas identified in this report',
-              'Perform team fit analysis to understand how the candidate will integrate with the current or target team dynamics',
-              'Check professional references with emphasis on areas of strength',
-              'Consider for final candidate pool'
+              `Conduct a structured technical interview focusing on the candidate's practical application of ${recStrengthNamesForSteps.length > 0 ? recStrengthNamesForSteps.join(', ') : 'their core competencies'}. Use scenario-based questions to validate real-world capability beyond assessment scores.`,
+              'Schedule a behavioral interview to explore team dynamics, leadership potential, and cultural alignment. Pay attention to how they approach collaboration and conflict resolution in cross-functional settings.',
+              "Perform a team composition analysis to understand how this candidate's strengths complement existing team capabilities and identify potential synergies or overlaps with current team members.",
+              recCriticalGapSkills.length > 0
+                ? `Design a targeted 30-60-90 day development plan addressing identified gaps in ${recGapNamesForSteps.join(' and ')}. Include specific training resources, mentorship pairing, and measurable milestones.`
+                : "Prepare an onboarding acceleration plan that leverages the candidate's strong skill alignment to achieve rapid time-to-productivity, with clear 30-60-90 day milestones.",
+              `Request professional references with specific emphasis on ${recStrengthNamesForSteps.length > 0 ? recStrengthNamesForSteps[0] : 'their primary strengths'} and ability to deliver results in fast-paced, evolving environments.`,
+              `Advance to final decision stage — the candidate's overall alignment score of ${overallFit}/100 indicates strong readiness for the role.`
             ]
           : [
-              'Schedule combined technical and behavioral screening to assess both skills and cultural fit',
-              'Perform team fit analysis to evaluate potential integration with existing team structure and dynamics',
-              'Explore development potential through scenario-based questions',
-              'Consider alternative roles that better match current skill profile'
+              `Schedule a combined technical and behavioral screening interview. Focus on exploring the candidate's approach to ${recGapNamesForSteps.length > 0 ? recGapNamesForSteps.join(' and ') : 'development areas'} through practical scenarios and case studies.`,
+              "Conduct a skills gap assessment to determine the candidate's learning velocity and potential for rapid skill acquisition in areas where they currently score below requirements.",
+              'Evaluate team fit through a collaborative exercise or shadow session to understand how the candidate would integrate with existing team dynamics and workflows.',
+              `Create a comprehensive development roadmap if proceeding — identify specific training programs, certification paths, and mentorship opportunities to bridge the ${recCriticalGapSkills.length} identified skill gap${recCriticalGapSkills.length !== 1 ? 's' : ''}.`,
+              "Consider alternative roles within the organization that better align with the candidate's current skill profile. The Role Flexibility Analysis in this report identifies potential matches.",
+              'If proceeding with this role, ensure robust onboarding support is available including extended ramp-up periods, dedicated mentorship, and regular performance check-ins during the first 90 days.'
             ])
       ];
 
@@ -14732,7 +14741,7 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         );
         if (existingReport) {
           const resultData = existingReport.resultData as any;
-          if (resultData && resultData.aiInsights) {
+          if (resultData && resultData.aiInsights && resultData.scoringVersion >= 2) {
             return res.json({
               ...resultData,
               cached: true,
@@ -14741,7 +14750,11 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
               reportId: existingReport.id,
             });
           }
-          hasIncompleteCachedReport = true;
+          // Invalidate old reports without critical gap penalty scoring (version < 2)
+          if (existingReport) {
+            await storage.deletePartnerAnalysisReport(existingReport.id);
+          }
+          hasIncompleteCachedReport = false;
         }
       }
 
@@ -16125,6 +16138,7 @@ Provide a concise 2-3 paragraph analysis focusing on practical implications for 
         },
         generatedAt: new Date().toISOString(),
         version: 1,
+        scoringVersion: 2,
       };
 
       // Get candidate display name from session data or use candidateId
@@ -17213,6 +17227,7 @@ Be thorough, professional, and reference specific data points from the assessmen
         aiInsights,
         generatedAt: new Date().toISOString(),
         version: 1,
+        scoringVersion: 2,
       };
       
       const savedReport = await storage.createPartnerAnalysisReport({
@@ -17233,6 +17248,7 @@ Be thorough, professional, and reference specific data points from the assessmen
         cached: false,
         generatedAt: new Date().toISOString(),
         reportId: savedReport.id,
+        scoringVersion: 2,
       });
     } catch (error) {
       console.error("Error creating partner multi-candidate comparison:", error);

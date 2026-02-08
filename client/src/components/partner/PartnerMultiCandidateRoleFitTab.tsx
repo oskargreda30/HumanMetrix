@@ -205,13 +205,13 @@ const CHART_COLORS = ['#4A7FA8', '#6A9BC5', '#8AB5D5', '#3D6F96', '#7BAAD0', '#5
 const getFitTierBadge = (tier: string) => {
   switch (tier) {
     case 'strong':
-      return <Badge className="bg-green-600 text-white">Strong Fit</Badge>;
+      return <Badge variant="secondary">Strong Fit</Badge>;
     case 'moderate':
-      return <Badge className="bg-amber-500 text-white">Moderate Fit</Badge>;
+      return <Badge variant="secondary">Moderate Fit</Badge>;
     case 'insufficient-data':
-      return <Badge className="bg-gray-400 text-white">Insufficient Data</Badge>;
+      return <Badge variant="secondary">Insufficient Data</Badge>;
     default:
-      return <Badge variant="destructive">Development Needed</Badge>;
+      return <Badge variant="secondary">Development Needed</Badge>;
   }
 };
 
@@ -219,13 +219,13 @@ const getCoverageBadge = (coverage?: { percentage: number }) => {
   if (!coverage) return null;
   const pct = coverage.percentage;
   if (pct >= 100) {
-    return <Badge className="bg-green-100 text-green-800">Full Coverage</Badge>;
+    return <Badge variant="secondary">Full Coverage</Badge>;
   } else if (pct >= 70) {
-    return <Badge className="bg-blue-100 text-blue-800">{pct}% Coverage</Badge>;
+    return <Badge variant="secondary">{pct}% Coverage</Badge>;
   } else if (pct >= 40) {
-    return <Badge className="bg-amber-100 text-amber-800">{pct}% Coverage</Badge>;
+    return <Badge variant="secondary">{pct}% Coverage</Badge>;
   } else {
-    return <Badge className="bg-red-100 text-red-800">Low Coverage ({pct}%)</Badge>;
+    return <Badge variant="secondary">Low Coverage ({pct}%)</Badge>;
   }
 };
 
@@ -832,10 +832,10 @@ export default function PartnerMultiCandidateRoleFitTab() {
 
           {/* Hiring Recommendation - Most Important Section */}
           {comparison.summaryInsights.recommendation && (
-            <Card className="border-2 border-green-500">
-              <CardHeader className="bg-green-50 dark:bg-green-950/30">
-                <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
-                  <Trophy className="h-6 w-6" />
+            <Card className="border-2 border-border">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Trophy className="h-6 w-6 text-primary" />
                   Hiring Recommendation
                 </CardTitle>
               </CardHeader>
@@ -844,25 +844,25 @@ export default function PartnerMultiCandidateRoleFitTab() {
                   {/* Recommended Candidate */}
                   <div className="space-y-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center text-white text-2xl font-bold">
+                      <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xl font-bold">
                         1
                       </div>
                       <div>
                         <div className="text-xl font-bold">{comparison.summaryInsights.recommendation.recommendedCandidate}</div>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-2xl font-bold text-green-600">{comparison.summaryInsights.recommendation.fitScore}%</span>
+                          <span className="text-2xl font-bold text-foreground">{comparison.summaryInsights.recommendation.fitScore}%</span>
                           {getFitTierBadge(comparison.summaryInsights.recommendation.fitTier)}
                         </div>
                       </div>
                     </div>
                     
                     {(comparison.summaryInsights.recommendation.reasons?.length || 0) > 0 && (
-                      <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                        <h4 className="font-semibold text-green-700 dark:text-green-400 mb-2">Why This Candidate?</h4>
+                      <div className="p-4 bg-muted rounded-lg">
+                        <h4 className="font-semibold text-foreground mb-2">Why This Candidate?</h4>
                         <ul className="space-y-2">
                           {comparison.summaryInsights.recommendation.reasons.map((reason, i) => (
                             <li key={i} className="text-sm flex items-start gap-2">
-                              <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                              <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                               <span>{reason}</span>
                             </li>
                           ))}
@@ -871,11 +871,11 @@ export default function PartnerMultiCandidateRoleFitTab() {
                     )}
 
                     {(comparison.summaryInsights.recommendation.criticalSkillAdvantages?.length || 0) > 0 && (
-                      <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                        <h4 className="font-semibold text-blue-700 dark:text-blue-400 mb-2">Critical Skill Advantages</h4>
+                      <div className="p-4 bg-muted rounded-lg">
+                        <h4 className="font-semibold text-foreground mb-2">Critical Skill Advantages</h4>
                         <div className="flex flex-wrap gap-2">
                           {comparison.summaryInsights.recommendation.criticalSkillAdvantages.map((adv, i) => (
-                            <Badge key={i} className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                            <Badge key={i} variant="secondary">
                               {adv}
                             </Badge>
                           ))}
@@ -913,13 +913,13 @@ export default function PartnerMultiCandidateRoleFitTab() {
                       )}
 
                       {(comparison.summaryInsights.runnerUp.advantagesOverTop?.length || 0) > 0 && (
-                        <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg">
-                          <h4 className="font-medium text-sm text-amber-700 dark:text-amber-400 mb-2">
+                        <div className="p-3 bg-muted rounded-lg">
+                          <h4 className="font-medium text-sm text-foreground mb-2">
                             Where Runner-Up Outperforms
                           </h4>
                           <div className="flex flex-wrap gap-2">
                             {comparison.summaryInsights.runnerUp.advantagesOverTop.map((adv, i) => (
-                              <Badge key={i} variant="outline" className="text-amber-700 border-amber-300">
+                              <Badge key={i} variant="outline">
                                 {adv}
                               </Badge>
                             ))}
@@ -934,10 +934,10 @@ export default function PartnerMultiCandidateRoleFitTab() {
           )}
 
           {/* Critical Skills Dashboard - Most Important for Hiring Decision */}
-          <Card className="border-2 border-red-200 dark:border-red-800">
-            <CardHeader className="bg-red-50 dark:bg-red-950/30">
-              <CardTitle className="flex items-center gap-2 text-red-700 dark:text-red-400">
-                <AlertTriangle className="h-6 w-6" />
+          <Card className="border-2 border-border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-6 w-6 text-primary" />
                 Critical Skills Dashboard
               </CardTitle>
               <p className="text-sm text-muted-foreground">
@@ -1046,10 +1046,10 @@ export default function PartnerMultiCandidateRoleFitTab() {
                               candidate.fitTier === 'insufficient-data' || 
                               candidate.overallFit == null;
                             return (
-                              <th key={candidate.userId} className={`text-center p-2 md:p-3 font-semibold min-w-[50px] md:min-w-[80px] ${idx === 0 && !hasInsufficientData ? 'bg-green-50 dark:bg-green-950/30' : hasInsufficientData ? 'bg-gray-100 dark:bg-gray-800' : 'bg-muted/50'}`}>
+                              <th key={candidate.userId} className={`text-center p-2 md:p-3 font-semibold min-w-[50px] md:min-w-[80px] ${idx === 0 && !hasInsufficientData ? 'bg-muted/60' : hasInsufficientData ? 'bg-gray-100 dark:bg-gray-800' : 'bg-muted/50'}`}>
                                 <div className="flex flex-col items-center gap-0.5 md:gap-1">
                                   <span className="truncate max-w-[50px] md:max-w-[100px] text-xs md:text-sm">{candidate.userName.split(' ')[0]}</span>
-                                  {idx === 0 && !hasInsufficientData && <Badge className="bg-green-600 text-white text-[10px] md:text-xs px-1">Top</Badge>}
+                                  {idx === 0 && !hasInsufficientData && <Badge variant="secondary" className="text-[10px] md:text-xs px-1">Top</Badge>}
                                   {hasInsufficientData && <Badge variant="outline" className="text-[10px] md:text-xs text-gray-500 px-1">Inc</Badge>}
                                 </div>
                               </th>
@@ -1078,7 +1078,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                                 const meetsRequired = hasData && score >= criticalSkill.requiredScore;
                                 
                                 return (
-                                  <td key={candidate.userId} className={`text-center p-2 md:p-3 ${idx === 0 && !hasInsufficientData ? 'bg-green-50/50 dark:bg-green-950/20' : hasInsufficientData ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}>
+                                  <td key={candidate.userId} className={`text-center p-2 md:p-3 ${idx === 0 && !hasInsufficientData ? 'bg-muted/30' : hasInsufficientData ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}>
                                     {!hasData ? (
                                       <span className="text-muted-foreground italic text-xs">N/A</span>
                                     ) : (
@@ -1124,7 +1124,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                             const allMet = criticalSkillsMet === totalCritical && totalCritical > 0;
                             
                             return (
-                              <td key={candidate.userId} className={`text-center p-2 md:p-3 ${idx === 0 && !hasInsufficientData ? 'bg-green-50/50 dark:bg-green-950/20' : hasInsufficientData ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}>
+                              <td key={candidate.userId} className={`text-center p-2 md:p-3 ${idx === 0 && !hasInsufficientData ? 'bg-muted/30' : hasInsufficientData ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}>
                                 {assessedCritical === 0 ? (
                                   <span className="text-muted-foreground italic text-xs">No data</span>
                                 ) : (
@@ -1135,7 +1135,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                                     {assessedCritical < totalCritical && (
                                       <span className="text-xs text-muted-foreground block">({totalCritical - assessedCritical} not assessed)</span>
                                     )}
-                                    {allMet && assessedCritical === totalCritical && <Badge className="ml-2 bg-green-600 text-white">All Met</Badge>}
+                                    {allMet && assessedCritical === totalCritical && <Badge variant="secondary" className="ml-2">All Met</Badge>}
                                   </>
                                 )}
                               </td>

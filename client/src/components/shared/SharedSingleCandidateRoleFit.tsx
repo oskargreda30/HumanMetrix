@@ -1125,13 +1125,33 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
               .replace(/KEY STRENGTHS:[\s\S]*?(?=\n\n[A-Z]|DEVELOPMENT AREAS:|COHORT CONTEXT:|HIRING RECOMMENDATION:|ALTERNATIVE ROLE|$)/gi, '')
               .replace(/DEVELOPMENT AREAS:[\s\S]*?(?=\n\n[A-Z]|COHORT CONTEXT:|HIRING RECOMMENDATION:|ALTERNATIVE ROLE|$)/gi, '')
               .replace(/\n{3,}/g, '\n\n')
-              .replace(/CRITICAL SKILLS ANALYSIS:/g, 'Critical Skills Analysis:')
-              .replace(/COHORT CONTEXT:/g, 'Cohort Context:')
-              .replace(/HIRING RECOMMENDATION:/g, 'Hiring Recommendation:')
-              .replace(/ALTERNATIVE ROLE INSIGHT:/g, 'Alternative Role Insight:')
               .trim();
             
+            if (!cleanedText) return null;
+            
             const sections = cleanedText.split(/\n\n+/).filter(s => s.trim());
+            
+            const renderSection = (text: string, index: number) => {
+              const sectionHeaderMatch = text.match(/^(CRITICAL SKILLS ANALYSIS|COHORT CONTEXT|HIRING RECOMMENDATION|ALTERNATIVE ROLE INSIGHT|Critical Skills Analysis|Cohort Context|Hiring Recommendation|Alternative Role Insight):\s*([\s\S]*)/i);
+              
+              if (sectionHeaderMatch) {
+                const title = sectionHeaderMatch[1].replace(/([a-z])([A-Z])/g, '$1 $2')
+                  .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+                const body = sectionHeaderMatch[2].trim();
+                return (
+                  <div key={index} className="space-y-2">
+                    <h4 className="font-semibold text-sm text-foreground">{title}</h4>
+                    {body && <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>}
+                  </div>
+                );
+              }
+              
+              return (
+                <p key={index} className="text-sm text-muted-foreground leading-relaxed">
+                  {text.trim()}
+                </p>
+              );
+            };
             
             return (
               <Card>
@@ -1146,11 +1166,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4" data-testid="text-final-recommendation">
-                    {sections.map((section, index) => (
-                      <p key={index} className="text-sm text-muted-foreground leading-relaxed">
-                        {section.trim()}
-                      </p>
-                    ))}
+                    {sections.map((section, index) => renderSection(section, index))}
                   </div>
                 </CardContent>
               </Card>
