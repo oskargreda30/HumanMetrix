@@ -2307,10 +2307,10 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.text(sectionTitle, 20, yPos);
     yPos += 7;
     
-    // Line chart dimensions - increased left margin for skill labels
-    const chartMarginLeft = 55;
-    const chartWidth = pageWidth - 75;
-    const chartHeight = Math.min(skills.length * 8, 80); // Max 80mm height
+    // Line chart dimensions - wide left margin for full skill labels
+    const chartMarginLeft = 75;
+    const chartWidth = pageWidth - 95;
+    const chartHeight = skills.length * 8;
     const chartStartY = yPos;
     
     // Draw chart background with subtle border
@@ -2349,7 +2349,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
       // Skill label on left with prominent criticality indicator
       const criticality = skill.criticality || 'standard';
       const isCriticalGap = criticality === 'critical' && skill.gap > 0;
-      const skillName = skill.skillName.length > 18 ? skill.skillName.substring(0, 16) + '...' : skill.skillName;
+      const skillName = skill.skillName;
       
       // Draw criticality indicator - only show CRITICAL badges (simplified per user request)
       if (criticality === 'critical') {
@@ -2446,18 +2446,23 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   // Render FIT skills if available
   if (data.alignment.fitSkillAlignments && data.alignment.fitSkillAlignments.length > 0) {
-    renderSkillSection(data.alignment.fitSkillAlignments.slice(0, 6), 'FIT ASSESSMENT SKILLS (Behavioral)', [59, 130, 246]);
+    renderSkillSection(data.alignment.fitSkillAlignments, 'FIT ASSESSMENT SKILLS (Behavioral)', [59, 130, 246]);
   }
   
-  // Add spacing between sections
-  yPos += 6;
-  
-  // Render AI Readiness skills if available
+  // Render AI Readiness skills on a new page (9 skills needs dedicated space)
   if (data.alignment.aiReadinessSkillAlignments && data.alignment.aiReadinessSkillAlignments.length > 0) {
-    renderSkillSection(data.alignment.aiReadinessSkillAlignments.slice(0, 6), 'AI READINESS SKILLS (Technical)', [59, 130, 246]);
+    pdf.addPage();
+    addBackgroundPattern(pdf, pageWidth, pageHeight);
+    addHeader(pdf, pageWidth);
+    yPos = 32;
+    renderSkillSection(data.alignment.aiReadinessSkillAlignments, 'AI READINESS SKILLS (Technical)', [59, 130, 246]);
   }
   
-  // ========== CRITICAL SKILLS ANALYSIS ==========
+  // ========== CRITICAL SKILLS ANALYSIS (new page) ==========
+  pdf.addPage();
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+  yPos = 32;
   // Get all critical skills from both FIT and AI Readiness alignments (up to 6)
   // Prioritize by: 1) criticality='critical', 2) largest gaps (most need for development)
   const allSkillsWithSource = [
