@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -243,11 +243,20 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
   const selectedCandidateData = candidates?.find((c) => c.user.id === selectedCandidate);
   const selectedRoleData = roles?.find((r) => r.id === selectedRole);
 
-  // Track last triggered selection to avoid re-triggering
-
-  // AI analyses are now pre-loaded from the role-alignment endpoint (single-loading UX) // Only trigger when alignment changes meaningfully
-
-
+  const top6CriticalNames = useMemo(() => {
+    if (!alignment) return new Set<string>();
+    const allSkills = [
+      ...(alignment.fitSkillAlignments || []),
+      ...(alignment.aiReadinessSkillAlignments || [])
+    ];
+    return new Set(
+      allSkills
+        .filter((s: any) => s.criticality === 'critical')
+        .sort((a: any, b: any) => (b.requiredScore ?? 0) - (a.requiredScore ?? 0))
+        .slice(0, 6)
+        .map((s: any) => s.skillName)
+    );
+  }, [alignment]);
 
   const handleExportPDF = async () => {
     if (!alignment || !selectedCandidateData || !selectedRoleData) return;
@@ -257,6 +266,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
         candidate: selectedCandidateData,
         role: selectedRoleData,
         alignment: alignment,
+        criticalSkillNames: Array.from(top6CriticalNames),
       });
       toast({
         title: "PDF exported successfully",
@@ -654,18 +664,8 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
             </Card>
           </div>
 
-          {/* FIT and AI Readiness Skill Alignments + Critical Skills Analysis — single source of truth */}
+          {/* FIT and AI Readiness Skill Alignments — uses component-level top6CriticalNames */}
           {(() => {
-            const allAlignmentSkills = [
-              ...(alignment.fitSkillAlignments || []),
-              ...(alignment.aiReadinessSkillAlignments || [])
-            ];
-            const criticalSkills = allAlignmentSkills
-              .filter((s: any) => s.criticality === 'critical')
-              .sort((a: any, b: any) => (b.requiredScore ?? 0) - (a.requiredScore ?? 0))
-              .slice(0, 6);
-            const top6CriticalNames = new Set(criticalSkills.map((s: any) => s.skillName));
-
             const renderSkillBar = (skill: any, index: number) => {
               const hasData = skill.dataAvailable !== false && skill.candidateScore !== null;
               const meetsThreshold = hasData && (skill.candidateScore ?? 0) >= skill.requiredScore;
@@ -739,16 +739,15 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
             );
           })()}
 
-          {/* Critical Skills Analysis — uses same source as C badges above */}
+          {/* Critical Skills Analysis — uses component-level top6CriticalNames */}
           {(() => {
             const allSkills = [
               ...(alignment.fitSkillAlignments || []),
               ...(alignment.aiReadinessSkillAlignments || [])
             ];
             const criticalSkills = allSkills
-              .filter((s: any) => s.criticality === 'critical')
-              .sort((a: any, b: any) => (b.requiredScore ?? 0) - (a.requiredScore ?? 0))
-              .slice(0, 6);
+              .filter((s: any) => top6CriticalNames.has(s.skillName))
+              .sort((a: any, b: any) => (b.requiredScore ?? 0) - (a.requiredScore ?? 0));
             const hasData = (s: any) => s.dataAvailable !== false && s.candidateScore != null;
             const assessedCritical = criticalSkills.filter(hasData);
             const noDataCritical = criticalSkills.filter((s: any) => !hasData(s));

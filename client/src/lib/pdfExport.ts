@@ -97,6 +97,7 @@ interface RoleFitData {
     name: string;
     description?: string;
   };
+  criticalSkillNames?: string[];
   alignment: {
     overallFit: number | null;
     fitSkillAlignments?: Array<{
@@ -2311,11 +2312,18 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     ...(data.alignment.fitSkillAlignments || []),
     ...(data.alignment.aiReadinessSkillAlignments || [])
   ];
+  const pdfTop6CriticalNames = data.criticalSkillNames
+    ? new Set(data.criticalSkillNames)
+    : new Set(
+        pdfAllAlignmentSkills
+          .filter(s => s.criticality === 'critical')
+          .sort((a, b) => (b.requiredScore ?? 0) - (a.requiredScore ?? 0))
+          .slice(0, 6)
+          .map(s => s.skillName)
+      );
   const pdfCriticalSkillsList = pdfAllAlignmentSkills
-    .filter(s => s.criticality === 'critical')
-    .sort((a, b) => (b.requiredScore ?? 0) - (a.requiredScore ?? 0))
-    .slice(0, 6);
-  const pdfTop6CriticalNames = new Set(pdfCriticalSkillsList.map(s => s.skillName));
+    .filter(s => pdfTop6CriticalNames.has(s.skillName))
+    .sort((a, b) => (b.requiredScore ?? 0) - (a.requiredScore ?? 0));
 
   const renderSkillSection = (skills: any[], sectionTitle: string, iconColor: [number, number, number]) => {
     if (!skills || skills.length === 0) return;
