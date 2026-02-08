@@ -311,7 +311,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
   };
 
   return (
-    <div className="space-y-6 md:space-y-8">
+    <div className="space-y-8 md:space-y-10">
       {config.contextType === 'partner' && (
         <div className="p-3 md:p-4 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800">
           <div className="flex items-start gap-2 md:gap-3">
