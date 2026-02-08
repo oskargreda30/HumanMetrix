@@ -2528,31 +2528,29 @@ export default function EmbedAssessment() {
           </div>
         )}
         <div className="mb-6">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-            <Badge 
-              className="border"
-              style={{ 
-                backgroundColor: `${accentColor}20`,
-                color: accentColor,
-                borderColor: `${accentColor}4D`
-              }}
-            >
-              {session && getAssessmentDisplayName(session.assessmentType)}
-            </Badge>
-            <div className="flex items-center gap-3 flex-1 justify-between">
-              <span className={`text-sm ${textMuted}`}>
-                Question {currentIndex + 1} of {questions.length}
-              </span>
-              <AssessmentTimerDisplay
-                initialTime={timeRemaining}
-                isLight={isLight}
-                warningThreshold={isPromptArchitecture ? 30 : 300}
-                isActive={status === 'started' && !isSubmitting}
-                onWarning={handleTimerWarning}
-                onExpiry={handleTimerExpiry}
-                timeRemainingRef={timeRemainingRef}
-              />
-            </div>
+          <Badge 
+            className="border mb-2"
+            style={{ 
+              backgroundColor: `${accentColor}20`,
+              color: accentColor,
+              borderColor: `${accentColor}4D`
+            }}
+          >
+            {session && getAssessmentDisplayName(session.assessmentType)}
+          </Badge>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <span className={`text-sm ${textMuted}`}>
+              Question {currentIndex + 1} of {questions.length}
+            </span>
+            <AssessmentTimerDisplay
+              initialTime={timeRemaining}
+              isLight={isLight}
+              warningThreshold={isPromptArchitecture ? 30 : 300}
+              isActive={status === 'started' && !isSubmitting}
+              onWarning={handleTimerWarning}
+              onExpiry={handleTimerExpiry}
+              timeRemainingRef={timeRemainingRef}
+            />
           </div>
           <Progress value={progress} className="h-2" style={{ '--progress-color': primaryColor } as any} />
           {showTimeWarning && (
