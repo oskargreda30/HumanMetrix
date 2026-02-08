@@ -5277,7 +5277,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   const extractItemText = (item: any): string => typeof item === 'string' ? item : (item.skill || item.summary || item.description || '');
 
   const maxCandidatesPerRow = 4;
-  const candidateCardHeight = 68;
+  const candidateCardHeight = 62;
 
   if (data.candidateEntries.length === 0) {
     pdf.setFontSize(8);
@@ -5295,27 +5295,38 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     const row = Math.floor(idx / maxCandidatesPerRow);
     const col = idx % maxCandidatesPerRow;
 
-    if (col === 0 && row > 0) {
-      yPos += candidateCardHeight + 8;
-    }
     if (col === 0) {
-      yPos = ensurePageSpace(pdf, yPos, candidateCardHeight + 10, pageHeight, pageWidth);
+      if (row === 0) {
+        yPos = ensurePageSpace(pdf, yPos, candidateCardHeight + 10, pageHeight, pageWidth);
+      } else {
+        const nextRowY = yPos + candidateCardHeight + 6;
+        if (nextRowY + candidateCardHeight > pageHeight - 20) {
+          pdf.addPage();
+          addBackgroundPattern(pdf, pageWidth, pageHeight);
+          addHeader(pdf, pageWidth);
+          yPos = 35;
+        } else {
+          yPos = nextRowY;
+        }
+      }
     }
 
     const cardX = 20 + (col * (candidateCardWidth + 3));
     const cardY = yPos;
     const cardW = candidateCardWidth - 3;
+    const tierBarH = 6;
+    const inset = 0.3;
 
-    const tierColors: Record<string, { fill: [number, number, number]; border: [number, number, number]; text: [number, number, number]; label: [number, number, number]; tierBg: [number, number, number] }> = {
-      'strong': { fill: [255, 255, 255], border: [209, 213, 219], text: [55, 65, 81], label: [22, 163, 74], tierBg: [220, 252, 231] },
-      'moderate': { fill: [255, 255, 255], border: [209, 213, 219], text: [55, 65, 81], label: [161, 98, 7], tierBg: [254, 249, 195] },
-      'development-needed': { fill: [255, 255, 255], border: [209, 213, 219], text: [55, 65, 81], label: [220, 38, 38], tierBg: [254, 226, 226] },
-      'insufficient-data': { fill: [255, 255, 255], border: [209, 213, 219], text: [107, 114, 128], label: [107, 114, 128], tierBg: [243, 244, 246] }
+    const tierColors: Record<string, { text: [number, number, number]; label: [number, number, number] }> = {
+      'strong': { text: [55, 65, 81], label: [22, 163, 74] },
+      'moderate': { text: [55, 65, 81], label: [161, 98, 7] },
+      'development-needed': { text: [55, 65, 81], label: [220, 38, 38] },
+      'insufficient-data': { text: [107, 114, 128], label: [107, 114, 128] }
     };
     const colors = tierColors[candidate.fitTier] || tierColors['development-needed'];
 
-    pdf.setFillColor(colors.fill[0], colors.fill[1], colors.fill[2]);
-    pdf.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
+    pdf.setFillColor(255, 255, 255);
+    pdf.setDrawColor(209, 213, 219);
     pdf.setLineWidth(0.3);
     pdf.roundedRect(cardX, cardY, cardW, candidateCardHeight, 2, 2, 'FD');
 
@@ -5324,17 +5335,17 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
                       fitTier === 'moderate' ? 'MODERATE' :
                       fitTier === 'insufficient-data' ? 'NO DATA' : 'DEV NEEDED';
 
-    const tierBarH = 5;
     pdf.setFillColor(colors.label[0], colors.label[1], colors.label[2]);
-    pdf.roundedRect(cardX, cardY, cardW, tierBarH + 2, 2, 2, 'F');
-    pdf.rect(cardX, cardY + tierBarH - 1, cardW, 3, 'F');
-    pdf.setFontSize(5);
+    pdf.roundedRect(cardX + inset, cardY + inset, cardW - inset * 2, tierBarH, 1.7, 1.7, 'F');
+    pdf.rect(cardX + inset, cardY + inset + tierBarH - 2, cardW - inset * 2, 2, 'F');
+
+    pdf.setFontSize(5.5);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(255, 255, 255);
-    pdf.text(tierLabel, cardX + 3, cardY + tierBarH - 1.2);
+    pdf.text(tierLabel, cardX + 4, cardY + tierBarH - 1.5);
 
     const userName = String(candidate.userName || 'Unknown');
-    pdf.setFontSize(7);
+    pdf.setFontSize(8);
     pdf.setFont('helvetica', 'bold');
     const maxNameW = cardW - 8;
     let truncCardName = userName;
@@ -5343,12 +5354,25 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     }
     if (truncCardName !== userName) truncCardName = truncCardName.trim() + '..';
     pdf.setTextColor(17, 24, 39);
-    pdf.text(truncCardName, cardX + 4, cardY + tierBarH + 7);
+    pdf.text(truncCardName, cardX + 4, cardY + tierBarH + 8);
 
     const fitPercent = Math.min(100, Math.max(0, candidate.overallFit ?? 0));
-    const progressBarY = cardY + tierBarH + 10;
+
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(colors.label[0], colors.label[1], colors.label[2]);
+    const scoreStr = `${fitPercent}%`;
+    pdf.text(scoreStr, cardX + 4, cardY + tierBarH + 18);
+    const scoreTextW = pdf.getTextWidth(scoreStr);
+
+    pdf.setFontSize(6);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('overall fit', cardX + 6 + scoreTextW, cardY + tierBarH + 18);
+
+    const progressBarY = cardY + tierBarH + 21;
     const progressBarW = cardW - 8;
-    const progressBarH = 4;
+    const progressBarH = 3;
 
     pdf.setFillColor(229, 231, 235);
     pdf.roundedRect(cardX + 4, progressBarY, progressBarW, progressBarH, 1, 1, 'F');
@@ -5356,16 +5380,11 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     pdf.setFillColor(colors.label[0], colors.label[1], colors.label[2]);
     pdf.roundedRect(cardX + 4, progressBarY, fillW, progressBarH, 1, 1, 'F');
 
-    pdf.setFontSize(12);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(colors.label[0], colors.label[1], colors.label[2]);
-    pdf.text(`${fitPercent}%`, cardX + 4, progressBarY + progressBarH + 8);
-
-    const detailStartY = progressBarY + progressBarH + 13;
+    const detailStartY = progressBarY + progressBarH + 3;
 
     pdf.setDrawColor(229, 231, 235);
     pdf.setLineWidth(0.2);
-    pdf.line(cardX + 4, detailStartY - 2, cardX + cardW - 4, detailStartY - 2);
+    pdf.line(cardX + 4, detailStartY, cardX + cardW - 4, detailStartY);
 
     const strengthsArr = candidate.strengths || [];
     const risksArr = candidate.riskFlags || [];
@@ -5376,44 +5395,37 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
 
     const maxTextW = cardW - 10;
 
-    if (strengthsArr.length > 0 && strengthsArr[0]) {
-      const strengthText = extractItemText(strengthsArr[0]);
-      if (strengthText) {
-        pdf.setTextColor(22, 163, 74);
-        let sText = strengthText.replace('Strong ', '');
-        while (pdf.getTextWidth(`+ ${sText}`) > maxTextW && sText.length > 3) sText = sText.slice(0, -1);
-        if (sText !== strengthText.replace('Strong ', '')) sText = sText.trim() + '..';
-        pdf.text(`+ ${sText}`, cardX + 4, detailStartY + 3);
-      }
+    const strengthText = strengthsArr.length > 0 && strengthsArr[0] ? extractItemText(strengthsArr[0]) : '';
+    if (strengthText) {
+      pdf.setTextColor(22, 163, 74);
+      let sText = strengthText.replace('Strong ', '');
+      while (pdf.getTextWidth(`+ ${sText}`) > maxTextW && sText.length > 3) sText = sText.slice(0, -1);
+      if (sText !== strengthText.replace('Strong ', '')) sText = sText.trim() + '..';
+      pdf.text(`+ ${sText}`, cardX + 4, detailStartY + 5);
     } else {
       pdf.setTextColor(156, 163, 175);
-      pdf.text('No strengths data', cardX + 4, detailStartY + 3);
+      pdf.text('No strengths data', cardX + 4, detailStartY + 5);
     }
 
-    if (gapsArr.length > 0 && gapsArr[0]) {
-      const gapText = extractItemText(gapsArr[0]);
-      if (gapText) {
-        pdf.setTextColor(220, 38, 38);
-        let gText = gapText;
-        while (pdf.getTextWidth(`- ${gText}`) > maxTextW && gText.length > 3) gText = gText.slice(0, -1);
-        if (gText !== gapText) gText = gText.trim() + '..';
-        pdf.text(`- ${gText}`, cardX + 4, detailStartY + 9);
-      }
-    } else if (risksArr.length > 0 && risksArr[0]) {
-      const riskText = String(risksArr[0]);
+    let gapDisplayText = '';
+    if (gapsArr.length > 0 && gapsArr[0]) gapDisplayText = extractItemText(gapsArr[0]);
+    if (!gapDisplayText && risksArr.length > 0 && risksArr[0]) gapDisplayText = String(risksArr[0]);
+
+    if (gapDisplayText) {
       pdf.setTextColor(220, 38, 38);
-      let rText = riskText;
-      while (pdf.getTextWidth(`- ${rText}`) > maxTextW && rText.length > 3) rText = rText.slice(0, -1);
-      if (rText !== riskText) rText = rText.trim() + '..';
-      pdf.text(`- ${rText}`, cardX + 4, detailStartY + 9);
+      let gText = gapDisplayText;
+      while (pdf.getTextWidth(`- ${gText}`) > maxTextW && gText.length > 3) gText = gText.slice(0, -1);
+      if (gText !== gapDisplayText) gText = gText.trim() + '..';
+      pdf.text(`- ${gText}`, cardX + 4, detailStartY + 11);
     } else {
       pdf.setTextColor(156, 163, 175);
-      pdf.text('No gaps identified', cardX + 4, detailStartY + 9);
+      pdf.text('No gaps identified', cardX + 4, detailStartY + 11);
     }
   });
 
-  const totalRows = Math.ceil(Math.min(8, data.candidateEntries.length) / maxCandidatesPerRow);
-  yPos += (candidateCardHeight * totalRows) + (totalRows > 1 ? (totalRows - 1) * 8 : 0) + 15;
+  if (data.candidateEntries.length > 0) {
+    yPos += candidateCardHeight + 10;
+  }
 
   // ========== SKILLS LEGEND PAGE ==========
   const legendStartPage = pdf.getNumberOfPages() + 1;
