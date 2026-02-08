@@ -1492,7 +1492,12 @@ export async function exportComparisonPDF(data: ComparisonData) {
         applySmallText(pdf);
         const maxNameWidth = columnWidth - 18;
         const skillName = strength.name;
-        pdf.text(skillName, colX, yPos, { maxWidth: maxNameWidth });
+        let truncatedName = skillName;
+        while (pdf.getTextWidth(truncatedName) > maxNameWidth && truncatedName.length > 3) {
+          truncatedName = truncatedName.slice(0, -1);
+        }
+        if (truncatedName !== skillName) truncatedName = truncatedName.trim() + '..';
+        pdf.text(truncatedName, colX, yPos);
         
         pdf.setFont('helvetica', 'bold');
         const scoreColor = strength.score >= 80 ? [34, 139, 34] : strength.score >= 60 ? [59, 130, 246] : [107, 114, 128];
@@ -1523,7 +1528,12 @@ export async function exportComparisonPDF(data: ComparisonData) {
         applySmallText(pdf);
         const maxNameWidth = columnWidth - 18;
         const skillName = weakness.name;
-        pdf.text(skillName, colX, yPos, { maxWidth: maxNameWidth });
+        let truncatedWName = skillName;
+        while (pdf.getTextWidth(truncatedWName) > maxNameWidth && truncatedWName.length > 3) {
+          truncatedWName = truncatedWName.slice(0, -1);
+        }
+        if (truncatedWName !== skillName) truncatedWName = truncatedWName.trim() + '..';
+        pdf.text(truncatedWName, colX, yPos);
         
         pdf.setFont('helvetica', 'bold');
         const scoreColor = weakness.score < 50 ? [220, 38, 38] : weakness.score < 65 ? [220, 120, 50] : [107, 114, 128];
@@ -1559,15 +1569,15 @@ export async function exportComparisonPDF(data: ComparisonData) {
       profileText += ` ${secondProfile.name} shows strength in ${secondProfile.topStrength.name} (${secondProfile.topStrength.score}/100).`;
     }
     
+    pdf.setFontSize(7.5);
+    pdf.setFont('helvetica', 'normal');
     const splitProfileText = pdf.splitTextToSize(profileText, pageWidth - 48);
-    const profileBoxH = 8 + (splitProfileText.length * 4);
+    const profileBoxH = 8 + (splitProfileText.length * 3.5);
     pdf.setFillColor(248, 250, 252);
     pdf.roundedRect(20, yPos, pageWidth - 40, profileBoxH, 2, 2, 'F');
     
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(71, 85, 105);
-    pdf.text(splitProfileText, 24, yPos + 6);
+    pdf.text(splitProfileText, 24, yPos + 5);
     yPos += profileBoxH;
   }
   
@@ -3276,7 +3286,11 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
   for (let i = 0; i < 3; i++) {
     if (strengths[i]) {
       applySmallText(pdf);
-      pdf.text(strengths[i].name, strengthsX, yPos, { maxWidth: halfWidth - 18 });
+      let truncSName = strengths[i].name;
+      const sMaxW = halfWidth - 18;
+      while (pdf.getTextWidth(truncSName) > sMaxW && truncSName.length > 3) { truncSName = truncSName.slice(0, -1); }
+      if (truncSName !== strengths[i].name) truncSName = truncSName.trim() + '..';
+      pdf.text(truncSName, strengthsX, yPos);
       pdf.setFont('helvetica', 'bold');
       const sColor = strengths[i].score >= 80 ? [34, 139, 34] : strengths[i].score >= 60 ? [59, 130, 246] : [107, 114, 128];
       pdf.setTextColor(sColor[0], sColor[1], sColor[2]);
@@ -3285,7 +3299,11 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
 
     if (weaknesses[i]) {
       applySmallText(pdf);
-      pdf.text(weaknesses[i].name, weaknessesX, yPos, { maxWidth: halfWidth - 18 });
+      let truncWName = weaknesses[i].name;
+      const wMaxW = halfWidth - 18;
+      while (pdf.getTextWidth(truncWName) > wMaxW && truncWName.length > 3) { truncWName = truncWName.slice(0, -1); }
+      if (truncWName !== weaknesses[i].name) truncWName = truncWName.trim() + '..';
+      pdf.text(truncWName, weaknessesX, yPos);
       pdf.setFont('helvetica', 'bold');
       const wColor = weaknesses[i].score < 50 ? [220, 38, 38] : weaknesses[i].score < 65 ? [220, 120, 50] : [107, 114, 128];
       pdf.setTextColor(wColor[0], wColor[1], wColor[2]);
@@ -3347,7 +3365,10 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
 
       applySmallText(pdf);
       pdf.setTextColor(55, 65, 81);
-      pdf.text(skill.displayName, labelX, yPos + 3, { maxWidth: 62 });
+      let truncFitLabel = skill.displayName;
+      while (pdf.getTextWidth(truncFitLabel) > 62 && truncFitLabel.length > 3) { truncFitLabel = truncFitLabel.slice(0, -1); }
+      if (truncFitLabel !== skill.displayName) truncFitLabel = truncFitLabel.trim() + '..';
+      pdf.text(truncFitLabel, labelX, yPos + 3);
 
       pdf.setFillColor(229, 231, 235);
       pdf.roundedRect(barX, yPos, barMaxWidth, 4, 1, 1, 'F');
@@ -3421,7 +3442,10 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
 
       applySmallText(pdf);
       pdf.setTextColor(55, 65, 81);
-      pdf.text(skill.displayName, aiLabelX, yPos + 3, { maxWidth: 62 });
+      let truncAiLabel = skill.displayName;
+      while (pdf.getTextWidth(truncAiLabel) > 62 && truncAiLabel.length > 3) { truncAiLabel = truncAiLabel.slice(0, -1); }
+      if (truncAiLabel !== skill.displayName) truncAiLabel = truncAiLabel.trim() + '..';
+      pdf.text(truncAiLabel, aiLabelX, yPos + 3);
 
       pdf.setFillColor(229, 231, 235);
       pdf.roundedRect(aiBarX, yPos, aiBarMaxWidth, 4, 1, 1, 'F');
@@ -3605,7 +3629,7 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
     yPos = 32;
 
     yPos = addSectionHeader(pdf, 'PROFILE INSIGHTS & RECOMMENDATIONS', yPos, pageWidth);
-    yPos += 6;
+    yPos += 2;
 
     const profileInsightsDesc = 'AI-generated analysis of this candidate\'s assessment results, highlighting role fit, strengths, development areas, and overall recommendations for hiring managers.';
     applySmallText(pdf);
@@ -3725,18 +3749,18 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
     yPos = ensurePageSpace(pdf, yPos, 12, pageHeight, pageWidth);
 
     pdf.setFillColor(59, 130, 246);
-    pdf.circle(25, yPos, 3, 'F');
+    pdf.circle(25, yPos + 2, 3, 'F');
     pdf.setFontSize(8);
     pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
-    pdf.text(`${stepNum}`, 25, yPos + 1, { align: 'center' });
+    pdf.text(`${stepNum}`, 25, yPos + 3, { align: 'center' });
 
     applyBodyText(pdf);
     const stepLines = pdf.splitTextToSize(step, pageWidth - 60);
     stepLines.forEach((line: string, idx: number) => {
-      pdf.text(line, 32, yPos - 1 + (idx * 5));
+      pdf.text(line, 32, yPos + 2 + (idx * 5));
     });
-    yPos += (stepLines.length * 5) + 3;
+    yPos += (stepLines.length * 5) + 5;
     stepNum++;
   });
 
