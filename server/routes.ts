@@ -11959,9 +11959,11 @@ Return valid JSON with only the requested fields.`;
           `Package purchase: ${packageSize} tests (FREE promo code)`
         );
         console.log(`[Partner Purchase] FREE promo applied - credited ${packageSize} tests to partner ${matchingPartner.id}`);
+        const freeSuccessUrl = `${baseUrl}/partner-package-success?provider=airwallex&packageId=${pkg.id}&promo=free`;
         return res.json({
           success: true,
           free: true,
+          sessionUrl: freeSuccessUrl,
           message: `${packageSize} tests credited successfully with FREE promo code`,
           packageId: pkg.id,
         });
@@ -19047,7 +19049,16 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         
         if (pkg.status === 'completed') {
           console.log(`[Partner Package] Package ${airwallexPackageId} already processed, skipping`);
-          return res.json({ success: true, message: "Package already credited", alreadyProcessed: true });
+          const existingPartner = await storage.getPartnerAccount(pkg.partnerId);
+          const currentBalance = existingPartner ? (existingPartner.testsPurchased || 0) - (existingPartner.testsConsumed || 0) : 0;
+          return res.json({ 
+            success: true, 
+            message: "Credits have been added to your account", 
+            alreadyProcessed: true,
+            newBalance: currentBalance,
+            previousBalance: Math.max(0, currentBalance - pkg.packageSize),
+            creditsAdded: pkg.packageSize,
+          });
         }
         
         if (!pkg.airwallexPaymentIntentId) {

@@ -1584,6 +1584,10 @@ export default function PartnerDashboard() {
     },
     onSuccess: async (data) => {
       if (data.free) {
+        if (data.sessionUrl) {
+          window.location.replace(data.sessionUrl);
+          return;
+        }
         toast({
           title: "Credits added successfully",
           description: data.message || "Your free credits have been applied.",
