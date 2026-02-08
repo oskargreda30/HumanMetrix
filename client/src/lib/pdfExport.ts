@@ -1073,8 +1073,8 @@ export async function exportComparisonPDF(data: ComparisonData) {
     const aiCharts = data.aiChartImages.filter(img => img !== null);
     const aiChartsPerRow = Math.min(aiCharts.length, 2);
     const aiColumnWidth = (pageWidth - 30) / aiChartsPerRow;
-    const aiChartWidth = 85; // Horizontally stretched within 4:3 aspect container
-    const aiChartHeight = 58;
+    const aiChartWidth = 85;
+    const aiChartHeight = 87;
     
     aiCharts.forEach((image, index) => {
       if (!image) return;
