@@ -1527,6 +1527,39 @@ export const insertBillingChangeRequestSchema = createInsertSchema(billingChange
 export type InsertBillingChangeRequest = z.infer<typeof insertBillingChangeRequestSchema>;
 export type BillingChangeRequest = typeof billingChangeRequests.$inferSelect;
 
+// Partner enquiries - subscription plan requests and other enquiries from partners
+export const partnerEnquiries = pgTable("partner_enquiries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  requestedByUserId: varchar("requested_by_user_id").notNull().references(() => users.id),
+  type: varchar("type").notNull().default("subscription"),
+  name: varchar("name"),
+  email: varchar("email"),
+  companyName: varchar("company_name"),
+  message: text("message").notNull(),
+  status: varchar("status").notNull().default("pending"),
+  reviewedByUserId: varchar("reviewed_by_user_id").references(() => users.id),
+  reviewNotes: text("review_notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  reviewedAt: timestamp("reviewed_at"),
+}, (table) => [
+  index("idx_partner_enquiry_partner").on(table.partnerId),
+  index("idx_partner_enquiry_status").on(table.status),
+  index("idx_partner_enquiry_created").on(table.createdAt),
+]);
+
+export const insertPartnerEnquirySchema = createInsertSchema(partnerEnquiries).omit({
+  id: true,
+  createdAt: true,
+  reviewedAt: true,
+  reviewedByUserId: true,
+  reviewNotes: true,
+  status: true,
+});
+
+export type InsertPartnerEnquiry = z.infer<typeof insertPartnerEnquirySchema>;
+export type PartnerEnquiry = typeof partnerEnquiries.$inferSelect;
+
 // Partner candidate import batches - tracks bulk invitation imports
 export const partnerCandidateImports = pgTable("partner_candidate_imports", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
