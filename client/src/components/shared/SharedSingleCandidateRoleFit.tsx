@@ -654,31 +654,29 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
             </Card>
           </div>
 
-          {/* FIT and AI Readiness Skill Alignments - cap critical badges to top 6 */}
+          {/* FIT and AI Readiness Skill Alignments + Critical Skills Analysis — single source of truth */}
           {(() => {
             const allAlignmentSkills = [
               ...(alignment.fitSkillAlignments || []),
               ...(alignment.aiReadinessSkillAlignments || [])
             ];
-            const top6CriticalNames = new Set(
-              allAlignmentSkills
-                .filter((s: any) => s.criticality === 'critical')
-                .sort((a: any, b: any) => (b.requiredScore ?? 0) - (a.requiredScore ?? 0))
-                .slice(0, 6)
-                .map((s: any) => s.skillName)
-            );
+            const criticalSkills = allAlignmentSkills
+              .filter((s: any) => s.criticality === 'critical')
+              .sort((a: any, b: any) => (b.requiredScore ?? 0) - (a.requiredScore ?? 0))
+              .slice(0, 6);
+            const top6CriticalNames = new Set(criticalSkills.map((s: any) => s.skillName));
 
             const renderSkillBar = (skill: any, index: number) => {
               const hasData = skill.dataAvailable !== false && skill.candidateScore !== null;
               const meetsThreshold = hasData && (skill.candidateScore ?? 0) >= skill.requiredScore;
-              const effectiveCriticality = top6CriticalNames.has(skill.skillName) ? skill.criticality : 'standard';
+              const isCritical = top6CriticalNames.has(skill.skillName);
               return (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {getAlignmentIcon(skill.alignment)}
                       <span className="font-medium">{skill.skillName}</span>
-                      {getCriticalityBadge(effectiveCriticality)}
+                      {getCriticalityBadge(isCritical ? 'critical' : 'standard')}
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`font-medium ${!hasData ? 'text-muted-foreground' : meetsThreshold ? 'text-green-600' : 'text-amber-500'}`}>
@@ -714,7 +712,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {alignment.fitSkillAlignments.slice(0, 6).map(renderSkillBar)}
+                        {alignment.fitSkillAlignments.map(renderSkillBar)}
                       </div>
                       <CriticalityLegend />
                     </CardContent>
@@ -731,7 +729,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {alignment.aiReadinessSkillAlignments.slice(0, 6).map(renderSkillBar)}
+                        {alignment.aiReadinessSkillAlignments.map(renderSkillBar)}
                       </div>
                       <CriticalityLegend />
                     </CardContent>
@@ -741,13 +739,14 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
             );
           })()}
 
-          {/* Critical Skills Analysis */}
+          {/* Critical Skills Analysis — uses same source as C badges above */}
           {(() => {
             const allSkills = [
               ...(alignment.fitSkillAlignments || []),
               ...(alignment.aiReadinessSkillAlignments || [])
             ];
-            const criticalSkills = allSkills.filter((s: any) => s.criticality === 'critical')
+            const criticalSkills = allSkills
+              .filter((s: any) => s.criticality === 'critical')
               .sort((a: any, b: any) => (b.requiredScore ?? 0) - (a.requiredScore ?? 0))
               .slice(0, 6);
             const hasData = (s: any) => s.dataAvailable !== false && s.candidateScore != null;

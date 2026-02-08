@@ -2307,7 +2307,16 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.text(rfAlignDescLines, 24, yPos + 4);
   yPos += rfAlignDescBoxH + 3;
   
-  // Helper function to render skill line chart
+  const pdfAllAlignmentSkills = [
+    ...(data.alignment.fitSkillAlignments || []),
+    ...(data.alignment.aiReadinessSkillAlignments || [])
+  ];
+  const pdfCriticalSkillsList = pdfAllAlignmentSkills
+    .filter(s => s.criticality === 'critical')
+    .sort((a, b) => (b.requiredScore ?? 0) - (a.requiredScore ?? 0))
+    .slice(0, 6);
+  const pdfTop6CriticalNames = new Set(pdfCriticalSkillsList.map(s => s.skillName));
+
   const renderSkillSection = (skills: any[], sectionTitle: string, iconColor: [number, number, number]) => {
     if (!skills || skills.length === 0) return;
     
@@ -2356,13 +2365,10 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     skills.forEach((skill, index) => {
       const skillY = chartStartY + (index * skillHeight) + (skillHeight / 2);
       
-      // Skill label on left with prominent criticality indicator
-      const criticality = skill.criticality || 'standard';
-      const isCriticalGap = criticality === 'critical' && skill.gap > 0;
+      const isCritical = pdfTop6CriticalNames.has(skill.skillName);
       const skillName = skill.skillName;
       
-      // Draw criticality indicator - only show CRITICAL badges (simplified per user request)
-      if (criticality === 'critical') {
+      if (isCritical) {
         // Blue badge for critical skills - positioned prominently
         pdf.setFillColor(37, 99, 235); // Blue-600
         pdf.roundedRect(14, skillY - 2.2, 10, 4.5, 1, 1, 'F');
@@ -2473,21 +2479,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   addBackgroundPattern(pdf, pageWidth, pageHeight);
   addHeader(pdf, pageWidth);
   yPos = 32;
-  // Get all critical skills from both FIT and AI Readiness alignments (up to 6)
-  // Prioritize by: 1) criticality='critical', 2) largest gaps (most need for development)
-  const allSkillsWithSource = [
-    ...(data.alignment.fitSkillAlignments || []).map(s => ({ ...s, source: 'fit' as const })),
-    ...(data.alignment.aiReadinessSkillAlignments || []).map(s => ({ ...s, source: 'ai' as const }))
-  ];
-  const criticalSkills = allSkillsWithSource
-    .filter(skill => skill.criticality === 'critical')
-    .sort((a, b) => {
-      // Sort by gap (descending) - larger gaps first for priority
-      const gapA = a.requiredScore - (a.candidateScore ?? 0);
-      const gapB = b.requiredScore - (b.candidateScore ?? 0);
-      return gapB - gapA;
-    })
-    .slice(0, 6);
+  const criticalSkills = pdfCriticalSkillsList;
   
   if (criticalSkills.length > 0) {
     yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
