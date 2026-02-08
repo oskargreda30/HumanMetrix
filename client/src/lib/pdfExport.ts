@@ -994,7 +994,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       const xPos = columnStart + (columnWidth - chartWidth) / 2;
       const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 5);
       
-      pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth, chartHeight);
+      pdf.addImage(image, 'JPEG', xPos, chartYPos, chartWidth, chartHeight);
     });
     
     yPos += Math.ceil(fitCharts.length / chartsPerRow) * (chartHeight + 5) + 3;
@@ -1077,7 +1077,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       const xPos = columnStart + (aiColumnWidth - aiChartWidth) / 2;
       const chartYPos = yPos + Math.floor(index / aiChartsPerRow) * (aiChartHeight + 5);
       
-      pdf.addImage(image, 'PNG', xPos, chartYPos, aiChartWidth, aiChartHeight);
+      pdf.addImage(image, 'JPEG', xPos, chartYPos, aiChartWidth, aiChartHeight);
     });
     
     yPos += Math.ceil(aiCharts.length / aiChartsPerRow) * (aiChartHeight + 5) + 3;
@@ -1156,7 +1156,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     const chartHeight = imgProps.height * scale;
     const xPos = (pageWidth - chartWidth) / 2;
     
-    pdf.addImage(data.overallSkillsChartImage, 'PNG', xPos, yPos, chartWidth, chartHeight);
+    pdf.addImage(data.overallSkillsChartImage, 'JPEG', xPos, yPos, chartWidth, chartHeight);
     yPos += chartHeight + 8;
   }
   
@@ -1848,166 +1848,6 @@ export async function exportComparisonPDF(data: ComparisonData) {
   yPos += priorityBoxHeight + 5;
   
   } // End of role suitability conditional
-  
-  // ========== EMPLOYER RECOMMENDATION ==========
-  yPos = ensurePageSpace(pdf, yPos, 60, pageHeight, pageWidth);
-  
-  yPos = addSectionHeader(pdf, 'EMPLOYER RECOMMENDATION', yPos, pageWidth);
-  
-  // Add Comparison Summary header for the selected role
-  if (data.selectedRole && roleData) {
-    const roleLabel = roleData.name ?? 'Selected Role';
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(17, 24, 39);
-    pdf.text(`Comparison Summary for the ${roleLabel} role`, 20, yPos);
-    yPos += 8;
-  }
-  
-  // Use passed-in employer recommendation from dashboard if available
-  if (data.employerRecommendation) {
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(55, 65, 81);
-    
-    const recLines = pdf.splitTextToSize(data.employerRecommendation, pageWidth - 50);
-    recLines.forEach((line: string) => {
-      yPos = ensurePageSpace(pdf, yPos, 6, pageHeight, pageWidth);
-      pdf.text(line, 25, yPos);
-      yPos += 5;
-    });
-    yPos += 5;
-  } else {
-    // Fallback to generic recommendation if no dashboard data
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(55, 65, 81);
-    
-    const fallbackText = 'Based on the comprehensive assessment data, review each candidate\'s performance metrics to determine the best fit for your role requirements.';
-    const lines = pdf.splitTextToSize(fallbackText, pageWidth - 50);
-    lines.forEach((line: string) => {
-      pdf.text(line, 25, yPos);
-      yPos += 5;
-    });
-    yPos += 5;
-  }
-  
-  // Individual candidate summaries using composite scores
-  // Calculate composite score for each candidate (weighted average across all 4 assessment types)
-  const calculateCompositeScore = (candidateIndex: number): number => {
-    const weights = data.assessmentWeights || { fit: 25, aiReadiness: 25, promptArchitecture: 25, aiq: 25 };
-    const assessmentScores: Array<{ score: number; weight: number }> = [];
-    
-    // FIT average
-    const fitData = data.fitAssessments?.[candidateIndex];
-    if (fitData) {
-      const fitScores = Object.values(fitData.scores);
-      if (fitScores.length > 0) {
-        const fitAvg = fitScores.reduce((a, b) => a + b, 0) / fitScores.length;
-        assessmentScores.push({ score: fitAvg, weight: weights.fit });
-      }
-    }
-    
-    // AI Readiness average
-    const aiData = data.aiReadinessAssessments?.[candidateIndex];
-    if (aiData) {
-      const aiScores = Object.values(aiData.scores);
-      if (aiScores.length > 0) {
-        const aiAvg = aiScores.reduce((a, b) => a + b, 0) / aiScores.length;
-        assessmentScores.push({ score: aiAvg, weight: weights.aiReadiness });
-      }
-    }
-    
-    // Prompt Architecture
-    const promptData = data.promptArchitectureAssessments?.[candidateIndex];
-    if (promptData) {
-      assessmentScores.push({ score: promptData.totalScore, weight: weights.promptArchitecture });
-    }
-    
-    // AIQ
-    const aiqData = data.aiqAssessments?.[candidateIndex];
-    if (aiqData) {
-      assessmentScores.push({ score: aiqData.totalScore, weight: weights.aiq });
-    }
-    
-    if (assessmentScores.length === 0) return 0;
-    
-    const totalWeight = assessmentScores.reduce((sum, d) => sum + d.weight, 0);
-    if (totalWeight === 0) return 0;
-    
-    const weightedSum = assessmentScores.reduce((sum, d) => sum + d.score * d.weight, 0);
-    return Math.round(weightedSum / totalWeight);
-  };
-
-  const candidateAnalysis = data.candidates.map((candidate, index) => {
-    const name = getCandidateName(candidate);
-    const compositeScore = calculateCompositeScore(index);
-    
-    // Track which assessments are completed
-    const completedAssessments: string[] = [];
-    if (data.fitAssessments?.[index]) completedAssessments.push('FIT');
-    if (data.aiReadinessAssessments?.[index]) completedAssessments.push('AI Readiness');
-    if (data.promptArchitectureAssessments?.[index]) completedAssessments.push('Prompt Architecture');
-    if (data.aiqAssessments?.[index]) completedAssessments.push('AIQ');
-    
-    const completedCount = completedAssessments.length;
-    
-    const candidateSkills = data.skillComparison
-      .map(skill => ({ name: skill.skillName, score: skill.scores[index] }))
-      .filter(s => s.score !== null)
-      .sort((a, b) => (b.score || 0) - (a.score || 0))
-      .slice(0, 3);
-    
-    return { name, compositeScore, completedCount, completedAssessments, topSkills: candidateSkills };
-  });
-  
-  const rankedCandidates = [...candidateAnalysis].sort((a, b) => b.compositeScore - a.compositeScore);
-  
-  rankedCandidates.forEach((candidate, rankIndex) => {
-    const candidateColor = CANDIDATE_COLORS[data.candidates.findIndex(c => getCandidateName(c) === candidate.name)] || [100, 100, 100];
-    const perfLevel = getPerformanceLevel(candidate.compositeScore);
-    
-    const scoreLine = `Composite Score: ${candidate.compositeScore}/100 (${perfLevel.label})`;
-    const assessmentLine = candidate.completedCount === 4 
-      ? 'Completed all 4 assessments'
-      : `Completed ${candidate.completedCount}/4 assessments (${candidate.completedAssessments.join(', ')})`;
-    const strengthsLine = `Key Strengths: ${candidate.topSkills.map(s => s.name).join(', ')}`;
-    
-    const strengthsLines = pdf.splitTextToSize(strengthsLine, pageWidth - 50);
-    const contentHeight = 24 + (strengthsLines.length - 1) * 5;
-    
-    yPos = ensurePageSpace(pdf, yPos, contentHeight + 8, pageHeight, pageWidth);
-    
-    const textStartX = 22;
-    
-    // Candidate name
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-    pdf.text(candidate.name, textStartX, yPos);
-    yPos += 6;
-    
-    // Composite score line
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(55, 65, 81);
-    pdf.text(scoreLine, textStartX, yPos);
-    yPos += 5;
-    
-    // Assessments completed line
-    pdf.setTextColor(107, 114, 128);
-    pdf.text(assessmentLine, textStartX, yPos);
-    yPos += 5;
-    
-    // Key strengths (may wrap)
-    pdf.setTextColor(55, 65, 81);
-    strengthsLines.forEach((line: string) => {
-      pdf.text(line, textStartX, yPos);
-      yPos += 5;
-    });
-    
-    yPos += 6;
-  });
   
   // ========== RECOMMENDED NEXT STEPS & ADDITIONAL SERVICES ==========
   // Both sections on the same page - estimate space needed: ~120mm for both sections
@@ -4757,7 +4597,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     // Right column - Bar Chart
     if (data.fitChartImage) {
       try {
-        pdf.addImage(data.fitChartImage, 'PNG', rightColStart, fitScoresStartY - 5, chartWidth, chartHeight);
+        pdf.addImage(data.fitChartImage, 'JPEG', rightColStart, fitScoresStartY - 5, chartWidth, chartHeight);
       } catch (e) {
         // Fallback: draw placeholder box
         pdf.setDrawColor(229, 231, 235);
@@ -4833,7 +4673,7 @@ export async function generateIndividualReportPDF(data: IndividualReportData) {
     // Right column - Bar Chart (positioned to align with skills list)
     if (data.aiChartImage) {
       try {
-        pdf.addImage(data.aiChartImage, 'PNG', rightColStart, aiScoresStartY + 5, chartWidth, aiChartHeight);
+        pdf.addImage(data.aiChartImage, 'JPEG', rightColStart, aiScoresStartY + 5, chartWidth, aiChartHeight);
       } catch (e) {
         // Fallback: draw placeholder box
         pdf.setDrawColor(229, 231, 235);
