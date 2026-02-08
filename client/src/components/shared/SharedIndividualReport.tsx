@@ -25,7 +25,6 @@ import { FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym, getAIReadinessScore, 
 import SkillsLegend from "@/components/SkillsLegend";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import html2canvas from "html2canvas";
 import { EnquiryModal } from "@/components/EnquiryModal";
 
 const CHART_COLOR = "#5B8DB8";
@@ -230,122 +229,70 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
     try {
       toast({
         title: "Generating PDF",
-        description: "Please wait while we capture your report...",
+        description: "Please wait while we prepare your report...",
       });
-      
-      const element = document.getElementById('individual-report-content');
-      if (!element) throw new Error('Report content not found');
-      
-      const { jsPDF } = await import('jspdf');
-      const html2canvas = (await import('html2canvas')).default;
-      
-      const sections = element.querySelectorAll(':scope > div, :scope > section, :scope > article');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const margin = 5;
-      const usableWidth = pdfWidth - margin * 2;
-      
-      const captureElement = async (el: HTMLElement) => {
-        const canvas = await html2canvas(el, {
-          scale: 1.5,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#0f172a',
-          allowTaint: true,
-          windowWidth: el.scrollWidth,
-        });
-        return canvas;
-      };
-      
-      if (sections.length > 1) {
-        let yPos = margin;
-        let isFirstPage = true;
-        
-        for (let i = 0; i < sections.length; i++) {
-          const section = sections[i] as HTMLElement;
-          if (section.offsetHeight < 5) continue;
-          
-          try {
-            const canvas = await captureElement(section);
-            const imgData = canvas.toDataURL('image/jpeg', 0.85);
-            const imgWidth = canvas.width;
-            const imgHeight = canvas.height;
-            const scaledWidth = usableWidth;
-            const scaledHeight = (imgHeight / imgWidth) * scaledWidth;
-            
-            if (yPos + scaledHeight > pdfHeight - margin && !isFirstPage) {
-              pdf.addPage();
-              yPos = margin;
-            }
-            
-            if (scaledHeight > pdfHeight - margin * 2) {
-              if (yPos > margin + 1) {
-                pdf.addPage();
-                yPos = margin;
-              }
-              
-              let srcY = 0;
-              const pixelsPerMM = imgHeight / scaledHeight;
-              
-              while (srcY < imgHeight) {
-                if (srcY > 0) {
-                  pdf.addPage();
-                  yPos = margin;
-                }
-                
-                const availableHeight = pdfHeight - margin - yPos;
-                const srcHeightForPage = Math.min(availableHeight * pixelsPerMM, imgHeight - srcY);
-                const destHeight = srcHeightForPage / pixelsPerMM;
-                
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = imgWidth;
-                tempCanvas.height = Math.ceil(srcHeightForPage);
-                const ctx = tempCanvas.getContext('2d');
-                if (ctx) {
-                  ctx.drawImage(canvas, 0, srcY, imgWidth, srcHeightForPage, 0, 0, imgWidth, srcHeightForPage);
-                  const sliceData = tempCanvas.toDataURL('image/jpeg', 0.85);
-                  pdf.addImage(sliceData, 'JPEG', margin, yPos, scaledWidth, destHeight);
-                }
-                
-                srcY += srcHeightForPage;
-                yPos = yPos + destHeight;
-              }
-            } else {
-              pdf.addImage(imgData, 'JPEG', margin, yPos, scaledWidth, scaledHeight);
-              yPos += scaledHeight + 2;
-            }
-            
-            isFirstPage = false;
-          } catch (sectionError) {
-            console.warn(`Skipping section ${i} due to rendering error:`, sectionError);
-          }
+
+      await new Promise(resolve => setTimeout(resolve, 300));
+      await document.fonts.ready;
+
+      let fitChartImage: string | null = null;
+      let aiChartImage: string | null = null;
+
+      try {
+        if (fitChartRef.current && fitData) {
+          const h2c = (await import('html2canvas')).default;
+          const canvas = await h2c(fitChartRef.current, {
+            backgroundColor: '#ffffff',
+            scale: 2,
+            useCORS: true,
+            logging: false,
+          });
+          fitChartImage = canvas.toDataURL('image/jpeg', 0.7);
         }
-      } else {
-        const canvas = await captureElement(element);
-        const imgData = canvas.toDataURL('image/jpeg', 0.85);
-        const imgWidth = canvas.width;
-        const imgHeight = canvas.height;
-        const ratio = usableWidth / imgWidth;
-        
-        let heightLeft = imgHeight * ratio;
-        let position = 0;
-        
-        pdf.addImage(imgData, 'JPEG', margin, position, imgWidth * ratio, imgHeight * ratio);
-        heightLeft -= pdfHeight;
-        
-        while (heightLeft > 0) {
-          position = heightLeft - imgHeight * ratio;
-          pdf.addPage();
-          pdf.addImage(imgData, 'JPEG', margin, position, imgWidth * ratio, imgHeight * ratio);
-          heightLeft -= pdfHeight;
-        }
+      } catch (err) {
+        console.warn('Could not capture FIT chart:', err);
       }
-      
-      const candidateName = selectedCandidateData.user.firstName || selectedCandidateData.user.lastName
-        ? `${selectedCandidateData.user.firstName || ''}_${selectedCandidateData.user.lastName || ''}`.trim()
-        : selectedCandidateData.user.email.split('@')[0];
-      pdf.save(`${candidateName}_Assessment_Report.pdf`);
+
+      try {
+        if (aiChartRef.current && aiData) {
+          const h2c = (await import('html2canvas')).default;
+          const canvas = await h2c(aiChartRef.current, {
+            backgroundColor: '#ffffff',
+            scale: 2,
+            useCORS: true,
+            logging: false,
+          });
+          aiChartImage = canvas.toDataURL('image/jpeg', 0.7);
+        }
+      } catch (err) {
+        console.warn('Could not capture AI chart:', err);
+      }
+
+      const { exportIndividualReportPDF } = await import('@/lib/pdfExport');
+
+      await exportIndividualReportPDF({
+        candidate: {
+          firstName: selectedCandidateData.user.firstName,
+          lastName: selectedCandidateData.user.lastName,
+          email: selectedCandidateData.user.email,
+        },
+        fitAssessment: fitData ? { scores: fitData.scores, completedAt: fitData.completedAt } : null,
+        aiReadinessAssessment: aiData ? { scores: aiData.scores, completedAt: aiData.completedAt } : null,
+        promptArchitectureAssessment: promptData ? {
+          levels: promptData.levels || [],
+          totalScore: promptData.totalScore,
+          percentile: promptData.percentile,
+          completedAt: promptData.completedAt,
+        } : null,
+        aiqAssessment: aiqData ? {
+          totalScore: aiqData.totalScore,
+          scores: aiqData.scores,
+          completedAt: aiqData.completedAt,
+        } : null,
+        aiInsights: candidateReport.aiInsights,
+        fitChartImage,
+        aiChartImage,
+      });
       
       toast({
         title: "PDF Generated",
