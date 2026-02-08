@@ -60,6 +60,7 @@ export function csrfProtection() {
       
       // Webhooks and callbacks (external services)
       "/api/stripe/webhook",
+      "/api/webhooks/airwallex",
       "/api/partner/package/callback",
       "/api/partner/package/airwallex-callback",
       
