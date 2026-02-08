@@ -58,6 +58,12 @@ export default function StartAssessment() {
   const [startingType, setStartingType] = useState<string | null>(null);
 
   useEffect(() => {
+    const originalBg = document.body.style.backgroundColor;
+    document.body.style.backgroundColor = '#0f172a';
+    return () => { document.body.style.backgroundColor = originalBg; };
+  }, []);
+
+  useEffect(() => {
     if (!token) {
       setStatus("error");
       setErrorMessage("No invitation token provided");
@@ -168,7 +174,7 @@ export default function StartAssessment() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-slate-900 pt-16 md:pt-12 pb-12 px-4">
+    <div className="min-h-[100dvh] bg-slate-900 pt-8 md:pt-12 pb-12 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
           {invitation?.branding?.logoUrl ? (
