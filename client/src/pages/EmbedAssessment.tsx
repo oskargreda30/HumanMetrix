@@ -2528,20 +2528,22 @@ export default function EmbedAssessment() {
           </div>
         )}
         <div className="mb-6">
-          <Badge 
-            className="border mb-2"
-            style={{ 
-              backgroundColor: `${accentColor}20`,
-              color: accentColor,
-              borderColor: `${accentColor}4D`
-            }}
-          >
-            {session && getAssessmentDisplayName(session.assessmentType)}
-          </Badge>
           <div className="flex items-center justify-between gap-2 mb-2">
-            <span className={`text-sm ${textMuted}`}>
-              Question {currentIndex + 1} of {questions.length}
-            </span>
+            <div className="flex flex-col gap-1">
+              <Badge 
+                className="border w-fit"
+                style={{ 
+                  backgroundColor: `${accentColor}20`,
+                  color: accentColor,
+                  borderColor: `${accentColor}4D`
+                }}
+              >
+                {session && getAssessmentDisplayName(session.assessmentType)}
+              </Badge>
+              <span className={`text-sm ${textMuted}`}>
+                Question {currentIndex + 1} of {questions.length}
+              </span>
+            </div>
             <AssessmentTimerDisplay
               initialTime={timeRemaining}
               isLight={isLight}
