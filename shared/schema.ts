@@ -317,7 +317,7 @@ export const jobRoles = pgTable("job_roles", {
     aiReadinessSkills: Record<string, number>;
     promptArchitectureSkills?: Record<string, number>;
     aiqSkills?: Record<string, number>;
-    skillCriticality?: Record<string, 'critical' | 'important' | 'nice-to-have'>;
+    skillCriticality?: Record<string, 'critical' | 'standard'>;
     generatedAt?: string;
   }>(),
   isCustom: boolean("is_custom").notNull().default(false),
