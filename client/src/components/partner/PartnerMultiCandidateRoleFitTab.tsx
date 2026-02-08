@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { AnalysisLoadingScreen } from "@/components/shared/AnalysisLoadingScreen";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -432,6 +432,45 @@ export default function PartnerMultiCandidateRoleFitTab() {
 
   const comparison = compareMutation.data as MultiCandidateComparison | undefined;
 
+  const multiCriticalSkills = useMemo(() => {
+    if (!comparison) return [];
+    const roleSkills = comparison.roleSnapshot.requiredSkillScores;
+    const skillCriticality = roleSkills?.skillCriticality || {};
+    const result: Array<{ skillName: string; requiredScore: number; category: 'fit' | 'ai_readiness' | 'prompt_architecture' | 'aiq' }> = [];
+    if (roleSkills?.fitSkills) {
+      Object.entries(roleSkills.fitSkills).forEach(([skillName, requiredScore]) => {
+        if (skillCriticality[skillName] === 'critical') {
+          result.push({ skillName, requiredScore: requiredScore as number, category: 'fit' });
+        }
+      });
+    }
+    if (roleSkills?.aiReadinessSkills) {
+      Object.entries(roleSkills.aiReadinessSkills).forEach(([skillName, requiredScore]) => {
+        if (skillCriticality[skillName] === 'critical') {
+          result.push({ skillName, requiredScore: requiredScore as number, category: 'ai_readiness' });
+        }
+      });
+    }
+    if (roleSkills?.promptArchitectureSkills) {
+      Object.entries(roleSkills.promptArchitectureSkills).forEach(([skillName, requiredScore]) => {
+        if (skillCriticality[skillName] === 'critical') {
+          result.push({ skillName, requiredScore: requiredScore as number, category: 'prompt_architecture' });
+        }
+      });
+    }
+    if (roleSkills?.aiqSkills) {
+      Object.entries(roleSkills.aiqSkills).forEach(([skillName, requiredScore]) => {
+        if (skillCriticality[skillName] === 'critical') {
+          result.push({ skillName, requiredScore: requiredScore as number, category: 'aiq' });
+        }
+      });
+    }
+    result.sort((a, b) => b.requiredScore - a.requiredScore);
+    return result.slice(0, 6);
+  }, [comparison]);
+
+  const multiCriticalSkillNames = useMemo(() => new Set(multiCriticalSkills.map(s => s.skillName)), [multiCriticalSkills]);
+
   const toggleCandidate = (userId: string) => {
     setSelectedCandidates((prev) =>
       prev.includes(userId)
@@ -521,6 +560,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
         candidateEntries: comparison.candidateEntries,
         summaryInsights: comparison.summaryInsights,
         barChartImage,
+        criticalSkillNames: multiCriticalSkills.map(s => s.skillName),
       });
       
       toast({
@@ -946,67 +986,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
             </CardHeader>
             <CardContent className="pt-4">
               {(() => {
-                // Extract critical skills from role snapshot (authoritative source)
-                const roleSkills = comparison.roleSnapshot.requiredSkillScores;
-                const skillCriticality = roleSkills?.skillCriticality || {};
-                
-                // Build critical skill list with required scores from role definition
-                const criticalSkillsWithRequirements: Array<{ skillName: string; requiredScore: number; category: 'fit' | 'ai_readiness' | 'prompt_architecture' | 'aiq' }> = [];
-                
-                // Check FIT skills
-                if (roleSkills?.fitSkills) {
-                  Object.entries(roleSkills.fitSkills).forEach(([skillName, requiredScore]) => {
-                    if (skillCriticality[skillName] === 'critical') {
-                      criticalSkillsWithRequirements.push({
-                        skillName,
-                        requiredScore: requiredScore as number,
-                        category: 'fit'
-                      });
-                    }
-                  });
-                }
-                
-                // Check AI Readiness skills
-                if (roleSkills?.aiReadinessSkills) {
-                  Object.entries(roleSkills.aiReadinessSkills).forEach(([skillName, requiredScore]) => {
-                    if (skillCriticality[skillName] === 'critical') {
-                      criticalSkillsWithRequirements.push({
-                        skillName,
-                        requiredScore: requiredScore as number,
-                        category: 'ai_readiness'
-                      });
-                    }
-                  });
-                }
-                
-                // Check Prompt Architecture skills
-                if (roleSkills?.promptArchitectureSkills) {
-                  Object.entries(roleSkills.promptArchitectureSkills).forEach(([skillName, requiredScore]) => {
-                    if (skillCriticality[skillName] === 'critical') {
-                      criticalSkillsWithRequirements.push({
-                        skillName,
-                        requiredScore: requiredScore as number,
-                        category: 'prompt_architecture'
-                      });
-                    }
-                  });
-                }
-                
-                // Check AIQ skills
-                if (roleSkills?.aiqSkills) {
-                  Object.entries(roleSkills.aiqSkills).forEach(([skillName, requiredScore]) => {
-                    if (skillCriticality[skillName] === 'critical') {
-                      criticalSkillsWithRequirements.push({
-                        skillName,
-                        requiredScore: requiredScore as number,
-                        category: 'aiq'
-                      });
-                    }
-                  });
-                }
-                
-                criticalSkillsWithRequirements.sort((a, b) => b.requiredScore - a.requiredScore);
-                const cappedCriticalSkills = criticalSkillsWithRequirements.slice(0, 6);
+                const cappedCriticalSkills = multiCriticalSkills;
 
                 if (cappedCriticalSkills.length === 0) {
                   return (
@@ -1169,76 +1149,51 @@ export default function PartnerMultiCandidateRoleFitTab() {
             </CardContent>
           </Card>
 
-          {/* Critical Skills Deep Dive - AI-Identified Analysis */}
+          {/* Critical Skills Deep Dive — uses component-level multiCriticalSkillNames */}
           {(() => {
             const roleSkills = comparison.roleSnapshot.requiredSkillScores;
-            const skillCriticality = roleSkills?.skillCriticality || {};
-            
-            // Build critical skills data for the new component
-            const criticalSkillsData: CriticalSkillMultiData[] = [];
-            
-            // Process FIT skills
-            if (roleSkills?.fitSkills) {
-              Object.entries(roleSkills.fitSkills).forEach(([skillName, requiredScore]) => {
-                if (skillCriticality[skillName] === 'critical') {
-                  const candidates = comparison.candidateEntries.map(candidate => {
-                    const skill = findSkillInScores(candidate.skillScores, skillName);
-                    const hasData = skill?.dataAvailable !== false && skill?.score != null;
-                    return {
-                      userId: candidate.userId,
-                      userName: candidate.userName,
-                      score: hasData ? skill.score : null,
-                      dataAvailable: hasData,
-                      gap: hasData && skill.score != null ? skill.score - (requiredScore as number) : null,
-                      meetsRequirement: hasData && (skill?.score || 0) >= (requiredScore as number),
-                    };
-                  });
-                  criticalSkillsData.push({
-                    skillName,
-                    requiredScore: requiredScore as number,
-                    criticality: 'critical',
-                    category: 'fit',
-                    candidates,
-                  });
-                }
-              });
-            }
-            
-            // Process AI Readiness skills
-            if (roleSkills?.aiReadinessSkills) {
-              Object.entries(roleSkills.aiReadinessSkills).forEach(([skillName, requiredScore]) => {
-                if (skillCriticality[skillName] === 'critical') {
-                  const candidates = comparison.candidateEntries.map(candidate => {
-                    const skill = findSkillInScores(candidate.skillScores, skillName);
-                    const hasData = skill?.dataAvailable !== false && skill?.score != null;
-                    return {
-                      userId: candidate.userId,
-                      userName: candidate.userName,
-                      score: hasData ? skill.score : null,
-                      dataAvailable: hasData,
-                      gap: hasData && skill.score != null ? skill.score - (requiredScore as number) : null,
-                      meetsRequirement: hasData && (skill?.score || 0) >= (requiredScore as number),
-                    };
-                  });
-                  criticalSkillsData.push({
-                    skillName,
-                    requiredScore: requiredScore as number,
-                    criticality: 'critical',
-                    category: 'ai_readiness',
-                    candidates,
-                  });
-                }
-              });
-            }
-            
-            criticalSkillsData.sort((a, b) => b.requiredScore - a.requiredScore);
-            const cappedCriticalSkillsData = criticalSkillsData.slice(0, 6);
 
-            if (cappedCriticalSkillsData.length === 0) return null;
+            const criticalSkillsData: CriticalSkillMultiData[] = [];
+
+            const processCategory = (skillsMap: Record<string, number> | undefined, category: 'fit' | 'ai_readiness' | 'prompt_architecture' | 'aiq') => {
+              if (!skillsMap) return;
+              Object.entries(skillsMap).forEach(([skillName, requiredScore]) => {
+                if (multiCriticalSkillNames.has(skillName)) {
+                  const candidates = comparison.candidateEntries.map(candidate => {
+                    const skill = findSkillInScores(candidate.skillScores, skillName);
+                    const hasData = skill?.dataAvailable !== false && skill?.score != null;
+                    return {
+                      userId: candidate.userId,
+                      userName: candidate.userName,
+                      score: hasData ? skill.score : null,
+                      dataAvailable: hasData,
+                      gap: hasData && skill.score != null ? skill.score - (requiredScore as number) : null,
+                      meetsRequirement: hasData && (skill?.score || 0) >= (requiredScore as number),
+                    };
+                  });
+                  criticalSkillsData.push({
+                    skillName,
+                    requiredScore: requiredScore as number,
+                    criticality: 'critical',
+                    category,
+                    candidates,
+                  });
+                }
+              });
+            };
+
+            processCategory(roleSkills?.fitSkills as Record<string, number> | undefined, 'fit');
+            processCategory(roleSkills?.aiReadinessSkills as Record<string, number> | undefined, 'ai_readiness');
+            processCategory(roleSkills?.promptArchitectureSkills as Record<string, number> | undefined, 'prompt_architecture');
+            processCategory(roleSkills?.aiqSkills as Record<string, number> | undefined, 'aiq');
+
+            criticalSkillsData.sort((a, b) => b.requiredScore - a.requiredScore);
+
+            if (criticalSkillsData.length === 0) return null;
             
             return (
               <MultiCandidateCriticalSkillsAnalysis 
-                skills={cappedCriticalSkillsData}
+                skills={criticalSkillsData}
                 roleName={comparison.roleSnapshot.roleName}
               />
             );

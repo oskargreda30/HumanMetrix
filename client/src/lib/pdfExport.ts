@@ -4045,6 +4045,7 @@ interface MultiCandidateComparisonData {
   barChartImage?: string | null;
   promptArchitectureAnalysis?: string | null;
   aiqAnalysis?: string | null;
+  criticalSkillNames?: string[];
 }
 
 export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComparisonData) {
@@ -4503,25 +4504,37 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   const roleSkills = data.roleSnapshot.requiredSkillScores;
   const skillCriticality = roleSkills?.skillCriticality || {};
 
+  const multiPdfCriticalNames = data.criticalSkillNames
+    ? new Set(data.criticalSkillNames)
+    : null;
+
   const criticalSkillsWithRequirements: Array<{ skillName: string; requiredScore: number; category: 'fit' | 'ai_readiness' }> = [];
 
   if (roleSkills?.fitSkills) {
     Object.entries(roleSkills.fitSkills).forEach(([skillName, requiredScore]) => {
-      if (skillCriticality[skillName] === 'critical') {
+      const isCritical = multiPdfCriticalNames
+        ? multiPdfCriticalNames.has(skillName)
+        : skillCriticality[skillName] === 'critical';
+      if (isCritical) {
         criticalSkillsWithRequirements.push({ skillName, requiredScore: requiredScore as number, category: 'fit' });
       }
     });
   }
   if (roleSkills?.aiReadinessSkills) {
     Object.entries(roleSkills.aiReadinessSkills).forEach(([skillName, requiredScore]) => {
-      if (skillCriticality[skillName] === 'critical') {
+      const isCritical = multiPdfCriticalNames
+        ? multiPdfCriticalNames.has(skillName)
+        : skillCriticality[skillName] === 'critical';
+      if (isCritical) {
         criticalSkillsWithRequirements.push({ skillName, requiredScore: requiredScore as number, category: 'ai_readiness' });
       }
     });
   }
 
   criticalSkillsWithRequirements.sort((a, b) => b.requiredScore - a.requiredScore);
-  const cappedCriticalSkills = criticalSkillsWithRequirements.slice(0, 6);
+  const cappedCriticalSkills = multiPdfCriticalNames
+    ? criticalSkillsWithRequirements
+    : criticalSkillsWithRequirements.slice(0, 6);
 
   if (cappedCriticalSkills.length > 0) {
     pdf.addPage();

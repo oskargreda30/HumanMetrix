@@ -16,7 +16,7 @@ export interface CriticalSkillMultiData {
   skillName: string;
   requiredScore: number;
   criticality: string;
-  category: 'fit' | 'ai_readiness';
+  category: 'fit' | 'ai_readiness' | 'prompt_architecture' | 'aiq';
   candidates: CriticalSkillCandidateData[];
 }
 
@@ -49,8 +49,13 @@ function getSkillDescription(skillName: string): string {
   return SKILL_DESCRIPTIONS[skillName] || `Critical for success in roles requiring ${skillName.toLowerCase()} capabilities.`;
 }
 
-function getCategoryLabel(category: 'fit' | 'ai_readiness'): string {
-  return category === 'fit' ? 'Behavioral' : 'Technical';
+function getCategoryLabel(category: 'fit' | 'ai_readiness' | 'prompt_architecture' | 'aiq'): string {
+  switch (category) {
+    case 'fit': return 'Behavioral';
+    case 'ai_readiness': return 'Technical';
+    case 'prompt_architecture': return 'Prompt Architecture';
+    case 'aiq': return 'AIQ';
+  }
 }
 
 export function MultiCandidateCriticalSkillsAnalysis({ skills, roleName }: MultiCandidateCriticalSkillsAnalysisProps) {
