@@ -1341,16 +1341,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if discount code is "FREE" (case-insensitive) - 100% off
       if (normalizedCode === "FREE") {
-        // Grant free access
-        await storage.updatePurchase(unpaidPurchase.id.toString(), {
-          resultsAccessPaid: true,
-        });
-        
-        return res.json({ 
-          success: true, 
-          message: "Results unlocked successfully",
-          free: true 
-        });
+        finalPriceInPence = 0;
+        discountApplied = true;
+        discountDescription = ' (100% discount - FREE)';
       }
       
       // 20OFFPRICE - 20% off
@@ -1414,6 +1407,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const baseUrl = getRoutesBaseUrl(req);
       
+
+      // Handle zero-amount payments (e.g., FREE discount code) - grant access immediately
+      if (stripeAmount === 0 || finalPriceInPence === 0) {
+        await storage.updatePurchase(unpaidPurchase.id.toString(), {
+          resultsAccessPaid: true,
+        });
+        console.log(`[Results Payment] FREE discount applied - results unlocked for purchase ${unpaidPurchase.id}`);
+        return res.json({
+          success: true,
+          message: "Results unlocked successfully" + discountDescription,
+          free: true,
+        });
+      }
       // Airwallex primary, Stripe fallback for B2C payments
       const paymentMeta = {
         userId: userId.toString(),
@@ -11908,6 +11914,32 @@ Return valid JSON with only the requested fields.`;
       }
       
       const baseUrl = getRoutesBaseUrl(req);
+
+      // Handle FREE promo code for Airwallex - apply discount at app level
+      let adjustedTotalPrice = totalPrice;
+      const normalizedPromo = promoCode ? promoCode.trim().toUpperCase() : '';
+      if (normalizedPromo === "FREE") {
+        adjustedTotalPrice = 0;
+        // For zero-amount, grant access immediately
+        await storage.updatePartnerTestPackage(pkg.id, {
+          status: 'completed',
+          totalPrice: 0,
+          paymentProvider: 'airwallex',
+        });
+        await storage.creditPartnerTests(
+          matchingPartner.id,
+          pkg.id,
+          packageSize,
+          `Package purchase: ${packageSize} tests (FREE promo code)`
+        );
+        console.log(`[Partner Purchase] FREE promo applied - credited ${packageSize} tests to partner ${matchingPartner.id}`);
+        return res.json({
+          success: true,
+          free: true,
+          message: `${packageSize} tests credited successfully with FREE promo code`,
+          packageId: pkg.id,
+        });
+      }
       
       const airwallexPurchaseFn = async (): Promise<PaymentCheckoutResult> => {
         const airwallexAmount = formatAmountForAirwallex(totalPrice);
