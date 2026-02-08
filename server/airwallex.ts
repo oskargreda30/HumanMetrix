@@ -1,13 +1,33 @@
 import crypto from 'crypto';
 
-const AIRWALLEX_BASE_URL = (process.env.AIRWALLEX_ENVIRONMENT || 'prod') === 'demo'
+const airwallexEnv = process.env.AIRWALLEX_ENVIRONMENT || 'prod';
+const AIRWALLEX_BASE_URL = airwallexEnv === 'demo'
   ? 'https://api-demo.airwallex.com'
   : 'https://api.airwallex.com';
+
+function getAirwallexCredentials() {
+  const isDemo = airwallexEnv === 'demo';
+  const clientId = isDemo
+    ? (process.env.DEV_AIRWALLEX_CLIENT_ID || process.env.AIRWALLEX_CLIENT_ID)
+    : (process.env.PROD_AIRWALLEX_CLIENT_ID || process.env.AIRWALLEX_CLIENT_ID);
+  const apiKey = isDemo
+    ? (process.env.DEV_AIRWALLEX_API_KEY || process.env.AIRWALLEX_API_KEY)
+    : (process.env.PROD_AIRWALLEX_API_KEY || process.env.AIRWALLEX_API_KEY);
+  const webhookSecret = isDemo
+    ? (process.env.DEV_AIRWALLEX_WEBHOOK_SECRET || process.env.AIRWALLEX_WEBHOOK_SECRET)
+    : (process.env.PROD_AIRWALLEX_WEBHOOK_SECRET || process.env.AIRWALLEX_WEBHOOK_SECRET);
+  return { clientId, apiKey, webhookSecret };
+}
 
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
 export function isAirwallexConfigured(): boolean {
-  return !!(process.env.AIRWALLEX_CLIENT_ID && process.env.AIRWALLEX_API_KEY);
+  const { clientId, apiKey } = getAirwallexCredentials();
+  return !!(clientId && apiKey);
+}
+
+export function getAirwallexWebhookSecret(): string | undefined {
+  return getAirwallexCredentials().webhookSecret;
 }
 
 async function getAuthToken(): Promise<string> {
@@ -15,15 +35,13 @@ async function getAuthToken(): Promise<string> {
     return cachedToken.token;
   }
 
-  const clientId = process.env.AIRWALLEX_CLIENT_ID;
-  const apiKey = process.env.AIRWALLEX_API_KEY;
+  const { clientId, apiKey } = getAirwallexCredentials();
 
   if (!clientId || !apiKey) {
     throw new Error('Airwallex credentials not configured');
   }
 
-  const env = process.env.AIRWALLEX_ENVIRONMENT || 'prod';
-  console.log(`[Airwallex] Authenticating with ${env} API at ${AIRWALLEX_BASE_URL}`);
+  console.log(`[Airwallex] Authenticating with ${airwallexEnv} API at ${AIRWALLEX_BASE_URL}`);
 
   const response = await fetch(`${AIRWALLEX_BASE_URL}/api/v1/authentication/login`, {
     method: 'POST',

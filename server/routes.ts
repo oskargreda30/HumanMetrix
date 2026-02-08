@@ -21,7 +21,7 @@ import OpenAI from "openai";
 import Stripe from "stripe";
 import { z } from "zod";
 import { EMAIL_REGEX, isValidEmail, isValidName } from "@shared/validation";
-import { createPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured, getPaymentIntent, verifyAirwallexWebhookSignature, AirwallexWebhookEvent } from "./airwallex";
+import { createPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured, getPaymentIntent, verifyAirwallexWebhookSignature, AirwallexWebhookEvent, getAirwallexWebhookSecret } from "./airwallex";
 import { getPaymentProviders, createCheckoutWithFallback, type PaymentCheckoutResult } from "./payment-routing";
 import { logAiCost, extractUsage, AI_USAGE_OPERATION_TYPES } from "./ai-cost-tracker";
 import multer from "multer";
@@ -1731,7 +1731,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const rawBody = req.rawBody?.toString() || JSON.stringify(req.body);
       
       // Verify webhook signature if secret is configured
-      const webhookSecret = process.env.AIRWALLEX_WEBHOOK_SECRET;
+      const webhookSecret = getAirwallexWebhookSecret();
       if (webhookSecret) {
         // When secret is configured, require valid signature
         if (!signature || !timestamp) {
@@ -2275,7 +2275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/webhooks/airwallex", express.raw({ type: 'application/json' }), async (req: any, res) => {
     const signature = req.headers['x-signature'];
     const timestamp = req.headers['x-timestamp'];
-    const webhookSecret = process.env.AIRWALLEX_WEBHOOK_SECRET;
+    const webhookSecret = getAirwallexWebhookSecret();
     
     let event: any;
     
