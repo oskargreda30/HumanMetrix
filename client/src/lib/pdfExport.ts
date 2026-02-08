@@ -4186,7 +4186,17 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
 
   // ========== COHORT INSIGHTS ==========
   yPos = addSectionHeader(pdf, 'COHORT INSIGHTS', yPos, pageWidth);
-  yPos += CARD_PADDING;
+  yPos += 2;
+  const cohortDesc = 'Overview of shared strengths, development areas, and key differentiators across all candidates.';
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'normal');
+  const cohortDescLines = pdf.splitTextToSize(cohortDesc, contentWidth - 8);
+  const cohortDescH = Math.max(10, cohortDescLines.length * 4 + 4);
+  pdf.setFillColor(240, 249, 255);
+  pdf.roundedRect(MARGIN, yPos - 2, contentWidth, cohortDescH, 2, 2, 'F');
+  pdf.setTextColor(71, 85, 105);
+  pdf.text(cohortDescLines, MARGIN + 4, yPos + 4);
+  yPos += cohortDescH + 3;
 
   const halfWidth = (contentWidth - 10) / 2;
   const insightBoxHeight = 38;
@@ -4240,6 +4250,17 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   // Key Differentiators - Blue-tinted
   if (data.summaryInsights.keyDifferentiators.length > 0) {
     yPos = addSectionHeader(pdf, 'KEY DIFFERENTIATORS', yPos, pageWidth);
+    yPos += 2;
+    const diffDesc = 'Factors that most distinguish candidates from each other in this role comparison.';
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'normal');
+    const diffDescLines = pdf.splitTextToSize(diffDesc, contentWidth - 8);
+    const diffDescH = Math.max(10, diffDescLines.length * 4 + 4);
+    pdf.setFillColor(240, 249, 255);
+    pdf.roundedRect(MARGIN, yPos - 2, contentWidth, diffDescH, 2, 2, 'F');
+    pdf.setTextColor(71, 85, 105);
+    pdf.text(diffDescLines, MARGIN + 4, yPos + 4);
+    yPos += diffDescH + 3;
     pdf.setFillColor(240, 249, 255);
     pdf.setDrawColor(191, 219, 254);
     pdf.setLineWidth(0.3);
@@ -4258,6 +4279,17 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
 
   // AI Hiring Suggestions - Blue-tinted
   yPos = addSectionHeader(pdf, 'AI HIRING SUGGESTIONS', yPos, pageWidth);
+  yPos += 2;
+  const hiringDesc = 'AI-generated recommendations based on comparative analysis of all candidates for this role.';
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'normal');
+  const hiringDescLines = pdf.splitTextToSize(hiringDesc, contentWidth - 8);
+  const hiringDescH = Math.max(10, hiringDescLines.length * 4 + 4);
+  pdf.setFillColor(240, 249, 255);
+  pdf.roundedRect(MARGIN, yPos - 2, contentWidth, hiringDescH, 2, 2, 'F');
+  pdf.setTextColor(71, 85, 105);
+  pdf.text(hiringDescLines, MARGIN + 4, yPos + 4);
+  yPos += hiringDescH + 3;
 
   const strongCount = data.summaryInsights.fitDistribution?.strong ?? 0;
   const topPerformerFit = data.summaryInsights.topPerformer?.overallFit ?? 0;
@@ -4311,7 +4343,17 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     }
 
     yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE ANALYSIS', yPos, pageWidth);
-    yPos += 5;
+    yPos += 2;
+    const paDesc = 'Assessment of candidates\' ability to design and structure effective AI prompts for this role.';
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'normal');
+    const paDescLines = pdf.splitTextToSize(paDesc, contentWidth - 8);
+    const paDescH = Math.max(10, paDescLines.length * 4 + 4);
+    pdf.setFillColor(240, 249, 255);
+    pdf.roundedRect(MARGIN, yPos - 2, contentWidth, paDescH, 2, 2, 'F');
+    pdf.setTextColor(71, 85, 105);
+    pdf.text(paDescLines, MARGIN + 4, yPos + 4);
+    yPos += paDescH + 3;
 
     pdf.setFillColor(240, 249, 255);
     pdf.setDrawColor(191, 219, 254);
@@ -4360,7 +4402,17 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     }
 
     yPos = addSectionHeader(pdf, 'AIQ ASSESSMENT', yPos, pageWidth);
-    yPos += 5;
+    yPos += 2;
+    const aiqDesc = 'Evaluation of candidates\' algorithmic integrity and ethical AI decision-making capabilities.';
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'normal');
+    const aiqDescLines = pdf.splitTextToSize(aiqDesc, contentWidth - 8);
+    const aiqDescH = Math.max(10, aiqDescLines.length * 4 + 4);
+    pdf.setFillColor(240, 249, 255);
+    pdf.roundedRect(MARGIN, yPos - 2, contentWidth, aiqDescH, 2, 2, 'F');
+    pdf.setTextColor(71, 85, 105);
+    pdf.text(aiqDescLines, MARGIN + 4, yPos + 4);
+    yPos += aiqDescH + 3;
 
     pdf.setFillColor(240, 249, 255);
     pdf.setDrawColor(191, 219, 254);
@@ -4406,7 +4458,17 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   yPos = 35;
 
   yPos = addSectionHeader(pdf, 'CANDIDATE RANKINGS', yPos, pageWidth);
-  yPos += 4;
+  yPos += 2;
+  const rankDesc = 'Candidates ranked by overall role fit score with key performance indicators and tier classification.';
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'normal');
+  const rankDescLines = pdf.splitTextToSize(rankDesc, contentWidth - 8);
+  const rankDescH = Math.max(10, rankDescLines.length * 4 + 4);
+  pdf.setFillColor(240, 249, 255);
+  pdf.roundedRect(MARGIN, yPos - 2, contentWidth, rankDescH, 2, 2, 'F');
+  pdf.setTextColor(71, 85, 105);
+  pdf.text(rankDescLines, MARGIN + 4, yPos + 4);
+  yPos += rankDescH + 3;
 
   const tableX = MARGIN;
   const tableWidth = contentWidth;
@@ -4581,12 +4643,17 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     yPos = 35;
 
     yPos = addSectionHeader(pdf, 'CRITICAL SKILLS DASHBOARD', yPos, pageWidth);
-    yPos += 3;
-
-    pdf.setFontSize(8);
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('Must-have skills for this role. Candidates must meet thresholds on these critical skills.', 20, yPos);
-    yPos += 8;
+    yPos += 2;
+    const csdDesc = 'Must-have skills for this role. Candidates must meet thresholds on these critical skills.';
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'normal');
+    const csdDescLines = pdf.splitTextToSize(csdDesc, contentWidth - 8);
+    const csdDescH = Math.max(10, csdDescLines.length * 4 + 4);
+    pdf.setFillColor(240, 249, 255);
+    pdf.roundedRect(MARGIN, yPos - 2, contentWidth, csdDescH, 2, 2, 'F');
+    pdf.setTextColor(71, 85, 105);
+    pdf.text(csdDescLines, MARGIN + 4, yPos + 4);
+    yPos += csdDescH + 3;
 
     const sortedCandidates = [...data.candidateEntries].sort((a, b) => {
       const aHasData = a.hasSufficientData !== false && a.overallFit != null;
@@ -4807,12 +4874,17 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     yPos = ensurePageSpace(pdf, yPos, 80, pageHeight, pageWidth);
     yPos += 15;
     yPos = addSectionHeader(pdf, 'CRITICAL SKILLS DEEP DIVE', yPos, pageWidth);
-    yPos += 3;
-
-    pdf.setFontSize(8);
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('AI-identified must-have skills for this role with detailed analysis of why each matters', 20, yPos);
-    yPos += 10;
+    yPos += 2;
+    const deepDiveDesc = 'AI-identified must-have skills for this role with detailed analysis of why each matters.';
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'normal');
+    const deepDiveDescLines = pdf.splitTextToSize(deepDiveDesc, contentWidth - 8);
+    const deepDiveDescH = Math.max(10, deepDiveDescLines.length * 4 + 4);
+    pdf.setFillColor(240, 249, 255);
+    pdf.roundedRect(MARGIN, yPos - 2, contentWidth, deepDiveDescH, 2, 2, 'F');
+    pdf.setTextColor(71, 85, 105);
+    pdf.text(deepDiveDescLines, MARGIN + 4, yPos + 4);
+    yPos += deepDiveDescH + 3;
 
     cappedCriticalSkills.forEach((criticalSkill) => {
       if (yPos > pageHeight - 45) {
