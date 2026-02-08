@@ -3631,7 +3631,19 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
     yPos = 32;
 
     yPos = addSectionHeader(pdf, 'PROFILE INSIGHTS & RECOMMENDATIONS', yPos, pageWidth);
-    yPos += 3;
+    yPos += 6;
+
+    const profileInsightsDesc = 'AI-generated analysis of this candidate\'s assessment results, highlighting role fit, strengths, development areas, and overall recommendations for hiring managers.';
+    const profileInsightsDescLines = pdf.splitTextToSize(profileInsightsDesc, pageWidth - 48);
+    const profileInsightsDescBoxH = 8 + (profileInsightsDescLines.length * 4);
+    pdf.setFillColor(240, 249, 255);
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, profileInsightsDescBoxH, 2, 2, 'F');
+    applySmallText(pdf);
+    pdf.setTextColor(71, 85, 105);
+    profileInsightsDescLines.forEach((line: string, i: number) => {
+      pdf.text(line, 24, yPos + 3 + (i * 4));
+    });
+    yPos += profileInsightsDescBoxH + 6;
 
     const insightSections = [
       { key: 'ROLE SUITABILITY', color: [30, 64, 175] as [number, number, number] },
@@ -3657,12 +3669,13 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
         pdf.text(section.key, 20, yPos);
         yPos += 5;
 
-        applyBodyText(pdf);
+        applySmallText(pdf);
+        pdf.setTextColor(55, 65, 81);
         const bodyLines = pdf.splitTextToSize(match[1].trim(), pageWidth - 40);
         bodyLines.forEach((line: string) => {
           yPos = ensurePageSpace(pdf, yPos, 6, pageHeight, pageWidth);
           pdf.text(line, 20, yPos);
-          yPos += 4.5;
+          yPos += 4;
         });
 
         yPos += 4;
@@ -3670,12 +3683,13 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
     });
 
     if (!parsedAny) {
-      applyBodyText(pdf);
+      applySmallText(pdf);
+      pdf.setTextColor(55, 65, 81);
       const fullLines = pdf.splitTextToSize(data.aiInsights, pageWidth - 40);
       fullLines.forEach((line: string) => {
         yPos = ensurePageSpace(pdf, yPos, 6, pageHeight, pageWidth);
         pdf.text(line, 20, yPos);
-        yPos += 4.5;
+        yPos += 4;
       });
       yPos += 4;
     }
