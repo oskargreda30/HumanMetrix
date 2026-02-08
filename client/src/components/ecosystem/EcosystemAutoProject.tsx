@@ -201,24 +201,8 @@ export function EcosystemAutoProject({
     );
   }
 
-  // Get current project for display
-  const currentProject = projects.find(p => p.id === projectId);
-  
-  // Derived values (the useMemo hooks are defined above before early returns)
-  const hasMultipleAnalyses = completedProjects.length > 1 || (completedProjects.length === 1 && !currentProject?.teamAnalysis);
-  
-  // Show search box if there are many projects
-  const showProjectSearch = projects.length > 5;
-  
-  // Truncate long names with ellipsis
-  const truncateName = (name: string, maxLength: number = 30) => {
-    if (name.length <= maxLength) return name;
-    return name.slice(0, maxLength - 3) + "...";
-  };
-
   // Open the new analysis naming dialog
   const handleStartNewAnalysis = () => {
-    // Generate default name with timestamp
     const timestamp = new Date().toLocaleDateString('en-US', { 
       month: 'short', 
       day: 'numeric', 
@@ -228,20 +212,15 @@ export function EcosystemAutoProject({
     setShowNewAnalysisDialog(true);
   };
   
-  // Sanitize analysis name - remove XSS vectors and limit length
-  // Note: Quotes and other punctuation are allowed since React JSX automatically
-  // escapes them on render. We only need to remove HTML tags and angle brackets
-  // which could be used for script injection if the name were ever rendered as raw HTML.
   const sanitizeAnalysisName = (name: string): string => {
     const sanitized = name
-      .replace(/<[^>]*>/g, '') // Remove HTML tags
-      .replace(/[<>]/g, '')    // Remove stray angle brackets
+      .replace(/<[^>]*>/g, '')
+      .replace(/[<>]/g, '')
       .trim()
       .slice(0, MAX_ANALYSIS_NAME_LENGTH);
     return sanitized;
   };
   
-  // Create the new analysis with the custom name
   const handleConfirmNewAnalysis = async () => {
     const sanitizedName = sanitizeAnalysisName(newAnalysisName);
     
@@ -250,20 +229,14 @@ export function EcosystemAutoProject({
       return;
     }
     
-    // Guard against concurrent creation
     if (createProject.isPending || isCreatingProject) return;
     
     setDialogError(null);
-    
-    // CRITICAL: Set creating flag BEFORE clearing project
-    // This prevents auto-selection useEffect from selecting an old project
     setIsCreatingProject(true);
     
-    // Clear the current project to show loading state
     const oldProjectId = projectId;
     setProjectId(null);
     
-    // Invalidate ALL old project data from React Query cache
     if (oldProjectId) {
       queryClient.invalidateQueries({ 
         predicate: (query) => {
@@ -279,7 +252,6 @@ export function EcosystemAutoProject({
         partnerId,
       });
       
-      // Set the new project ID and clear the creating flag
       setProjectId(project.id);
       setIsCreatingProject(false);
       setShowNewAnalysisDialog(false);
@@ -291,11 +263,194 @@ export function EcosystemAutoProject({
         description: `"${sanitizedName}" is ready to start.`,
       });
     } catch (err) {
-      // Clear the creating flag and restore old project ID on error
       setIsCreatingProject(false);
       setProjectId(oldProjectId);
       setDialogError("Unable to create analysis. Please try again.");
     }
+  };
+
+  const renderNewAnalysisDialog = () => (
+    <Dialog 
+      open={showNewAnalysisDialog} 
+      onOpenChange={(open) => {
+        if (!open && createProject.isPending) return;
+        
+        if (open && !newAnalysisName) {
+          const timestamp = new Date().toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric' 
+          });
+          setNewAnalysisName(`Team Diagnostic - ${timestamp}`);
+        }
+        setShowNewAnalysisDialog(open);
+        if (!open) {
+          setNewAnalysisName("");
+          setDialogError(null);
+        }
+      }}
+    >
+      <DialogContent 
+        onEscapeKeyDown={(e) => {
+          if (createProject.isPending) e.preventDefault();
+        }}
+        onPointerDownOutside={(e) => {
+          if (createProject.isPending) e.preventDefault();
+        }}
+      >
+        <DialogHeader>
+          <DialogTitle>Name Your Analysis</DialogTitle>
+          <DialogDescription>
+            Give your new team analysis a descriptive name to help you identify it later.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4 space-y-2">
+          <Label htmlFor="analysis-name">Analysis Name</Label>
+          <Input
+            id="analysis-name"
+            value={newAnalysisName}
+            onChange={(e) => {
+              const value = e.target.value.slice(0, MAX_ANALYSIS_NAME_LENGTH);
+              setNewAnalysisName(value);
+              if (dialogError) setDialogError(null);
+            }}
+            placeholder="e.g., Q1 2026 Engineering Team"
+            className={dialogError ? "border-destructive" : ""}
+            data-testid="input-analysis-name"
+            disabled={createProject.isPending}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !createProject.isPending) {
+                handleConfirmNewAnalysis();
+              }
+            }}
+          />
+          <div className="flex items-center justify-between text-xs">
+            <span className={dialogError ? "text-destructive" : "text-transparent"}>
+              {dialogError || " "}
+            </span>
+            <span className={`text-muted-foreground ${newAnalysisName.length >= MAX_ANALYSIS_NAME_LENGTH ? "text-destructive" : ""}`}>
+              {newAnalysisName.length}/{MAX_ANALYSIS_NAME_LENGTH}
+            </span>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setShowNewAnalysisDialog(false);
+              setNewAnalysisName("");
+              setDialogError(null);
+            }}
+            disabled={createProject.isPending}
+            data-testid="button-cancel-new-analysis"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmNewAnalysis}
+            disabled={createProject.isPending || !newAnalysisName.trim()}
+            data-testid="button-confirm-new-analysis"
+          >
+            {createProject.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              "Create Analysis"
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
+  if (projects.length === 0 && !projectId) {
+    return (
+      <div className="space-y-4 md:space-y-6">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  The Ecosystem Index
+                  <Badge variant="secondary" className="bg-cyan-500 text-white border-0">New</Badge>
+                </CardTitle>
+                <CardDescription>AI-powered team diagnostic and hiring recommendations</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-12">
+              <Sparkles className="h-12 w-12 mx-auto mb-4 text-primary opacity-60" />
+              <h3 className="text-lg font-semibold mb-2">Welcome to the Ecosystem Index</h3>
+              <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                Assess your team's capabilities, identify skill gaps, and get AI-powered hiring recommendations. Create your first analysis to get started.
+              </p>
+              <div className="flex items-center justify-center gap-3 flex-wrap">
+                <Button
+                  onClick={handleStartNewAnalysis}
+                  disabled={createProject.isPending}
+                  data-testid="button-create-first-analysis"
+                >
+                  {createProject.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create New Analysis
+                    </>
+                  )}
+                </Button>
+                {onNavigateToAnalysis && (
+                  <Button
+                    variant="outline"
+                    onClick={() => onNavigateToAnalysis()}
+                    data-testid="button-back-to-individual"
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    Individual Analysis
+                  </Button>
+                )}
+              </div>
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto text-left">
+                <div className="p-4 rounded-md bg-muted/50">
+                  <h4 className="font-medium text-sm mb-1">Mission Alignment</h4>
+                  <p className="text-xs text-muted-foreground">Analyze how your team's skills align with your company mission</p>
+                </div>
+                <div className="p-4 rounded-md bg-muted/50">
+                  <h4 className="font-medium text-sm mb-1">Gap Analysis</h4>
+                  <p className="text-xs text-muted-foreground">Identify critical capability gaps and get hiring priorities</p>
+                </div>
+                <div className="p-4 rounded-md bg-muted/50">
+                  <h4 className="font-medium text-sm mb-1">Ideal Candidate</h4>
+                  <p className="text-xs text-muted-foreground">Get AI-generated profiles for your next ideal hire</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        {renderNewAnalysisDialog()}
+      </div>
+    );
+  }
+
+  // Get current project for display
+  const currentProject = projects.find(p => p.id === projectId);
+  
+  // Derived values (the useMemo hooks are defined above before early returns)
+  const hasMultipleAnalyses = completedProjects.length > 1 || (completedProjects.length === 1 && !currentProject?.teamAnalysis);
+  
+  // Show search box if there are many projects
+  const showProjectSearch = projects.length > 5;
+  
+  // Truncate long names with ellipsis
+  const truncateName = (name: string, maxLength: number = 30) => {
+    if (name.length <= maxLength) return name;
+    return name.slice(0, maxLength - 3) + "...";
   };
 
   return (
@@ -576,106 +731,7 @@ export function EcosystemAutoProject({
         </CardContent>
       </Card>
       
-      {/* New Analysis Naming Dialog */}
-      <Dialog 
-        open={showNewAnalysisDialog} 
-        onOpenChange={(open) => {
-          // Prevent closing while mutation is pending
-          if (!open && createProject.isPending) return;
-          
-          if (open && !newAnalysisName) {
-            // Ensure prefill with suggested name when dialog opens without a name
-            const timestamp = new Date().toLocaleDateString('en-US', { 
-              month: 'short', 
-              day: 'numeric', 
-              year: 'numeric' 
-            });
-            setNewAnalysisName(`Team Diagnostic - ${timestamp}`);
-          }
-          setShowNewAnalysisDialog(open);
-          if (!open) {
-            // Clear state when dialog closes
-            setNewAnalysisName("");
-            setDialogError(null);
-          }
-        }}
-      >
-        <DialogContent 
-          onEscapeKeyDown={(e) => {
-            // Prevent closing with Escape while mutation is pending
-            if (createProject.isPending) e.preventDefault();
-          }}
-          onPointerDownOutside={(e) => {
-            // Prevent closing by clicking outside while mutation is pending
-            if (createProject.isPending) e.preventDefault();
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>Name Your Analysis</DialogTitle>
-            <DialogDescription>
-              Give your new team analysis a descriptive name to help you identify it later.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-2">
-            <Label htmlFor="analysis-name">Analysis Name</Label>
-            <Input
-              id="analysis-name"
-              value={newAnalysisName}
-              onChange={(e) => {
-                // Limit to max length
-                const value = e.target.value.slice(0, MAX_ANALYSIS_NAME_LENGTH);
-                setNewAnalysisName(value);
-                if (dialogError) setDialogError(null);
-              }}
-              placeholder="e.g., Q1 2026 Engineering Team"
-              className={dialogError ? "border-destructive" : ""}
-              data-testid="input-analysis-name"
-              disabled={createProject.isPending}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !createProject.isPending) {
-                  handleConfirmNewAnalysis();
-                }
-              }}
-            />
-            <div className="flex items-center justify-between text-xs">
-              <span className={dialogError ? "text-destructive" : "text-transparent"}>
-                {dialogError || " "}
-              </span>
-              <span className={`text-muted-foreground ${newAnalysisName.length >= MAX_ANALYSIS_NAME_LENGTH ? "text-destructive" : ""}`}>
-                {newAnalysisName.length}/{MAX_ANALYSIS_NAME_LENGTH}
-              </span>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowNewAnalysisDialog(false);
-                setNewAnalysisName("");
-                setDialogError(null);
-              }}
-              disabled={createProject.isPending}
-              data-testid="button-cancel-new-analysis"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleConfirmNewAnalysis}
-              disabled={createProject.isPending || !newAnalysisName.trim()}
-              data-testid="button-confirm-new-analysis"
-            >
-              {createProject.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                "Create Analysis"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {renderNewAnalysisDialog()}
         </>
       )}
 

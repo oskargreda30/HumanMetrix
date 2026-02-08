@@ -7482,10 +7482,10 @@ AI READINESS SKILLS (Technical):
 9. Creativity & Innovation - Using AI to generate novel solutions and approaches
 
 For each skill, provide a realistic required score (0-100) that represents the MINIMUM competency needed for this specific role. Consider:
-- Entry-level roles: 45-58% for standard skills, 55-65% for critical skills
-- Mid-level roles: 52-65% for standard skills, 62-72% for critical skills  
-- Senior roles: 58-72% for standard skills, 68-78% for critical skills
-- Executive roles: 65-78% for standard skills, 72-82% for critical skills
+- Entry-level roles: 38-51% for standard skills, 48-58% for critical skills
+- Mid-level roles: 45-58% for standard skills, 55-65% for critical skills  
+- Senior roles: 51-65% for standard skills, 61-71% for critical skills
+- Executive roles: 58-71% for standard skills, 65-75% for critical skills
 - Typically, 3-5 skills should be marked as "critical" per role
 
 CRITICAL INSTRUCTION: You MUST use precise scores that are NOT multiples of 5. Do NOT use 50, 55, 60, 65, 70, 75, 80, 85, 90. Instead use exact values like 47, 53, 58, 63, 67, 71, 76, 78, 82. Each skill should have a unique, differentiated score. Intervals of 5 provide insufficient differentiation between skills.
@@ -7570,6 +7570,22 @@ Format your response as JSON with this exact structure and skill names:
       if (requiredScores.aiReadinessSkills) {
         Object.keys(requiredScores.aiReadinessSkills).forEach(skill => {
           requiredScores.aiReadinessSkills[skill] = nudgeScore(requiredScores.aiReadinessSkills[skill]);
+        });
+      }
+
+      // Cap scores to prevent GPT from exceeding defined ranges (max 75 for executive critical skills)
+      const capScore = (score: number): number => {
+        if (typeof score !== 'number') return score;
+        return Math.min(75, Math.max(1, score));
+      };
+      if (requiredScores.fitSkills) {
+        Object.keys(requiredScores.fitSkills).forEach(skill => {
+          requiredScores.fitSkills[skill] = capScore(requiredScores.fitSkills[skill]);
+        });
+      }
+      if (requiredScores.aiReadinessSkills) {
+        Object.keys(requiredScores.aiReadinessSkills).forEach(skill => {
+          requiredScores.aiReadinessSkills[skill] = capScore(requiredScores.aiReadinessSkills[skill]);
         });
       }
 
@@ -7705,10 +7721,10 @@ AI READINESS SKILLS (Technical):
 9. Creativity & Innovation - Using AI to generate novel solutions and approaches
 
 For each skill, provide a realistic required score (0-100). Consider:
-- Entry-level roles: 45-58% for standard skills, 55-65% for critical skills
-- Mid-level roles: 52-65% for standard skills, 62-72% for critical skills  
-- Senior roles: 58-72% for standard skills, 68-78% for critical skills
-- Executive roles: 65-78% for standard skills, 72-82% for critical skills
+- Entry-level roles: 38-51% for standard skills, 48-58% for critical skills
+- Mid-level roles: 45-58% for standard skills, 55-65% for critical skills  
+- Senior roles: 51-65% for standard skills, 61-71% for critical skills
+- Executive roles: 58-71% for standard skills, 65-75% for critical skills
 - Typically, 3-5 skills should be marked as "critical" per role
 
 CRITICAL INSTRUCTION: You MUST use precise scores that are NOT multiples of 5. Do NOT use 50, 55, 60, 65, 70, 75, 80, 85, 90. Instead use exact values like 47, 53, 58, 63, 67, 71, 76, 78, 82. Each skill should have a unique, differentiated score.
@@ -7759,6 +7775,22 @@ Format your response as JSON:
               });
             }
 
+
+            // Cap scores to prevent GPT from exceeding defined ranges (max 75 for executive critical skills)
+            const capScore = (score: number): number => {
+              if (typeof score !== 'number') return score;
+              return Math.min(75, Math.max(1, score));
+            };
+            if (requiredScores.fitSkills) {
+              Object.keys(requiredScores.fitSkills).forEach(skill => {
+                requiredScores.fitSkills[skill] = capScore(requiredScores.fitSkills[skill]);
+              });
+            }
+            if (requiredScores.aiReadinessSkills) {
+              Object.keys(requiredScores.aiReadinessSkills).forEach(skill => {
+                requiredScores.aiReadinessSkills[skill] = capScore(requiredScores.aiReadinessSkills[skill]);
+              });
+            }
             // Ensure at least 3 skills are marked as critical
             if (requiredScores.skillCriticality) {
               const criticalCount = Object.values(requiredScores.skillCriticality).filter(v => v === 'critical').length;
