@@ -4690,7 +4690,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
           pdf.setFillColor(229, 231, 235);
           pdf.roundedRect(barStartX, barY, barW, barH, 1, 1, 'F');
 
-          const fillColor: [number, number, number] = meetsRequired ? [59, 130, 246] : meetsThreshold ? [234, 179, 8] : [239, 68, 68];
+          const fillColor: [number, number, number] = meetsRequired ? [34, 197, 94] : meetsThreshold ? [234, 179, 8] : [239, 68, 68];
           pdf.setFillColor(fillColor[0], fillColor[1], fillColor[2]);
           const fillW = Math.max(1, (score / 100) * barW);
           pdf.roundedRect(barStartX, barY, fillW, barH, 1, 1, 'F');
@@ -4707,7 +4707,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
           pdf.setTextColor(fillColor[0], fillColor[1], fillColor[2]);
           pdf.text(`${score}`, colX + candidateColWidth - 15, yPos + 5);
 
-          const indicator = meetsRequired ? '\u2713' : meetsThreshold ? '~' : '\u2717';
+          const indicator = meetsRequired ? '+' : meetsThreshold ? '~' : '-';
           pdf.text(indicator, colX + candidateColWidth - 8, yPos + 5);
           pdf.setFont('helvetica', 'normal');
         }
@@ -4751,11 +4751,39 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
 
     yPos += 15;
 
-    // Legend
+    // Legend with colored shapes
+    let legendX = 20;
+    const legendY = yPos;
+
+    pdf.setFillColor(34, 197, 94);
+    pdf.roundedRect(legendX, legendY - 2.5, 8, 3.5, 1, 1, 'F');
+    legendX += 10;
     pdf.setFontSize(7);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    pdf.text('\u2713 Meets required  |  ~ Above 60 but below required  |  \u2717 Below 60 threshold', 20, yPos);
+    pdf.text('Meets required', legendX, legendY);
+    legendX += 30;
+
+    pdf.setTextColor(156, 163, 175);
+    pdf.text('|', legendX, legendY);
+    legendX += 5;
+
+    pdf.setFillColor(234, 179, 8);
+    pdf.roundedRect(legendX, legendY - 2.5, 8, 3.5, 1, 1, 'F');
+    legendX += 10;
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Above 60 but below required', legendX, legendY);
+    legendX += 52;
+
+    pdf.setTextColor(156, 163, 175);
+    pdf.text('|', legendX, legendY);
+    legendX += 5;
+
+    pdf.setFillColor(239, 68, 68);
+    pdf.roundedRect(legendX, legendY - 2.5, 8, 3.5, 1, 1, 'F');
+    legendX += 10;
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Below 60 threshold', legendX, legendY);
 
     // ========== CRITICAL SKILLS DEEP DIVE ==========
     const SKILL_DESCRIPTIONS: Record<string, string> = {
