@@ -7456,11 +7456,14 @@ ${truncatedText}`;
 JOB ROLE: ${role.name}
 ${role.description ? `DESCRIPTION: ${role.description}\n` : ''}
 
-Based on this role, determine:
-1. The minimum required percentage scores (0-100) for each skill
-2. The CRITICALITY of each skill for this role:
-   - "critical": Must-have skills - gaps here are deal-breakers (maximum 6 total across FIT and AI Readiness)
-   - "standard": All other skills that are not critical
+Based on this role, determine the minimum required percentage scores (0-100) for each skill. Evaluate what competency level this specific role genuinely requires - score higher for skills central to the role, lower for less relevant ones.
+
+SCORING GUIDELINES BY SENIORITY:
+- Entry-level / Junior roles: scores generally in the 50-60% range
+- Mid-level roles: scores generally in the 60-70% range
+- Senior roles: scores generally in the 70-80% range
+- Executive / C-suite roles: scores generally in the 80-90% range
+Skills more important to the specific role should score toward the higher end of the range, and less relevant skills toward the lower end.
 
 FIT ASSESSMENT SKILLS (Behavioral):
 1. Resilience - Ability to bounce back from setbacks and maintain performance under pressure
@@ -7481,14 +7484,7 @@ AI READINESS SKILLS (Technical):
 8. Technical Fundamentals - Comfort with technical tools and systems
 9. Creativity & Innovation - Using AI to generate novel solutions and approaches
 
-For each skill, provide a realistic required score (0-100) that represents the MINIMUM competency needed for this specific role. Consider:
-- Entry-level roles: 38-51% for standard skills, 48-58% for critical skills
-- Mid-level roles: 45-58% for standard skills, 55-65% for critical skills  
-- Senior roles: 51-65% for standard skills, 61-71% for critical skills
-- Executive roles: 58-71% for standard skills, 65-75% for critical skills
-- Typically, 3-5 skills should be marked as "critical" per role
-
-CRITICAL INSTRUCTION: You MUST use precise scores that are NOT multiples of 5. Do NOT use 50, 55, 60, 65, 70, 75, 80, 85, 90. Instead use exact values like 47, 53, 58, 63, 67, 71, 76, 78, 82. Each skill should have a unique, differentiated score. Intervals of 5 provide insufficient differentiation between skills.
+CRITICAL INSTRUCTION: You MUST use precise scores that are NOT multiples of 5. Do NOT use 50, 55, 60, 65, 70, 75, 80, 85, 90. Instead use exact values like 47, 53, 58, 63, 67, 71, 76, 78, 82. Each skill should have a unique, differentiated score.
 
 Format your response as JSON with this exact structure and skill names:
 {
@@ -7510,23 +7506,6 @@ Format your response as JSON with this exact structure and skill names:
     "Critical Thinking & Problem-Solving": number,
     "Technical Fundamentals": number,
     "Creativity & Innovation": number
-  },
-  "skillCriticality": {
-    "Resilience": "critical" | "standard",
-    "High Agency": "critical" | "standard",
-    "Growth Mindset": "critical" | "standard",
-    "Empathy & Ethics": "critical" | "standard",
-    "Interpersonal Agility": "critical" | "standard",
-    "Intellectual Curiosity": "critical" | "standard",
-    "AI Literacy & Prompt Engineering": "critical" | "standard",
-    "Collaboration & Communication": "critical" | "standard",
-    "Data Fluency": "critical" | "standard",
-    "Responsible AI & Ethical Awareness": "critical" | "standard",
-    "Domain Expertise": "critical" | "standard",
-    "Adaptability & Continuous Learning": "critical" | "standard",
-    "Critical Thinking & Problem-Solving": "critical" | "standard",
-    "Technical Fundamentals": "critical" | "standard",
-    "Creativity & Innovation": "critical" | "standard"
   },
   "promptArchitectureScore": number (0-100, required minimum score for Prompt Architecture - measures AI prompt engineering ability across 7 levels),
   "aiqScore": number (0-100, required minimum score for AIQ - measures ethical AI decision-making)
@@ -7573,73 +7552,25 @@ Format your response as JSON with this exact structure and skill names:
         });
       }
 
-      // Cap scores to prevent GPT from exceeding defined ranges (max 75 for executive critical skills)
-      const capScore = (score: number): number => {
-        if (typeof score !== 'number') return score;
-        return Math.min(75, Math.max(1, score));
-      };
+      // Deterministic criticality: top 6 highest-scored skills = critical, rest = standard
+      const allSkillsForCriticality: Array<{skill: string; score: number}> = [];
       if (requiredScores.fitSkills) {
-        Object.keys(requiredScores.fitSkills).forEach(skill => {
-          requiredScores.fitSkills[skill] = capScore(requiredScores.fitSkills[skill]);
+        Object.entries(requiredScores.fitSkills).forEach(([skill, score]) => {
+          allSkillsForCriticality.push({ skill, score: score as number });
         });
       }
       if (requiredScores.aiReadinessSkills) {
-        Object.keys(requiredScores.aiReadinessSkills).forEach(skill => {
-          requiredScores.aiReadinessSkills[skill] = capScore(requiredScores.aiReadinessSkills[skill]);
+        Object.entries(requiredScores.aiReadinessSkills).forEach(([skill, score]) => {
+          allSkillsForCriticality.push({ skill, score: score as number });
         });
       }
-
-      // Ensure at least 3 skills are marked as critical (fix for OpenAI sometimes not marking any)
-      if (requiredScores.skillCriticality) {
-        const criticalCount = Object.values(requiredScores.skillCriticality).filter(v => v === 'critical').length;
-        if (criticalCount < 3) {
-          // Get all skills sorted by their required score (highest first) and mark top ones as critical
-          const allSkills: Array<{skill: string; score: number}> = [];
-          if (requiredScores.fitSkills) {
-            Object.entries(requiredScores.fitSkills).forEach(([skill, score]) => {
-              allSkills.push({ skill, score: score as number });
-            });
-          }
-          if (requiredScores.aiReadinessSkills) {
-            Object.entries(requiredScores.aiReadinessSkills).forEach(([skill, score]) => {
-              allSkills.push({ skill, score: score as number });
-            });
-          }
-          // Sort by score descending and mark top 3-5 as critical
-          allSkills.sort((a, b) => b.score - a.score);
-          const toMarkCritical = allSkills.slice(0, Math.max(3, 5 - criticalCount));
-          toMarkCritical.forEach(({ skill }) => {
-            requiredScores.skillCriticality[skill] = 'critical';
-          });
-          console.log(`[Role Generation] Auto-marked ${toMarkCritical.length} skills as critical for better hiring insights`);
-        }
-      }
-
-      // Cap total critical skills at 6 across FIT + AI Readiness
-      if (requiredScores.skillCriticality) {
-        const allCriticalEntries = Object.entries(requiredScores.skillCriticality).filter(([_, v]) => v === 'critical');
-        if (allCriticalEntries.length > 6) {
-          const allSkillsForCap: Array<{skill: string; score: number}> = [];
-          if (requiredScores.fitSkills) {
-            Object.entries(requiredScores.fitSkills).forEach(([skill, score]) => {
-              allSkillsForCap.push({ skill, score: score as number });
-            });
-          }
-          if (requiredScores.aiReadinessSkills) {
-            Object.entries(requiredScores.aiReadinessSkills).forEach(([skill, score]) => {
-              allSkillsForCap.push({ skill, score: score as number });
-            });
-          }
-          allSkillsForCap.sort((a, b) => b.score - a.score);
-          const topCriticalSkills = new Set(allSkillsForCap.filter(s => requiredScores.skillCriticality[s.skill] === 'critical').slice(0, 6).map(s => s.skill));
-          Object.keys(requiredScores.skillCriticality).forEach(skill => {
-            if (requiredScores.skillCriticality[skill] === 'critical' && !topCriticalSkills.has(skill)) {
-              requiredScores.skillCriticality[skill] = 'standard';
-            }
-          });
-          console.log(`[Role Generation] Capped critical skills to 6 (was ${allCriticalEntries.length})`);
-        }
-      }
+      allSkillsForCriticality.sort((a, b) => b.score - a.score);
+      const topCriticalSet = new Set(allSkillsForCriticality.slice(0, 6).map(s => s.skill));
+      requiredScores.skillCriticality = {};
+      allSkillsForCriticality.forEach(({ skill }) => {
+        requiredScores.skillCriticality[skill] = topCriticalSet.has(skill) ? 'critical' : 'standard';
+      });
+      console.log(`[Role Generation] Top 6 critical skills: ${[...topCriticalSet].join(', ')}`);
 
       // Update the role with the generated scores
       await storage.updateJobRole(roleId, {
@@ -7695,11 +7626,14 @@ Format your response as JSON with this exact structure and skill names:
 JOB ROLE: ${role.name}
 ${role.description ? `DESCRIPTION: ${role.description}\n` : ''}
 
-Based on this role, determine:
-1. The minimum required percentage scores (0-100) for each skill
-2. The CRITICALITY of each skill for this role:
-   - "critical": Must-have skills - gaps here are deal-breakers (maximum 6 total across FIT and AI Readiness)
-   - "standard": All other skills that are not critical
+Based on this role, determine the minimum required percentage scores (0-100) for each skill. Evaluate what competency level this specific role genuinely requires - score higher for skills central to the role, lower for less relevant ones.
+
+SCORING GUIDELINES BY SENIORITY:
+- Entry-level / Junior roles: scores generally in the 50-60% range
+- Mid-level roles: scores generally in the 60-70% range
+- Senior roles: scores generally in the 70-80% range
+- Executive / C-suite roles: scores generally in the 80-90% range
+Skills more important to the specific role should score toward the higher end of the range, and less relevant skills toward the lower end.
 
 FIT ASSESSMENT SKILLS (Behavioral):
 1. Resilience - Ability to bounce back from setbacks and maintain performance under pressure
@@ -7720,20 +7654,12 @@ AI READINESS SKILLS (Technical):
 8. Technical Fundamentals - Comfort with technical tools and systems
 9. Creativity & Innovation - Using AI to generate novel solutions and approaches
 
-For each skill, provide a realistic required score (0-100). Consider:
-- Entry-level roles: 38-51% for standard skills, 48-58% for critical skills
-- Mid-level roles: 45-58% for standard skills, 55-65% for critical skills  
-- Senior roles: 51-65% for standard skills, 61-71% for critical skills
-- Executive roles: 58-71% for standard skills, 65-75% for critical skills
-- Typically, 3-5 skills should be marked as "critical" per role
-
 CRITICAL INSTRUCTION: You MUST use precise scores that are NOT multiples of 5. Do NOT use 50, 55, 60, 65, 70, 75, 80, 85, 90. Instead use exact values like 47, 53, 58, 63, 67, 71, 76, 78, 82. Each skill should have a unique, differentiated score.
 
 Format your response as JSON:
 {
   "fitSkills": { "Resilience": number, "High Agency": number, "Growth Mindset": number, "Empathy & Ethics": number, "Interpersonal Agility": number, "Intellectual Curiosity": number },
   "aiReadinessSkills": { "AI Literacy & Prompt Engineering": number, "Collaboration & Communication": number, "Data Fluency": number, "Responsible AI & Ethical Awareness": number, "Domain Expertise": number, "Adaptability & Continuous Learning": number, "Critical Thinking & Problem-Solving": number, "Technical Fundamentals": number, "Creativity & Innovation": number },
-  "skillCriticality": { ... each skill as "critical" or "standard" ... },
   "promptArchitectureScore": number (0-100, required minimum for Prompt Architecture),
   "aiqScore": number (0-100, required minimum for AIQ)
 }`;
@@ -7776,70 +7702,25 @@ Format your response as JSON:
             }
 
 
-            // Cap scores to prevent GPT from exceeding defined ranges (max 75 for executive critical skills)
-            const capScore = (score: number): number => {
-              if (typeof score !== 'number') return score;
-              return Math.min(75, Math.max(1, score));
-            };
+            // Deterministic criticality: top 6 highest-scored skills = critical, rest = standard
+            const allSkillsForCriticality: Array<{skill: string; score: number}> = [];
             if (requiredScores.fitSkills) {
-              Object.keys(requiredScores.fitSkills).forEach(skill => {
-                requiredScores.fitSkills[skill] = capScore(requiredScores.fitSkills[skill]);
+              Object.entries(requiredScores.fitSkills).forEach(([skill, score]) => {
+                allSkillsForCriticality.push({ skill, score: score as number });
               });
             }
             if (requiredScores.aiReadinessSkills) {
-              Object.keys(requiredScores.aiReadinessSkills).forEach(skill => {
-                requiredScores.aiReadinessSkills[skill] = capScore(requiredScores.aiReadinessSkills[skill]);
+              Object.entries(requiredScores.aiReadinessSkills).forEach(([skill, score]) => {
+                allSkillsForCriticality.push({ skill, score: score as number });
               });
             }
-            // Ensure at least 3 skills are marked as critical
-            if (requiredScores.skillCriticality) {
-              const criticalCount = Object.values(requiredScores.skillCriticality).filter(v => v === 'critical').length;
-              if (criticalCount < 3) {
-                const allSkills: Array<{skill: string; score: number}> = [];
-                if (requiredScores.fitSkills) {
-                  Object.entries(requiredScores.fitSkills).forEach(([skill, score]) => {
-                    allSkills.push({ skill, score: score as number });
-                  });
-                }
-                if (requiredScores.aiReadinessSkills) {
-                  Object.entries(requiredScores.aiReadinessSkills).forEach(([skill, score]) => {
-                    allSkills.push({ skill, score: score as number });
-                  });
-                }
-                allSkills.sort((a, b) => b.score - a.score);
-                const toMarkCritical = allSkills.slice(0, Math.max(3, 5 - criticalCount));
-                toMarkCritical.forEach(({ skill }) => {
-                  requiredScores.skillCriticality[skill] = 'critical';
-                });
-                console.log(`[Batch] Auto-marked ${toMarkCritical.length} skills as critical for ${role.name}`);
-              }
-            }
-
-            // Cap total critical skills at 6 across FIT + AI Readiness
-            if (requiredScores.skillCriticality) {
-              const allCriticalEntries = Object.entries(requiredScores.skillCriticality).filter(([_, v]) => v === 'critical');
-              if (allCriticalEntries.length > 6) {
-                const allSkillsForCap: Array<{skill: string; score: number}> = [];
-                if (requiredScores.fitSkills) {
-                  Object.entries(requiredScores.fitSkills).forEach(([skill, score]) => {
-                    allSkillsForCap.push({ skill, score: score as number });
-                  });
-                }
-                if (requiredScores.aiReadinessSkills) {
-                  Object.entries(requiredScores.aiReadinessSkills).forEach(([skill, score]) => {
-                    allSkillsForCap.push({ skill, score: score as number });
-                  });
-                }
-                allSkillsForCap.sort((a, b) => b.score - a.score);
-                const topCriticalSkills = new Set(allSkillsForCap.filter(s => requiredScores.skillCriticality[s.skill] === 'critical').slice(0, 6).map(s => s.skill));
-                Object.keys(requiredScores.skillCriticality).forEach(skill => {
-                  if (requiredScores.skillCriticality[skill] === 'critical' && !topCriticalSkills.has(skill)) {
-                    requiredScores.skillCriticality[skill] = 'standard';
-                  }
-                });
-                console.log(`[Batch] Capped critical skills to 6 for ${role.name} (was ${allCriticalEntries.length})`);
-              }
-            }
+            allSkillsForCriticality.sort((a, b) => b.score - a.score);
+            const topCriticalSet = new Set(allSkillsForCriticality.slice(0, 6).map(s => s.skill));
+            requiredScores.skillCriticality = {};
+            allSkillsForCriticality.forEach(({ skill }) => {
+              requiredScores.skillCriticality[skill] = topCriticalSet.has(skill) ? 'critical' : 'standard';
+            });
+            console.log(`[Batch] Top 6 critical skills for ${role.name}: ${[...topCriticalSet].join(', ')}`);
 
             await storage.updateJobRole(role.id, {
               requiredSkillScores: requiredScores,
