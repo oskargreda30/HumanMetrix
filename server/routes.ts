@@ -11774,7 +11774,35 @@ Return valid JSON with only the requested fields.`;
     }
   });
 
-  // Partner self-service: Create checkout session for test package purchase
+  // Validate promo/discount code and return discount percentage
+  app.post("/api/partner/validate-promo", isAuthenticated, async (req: any, res) => {
+    try {
+      const { promoCode } = req.body;
+      if (!promoCode || typeof promoCode !== 'string') {
+        return res.status(400).json({ valid: false, message: "Promo code is required" });
+      }
+
+      const normalized = promoCode.trim().toUpperCase();
+
+      const knownCodes: Record<string, { percentOff: number; name: string }> = {
+        'FREE': { percentOff: 100, name: 'Free Access (100% off)' },
+        '20OFFPRICE': { percentOff: 20, name: '20% Discount' },
+        'DISCOUNT': { percentOff: 99, name: 'Partner Discount (99% off)' },
+      };
+
+      const match = knownCodes[normalized];
+      if (match) {
+        return res.json({ valid: true, percentOff: match.percentOff, name: match.name, code: normalized });
+      }
+
+      return res.json({ valid: false, message: "Invalid promo code" });
+    } catch (error: any) {
+      console.error("Error validating promo code:", error);
+      res.status(500).json({ valid: false, message: "Failed to validate promo code" });
+    }
+  });
+
+    // Partner self-service: Create checkout session for test package purchase
   app.post("/api/partner/purchase/checkout", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
@@ -11905,11 +11933,19 @@ Return valid JSON with only the requested fields.`;
       
       const baseUrl = getRoutesBaseUrl(req);
 
-      // Handle FREE promo code for Airwallex - apply discount at app level
+      // Handle promo codes for Airwallex partners - apply discount at app level
       let adjustedTotalPrice = totalPrice;
       const normalizedPromo = promoCode ? promoCode.trim().toUpperCase() : '';
-      if (normalizedPromo === "FREE") {
-        adjustedTotalPrice = 0;
+      const appLevelPromoCodes: Record<string, number> = {
+        'FREE': 100,
+        '20OFFPRICE': 20,
+        'DISCOUNT': 99,
+      };
+      const promoDiscountPercent = appLevelPromoCodes[normalizedPromo] || 0;
+      if (promoDiscountPercent > 0) {
+        adjustedTotalPrice = Math.round(totalPrice * (1 - promoDiscountPercent / 100));
+      }
+      if (adjustedTotalPrice === 0 && promoDiscountPercent > 0) {
         // For zero-amount, grant access immediately
         await storage.updatePartnerTestPackage(pkg.id, {
           status: 'completed',
@@ -11932,7 +11968,7 @@ Return valid JSON with only the requested fields.`;
       }
       
       const airwallexPurchaseFn = async (): Promise<PaymentCheckoutResult> => {
-        const airwallexAmount = formatAmountForAirwallex(totalPrice);
+        const airwallexAmount = formatAmountForAirwallex(adjustedTotalPrice);
         const merchantOrderId = `partner_pkg_${pkg.id}_${Date.now()}`;
         
         const intent = await createPaymentIntent({

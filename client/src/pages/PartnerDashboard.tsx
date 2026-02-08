@@ -1048,8 +1048,33 @@ export default function PartnerDashboard() {
   
   // Promo code state for package purchases
   const [promoCode, setPromoCode] = useState("");
-  
-  
+  const [validatedPromo, setValidatedPromo] = useState<{ valid: boolean; percentOff: number; name: string; code: string } | null>(null);
+  const [validatingPromo, setValidatingPromo] = useState(false);
+
+  const validatePromoCode = async (code: string) => {
+    if (!code.trim()) {
+      setValidatedPromo(null);
+      return;
+    }
+    setValidatingPromo(true);
+    try {
+      const response = await apiRequest("POST", "/api/partner/validate-promo", { promoCode: code.trim() });
+      const data = await response.json();
+      if (data.valid) {
+        setValidatedPromo(data);
+        toast({ title: "Promo code applied", description: `${data.name} - ${data.percentOff}% off` });
+      } else {
+        setValidatedPromo(null);
+        toast({ title: "Invalid promo code", description: data.message || "This code is not valid.", variant: "destructive" });
+      }
+    } catch {
+      setValidatedPromo(null);
+      toast({ title: "Error", description: "Could not validate promo code.", variant: "destructive" });
+    } finally {
+      setValidatingPromo(false);
+    }
+  };
+
   // Tour state
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialChecked, setTutorialChecked] = useState(false);
@@ -1565,6 +1590,7 @@ export default function PartnerDashboard() {
         });
         setPurchasingPackageSize(null);
         setPromoCode("");
+        setValidatedPromo(null);
         queryClient.invalidateQueries({ queryKey: ["/api/partner/me"] });
         queryClient.invalidateQueries({ queryKey: ["/api/partner/test-packages"] });
         queryClient.invalidateQueries({ queryKey: ["/api/partner/credits"] });
@@ -3326,27 +3352,58 @@ export default function PartnerDashboard() {
                                   id="promo-code"
                                   placeholder="Enter promo code (optional)"
                                   value={promoCode}
-                                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                                  onChange={(e) => {
+                                    setPromoCode(e.target.value.toUpperCase());
+                                    if (!e.target.value.trim()) {
+                                      setValidatedPromo(null);
+                                    }
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      validatePromoCode(promoCode);
+                                    }
+                                  }}
                                   className="uppercase text-xs md:text-sm h-8 md:h-10"
                                   data-testid="input-promo-code"
                                 />
                               </div>
+                              {promoCode && !validatedPromo && (
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  onClick={() => validatePromoCode(promoCode)}
+                                  disabled={validatingPromo}
+                                  data-testid="button-apply-promo"
+                                >
+                                  {validatingPromo ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                                </Button>
+                              )}
                               {promoCode && (
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  onClick={() => setPromoCode("")}
+                                  onClick={() => { setPromoCode(""); setValidatedPromo(null); }}
                                   data-testid="button-clear-promo"
                                 >
                                   <X className="h-4 w-4" />
                                 </Button>
                               )}
                             </div>
+                            {validatedPromo && (
+                              <div className="mb-3 md:mb-4 p-2 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 flex items-center gap-2" data-testid="promo-applied-banner">
+                                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                                <span className="text-sm text-green-700 dark:text-green-300 font-medium">{validatedPromo.name} applied — {validatedPromo.percentOff}% off all packages</span>
+                              </div>
+                            )}
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                               {pricing.packages.map((pkg: any) => {
                                 // Use partner's assigned pricing (no PPP adjustment for B2B partners)
-                                const packagePrice = pkg.price; // Price from API already in partner's currency
-                                const pricePerTest = pkg.pricePerTest;
+                                const basePackagePrice = pkg.price;
+                                const basePricePerTest = pkg.pricePerTest;
+                                const promoMultiplier = validatedPromo ? (1 - validatedPromo.percentOff / 100) : 1;
+                                const packagePrice = Math.round(basePackagePrice * promoMultiplier);
+                                const pricePerTest = Math.round(basePricePerTest * promoMultiplier);
                                 const savings = pkg.savings || 0;
                                 const hasDiscount = pkg.discountPercent > 0;
                                 const isPayg = account?.partner?.billingType === 'payg';
@@ -3376,11 +3433,16 @@ export default function PartnerDashboard() {
                                       </div>
                                     </div>
                                     <div className="text-center border-t pt-3 mb-3">
-                                      <div className="text-lg font-semibold">
-                                        {formatPartnerPrice(packagePrice)}
+                                      {validatedPromo && promoMultiplier < 1 && (
+                                        <div className="text-sm text-muted-foreground line-through">
+                                          {formatPartnerPrice(basePackagePrice)}
+                                        </div>
+                                      )}
+                                      <div className={`text-lg font-semibold ${validatedPromo && promoMultiplier < 1 ? 'text-green-600 dark:text-green-400' : ''}`}>
+                                        {packagePrice === 0 ? 'FREE' : formatPartnerPrice(packagePrice)}
                                       </div>
                                       <div className="text-xs text-muted-foreground">
-                                        {formatPartnerPrice(pricePerTest)}/credit
+                                        {packagePrice === 0 ? 'No charge' : `${formatPartnerPrice(pricePerTest)}/credit`}
                                       </div>
                                     </div>
                                     {/* Show savings for subscription users with discounts */}
