@@ -4092,8 +4092,11 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   const MARGIN = 20;
   const contentWidth = pageWidth - MARGIN * 2;
 
-  // Helper: extract string from strength/gap items (may be string or {skill, summary} object)
-  const extractText = (item: any): string => typeof item === 'string' ? item : (item.skill || item.summary || String(item));
+  const extractText = (item: any): string => {
+    if (typeof item === 'string') return item;
+    if (item && typeof item === 'object') return item.skill || item.summary || item.description || '';
+    return '';
+  };
 
   // ========== SUMMARY CARDS ==========
   const cardWidth = (contentWidth - 10) / 3;
@@ -4195,8 +4198,13 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   pdf.text(cohortDescLines, MARGIN + 4, yPos + 4);
   yPos += cohortDescH + 3;
 
+  yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
+
   const halfWidth = (contentWidth - 10) / 2;
-  const insightBoxHeight = 38;
+  const strengthItems = (data.summaryInsights.commonStrengths || []).slice(0, 4);
+  const gapItems = (data.summaryInsights.commonGaps || []).slice(0, 4);
+  const maxItems = Math.max(strengthItems.length, gapItems.length, 1);
+  const insightBoxHeight = CARD_PADDING + 10 + maxItems * 6 + 4;
 
   // Common Strengths - Light green tint
   pdf.setFillColor(240, 249, 255);
@@ -4210,11 +4218,14 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(8);
   pdf.setTextColor(55, 65, 81);
-  if (data.summaryInsights.commonStrengths.length > 0) {
-    data.summaryInsights.commonStrengths.slice(0, 4).forEach((s: any, i: number) => {
+  if (strengthItems.length > 0) {
+    strengthItems.forEach((s: any, i: number) => {
       const sText = extractText(s);
-      const truncated = sText.length > 35 ? sText.slice(0, 33) + '...' : sText;
-      pdf.text(`\u2022 ${truncated}`, MARGIN + CARD_PADDING, yPos + CARD_PADDING + 10 + (i * 6));
+      const maxBulletW = halfWidth - CARD_PADDING * 2 - 4;
+      let truncS = sText;
+      while (pdf.getTextWidth(`\u2022 ${truncS}`) > maxBulletW && truncS.length > 3) truncS = truncS.slice(0, -1);
+      if (truncS !== sText) truncS = truncS.trim() + '..';
+      pdf.text(`\u2022 ${truncS}`, MARGIN + CARD_PADDING, yPos + CARD_PADDING + 10 + (i * 6));
     });
   } else {
     pdf.text('No common strengths identified', MARGIN + CARD_PADDING, yPos + CARD_PADDING + 12);
@@ -4232,11 +4243,14 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(8);
   pdf.setTextColor(55, 65, 81);
-  if (data.summaryInsights.commonGaps.length > 0) {
-    data.summaryInsights.commonGaps.slice(0, 4).forEach((g: any, i: number) => {
+  if (gapItems.length > 0) {
+    gapItems.forEach((g: any, i: number) => {
       const gText = extractText(g);
-      const truncated = gText.length > 35 ? gText.slice(0, 33) + '...' : gText;
-      pdf.text(`\u2022 ${truncated}`, rightX + CARD_PADDING, yPos + CARD_PADDING + 10 + (i * 6));
+      const maxBulletW = halfWidth - CARD_PADDING * 2 - 4;
+      let truncG = gText;
+      while (pdf.getTextWidth(`\u2022 ${truncG}`) > maxBulletW && truncG.length > 3) truncG = truncG.slice(0, -1);
+      if (truncG !== gText) truncG = truncG.trim() + '..';
+      pdf.text(`\u2022 ${truncG}`, rightX + CARD_PADDING, yPos + CARD_PADDING + 10 + (i * 6));
     });
   } else {
     pdf.text('No common gaps identified', rightX + CARD_PADDING, yPos + CARD_PADDING + 12);
@@ -4244,8 +4258,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
 
   yPos += insightBoxHeight + BLOCK_SPACING;
 
-  // Key Differentiators - Blue-tinted
-  if (data.summaryInsights.keyDifferentiators.length > 0) {
+  if ((data.summaryInsights.keyDifferentiators || []).length > 0) {
     yPos = addSectionHeader(pdf, 'KEY DIFFERENTIATORS', yPos, pageWidth);
     yPos += 2;
     const diffDesc = 'Factors that most distinguish candidates from each other in this role comparison.';
@@ -4262,14 +4275,19 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     pdf.setDrawColor(191, 219, 254);
     pdf.setLineWidth(0.3);
     const diffItems = data.summaryInsights.keyDifferentiators.slice(0, 3);
-    const diffBoxHeight = 6 + diffItems.length * 5;
-    pdf.roundedRect(MARGIN, yPos, contentWidth, diffBoxHeight, 2, 2, 'FD');
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
+    const diffMaxTextW = contentWidth - CARD_PADDING * 2 - 4;
+    const wrappedDiffLines: string[] = [];
+    diffItems.forEach((d) => {
+      const lines = pdf.splitTextToSize(`\u2022 ${d}`, diffMaxTextW);
+      wrappedDiffLines.push(...lines.slice(0, 2));
+    });
+    const diffBoxHeight = 6 + wrappedDiffLines.length * 4.5;
+    pdf.roundedRect(MARGIN, yPos, contentWidth, diffBoxHeight, 2, 2, 'FD');
     pdf.setTextColor(30, 64, 175);
-    diffItems.forEach((d, i) => {
-      const truncated = d.length > 90 ? d.slice(0, 88) + '...' : d;
-      pdf.text(`\u2022 ${truncated}`, MARGIN + CARD_PADDING, yPos + 4 + (i * 5));
+    wrappedDiffLines.forEach((line, i) => {
+      pdf.text(line, MARGIN + CARD_PADDING, yPos + 4 + (i * 4.5));
     });
     yPos += diffBoxHeight + BLOCK_SPACING;
   }
@@ -4452,13 +4470,13 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       yPos = 35;
     }
 
-    const firstStrength = candidate.strengths.length > 0
-      ? (typeof candidate.strengths[0] === 'string' ? candidate.strengths[0] : candidate.strengths[0].skill)
-      : '';
-    const notesRaw = candidate.riskFlags.length > 0
-      ? candidate.riskFlags[0]
+    const safeStrengths = candidate.strengths || [];
+    const safeRiskFlags = candidate.riskFlags || [];
+    const firstStrength = safeStrengths.length > 0 ? extractText(safeStrengths[0]) : '';
+    const notesRaw = safeRiskFlags.length > 0
+      ? String(safeRiskFlags[0])
       : firstStrength.replace('Strong ', '');
-    const notesLines = pdf.splitTextToSize(notesRaw, col.notes - 6);
+    const notesLines = pdf.splitTextToSize(notesRaw || 'No notes', col.notes - 6);
     const displayLines = notesLines.slice(0, 2);
     const rowHeight = Math.max(16, 6 + displayLines.length * 4.5);
 
@@ -4495,7 +4513,12 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     pdf.setTextColor(17, 24, 39);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(8);
-    const truncName = candidate.userName.length > 20 ? candidate.userName.slice(0, 18) + '...' : candidate.userName;
+    const rankNameMaxW = col.name - 8;
+    let truncName = candidate.userName;
+    while (pdf.getTextWidth(truncName) > rankNameMaxW && truncName.length > 3) {
+      truncName = truncName.slice(0, -1);
+    }
+    if (truncName !== candidate.userName) truncName = truncName.trim() + '..';
     pdf.text(truncName, cx + 3, yPos + 6);
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(6.5);
@@ -4609,10 +4632,17 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     });
 
     const candidateCount = Math.min(sortedCandidates.length, 5);
+    if (candidateCount === 0) {
+      pdf.setFontSize(8);
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('No candidate data available for critical skills comparison.', 24, yPos);
+      yPos += 15;
+    }
     const skillColWidth = 50;
     const reqColWidth = 18;
-    const candidateColWidth = (pageWidth - 40 - skillColWidth - reqColWidth) / candidateCount;
+    const candidateColWidth = candidateCount > 0 ? (pageWidth - 40 - skillColWidth - reqColWidth) / candidateCount : 30;
 
+   if (candidateCount > 0) {
     // Blue-tinted header
     pdf.setFillColor(239, 246, 255);
     pdf.rect(20, yPos, pageWidth - 40, 12, 'F');
@@ -4689,8 +4719,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
           pdf.text('N/A', colX + 2, yPos + 5);
           pdf.setFont('helvetica', 'normal');
         } else {
-          // Mini progress bar
-          const barW = candidateColWidth - 18;
+          const barW = Math.max(10, candidateColWidth - 18);
           const barH = 4;
           const barStartX = colX + 2;
           const barY = yPos + 1;
@@ -4792,6 +4821,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     legendX += 10;
     pdf.setTextColor(107, 114, 128);
     pdf.text('Below 60 threshold', legendX, legendY);
+   } // end if (candidateCount > 0)
 
     // ========== CRITICAL SKILLS DEEP DIVE ==========
     const SKILL_DESCRIPTIONS: Record<string, string> = {
@@ -5138,15 +5168,22 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       }
 
       const candidateEntry = candidate as any;
-      const score = candidateEntry.promptArchitectureScore;
-      const hasData = score !== null && score !== undefined;
-      const meetsReq = hasData && score >= promptReq;
-      const isClose = hasData && !meetsReq && score >= promptReq * 0.8;
+      const rawScore = candidateEntry.promptArchitectureScore;
+      const hasData = rawScore !== null && rawScore !== undefined;
+      const score = hasData ? Math.min(100, Math.max(0, rawScore)) : 0;
+      const clampedReq = Math.min(100, Math.max(0, promptReq));
+      const meetsReq = hasData && score >= clampedReq;
+      const isClose = hasData && !meetsReq && score >= clampedReq * 0.8;
 
       pdf.setFontSize(8);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(17, 24, 39);
-      const truncPromptName = candidate.userName.length > 15 ? candidate.userName.slice(0, 13) + '...' : candidate.userName;
+      const nameMaxW = 35;
+      let truncPromptName = candidate.userName;
+      while (pdf.getTextWidth(truncPromptName) > nameMaxW && truncPromptName.length > 3) {
+        truncPromptName = truncPromptName.slice(0, -1);
+      }
+      if (truncPromptName !== candidate.userName) truncPromptName = truncPromptName.trim() + '..';
       pdf.text(truncPromptName, 22, yPos + 4);
 
       const barX = 60;
@@ -5156,12 +5193,16 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
 
       if (hasData) {
         const fillColor: [number, number, number] = meetsReq ? [59, 130, 246] : isClose ? [234, 179, 8] : [239, 68, 68];
-        pdf.setFillColor(fillColor[0], fillColor[1], fillColor[2]);
-        pdf.roundedRect(barX, yPos, (score / 100) * barWidth, 6, 1, 1, 'F');
+        if (score > 0) {
+          const fillW = Math.max(2, (score / 100) * barWidth);
+          pdf.setFillColor(fillColor[0], fillColor[1], fillColor[2]);
+          pdf.roundedRect(barX, yPos, fillW, 6, 1, 1, 'F');
+        }
 
+        const thresholdX = barX + (clampedReq / 100) * barWidth;
         pdf.setDrawColor(17, 24, 39);
         pdf.setLineWidth(0.5);
-        pdf.line(barX + (promptReq / 100) * barWidth, yPos - 1, barX + (promptReq / 100) * barWidth, yPos + 7);
+        pdf.line(thresholdX, yPos - 1, thresholdX, yPos + 7);
 
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(fillColor[0], fillColor[1], fillColor[2]);
@@ -5215,15 +5256,22 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       }
 
       const candidateEntry = candidate as any;
-      const score = candidateEntry.aiqScore;
-      const hasData = score !== null && score !== undefined;
-      const meetsReq = hasData && score >= aiqReq;
-      const isClose = hasData && !meetsReq && score >= aiqReq * 0.8;
+      const rawScore = candidateEntry.aiqScore;
+      const hasData = rawScore !== null && rawScore !== undefined;
+      const score = hasData ? Math.min(100, Math.max(0, rawScore)) : 0;
+      const clampedReq = Math.min(100, Math.max(0, aiqReq));
+      const meetsReq = hasData && score >= clampedReq;
+      const isClose = hasData && !meetsReq && score >= clampedReq * 0.8;
 
       pdf.setFontSize(8);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(17, 24, 39);
-      const truncAiqName = candidate.userName.length > 15 ? candidate.userName.slice(0, 13) + '...' : candidate.userName;
+      const aiqNameMaxW = 35;
+      let truncAiqName = candidate.userName;
+      while (pdf.getTextWidth(truncAiqName) > aiqNameMaxW && truncAiqName.length > 3) {
+        truncAiqName = truncAiqName.slice(0, -1);
+      }
+      if (truncAiqName !== candidate.userName) truncAiqName = truncAiqName.trim() + '..';
       pdf.text(truncAiqName, 22, yPos + 4);
 
       const barX = 60;
@@ -5233,12 +5281,16 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
 
       if (hasData) {
         const fillColor: [number, number, number] = meetsReq ? [59, 130, 246] : isClose ? [234, 179, 8] : [239, 68, 68];
-        pdf.setFillColor(fillColor[0], fillColor[1], fillColor[2]);
-        pdf.roundedRect(barX, yPos, (score / 100) * barWidth, 6, 1, 1, 'F');
+        if (score > 0) {
+          const fillW = Math.max(2, (score / 100) * barWidth);
+          pdf.setFillColor(fillColor[0], fillColor[1], fillColor[2]);
+          pdf.roundedRect(barX, yPos, fillW, 6, 1, 1, 'F');
+        }
 
+        const thresholdX = barX + (clampedReq / 100) * barWidth;
         pdf.setDrawColor(17, 24, 39);
         pdf.setLineWidth(0.5);
-        pdf.line(barX + (aiqReq / 100) * barWidth, yPos - 1, barX + (aiqReq / 100) * barWidth, yPos + 7);
+        pdf.line(thresholdX, yPos - 1, thresholdX, yPos + 7);
 
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(fillColor[0], fillColor[1], fillColor[2]);
@@ -5273,8 +5325,6 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   pdf.setTextColor(71, 85, 105);
   pdf.text(matrixDescLines, 24, yPos + 4);
   yPos += matrixDescBoxH + 5;
-
-  const extractItemText = (item: any): string => typeof item === 'string' ? item : (item.skill || item.summary || item.description || '');
 
   const maxCandidatesPerRow = 4;
   const candidateCardHeight = 62;
@@ -5395,7 +5445,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
 
     const maxTextW = cardW - 10;
 
-    const strengthText = strengthsArr.length > 0 && strengthsArr[0] ? extractItemText(strengthsArr[0]) : '';
+    const strengthText = strengthsArr.length > 0 && strengthsArr[0] ? extractText(strengthsArr[0]) : '';
     if (strengthText) {
       pdf.setTextColor(22, 163, 74);
       let sText = strengthText.replace('Strong ', '');
@@ -5408,7 +5458,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     }
 
     let gapDisplayText = '';
-    if (gapsArr.length > 0 && gapsArr[0]) gapDisplayText = extractItemText(gapsArr[0]);
+    if (gapsArr.length > 0 && gapsArr[0]) gapDisplayText = extractText(gapsArr[0]);
     if (!gapDisplayText && risksArr.length > 0 && risksArr[0]) gapDisplayText = String(risksArr[0]);
 
     if (gapDisplayText) {
