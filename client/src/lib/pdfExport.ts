@@ -3244,7 +3244,7 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
   pdf.roundedRect(20, yPos - 2, pageWidth - 40, traitDescBoxH, 2, 2, 'F');
   pdf.setTextColor(71, 85, 105);
   pdf.text(traitDescLines, 24, yPos + 4);
-  yPos += traitDescBoxH + 3;
+  yPos += traitDescBoxH + 8;
 
   const allSkills: Array<{ name: string; score: number; category: string }> = [];
 
