@@ -138,11 +138,25 @@
       </style>
       <style id="hide-dev-banner">
         /* Hide Replit development preview banner immediately to prevent flash */
-        body > div[style*="position: fixed"][style*="z-index"],
-        body > div[style*="position:fixed"][style*="z-index"] {
+        body > div:not(#root) {
           display: none !important;
         }
       </style>
+      <script>
+        /* Remove dev banner as soon as it appears */
+        new MutationObserver(function(mutations) {
+          for (var i = 0; i < mutations.length; i++) {
+            var nodes = mutations[i].addedNodes;
+            for (var j = 0; j < nodes.length; j++) {
+              var n = nodes[j];
+              if (n.nodeType === 1 && n.parentElement === document.body && n.id !== 'root') {
+                n.style.display = 'none';
+                n.remove();
+              }
+            }
+          }
+        }).observe(document.body, { childList: true });
+      </script>
       <script>
         (function() {
           var darkPaths = ['/start-assessment', '/embed/assessment', '/invite/', '/b2b-payment-callback', '/guest-invite/'];
