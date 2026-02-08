@@ -54,6 +54,7 @@ TESTING_STRIPE_SECRET_KEY = "kdsfj"
 
 [userenv.production]
 PRODUCTION_URL = "https://www.humanmetrix.co.uk"
+AIRWALLEX_ENVIRONMENT = "prod"
 
 [userenv.development]
 AIRWALLEX_ENVIRONMENT = "demo"

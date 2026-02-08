@@ -3402,7 +3402,8 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         isBulkPurchase: isBulk ? 'true' : 'false',
       };
       
-      const { primary: prPrimary, fallback: prFallback } = getPaymentProviders(partnerForPayment?.paymentProvider);
+      // Candidate-facing payment: always use Airwallex primary (partner preference only applies to partner's own payments)
+      const { primary: prPrimary, fallback: prFallback } = getPaymentProviders();
       
       const airwallexPrFn = async (): Promise<PaymentCheckoutResult> => {
         const airwallexAmount = formatAmountForAirwallex(stripeAmount);
