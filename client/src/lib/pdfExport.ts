@@ -2324,8 +2324,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   strengthDescriptions.forEach((strength: string | { skill: string; summary: string; description: string }, index: number) => {
     const isLeftCol = index % 2 === 0;
-    const boxX = isLeftCol ? 20 : 20 + itemBoxWidth + itemBoxGap;
-    const currentY = isLeftCol ? strengthLeftY : strengthRightY;
+    let currentY = isLeftCol ? strengthLeftY : strengthRightY;
     
     const isObject = typeof strength === 'object' && strength !== null;
     const skillName = isObject ? (strength.skill || strength.summary) : String(strength);
@@ -2334,6 +2333,17 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.setFontSize(6.5);
     const descLines = pdf.splitTextToSize(descriptionText, itemBoxWidth - 6);
     const boxHeight = Math.max(14, 5 + descLines.length * 2.8 + 3);
+    
+    if (currentY + boxHeight > pageHeight - 20) {
+      pdf.addPage();
+      addBackgroundPattern(pdf, pageWidth, pageHeight);
+      addHeader(pdf, pageWidth);
+      currentY = 35;
+      strengthLeftY = 35;
+      strengthRightY = 35;
+    }
+    
+    const boxX = isLeftCol ? 20 : 20 + itemBoxWidth + itemBoxGap;
     
     pdf.setFillColor(250, 255, 250);
     pdf.setDrawColor(134, 197, 134);
@@ -2363,6 +2373,17 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.setTextColor(0, 0, 0);
   
   // ========== DEVELOPMENT AREAS (text descriptions) ==========
+  // Use text descriptions from alignment.gaps
+  const gapDescriptions = data.alignment.gaps?.slice(0, 6) || [];
+  
+  // Check if DEVELOPMENT AREAS section needs a new page before rendering header
+  if (yPos + 30 > pageHeight - 20) {
+    pdf.addPage();
+    addBackgroundPattern(pdf, pageWidth, pageHeight);
+    addHeader(pdf, pageWidth);
+    yPos = 35;
+  }
+  
   yPos = addSectionHeader(pdf, 'DEVELOPMENT AREAS', yPos, pageWidth);
   yPos += 2;
   
@@ -2371,16 +2392,12 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.text('Skill gaps requiring targeted development to meet role requirements', 20, yPos);
   yPos += 6;
   
-  // Use text descriptions from alignment.gaps
-  const gapDescriptions = data.alignment.gaps?.slice(0, 6) || [];
-  
   let gapLeftY = yPos;
   let gapRightY = yPos;
   
   gapDescriptions.forEach((gap: string | { skill: string; summary: string; description: string }, index: number) => {
     const isLeftCol = index % 2 === 0;
-    const boxX = isLeftCol ? 20 : 20 + itemBoxWidth + itemBoxGap;
-    const currentY = isLeftCol ? gapLeftY : gapRightY;
+    let currentY = isLeftCol ? gapLeftY : gapRightY;
     
     const isObject = typeof gap === 'object' && gap !== null;
     const skillName = isObject ? (gap.skill || gap.summary) : String(gap);
@@ -2389,6 +2406,17 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.setFontSize(6.5);
     const descLines = pdf.splitTextToSize(descriptionText, itemBoxWidth - 6);
     const boxHeight = Math.max(14, 5 + descLines.length * 2.8 + 3);
+    
+    if (currentY + boxHeight > pageHeight - 20) {
+      pdf.addPage();
+      addBackgroundPattern(pdf, pageWidth, pageHeight);
+      addHeader(pdf, pageWidth);
+      currentY = 35;
+      gapLeftY = 35;
+      gapRightY = 35;
+    }
+    
+    const boxX = isLeftCol ? 20 : 20 + itemBoxWidth + itemBoxGap;
     
     pdf.setFillColor(255, 253, 245);
     pdf.setDrawColor(210, 180, 100);
