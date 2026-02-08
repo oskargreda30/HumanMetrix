@@ -20,6 +20,11 @@ import {
   ResponsiveContainer,
   Tooltip as RechartsTooltip,
   Cell,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
 } from "recharts";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -2541,42 +2546,34 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                         <div>
                           <h3 className="font-semibold mb-4">All Skills Combined</h3>
                           <div id="pdf-comparison-overall-skills" className="bg-white p-4 md:p-6 rounded-lg overflow-visible">
-                          <ResponsiveContainer width="100%" height={470} className="min-h-[380px] md:min-h-[470px]">
-                            <BarChart layout="vertical" margin={{ top: 5, right: 55, left: 10, bottom: 5 }} barCategoryGap="55%" barGap={4} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} data={comparison.radarData.map(item => ({
+                          <ResponsiveContainer width="100%" height={500} className="min-h-[400px] md:min-h-[500px]">
+                            <RadarChart cx="50%" cy="50%" outerRadius="75%" data={comparison.radarData.map(item => ({
                               ...item,
                               skill: getSkillAcronym(item.skill)
                             }))}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                              <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} axisLine={false} tickLine={false} />
-                              <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} axisLine={{ stroke: 'hsl(var(--border))' }} tickLine={{ stroke: 'hsl(var(--border))' }} />
-                              <RechartsTooltip cursor={false} />
+                              <PolarGrid stroke="hsl(var(--border))" />
+                              <PolarAngleAxis dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} />
+                              <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} axisLine={false} />
+                              <RechartsTooltip />
                               {selectedCandidateData?.map((candidate: any, index: number) => (
-                                <Bar
+                                <Radar
                                   key={candidate.user.id}
                                   name={getCandidateName(candidate)}
                                   dataKey={`candidate${index}`}
-                                  radius={[0, 4, 4, 0]}
-                                  barSize={12}
+                                  stroke={isCapturingPDF ? PDF_CHART_COLORS[index] : MULTI_CANDIDATE_COLORS[index % MULTI_CANDIDATE_COLORS.length]}
+                                  fill={isCapturingPDF ? PDF_CHART_COLORS[index] : MULTI_CANDIDATE_COLORS[index % MULTI_CANDIDATE_COLORS.length]}
+                                  fillOpacity={0.15}
+                                  strokeWidth={2}
                                   isAnimationActive={!isCapturingPDF}
-                                >
-                                  {comparison.radarData.map((item: any, i: number) => (
-                                    <Cell
-                                      key={`cell-${i}`}
-                                      fill={isCapturingPDF ? PDF_CHART_COLORS[index] : MULTI_CANDIDATE_COLORS[index % MULTI_CANDIDATE_COLORS.length]}
-                                      fillOpacity={!hoveredSkill || hoveredSkill === getSkillAcronym(item.skill) ? 1 : 0.2}
-                                      style={{ transition: 'fill-opacity 0.2s ease' }}
-                                    />
-                                  ))}
-                                </Bar>
+                                />
                               ))}
                               <Legend
                                 formatter={(value: string, entry: any, index: number) => (
                                   <span style={{ color: MULTI_CANDIDATE_COLORS[index % MULTI_CANDIDATE_COLORS.length] }}>{value}</span>
                                 )}
                               />
-                            </BarChart>
+                            </RadarChart>
                           </ResponsiveContainer>
-                          <p className="text-xs text-muted-foreground text-center mt-1">Hover over a skill to highlight comparison</p>
                           </div>
                         </div>
                       )}
@@ -2992,27 +2989,27 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
               style={{ width: '1000px', height: '750px', backgroundColor: 'white', padding: '20px 40px 40px 40px' }}
             >
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart 
-                  layout="vertical"
-                  data={comparison.radarData} 
-                  margin={{ top: 5, right: 55, left: 10, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                  <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} axisLine={false} tickLine={false} />
-                  <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} axisLine={{ stroke: 'hsl(var(--border))' }} tickLine={{ stroke: 'hsl(var(--border))' }} />
-                  <RechartsTooltip />
+                <RadarChart cx="50%" cy="50%" outerRadius="75%" data={comparison.radarData.map(item => ({
+                  ...item,
+                  skill: getSkillAcronym(item.skill)
+                }))}>
+                  <PolarGrid stroke="#e5e7eb" />
+                  <PolarAngleAxis dataKey="skill" tick={{ fill: '#374151', fontSize: 11, fontWeight: 500 }} />
+                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#9ca3af', fontSize: 10 }} axisLine={false} />
                   {selectedCandidateData?.map((candidate: any, index: number) => (
-                    <Bar
+                    <Radar
                       key={candidate.user.id}
                       name={getCandidateName(candidate)}
                       dataKey={`candidate${index}`}
-                      fill={MULTI_CANDIDATE_COLORS[index % MULTI_CANDIDATE_COLORS.length]}
-                      radius={[0, 4, 4, 0]}
-                      barSize={12}
+                      stroke={PDF_CHART_COLORS[index]}
+                      fill={PDF_CHART_COLORS[index]}
+                      fillOpacity={0.15}
+                      strokeWidth={2}
+                      isAnimationActive={false}
                     />
                   ))}
                   <Legend />
-                </BarChart>
+                </RadarChart>
               </ResponsiveContainer>
             </div>
           )}
