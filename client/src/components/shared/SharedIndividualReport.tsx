@@ -963,7 +963,13 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                       const match = candidateReport?.aiInsights?.match(regex);
                       let content = match?.[1]?.trim();
                       if (content) {
-                        content = content.replace(/^[-•]\s*/gm, '').replace(/\n{2,}/g, '\n');
+                        content = content
+                          .replace(/\*\*(.*?)\*\*/g, '$1')
+                          .replace(/__(.*?)__/g, '$1')
+                          .replace(/\*(.*?)\*/g, '$1')
+                          .replace(/^\s*[-•]\s*/gm, '')
+                          .replace(/^\s*\d+\.\s+/gm, '')
+                          .replace(/\n{2,}/g, '\n');
                       }
                       return { ...section, content };
                     }).filter(s => s.content);

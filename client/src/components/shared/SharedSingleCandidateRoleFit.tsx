@@ -20,6 +20,16 @@ import SkillsLegend from "@/components/SkillsLegend";
 import { CriticalSkillsAnalysis } from "@/components/shared/CriticalSkillsAnalysis";
 import { EnquiryModal } from "@/components/EnquiryModal";
 
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/^\s*[-•]\s+/gm, '')
+    .replace(/^\s*\d+\.\s+/gm, '')
+    .replace(/__(.*?)__/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .trim();
+}
+
 // Configuration interface for shared component
 export interface SharedRoleFitConfig {
   // API endpoints
@@ -590,8 +600,8 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                 <ul className="space-y-3">
                   {alignment.strengths.map((strength, index) => {
                     const isObject = typeof strength === 'object' && strength !== null;
-                    const summary = isObject ? strength.summary : strength;
-                    const description = isObject ? strength.description : null;
+                    const summary = stripMarkdown(isObject ? strength.summary : String(strength));
+                    const description = isObject && strength.description ? stripMarkdown(strength.description) : null;
                     return (
                       <li key={index} className="flex items-start gap-2">
                         <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
@@ -622,8 +632,8 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                 <ul className="space-y-3">
                   {alignment.gaps.map((gap, index) => {
                     const isObject = typeof gap === 'object' && gap !== null;
-                    const summary = isObject ? gap.summary : gap;
-                    const description = isObject ? gap.description : null;
+                    const summary = stripMarkdown(isObject ? gap.summary : String(gap));
+                    const description = isObject && gap.description ? stripMarkdown(gap.description) : null;
                     return (
                       <li key={index} className="flex items-start gap-2">
                         <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
@@ -1113,6 +1123,11 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
               .replace(/OVERALL ASSESSMENT:.*?\n/gi, '')
               .replace(/KEY STRENGTHS:[\s\S]*?(?=\n\n[A-Z]|DEVELOPMENT AREAS:|COHORT CONTEXT:|HIRING RECOMMENDATION:|ALTERNATIVE ROLE|$)/gi, '')
               .replace(/DEVELOPMENT AREAS:[\s\S]*?(?=\n\n[A-Z]|COHORT CONTEXT:|HIRING RECOMMENDATION:|ALTERNATIVE ROLE|$)/gi, '')
+              .replace(/\*\*(.*?)\*\*/g, '$1')
+              .replace(/__(.*?)__/g, '$1')
+              .replace(/\*(.*?)\*/g, '$1')
+              .replace(/^\s*[-•]\s+/gm, '')
+              .replace(/^\s*\d+\.\s+/gm, '')
               .replace(/\n{3,}/g, '\n\n')
               .trim();
             
