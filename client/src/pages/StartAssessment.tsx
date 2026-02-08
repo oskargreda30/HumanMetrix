@@ -171,7 +171,7 @@ export default function StartAssessment() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-slate-900 pt-8 md:pt-12 pb-12 px-4">
+    <div className="min-h-[100dvh] bg-slate-900 pt-3 md:pt-8 pb-12 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
           {invitation?.branding?.logoUrl ? (
