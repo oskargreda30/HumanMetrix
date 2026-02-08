@@ -721,7 +721,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {alignment.aiReadinessSkillAlignments.slice(0, 9).map(renderSkillBar)}
+                        {alignment.aiReadinessSkillAlignments.slice(0, 6).map(renderSkillBar)}
                       </div>
                       <CriticalityLegend />
                     </CardContent>
