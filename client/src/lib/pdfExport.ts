@@ -3217,7 +3217,7 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
   traitDescLines.forEach((line: string, i: number) => {
     pdf.text(line, 24, yPos + 3 + (i * 4));
   });
-  yPos += traitDescBoxH + 3;
+  yPos += traitDescBoxH + 8;
 
   const allSkills: Array<{ name: string; score: number; category: string }> = [];
 
