@@ -662,7 +662,9 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                   </div>
                   
                   <div className="space-y-3">
-                    {Object.entries(fitData.scores).map(([skill, score]) => (
+                    {Object.entries(fitData.scores)
+                      .sort(([, a], [, b]) => (b as number) - (a as number))
+                      .map(([skill, score]) => (
                       <div key={skill} className="space-y-1">
                         <div className="flex justify-between text-sm">
                           <span>{skill}</span>
@@ -708,7 +710,9 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                   </div>
                   
                   <div className="space-y-3">
-                    {Object.entries(normalizedAIScores).map(([skill, score]) => (
+                    {Object.entries(normalizedAIScores)
+                      .sort(([, a], [, b]) => (b as number) - (a as number))
+                      .map(([skill, score]) => (
                       <div key={skill} className="space-y-1">
                         <div className="flex justify-between text-sm">
                           <span className="truncate max-w-[200px]">{skill}</span>
@@ -955,9 +959,12 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                     ];
                     
                     const parsedSections = sections.map((section) => {
-                      const regex = new RegExp(`\\*\\*${section.key}\\*\\*\\s*([\\s\\S]*?)(?=\\*\\*[A-Z]|$)`, 'i');
+                      const regex = new RegExp(`\\*\\*${section.key}\\*\\*[:\\s]*([\\s\\S]*?)(?=\\n\\s*\\*\\*[A-Z]|$)`, 'i');
                       const match = candidateReport?.aiInsights?.match(regex);
-                      const content = match?.[1]?.trim();
+                      let content = match?.[1]?.trim();
+                      if (content) {
+                        content = content.replace(/^[-•]\s*/gm, '').replace(/\n{2,}/g, '\n');
+                      }
                       return { ...section, content };
                     }).filter(s => s.content);
                     
@@ -969,13 +976,25 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                     
                     return parsedSections.map((section) => {
                       const IconComponent = section.icon;
+                      const lines = section.content?.split('\n').filter((l: string) => l.trim()) || [];
                       return (
-                        <div key={section.key}>
-                          <h4 className={`text-sm font-bold ${section.color} uppercase tracking-wide mb-2 flex items-center gap-2`}>
+                        <div key={section.key} className="p-4 rounded-lg bg-muted/30 border">
+                          <h4 className={`text-sm font-bold ${section.color} uppercase tracking-wide mb-3 flex items-center gap-2`}>
                             <IconComponent className="h-4 w-4" />
                             {section.key}
                           </h4>
-                          <p className="text-sm text-muted-foreground leading-relaxed">{section.content}</p>
+                          {lines.length > 1 ? (
+                            <ul className="space-y-1.5">
+                              {lines.map((line: string, i: number) => (
+                                <li key={i} className="text-sm text-muted-foreground leading-relaxed flex items-start gap-2">
+                                  <span className={`mt-1.5 h-1.5 w-1.5 rounded-full flex-shrink-0 ${section.color.replace('text-', 'bg-')}`} />
+                                  {line}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-sm text-muted-foreground leading-relaxed">{section.content}</p>
+                          )}
                         </div>
                       );
                     });

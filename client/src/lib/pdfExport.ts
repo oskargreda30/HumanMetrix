@@ -657,15 +657,21 @@ export async function exportComparisonPDF(data: ComparisonData) {
   // ========== CANDIDATE DETAILS (Brief) ==========
   yPos = addSectionHeader(pdf, 'CANDIDATE DETAILS', yPos, pageWidth);
   
-  // Add description for candidate details
+  const candDetailsDesc = 'Overview of candidates included in this comparison report.';
+  const candDetailsDescLines = pdf.splitTextToSize(candDetailsDesc, pageWidth - 48);
+  const candDetailsBoxH = 8 + (candDetailsDescLines.length * 4);
+  pdf.setFillColor(240, 249, 255);
+  pdf.roundedRect(20, yPos - 2, pageWidth - 40, candDetailsBoxH, 2, 2, 'F');
   applySmallText(pdf);
-  pdf.setTextColor(107, 114, 128);
-  pdf.text('Overview of candidates included in this comparison report.', 20, yPos);
-  yPos += 5;
+  pdf.setTextColor(71, 85, 105);
+  candDetailsDescLines.forEach((line: string, i: number) => {
+    pdf.text(line, 24, yPos + 3 + (i * 4));
+  });
+  yPos += candDetailsBoxH + 3;
   
   // Draw candidate details in boxes - compact horizontal layout
   const candidateBoxWidth = (pageWidth - 40 - (data.candidates.length - 1) * 5) / data.candidates.length;
-  const candidateBoxHeight = 22;
+  const candidateBoxHeight = 25;
   let candX = 20;
   
   data.candidates.forEach((candidate, index) => {
@@ -687,19 +693,20 @@ export async function exportComparisonPDF(data: ComparisonData) {
     const truncatedName = nameText.length > 20 ? nameText.substring(0, 18) + '...' : nameText;
     pdf.text(truncatedName, textStartX, yPos + 6);
     
-    // Email
-    pdf.setFontSize(7);
+    pdf.setFontSize(6.5);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    const maxEmailLen = Math.floor(candidateBoxWidth / 2.5);
-    const emailText = candidate.user.email.length > maxEmailLen ? candidate.user.email.substring(0, maxEmailLen - 3) + '...' : candidate.user.email;
-    pdf.text(emailText, textStartX, yPos + 11);
+    const maxEmailWidth = candidateBoxWidth - 10;
+    const emailLines = pdf.splitTextToSize(candidate.user.email, maxEmailWidth);
+    emailLines.slice(0, 2).forEach((line: string, lineIdx: number) => {
+      pdf.text(line, textStartX, yPos + 11 + (lineIdx * 3.5));
+    });
     
-    // Application date
     const appliedDate = candidate.user.createdAt 
       ? new Date(candidate.user.createdAt).toLocaleDateString() 
       : 'N/A';
-    pdf.text(`Applied: ${appliedDate}`, textStartX, yPos + 16);
+    const emailOffset = emailLines.length > 1 ? 3.5 : 0;
+    pdf.text(`Applied: ${appliedDate}`, textStartX, yPos + 16 + emailOffset);
     
     candX += candidateBoxWidth + 5; // Add gap between boxes
   });
@@ -709,12 +716,17 @@ export async function exportComparisonPDF(data: ComparisonData) {
   // Assessment Completion Status - IMPROVED TABLE
   yPos = addSectionHeader(pdf, 'COMPLETION STATUS', yPos, pageWidth);
   
-  // Add description for completion status
-  applySmallText(pdf);
-  pdf.setTextColor(107, 114, 128);
   const completionDesc = 'Tracks which of the four core assessments each candidate has completed.';
-  pdf.text(completionDesc, 20, yPos);
-  yPos += 5;
+  const completionDescLines = pdf.splitTextToSize(completionDesc, pageWidth - 48);
+  const completionDescBoxH = 8 + (completionDescLines.length * 4);
+  pdf.setFillColor(240, 249, 255);
+  pdf.roundedRect(20, yPos - 2, pageWidth - 40, completionDescBoxH, 2, 2, 'F');
+  applySmallText(pdf);
+  pdf.setTextColor(71, 85, 105);
+  completionDescLines.forEach((line: string, i: number) => {
+    pdf.text(line, 24, yPos + 3 + (i * 4));
+  });
+  yPos += completionDescBoxH + 3;
   
   const assessmentNames = ['FIT Assessment', 'AI Readiness', 'Prompt Architecture', 'AIQ'];
   const assessmentData = [
@@ -1403,13 +1415,17 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   yPos = addSectionHeader(pdf, 'STRENGTHS & DEVELOPMENT AREAS', yPos, pageWidth);
   
-  // Add description for Strengths & Development section
-  applySmallText(pdf);
-  pdf.setTextColor(107, 114, 128);
   const strengthsDesc = 'Highlights each candidate\'s top 3 strongest skills and areas requiring development, based on assessment scores across all completed evaluations.';
-  const splitStrengthsDesc = pdf.splitTextToSize(strengthsDesc, pageWidth - 40);
-  pdf.text(splitStrengthsDesc, 20, yPos);
-  yPos += splitStrengthsDesc.length * 4 + 4;
+  const splitStrengthsDesc = pdf.splitTextToSize(strengthsDesc, pageWidth - 48);
+  const strengthsDescBoxH = 8 + (splitStrengthsDesc.length * 4);
+  pdf.setFillColor(240, 249, 255);
+  pdf.roundedRect(20, yPos - 2, pageWidth - 40, strengthsDescBoxH, 2, 2, 'F');
+  applySmallText(pdf);
+  pdf.setTextColor(71, 85, 105);
+  splitStrengthsDesc.forEach((line: string, i: number) => {
+    pdf.text(line, 24, yPos + 3 + (i * 4));
+  });
+  yPos += strengthsDescBoxH + 5;
   
   // Helper to get candidate's top strengths and development areas
   const getCandidateStrengthsAndWeaknesses = (candidateIndex: number) => {
@@ -1471,23 +1487,21 @@ export async function exportComparisonPDF(data: ComparisonData) {
       const strength = strengths[skillIndex];
       
       if (strength) {
-        // Skill name - allow full name display with wider column
         applySmallText(pdf);
-        const maxNameWidth = columnWidth - 18; // Leave space for score
+        const maxNameWidth = columnWidth - 18;
         const skillName = strength.name;
         pdf.text(skillName, colX, yPos, { maxWidth: maxNameWidth });
         
-        // Score badge
         pdf.setFont('helvetica', 'bold');
         const scoreColor = strength.score >= 80 ? [34, 139, 34] : strength.score >= 60 ? [59, 130, 246] : [107, 114, 128];
         pdf.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
         pdf.text(`${strength.score}`, colX + columnWidth - 12, yPos);
       }
     });
-    yPos += 6;
+    yPos += 7;
   }
   
-  yPos += 5;
+  yPos += 8;
   
   // Draw Development Areas section
   applySmallText(pdf);
@@ -1504,20 +1518,18 @@ export async function exportComparisonPDF(data: ComparisonData) {
       const weakness = weaknesses[skillIndex];
       
       if (weakness) {
-        // Skill name - allow full name display with wider column
         applySmallText(pdf);
-        const maxNameWidth = columnWidth - 18; // Leave space for score
+        const maxNameWidth = columnWidth - 18;
         const skillName = weakness.name;
         pdf.text(skillName, colX, yPos, { maxWidth: maxNameWidth });
         
-        // Score badge
         pdf.setFont('helvetica', 'bold');
         const scoreColor = weakness.score < 50 ? [220, 38, 38] : weakness.score < 65 ? [220, 120, 50] : [107, 114, 128];
         pdf.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2]);
         pdf.text(`${weakness.score}`, colX + columnWidth - 12, yPos);
       }
     });
-    yPos += 6;
+    yPos += 7;
   }
   
   // Strengths & Development Areas Analysis Summary
@@ -1558,12 +1570,6 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   yPos += 8;
   pdf.setTextColor(0, 0, 0);
-  
-  // ========== ENHANCED ANALYSIS PAGE ==========
-  pdf.addPage();
-  addBackgroundPattern(pdf, pageWidth, pageHeight);
-  addHeader(pdf, pageWidth);
-  yPos = 32;
   
   // --- ROLE SUITABILITY ANALYSIS (only if a role is selected) ---
   // Helper to extract skill requirements from requiredSkillScores structure
@@ -1624,7 +1630,11 @@ export async function exportComparisonPDF(data: ComparisonData) {
     : (data.selectedRole && ROLE_DEFINITIONS[data.selectedRole]?.weights || {});
   
   if (roleData) {
-    yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
+    pdf.addPage();
+    addBackgroundPattern(pdf, pageWidth, pageHeight);
+    addHeader(pdf, pageWidth);
+    yPos = 32;
+    
     yPos = addSectionHeader(pdf, `ROLE SUITABILITY: ${roleData.name.toUpperCase()}`, yPos, pageWidth);
     yPos += 3;
     
@@ -3130,10 +3140,17 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
   // Assessment Completion Status
   yPos = addSectionHeader(pdf, 'COMPLETION STATUS', yPos, pageWidth);
 
+  const completionIndvDesc = 'Tracks which of the four core assessments have been completed.';
+  const completionIndvLines = pdf.splitTextToSize(completionIndvDesc, pageWidth - 48);
+  const completionIndvBoxH = 8 + (completionIndvLines.length * 4);
+  pdf.setFillColor(240, 249, 255);
+  pdf.roundedRect(20, yPos - 2, pageWidth - 40, completionIndvBoxH, 2, 2, 'F');
   applySmallText(pdf);
-  pdf.setTextColor(107, 114, 128);
-  pdf.text('Tracks which of the four core assessments have been completed.', 20, yPos);
-  yPos += 5;
+  pdf.setTextColor(71, 85, 105);
+  completionIndvLines.forEach((line: string, i: number) => {
+    pdf.text(line, 24, yPos + 3 + (i * 4));
+  });
+  yPos += completionIndvBoxH + 3;
 
   const assessmentNames = ['FIT Assessment', 'AI Readiness', 'Prompt Architecture', 'AIQ'];
   const assessmentCompleted = [
@@ -3179,16 +3196,23 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
     yPos += statusRowHeight;
   });
 
-  yPos += 5;
+  yPos += 10;
   pdf.setTextColor(0, 0, 0);
 
   // Trait Profile Summary
   yPos = addSectionHeader(pdf, 'TRAIT PROFILE SUMMARY', yPos, pageWidth);
 
+  const traitDescText = 'Top strengths and development areas based on all completed skill-based assessments.';
+  const traitDescLines = pdf.splitTextToSize(traitDescText, pageWidth - 48);
+  const traitDescBoxH = 8 + (traitDescLines.length * 4);
+  pdf.setFillColor(240, 249, 255);
+  pdf.roundedRect(20, yPos - 2, pageWidth - 40, traitDescBoxH, 2, 2, 'F');
   applySmallText(pdf);
-  pdf.setTextColor(107, 114, 128);
-  pdf.text('Top strengths and development areas based on all completed skill-based assessments.', 20, yPos);
-  yPos += 6;
+  pdf.setTextColor(71, 85, 105);
+  traitDescLines.forEach((line: string, i: number) => {
+    pdf.text(line, 24, yPos + 3 + (i * 4));
+  });
+  yPos += traitDescBoxH + 3;
 
   const allSkills: Array<{ name: string; score: number; category: string }> = [];
 
@@ -3260,10 +3284,17 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
 
     yPos = addSectionHeader(pdf, 'FIT ASSESSMENT', yPos, pageWidth);
 
+    const fitDescText = 'Behavioral assessment measuring core competencies: agency, curiosity, resilience, empathy, and collaboration.';
+    const fitDescLines = pdf.splitTextToSize(fitDescText, pageWidth - 48);
+    const fitDescBoxH = 8 + (fitDescLines.length * 4);
+    pdf.setFillColor(240, 249, 255);
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, fitDescBoxH, 2, 2, 'F');
     applySmallText(pdf);
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('Behavioral assessment measuring core competencies: agency, curiosity, resilience, empathy, and collaboration.', 20, yPos);
-    yPos += 6;
+    pdf.setTextColor(71, 85, 105);
+    fitDescLines.forEach((line: string, i: number) => {
+      pdf.text(line, 24, yPos + 3 + (i * 4));
+    });
+    yPos += fitDescBoxH + 3;
 
     if (data.fitChartImage) {
       const chartWidth = 85;
@@ -3284,9 +3315,13 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
     const labelX = 20;
     const scoreX = barX + barMaxWidth + 5;
 
-    FIT_SKILLS.forEach(skill => {
+    const sortedFitSkills = [...FIT_SKILLS]
+      .map(skill => ({ ...skill, score: data.fitAssessment!.scores[skill.key] ?? 0 }))
+      .sort((a, b) => b.score - a.score);
+
+    sortedFitSkills.forEach(skill => {
       yPos = ensurePageSpace(pdf, yPos, 10, pageHeight, pageWidth);
-      const score = data.fitAssessment!.scores[skill.key] ?? 0;
+      const score = skill.score;
       const perf = getBluePerformanceLevel(score);
 
       applySmallText(pdf);
@@ -3294,9 +3329,11 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
       pdf.text(skill.displayName, labelX, yPos + 3, { maxWidth: 62 });
 
       pdf.setFillColor(229, 231, 235);
-      pdf.rect(barX, yPos, barMaxWidth, 4, 'F');
+      pdf.roundedRect(barX, yPos, barMaxWidth, 4, 1, 1, 'F');
       pdf.setFillColor(59, 130, 246);
-      pdf.rect(barX, yPos, (score / 100) * barMaxWidth, 4, 'F');
+      if (score > 0) {
+        pdf.roundedRect(barX, yPos, (score / 100) * barMaxWidth, 4, 1, 1, 'F');
+      }
 
       pdf.setFontSize(8);
       pdf.setFont('helvetica', 'bold');
@@ -3322,10 +3359,17 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
 
     yPos = addSectionHeader(pdf, 'AI READINESS ASSESSMENT', yPos, pageWidth);
 
+    const aiDescText = 'Evaluates preparedness for AI-augmented work across technical fluency, problem-solving, and human-AI collaboration.';
+    const aiDescLines = pdf.splitTextToSize(aiDescText, pageWidth - 48);
+    const aiDescBoxH = 8 + (aiDescLines.length * 4);
+    pdf.setFillColor(240, 249, 255);
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, aiDescBoxH, 2, 2, 'F');
     applySmallText(pdf);
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('Evaluates preparedness for AI-augmented work across technical fluency, problem-solving, and human-AI collaboration.', 20, yPos);
-    yPos += 6;
+    pdf.setTextColor(71, 85, 105);
+    aiDescLines.forEach((line: string, i: number) => {
+      pdf.text(line, 24, yPos + 3 + (i * 4));
+    });
+    yPos += aiDescBoxH + 3;
 
     if (data.aiChartImage) {
       const chartWidth = 85;
@@ -3346,9 +3390,13 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
     const aiLabelX = 20;
     const aiScoreX = aiBarX + aiBarMaxWidth + 5;
 
-    AI_READINESS_SKILLS.forEach(skill => {
+    const sortedAiSkills = [...AI_READINESS_SKILLS]
+      .map(skill => ({ ...skill, score: getAIReadinessScore(data.aiReadinessAssessment!.scores, skill.displayName) }))
+      .sort((a, b) => b.score - a.score);
+
+    sortedAiSkills.forEach(skill => {
       yPos = ensurePageSpace(pdf, yPos, 10, pageHeight, pageWidth);
-      const score = getAIReadinessScore(data.aiReadinessAssessment!.scores, skill.displayName);
+      const score = skill.score;
       const perf = getBluePerformanceLevel(score);
 
       applySmallText(pdf);
@@ -3356,9 +3404,11 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
       pdf.text(skill.displayName, aiLabelX, yPos + 3, { maxWidth: 62 });
 
       pdf.setFillColor(229, 231, 235);
-      pdf.rect(aiBarX, yPos, aiBarMaxWidth, 4, 'F');
+      pdf.roundedRect(aiBarX, yPos, aiBarMaxWidth, 4, 1, 1, 'F');
       pdf.setFillColor(59, 130, 246);
-      pdf.rect(aiBarX, yPos, (score / 100) * aiBarMaxWidth, 4, 'F');
+      if (score > 0) {
+        pdf.roundedRect(aiBarX, yPos, (score / 100) * aiBarMaxWidth, 4, 1, 1, 'F');
+      }
 
       pdf.setFontSize(8);
       pdf.setFont('helvetica', 'bold');
@@ -3384,12 +3434,17 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
 
     yPos = addSectionHeader(pdf, 'PROMPT ARCHITECTURE ASSESSMENT', yPos, pageWidth);
 
-    applySmallText(pdf);
-    pdf.setTextColor(107, 114, 128);
     const promptDesc = 'Evaluates ability to craft effective AI prompts across 7 progressive difficulty levels, measuring clarity, structure, context relevance, creativity, and iterative improvement skills.';
-    const splitPromptDesc = pdf.splitTextToSize(promptDesc, pageWidth - 40);
-    pdf.text(splitPromptDesc, 20, yPos);
-    yPos += splitPromptDesc.length * 4 + 4;
+    const splitPromptDesc = pdf.splitTextToSize(promptDesc, pageWidth - 48);
+    const promptDescBoxH = 8 + (splitPromptDesc.length * 4);
+    pdf.setFillColor(240, 249, 255);
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, promptDescBoxH, 2, 2, 'F');
+    applySmallText(pdf);
+    pdf.setTextColor(71, 85, 105);
+    splitPromptDesc.forEach((line: string, i: number) => {
+      pdf.text(line, 24, yPos + 3 + (i * 4));
+    });
+    yPos += promptDescBoxH + 3;
 
     const promptScore = data.promptArchitectureAssessment.totalScore;
     const promptPerf = getBluePerformanceLevel(promptScore);
@@ -3466,8 +3521,8 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
     pdf.text('Level Score Bars', 20, yPos);
     yPos += 4;
 
-    const promptBarMaxWidth = 80;
-    const promptBarX = 45;
+    const promptBarMaxWidth = 90;
+    const promptBarX = 40;
 
     for (let level = 1; level <= 7; level++) {
       const levelData = data.promptArchitectureAssessment.levels.find(l => l.level === level);
@@ -3475,28 +3530,30 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
       applySmallText(pdf);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(55, 65, 81);
-      pdf.text(`L${level}`, 20, yPos + 3);
+      pdf.text(`Level ${level}`, 20, yPos + 3);
 
       if (levelData && !levelData.isMissing) {
         const score = levelData.totalScore;
         pdf.setFillColor(229, 231, 235);
-        pdf.rect(promptBarX, yPos, promptBarMaxWidth, 4, 'F');
+        pdf.roundedRect(promptBarX, yPos, promptBarMaxWidth, 5, 1, 1, 'F');
         pdf.setFillColor(59, 130, 246);
-        pdf.rect(promptBarX, yPos, (score / 100) * promptBarMaxWidth, 4, 'F');
+        if (score > 0) {
+          pdf.roundedRect(promptBarX, yPos, (score / 100) * promptBarMaxWidth, 5, 1, 1, 'F');
+        }
 
         pdf.setFontSize(8);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(17, 24, 39);
-        pdf.text(`${score}`, promptBarX + promptBarMaxWidth + 5, yPos + 3);
+        pdf.text(`${score}`, promptBarX + promptBarMaxWidth + 5, yPos + 3.5);
       } else {
         pdf.setFillColor(229, 231, 235);
-        pdf.rect(promptBarX, yPos, promptBarMaxWidth, 4, 'F');
+        pdf.roundedRect(promptBarX, yPos, promptBarMaxWidth, 5, 1, 1, 'F');
         pdf.setTextColor(150, 150, 150);
         pdf.setFontSize(8);
-        pdf.text('N/A', promptBarX + promptBarMaxWidth + 5, yPos + 3);
+        pdf.text('N/A', promptBarX + promptBarMaxWidth + 5, yPos + 3.5);
       }
 
-      yPos += 7;
+      yPos += 8;
     }
 
     yPos += 5;
@@ -3508,10 +3565,17 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
 
     yPos = addSectionHeader(pdf, 'AIQ ASSESSMENT', yPos, pageWidth);
 
+    const aiqDescText = 'Measures understanding of AI ethics, bias awareness, fairness, and responsible AI governance.';
+    const aiqDescLines = pdf.splitTextToSize(aiqDescText, pageWidth - 48);
+    const aiqDescBoxH = 8 + (aiqDescLines.length * 4);
+    pdf.setFillColor(240, 249, 255);
+    pdf.roundedRect(20, yPos - 2, pageWidth - 40, aiqDescBoxH, 2, 2, 'F');
     applySmallText(pdf);
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('Measures understanding of AI ethics, bias awareness, fairness, and responsible AI governance.', 20, yPos);
-    yPos += 6;
+    pdf.setTextColor(71, 85, 105);
+    aiqDescLines.forEach((line: string, i: number) => {
+      pdf.text(line, 24, yPos + 3 + (i * 4));
+    });
+    yPos += aiqDescBoxH + 3;
 
     const aiqScore = data.aiqAssessment.totalScore;
     const aiqBand = getAIQBandInterpretation(aiqScore);
