@@ -1007,7 +1007,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
             <CardHeader className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-t-lg">
               <CardTitle className="flex items-center gap-2 text-white">
                 <ShieldAlert className="h-5 w-5" />
-                AIQ (Ethical AI) Role Fit Analysis
+                AIQ Role Fit Analysis
               </CardTitle>
               <p className="text-sm text-white/80">
                 AI-powered analysis of how the candidate's ethical AI stance aligns with role governance requirements
