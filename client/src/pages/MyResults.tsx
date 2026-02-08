@@ -8,7 +8,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, ArrowUp, Download, CheckCircle2, FileText, TrendingUp, Brain, Shield, Zap, Star, Target, Users, MessageSquare, Rocket, Mail, Send } from "lucide-react";
-import { exportEnhancedCandidatePDF, captureRadarChart } from "@/lib/enhancedPdfExport";
 import { useToast } from "@/hooks/use-toast";
 import { formatAssessmentName } from "@/lib/assessmentHelpers";
 import { ResultsPaymentGate } from "@/components/ResultsPaymentGate";
@@ -265,7 +264,7 @@ export default function MyResults() {
   const totalAssessments = completedResults.length;
 
   const handleDownloadPDF = async () => {
-    if (!user || !completedResults) {
+    if (!user || !completedResults || completedResults.length === 0) {
       toast({
         title: "Error",
         description: "Unable to generate PDF. Please try again.",
@@ -277,26 +276,73 @@ export default function MyResults() {
     try {
       toast({
         title: "Generating PDF",
-        description: "Please wait while we capture your report...",
+        description: "Please wait while we generate your report...",
       });
 
-      const { exportResultsPDF } = await import('@/lib/pdfScreenCapture');
-      const candidateName = user.firstName && user.lastName 
-        ? `${user.firstName}_${user.lastName}` 
-        : user.email.split('@')[0];
-      const filename = `${candidateName}_Assessment_Report.pdf`;
+      const { exportIndividualReportPDF } = await import('@/lib/pdfExport');
 
-      await exportResultsPDF({
-        elementId: 'my-results-content',
-        filename,
+      const fitResult = completedResults.find((r: any) => r.assessmentType === 'fit');
+      const aiResult = completedResults.find((r: any) => r.assessmentType === 'ai_readiness');
+      const promptResult = completedResults.find((r: any) => r.assessmentType === 'prompt_architecture');
+      const aiqResult = completedResults.find((r: any) => r.assessmentType === 'aiq');
+
+      let promptLevels: any[] = [];
+      if (promptResult?.id) {
+        try {
+          const res = await fetch(`/api/prompt-evaluations/${promptResult.id}`, { credentials: 'include' });
+          if (res.ok) {
+            const evals = await res.json();
+            promptLevels = (evals || [])
+              .sort((a: any, b: any) => a.level - b.level)
+              .map((ev: any) => ({
+                level: ev.level,
+                scores: ev.evaluationScores || { clarity: 0, structure: 0, contextRelevance: 0, creativity: 0, iterativeImprovement: 0 },
+                totalScore: ev.totalScore || 0,
+                feedback: ev.feedback || '',
+                isMissing: ev.status === 'pending',
+              }));
+          }
+        } catch (err) {
+          console.warn('Could not fetch prompt evaluations for PDF:', err);
+        }
+      }
+
+      await exportIndividualReportPDF({
+        candidate: {
+          firstName: user.firstName || undefined,
+          lastName: user.lastName || undefined,
+          email: user.email,
+        },
+        fitAssessment: fitResult?.scores
+          ? { scores: fitResult.scores, completedAt: fitResult.completedAt }
+          : null,
+        aiReadinessAssessment: aiResult?.scores
+          ? { scores: aiResult.scores, completedAt: aiResult.completedAt }
+          : null,
+        promptArchitectureAssessment: promptResult
+          ? {
+              levels: promptLevels,
+              totalScore: promptResult.totalScore || 0,
+              percentile: promptResult.percentile,
+              completedAt: promptResult.completedAt,
+            }
+          : null,
+        aiqAssessment: aiqResult
+          ? {
+              totalScore: aiqResult.totalScore ?? aiqResult.scores?.['Algorithmic Integrity'] ?? 0,
+              scores: aiqResult.scores,
+              completedAt: aiqResult.completedAt,
+            }
+          : null,
+        aiInsights: null,
       });
 
       toast({
         title: "Success",
         description: "Your comprehensive report has been downloaded successfully.",
       });
-    } catch (error) {
-      console.error("Error generating PDF:", error);
+    } catch (error: any) {
+      console.error("Error generating PDF:", error?.message || error);
       toast({
         title: "Error",
         description: "Failed to generate PDF. Please try again.",
