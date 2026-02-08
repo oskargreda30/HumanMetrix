@@ -99,7 +99,7 @@ export default function UnlockResults() {
             clientSecret: result.clientSecret,
             currency: result.currency || 'GBP',
             airwallexEnv: result.airwallexEnv,
-            successUrl: `${window.location.origin}/b2b-payment-callback?success=true&provider=airwallex`,
+            successUrl: `${window.location.origin}/b2b-payment-callback?success=true&provider=airwallex&intent_id=${result.intentId}`,
             failUrl: `${window.location.origin}/unlock-results?email=${encodeURIComponent(email || '')}&invite=${inviteToken || ''}`,
           });
           return;

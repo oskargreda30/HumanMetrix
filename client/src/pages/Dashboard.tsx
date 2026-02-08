@@ -394,7 +394,7 @@ export default function Dashboard() {
             clientSecret: data.clientSecret,
             currency: data.currency || 'GBP',
             airwallexEnv: data.airwallexEnv,
-            successUrl: `${window.location.origin}/dashboard?partner_purchase=success&provider=airwallex`,
+            successUrl: `${window.location.origin}/dashboard?partner_purchase=success&provider=airwallex&intent_id=${data.intentId}`,
             failUrl: `${window.location.origin}/dashboard?partner_purchase=cancelled`,
           });
           return;

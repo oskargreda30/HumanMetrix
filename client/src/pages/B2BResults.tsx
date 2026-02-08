@@ -104,7 +104,7 @@ export default function B2BResults() {
             clientSecret: result.clientSecret,
             currency: result.currency || 'GBP',
             airwallexEnv: result.airwallexEnv,
-            successUrl: `${window.location.origin}/b2b-payment-callback?provider=airwallex&b2b_session=${sessionId}`,
+            successUrl: `${window.location.origin}/b2b-payment-callback?provider=airwallex&b2b_session=${sessionId}&intent_id=${result.intentId}`,
             failUrl: `${window.location.origin}/b2b-results?session=${sessionId}&country=${countryCode}`,
           });
           return;

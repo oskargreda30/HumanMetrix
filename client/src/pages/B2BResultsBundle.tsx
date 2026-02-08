@@ -94,7 +94,7 @@ export default function B2BResultsBundle() {
             clientSecret: result.clientSecret,
             currency: result.currency || 'GBP',
             airwallexEnv: result.airwallexEnv,
-            successUrl: `${window.location.origin}/b2b-payment-callback?provider=airwallex&bundle=true&email=${encodeURIComponent(email || '')}&partner=${partnerId || ''}`,
+            successUrl: `${window.location.origin}/b2b-payment-callback?provider=airwallex&bundle=true&email=${encodeURIComponent(email || '')}&partner=${partnerId || ''}&intent_id=${result.intentId}`,
             failUrl: `${window.location.origin}/b2b-results-bundle?email=${encodeURIComponent(email || '')}&partner=${partnerId || ''}&country=${countryCode || 'GB'}`,
           });
           return;
