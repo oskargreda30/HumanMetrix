@@ -4044,6 +4044,14 @@ interface MultiCandidateComparisonData {
   promptArchitectureAnalysis?: string | null;
   aiqAnalysis?: string | null;
   criticalSkillNames?: string[];
+  aiInsights?: string | null;
+  recommendation?: {
+    recommendedCandidate: string;
+    fitScore: number;
+    fitTier: string;
+    reasons: string[];
+    criticalSkillAdvantages: string[];
+  } | null;
 }
 
 export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComparisonData) {
@@ -5476,6 +5484,204 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   if (data.candidateEntries.length > 0) {
     yPos += candidateCardHeight + 10;
   }
+
+  // ========== AI-POWERED STRATEGIC INSIGHTS ==========
+  if (data.aiInsights) {
+    pdf.addPage();
+    addBackgroundPattern(pdf, pageWidth, pageHeight);
+    addHeader(pdf, pageWidth);
+    yPos = 32;
+
+    yPos = addSectionHeader(pdf, 'AI-POWERED STRATEGIC INSIGHTS', yPos, pageWidth);
+    yPos += 2;
+
+    pdf.setFillColor(240, 249, 255);
+    pdf.roundedRect(20, yPos, pageWidth - 40, 12, 2, 2, 'F');
+    applySmallText(pdf);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('AI-generated analysis and hiring recommendations based on the comparison data', 25, yPos + 5);
+    yPos += 16;
+
+    const insightLines = data.aiInsights.split('\n');
+    const stripEmoji = (text: string) => text.replace(/[^\x00-\x7F\u00C0-\u024F\u0370-\u03FF\u0400-\u04FF]/g, '').replace(/\s{2,}/g, ' ').trim();
+
+    insightLines.forEach((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        yPos += 3;
+        return;
+      }
+
+      yPos = ensurePageSpace(pdf, yPos, 12, pageHeight, pageWidth);
+
+      const h2Match = trimmed.match(/^#{1,2}\s+(.+)/);
+      if (h2Match) {
+        yPos += 3;
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(17, 24, 39);
+        pdf.text(stripEmoji(h2Match[1]), 22, yPos);
+        yPos += 6;
+        return;
+      }
+
+      const h3Match = trimmed.match(/^###\s+(.+)/);
+      if (h3Match) {
+        yPos += 2;
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(55, 65, 81);
+        pdf.text(stripEmoji(h3Match[1]), 22, yPos);
+        yPos += 5;
+        return;
+      }
+
+      const boldHeadingMatch = trimmed.match(/^\*\*(.+?)\*\*\s*$/);
+      if (boldHeadingMatch) {
+        yPos += 2;
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(55, 65, 81);
+        pdf.text(stripEmoji(boldHeadingMatch[1]), 22, yPos);
+        yPos += 5;
+        return;
+      }
+
+      const bulletMatch = trimmed.match(/^[-*]\s+(.+)/) || trimmed.match(/^\d+\.\s+(.+)/);
+      if (bulletMatch) {
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(75, 85, 99);
+        let bulletText = stripEmoji(bulletMatch[1]).replace(/\*\*(.+?)\*\*/g, '$1');
+        const bulletLines = pdf.splitTextToSize(bulletText, pageWidth - 60);
+        pdf.setTextColor(59, 130, 246);
+        pdf.text('\u2022', 25, yPos);
+        pdf.setTextColor(75, 85, 99);
+        bulletLines.forEach((bl: string, idx: number) => {
+          yPos = ensurePageSpace(pdf, yPos, 5, pageHeight, pageWidth);
+          pdf.text(bl, 30, yPos);
+          if (idx < bulletLines.length - 1) yPos += 4;
+        });
+        yPos += 5;
+        return;
+      }
+
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      let paraText = stripEmoji(trimmed).replace(/\*\*(.+?)\*\*/g, '$1');
+      const paraLines = pdf.splitTextToSize(paraText, pageWidth - 45);
+      paraLines.forEach((pl: string, idx: number) => {
+        yPos = ensurePageSpace(pdf, yPos, 5, pageHeight, pageWidth);
+        pdf.text(pl, 22, yPos);
+        if (idx < paraLines.length - 1) yPos += 4;
+      });
+      yPos += 5;
+    });
+  }
+
+  // ========== RECOMMENDED NEXT STEPS & ADDITIONAL SERVICES ==========
+  yPos = ensurePageSpace(pdf, yPos, 120, pageHeight, pageWidth);
+  if (yPos < 40) {
+    yPos = 32;
+  }
+  yPos += 5;
+
+  yPos = addSectionHeader(pdf, 'RECOMMENDED NEXT STEPS', yPos, pageWidth);
+  yPos += 3;
+
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'normal');
+
+  const recommendedName = data.recommendation?.recommendedCandidate || data.summaryInsights.topPerformer?.userName || 'the top candidate';
+  const multiNextSteps = [
+    `Conduct final-round interviews with ${recommendedName} focusing on team dynamics and cultural alignment`,
+    'Perform reference checks emphasizing leadership and collaboration competencies',
+    'Prepare competitive offer package based on candidate expectations',
+    'Design 90-day onboarding plan targeting identified development areas',
+  ];
+
+  multiNextSteps.forEach((step, index) => {
+    yPos = ensurePageSpace(pdf, yPos, 14, pageHeight, pageWidth);
+
+    pdf.setFillColor(219, 234, 254);
+    pdf.roundedRect(22, yPos - 3, 6, 6, 3, 3, 'F');
+    pdf.setFontSize(8);
+    pdf.setTextColor(37, 99, 235);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`${index + 1}`, 25, yPos + 1, { align: 'center' });
+
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    const stepLines = pdf.splitTextToSize(step, pageWidth - 60);
+    stepLines.forEach((line: string, idx: number) => {
+      pdf.text(line, 32, yPos + (idx * 4));
+    });
+    yPos += (stepLines.length * 4) + 5;
+  });
+
+  yPos += 8;
+
+  yPos = ensurePageSpace(pdf, yPos, 80, pageHeight, pageWidth);
+  if (yPos < 40) {
+    yPos = 32;
+  }
+  yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);
+  yPos += 3;
+
+  pdf.setFontSize(8);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('Contact our team to unlock these premium insights for your hiring decisions:', 22, yPos);
+  yPos += 8;
+
+  const additionalServices = [
+    { name: 'Suggested Interview Questions', description: 'AI-generated questions based on candidates\' assessment results and identified skill gaps' },
+    { name: 'Team Composition Fit', description: 'Analysis of how candidates would complement your existing team dynamics' },
+    { name: 'Time to Productivity Estimate', description: 'Projected onboarding timeline based on skill readiness and learning agility' },
+    { name: 'Hiring Risk Analysis', description: 'Comprehensive risk assessment highlighting potential challenges and mitigations' },
+    { name: 'Development Investment Cost', description: 'Estimated training and development investment to close identified skill gaps' },
+  ];
+
+  additionalServices.forEach((service, index) => {
+    yPos = ensurePageSpace(pdf, yPos, 18, pageHeight, pageWidth);
+
+    pdf.setFillColor(59, 130, 246);
+    pdf.roundedRect(22, yPos - 2, 6, 6, 1, 1, 'F');
+    pdf.setFontSize(7);
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`${index + 1}`, 25, yPos + 2, { align: 'center' });
+
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text(service.name, 32, yPos + 2);
+
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(107, 114, 128);
+    const descLines = pdf.splitTextToSize(service.description, pageWidth - 58);
+    descLines.forEach((line: string, idx: number) => {
+      pdf.text(line, 32, yPos + 7 + (idx * 4));
+    });
+
+    yPos += 7 + (descLines.length * 4) + 4;
+  });
+
+  yPos += 6;
+
+  yPos = ensurePageSpace(pdf, yPos, 20, pageHeight, pageWidth);
+  pdf.setFillColor(239, 246, 255);
+  pdf.setDrawColor(59, 130, 246);
+  pdf.roundedRect(20, yPos, pageWidth - 40, 14, 2, 2, 'FD');
+  pdf.setFontSize(9);
+  pdf.setTextColor(30, 58, 138);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Contact the HumanMetrix team to learn more about these services', 25, yPos + 5);
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('hello@humanmetrix.co.uk', 25, yPos + 10);
 
   // ========== SKILLS LEGEND PAGE ==========
   const legendStartPage = pdf.getNumberOfPages() + 1;

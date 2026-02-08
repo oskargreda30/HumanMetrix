@@ -561,6 +561,8 @@ export default function PartnerMultiCandidateRoleFitTab() {
         summaryInsights: comparison.summaryInsights,
         barChartImage,
         criticalSkillNames: multiCriticalSkills.map(s => s.skillName),
+        aiInsights: comparison.aiInsights || null,
+        recommendation: comparison.summaryInsights?.recommendation || null,
       });
       
       toast({

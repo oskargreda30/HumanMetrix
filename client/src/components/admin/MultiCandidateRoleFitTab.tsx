@@ -188,6 +188,7 @@ type MultiCandidateComparison = {
       criticality: string;
     } | null;
   };
+  aiInsights?: string | null;
   createdAt: string;
 };
 
@@ -522,6 +523,8 @@ export default function MultiCandidateRoleFitTab() {
         promptArchitectureAnalysis: promptAnalysis,
         aiqAnalysis: aiqAnalysis,
         criticalSkillNames: multiCriticalSkills.map(s => s.skillName),
+        aiInsights: comparison.aiInsights || null,
+        recommendation: comparison.summaryInsights?.recommendation || null,
       });
       
       toast({
