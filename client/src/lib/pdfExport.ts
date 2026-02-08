@@ -5,6 +5,7 @@ import { HUMANMETRIX_LOGO_BASE64 } from './pdfAssets';
 import { applyBodyText, applySubheading, applyHeading, applySmallText, applyLabelText, PDF_SPACING, savePdfMobile } from './pdfStyles';
 import { getAIQBandInterpretation } from '@/data/aiq-questions';
 import { PROMPT_ARCHITECTURE_DIMENSIONS, AIQ_BANDS } from '@/components/SkillsLegend';
+import { getStrengthDescription, getDevelopmentDescription } from '@shared/skillNames';
 
 // Mapping from short/legacy skill names to canonical names used in candidate data
 const SKILL_NAME_MAPPING: Record<string, string> = {
@@ -2326,32 +2327,31 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     const boxX = isLeftCol ? 20 : 20 + itemBoxWidth + itemBoxGap;
     const currentY = isLeftCol ? strengthLeftY : strengthRightY;
     
-    // Handle both string and object formats
     const isObject = typeof strength === 'object' && strength !== null;
-    const summaryText = isObject ? strength.summary : String(strength);
-    const descriptionText = isObject ? strength.description : null;
-    const fullText = descriptionText ? summaryText + ' - ' + descriptionText : summaryText;
+    const skillName = isObject ? (strength.skill || strength.summary) : String(strength);
+    const descriptionText = isObject && strength.description ? strength.description : getStrengthDescription(skillName);
     
-    // Calculate box height based on text content - smaller font and tighter spacing
-    pdf.setFontSize(7);
-    const wrappedLines = pdf.splitTextToSize(fullText, itemBoxWidth - 6);
-    const boxHeight = Math.max(12, wrappedLines.length * 3 + 4);
+    pdf.setFontSize(6.5);
+    const descLines = pdf.splitTextToSize(descriptionText, itemBoxWidth - 6);
+    const boxHeight = Math.max(14, 5 + descLines.length * 2.8 + 3);
     
-    // Draw individual box with subtle green styling
-    pdf.setFillColor(250, 255, 250); // Very light green
-    pdf.setDrawColor(134, 197, 134); // Subtle green border
+    pdf.setFillColor(250, 255, 250);
+    pdf.setDrawColor(134, 197, 134);
     pdf.setLineWidth(0.3);
     pdf.roundedRect(boxX, currentY, itemBoxWidth, boxHeight, 2, 2, 'FD');
     
-    // Strength description text
-    pdf.setFontSize(7);
+    pdf.setFontSize(7.5);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(34, 84, 52);
+    pdf.text(skillName, boxX + 3, currentY + 4.5);
+    
+    pdf.setFontSize(6.5);
     pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(34, 84, 52); // Dark green text
-    wrappedLines.forEach((line: string, lineIndex: number) => {
-      pdf.text(line, boxX + 3, currentY + 4 + (lineIndex * 3));
+    pdf.setTextColor(75, 110, 80);
+    descLines.forEach((line: string, lineIndex: number) => {
+      pdf.text(line, boxX + 3, currentY + 8 + (lineIndex * 2.8));
     });
     
-    // Update column Y position - reduced gap between boxes
     if (isLeftCol) {
       strengthLeftY = currentY + boxHeight + 2;
     } else {
@@ -2382,32 +2382,31 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     const boxX = isLeftCol ? 20 : 20 + itemBoxWidth + itemBoxGap;
     const currentY = isLeftCol ? gapLeftY : gapRightY;
     
-    // Handle both string and object formats
     const isObject = typeof gap === 'object' && gap !== null;
-    const summaryText = isObject ? gap.summary : String(gap);
-    const descriptionText = isObject ? gap.description : null;
-    const fullText = descriptionText ? summaryText + ' - ' + descriptionText : summaryText;
+    const skillName = isObject ? (gap.skill || gap.summary) : String(gap);
+    const descriptionText = isObject && gap.description ? gap.description : getDevelopmentDescription(skillName);
     
-    // Calculate box height based on text content - smaller font and tighter spacing
-    pdf.setFontSize(7);
-    const wrappedLines = pdf.splitTextToSize(fullText, itemBoxWidth - 6);
-    const boxHeight = Math.max(12, wrappedLines.length * 3 + 4);
+    pdf.setFontSize(6.5);
+    const descLines = pdf.splitTextToSize(descriptionText, itemBoxWidth - 6);
+    const boxHeight = Math.max(14, 5 + descLines.length * 2.8 + 3);
     
-    // Draw individual box with subtle amber styling
-    pdf.setFillColor(255, 253, 245); // Very light amber
-    pdf.setDrawColor(210, 180, 100); // Subtle amber border
+    pdf.setFillColor(255, 253, 245);
+    pdf.setDrawColor(210, 180, 100);
     pdf.setLineWidth(0.3);
     pdf.roundedRect(boxX, currentY, itemBoxWidth, boxHeight, 2, 2, 'FD');
     
-    // Gap description text
-    pdf.setFontSize(7);
+    pdf.setFontSize(7.5);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(130, 90, 20);
+    pdf.text(skillName, boxX + 3, currentY + 4.5);
+    
+    pdf.setFontSize(6.5);
     pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(130, 90, 20); // Dark amber text
-    wrappedLines.forEach((line: string, lineIndex: number) => {
-      pdf.text(line, boxX + 3, currentY + 4 + (lineIndex * 3));
+    pdf.setTextColor(150, 115, 45);
+    descLines.forEach((line: string, lineIndex: number) => {
+      pdf.text(line, boxX + 3, currentY + 8 + (lineIndex * 2.8));
     });
     
-    // Update column Y position - reduced gap between boxes
     if (isLeftCol) {
       gapLeftY = currentY + boxHeight + 2;
     } else {
