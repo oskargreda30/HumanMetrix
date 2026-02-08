@@ -15763,9 +15763,55 @@ Use the candidates' actual names. Be specific and actionable.`;
       ];
       
       const scoredAlignments = allAlignments.filter(a => a.candidateScore !== null);
-      const overallFit = scoredAlignments.length > 0
-        ? Math.round(scoredAlignments.reduce((sum, a) => sum + (a.candidateScore || 0), 0) / scoredAlignments.length)
-        : null;
+      
+      // Weighted scoring with critical gap penalty (matches admin + multi-candidate logic)
+      let overallFit: number | null = null;
+      if (scoredAlignments.length > 0) {
+        const getSkillWeightLocal = (crit: string): number => {
+          if (crit === 'critical') return 2.0;
+          return 1.0;
+        };
+        let weightedTotal = 0;
+        let weightSum = 0;
+        let criticalGaps = 0;
+        let totalCriticalSkills = 0;
+        let assessedCriticalSkills = 0;
+        
+        allAlignments.forEach(skill => {
+          const isCritical = skill.criticality === 'critical';
+          if (isCritical) totalCriticalSkills++;
+          
+          if (skill.dataAvailable && skill.candidateScore !== null) {
+            const weight = getSkillWeightLocal(skill.criticality || 'standard');
+            if (isCritical) assessedCriticalSkills++;
+            
+            const matchPercent = skill.candidateScore >= skill.requiredScore
+              ? 100
+              : (skill.candidateScore / skill.requiredScore) * 100;
+            
+            weightedTotal += matchPercent * weight;
+            weightSum += weight;
+            
+            if (isCritical && skill.candidateScore < skill.requiredScore) {
+              criticalGaps++;
+            }
+          }
+        });
+        
+        overallFit = weightSum > 0 ? weightedTotal / weightSum : 0;
+        
+        // Unassessed critical skills count as gaps too
+        const unassessedCriticalSkills = totalCriticalSkills - assessedCriticalSkills;
+        const totalCriticalGaps = criticalGaps + unassessedCriticalSkills;
+        
+        if (totalCriticalGaps > 0 && totalCriticalSkills > 0) {
+          const criticalPenalty = totalCriticalGaps * 0.12;
+          overallFit = overallFit * (1 - Math.min(criticalPenalty, 0.5));
+          overallFit = Math.min(overallFit, 74);
+        }
+        
+        overallFit = ensureNoMultipleOf5(Math.round(overallFit));
+      }
 
       // Determine strengths and gaps
       const strengths = scoredAlignments
@@ -16983,6 +17029,13 @@ Return valid JSON with only the requested fields.`;
         let overallFit = 0;
         let criticalGapsCount = 0;
         let assessedCriticalCount = 0;
+        let totalCriticalCount = 0;
+        
+        // Count ALL critical skills (assessed or not)
+        skillScores.forEach(skill => {
+          if (skill.criticality === 'critical') totalCriticalCount++;
+        });
+        
         if (assessedSkills.length > 0) {
           let totalWeight = 0;
           let weightedSum = 0;
@@ -17002,9 +17055,12 @@ Return valid JSON with only the requested fields.`;
         }
 
         // Apply critical gap penalty and hard cap (matches single-candidate logic)
-        // Any critical skill gap caps the score at 74% max
-        if (criticalGapsCount > 0 && assessedCriticalCount > 0) {
-          const criticalPenalty = criticalGapsCount * 0.12;
+        // Unassessed critical skills count as gaps too
+        const unassessedCritical = totalCriticalCount - assessedCriticalCount;
+        const totalCriticalGaps = criticalGapsCount + unassessedCritical;
+        
+        if (totalCriticalGaps > 0 && totalCriticalCount > 0) {
+          const criticalPenalty = totalCriticalGaps * 0.12;
           overallFit = Math.round(overallFit * (1 - Math.min(criticalPenalty, 0.5)));
           overallFit = Math.min(overallFit, 74);
         }
