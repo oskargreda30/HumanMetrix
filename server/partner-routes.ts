@@ -3278,7 +3278,7 @@ export function registerPartnerRoutes(app: Express) {
       const baseUrl = getBaseUrl(req);
       const sessionIds = isBundle ? unpaidSessions.map(s => s.id) : [unpaidSessions[0].id];
       
-      const { primary, fallback } = getPaymentProviders();
+      const { primary, fallback } = getPaymentProviders(partner?.paymentProvider);
 
       const airwallexFn = async (): Promise<PaymentCheckoutResult> => {
         const airwallexAmount = formatAmountForAirwallex(totalPrice);
@@ -4107,7 +4107,7 @@ export function registerPartnerRoutes(app: Express) {
       // Get base URL
       const baseUrl = getBaseUrl(req);
       
-      const { primary, fallback } = getPaymentProviders();
+      const { primary, fallback } = getPaymentProviders(partner?.paymentProvider);
 
       const airwallexFn = async (): Promise<PaymentCheckoutResult> => {
         const airwallexAmount = formatAmountForAirwallex(stripeAmount);
@@ -5106,7 +5106,7 @@ export function registerPartnerRoutes(app: Express) {
       // Use unique assessment count for description
       const uniqueAssessmentCount = new Set(filteredSessions.map((s: any) => normalizeAssessmentId(s.assessmentType))).size;
       
-      const { primary, fallback: fallbackProvider } = getPaymentProviders();
+      const { primary, fallback: fallbackProvider } = getPaymentProviders(partnerAccount?.paymentProvider);
 
       const airwallexFn = async (): Promise<PaymentCheckoutResult> => {
         const airwallexAmount = formatAmountForAirwallex(stripeAmount);

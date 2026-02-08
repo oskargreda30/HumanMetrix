@@ -18180,7 +18180,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       const validPaymentProviders = ['stripe', 'airwallex'];
       const selectedPaymentProvider = paymentProvider && validPaymentProviders.includes(paymentProvider)
         ? paymentProvider
-        : 'stripe';
+        : 'airwallex';
       
       const partner = await storage.createPartnerAccount({
         name,

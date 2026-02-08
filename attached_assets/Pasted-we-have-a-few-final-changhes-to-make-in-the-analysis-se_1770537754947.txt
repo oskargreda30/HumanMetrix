@@ -1,0 +1,29 @@
+we have a few final changhes to make in the analysis section, partner dashboard to teh way we show results: 
+
+On the Individual Candidate Report: 
+
+1. can you add some spaces betweeen the sections on the web view, like you have for the other reports, they look a little squished. you actually have correct spacing between the enterprice services and skill legend sections. There must be same sapcing betweeen the skill legend and the button below. 
+2. Profile Insights and Recommendations - still shows 2 sections - should show 4? can you identify what it should show 
+
+On the Individual Candidate Report Export PDF: 
+1. chnage the resolution of the FIT radar chart so it does not look squished. 
+2. can you present the FIT Skills Breakdown and AI Readiness Skills Breakdown skill from best at the top to worst at the bottom. 
+3. can you leave a bit more spacing between the table in COMPLETION STATUS section and the below TRAIT PROFILE SUMMARY section. 
+4. within the prompt architecture assessment section you can leave the Level Score Bars - just make them a bit nicer, and you can remove the level breakdown. 
+5. You see how you have these little 'info' sections like 'Measures understanding of AI ethics, bias awareness, fairness, and responsible AI governance.' below titles of the sections? Make them a little bigger and put them in a nice box. 
+
+For the candiate comparison on the web view: 
+
+1. you have correctly reverted the AI Readiness Comparison and FIT Assessment Comparison COMNINED charts to radar charts but the individual ones, should remain as bar charts, and top scoring at the top, least scoring at the bottom. 
+2. You have added the tooltip buttons to see skills in the right hand side but once i click or hover over them they do not show anything. also they are too small to see - they need to be bigger with a banner to see skill definitions there 
+
+for the candiate comparison PDF Export: 
+
+1. within the candidate details, some email addresses are cut off, for example kinga.greda1@outlo...
+2. again these radar charts are individual so we have them as bar charts 
+3. Here again all of these sections like 'Evaluates ability to craft effective AI prompts across 7 progressive difficulty levels, measuring clarity, structure, context relevance,
+creativity, and iterative improvement skills.' which explain the section need to be in nice boxes, like for the individual candidate report PDF 
+4. more spacing between the skills in STRENGTHS & DEVELOPMENT AREAS area, some skills in the top strenghts are right on top of eachother. 
+5. there is a blank page you need to get rid of? 
+
+Do you understand everything?  tell me how you will approach this prompt. 

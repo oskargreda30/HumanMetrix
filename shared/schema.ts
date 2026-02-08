@@ -768,7 +768,7 @@ export const partnerAccounts = pgTable("partner_accounts", {
   // Tour completion tracking
   tourCompleted: boolean("tour_completed").notNull().default(false), // Dashboard tour has been completed
   // Payment provider configuration
-  paymentProvider: varchar("payment_provider").notNull().default("stripe"), // 'stripe' or 'airwallex'
+  paymentProvider: varchar("payment_provider").notNull().default("airwallex"), // 'stripe' or 'airwallex'
   // Notification preferences (JSON object with notification type keys and boolean values)
   // Partners can toggle these on/off in Settings > Notifications
   notificationPreferences: jsonb("notification_preferences").$type<{
@@ -1006,7 +1006,7 @@ export const partnerTestPackages = pgTable("partner_test_packages", {
   stripeCheckoutSessionId: varchar("stripe_checkout_session_id"),
   stripePaymentIntentId: varchar("stripe_payment_intent_id"),
   airwallexPaymentIntentId: varchar("airwallex_payment_intent_id"), // Airwallex payment intent ID
-  paymentProvider: varchar("payment_provider").default("stripe"), // 'stripe' or 'airwallex'
+  paymentProvider: varchar("payment_provider").default("airwallex"), // 'stripe' or 'airwallex'
   status: varchar("status").notNull().default("pending"), // pending, completed, failed, refunded
   purchasedAt: timestamp("purchased_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
