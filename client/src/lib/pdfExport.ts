@@ -669,44 +669,47 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   // Draw candidate details in boxes - compact horizontal layout
   const candidateBoxWidth = (pageWidth - 40 - (data.candidates.length - 1) * 5) / data.candidates.length;
-  const candidateBoxHeight = 25;
+  const candidateBoxHeight = 32;
   let candX = 20;
   
   data.candidates.forEach((candidate, index) => {
     const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
     
-    // Draw box with light background and colored outline only
     pdf.setFillColor(248, 250, 252);
     pdf.setDrawColor(candidateColor[0], candidateColor[1], candidateColor[2]);
     pdf.setLineWidth(0.5);
     pdf.roundedRect(candX, yPos, candidateBoxWidth, candidateBoxHeight, 2, 2, 'FD');
     
-    const textStartX = candX + 5;
+    const textStartX = candX + 4;
+    const maxTextWidth = candidateBoxWidth - 8;
     
-    // Name
-    pdf.setFontSize(9);
+    pdf.setFontSize(11);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
     const nameText = getCandidateName(candidate);
-    const truncatedName = nameText.length > 20 ? nameText.substring(0, 18) + '...' : nameText;
-    pdf.text(truncatedName, textStartX, yPos + 6);
+    const nameLines = pdf.splitTextToSize(nameText, maxTextWidth);
+    pdf.text(nameLines.slice(0, 1), textStartX, yPos + 7);
+    const nameEndY = yPos + 7 + (Math.min(nameLines.length, 1) - 1) * 4.5;
     
-    pdf.setFontSize(6.5);
+    pdf.setFontSize(8.5);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    const maxEmailWidth = candidateBoxWidth - 10;
-    const emailLines = pdf.splitTextToSize(candidate.user.email, maxEmailWidth);
-    emailLines.slice(0, 2).forEach((line: string, lineIdx: number) => {
-      pdf.text(line, textStartX, yPos + 11 + (lineIdx * 3.5));
+    const emailText = candidate.user.email || '';
+    const emailLines = pdf.splitTextToSize(emailText, maxTextWidth);
+    const emailToRender = emailLines.slice(0, 2);
+    let emailY = nameEndY + 5;
+    emailToRender.forEach((line: string) => {
+      pdf.text(line, textStartX, emailY);
+      emailY += 3.5;
     });
     
     const appliedDate = candidate.user.createdAt 
       ? new Date(candidate.user.createdAt).toLocaleDateString() 
       : 'N/A';
-    const emailOffset = emailLines.length > 1 ? 3.5 : 0;
-    pdf.text(`Applied: ${appliedDate}`, textStartX, yPos + 16 + emailOffset);
+    pdf.setFontSize(8);
+    pdf.text(`Applied: ${appliedDate}`, textStartX, emailY + 2);
     
-    candX += candidateBoxWidth + 5; // Add gap between boxes
+    candX += candidateBoxWidth + 5;
   });
   
   yPos += candidateBoxHeight + 5;
