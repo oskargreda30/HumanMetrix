@@ -8288,9 +8288,12 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
       let overallFit = weightSum > 0 ? weightedTotal / weightSum : 0;
       
       // Apply critical gap penalty and hard cap
-      // Any critical skill gap caps the score at 75% max (prevents misleading "Strong Fit" scores)
-      if (criticalGaps > 0 && assessedCriticalSkills > 0) {
-        const criticalPenalty = criticalGaps * 0.12;
+      // Unassessed critical skills count as gaps too (missing data = missing skill)
+      const unassessedCriticalSkills = totalCriticalSkills - assessedCriticalSkills;
+      const totalCriticalGaps = criticalGaps + unassessedCriticalSkills;
+      
+      if (totalCriticalGaps > 0 && totalCriticalSkills > 0) {
+        const criticalPenalty = totalCriticalGaps * 0.12;
         overallFit = overallFit * (1 - Math.min(criticalPenalty, 0.5));
         overallFit = Math.min(overallFit, 74);
       }
@@ -10012,9 +10015,12 @@ Return valid JSON with only the requested fields.`;
         let overallFit = weightSum > 0 ? weightedTotal / weightSum : 0;
         
         // Apply critical gap penalty and hard cap
-        // Any critical skill gap caps the score at 75% max (prevents misleading "Strong Fit" scores)
-        if (criticalGaps > 0 && assessedCriticalSkills > 0) {
-          const criticalPenalty = criticalGaps * 0.12;
+        // Unassessed critical skills count as gaps too (missing data = missing skill)
+        const unassessedCriticalSkills = totalCriticalSkills - assessedCriticalSkills;
+        const totalCriticalGaps = criticalGaps + unassessedCriticalSkills;
+        
+        if (totalCriticalGaps > 0 && totalCriticalSkills > 0) {
+          const criticalPenalty = totalCriticalGaps * 0.12;
           overallFit = overallFit * (1 - Math.min(criticalPenalty, 0.5));
           overallFit = Math.min(overallFit, 74);
         }
