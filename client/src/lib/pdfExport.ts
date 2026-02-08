@@ -4863,10 +4863,16 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       pdf.setFont('helvetica', 'italic');
       const descPreCalcLines = pdf.splitTextToSize(`Why it matters: ${description}`, cardW - 12);
       const descLineCount = Math.min(descPreCalcLines.length, 2);
-      const headerH = 13 + (descLineCount * 3.5) + 4 + 3 + 7;
+      const topPad = 4;
+      const badgeRowH = 9;
+      const descAreaH = descLineCount * 3.5 + 4;
+      const separatorH = 3;
+      const perfHeaderH = 7;
       const candidateAreaH = candidateList.length * barRowH;
-      const legendH = 10;
-      const totalCardH = headerH + candidateAreaH + legendH + 4;
+      const legendPad = 2;
+      const legendH = 8;
+      const bottomPad = 3;
+      const totalCardH = topPad + badgeRowH + descAreaH + separatorH + perfHeaderH + candidateAreaH + legendPad + legendH + bottomPad;
 
       yPos = ensurePageSpace(pdf, yPos, totalCardH + 5, pageHeight, pageWidth);
 
@@ -4875,7 +4881,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       pdf.setLineWidth(0.3);
       pdf.roundedRect(cardX, yPos, cardW, totalCardH, 2, 2, 'FD');
 
-      let innerY = yPos + 4;
+      let innerY = yPos + topPad;
 
       pdf.setFillColor(59, 130, 246);
       pdf.roundedRect(cardX + 4, innerY, 24, 5.5, 1, 1, 'F');
@@ -4940,8 +4946,8 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
 
       const nameColW = 42;
       const barStartX = cardX + nameColW + 4;
-      const scoreColW = 28;
-      const barEndX = cardX + cardW - scoreColW - 6;
+      const scoreColW = 34;
+      const barEndX = cardX + cardW - scoreColW;
       const barW = barEndX - barStartX;
 
       candidatesWithScores.forEach((cand) => {
@@ -5027,14 +5033,16 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
           pdf.setFontSize(7);
           pdf.setFont('helvetica', 'bold');
           pdf.setTextColor(55, 65, 81);
-          pdf.text(`${score}%`, iconX + 5, innerY + 4.5);
+          const scoreStr = `${score}%`;
+          pdf.text(scoreStr, iconX + 5, innerY + 4.5);
 
           const gap = cand.gap!;
           const gapStr = gap >= 0 ? `+${gap}` : `${gap}`;
           const gapColor: [number, number, number] = gap >= 0 ? [34, 197, 94] : [239, 68, 68];
           pdf.setTextColor(gapColor[0], gapColor[1], gapColor[2]);
           pdf.setFontSize(6.5);
-          pdf.text(gapStr, iconX + 15, innerY + 4.5);
+          const gapW = pdf.getTextWidth(gapStr);
+          pdf.text(gapStr, cardX + cardW - gapW - 4, innerY + 4.5);
         }
 
         innerY += barRowH;
