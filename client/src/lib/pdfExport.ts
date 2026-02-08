@@ -5508,22 +5508,12 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     insightLines.forEach((line) => {
       const trimmed = line.trim();
       if (!trimmed) {
+        yPos = ensurePageSpace(pdf, yPos, 5, pageHeight, pageWidth);
         yPos += 3;
         return;
       }
 
       yPos = ensurePageSpace(pdf, yPos, 12, pageHeight, pageWidth);
-
-      const h2Match = trimmed.match(/^#{1,2}\s+(.+)/);
-      if (h2Match) {
-        yPos += 3;
-        pdf.setFontSize(10);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(17, 24, 39);
-        pdf.text(stripEmoji(h2Match[1]), 22, yPos);
-        yPos += 6;
-        return;
-      }
 
       const h3Match = trimmed.match(/^###\s+(.+)/);
       if (h3Match) {
@@ -5533,6 +5523,17 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
         pdf.setTextColor(55, 65, 81);
         pdf.text(stripEmoji(h3Match[1]), 22, yPos);
         yPos += 5;
+        return;
+      }
+
+      const h2Match = trimmed.match(/^#{1,2}\s+(.+)/);
+      if (h2Match) {
+        yPos += 3;
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(17, 24, 39);
+        pdf.text(stripEmoji(h2Match[1]), 22, yPos);
+        yPos += 6;
         return;
       }
 
@@ -5551,18 +5552,17 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       if (bulletMatch) {
         pdf.setFontSize(8);
         pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(75, 85, 99);
         let bulletText = stripEmoji(bulletMatch[1]).replace(/\*\*(.+?)\*\*/g, '$1');
         const bulletLines = pdf.splitTextToSize(bulletText, pageWidth - 60);
+        const totalBulletHeight = bulletLines.length * 4 + 2;
+        yPos = ensurePageSpace(pdf, yPos, totalBulletHeight, pageHeight, pageWidth);
         pdf.setTextColor(59, 130, 246);
         pdf.text('\u2022', 25, yPos);
         pdf.setTextColor(75, 85, 99);
         bulletLines.forEach((bl: string, idx: number) => {
-          yPos = ensurePageSpace(pdf, yPos, 5, pageHeight, pageWidth);
-          pdf.text(bl, 30, yPos);
-          if (idx < bulletLines.length - 1) yPos += 4;
+          pdf.text(bl, 30, yPos + (idx * 4));
         });
-        yPos += 5;
+        yPos += totalBulletHeight + 1;
         return;
       }
 
@@ -5571,12 +5571,12 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       pdf.setTextColor(75, 85, 99);
       let paraText = stripEmoji(trimmed).replace(/\*\*(.+?)\*\*/g, '$1');
       const paraLines = pdf.splitTextToSize(paraText, pageWidth - 45);
+      const totalParaHeight = paraLines.length * 4 + 2;
+      yPos = ensurePageSpace(pdf, yPos, totalParaHeight, pageHeight, pageWidth);
       paraLines.forEach((pl: string, idx: number) => {
-        yPos = ensurePageSpace(pdf, yPos, 5, pageHeight, pageWidth);
-        pdf.text(pl, 22, yPos);
-        if (idx < paraLines.length - 1) yPos += 4;
+        pdf.text(pl, 22, yPos + (idx * 4));
       });
-      yPos += 5;
+      yPos += totalParaHeight + 1;
     });
   }
 
@@ -5602,7 +5602,11 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   ];
 
   multiNextSteps.forEach((step, index) => {
-    yPos = ensurePageSpace(pdf, yPos, 14, pageHeight, pageWidth);
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    const stepLines = pdf.splitTextToSize(step, pageWidth - 60);
+    const stepHeight = (stepLines.length * 4) + 5;
+    yPos = ensurePageSpace(pdf, yPos, stepHeight, pageHeight, pageWidth);
 
     pdf.setFillColor(219, 234, 254);
     pdf.roundedRect(22, yPos - 3, 6, 6, 3, 3, 'F');
@@ -5614,11 +5618,10 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(55, 65, 81);
-    const stepLines = pdf.splitTextToSize(step, pageWidth - 60);
     stepLines.forEach((line: string, idx: number) => {
       pdf.text(line, 32, yPos + (idx * 4));
     });
-    yPos += (stepLines.length * 4) + 5;
+    yPos += stepHeight;
   });
 
   yPos += 8;
@@ -5644,7 +5647,11 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   ];
 
   additionalServices.forEach((service, index) => {
-    yPos = ensurePageSpace(pdf, yPos, 18, pageHeight, pageWidth);
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    const descLines = pdf.splitTextToSize(service.description, pageWidth - 58);
+    const serviceHeight = 7 + (descLines.length * 4) + 4;
+    yPos = ensurePageSpace(pdf, yPos, serviceHeight, pageHeight, pageWidth);
 
     pdf.setFillColor(59, 130, 246);
     pdf.roundedRect(22, yPos - 2, 6, 6, 1, 1, 'F');
@@ -5661,12 +5668,11 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    const descLines = pdf.splitTextToSize(service.description, pageWidth - 58);
     descLines.forEach((line: string, idx: number) => {
       pdf.text(line, 32, yPos + 7 + (idx * 4));
     });
 
-    yPos += 7 + (descLines.length * 4) + 4;
+    yPos += serviceHeight;
   });
 
   yPos += 6;
