@@ -4857,15 +4857,18 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       const assessedCount = candidatesWithScores.filter(c => c.hasData).length;
 
       const barRowH = 9;
-      const headerH = 30;
-      const candidateAreaH = candidateList.length * barRowH + 6;
+      const cardX = MARGIN;
+      const cardW = contentWidth;
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'italic');
+      const descPreCalcLines = pdf.splitTextToSize(`Why it matters: ${description}`, cardW - 12);
+      const descLineCount = Math.min(descPreCalcLines.length, 2);
+      const headerH = 13 + (descLineCount * 3.5) + 4 + 3 + 7;
+      const candidateAreaH = candidateList.length * barRowH;
       const legendH = 10;
       const totalCardH = headerH + candidateAreaH + legendH + 4;
 
       yPos = ensurePageSpace(pdf, yPos, totalCardH + 5, pageHeight, pageWidth);
-
-      const cardX = MARGIN;
-      const cardW = contentWidth;
 
       pdf.setFillColor(249, 250, 251);
       pdf.setDrawColor(229, 231, 235);
@@ -4950,12 +4953,16 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
 
         if (cand.isBest && cand.hasData) {
           const nameW = pdf.getTextWidth(displayName);
-          pdf.setFillColor(34, 197, 94);
-          pdf.roundedRect(cardX + 7 + nameW + 1, innerY + 0.5, 12, 5, 1, 1, 'F');
-          pdf.setFontSize(4.5);
-          pdf.setFont('helvetica', 'bold');
-          pdf.setTextColor(255, 255, 255);
-          pdf.text('Best', cardX + 8.5 + nameW + 1, innerY + 4);
+          const bestBadgeX = cardX + 7 + nameW + 1;
+          const bestBadgeMaxX = barStartX - 2;
+          if (bestBadgeX + 12 < bestBadgeMaxX) {
+            pdf.setFillColor(34, 197, 94);
+            pdf.roundedRect(bestBadgeX, innerY + 0.5, 12, 5, 1, 1, 'F');
+            pdf.setFontSize(4.5);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(255, 255, 255);
+            pdf.text('Best', bestBadgeX + 1.5, innerY + 4);
+          }
         }
 
         if (!cand.hasData) {
@@ -5000,13 +5007,22 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
 
           const meetsIcon = cand.meetsRequired;
           const iconColor: [number, number, number] = meetsIcon ? [34, 197, 94] : [234, 179, 8];
-          pdf.setFillColor(iconColor[0], iconColor[1], iconColor[2]);
           const iconX = barEndX + 3;
+
+          pdf.setFillColor(iconColor[0], iconColor[1], iconColor[2]);
           pdf.circle(iconX + 1.5, innerY + 3.5, 1.8, 'F');
-          pdf.setFontSize(5);
-          pdf.setFont('helvetica', 'bold');
-          pdf.setTextColor(255, 255, 255);
-          pdf.text(meetsIcon ? 'O' : '!', iconX + 0.7, innerY + 4.5);
+          if (meetsIcon) {
+            pdf.setDrawColor(255, 255, 255);
+            pdf.setLineWidth(0.5);
+            pdf.line(iconX + 0.7, innerY + 3.6, iconX + 1.3, innerY + 4.2);
+            pdf.line(iconX + 1.3, innerY + 4.2, iconX + 2.3, innerY + 2.9);
+          } else {
+            pdf.setDrawColor(255, 255, 255);
+            pdf.setLineWidth(0.6);
+            pdf.line(iconX + 1.5, innerY + 2.5, iconX + 1.5, innerY + 3.8);
+            pdf.setFillColor(255, 255, 255);
+            pdf.circle(iconX + 1.5, innerY + 4.5, 0.3, 'F');
+          }
 
           pdf.setFontSize(7);
           pdf.setFont('helvetica', 'bold');
