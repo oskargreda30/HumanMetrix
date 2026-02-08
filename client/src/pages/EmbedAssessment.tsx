@@ -1429,7 +1429,7 @@ export default function EmbedAssessment() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center bg-slate-900" data-testid="embed-loading">
+      <div className="fixed inset-0 flex items-center justify-center bg-slate-900 z-50" data-testid="embed-loading">
         <div className="text-center">
           <div className="w-20 h-20 mx-auto mb-4 loader-pulse">
             <img src="/favicon.png" alt="HumanMetrix" className="w-full h-full object-contain" />
