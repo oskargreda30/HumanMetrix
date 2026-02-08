@@ -670,7 +670,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   // Draw candidate details in boxes - compact horizontal layout
   const candidateBoxWidth = (pageWidth - 40 - (data.candidates.length - 1) * 5) / data.candidates.length;
-  const candidateBoxHeight = 32;
+  const candidateBoxHeight = 24;
   let candX = 20;
   
   data.candidates.forEach((candidate, index) => {
@@ -703,12 +703,6 @@ export async function exportComparisonPDF(data: ComparisonData) {
       pdf.text(line, textStartX, emailY);
       emailY += 3.5;
     });
-    
-    const appliedDate = candidate.user.createdAt 
-      ? new Date(candidate.user.createdAt).toLocaleDateString() 
-      : 'N/A';
-    pdf.setFontSize(8);
-    pdf.text(`Applied: ${appliedDate}`, textStartX, emailY + 2);
     
     candX += candidateBoxWidth + 5;
   });
