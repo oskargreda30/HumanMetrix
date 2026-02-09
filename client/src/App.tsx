@@ -62,6 +62,7 @@ const B2BResultsBundle = lazy(() => import("@/pages/B2BResultsBundle"));
 const B2BPaymentCallback = lazy(() => import("@/pages/B2BPaymentCallback"));
 const B2BPdfEmail = lazy(() => import("@/pages/B2BPdfEmail"));
 const PartnerResult = lazy(() => import("@/pages/PartnerResult"));
+const PartnerReportView = lazy(() => import("@/pages/PartnerReportView"));
 const SampleIndividualReport = lazy(() => import("@/pages/SampleIndividualReport"));
 const SampleComparisonReport = lazy(() => import("@/pages/SampleComparisonReport"));
 const SampleRoleFitReport = lazy(() => import("@/pages/SampleRoleFitReport"));
@@ -202,6 +203,13 @@ function Router() {
           {() => (
             <ProtectedRoute>
               <PartnerResult />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path="/partner/report/:reportId">
+          {() => (
+            <ProtectedRoute>
+              <PartnerReportView />
             </ProtectedRoute>
           )}
         </Route>

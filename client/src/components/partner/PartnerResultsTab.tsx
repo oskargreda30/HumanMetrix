@@ -461,8 +461,7 @@ export default function PartnerResultsTab() {
                           size="sm"
                           className="h-6 md:h-7 text-[10px] md:text-xs px-2"
                           onClick={() => {
-                            setSelectedReportId(report.id);
-                            setReportViewerOpen(true);
+                            window.open(`/partner/report/${report.id}`, '_blank');
                           }}
                           data-testid={`button-view-report-${report.id}`}
                         >
