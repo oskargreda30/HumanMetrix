@@ -4679,9 +4679,20 @@ export function registerPartnerRoutes(app: Express) {
         
         const isPartnerAdmin = user!.role === 'partner_admin';
         
+        const sessionMeta = session.metadata as any;
+        const scrollSeriesId = sessionMeta?.invitationId || null;
+        let redirectUrl = "/dashboard";
+        if (isPartnerAdmin && scrollSeriesId) {
+          redirectUrl = `/dashboard?view=candidate&scrollToSeries=${scrollSeriesId}`;
+        } else if (isPartnerAdmin) {
+          redirectUrl = "/dashboard?view=candidate";
+        } else if (scrollSeriesId) {
+          redirectUrl = `/dashboard?scrollToSeries=${scrollSeriesId}`;
+        }
+        
         res.json({
           success: true,
-          redirectTo: isPartnerAdmin ? "/dashboard?view=candidate" : "/dashboard",
+          redirectTo: redirectUrl,
           userId: user!.id,
           isNewUser,
           emailSent,
