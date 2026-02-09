@@ -1987,19 +1987,21 @@ export default function EmbedAssessment() {
                     <Button
                       className="w-full"
                       style={{ backgroundColor: primaryColor }}
-                      onClick={() => { const target = window.top || window; target.location.href = '/dashboard'; }}
+                      onClick={() => { const target = window.top || window; target.location.href = invitationCompletionData.dashboardUrl || '/dashboard?view=candidate'; }}
                       data-testid="button-go-to-dashboard"
                     >
                       Go to Dashboard
                     </Button>
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => { const target = window.top || window; target.location.href = invitationCompletionData.paymentUrl; }}
-                      data-testid="button-unlock-results"
-                    >
-                      Unlock Results Now
-                    </Button>
+                    {invitationCompletionData.unpaidCount > 0 && (
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => { const target = window.top || window; target.location.href = invitationCompletionData.paymentUrl; }}
+                        data-testid="button-unlock-results"
+                      >
+                        Unlock Results Now
+                      </Button>
+                    )}
                   </>
                 ) : invitationCompletionData ? (
                   <>
