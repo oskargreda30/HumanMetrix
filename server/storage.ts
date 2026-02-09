@@ -3929,7 +3929,7 @@ export class DatabaseStorage implements IStorage {
     const testsUsed = Number(result[0]?.count || 0);
 
     const balance = await this.getPartnerBalance(partnerId);
-    const remaining = balance ? Math.max(0, balance.testsPurchased - balance.testsConsumed) : 0;
+    const remaining = balance ? Math.max(0, (balance.testsPurchased + (balance.freeTestsAllocated || 0)) - balance.testsConsumed) : 0;
 
     return { testsUsed, remaining };
   }

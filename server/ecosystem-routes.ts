@@ -1611,7 +1611,8 @@ export function registerEcosystemRoutes(app: Express): void {
         if (!partnerForRegen) {
           return res.status(403).json({ error: "Partner account not found" });
         }
-        const remaining = partnerForRegen.testsPurchased - partnerForRegen.testsConsumed;
+        const totalAvailable = partnerForRegen.testsPurchased + (partnerForRegen.freeTestsAllocated || 0);
+        const remaining = totalAvailable - partnerForRegen.testsConsumed;
         if (remaining < ECOSYSTEM_CREDITS_REQUIRED) {
           return res.status(400).json({
             error: `Insufficient credits. This service requires ${ECOSYSTEM_CREDITS_REQUIRED} credits. You have ${remaining} credits remaining.`,
@@ -2059,7 +2060,8 @@ export function registerEcosystemRoutes(app: Express): void {
       
       // Check if partner has enough credits (20 credits required)
       const ECOSYSTEM_CREDITS_REQUIRED = 20;
-      const remaining = partner.testsPurchased - partner.testsConsumed;
+      const totalAvailable = partner.testsPurchased + (partner.freeTestsAllocated || 0);
+      const remaining = totalAvailable - partner.testsConsumed;
       
       if (remaining < ECOSYSTEM_CREDITS_REQUIRED) {
         return res.status(400).json({ 
