@@ -3797,7 +3797,7 @@ export async function sendResultsReadyEmail(details: ResultsReadyEmailDetails) {
   let ctaNote: string;
   
   const dashboardPath = details.partnerInvitationId 
-    ? `dashboard?scrollToSeries=${details.partnerInvitationId}`
+    ? `dashboard?view=candidate&scrollToSeries=${details.partnerInvitationId}`
     : 'dashboard';
   
   if (details.hasExistingAccount) {

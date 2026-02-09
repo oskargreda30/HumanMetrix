@@ -5796,12 +5796,24 @@ export function registerGuestAssessmentRoutes(app: Express) {
         // Send a results-ready email reminding them of their existing account
         const { sendB2BResultsReadyEmail } = await import('./email');
         const displayName = existingUser.firstName || existingUser.name || existingUser.username || invitation.email.split('@')[0];
+        
+        const isPartnerAdmin = existingUser.role === 'partner_admin';
+        const invitationId = invitation.id;
+        let guestRedirectUrl = "/dashboard";
+        if (isPartnerAdmin && invitationId) {
+          guestRedirectUrl = `/dashboard?view=candidate&scrollToSeries=${invitationId}`;
+        } else if (isPartnerAdmin) {
+          guestRedirectUrl = "/dashboard?view=candidate";
+        } else if (invitationId) {
+          guestRedirectUrl = `/dashboard?scrollToSeries=${invitationId}`;
+        }
+        
         try {
           await sendB2BResultsReadyEmail({
             email: invitation.email,
             candidateName: displayName,
             partnerName: invitation.partnerName || 'your employer',
-            dashboardUrl: `${req.protocol}://${req.get('host')}/my-results?scrollTo=latest`,
+            dashboardUrl: `${req.protocol}://${req.get('host')}${guestRedirectUrl}`,
           });
         } catch (emailErr) {
           console.error(`[GuestInvite] Failed to send results-ready email to ${invitation.email}:`, emailErr);
@@ -5812,7 +5824,7 @@ export function registerGuestAssessmentRoutes(app: Express) {
           success: true, 
           message: "You have been logged in to your existing account.",
           existingAccount: true,
-          redirectTo: '/dashboard'
+          redirectTo: guestRedirectUrl
         });
       }
       
