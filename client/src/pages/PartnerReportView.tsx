@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import {
   Loader2, FileText, TrendingUp, TrendingDown, BarChart3, Target, User, Award,
-  Brain, Sparkles, ArrowLeft, Calendar, Shield, Lightbulb, BookOpen
+  Brain, Sparkles, ArrowLeft, Calendar, Shield, Lightbulb, BookOpen, Users
 } from "lucide-react";
 import {
   RadarChart,
@@ -16,6 +16,7 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   ResponsiveContainer,
+  Legend,
 } from "recharts";
 import { calculateAverageScore, FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym, getAIReadinessScore, normalizeAIReadinessScores } from "@/lib/assessmentSkills";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
@@ -24,16 +25,12 @@ import SkillsLegend from "@/components/SkillsLegend";
 import { AdditionalServicesSection } from "@/components/shared/AdditionalServicesSection";
 import hmLogoPath from "@assets/Gemini_Generated_Image_misel3misel3mise-removebg-preview_1762775600899.png";
 
+const CHART_COLORS = ['#3b82f6', '#f97316', '#10b981', '#8b5cf6', '#ec4899'];
+
 const getScoreColor = (score: number) => {
   if (score >= 75) return 'text-green-600';
   if (score >= 50) return 'text-amber-600';
   return 'text-red-600';
-};
-
-const getScoreBgColor = (score: number) => {
-  if (score >= 75) return 'bg-green-500';
-  if (score >= 50) return 'bg-amber-500';
-  return 'bg-red-500';
 };
 
 const getPromptArchBandInterpretation = (score: number): { title: string; description: string } => {
@@ -134,11 +131,13 @@ function ScoringMethodologySection() {
   );
 }
 
-function IndividualReportContent({ reportData }: { reportData: any }) {
-  const fitData = reportData.fitAssessments?.[0];
-  const aiData = reportData.aiReadinessAssessments?.[0];
-  const promptData = reportData.promptArchitectureAssessments?.[0];
-  const aiqData = reportData.aiqAssessments?.[0];
+function CandidateAssessmentSection({ candidateData, candidateIndex, candidateName, color }: {
+  candidateData: { fitData: any; aiData: any; promptData: any; aiqData: any };
+  candidateIndex: number;
+  candidateName: string;
+  color: string;
+}) {
+  const { fitData, aiData, promptData, aiqData } = candidateData;
 
   const fitRadarData = fitData ? FIT_SKILLS.map(skill => ({
     skill: getSkillAcronym(skill.displayName),
@@ -179,7 +178,12 @@ function IndividualReportContent({ reportData }: { reportData: any }) {
   };
 
   return (
-    <>
+    <div className="space-y-6">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
+        <h3 className="text-lg font-semibold" data-testid={`text-candidate-name-${candidateIndex}`}>{candidateName}</h3>
+      </div>
+
       <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2">
@@ -189,27 +193,27 @@ function IndividualReportContent({ reportData }: { reportData: any }) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="text-center p-4 rounded-lg border bg-card" data-testid="card-fit-score">
+            <div className="text-center p-4 rounded-lg border bg-card" data-testid={`card-fit-score-${candidateIndex}`}>
               <div className="text-sm text-muted-foreground mb-1">FIT Score</div>
-              <div className={`text-2xl font-bold ${fitData ? getScoreColor(calculateAverageScore(fitData.scores)) : 'text-muted-foreground'}`} data-testid="text-fit-score">
+              <div className={`text-2xl font-bold ${fitData ? getScoreColor(calculateAverageScore(fitData.scores)) : 'text-muted-foreground'}`}>
                 {fitData ? `${calculateAverageScore(fitData.scores)}%` : '-'}
               </div>
             </div>
-            <div className="text-center p-4 rounded-lg border bg-card" data-testid="card-ai-readiness-score">
+            <div className="text-center p-4 rounded-lg border bg-card" data-testid={`card-ai-readiness-score-${candidateIndex}`}>
               <div className="text-sm text-muted-foreground mb-1">AI Readiness</div>
-              <div className={`text-2xl font-bold ${aiData ? getScoreColor(calculateAverageScore(aiData.scores)) : 'text-muted-foreground'}`} data-testid="text-ai-readiness-score">
+              <div className={`text-2xl font-bold ${aiData ? getScoreColor(calculateAverageScore(aiData.scores)) : 'text-muted-foreground'}`}>
                 {aiData ? `${calculateAverageScore(aiData.scores)}%` : '-'}
               </div>
             </div>
-            <div className="text-center p-4 rounded-lg border bg-card" data-testid="card-prompt-score">
+            <div className="text-center p-4 rounded-lg border bg-card" data-testid={`card-prompt-score-${candidateIndex}`}>
               <div className="text-sm text-muted-foreground mb-1">Prompt Architecture</div>
-              <div className={`text-2xl font-bold ${promptData ? getScoreColor(promptData.totalScore) : 'text-muted-foreground'}`} data-testid="text-prompt-score">
+              <div className={`text-2xl font-bold ${promptData ? getScoreColor(promptData.totalScore) : 'text-muted-foreground'}`}>
                 {promptData ? `${promptData.totalScore}%` : '-'}
               </div>
             </div>
-            <div className="text-center p-4 rounded-lg border bg-card" data-testid="card-aiq-score">
+            <div className="text-center p-4 rounded-lg border bg-card" data-testid={`card-aiq-score-${candidateIndex}`}>
               <div className="text-sm text-muted-foreground mb-1">AIQ (Ethics)</div>
-              <div className={`text-2xl font-bold ${aiqData ? getScoreColor(aiqData.totalScore) : 'text-muted-foreground'}`} data-testid="text-aiq-score">
+              <div className={`text-2xl font-bold ${aiqData ? getScoreColor(aiqData.totalScore) : 'text-muted-foreground'}`}>
                 {aiqData ? `${aiqData.totalScore}%` : '-'}
               </div>
             </div>
@@ -233,14 +237,14 @@ function IndividualReportContent({ reportData }: { reportData: any }) {
                   <TrendingUp className="h-4 w-4" />
                   Highest Scoring Traits
                 </h4>
-                <div className="space-y-3">
+                <div className="space-y-3" data-testid={`list-strengths-${candidateIndex}`}>
                   {getStrengthsAndWeaknesses().strengths.map((skill, i) => (
-                    <div key={i} className="flex items-center justify-between gap-1 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20" data-testid={`row-strength-${i}`}>
+                    <div key={i} className="flex items-center justify-between gap-1 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20" data-testid={`row-strength-${candidateIndex}-${i}`}>
                       <div>
-                        <span className="font-medium" data-testid={`text-strength-name-${i}`}>{skill.name}</span>
+                        <span className="font-medium" data-testid={`text-strength-name-${candidateIndex}-${i}`}>{skill.name}</span>
                         <Badge variant="outline" className="ml-2 text-xs">{skill.category}</Badge>
                       </div>
-                      <span className="font-bold text-blue-600" data-testid={`text-strength-score-${i}`}>{skill.score}%</span>
+                      <span className="font-bold text-blue-600" data-testid={`text-strength-score-${candidateIndex}-${i}`}>{skill.score}%</span>
                     </div>
                   ))}
                 </div>
@@ -250,14 +254,14 @@ function IndividualReportContent({ reportData }: { reportData: any }) {
                   <TrendingDown className="h-4 w-4" />
                   Lowest Scoring Traits
                 </h4>
-                <div className="space-y-3">
+                <div className="space-y-3" data-testid={`list-weaknesses-${candidateIndex}`}>
                   {getStrengthsAndWeaknesses().weaknesses.map((skill, i) => (
-                    <div key={i} className="flex items-center justify-between gap-1 p-3 rounded-lg bg-slate-50 dark:bg-slate-950/20" data-testid={`row-weakness-${i}`}>
+                    <div key={i} className="flex items-center justify-between gap-1 p-3 rounded-lg bg-slate-50 dark:bg-slate-950/20" data-testid={`row-weakness-${candidateIndex}-${i}`}>
                       <div>
-                        <span className="font-medium" data-testid={`text-weakness-name-${i}`}>{skill.name}</span>
+                        <span className="font-medium" data-testid={`text-weakness-name-${candidateIndex}-${i}`}>{skill.name}</span>
                         <Badge variant="outline" className="ml-2 text-xs">{skill.category}</Badge>
                       </div>
-                      <span className="font-bold text-slate-600 dark:text-slate-400" data-testid={`text-weakness-score-${i}`}>{skill.score}%</span>
+                      <span className="font-bold text-slate-600 dark:text-slate-400" data-testid={`text-weakness-score-${candidateIndex}-${i}`}>{skill.score}%</span>
                     </div>
                   ))}
                 </div>
@@ -284,16 +288,16 @@ function IndividualReportContent({ reportData }: { reportData: any }) {
                     <PolarGrid stroke="#e2e8f0" />
                     <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11, fill: '#64748b' }} />
                     <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 9, fill: '#94a3b8' }} />
-                    <Radar dataKey="score" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.25} strokeWidth={2} />
+                    <Radar dataKey="score" stroke={color} fill={color} fillOpacity={0.25} strokeWidth={2} />
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
-              <div className="space-y-3" data-testid="list-fit-skills">
+              <div className="space-y-3" data-testid={`list-fit-skills-${candidateIndex}`}>
                 {Object.entries(fitData.scores || {}).map(([skill, score]) => (
-                  <div key={skill} className="space-y-1" data-testid={`row-fit-skill-${skill}`}>
+                  <div key={skill} className="space-y-1" data-testid={`row-fit-skill-${candidateIndex}-${skill}`}>
                     <div className="flex justify-between gap-1 text-sm">
-                      <span data-testid={`text-fit-skill-name-${skill}`}>{skill}</span>
-                      <span className={`font-medium ${getScoreColor(score as number)}`} data-testid={`text-fit-skill-score-${skill}`}>{score as number}%</span>
+                      <span data-testid={`text-fit-skill-name-${candidateIndex}-${skill}`}>{skill}</span>
+                      <span className={`font-medium ${getScoreColor(score as number)}`} data-testid={`text-fit-skill-score-${candidateIndex}-${skill}`}>{score as number}%</span>
                     </div>
                     <Progress value={score as number} className="h-2" />
                   </div>
@@ -321,16 +325,16 @@ function IndividualReportContent({ reportData }: { reportData: any }) {
                     <PolarGrid stroke="#e2e8f0" />
                     <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10, fill: '#64748b' }} />
                     <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 9, fill: '#94a3b8' }} />
-                    <Radar dataKey="score" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.25} strokeWidth={2} />
+                    <Radar dataKey="score" stroke={color} fill={color} fillOpacity={0.25} strokeWidth={2} />
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
-              <div className="space-y-3 max-h-72 overflow-y-auto" data-testid="list-ai-skills">
+              <div className="space-y-3 max-h-72 overflow-y-auto" data-testid={`list-ai-skills-${candidateIndex}`}>
                 {Object.entries(normalizedAIScores).map(([skill, score]) => (
-                  <div key={skill} className="space-y-1" data-testid={`row-ai-skill-${skill}`}>
+                  <div key={skill} className="space-y-1" data-testid={`row-ai-skill-${candidateIndex}-${skill}`}>
                     <div className="flex justify-between gap-1 text-sm">
-                      <span className="truncate" data-testid={`text-ai-skill-name-${skill}`}>{skill}</span>
-                      <span className={`font-medium ${getScoreColor(score as number)}`} data-testid={`text-ai-skill-score-${skill}`}>{score as number}%</span>
+                      <span className="truncate" data-testid={`text-ai-skill-name-${candidateIndex}-${skill}`}>{skill}</span>
+                      <span className={`font-medium ${getScoreColor(score as number)}`} data-testid={`text-ai-skill-score-${candidateIndex}-${skill}`}>{score as number}%</span>
                     </div>
                     <Progress value={score as number} className="h-2" />
                   </div>
@@ -361,9 +365,9 @@ function IndividualReportContent({ reportData }: { reportData: any }) {
               </div>
             </div>
             {promptData.scores && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid={`grid-prompt-levels-${candidateIndex}`}>
                 {Object.entries(promptData.scores).map(([level, score]) => (
-                  <div key={level} className="text-center p-3 rounded-lg border bg-card">
+                  <div key={level} className="text-center p-3 rounded-lg border bg-card" data-testid={`card-prompt-level-${candidateIndex}-${level}`}>
                     <div className="text-xs text-muted-foreground mb-1">{level}</div>
                     <div className={`text-xl font-bold ${getScoreColor(score as number)}`}>{score as number}%</div>
                   </div>
@@ -394,9 +398,9 @@ function IndividualReportContent({ reportData }: { reportData: any }) {
               </div>
             </div>
             {aiqData.scores && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" data-testid={`grid-aiq-categories-${candidateIndex}`}>
                 {Object.entries(aiqData.scores).map(([key, score]) => (
-                  <div key={key} className="text-center p-3 rounded-lg border bg-card">
+                  <div key={key} className="text-center p-3 rounded-lg border bg-card" data-testid={`card-aiq-category-${candidateIndex}-${key}`}>
                     <div className="text-xs text-muted-foreground mb-1">{key.replace(/_/g, ' ')}</div>
                     <div className={`text-xl font-bold ${getScoreColor(score as number)}`}>{score as number}%</div>
                   </div>
@@ -406,6 +410,262 @@ function IndividualReportContent({ reportData }: { reportData: any }) {
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+}
+
+function IndividualReportContent({ reportData }: { reportData: any }) {
+  const fitData = reportData.fitAssessments?.[0];
+  const aiData = reportData.aiReadinessAssessments?.[0];
+  const promptData = reportData.promptArchitectureAssessments?.[0];
+  const aiqData = reportData.aiqAssessments?.[0];
+
+  const candidateName = reportData.title?.replace('Individual Report: ', '') || 'Candidate';
+
+  return (
+    <>
+      <CandidateAssessmentSection
+        candidateData={{ fitData, aiData, promptData, aiqData }}
+        candidateIndex={0}
+        candidateName={candidateName}
+        color={CHART_COLORS[0]}
+      />
+
+      {reportData.aiInsights && (
+        <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              AI-Generated Insights
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="prose prose-sm max-w-none dark:prose-invert">
+              <p className="whitespace-pre-wrap" data-testid="text-ai-insights">{reportData.aiInsights}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </>
+  );
+}
+
+function ComparisonReportContent({ reportData }: { reportData: any }) {
+  const candidateCount = Math.max(
+    reportData.fitAssessments?.length || 0,
+    reportData.aiReadinessAssessments?.length || 0,
+    reportData.promptArchitectureAssessments?.length || 0,
+    reportData.aiqAssessments?.length || 0,
+    reportData.averageScores?.length || 0,
+    2
+  );
+
+  const extractCandidateNames = (): string[] => {
+    const titleMatch = reportData.title?.match(/Candidate Comparison:\s*(.+)/i);
+    if (titleMatch) {
+      const parsed = titleMatch[1].split(',').map((n: string) => n.trim()).filter((n: string) => n.length > 0);
+      if (parsed.length >= candidateCount) return parsed.slice(0, candidateCount);
+      while (parsed.length < candidateCount) {
+        parsed.push(`Candidate ${parsed.length + 1}`);
+      }
+      return parsed;
+    }
+    return Array.from({ length: candidateCount }, (_, i) => `Candidate ${i + 1}`);
+  };
+
+  const candidateNames = extractCandidateNames();
+
+  const radarData = reportData.radarData || [];
+
+  return (
+    <>
+      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            Comparison Overview
+          </CardTitle>
+          <CardDescription>Side-by-side assessment scores for all candidates</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm" data-testid="table-comparison-overview">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-3 pr-4 font-medium text-muted-foreground">Assessment</th>
+                  {candidateNames.map((name: string, idx: number) => (
+                    <th key={idx} className="text-center py-3 px-3 font-medium" data-testid={`th-candidate-${idx}`}>
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: CHART_COLORS[idx] || '#666' }} />
+                        <span>{name}</span>
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b">
+                  <td className="py-3 pr-4 font-medium">FIT Score</td>
+                  {Array.from({ length: candidateCount }, (_, idx) => {
+                    const fitData = reportData.fitAssessments?.[idx];
+                    const score = fitData ? calculateAverageScore(fitData.scores) : null;
+                    return (
+                      <td key={idx} className="text-center py-3 px-3" data-testid={`cell-fit-${idx}`}>
+                        <span className={`text-xl font-bold ${score !== null ? getScoreColor(score) : 'text-muted-foreground'}`}>
+                          {score !== null ? `${score}%` : '-'}
+                        </span>
+                      </td>
+                    );
+                  })}
+                </tr>
+                <tr className="border-b">
+                  <td className="py-3 pr-4 font-medium">AI Readiness</td>
+                  {Array.from({ length: candidateCount }, (_, idx) => {
+                    const aiData = reportData.aiReadinessAssessments?.[idx];
+                    const score = aiData ? calculateAverageScore(aiData.scores) : null;
+                    return (
+                      <td key={idx} className="text-center py-3 px-3" data-testid={`cell-ai-${idx}`}>
+                        <span className={`text-xl font-bold ${score !== null ? getScoreColor(score) : 'text-muted-foreground'}`}>
+                          {score !== null ? `${score}%` : '-'}
+                        </span>
+                      </td>
+                    );
+                  })}
+                </tr>
+                <tr className="border-b">
+                  <td className="py-3 pr-4 font-medium">Prompt Architecture</td>
+                  {Array.from({ length: candidateCount }, (_, idx) => {
+                    const promptData = reportData.promptArchitectureAssessments?.[idx];
+                    const score = promptData?.totalScore ?? null;
+                    return (
+                      <td key={idx} className="text-center py-3 px-3" data-testid={`cell-prompt-${idx}`}>
+                        <span className={`text-xl font-bold ${score !== null ? getScoreColor(score) : 'text-muted-foreground'}`}>
+                          {score !== null ? `${score}%` : '-'}
+                        </span>
+                      </td>
+                    );
+                  })}
+                </tr>
+                <tr>
+                  <td className="py-3 pr-4 font-medium">AIQ (Ethics)</td>
+                  {Array.from({ length: candidateCount }, (_, idx) => {
+                    const aiqData = reportData.aiqAssessments?.[idx];
+                    const score = aiqData?.totalScore ?? null;
+                    return (
+                      <td key={idx} className="text-center py-3 px-3" data-testid={`cell-aiq-${idx}`}>
+                        <span className={`text-xl font-bold ${score !== null ? getScoreColor(score) : 'text-muted-foreground'}`}>
+                          {score !== null ? `${score}%` : '-'}
+                        </span>
+                      </td>
+                    );
+                  })}
+                </tr>
+                {reportData.averageScores && (
+                  <tr className="border-t-2 border-primary/20">
+                    <td className="py-3 pr-4 font-semibold">Overall Average</td>
+                    {reportData.averageScores.map((avg: number, idx: number) => (
+                      <td key={idx} className="text-center py-3 px-3" data-testid={`cell-avg-${idx}`}>
+                        <span className={`text-2xl font-bold ${getScoreColor(avg)}`}>{avg}%</span>
+                      </td>
+                    ))}
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {radarData.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-blue-500" />
+              Skill Comparison Radar
+            </CardTitle>
+            <CardDescription>Visual comparison of candidate skills across all assessment areas</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-96 bg-white dark:bg-gray-900 rounded-lg p-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="65%">
+                  <PolarGrid stroke="#e2e8f0" />
+                  <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9, fill: '#64748b' }} />
+                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 9, fill: '#94a3b8' }} />
+                  {candidateNames.map((name: string, idx: number) => (
+                    <Radar
+                      key={idx}
+                      name={name}
+                      dataKey={`candidate${idx}`}
+                      stroke={CHART_COLORS[idx] || '#666'}
+                      fill={CHART_COLORS[idx] || '#666'}
+                      fillOpacity={0.15}
+                      strokeWidth={2}
+                    />
+                  ))}
+                  <Legend />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {reportData.skillComparison && reportData.skillComparison.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Skill-by-Skill Comparison
+            </CardTitle>
+            <CardDescription>Detailed score breakdown for each assessed skill</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3" data-testid="list-skill-comparison">
+              {reportData.skillComparison.map((skill: any, idx: number) => (
+                <div key={idx} className="p-3 rounded-lg border bg-card" data-testid={`row-skill-comparison-${idx}`}>
+                  <div className="font-medium text-sm mb-2">{skill.skillName}</div>
+                  <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${candidateCount}, 1fr)` }}>
+                    {skill.scores.map((score: number | null, cIdx: number) => (
+                      <div key={cIdx} className="space-y-1" data-testid={`cell-skill-${idx}-candidate-${cIdx}`}>
+                        <div className="flex justify-between gap-1 text-xs">
+                          <span className="truncate text-muted-foreground">{candidateNames[cIdx] || `Candidate ${cIdx + 1}`}</span>
+                          <span className={`font-medium ${score !== null && score !== undefined ? getScoreColor(score) : 'text-muted-foreground'}`}>
+                            {score !== null && score !== undefined ? `${score}%` : '-'}
+                          </span>
+                        </div>
+                        <Progress value={score ?? 0} className="h-2" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {Array.from({ length: candidateCount }, (_, idx) => {
+        const fitData = reportData.fitAssessments?.[idx];
+        const aiData = reportData.aiReadinessAssessments?.[idx];
+        const promptData = reportData.promptArchitectureAssessments?.[idx];
+        const aiqData = reportData.aiqAssessments?.[idx];
+        const name = candidateNames[idx] || `Candidate ${idx + 1}`;
+
+        if (!fitData && !aiData && !promptData && !aiqData) return null;
+
+        return (
+          <div key={idx}>
+            <Separator className="my-8" />
+            <CandidateAssessmentSection
+              candidateData={{ fitData, aiData, promptData, aiqData }}
+              candidateIndex={idx}
+              candidateName={name}
+              color={CHART_COLORS[idx] || '#666'}
+            />
+          </div>
+        );
+      })}
 
       {reportData.aiInsights && (
         <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
@@ -497,15 +757,12 @@ function RoleFitReportContent({ reportData }: { reportData: any }) {
                   <div key={idx} className="p-4 rounded-lg border bg-card" data-testid={`row-skill-alignment-${idx}`}>
                     <div className="flex justify-between items-center gap-1 mb-3 flex-wrap">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium" data-testid={`text-skill-name-${idx}`}>{skill.skillName}</span>
+                        <span className="font-medium">{skill.skillName}</span>
                         {skill.critical && (
                           <Badge className="bg-blue-600 text-white text-[10px] px-1.5 py-0">Critical</Badge>
                         )}
                       </div>
-                      <Badge
-                        variant={gap >= 0 ? "default" : "destructive"}
-                        data-testid={`badge-skill-gap-${idx}`}
-                      >
+                      <Badge variant={gap >= 0 ? "default" : "destructive"}>
                         {gap >= 0 ? `+${gap}%` : `${gap}%`} gap
                       </Badge>
                     </div>
@@ -514,7 +771,7 @@ function RoleFitReportContent({ reportData }: { reportData: any }) {
                         <div className="text-xs text-muted-foreground mb-1">Candidate Score</div>
                         <div className="flex items-center gap-2">
                           <Progress value={skill.candidateScore} className="h-2 flex-1" />
-                          <span className={`text-sm font-medium ${getScoreColor(skill.candidateScore)}`} data-testid={`text-candidate-score-${idx}`}>
+                          <span className={`text-sm font-medium ${getScoreColor(skill.candidateScore)}`}>
                             {skill.candidateScore}%
                           </span>
                         </div>
@@ -523,7 +780,7 @@ function RoleFitReportContent({ reportData }: { reportData: any }) {
                         <div className="text-xs text-muted-foreground mb-1">Required Score</div>
                         <div className="flex items-center gap-2">
                           <Progress value={skill.requiredScore} className="h-2 flex-1" />
-                          <span className="text-sm font-medium text-muted-foreground" data-testid={`text-required-score-${idx}`}>
+                          <span className="text-sm font-medium text-muted-foreground">
                             {skill.requiredScore}%
                           </span>
                         </div>
@@ -549,7 +806,7 @@ function RoleFitReportContent({ reportData }: { reportData: any }) {
           <CardContent>
             <div className="space-y-2" data-testid="list-skill-gaps">
               {reportData.skillGaps.map((gap: any, idx: number) => (
-                <div key={idx} className="flex items-center justify-between gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800" data-testid={`row-skill-gap-${idx}`}>
+                <div key={idx} className="flex items-center justify-between gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
                   <span className="font-medium text-sm">{gap.skillName || gap.skill}</span>
                   <Badge variant="destructive" className="text-xs">
                     -{Math.abs(gap.gap || gap.difference || 0)}%
@@ -572,7 +829,7 @@ function RoleFitReportContent({ reportData }: { reportData: any }) {
           <CardContent>
             <div className="space-y-3" data-testid="list-recommendations">
               {reportData.recommendations.map((rec: any, idx: number) => (
-                <div key={idx} className="flex gap-3 p-3 rounded-lg bg-muted/30" data-testid={`row-recommendation-${idx}`}>
+                <div key={idx} className="flex gap-3 p-3 rounded-lg bg-muted/30">
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
                     {idx + 1}
                   </div>
@@ -706,7 +963,8 @@ export default function PartnerReportView() {
 
   const reportType = reportData.reportType || 'individual';
   const howToReadType = getHowToReadReportType(reportType);
-  const isIndividualOrComparison = reportType === 'individual' || reportType === 'comparison';
+  const isIndividual = reportType === 'individual';
+  const isComparison = reportType === 'comparison';
   const isRoleFit = reportType === 'role_fit_single' || reportType === 'role_fit_multi';
   const isProfileInsights = reportType === 'profile_insights';
 
@@ -727,15 +985,16 @@ export default function PartnerReportView() {
         <ScoringMethodologySection />
 
         <div className="space-y-6" data-testid="report-content">
-          {isIndividualOrComparison && <IndividualReportContent reportData={reportData} />}
+          {isIndividual && <IndividualReportContent reportData={reportData} />}
+          {isComparison && <ComparisonReportContent reportData={reportData} />}
           {isRoleFit && <RoleFitReportContent reportData={reportData} />}
           {isProfileInsights && <ProfileInsightsContent reportData={reportData} />}
-          {!isIndividualOrComparison && !isRoleFit && !isProfileInsights && (
+          {!isIndividual && !isComparison && !isRoleFit && !isProfileInsights && (
             <GenericReportContent reportData={reportData} />
           )}
         </div>
 
-        {(isIndividualOrComparison || isRoleFit) && (
+        {(isIndividual || isComparison || isRoleFit) && (
           <div className="mt-8">
             <SkillsLegend />
           </div>
