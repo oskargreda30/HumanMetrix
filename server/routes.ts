@@ -3436,7 +3436,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
           line_items: lineItems,
           mode: "payment",
           allow_promotion_codes: true,
-          success_url: `${baseUrl}/dashboard?partner_purchase=success&session_id={CHECKOUT_SESSION_ID}`,
+          success_url: `${baseUrl}/dashboard?partner_purchase=success&session_id={CHECKOUT_SESSION_ID}&seriesId=${partnerInvitationId}`,
           cancel_url: `${baseUrl}/dashboard?partner_purchase=cancelled`,
           metadata: purchaseMeta,
         });

@@ -395,7 +395,7 @@ export default function Dashboard() {
             currency: data.currency || 'GBP',
             countryCode: countryCode || 'GB',
             airwallexEnv: data.airwallexEnv,
-            successUrl: `${window.location.origin}/dashboard?partner_purchase=success&provider=airwallex&intent_id=${data.intentId}`,
+            successUrl: `${window.location.origin}/dashboard?partner_purchase=success&provider=airwallex&intent_id=${data.intentId}&seriesId=${lockedResultsDialog?.seriesId || ''}`,
             failUrl: `${window.location.origin}/dashboard?partner_purchase=cancelled`,
           });
           return;
@@ -480,6 +480,9 @@ export default function Dashboard() {
     }
   }, [toast]);
 
+  // Track which series to scroll to after purchase
+  const [scrollToSeriesId, setScrollToSeriesId] = useState<string | null>(null);
+
   // Handle partner results purchase success
   useEffect(() => {
     const confirmPartnerPurchase = async () => {
@@ -488,6 +491,7 @@ export default function Dashboard() {
       const sessionId = params.get("session_id");
       const provider = params.get("provider");
       const intentId = params.get("intent_id");
+      const seriesId = params.get("seriesId");
 
       if (partnerPurchase === "success" && (sessionId || intentId)) {
         try {
@@ -500,7 +504,10 @@ export default function Dashboard() {
               title: "Results Unlocked!",
               description: "You now have full access to your assessment results.",
             });
-            refetchPartnerSeries();
+            await refetchPartnerSeries();
+            if (seriesId) {
+              setScrollToSeriesId(seriesId);
+            }
           }
         } catch (error) {
           console.error("Error confirming partner purchase:", error);
@@ -517,6 +524,24 @@ export default function Dashboard() {
 
     confirmPartnerPurchase();
   }, [toast, refetchPartnerSeries]);
+
+  // Scroll to the target series card after data loads
+  useEffect(() => {
+    if (scrollToSeriesId && partnerTestingSeries && partnerTestingSeries.length > 0) {
+      const timer = setTimeout(() => {
+        const element = document.getElementById(`partner-series-${scrollToSeriesId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.classList.add('ring-2', 'ring-cyan-500', 'ring-offset-2');
+          setTimeout(() => {
+            element.classList.remove('ring-2', 'ring-cyan-500', 'ring-offset-2');
+          }, 3000);
+        }
+        setScrollToSeriesId(null);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [scrollToSeriesId, partnerTestingSeries]);
 
   if (assessmentsLoading || purchasesLoading || partnerSeriesLoading) {
     return (
@@ -1224,12 +1249,12 @@ export default function Dashboard() {
                 Assessments completed via partner invitations
               </p>
               <div className="space-y-6">
-                {(partnerTestingSeries || []).map((series: any, index: number) => {
+                {[...(partnerTestingSeries || [])].sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()).map((series: any, index: number) => {
                   const progressPercentage = Math.round((series.completedCount / series.totalCount) * 100);
                   const isAllComplete = series.allComplete;
                   
                   return (
-                    <Card key={series.id} className="p-6 hover-elevate transition-all">
+                    <Card key={series.id} id={`partner-series-${series.id}`} className="p-6 hover-elevate transition-all">
                       <div className="flex flex-col md:flex-row items-start gap-6">
                         {/* Progress Circle */}
                         <div className="flex-shrink-0">
@@ -1278,7 +1303,7 @@ export default function Dashboard() {
                             <div className="flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <h3 className="text-lg font-semibold">
-                                  Partner Series #{(partnerTestingSeries || []).length - index}
+                                  Partner Series #{index + 1}
                                 </h3>
                                 <Badge className="bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-500/20">
                                   {series.partnerName}
