@@ -222,6 +222,13 @@ export function EcosystemAutoProject({
   };
   
   const handleConfirmNewAnalysis = async () => {
+    console.log("[Ecosystem] handleConfirmNewAnalysis called", { 
+      newAnalysisName, 
+      isPending: createProject.isPending, 
+      isCreatingProject,
+      partnerId 
+    });
+    
     const sanitizedName = sanitizeAnalysisName(newAnalysisName);
     
     if (!sanitizedName) {
@@ -229,7 +236,10 @@ export function EcosystemAutoProject({
       return;
     }
     
-    if (createProject.isPending || isCreatingProject) return;
+    if (createProject.isPending) {
+      console.warn("[Ecosystem] Create project mutation already pending, skipping");
+      return;
+    }
     
     setDialogError(null);
     setIsCreatingProject(true);
@@ -247,13 +257,14 @@ export function EcosystemAutoProject({
     }
     
     try {
+      console.log("[Ecosystem] Sending POST /api/ecosystem/projects", { name: sanitizedName, partnerId });
       const project = await createProject.mutateAsync({
         name: sanitizedName,
         partnerId,
       });
       
+      console.log("[Ecosystem] Analysis created successfully:", project?.id);
       setProjectId(project.id);
-      setIsCreatingProject(false);
       setShowNewAnalysisDialog(false);
       setNewAnalysisName("");
       setDialogError(null);
@@ -262,10 +273,18 @@ export function EcosystemAutoProject({
         title: "Analysis created",
         description: `"${sanitizedName}" is ready to start.`,
       });
-    } catch (err) {
-      setIsCreatingProject(false);
+    } catch (err: any) {
+      console.error("[Ecosystem] Failed to create analysis:", err);
       setProjectId(oldProjectId);
-      setDialogError("Unable to create analysis. Please try again.");
+      const errorMsg = err?.message || "Unable to create analysis. Please try again.";
+      setDialogError(errorMsg);
+      toast({
+        title: "Failed to create analysis",
+        description: errorMsg,
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingProject(false);
     }
   };
 
@@ -348,10 +367,10 @@ export function EcosystemAutoProject({
           </Button>
           <Button
             onClick={handleConfirmNewAnalysis}
-            disabled={createProject.isPending || !newAnalysisName.trim()}
+            disabled={createProject.isPending || isCreatingProject || !newAnalysisName.trim()}
             data-testid="button-confirm-new-analysis"
           >
-            {createProject.isPending ? (
+            {(createProject.isPending || isCreatingProject) ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Creating...
