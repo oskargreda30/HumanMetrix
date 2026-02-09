@@ -7459,11 +7459,11 @@ ${role.description ? `DESCRIPTION: ${role.description}\n` : ''}
 Based on this role, determine the minimum required percentage scores (0-100) for each skill. Evaluate what competency level this specific role genuinely requires - score higher for skills central to the role, lower for less relevant ones.
 
 SCORING GUIDELINES BY SENIORITY:
-- Entry-level / Junior roles: scores generally in the 50-60% range
-- Mid-level roles: scores generally in the 60-70% range
-- Senior roles: scores generally in the 70-80% range
-- Executive / C-suite roles: scores generally in the 80-90% range
-Skills more important to the specific role should score toward the higher end of the range, and less relevant skills toward the lower end.
+- Entry-level / Junior roles: scores generally in the 45-68 range
+- Mid-level roles: scores generally in the 55-78 range
+- Senior roles: scores generally in the 65-92 range
+- Executive / C-suite roles: scores generally in the 78-92 range
+Skills more important to the specific role should score toward the higher end of the range, and less relevant skills toward the lower end. Spread scores across the full range to create meaningful differentiation.
 
 FIT ASSESSMENT SKILLS (Behavioral):
 1. Resilience - Ability to bounce back from setbacks and maintain performance under pressure
@@ -7629,11 +7629,11 @@ ${role.description ? `DESCRIPTION: ${role.description}\n` : ''}
 Based on this role, determine the minimum required percentage scores (0-100) for each skill. Evaluate what competency level this specific role genuinely requires - score higher for skills central to the role, lower for less relevant ones.
 
 SCORING GUIDELINES BY SENIORITY:
-- Entry-level / Junior roles: scores generally in the 50-60% range
-- Mid-level roles: scores generally in the 60-70% range
-- Senior roles: scores generally in the 70-80% range
-- Executive / C-suite roles: scores generally in the 80-90% range
-Skills more important to the specific role should score toward the higher end of the range, and less relevant skills toward the lower end.
+- Entry-level / Junior roles: scores generally in the 45-68 range
+- Mid-level roles: scores generally in the 55-78 range
+- Senior roles: scores generally in the 65-92 range
+- Executive / C-suite roles: scores generally in the 78-92 range
+Skills more important to the specific role should score toward the higher end of the range, and less relevant skills toward the lower end. Spread scores across the full range to create meaningful differentiation.
 
 FIT ASSESSMENT SKILLS (Behavioral):
 1. Resilience - Ability to bounce back from setbacks and maintain performance under pressure
