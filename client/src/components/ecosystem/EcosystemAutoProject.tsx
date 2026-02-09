@@ -66,6 +66,7 @@ export function EcosystemAutoProject({
   const [showNewAnalysisDialog, setShowNewAnalysisDialog] = useState(false);
   const [newAnalysisName, setNewAnalysisName] = useState("");
   const [dialogError, setDialogError] = useState<string | null>(null);
+  const [pendingProjectName, setPendingProjectName] = useState<string | null>(null);
   
   // Search filter for project dropdown
   const [projectSearchQuery, setProjectSearchQuery] = useState("");
@@ -264,11 +265,13 @@ export function EcosystemAutoProject({
       });
       
       console.log("[Ecosystem] Analysis created successfully:", project?.id);
+      setPendingProjectName(sanitizedName);
       setProjectId(project.id);
       setShowNewAnalysisDialog(false);
       setNewAnalysisName("");
       setDialogError(null);
-      refetch();
+      await refetch();
+      setPendingProjectName(null);
       toast({
         title: "Analysis created",
         description: `"${sanitizedName}" is ready to start.`,
@@ -542,7 +545,7 @@ export function EcosystemAutoProject({
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-sm font-medium text-muted-foreground">Analysis:</span>
               <span className="font-bold text-foreground" data-testid="text-current-analysis">
-                {currentProject?.name || "Team Diagnostic"}
+                {currentProject?.name || pendingProjectName || "Team Diagnostic"}
               </span>
               {currentProject?.teamAnalysis && (
                 <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">Complete</Badge>
