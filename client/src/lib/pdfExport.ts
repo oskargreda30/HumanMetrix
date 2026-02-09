@@ -3838,7 +3838,10 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
   ];
 
   additionalServices.forEach((service, index) => {
-    yPos = ensurePageSpace(pdf, yPos, 18, pageHeight, pageWidth);
+    // For the last item, request enough space for itself + contact box to keep them together
+    const isLast = index === additionalServices.length - 1;
+    const spaceNeeded = isLast ? 46 : 18;
+    yPos = ensurePageSpace(pdf, yPos, spaceNeeded, pageHeight, pageWidth);
 
     pdf.setFillColor(59, 130, 246);
     pdf.roundedRect(20, yPos - 2, 6, 6, 1, 1, 'F');
@@ -3865,7 +3868,7 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
 
   yPos += 6;
 
-  // Contact info box
+  // Contact info box - ensure it stays on same page as extra offerings
   yPos = ensurePageSpace(pdf, yPos, 40, pageHeight, pageWidth);
   pdf.setFillColor(239, 246, 255);
   pdf.setDrawColor(59, 130, 246);
@@ -5932,7 +5935,10 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     pdf.setFont('helvetica', 'normal');
     const descLines = pdf.splitTextToSize(service.description, pageWidth - 58);
     const serviceHeight = 7 + (descLines.length * 4) + 4;
-    yPos = ensurePageSpace(pdf, yPos, serviceHeight, pageHeight, pageWidth);
+    // For the last item, request enough space for itself + contact box to keep them together
+    const isLast = index === additionalServices.length - 1;
+    const spaceNeeded = isLast ? serviceHeight + 26 : serviceHeight;
+    yPos = ensurePageSpace(pdf, yPos, spaceNeeded, pageHeight, pageWidth);
 
     pdf.setFillColor(59, 130, 246);
     pdf.roundedRect(22, yPos - 2, 6, 6, 1, 1, 'F');
@@ -5958,6 +5964,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
 
   yPos += 6;
 
+  // Contact info box - ensure it stays on same page as extra offerings
   yPos = ensurePageSpace(pdf, yPos, 20, pageHeight, pageWidth);
   pdf.setFillColor(239, 246, 255);
   pdf.setDrawColor(59, 130, 246);
