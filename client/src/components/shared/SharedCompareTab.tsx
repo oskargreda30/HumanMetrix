@@ -922,30 +922,105 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
     if (candidatesWithMissingAssessments.length > 0) {
       candidatesWithMissingAssessments.forEach(({ name, missing }) => {
         if (missing.length === 1) {
-          nextSteps.push(`Have ${name} complete the ${missing[0]} assessment for a complete skills picture`);
+          nextSteps.push(`Have ${name} complete the ${missing[0]} assessment to enable a full cross-candidate comparison and more accurate role fit scoring`);
         } else if (missing.length <= 3) {
-          nextSteps.push(`Have ${name} complete ${missing.slice(0, -1).join(', ')} and ${missing[missing.length - 1]} assessments`);
+          nextSteps.push(`Have ${name} complete ${missing.slice(0, -1).join(', ')} and ${missing[missing.length - 1]} assessments — incomplete profiles limit the reliability of overall fit calculations`);
         } else {
-          nextSteps.push(`Have ${name} complete all outstanding assessments (${missing.length} remaining)`);
+          nextSteps.push(`Have ${name} complete all outstanding assessments (${missing.length} remaining) — their current profile is too incomplete for meaningful comparison`);
         }
       });
     }
     
-    // Add hiring-focused steps
+    // Identify specific skill gaps for top candidate
+    const topCandidateIndex = selectedCandidateData.findIndex((c: any) => getCandidateName(c) === topCandidate.name);
+    const topFitData = comparison?.fitAssessments?.[topCandidateIndex];
+    const topAiData = comparison?.aiReadinessAssessments?.[topCandidateIndex];
+    const topAiqData = comparison?.aiqAssessments?.[topCandidateIndex];
+    const topPromptData = comparison?.promptArchitectureAssessments?.[topCandidateIndex];
+    
+    // Build assessment-specific insights
+    const weakAreas: string[] = [];
+    const strongAreas: string[] = [];
+    if (topFitData) {
+      const fitScore = (topFitData as any).totalScore || 0;
+      if (fitScore >= 75) strongAreas.push('behavioral competencies');
+      else if (fitScore < 60) weakAreas.push('behavioral skills');
+    }
+    if (topAiData) {
+      const aiScores = Object.values(topAiData.scores || {}) as number[];
+      const aiScore = aiScores.length > 0 ? Math.round(aiScores.reduce((a, b) => a + b, 0) / aiScores.length) : 0;
+      if (aiScore >= 75) strongAreas.push('AI readiness');
+      else if (aiScore < 60) weakAreas.push('AI readiness');
+    }
+    if (topAiqData) {
+      const aiqScore = topAiqData.totalScore || 0;
+      if (aiqScore >= 75) strongAreas.push('AI ethics and governance');
+      else if (aiqScore < 60) weakAreas.push('AI ethics understanding');
+    }
+    if (topPromptData) {
+      const promptScore = topPromptData.totalScore || 0;
+      if (promptScore >= 75) strongAreas.push('prompt engineering');
+      else if (promptScore < 60) weakAreas.push('prompt architecture');
+    }
+    
+    // Add hiring-focused steps with in-depth guidance
     if (topCandidate.score >= 70) {
       nextSteps.push(
-        `Conduct final-round interviews with ${topCandidate.name} focusing on team dynamics and cultural alignment`,
-        'Perform reference checks emphasizing leadership and collaboration competencies',
-        'Prepare competitive offer package based on candidate expectations',
-        'Design 90-day onboarding plan targeting identified development areas'
+        `Conduct final-round interviews with ${topCandidate.name} — focus on team dynamics, cultural alignment, and how they approach collaboration under pressure. Use behavioural-event interviewing to validate assessment findings with real-world examples from their experience`
       );
+      if (weakAreas.length > 0) {
+        nextSteps.push(
+          `Design targeted development plan for ${topCandidate.name} addressing identified gaps in ${weakAreas.join(' and ')}. Consider pairing them with a mentor strong in these areas during their first 90 days to accelerate growth`
+        );
+      }
+      if (strongAreas.length > 0) {
+        nextSteps.push(
+          `Leverage ${topCandidate.name}'s strengths in ${strongAreas.join(' and ')} by structuring their initial projects around these competencies — this builds early wins and team confidence`
+        );
+      }
+      nextSteps.push(
+        `Perform reference checks with previous managers and colleagues, specifically probing leadership style, collaboration effectiveness, and how they handle ambiguity or setbacks in AI-driven environments`
+      );
+      if (hasRoleSelected) {
+        nextSteps.push(
+          `Prepare a role-specific onboarding plan for the ${currentRoleName} position that maps the first 30/60/90 days to key deliverables, aligning their proven strengths with immediate business needs while scheduling development for any skill gaps`
+        );
+      } else {
+        nextSteps.push(
+          `Build a structured 90-day onboarding plan with clear milestones, assigning initial projects that play to their strongest assessment areas while gradually introducing stretch assignments in development areas`
+        );
+      }
     } else {
       nextSteps.push(
-        'Schedule in-depth technical interviews with top candidates to validate assessment findings',
-        'Assess development potential and learning agility through case-based scenarios',
-        'Consider rotational or project-based trial periods to evaluate practical performance',
-        'Explore alternative role placements that may better match current skill profiles'
+        `Schedule structured technical deep-dive interviews with the top ${Math.min(candidateScores.length, 3)} candidates — use scenario-based questions and practical exercises to validate whether assessment gaps reflect true skill deficits or testing conditions`
       );
+      if (weakAreas.length > 0) {
+        nextSteps.push(
+          `Evaluate each candidate's growth trajectory and learning agility in ${weakAreas.join(' and ')} — ask for examples of how they have closed similar skill gaps in the past, and assess their openness to structured development`
+        );
+      }
+      nextSteps.push(
+        `Consider a probationary or project-based trial period (30-60 days) to evaluate real-world performance before making a permanent commitment — this reduces hiring risk when assessment scores indicate moderate fit`
+      );
+      if (hasRoleSelected) {
+        nextSteps.push(
+          `Review the ${currentRoleName} role requirements to identify which skills are truly critical versus desirable. If no candidate meets all critical thresholds, consider whether the role scope can be adjusted or whether targeted training could close the gap within an acceptable timeframe`
+        );
+      } else {
+        nextSteps.push(
+          `Explore alternative role placements that may better align with each candidate's current skill profile — a strong performer in the wrong role underperforms, while the right placement can unlock exceptional results`
+        );
+      }
+    }
+    
+    // Add comparative insight if there are close scores
+    if (candidateScores.length >= 2) {
+      const scoreDiff = candidateScores[0].score - candidateScores[1].score;
+      if (scoreDiff <= 5 && scoreDiff >= 0) {
+        nextSteps.push(
+          `${candidateScores[0].name} and ${candidateScores[1].name} are within ${scoreDiff} points of each other — consider using additional evaluation criteria such as cultural fit interviews, work sample tests, or team interaction sessions to differentiate between them`
+        );
+      }
     }
     
     return { employerRecommendation, nextSteps };

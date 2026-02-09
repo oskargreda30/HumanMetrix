@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
+import { AnalysisLoadingScreen } from "@/components/shared/AnalysisLoadingScreen";
 import { 
   BarChart, 
   Bar, 
@@ -190,6 +191,8 @@ export function EcosystemWorkflow({
   // Button click protection to prevent double-clicking
   const [isGenerating, setIsGenerating] = useState(false);
   const [showRegenConfirm, setShowRegenConfirm] = useState(false);
+  const [showAnalysisLoading, setShowAnalysisLoading] = useState(false);
+  const [analysisLoadingComplete, setAnalysisLoadingComplete] = useState(false);
 
   // Team member dialog
   const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
@@ -625,20 +628,19 @@ export function EcosystemWorkflow({
       return;
     }
 
+    // Show loading screen
+    setShowAnalysisLoading(true);
+    setAnalysisLoadingComplete(false);
+
     try {
       await generateAnalysis.mutateAsync({ projectId });
       // Refetch project to show results
       await refetchProject();
-      // Exit editing mode to show results
-      setIsEditingForm(false);
-      // Auto-scroll to the report section after a brief delay for render
-      setTimeout(() => {
-        const reportSection = document.querySelector('[data-testid="section-team-diagnostic-report"]');
-        if (reportSection) {
-          reportSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 100);
+      // Mark loading as complete - the transition callback will handle the rest
+      setAnalysisLoadingComplete(true);
     } catch (error: any) {
+      setShowAnalysisLoading(false);
+      setAnalysisLoadingComplete(false);
       toast({
         title: "Analysis failed",
         description: (error.message || "Could not generate team analysis.") + " You can retry without being charged again.",
@@ -760,22 +762,20 @@ export function EcosystemWorkflow({
         return;
       }
 
+      // Show loading screen
+      setShowAnalysisLoading(true);
+      setAnalysisLoadingComplete(false);
+
       try {
         await generateAnalysis.mutateAsync({ projectId, isRegeneration: true });
         await refetchProject();
         queryClient.invalidateQueries({ queryKey: ['/api/partner/me'] });
         setIsEditingForm(false);
-        toast({
-          title: "Report regenerated",
-          description: `${ECOSYSTEM_CREDITS_REQUIRED} credits used for regeneration.`,
-        });
-        setTimeout(() => {
-          const reportSection = document.querySelector('[data-testid="section-team-diagnostic-report"]');
-          if (reportSection) {
-            reportSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        }, 100);
+        // Mark loading as complete - the transition callback will handle the rest
+        setAnalysisLoadingComplete(true);
       } catch (error: any) {
+        setShowAnalysisLoading(false);
+        setAnalysisLoadingComplete(false);
         const msg = error?.message || "Could not regenerate analysis.";
         const isCreditsError = msg.toLowerCase().includes("insufficient credits");
         toast({
@@ -1772,6 +1772,29 @@ export function EcosystemWorkflow({
               </Button>
             </div>
           </Card>
+
+          {showAnalysisLoading && (
+            <AnalysisLoadingScreen
+              isComplete={analysisLoadingComplete}
+              averageTimeSeconds={30}
+              message="Generating Team Diagnostic Report..."
+              onTransitionComplete={() => {
+                setShowAnalysisLoading(false);
+                setAnalysisLoadingComplete(false);
+                setIsEditingForm(false);
+                toast({
+                  title: "Report generated",
+                  description: "Your Team Diagnostic Report is ready to view.",
+                });
+                setTimeout(() => {
+                  const reportSection = document.querySelector('[data-testid="section-team-diagnostic-report"]');
+                  if (reportSection) {
+                    reportSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }, 100);
+              }}
+            />
+          )}
         </>
       )}
 
