@@ -5779,7 +5779,7 @@ export function registerGuestAssessmentRoutes(app: Express) {
             email: invitation.email,
             candidateName: displayName,
             partnerName: invitation.partnerName || 'your employer',
-            dashboardUrl: `${req.protocol}://${req.get('host')}/dashboard`,
+            dashboardUrl: `${req.protocol}://${req.get('host')}/my-results`,
           });
         } catch (emailErr) {
           console.error(`[GuestInvite] Failed to send results-ready email to ${invitation.email}:`, emailErr);

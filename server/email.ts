@@ -3796,11 +3796,11 @@ export async function sendResultsReadyEmail(details: ResultsReadyEmailDetails) {
   let ctaNote: string;
   
   if (details.hasExistingAccount) {
-    ctaUrl = `${baseUrl}/dashboard`;
+    ctaUrl = `${baseUrl}/my-results`;
     ctaLabel = 'View Your Results';
     ctaNote = 'Log in to your HumanMetrix account to view your detailed results and insights.';
   } else {
-    ctaUrl = `${baseUrl}/auth?email=${encodeURIComponent(details.email)}&redirect=dashboard`;
+    ctaUrl = `${baseUrl}/auth?email=${encodeURIComponent(details.email)}&redirect=my-results`;
     ctaLabel = 'Create Account & View Results';
     ctaNote = 'Create a free HumanMetrix account to access your detailed results and insights.';
   }
