@@ -435,21 +435,29 @@ export default function EmbedAssessment() {
   const borderColor = isLight ? "border-gray-300" : "border-slate-600";
   const inputBg = isLight ? "bg-white border-gray-300 text-gray-900" : "bg-slate-900 border-slate-600 text-white";
 
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
+
   useEffect(() => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (!isMobile || !window.visualViewport) return;
 
     const vv = window.visualViewport;
     const handleResize = () => {
-      if (vv.height < window.innerHeight * 0.75) {
-        setTimeout(() => {
-          navBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 100);
-      }
+      const offset = window.innerHeight - vv.height;
+      setKeyboardOffset(offset > 50 ? offset : 0);
+    };
+
+    const handleScroll = () => {
+      const offset = window.innerHeight - vv.height;
+      setKeyboardOffset(offset > 50 ? offset : 0);
     };
 
     vv.addEventListener('resize', handleResize);
-    return () => vv.removeEventListener('resize', handleResize);
+    vv.addEventListener('scroll', handleScroll);
+    return () => {
+      vv.removeEventListener('resize', handleResize);
+      vv.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   useEffect(() => {
@@ -2699,7 +2707,7 @@ export default function EmbedAssessment() {
           </CardContent>
         </Card>
 
-        <div ref={navBarRef} className={`sticky bottom-0 z-30 ${isLight ? 'bg-gray-50/95' : 'bg-slate-900/95'} backdrop-blur-sm py-3 px-4 -mx-4 border-t ${isLight ? 'border-gray-200' : 'border-slate-700/50'} flex justify-between gap-3 md:static md:z-auto md:bg-transparent md:backdrop-blur-none md:py-0 md:px-0 md:mx-0 md:border-t-0 md:mt-6`}>
+        <div ref={navBarRef} className={`${keyboardOffset > 0 ? 'fixed left-0 right-0 z-30' : 'sticky bottom-0 z-30'} ${isLight ? 'bg-gray-50/95' : 'bg-slate-900/95'} backdrop-blur-sm py-3 px-4 ${keyboardOffset > 0 ? '' : '-mx-4'} border-t ${isLight ? 'border-gray-200' : 'border-slate-700/50'} flex justify-between gap-3 md:static md:z-auto md:bg-transparent md:backdrop-blur-none md:py-0 md:px-0 md:mx-0 md:border-t-0 md:mt-6`} style={keyboardOffset > 0 ? { bottom: `${keyboardOffset}px` } : undefined}>
           {isPromptArchitecture ? (
             <div />
           ) : (

@@ -114,21 +114,29 @@ export default function Assessment() {
   currentQuestionRef.current = currentQuestion;
   timeRemainingRef.current = timeRemaining;
 
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
+
   useEffect(() => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (!isMobile || !window.visualViewport) return;
 
     const vv = window.visualViewport;
     const handleResize = () => {
-      if (vv.height < window.innerHeight * 0.75) {
-        setTimeout(() => {
-          navBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 100);
-      }
+      const offset = window.innerHeight - vv.height;
+      setKeyboardOffset(offset > 50 ? offset : 0);
+    };
+
+    const handleScroll = () => {
+      const offset = window.innerHeight - vv.height;
+      setKeyboardOffset(offset > 50 ? offset : 0);
     };
 
     vv.addEventListener('resize', handleResize);
-    return () => vv.removeEventListener('resize', handleResize);
+    vv.addEventListener('scroll', handleScroll);
+    return () => {
+      vv.removeEventListener('resize', handleResize);
+      vv.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   const startMutation = useMutation({
@@ -1043,7 +1051,7 @@ export default function Assessment() {
               </Card>
 
               {/* Navigation - fixed at bottom on mobile so keyboard doesn't hide buttons */}
-              <div ref={navBarRef} className="sticky bottom-0 z-30 bg-background/95 backdrop-blur-sm py-3 px-4 -mx-4 border-t border-border/50 flex flex-wrap gap-3 justify-between md:static md:z-auto md:bg-transparent md:backdrop-blur-none md:py-0 md:px-0 md:mx-0 md:border-t-0 md:mt-6">
+              <div ref={navBarRef} className={`${keyboardOffset > 0 ? 'fixed left-0 right-0 z-30' : 'sticky bottom-0 z-30'} bg-background/95 backdrop-blur-sm py-3 px-4 ${keyboardOffset > 0 ? '' : '-mx-4'} border-t border-border/50 flex flex-wrap gap-3 justify-between md:static md:z-auto md:bg-transparent md:backdrop-blur-none md:py-0 md:px-0 md:mx-0 md:border-t-0 md:mt-6`} style={keyboardOffset > 0 ? { bottom: `${keyboardOffset}px` } : undefined}>
                 {!submitMutation.isPending && !isPromptArchitecture && (
                   <Button
                     variant="outline"
