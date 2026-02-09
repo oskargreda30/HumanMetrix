@@ -3810,6 +3810,8 @@ export async function sendResultsReadyEmail(details: ResultsReadyEmailDetails) {
     ctaNote = 'Create a free HumanMetrix account to access your detailed results and insights.';
   }
   
+  console.log(`[Email] Results ready email CTA URL: ${ctaUrl} (partnerInvitationId: ${details.partnerInvitationId || 'none'})`);
+  
   const msg = {
     to: details.email,
     subject: `Your ${subjectLabel} Results Are Ready`,

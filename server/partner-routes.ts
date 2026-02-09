@@ -4436,6 +4436,7 @@ export function registerPartnerRoutes(app: Express) {
           
           try {
             const { sendResultsReadyEmail } = await import("./email");
+            const invitationIdForEmail = (session as any).metadata?.invitationId || (session as any).partnerInvitationId || null;
             const emailResult = await sendResultsReadyEmail({
               email: targetEmail,
               candidateName: (session as any).metadata?.candidateName,
@@ -4443,6 +4444,7 @@ export function registerPartnerRoutes(app: Express) {
               partnerCompanyName,
               hasExistingAccount: !!existingUserForEmail,
               sessionId: b2bSessionId,
+              partnerInvitationId: invitationIdForEmail || undefined,
             });
             
             if (emailResult.success) {
@@ -4731,6 +4733,7 @@ export function registerPartnerRoutes(app: Express) {
       const existingUserForResend = await storage.getUserByEmail(session.externalEmail);
       
       const { sendResultsReadyEmail } = await import("./email");
+      const invitationIdForResend = (session as any).metadata?.invitationId || (session as any).partnerInvitationId || null;
       const emailResult = await sendResultsReadyEmail({
         email: session.externalEmail,
         candidateName: (session as any).metadata?.candidateName,
@@ -4738,6 +4741,7 @@ export function registerPartnerRoutes(app: Express) {
         partnerCompanyName,
         hasExistingAccount: !!existingUserForResend,
         sessionId,
+        partnerInvitationId: invitationIdForResend || undefined,
       });
       
       if (!emailResult.success) {
@@ -4798,6 +4802,7 @@ export function registerPartnerRoutes(app: Express) {
       if (shouldSendEmail) {
         const existingUser = await storage.getUserByEmail(targetEmail);
         const { sendResultsReadyEmail } = await import("./email");
+        const invitationIdForDeliver = (session as any).metadata?.invitationId || (session as any).partnerInvitationId || null;
         const emailResult = await sendResultsReadyEmail({
           email: targetEmail,
           candidateName: (session as any).metadata?.candidateName,
@@ -4805,6 +4810,7 @@ export function registerPartnerRoutes(app: Express) {
           partnerCompanyName,
           hasExistingAccount: !!existingUser,
           sessionId,
+          partnerInvitationId: invitationIdForDeliver || undefined,
         });
         
         if (!emailResult.success) {
@@ -4876,6 +4882,7 @@ export function registerPartnerRoutes(app: Express) {
       const existingUser = await storage.getUserByEmail(targetEmail);
       
       const { sendResultsReadyEmail } = await import("./email");
+      const invitationIdForManual = (session as any).metadata?.invitationId || (session as any).partnerInvitationId || null;
       const emailResult = await sendResultsReadyEmail({
         email: targetEmail,
         candidateName: (session as any).metadata?.candidateName,
@@ -4883,6 +4890,7 @@ export function registerPartnerRoutes(app: Express) {
         partnerCompanyName,
         hasExistingAccount: !!existingUser,
         sessionId,
+        partnerInvitationId: invitationIdForManual || undefined,
       });
       
       if (!emailResult.success) {
@@ -5316,11 +5324,14 @@ export function registerPartnerRoutes(app: Express) {
           const assessmentTypes = validSessions.map(s => s!.assessmentType);
           
           const { sendResultsReadyEmail } = await import("./email");
+          const bundleInvitationId = validSessions.find(s => (s as any)?.metadata?.invitationId)?.metadata?.invitationId || 
+                                     validSessions.find(s => (s as any)?.partnerInvitationId)?.partnerInvitationId || null;
           const emailResult = await sendResultsReadyEmail({
             email,
             assessmentTypes: assessmentTypes.length > 0 ? assessmentTypes : ['fit'],
             partnerCompanyName: partnerName,
             hasExistingAccount,
+            partnerInvitationId: bundleInvitationId || undefined,
           });
           
           if (emailResult.success) {

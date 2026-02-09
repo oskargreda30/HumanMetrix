@@ -1932,6 +1932,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
               const { sendResultsReadyEmail } = await import('./email');
               const existingUser = await storage.getUserByEmail(session.externalEmail);
+              const invitationIdFromSession = (session as any).metadata?.invitationId || (session as any).partnerInvitationId || null;
               await sendResultsReadyEmail({
                 email: session.externalEmail,
                 candidateName: session.externalUserId || undefined,
@@ -1939,6 +1940,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
                 hasExistingAccount: !!existingUser,
                 sessionId,
+                partnerInvitationId: invitationIdFromSession || undefined,
               });
               
               // Email sent successfully - update delivery status
@@ -25889,6 +25891,7 @@ async function sendFreeUnlockResultsEmail(session: AssessmentSession) {
     
     const { sendResultsReadyEmail } = await import('./email');
     const existingUser = await storage.getUserByEmail(session.externalEmail);
+    const invitationIdFromSession = (session as any).metadata?.invitationId || (session as any).partnerInvitationId || null;
     await sendResultsReadyEmail({
       email: session.externalEmail,
       candidateName: session.externalUserId || undefined,
@@ -25896,6 +25899,7 @@ async function sendFreeUnlockResultsEmail(session: AssessmentSession) {
       partnerCompanyName: partner?.companyName || partner?.name || 'HumanMetrix Partner',
       hasExistingAccount: !!existingUser,
       sessionId: session.id,
+      partnerInvitationId: invitationIdFromSession || undefined,
     });
     
     // Mark email as sent - update both email sent time and delivery status
