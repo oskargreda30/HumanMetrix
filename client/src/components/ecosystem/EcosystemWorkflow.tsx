@@ -223,6 +223,7 @@ export function EcosystemWorkflow({
   const [expandedStep, setExpandedStep] = useState<number>(1);
   const isInitialLoadRef = useRef(true);
   const lastProjectStepRef = useRef<number | null>(null);
+  const lastInitializedProjectIdRef = useRef<string | null>(null);
 
   // Scroll to a specific step card with header offset
   const scrollToStep = useCallback((stepNumber: number) => {
@@ -260,14 +261,12 @@ export function EcosystemWorkflow({
   // Reset all state when projectId changes (switching projects)
   // This ensures new projects start with completely empty form fields
   useEffect(() => {
-    // Reset UI state
     setIsEditingForm(false);
     setIsGenerating(false);
     isInitialLoadRef.current = true;
     lastProjectStepRef.current = null;
+    lastInitializedProjectIdRef.current = null;
     
-    // Explicitly reset all form fields to empty strings
-    // This handles back-to-back creations and ensures clean state
     setMissionStatement("");
     setCompanyEthos("");
     setIndustry("");
@@ -278,7 +277,6 @@ export function EcosystemWorkflow({
     setHiringPlans("");
     setCurrentChallenges("");
     
-    // Reset deep dive fields
     setDelayedTasks("");
     setConflictTopics("");
     setAvoidedWork("");
@@ -291,55 +289,54 @@ export function EcosystemWorkflow({
     setTransformativeFix("");
     setShowDeepDive(false);
     
-    // Reset expanded step to 1 for new projects
     setExpandedStep(1);
   }, [projectId]);
   
   // Initialize form from project data
-  // For new/empty projects, fields will be empty strings since project has no saved data
-  // Guard: only populate form if project.id matches the current projectId to avoid stale data
+  // Guards: only populate when project.id matches current projectId AND
+  // we haven't already initialized this exact project (prevents stale cache re-population)
   useEffect(() => {
-    if (project && project.id === projectId) {
-      setMissionStatement(project.missionStatement || "");
-      setCompanyEthos(project.companyEthos || "");
-      setIndustry(project.industry || "");
-      setTeamFunction(project.teamFunction || "");
-      setTeamSize(project.teamSize?.toString() || "");
-      setWorkMode(project.workMode || "");
-      setTeamStage(project.teamStage || "");
-      setHiringPlans(project.hiringPlans || "");
-      setCurrentChallenges(project.currentChallenges || "");
-      
-      // Deep dive fields
-      setDelayedTasks(project.delayedTasks || "");
-      setConflictTopics(project.conflictTopics || "");
-      setAvoidedWork(project.avoidedWork || "");
-      setOverloadedMember(project.overloadedMember || "");
-      setWishedSkills(project.wishedSkills || "");
-      setIdealInteractionStyle(project.idealInteractionStyle || "");
-      setPersonalityGap(project.personalityGap || "");
-      setUpcomingInitiative(project.upcomingInitiative || "");
-      setCloneableSkills(project.cloneableSkills || "");
-      setTransformativeFix(project.transformativeFix || "");
-      
-      // Check if any deep dive fields have data
-      const hasDeepDiveData = project.delayedTasks || project.conflictTopics || project.avoidedWork ||
-        project.overloadedMember || project.wishedSkills || project.idealInteractionStyle ||
-        project.personalityGap || project.upcomingInitiative || project.cloneableSkills || project.transformativeFix;
-      setShowDeepDive(!!hasDeepDiveData);
-      
-      // Only auto-expand on initial load or when project step actually advances
-      const newStep = project.currentStep || 1;
-      if (isInitialLoadRef.current || (lastProjectStepRef.current !== null && newStep > lastProjectStepRef.current)) {
-        setExpandedStep(newStep);
-        if (!isInitialLoadRef.current && newStep > (lastProjectStepRef.current || 0)) {
-          scrollToStep(newStep);
-        }
+    if (!project || project.id !== projectId) return;
+    if (lastInitializedProjectIdRef.current === project.id && !isInitialLoadRef.current) return;
+    
+    lastInitializedProjectIdRef.current = project.id;
+    
+    setMissionStatement(project.missionStatement || "");
+    setCompanyEthos(project.companyEthos || "");
+    setIndustry(project.industry || "");
+    setTeamFunction(project.teamFunction || "");
+    setTeamSize(project.teamSize?.toString() || "");
+    setWorkMode(project.workMode || "");
+    setTeamStage(project.teamStage || "");
+    setHiringPlans(project.hiringPlans || "");
+    setCurrentChallenges(project.currentChallenges || "");
+    
+    setDelayedTasks(project.delayedTasks || "");
+    setConflictTopics(project.conflictTopics || "");
+    setAvoidedWork(project.avoidedWork || "");
+    setOverloadedMember(project.overloadedMember || "");
+    setWishedSkills(project.wishedSkills || "");
+    setIdealInteractionStyle(project.idealInteractionStyle || "");
+    setPersonalityGap(project.personalityGap || "");
+    setUpcomingInitiative(project.upcomingInitiative || "");
+    setCloneableSkills(project.cloneableSkills || "");
+    setTransformativeFix(project.transformativeFix || "");
+    
+    const hasDeepDiveData = project.delayedTasks || project.conflictTopics || project.avoidedWork ||
+      project.overloadedMember || project.wishedSkills || project.idealInteractionStyle ||
+      project.personalityGap || project.upcomingInitiative || project.cloneableSkills || project.transformativeFix;
+    setShowDeepDive(!!hasDeepDiveData);
+    
+    const newStep = project.currentStep || 1;
+    if (isInitialLoadRef.current || (lastProjectStepRef.current !== null && newStep > lastProjectStepRef.current)) {
+      setExpandedStep(newStep);
+      if (!isInitialLoadRef.current && newStep > (lastProjectStepRef.current || 0)) {
+        scrollToStep(newStep);
       }
-      lastProjectStepRef.current = newStep;
-      isInitialLoadRef.current = false;
     }
-  }, [project, scrollToStep]);
+    lastProjectStepRef.current = newStep;
+    isInitialLoadRef.current = false;
+  }, [project, projectId, scrollToStep]);
 
   // Progress tracking for analysis generation
   useEffect(() => {

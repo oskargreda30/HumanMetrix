@@ -479,8 +479,10 @@ export function EcosystemAutoProject({
         >
           <CardContent className="p-4 md:p-6 text-center">
             <FileText className="h-6 w-6 md:h-8 md:w-8 mx-auto mb-2 text-primary" />
-            <h3 className="font-semibold text-sm md:text-base">Saved Reports</h3>
-            <p className="text-xs md:text-sm text-muted-foreground">View completed team analyses</p>
+            <h3 className="font-semibold text-sm md:text-base">Your Analyses</h3>
+            <p className="text-xs md:text-sm text-muted-foreground">
+              {projects.length > 0 ? `${completedProjects.length} completed, ${inProgressProjects.length} in progress` : 'No analyses yet'}
+            </p>
           </CardContent>
         </Card>
         {/* Back to Individual Analysis - different color (matching the pattern from PartnerAnalysisTab) */}
@@ -741,43 +743,81 @@ export function EcosystemAutoProject({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              Saved Team Analyses
+              Your Analyses
             </CardTitle>
-            <CardDescription>View and access your completed team diagnostic reports</CardDescription>
+            <CardDescription>View completed reports and resume in-progress analyses</CardDescription>
           </CardHeader>
           <CardContent>
-            {completedProjects.length > 0 ? (
+            {projects.length > 0 ? (
               <div className="space-y-3">
-                {completedProjects.map((proj) => (
-                  <div 
-                    key={proj.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover-elevate cursor-pointer"
-                    onClick={() => {
-                      switchToProject(proj.id);
-                      setActiveView('new');
-                    }}
-                    data-testid={`saved-report-card-${proj.id}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-primary" />
-                      <div>
-                        <p className="font-medium">{proj.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {proj.createdAt ? new Date(proj.createdAt).toLocaleDateString() : 'Completed'}
-                        </p>
+                {/* Completed analyses first */}
+                {completedProjects.length > 0 && (
+                  <>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Completed</p>
+                    {completedProjects.map((proj) => (
+                      <div 
+                        key={proj.id}
+                        className="flex items-center justify-between p-4 border rounded-lg hover-elevate cursor-pointer"
+                        onClick={() => {
+                          switchToProject(proj.id);
+                          setActiveView('new');
+                        }}
+                        data-testid={`saved-report-card-${proj.id}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-primary" />
+                          <div>
+                            <p className="font-medium">{proj.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {proj.createdAt ? new Date(proj.createdAt).toLocaleDateString() : 'Completed'}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                          Complete
+                        </Badge>
                       </div>
-                    </div>
-                    <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
-                      Complete
-                    </Badge>
-                  </div>
-                ))}
+                    ))}
+                  </>
+                )}
+                
+                {/* In-progress analyses */}
+                {inProgressProjects.length > 0 && (
+                  <>
+                    {completedProjects.length > 0 && <div className="my-2" />}
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">In Progress</p>
+                    {inProgressProjects.map((proj) => (
+                      <div 
+                        key={proj.id}
+                        className="flex items-center justify-between p-4 border rounded-lg hover-elevate cursor-pointer"
+                        onClick={() => {
+                          switchToProject(proj.id);
+                          setActiveView('new');
+                        }}
+                        data-testid={`saved-report-card-${proj.id}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-muted-foreground" />
+                          <div>
+                            <p className="font-medium">{proj.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Step {proj.currentStep || 1} of 7 &middot; {proj.createdAt ? new Date(proj.createdAt).toLocaleDateString() : 'Draft'}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge variant="outline">
+                          Draft
+                        </Badge>
+                      </div>
+                    ))}
+                  </>
+                )}
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No completed analyses yet</p>
-                <p className="text-sm mt-1">Complete a team diagnostic from the New Analysis tab to see it here</p>
+                <p>No analyses yet</p>
+                <p className="text-sm mt-1">Create a new team diagnostic to get started</p>
               </div>
             )}
           </CardContent>
