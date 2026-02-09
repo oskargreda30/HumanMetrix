@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, TrendingDown, Download, Award, Brain, Sparkles, MessageSquare, Users, Clock, ShieldAlert, DollarSign, User, ChevronUp, BarChart3, RefreshCw } from "lucide-react";
+import { Loader2, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, TrendingDown, Download, Award, Brain, Sparkles, Clock, ShieldAlert, User, ChevronUp, RefreshCw } from "lucide-react";
 import { AnalysisLoadingScreen } from "./AnalysisLoadingScreen";
 import { Badge } from "@/components/ui/badge";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -18,8 +18,8 @@ import { Progress } from "@/components/ui/progress";
 import { exportRoleFitPDF } from "@/lib/pdfExport";
 import SkillsLegend from "@/components/SkillsLegend";
 import { CriticalSkillsAnalysis } from "@/components/shared/CriticalSkillsAnalysis";
-import { EnquiryModal } from "@/components/EnquiryModal";
 import { HowToReadReport } from "@/components/shared/HowToReadReport";
+import { AdditionalServicesSection } from "@/components/shared/AdditionalServicesSection";
 
 function stripMarkdown(text: string): string {
   return text
@@ -124,7 +124,6 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
   const [analysisTriggered, setAnalysisTriggered] = useState(false);
   const [loadingTransitionComplete, setLoadingTransitionComplete] = useState(false);
   const [isRerunning, setIsRerunning] = useState(false);
-  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
   const forceRefreshRef = useRef(false);
   const { toast } = useToast();
 
@@ -1150,90 +1149,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
             </Card>
           )}
 
-          {/* Additional Services on Request */}
-          <Card className="border-primary/20 bg-primary">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
-                <Sparkles className="h-5 w-5 text-white" />
-                Additional Services on Request
-              </CardTitle>
-              <p className="text-sm text-white/80">
-                Contact our team to unlock these premium insights for your hiring decisions
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                    <MessageSquare className="h-4 w-4 text-white" />
-                    Suggested Interview Questions
-                  </h4>
-                  <p className="text-sm text-white/70">
-                    AI-generated questions based on candidate's assessment results and skill gaps
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                    <Users className="h-4 w-4 text-white" />
-                    Team Composition Fit
-                  </h4>
-                  <p className="text-sm text-white/70">
-                    Analysis of how the candidate would complement your existing team dynamics
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                    <Clock className="h-4 w-4 text-white" />
-                    Time to Productivity Estimate
-                  </h4>
-                  <p className="text-sm text-white/70">
-                    Projected onboarding timeline based on skill readiness and learning agility
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                    <ShieldAlert className="h-4 w-4 text-white" />
-                    Hiring Risk Analysis
-                  </h4>
-                  <p className="text-sm text-white/70">
-                    Comprehensive risk assessment highlighting potential challenges and mitigations
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                    <DollarSign className="h-4 w-4 text-white" />
-                    Development Investment Cost
-                  </h4>
-                  <p className="text-sm text-white/70">
-                    Estimated training and development investment to close identified skill gaps
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                  <div className="mb-2">
-                    <Badge className="bg-amber-500 text-white border-amber-600 text-xs">Coming Soon</Badge>
-                  </div>
-                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                    <BarChart3 className="h-4 w-4 text-white" />
-                    Cohort Benchmarking
-                  </h4>
-                  <p className="text-sm text-white/70">
-                    Compare candidate performance against industry benchmarks and similar cohorts
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4 text-center">
-                <Button 
-                  variant="outline" 
-                  className="border-white text-white hover:bg-white/20"
-                  onClick={() => setShowEnquiryModal(true)}
-                  data-testid="button-contact-team-services"
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Speak to the Team
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <AdditionalServicesSection enquiryContext="Role Fit Analysis - Premium Services" />
 
           <SkillsLegend />
 
@@ -1273,11 +1189,6 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
         </div>
       )}
 
-      <EnquiryModal 
-        open={showEnquiryModal} 
-        onOpenChange={setShowEnquiryModal}
-        context="Role Fit Analysis - Enterprise Services"
-      />
     </div>
   );
 }

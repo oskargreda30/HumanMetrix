@@ -10,7 +10,7 @@ function getCsrfToken(): string | null {
   return match ? decodeURIComponent(match[2]) : null;
 }
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Users, Target, TrendingUp, Trophy, AlertTriangle, Download, CheckCircle2, AlertCircle, FileText, Sparkles, MessageSquare, Clock, ShieldAlert, DollarSign, ArrowUp, Brain, Send, ExternalLink, RefreshCw, Mail } from "lucide-react";
+import { Loader2, Users, Target, TrendingUp, Trophy, AlertTriangle, Download, CheckCircle2, AlertCircle, Sparkles, Clock, ShieldAlert, ArrowUp, Brain, Send, ExternalLink, RefreshCw, Mail } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -46,7 +46,8 @@ import html2canvas from "html2canvas";
 import { exportMultiCandidateComparisonPDF } from "@/lib/pdfExport";
 import SkillsLegend from "@/components/SkillsLegend";
 import { MultiCandidateCriticalSkillsAnalysis, type CriticalSkillMultiData } from "@/components/shared/MultiCandidateCriticalSkillsAnalysis";
-import { EnquiryModal } from "@/components/EnquiryModal";
+import { HowToReadReport } from "@/components/shared/HowToReadReport";
+import { AdditionalServicesSection } from "@/components/shared/AdditionalServicesSection";
 
 // Mapping from short/legacy skill names to canonical names used in candidate data
 const SKILL_NAME_MAPPING: Record<string, string> = {
@@ -252,7 +253,6 @@ export default function PartnerMultiCandidateRoleFitTab() {
   const [isExporting, setIsExporting] = useState(false);
   const [insufficientDataDialogOpen, setInsufficientDataDialogOpen] = useState(false);
   const [insufficientDataError, setInsufficientDataError] = useState<InsufficientDataError | null>(null);
-  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
   const [isRerunning, setIsRerunning] = useState(false);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [incompleteCandidates, setIncompleteCandidates] = useState<Array<{
@@ -801,76 +801,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
             </div>
           </div>
 
-          {/* How to Read This Report Section - Matching Individual Tab Style */}
-          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <FileText className="h-5 w-5 text-primary" />
-                How to Read This Report
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                A step-by-step guide to understanding this multi-candidate comparison for the {comparison.roleSnapshot?.roleName} role
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                {/* Step 1 */}
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
-                  <div>
-                    <p className="font-medium text-sm">Role Alignment Tiers</p>
-                    <p className="text-xs text-muted-foreground">
-                      <Badge variant="secondary" className="mr-1 text-[10px] px-1 py-0">75%+</Badge> High alignment, 
-                      <Badge variant="secondary" className="mx-1 text-[10px] px-1 py-0">50-74%</Badge> Moderate, 
-                      <Badge variant="secondary" className="mx-1 text-[10px] px-1 py-0">&lt;50%</Badge> Development needed
-                    </p>
-                  </div>
-                </div>
-                {/* Step 2 */}
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
-                  <div>
-                    <p className="font-medium text-sm">Skill Criticality</p>
-                    <p className="text-xs text-muted-foreground">
-                      Skills are prioritised based on how essential they are for success in this role. Focus on critical skills first when evaluating candidates.
-                    </p>
-                  </div>
-                </div>
-                {/* Step 3 */}
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
-                  <div>
-                    <p className="font-medium text-sm">Understanding Trait Scores</p>
-                    <p className="text-xs text-muted-foreground">FIT and AI Readiness are <strong>trait-based</strong>. Higher scores indicate stronger trait presence - whether beneficial depends on role requirements.</p>
-                  </div>
-                </div>
-                {/* Step 4 */}
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
-                  <div>
-                    <p className="font-medium text-sm">Prompt Architecture Scores</p>
-                    <p className="text-xs text-muted-foreground">Measures <strong>AI prompt engineering</strong> ability across 7 progressive levels - from basic prompts to advanced multi-agent orchestration.</p>
-                  </div>
-                </div>
-                {/* Step 5 */}
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
-                  <div>
-                    <p className="font-medium text-sm">AIQ (Algorithmic Integrity Quotient)</p>
-                    <p className="text-xs text-muted-foreground">Assesses <strong>ethical AI decision-making</strong> - how candidates balance efficiency, fairness, and transparency in AI-driven scenarios.</p>
-                  </div>
-                </div>
-                {/* Step 6 */}
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">6</div>
-                  <div>
-                    <p className="font-medium text-sm">Gap Analysis</p>
-                    <p className="text-xs text-muted-foreground">Gaps show difference between candidate score and role requirement, helping identify where development may be needed.</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <HowToReadReport reportType="rolefit" />
 
           {/* Hiring Recommendation - Most Important Section */}
           {comparison.summaryInsights.recommendation && (
@@ -1549,78 +1480,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
             </CardContent>
           </Card>
 
-          {/* Additional Services on Request - Matching Individual Tab Style */}
-          <Card className="border-primary/20 bg-primary">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
-                <Sparkles className="h-5 w-5 text-white" />
-                Additional Services on Request
-              </CardTitle>
-              <p className="text-sm text-white/80">
-                Contact our team to unlock these premium insights for your hiring decisions
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                    <MessageSquare className="h-4 w-4 text-white" />
-                    Suggested Interview Questions
-                  </h4>
-                  <p className="text-sm text-white/70">
-                    AI-generated questions based on candidates' assessment results and skill gaps
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                    <Users className="h-4 w-4 text-white" />
-                    Team Composition Fit
-                  </h4>
-                  <p className="text-sm text-white/70">
-                    Analysis of how candidates would complement your existing team dynamics
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                    <Clock className="h-4 w-4 text-white" />
-                    Time to Productivity Estimate
-                  </h4>
-                  <p className="text-sm text-white/70">
-                    Projected onboarding timeline based on skill readiness and learning agility
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                    <ShieldAlert className="h-4 w-4 text-white" />
-                    Hiring Risk Analysis
-                  </h4>
-                  <p className="text-sm text-white/70">
-                    Comprehensive risk assessment highlighting potential challenges and mitigations
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                    <DollarSign className="h-4 w-4 text-white" />
-                    Development Investment Cost
-                  </h4>
-                  <p className="text-sm text-white/70">
-                    Estimated training and development investment to close identified skill gaps
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4 text-center">
-                <Button 
-                  variant="outline" 
-                  className="border-white text-white"
-                  onClick={() => setShowEnquiryModal(true)}
-                  data-testid="button-contact-team-services-multi"
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Speak to the Team
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <AdditionalServicesSection enquiryContext="Multi-Candidate Role Fit - Premium Services" />
 
           {/* Skills Legend */}
           <SkillsLegend />
@@ -1803,11 +1663,6 @@ export default function PartnerMultiCandidateRoleFitTab() {
         </DialogContent>
       </Dialog>
 
-      <EnquiryModal 
-        open={showEnquiryModal} 
-        onOpenChange={setShowEnquiryModal}
-        context="Multi-Candidate Role Fit - Enterprise Services"
-      />
     </div>
   );
 }
