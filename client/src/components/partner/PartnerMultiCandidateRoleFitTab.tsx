@@ -801,7 +801,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
             </div>
           </div>
 
-          <HowToReadReport reportType="rolefit" />
+          <HowToReadReport reportType="rolefit_multi" />
 
           {/* Hiring Recommendation - Most Important Section */}
           {comparison.summaryInsights.recommendation && (

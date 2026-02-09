@@ -52,7 +52,8 @@ const getPromptArchBandInterpretation = (score: number): { title: string; descri
 
 function getHowToReadReportType(reportType: string): ReportType {
   if (reportType === 'comparison') return 'comparison';
-  if (reportType === 'role_fit_single' || reportType === 'role_fit_multi') return 'rolefit';
+  if (reportType === 'role_fit_single') return 'rolefit';
+  if (reportType === 'role_fit_multi') return 'rolefit_multi';
   return 'individual';
 }
 
