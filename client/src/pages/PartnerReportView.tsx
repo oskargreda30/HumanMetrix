@@ -686,7 +686,49 @@ function ComparisonReportContent({ reportData }: { reportData: any }) {
   );
 }
 
+function SkillAlignmentCard({ skill, idx }: { skill: any; idx: number }) {
+  const gap = skill.candidateScore - skill.requiredScore;
+  return (
+    <div className="p-4 rounded-lg border bg-card" data-testid={`row-skill-alignment-${idx}`}>
+      <div className="flex justify-between items-center gap-1 mb-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{skill.skillName}</span>
+          {skill.criticality === 'critical' && (
+            <Badge className="bg-blue-600 text-white text-[10px] px-1.5 py-0">Critical</Badge>
+          )}
+        </div>
+        <Badge variant={gap >= 0 ? "default" : "destructive"}>
+          {gap >= 0 ? `+${gap}%` : `${gap}%`} gap
+        </Badge>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <div className="text-xs text-muted-foreground mb-1">Candidate Score</div>
+          <div className="flex items-center gap-2">
+            <Progress value={skill.candidateScore} className="h-2 flex-1" />
+            <span className={`text-sm font-medium ${getScoreColor(skill.candidateScore)}`}>
+              {skill.candidateScore}%
+            </span>
+          </div>
+        </div>
+        <div>
+          <div className="text-xs text-muted-foreground mb-1">Required Score</div>
+          <div className="flex items-center gap-2">
+            <Progress value={skill.requiredScore} className="h-2 flex-1" />
+            <span className="text-sm font-medium text-muted-foreground">
+              {skill.requiredScore}%
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function RoleFitReportContent({ reportData }: { reportData: any }) {
+  const strengths = reportData.strengths || [];
+  const gaps = reportData.gaps || [];
+
   return (
     <>
       <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
@@ -737,103 +779,191 @@ function RoleFitReportContent({ reportData }: { reportData: any }) {
               </div>
             </div>
           </div>
+
+          {reportData.dataCoverage && (
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30" data-testid="container-data-coverage">
+              <Shield className="h-5 w-5 text-primary flex-shrink-0" />
+              <div className="text-sm">
+                <span className="font-medium">Data Coverage: {reportData.dataCoverage.percentage}%</span>
+                <span className="text-muted-foreground ml-2">
+                  ({reportData.dataCoverage.assessedSkillCount}/{reportData.dataCoverage.totalRequiredSkills} skills assessed)
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="text-center p-3 rounded-lg border bg-card" data-testid="card-rolefit-overall">
+              <div className="text-xs text-muted-foreground mb-1">Overall Fit</div>
+              <div className={`text-2xl font-bold ${getScoreColor(reportData.overallFit || 0)}`}>
+                {reportData.overallFit || 0}%
+              </div>
+            </div>
+            {reportData.promptArchitectureScore !== undefined && (
+              <div className="text-center p-3 rounded-lg border bg-card" data-testid="card-rolefit-prompt">
+                <div className="text-xs text-muted-foreground mb-1">Prompt Arch.</div>
+                <div className={`text-2xl font-bold ${getScoreColor(reportData.promptArchitectureScore)}`}>
+                  {reportData.promptArchitectureScore}%
+                </div>
+              </div>
+            )}
+            {reportData.aiqScore !== undefined && (
+              <div className="text-center p-3 rounded-lg border bg-card" data-testid="card-rolefit-aiq">
+                <div className="text-xs text-muted-foreground mb-1">AIQ Score</div>
+                <div className={`text-2xl font-bold ${getScoreColor(reportData.aiqScore)}`}>
+                  {reportData.aiqScore}%
+                </div>
+              </div>
+            )}
+            <div className="text-center p-3 rounded-lg border bg-card" data-testid="card-rolefit-gaps-count">
+              <div className="text-xs text-muted-foreground mb-1">Skill Gaps</div>
+              <div className={`text-2xl font-bold ${gaps.length > 3 ? 'text-red-600' : gaps.length > 0 ? 'text-amber-600' : 'text-green-600'}`}>
+                {gaps.length}
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {reportData.skillAlignments && reportData.skillAlignments.length > 0 && (
+      {(strengths.length > 0 || gaps.length > 0) && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Skill Alignment Breakdown
+              <Award className="h-5 w-5" />
+              Strengths & Gaps
             </CardTitle>
-            <CardDescription>Detailed comparison of candidate scores against role requirements</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3" data-testid="list-skill-alignments">
-              {reportData.skillAlignments.map((skill: any, idx: number) => {
-                const gap = skill.candidateScore - skill.requiredScore;
-                return (
-                  <div key={idx} className="p-4 rounded-lg border bg-card" data-testid={`row-skill-alignment-${idx}`}>
-                    <div className="flex justify-between items-center gap-1 mb-3 flex-wrap">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{skill.skillName}</span>
-                        {skill.critical && (
-                          <Badge className="bg-blue-600 text-white text-[10px] px-1.5 py-0">Critical</Badge>
-                        )}
+            <div className="grid gap-6 md:grid-cols-2">
+              {strengths.length > 0 && (
+                <div>
+                  <h4 className="flex items-center gap-2 mb-3 font-semibold text-green-600">
+                    <TrendingUp className="h-4 w-4" />
+                    Key Strengths
+                  </h4>
+                  <div className="space-y-2" data-testid="list-strengths">
+                    {strengths.map((s: string, i: number) => (
+                      <div key={i} className="flex items-center gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-950/20" data-testid={`row-strength-${i}`}>
+                        <TrendingUp className="h-3 w-3 text-green-600 flex-shrink-0" />
+                        <span className="text-sm font-medium">{s}</span>
                       </div>
-                      <Badge variant={gap >= 0 ? "default" : "destructive"}>
-                        {gap >= 0 ? `+${gap}%` : `${gap}%`} gap
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <div className="text-xs text-muted-foreground mb-1">Candidate Score</div>
-                        <div className="flex items-center gap-2">
-                          <Progress value={skill.candidateScore} className="h-2 flex-1" />
-                          <span className={`text-sm font-medium ${getScoreColor(skill.candidateScore)}`}>
-                            {skill.candidateScore}%
-                          </span>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground mb-1">Required Score</div>
-                        <div className="flex items-center gap-2">
-                          <Progress value={skill.requiredScore} className="h-2 flex-1" />
-                          <span className="text-sm font-medium text-muted-foreground">
-                            {skill.requiredScore}%
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                );
-              })}
+                </div>
+              )}
+              {gaps.length > 0 && (
+                <div>
+                  <h4 className="flex items-center gap-2 mb-3 font-semibold text-amber-600">
+                    <TrendingDown className="h-4 w-4" />
+                    Key Gaps
+                  </h4>
+                  <div className="space-y-2" data-testid="list-skill-gaps">
+                    {gaps.map((g: string, i: number) => (
+                      <div key={i} className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20" data-testid={`row-gap-${i}`}>
+                        <TrendingDown className="h-3 w-3 text-amber-600 flex-shrink-0" />
+                        <span className="text-sm font-medium">{g}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
       )}
 
-      {reportData.skillGaps && reportData.skillGaps.length > 0 && (
+      {reportData.fitSkillAlignments && reportData.fitSkillAlignments.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingDown className="h-5 w-5 text-amber-500" />
-              Key Skill Gaps
+              <Target className="h-5 w-5 text-blue-500" />
+              FIT Skill Alignment
             </CardTitle>
-            <CardDescription>Areas where candidate scores fall below role requirements</CardDescription>
+            <CardDescription>Behavioral trait scores vs. role requirements</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2" data-testid="list-skill-gaps">
-              {reportData.skillGaps.map((gap: any, idx: number) => (
-                <div key={idx} className="flex items-center justify-between gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
-                  <span className="font-medium text-sm">{gap.skillName || gap.skill}</span>
-                  <Badge variant="destructive" className="text-xs">
-                    -{Math.abs(gap.gap || gap.difference || 0)}%
-                  </Badge>
-                </div>
+            <div className="space-y-3" data-testid="list-fit-skill-alignments">
+              {reportData.fitSkillAlignments.map((skill: any, idx: number) => (
+                <SkillAlignmentCard key={idx} skill={skill} idx={idx} />
               ))}
             </div>
           </CardContent>
         </Card>
       )}
 
-      {reportData.recommendations && reportData.recommendations.length > 0 && (
+      {reportData.aiReadinessSkillAlignments && reportData.aiReadinessSkillAlignments.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Brain className="h-5 w-5 text-purple-500" />
+              AI Readiness Skill Alignment
+            </CardTitle>
+            <CardDescription>AI capability scores vs. role requirements</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3" data-testid="list-air-skill-alignments">
+              {reportData.aiReadinessSkillAlignments.map((skill: any, idx: number) => (
+                <SkillAlignmentCard key={idx} skill={skill} idx={(reportData.fitSkillAlignments?.length || 0) + idx} />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {reportData.promptRoleFitAnalysis && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-orange-500" />
+              Prompt Architecture Analysis
+            </CardTitle>
+            {reportData.promptArchitectureScore !== undefined && (
+              <CardDescription>Score: {reportData.promptArchitectureScore}% - {getPromptArchBandInterpretation(reportData.promptArchitectureScore).title}</CardDescription>
+            )}
+          </CardHeader>
+          <CardContent>
+            <div className="prose prose-sm max-w-none dark:prose-invert">
+              <p className="whitespace-pre-wrap" data-testid="text-prompt-role-fit">{reportData.promptRoleFitAnalysis}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {reportData.aiqRoleFitAnalysis && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-green-500" />
+              AIQ (Ethics) Analysis
+            </CardTitle>
+            {reportData.aiqScore !== undefined && (
+              <CardDescription>Score: {reportData.aiqScore}% - {getAIQBandInterpretation(reportData.aiqScore).title}</CardDescription>
+            )}
+          </CardHeader>
+          <CardContent>
+            <div className="prose prose-sm max-w-none dark:prose-invert">
+              <p className="whitespace-pre-wrap" data-testid="text-aiq-role-fit">{reportData.aiqRoleFitAnalysis}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {reportData.nextSteps && reportData.nextSteps.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Lightbulb className="h-5 w-5 text-primary" />
-              Recommendations
+              Recommended Next Steps
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3" data-testid="list-recommendations">
-              {reportData.recommendations.map((rec: any, idx: number) => (
-                <div key={idx} className="flex gap-3 p-3 rounded-lg bg-muted/30">
+            <div className="space-y-3" data-testid="list-next-steps">
+              {reportData.nextSteps.map((step: string, idx: number) => (
+                <div key={idx} className="flex gap-3 p-3 rounded-lg bg-muted/30" data-testid={`row-next-step-${idx}`}>
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
                     {idx + 1}
                   </div>
-                  <p className="text-sm">{typeof rec === 'string' ? rec : rec.text || rec.recommendation || JSON.stringify(rec)}</p>
+                  <p className="text-sm">{step}</p>
                 </div>
               ))}
             </div>
@@ -841,17 +971,17 @@ function RoleFitReportContent({ reportData }: { reportData: any }) {
         </Card>
       )}
 
-      {reportData.analysis && (
+      {reportData.finalRecommendation && (
         <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              AI Analysis
+              Final Recommendation
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="prose prose-sm max-w-none dark:prose-invert">
-              <p className="whitespace-pre-wrap" data-testid="text-role-fit-analysis">{reportData.analysis}</p>
+              <p className="whitespace-pre-wrap" data-testid="text-final-recommendation">{reportData.finalRecommendation}</p>
             </div>
           </CardContent>
         </Card>
@@ -861,25 +991,46 @@ function RoleFitReportContent({ reportData }: { reportData: any }) {
 }
 
 function ProfileInsightsContent({ reportData }: { reportData: any }) {
+  const candidateName = reportData.candidateName || reportData.title?.replace('Profile Insights: ', '') || 'Candidate';
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          Profile Insights
-        </CardTitle>
-        <CardDescription>AI-generated analysis of candidate profile and potential</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {reportData.insights ? (
-          <div className="prose prose-sm max-w-none dark:prose-invert">
-            <div className="whitespace-pre-wrap" data-testid="text-profile-insights">{reportData.insights}</div>
-          </div>
-        ) : (
-          <p className="text-muted-foreground" data-testid="text-no-insights">No insights available.</p>
-        )}
-      </CardContent>
-    </Card>
+    <>
+      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-5 w-5 text-primary" />
+            {candidateName}
+          </CardTitle>
+          <CardDescription>
+            AI-generated profile analysis
+            {reportData.generatedAt && (
+              <span className="ml-2 text-xs">
+                Generated {new Date(reportData.generatedAt).toLocaleDateString()}
+              </span>
+            )}
+          </CardDescription>
+        </CardHeader>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Profile Insights
+          </CardTitle>
+          <CardDescription>AI-generated analysis of candidate profile and potential</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {reportData.insights ? (
+            <div className="prose prose-sm max-w-none dark:prose-invert">
+              <div className="whitespace-pre-wrap" data-testid="text-profile-insights">{reportData.insights}</div>
+            </div>
+          ) : (
+            <p className="text-muted-foreground" data-testid="text-no-insights">No insights available.</p>
+          )}
+        </CardContent>
+      </Card>
+    </>
   );
 }
 
