@@ -689,7 +689,7 @@ export default function MyResults() {
 
               if (type === 'prompt_architecture') {
                 const totalScore = result.totalScore || 0;
-                const percentile = result.percentile || 0;
+                const percentile = result.percentile && result.percentile > 0 ? result.percentile : null;
                 return (
                   <Card key="prompt_architecture" id="assessment-prompt_architecture" className="p-6 mb-6" data-testid="card-prompt-arch-results">
                     <div className="flex items-center justify-between gap-3 mb-4">
@@ -722,15 +722,17 @@ export default function MyResults() {
                         <p className="text-sm text-muted-foreground">Directly correlates with AI productivity. Skilled prompt engineers extract 3-5x more value from AI tools, solve complex problems faster, and produce higher-quality AI-assisted outputs.</p>
                       </div>
                     </div>
-                    <div className="grid md:grid-cols-3 gap-4 mb-4">
+                    <div className={`grid ${percentile ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4 mb-4`}>
                       <div className="flex flex-col items-center justify-center p-4 bg-muted/30 rounded-lg">
                         <div className="text-2xl md:text-4xl font-bold text-amber-500 mb-1" data-testid="text-prompt-score">{totalScore}</div>
                         <div className="text-sm text-muted-foreground">Total Score</div>
                       </div>
+                      {percentile && (
                       <div className="flex flex-col items-center justify-center p-4 bg-muted/30 rounded-lg">
                         <div className="text-2xl md:text-4xl font-bold text-amber-500 mb-1" data-testid="text-prompt-percentile">{percentile}%</div>
                         <div className="text-sm text-muted-foreground">Percentile</div>
                       </div>
+                      )}
                       <div className="flex flex-col items-center justify-center p-4 bg-muted/30 rounded-lg">
                         <Badge 
                           variant={totalScore >= 70 ? "default" : totalScore >= 50 ? "secondary" : "outline"}

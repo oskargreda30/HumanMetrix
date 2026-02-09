@@ -3497,7 +3497,7 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
     pdf.setTextColor(promptPerf.color[0], promptPerf.color[1], promptPerf.color[2]);
     pdf.text(promptPerf.label, 25, yPos + 14);
 
-    if (data.promptArchitectureAssessment.percentile !== undefined) {
+    if (data.promptArchitectureAssessment.percentile && data.promptArchitectureAssessment.percentile > 0) {
       pdf.setTextColor(107, 114, 128);
       pdf.text(`Percentile: ${data.promptArchitectureAssessment.percentile}th`, 25, yPos + 19);
     }
