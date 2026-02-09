@@ -72,10 +72,9 @@ const B2COnboarding = lazy(() => import("@/pages/B2COnboarding"));
 const UnlockResults = lazy(() => import("@/pages/UnlockResults"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
-// Pulsing brain logo loading fallback during page transitions
 function PageLoader() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900">
+    <div className="fixed inset-0 flex items-center justify-center bg-slate-900 z-50">
       <div className="text-center">
         <div className="w-20 h-20 mx-auto mb-4 loader-pulse">
           <img src="/favicon.png" alt="HumanMetrix" className="w-full h-full object-contain" />
