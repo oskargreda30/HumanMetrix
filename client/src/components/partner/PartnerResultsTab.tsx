@@ -958,14 +958,14 @@ export default function PartnerResultsTab() {
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                             <div className="text-center p-4 rounded-lg border bg-card">
                               <div className="text-sm text-muted-foreground mb-1">FIT Score</div>
-                              <div className={`text-2xl font-bold ${fitData ? getScoreColor(fitData.totalScore) : 'text-muted-foreground'}`}>
-                                {fitData ? `${fitData.totalScore}%` : '-'}
+                              <div className={`text-2xl font-bold ${fitData ? getScoreColor(calculateAverageScore(fitData.scores)) : 'text-muted-foreground'}`}>
+                                {fitData ? `${calculateAverageScore(fitData.scores)}%` : '-'}
                               </div>
                             </div>
                             <div className="text-center p-4 rounded-lg border bg-card">
                               <div className="text-sm text-muted-foreground mb-1">AI Readiness</div>
-                              <div className={`text-2xl font-bold ${aiData ? getScoreColor(aiData.totalScore) : 'text-muted-foreground'}`}>
-                                {aiData ? `${aiData.totalScore}%` : '-'}
+                              <div className={`text-2xl font-bold ${aiData ? getScoreColor(calculateAverageScore(aiData.scores)) : 'text-muted-foreground'}`}>
+                                {aiData ? `${calculateAverageScore(aiData.scores)}%` : '-'}
                               </div>
                             </div>
                             <div className="text-center p-4 rounded-lg border bg-card">

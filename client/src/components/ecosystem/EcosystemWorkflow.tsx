@@ -277,6 +277,9 @@ export function EcosystemWorkflow({
     
     setIsEditingForm(false);
     setIsGenerating(false);
+    setIsRegenerating(false);
+    setShowAnalysisLoading(false);
+    setAnalysisLoadingComplete(false);
     isInitialLoadRef.current = true;
     lastProjectStepRef.current = null;
     

@@ -1034,20 +1034,20 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
     
     const assessmentData: Array<{ score: number; weight: number }> = [];
     
-    // FIT average
+    // FIT average (filter non-numeric and zero values)
     const fitData = comparison.fitAssessments?.[candidateIndex];
     if (fitData) {
-      const fitScores = Object.values(fitData.scores);
+      const fitScores = Object.values(fitData.scores).filter((v): v is number => typeof v === 'number' && v > 0);
       if (fitScores.length > 0) {
         const fitAvg = fitScores.reduce((a, b) => a + b, 0) / fitScores.length;
         assessmentData.push({ score: fitAvg, weight: assessmentWeights.fit });
       }
     }
     
-    // AI Readiness average
+    // AI Readiness average (filter non-numeric and zero values)
     const aiData = comparison.aiReadinessAssessments?.[candidateIndex];
     if (aiData) {
-      const aiScores = Object.values(aiData.scores);
+      const aiScores = Object.values(aiData.scores).filter((v): v is number => typeof v === 'number' && v > 0);
       if (aiScores.length > 0) {
         const aiAvg = aiScores.reduce((a, b) => a + b, 0) / aiScores.length;
         assessmentData.push({ score: aiAvg, weight: assessmentWeights.aiReadiness });
@@ -2656,7 +2656,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                               
                               const fitData = comparison.fitAssessments?.[candIndex];
                               if (fitData) {
-                                const fitScores = Object.values(fitData.scores);
+                                const fitScores = Object.values(fitData.scores).filter((v): v is number => typeof v === 'number' && v > 0);
                                 if (fitScores.length > 0) {
                                   const fitAvg = fitScores.reduce((a, b) => a + b, 0) / fitScores.length;
                                   assessmentData.push({ score: fitAvg, weight: equalWeight });
@@ -2665,7 +2665,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                               
                               const aiData = comparison.aiReadinessAssessments?.[candIndex];
                               if (aiData) {
-                                const aiScores = Object.values(aiData.scores);
+                                const aiScores = Object.values(aiData.scores).filter((v): v is number => typeof v === 'number' && v > 0);
                                 if (aiScores.length > 0) {
                                   const aiAvg = aiScores.reduce((a, b) => a + b, 0) / aiScores.length;
                                   assessmentData.push({ score: aiAvg, weight: equalWeight });
