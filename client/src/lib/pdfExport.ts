@@ -2471,6 +2471,23 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.text('= Essential for role success', criticalLegendX + 14, yPos + 1);
     
     pdf.setFont('helvetica', 'normal');
+    yPos += 5;
+    
+    // Line color legend row: green = target exceeded, red = below target
+    applySmallText(pdf);
+    pdf.setDrawColor(34, 197, 94);
+    pdf.setLineWidth(0.8);
+    pdf.line(chartMarginLeft + 2, yPos, chartMarginLeft + 10, yPos);
+    pdf.setTextColor(55, 65, 81);
+    pdf.text('Target Exceeded', chartMarginLeft + 13, yPos + 1);
+    
+    pdf.setDrawColor(239, 68, 68);
+    pdf.setLineWidth(0.8);
+    pdf.line(legendX - 3, yPos, legendX + 5, yPos);
+    pdf.setTextColor(55, 65, 81);
+    pdf.text('Below Target', legendX + 8, yPos + 1);
+    
+    pdf.setLineWidth(0.2);
     yPos += 6;
   };
   
