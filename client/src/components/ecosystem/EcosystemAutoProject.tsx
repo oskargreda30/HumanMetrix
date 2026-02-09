@@ -249,7 +249,7 @@ export function EcosystemAutoProject({
     setProjectId(null);
     
     if (oldProjectId) {
-      queryClient.invalidateQueries({ 
+      queryClient.removeQueries({ 
         predicate: (query) => {
           const key = query.queryKey[0];
           return typeof key === 'string' && key.includes(`/api/ecosystem/projects/${oldProjectId}`);
@@ -266,7 +266,7 @@ export function EcosystemAutoProject({
       
       console.log("[Ecosystem] Analysis created successfully:", project?.id);
       setPendingProjectName(sanitizedName);
-      setProjectId(project.id);
+      switchToProject(project.id);
       setShowNewAnalysisDialog(false);
       setNewAnalysisName("");
       setDialogError(null);
