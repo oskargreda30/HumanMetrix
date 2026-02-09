@@ -2689,12 +2689,14 @@ interface B2BAllCompleteEmailDetails {
   email: string;
   candidateName?: string;
   partnerCompanyName: string;
-  completedAssessments: string[]; // List of completed assessment types
+  completedAssessments: string[];
+  paidAssessments: string[];
+  unpaidAssessments: string[];
   paymentUrl: string;
-  bundlePrice: string; // Formatted bundle price with discount (e.g., "£60.00")
-  originalTotalPrice: string; // Formatted original total price (e.g., "£80.00")
-  discountPercentage: number; // e.g., 40
-  freeUnlockDate: Date; // 30 days after last completion
+  bundlePrice: string;
+  originalTotalPrice: string;
+  discountPercentage: number;
+  freeUnlockDate: Date;
 }
 
 export async function sendB2BAllCompleteEmail(details: B2BAllCompleteEmailDetails) {
@@ -2706,16 +2708,24 @@ export async function sendB2BAllCompleteEmail(details: B2BAllCompleteEmailDetail
   });
   
   const assessmentsList = details.completedAssessments.map(formatAssessmentName);
-  const assessmentsHtml = assessmentsList.map(a => `<li style="margin: 5px 0;">${a}</li>`).join('');
   const assessmentsText = assessmentsList.join(', ');
   
-  // Dynamic count text based on actual number of assessments
+  const unpaidList = details.unpaidAssessments.map(formatAssessmentName);
+  const paidList = details.paidAssessments.map(formatAssessmentName);
+  const unpaidCount = details.unpaidAssessments.length;
+  const showBundle = unpaidCount > 1 && details.discountPercentage > 0;
+  
   const assessmentCount = details.completedAssessments.length;
   const countText = assessmentCount === 4 ? 'all four assessments' : `all ${assessmentCount} assigned assessments`;
   
+  const unpaidHtml = unpaidList.map(a => `<li style="margin: 5px 0;">${a}</li>`).join('');
+  const paidHtml = paidList.map(a => `<li style="margin: 5px 0;">${a} <span style="color: #059669; font-weight: 600;">✓ Paid</span></li>`).join('');
+  
   const msg = {
     to: details.email,
-    subject: `🎉 All Assessments Complete - Unlock All Results with ${details.discountPercentage}% Bundle Discount!`,
+    subject: showBundle 
+      ? `🎉 All Assessments Complete - Unlock All Results with ${details.discountPercentage}% Bundle Discount!`
+      : `🎉 All Assessments Complete - Unlock Your Results!`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -2758,13 +2768,15 @@ export async function sendB2BAllCompleteEmail(details: B2BAllCompleteEmailDetail
               <div class="assessments-list">
                 <h4 style="margin: 0 0 10px 0; color: #059669;">✓ Completed Assessments:</h4>
                 <ul style="margin: 0; padding-left: 20px;">
-                  ${assessmentsHtml}
+                  ${paidHtml}${unpaidHtml}
                 </ul>
               </div>
               
+              ${unpaidCount > 0 ? `
               <div class="bundle-box">
+                ${showBundle ? `
                 <h3 style="margin: 0 0 15px 0; text-align: center; color: #92400e;">🎁 Exclusive Bundle Offer</h3>
-                <p style="text-align: center; margin: 0;">Unlock <strong>ALL</strong> your assessment results together and save big!</p>
+                <p style="text-align: center; margin: 0;">Unlock <strong>${unpaidCount}</strong> remaining assessment result${unpaidCount > 1 ? 's' : ''} together and save big!</p>
                 
                 <div class="price-container">
                   <span class="original-price">${details.originalTotalPrice}</span>
@@ -2773,15 +2785,22 @@ export async function sendB2BAllCompleteEmail(details: B2BAllCompleteEmailDetail
                   <br/>
                   <span class="savings-badge">SAVE ${details.discountPercentage}%</span>
                 </div>
+                ` : `
+                <h3 style="margin: 0 0 15px 0; text-align: center; color: #92400e;">Unlock Your Results</h3>
+                <div class="price-container">
+                  <span class="bundle-price">${details.bundlePrice}</span>
+                </div>
+                `}
                 
                 <p style="text-align: center; font-size: 14px; color: #78350f; margin: 15px 0 0 0;">
-                  View detailed results for all ${assessmentCount} assessments with insights and recommendations on your dashboard.
+                  View detailed results with insights and recommendations on your dashboard.
                 </p>
               </div>
               
               <div style="text-align: center;">
-                <a href="${details.paymentUrl}" class="button" style="color: white !important;">Unlock All Results Now</a>
+                <a href="${details.paymentUrl}" class="button" style="color: white !important;">Unlock Results Now</a>
               </div>
+              ` : ''}
               
               <div class="option-free">
                 <strong style="color: #059669;">🕐 Free Access Option</strong>
@@ -2801,21 +2820,21 @@ export async function sendB2BAllCompleteEmail(details: B2BAllCompleteEmailDetail
 You've completed ${countText} as part of your evaluation with ${details.partnerCompanyName}. This is a significant accomplishment!
 
 COMPLETED ASSESSMENTS:
-${assessmentsText}
-
+${paidList.length > 0 ? paidList.map(a => `${a} (Paid)`).join('\n') + '\n' : ''}${unpaidList.join('\n')}
+${unpaidCount > 0 ? `
 ═══════════════════════════════════════
-🎁 EXCLUSIVE BUNDLE OFFER
+${showBundle ? `🎁 EXCLUSIVE BUNDLE OFFER` : `UNLOCK YOUR RESULTS`}
 ═══════════════════════════════════════
 
-Unlock ALL your assessment results together and save ${details.discountPercentage}%!
+${showBundle ? `Unlock ${unpaidCount} remaining assessment results together and save ${details.discountPercentage}%!
 
 Original Price: ${details.originalTotalPrice}
 Bundle Price: ${details.bundlePrice}
-SAVINGS: ${details.discountPercentage}% OFF!
+SAVINGS: ${details.discountPercentage}% OFF!` : `Price: ${details.bundlePrice}`}
 
-View detailed results for all ${assessmentCount} assessments with insights and recommendations on your dashboard.
+View detailed results with insights and recommendations on your dashboard.
 
-Click here to unlock all results: ${details.paymentUrl}
+Click here to unlock results: ${details.paymentUrl}` : ''}
 
 FREE ACCESS
 All your results will be available for free on ${freeDate}.

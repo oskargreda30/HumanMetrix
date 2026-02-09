@@ -3066,26 +3066,27 @@ export function registerPartnerRoutes(app: Express) {
       const baseUrl = getBaseUrl(req);
       const paymentUrl = `${baseUrl}/unlock-results?email=${encodeURIComponent(invitation.email)}&invite=${token}&country=${userCountryCode}`;
       
-      // Only send completion email with bundle pricing if user hasn't already paid mid-series
-      if (!hasAlreadyPaid) {
-        try {
-          await sendB2BAllCompleteEmail({
-            email: invitation.email,
-            candidateName: invitation.name || undefined,
-            partnerCompanyName: companyName,
-            completedAssessments: completedTypes,
-            paymentUrl,
-            bundlePrice: bundlePriceDisplay,
-            originalTotalPrice: originalPriceDisplay,
-            discountPercentage,
-            freeUnlockDate,
-          });
-          console.log(`[Invite Complete] Sent completion email to ${invitation.email}`);
-        } catch (emailError) {
-          console.error(`[Invite Complete] Failed to send completion email:`, emailError);
-        }
-      } else {
-        console.log(`[Invite Complete] Skipping bundle pricing email - user has already paid for results`);
+      const paidTypes = completedSessions.filter(s => s.resultsPaymentStatus === 'paid').map(s => s.assessmentType);
+      const unpaidTypes = completedSessions.filter(s => s.resultsPaymentStatus !== 'paid').map(s => s.assessmentType);
+      
+      // Send completion email (always send, but content adapts based on paid/unpaid status)
+      try {
+        await sendB2BAllCompleteEmail({
+          email: invitation.email,
+          candidateName: invitation.name || undefined,
+          partnerCompanyName: companyName,
+          completedAssessments: completedTypes,
+          paidAssessments: paidTypes,
+          unpaidAssessments: unpaidTypes,
+          paymentUrl,
+          bundlePrice: bundlePriceDisplay,
+          originalTotalPrice: originalPriceDisplay,
+          discountPercentage,
+          freeUnlockDate,
+        });
+        console.log(`[Invite Complete] Sent completion email to ${invitation.email} (${unpaidTypes.length} unpaid, ${paidTypes.length} paid)`);
+      } catch (emailError) {
+        console.error(`[Invite Complete] Failed to send completion email:`, emailError);
       }
       
       // Update invitation status to completed
