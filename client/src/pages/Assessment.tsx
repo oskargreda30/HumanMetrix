@@ -888,7 +888,7 @@ export default function Assessment() {
         </DialogContent>
       </Dialog>
 
-      <main className="flex-grow py-16 pb-24 md:pb-16">
+      <main className="flex-grow py-16 pb-16">
         <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8">
           {/* Only show content after instructions dialog is dismissed and assessment started */}
           {!showInstructions && resultId && (
@@ -1025,7 +1025,7 @@ export default function Assessment() {
               </Card>
 
               {/* Navigation - fixed at bottom on mobile so keyboard doesn't hide buttons */}
-              <div className="fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-sm py-3 px-4 border-t border-border/50 flex flex-wrap gap-3 justify-between md:relative md:bottom-auto md:left-auto md:right-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:py-0 md:px-0 md:border-t-0">
+              <div className="sticky bottom-0 z-30 bg-background/95 backdrop-blur-sm py-3 px-4 -mx-4 border-t border-border/50 flex flex-wrap gap-3 justify-between md:static md:z-auto md:bg-transparent md:backdrop-blur-none md:py-0 md:px-0 md:mx-0 md:border-t-0 md:mt-6">
                 {!submitMutation.isPending && !isPromptArchitecture && (
                   <Button
                     variant="outline"
