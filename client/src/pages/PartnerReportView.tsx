@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -7,8 +8,9 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import {
   Loader2, FileText, TrendingUp, TrendingDown, BarChart3, Target, User, Award,
-  Brain, Sparkles, ArrowLeft, Calendar, Shield, Lightbulb, BookOpen, Users, AlertCircle
+  Brain, Sparkles, ArrowLeft, Calendar, Shield, Lightbulb, BookOpen, Users, AlertCircle, Download
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import {
   RadarChart,
   Radar,
@@ -195,7 +197,7 @@ function MarkdownContent({ text, testId }: { text: string; testId?: string }) {
   );
 }
 
-function ReportHeader({ title, createdAt, reportType, cached }: { title: string; createdAt?: string; reportType?: string; cached?: boolean }) {
+function ReportHeader({ title, createdAt, reportType, cached, onExportPDF, isExporting }: { title: string; createdAt?: string; reportType?: string; cached?: boolean; onExportPDF?: () => void; isExporting?: boolean }) {
   const reportTypeLabels: Record<string, string> = {
     individual: 'Individual Assessment Report',
     comparison: 'Candidate Comparison Report',
@@ -231,52 +233,36 @@ function ReportHeader({ title, createdAt, reportType, cached }: { title: string;
             {cached && <Badge variant="secondary" className="text-xs">Saved Report</Badge>}
           </div>
         </div>
-        <Link href="/partner">
-          <Button variant="outline" size="sm" data-testid="button-back-dashboard">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Dashboard
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          {onExportPDF && (
+            <Button
+              size="sm"
+              onClick={onExportPDF}
+              disabled={isExporting}
+              data-testid="button-export-pdf-top"
+            >
+              {isExporting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-1" />
+                  Export PDF
+                </>
+              )}
+            </Button>
+          )}
+          <Link href="/partner">
+            <Button variant="outline" size="sm" data-testid="button-back-dashboard">
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Dashboard
+            </Button>
+          </Link>
+        </div>
       </div>
     </div>
-  );
-}
-
-function ScoringMethodologySection() {
-  return (
-    <Card className="mb-6" data-testid="section-scoring-methodology">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Shield className="h-5 w-5 text-primary" />
-          Scoring Methodology
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-3 md:grid-cols-3">
-          <div className="p-3 rounded-lg bg-muted/30">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-3 h-3 rounded-full bg-green-500" />
-              <span className="font-medium text-sm">Strong (75%+)</span>
-            </div>
-            <p className="text-xs text-muted-foreground">Demonstrates well-developed capability in this area</p>
-          </div>
-          <div className="p-3 rounded-lg bg-muted/30">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-3 h-3 rounded-full bg-amber-500" />
-              <span className="font-medium text-sm">Developing (50-74%)</span>
-            </div>
-            <p className="text-xs text-muted-foreground">Shows foundational capability with room for growth</p>
-          </div>
-          <div className="p-3 rounded-lg bg-muted/30">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-3 h-3 rounded-full bg-red-500" />
-              <span className="font-medium text-sm">Needs Attention (&lt;50%)</span>
-            </div>
-            <p className="text-xs text-muted-foreground">Requires focused development in this area</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -1401,11 +1387,141 @@ function ReportDisclaimer() {
 export default function PartnerReportView() {
   const params = useParams<{ reportId: string }>();
   const reportId = params.reportId;
+  const { toast } = useToast();
+  const [isExporting, setIsExporting] = useState(false);
 
   const { data: reportData, isLoading, error } = useQuery<any>({
     queryKey: ['/api/partner/me/analysis-reports', reportId],
     enabled: !!reportId,
   });
+
+  const handleExportPDF = async () => {
+    if (!reportData || isExporting) return;
+    setIsExporting(true);
+    try {
+      const reportType = reportData.reportType || 'individual';
+
+      if (reportType === 'individual') {
+        const { exportIndividualReportPDF } = await import('@/lib/pdfExport');
+        const candidateName = reportData.title?.replace('Individual Report: ', '') || 'Candidate';
+        const nameParts = candidateName.split(' ');
+        await exportIndividualReportPDF({
+          candidate: {
+            firstName: nameParts[0] || '',
+            lastName: nameParts.slice(1).join(' ') || '',
+            email: reportData.candidateEmail || 'candidate@email.com',
+          },
+          fitAssessment: reportData.fitAssessments?.[0] || null,
+          aiReadinessAssessment: reportData.aiReadinessAssessments?.[0] || null,
+          promptArchitectureAssessment: reportData.promptArchitectureAssessments?.[0] || null,
+          aiqAssessment: reportData.aiqAssessments?.[0] || null,
+          aiInsights: reportData.aiInsights || null,
+        });
+        toast({ title: "PDF Exported", description: "Individual report PDF has been downloaded." });
+      } else if (reportType === 'comparison') {
+        const { exportComparisonPDF } = await import('@/lib/pdfExport');
+        const candidateCount = Math.max(
+          reportData.fitAssessments?.length || 0,
+          reportData.aiReadinessAssessments?.length || 0,
+          reportData.promptArchitectureAssessments?.length || 0,
+          reportData.aiqAssessments?.length || 0,
+          2
+        );
+        const titleMatch = reportData.title?.match(/Candidate Comparison:\s*(.+)/i);
+        const candidateNames = titleMatch
+          ? titleMatch[1].split(',').map((n: string) => n.trim()).filter((n: string) => n.length > 0)
+          : [];
+        const candidates = Array.from({ length: candidateCount }, (_, i) => ({
+          user: {
+            firstName: candidateNames[i]?.split(' ')[0] || `Candidate`,
+            lastName: candidateNames[i]?.split(' ').slice(1).join(' ') || `${i + 1}`,
+            email: `candidate${i + 1}@email.com`,
+          },
+        }));
+        const fitAssessments = reportData.fitAssessments || [];
+        const aiReadinessAssessments = reportData.aiReadinessAssessments || [];
+        const promptArchitectureAssessments = reportData.promptArchitectureAssessments || [];
+        const aiqAssessments = reportData.aiqAssessments || [];
+        const skillComparison = reportData.skillComparison || [];
+        const averageScores = reportData.averageScores || candidates.map(() => 0);
+        await exportComparisonPDF({
+          candidates,
+          fitAssessments,
+          aiReadinessAssessments,
+          promptArchitectureAssessments,
+          aiqAssessments,
+          skillComparison,
+          averageScores,
+        });
+        toast({ title: "PDF Exported", description: "Comparison report PDF has been downloaded." });
+      } else if (reportType === 'role_fit_single') {
+        const { exportRoleFitPDF } = await import('@/lib/pdfExport');
+        const candidateName = reportData.candidateName || reportData.title?.replace(/Role Fit.*?:\s*/i, '') || 'Candidate';
+        const nameParts = candidateName.split(' ');
+        await exportRoleFitPDF({
+          candidate: {
+            user: {
+              firstName: nameParts[0] || '',
+              lastName: nameParts.slice(1).join(' ') || '',
+              email: reportData.candidateEmail || 'candidate@email.com',
+            },
+            results: [],
+          },
+          role: {
+            name: reportData.roleName || reportData.role?.name || reportData.roleSnapshot?.roleName || 'Target Role',
+            description: reportData.roleDescription || reportData.role?.description || '',
+          },
+          criticalSkillNames: reportData.criticalSkillNames || [],
+          alignment: {
+            overallFit: reportData.overallFit ?? null,
+            fitSkillAlignments: reportData.fitSkillAlignments || reportData.skillAlignments?.filter((s: any) => s.assessmentType === 'fit') || null,
+            aiReadinessSkillAlignments: reportData.aiReadinessSkillAlignments || reportData.skillAlignments?.filter((s: any) => s.assessmentType === 'ai_readiness') || null,
+            strengths: reportData.strengths || [],
+            gaps: reportData.gaps || [],
+            cohortBenchmarks: reportData.cohortBenchmarks || null,
+            interviewQuestions: reportData.interviewQuestions || null,
+            roleFlexibility: reportData.roleFlexibility || [],
+            recommendations: reportData.recommendations || '',
+            riskFlags: reportData.riskFlags || [],
+            finalRecommendation: reportData.finalRecommendation || '',
+            nextSteps: reportData.nextSteps || [],
+            dataCoverage: reportData.dataCoverage || null,
+          },
+          fitAssessment: reportData.fitAssessments?.[0] || null,
+          aiReadinessAssessment: reportData.aiReadinessAssessments?.[0] || null,
+          promptArchitectureAssessment: reportData.promptArchitectureAssessments?.[0] || null,
+          aiqAssessment: reportData.aiqAssessments?.[0] || null,
+        });
+        toast({ title: "PDF Exported", description: "Role fit report PDF has been downloaded." });
+      } else if (reportType === 'role_fit_multi') {
+        const { exportMultiCandidateComparisonPDF } = await import('@/lib/pdfExport');
+        await exportMultiCandidateComparisonPDF({
+          roleSnapshot: reportData.roleSnapshot || { roleId: '', roleName: 'Target Role', requiredSkillScores: {} },
+          candidateEntries: reportData.candidateEntries || [],
+          summaryInsights: reportData.summaryInsights || {
+            topPerformer: { userId: '', userName: 'N/A', overallFit: 0 },
+            averageFit: 0,
+            fitDistribution: { strong: 0, moderate: 0, developmentNeeded: 0 },
+            commonStrengths: [],
+            commonGaps: [],
+            keyDifferentiators: [],
+          },
+          criticalSkillNames: reportData.criticalSkillNames || [],
+          aiInsights: reportData.aiInsights || null,
+        });
+        toast({ title: "PDF Exported", description: "Multi-candidate role fit PDF has been downloaded." });
+      } else {
+        toast({ title: "Export Not Available", description: "PDF export is not available for this report type.", variant: "destructive" });
+        setIsExporting(false);
+        return;
+      }
+    } catch (err) {
+      console.error('PDF export error:', err);
+      toast({ title: "Export Failed", description: "Failed to generate PDF. Please try again.", variant: "destructive" });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -1458,6 +1574,8 @@ export default function PartnerReportView() {
           createdAt={reportData.createdAt}
           reportType={reportType}
           cached={reportData.cached}
+          onExportPDF={(isIndividual || isComparison || isRoleFit) ? handleExportPDF : undefined}
+          isExporting={isExporting}
         />
 
         {(isIndividual || isComparison || isRoleFit) && <HowToReadReport reportType={howToReadType} />}
@@ -1484,6 +1602,28 @@ export default function PartnerReportView() {
         </div>
 
         <ReportDisclaimer />
+
+        {(isIndividual || isComparison || isRoleFit) && (
+          <div className="flex justify-end gap-2 mt-4 mb-4">
+            <Button
+              onClick={handleExportPDF}
+              disabled={isExporting}
+              data-testid="button-export-pdf-bottom"
+            >
+              {isExporting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export as PDF
+                </>
+              )}
+            </Button>
+          </div>
+        )}
 
         <div className="text-center mt-4 mb-8">
           <p className="text-xs text-muted-foreground">
