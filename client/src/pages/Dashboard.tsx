@@ -531,20 +531,32 @@ export default function Dashboard() {
 
   // Scroll to the target series card after data loads
   useEffect(() => {
-    if (scrollToSeriesId && partnerTestingSeries && partnerTestingSeries.length > 0) {
-      const timer = setTimeout(() => {
-        const element = document.getElementById(`partner-series-${scrollToSeriesId}`);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          element.classList.add('ring-2', 'ring-cyan-500', 'ring-offset-2');
-          setTimeout(() => {
-            element.classList.remove('ring-2', 'ring-cyan-500', 'ring-offset-2');
-          }, 3000);
-        }
+    if (!scrollToSeriesId) return;
+    
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    const tryScroll = () => {
+      const element = document.getElementById(`partner-series-${scrollToSeriesId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.classList.add('ring-2', 'ring-cyan-500', 'ring-offset-2');
+        setTimeout(() => {
+          element.classList.remove('ring-2', 'ring-cyan-500', 'ring-offset-2');
+        }, 3000);
         setScrollToSeriesId(null);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
+      } else {
+        attempts++;
+        if (attempts < maxAttempts) {
+          timer = setTimeout(tryScroll, 500);
+        } else {
+          setScrollToSeriesId(null);
+        }
+      }
+    };
+    
+    let timer = setTimeout(tryScroll, 500);
+    return () => clearTimeout(timer);
   }, [scrollToSeriesId, partnerTestingSeries]);
 
   if (assessmentsLoading || purchasesLoading || partnerSeriesLoading) {
