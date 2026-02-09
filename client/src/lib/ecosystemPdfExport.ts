@@ -6,8 +6,8 @@ const PAGE_WIDTH = 210;
 const PAGE_HEIGHT = 297;
 const MARGIN_LEFT = 20;
 const MARGIN_RIGHT = 20;
-const MARGIN_TOP = 35;
-const MARGIN_BOTTOM = 25;
+const MARGIN_TOP = 32;
+const MARGIN_BOTTOM = 20;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
 const COLORS = {
   primary: [30, 58, 138] as [number, number, number],
@@ -16,7 +16,7 @@ const COLORS = {
   textSecondary: [55, 65, 81] as [number, number, number],
   textMuted: [107, 114, 128] as [number, number, number],
   white: [255, 255, 255] as [number, number, number],
-  bgLight: [249, 250, 251] as [number, number, number],
+  bgLight: [240, 249, 255] as [number, number, number],
   bgSection: [243, 244, 246] as [number, number, number],
   border: [229, 231, 235] as [number, number, number],
   green: [22, 163, 74] as [number, number, number],
@@ -30,6 +30,8 @@ const COLORS = {
   purple: [147, 51, 234] as [number, number, number],
   cyan: [6, 182, 212] as [number, number, number],
   rose: [225, 29, 72] as [number, number, number],
+  descBox: [240, 249, 255] as [number, number, number],
+  descText: [71, 85, 105] as [number, number, number],
 };
 
 const CAP_COLORS: Record<string, [number, number, number]> = {
@@ -66,8 +68,13 @@ interface EcosystemPdfData {
 
 let totalPages = 1;
 
+function addBackgroundPattern(pdf: jsPDF) {
+  pdf.setFillColor(255, 255, 255);
+  pdf.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, 'F');
+}
+
 function addHeader(pdf: jsPDF) {
-  pdf.setFillColor(...COLORS.white);
+  pdf.setFillColor(255, 255, 255);
   pdf.rect(0, 0, PAGE_WIDTH, 32, 'F');
   try {
     pdf.addImage(HUMANMETRIX_LOGO_BASE64, 'PNG', -6, -4, 48, 48);
@@ -80,24 +87,22 @@ function addHeader(pdf: jsPDF) {
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(...COLORS.primaryLight);
   pdf.text('AI-Powered Assessment Platform', 34, 23);
-  pdf.setTextColor(...COLORS.text);
+  pdf.setTextColor(0, 0, 0);
 }
 
 function addFooter(pdf: jsPDF, pageNum: number) {
   pdf.setFontSize(8);
-  pdf.setTextColor(...COLORS.textMuted);
+  pdf.setTextColor(120, 120, 120);
   pdf.text(`Page ${pageNum} of ${totalPages}`, PAGE_WIDTH / 2, PAGE_HEIGHT - 8, { align: 'center' });
   pdf.text(`Generated: ${new Date().toLocaleDateString()}`, PAGE_WIDTH - 15, PAGE_HEIGHT - 8, { align: 'right' });
   pdf.text('\u00A9 HumanMetrix', 15, PAGE_HEIGHT - 8);
-  pdf.setTextColor(...COLORS.text);
+  pdf.setTextColor(0, 0, 0);
 }
 
 function newPage(pdf: jsPDF): number {
   pdf.addPage();
   totalPages++;
-  pdf.setFillColor(...COLORS.white);
-  pdf.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, 'F');
-  addHeader(pdf);
+  addBackgroundPattern(pdf);
   return MARGIN_TOP;
 }
 
@@ -108,21 +113,30 @@ function ensureSpace(pdf: jsPDF, yPos: number, needed: number): number {
   return yPos;
 }
 
-function drawSectionTitle(pdf: jsPDF, title: string, yPos: number, icon?: string): number {
+function addSectionHeader(pdf: jsPDF, title: string, yPos: number): number {
   yPos = ensureSpace(pdf, yPos, 20);
+  pdf.setDrawColor(...COLORS.bgSection);
   pdf.setFillColor(...COLORS.bgSection);
-  pdf.roundedRect(MARGIN_LEFT, yPos, CONTENT_WIDTH, 12, 2, 2, 'F');
-  pdf.setFontSize(11);
+  pdf.rect(MARGIN_LEFT, yPos, CONTENT_WIDTH, 12, 'F');
+  pdf.setFontSize(13);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(...COLORS.text);
-  const xOffset = icon ? MARGIN_LEFT + 10 : MARGIN_LEFT + 5;
-  if (icon) {
-    pdf.setFontSize(9);
-    pdf.text(icon, MARGIN_LEFT + 5, yPos + 8);
-    pdf.setFontSize(11);
-  }
-  pdf.text(title, xOffset, yPos + 8);
-  return yPos + 18;
+  pdf.text(title, MARGIN_LEFT + 5, yPos + 8);
+  pdf.setTextColor(0, 0, 0);
+  return yPos + 16;
+}
+
+function addDescriptionBox(pdf: jsPDF, text: string, yPos: number): number {
+  applySmallText(pdf);
+  const lines = pdf.splitTextToSize(text, CONTENT_WIDTH - 8);
+  const boxH = Math.max(10, lines.length * 4 + 4);
+  pdf.setFillColor(...COLORS.descBox);
+  pdf.setDrawColor(...COLORS.descBox);
+  pdf.roundedRect(MARGIN_LEFT, yPos - 2, CONTENT_WIDTH, boxH, 2, 2, 'F');
+  pdf.setTextColor(...COLORS.descText);
+  pdf.text(lines, MARGIN_LEFT + 4, yPos + 4);
+  pdf.setTextColor(0, 0, 0);
+  return yPos + boxH + 3;
 }
 
 function wrapText(pdf: jsPDF, text: string, maxWidth: number): string[] {
@@ -158,7 +172,7 @@ function drawCapabilityBadge(pdf: jsPDF, code: string, x: number, y: number, siz
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(...COLORS.white);
   pdf.text(code, x + size / 2, y - size / 2 + 2.5, { align: 'center' });
-  pdf.setTextColor(...COLORS.text);
+  pdf.setTextColor(0, 0, 0);
 }
 
 function drawHorizontalBar(pdf: jsPDF, x: number, y: number, width: number, currentPct: number, targetPct: number, barColor: [number, number, number]): void {
@@ -176,40 +190,111 @@ function drawHorizontalBar(pdf: jsPDF, x: number, y: number, width: number, curr
   pdf.setLineWidth(0.2);
 }
 
+function addReportGuidePage(pdf: jsPDF) {
+  addBackgroundPattern(pdf);
+  addHeader(pdf);
+
+  let yPos = 38;
+
+  pdf.setFillColor(...COLORS.primaryLight);
+  pdf.rect(0, yPos, PAGE_WIDTH, 28, 'F');
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(18);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('HOW TO READ THIS REPORT', PAGE_WIDTH / 2, yPos + 12, { align: 'center' });
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('A step-by-step guide for team leaders and stakeholders', PAGE_WIDTH / 2, yPos + 21, { align: 'center' });
+  pdf.setTextColor(0, 0, 0);
+  yPos = 85;
+
+  const addGuideItem = (num: number, title: string, description: string, y: number): number => {
+    pdf.setFillColor(...COLORS.primaryLight);
+    pdf.circle(25, y, 4, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(String(num), 25, y + 1, { align: 'center' });
+
+    pdf.setTextColor(17, 24, 39);
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(title, 34, y + 1);
+
+    pdf.setTextColor(75, 85, 99);
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    const lines = pdf.splitTextToSize(description, PAGE_WIDTH - 55);
+    lines.forEach((line: string, idx: number) => {
+      pdf.text(line, 34, y + 7 + (idx * 5));
+    });
+
+    return y + 10 + (lines.length * 5) + 6;
+  };
+
+  yPos = addGuideItem(1, 'Your Context',
+    'Summary of your mission statement, team details, and deep dive insights you provided during setup. This is the foundation for all analysis.', yPos);
+
+  yPos = addGuideItem(2, 'Strategic Assessment',
+    'Executive summary analyzing your team\'s strengths, gaps, and strategic recommendations. Written by AI based on all available team data.', yPos);
+
+  yPos = addGuideItem(3, 'Mission Alignment Score',
+    'How well your team\'s capabilities align with what your mission requires. Identifies which behavioral skills are most critical and why.', yPos);
+
+  yPos = addGuideItem(4, 'Health Score',
+    'Overall team capability coverage, balance, and risk exposure. Combines capability strength (40%), coverage (30%), and gap penalties (30%).', yPos);
+
+  yPos = addGuideItem(5, 'Capability Gap Analysis',
+    'Visual comparison of current team capabilities vs. mission requirements. Shows gaps and target thresholds for each behavioral dimension.', yPos);
+
+  yPos = addGuideItem(6, 'Hiring Recommendations',
+    'Ideal candidate profiles with specific FIT score targets, key behaviors to look for, and red flags to watch for during interviews.', yPos);
+
+  addGuideItem(7, 'Risk Alerts',
+    'Critical warnings about team vulnerabilities including single points of failure, capability imbalances, and areas needing immediate attention.', yPos);
+}
+
 export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void> {
   const { companyName, project, analysis, missionAnalysis, teamMembers, cumulativeScores } = data;
   totalPages = 1;
 
+  const missionScore = analysis.missionAlignmentScore ?? 0;
+  const healthScore = analysis.overallHealthScore ?? 0;
+  const teamSize = analysis.teamSize ?? teamMembers.length ?? 0;
+
   const pdf = new jsPDF('p', 'mm', 'a4');
-  pdf.setFillColor(...COLORS.white);
-  pdf.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, 'F');
-  addHeader(pdf);
 
-  let y = MARGIN_TOP;
+  // ========== PAGE 1: HOW TO READ THIS REPORT ==========
+  addReportGuidePage(pdf);
 
-  // ====== COVER / TITLE SECTION ======
-  y += 5;
+  // ========== PAGE 2: COVER + SUMMARY ==========
+  let y = newPage(pdf);
+
+  // Title banner - matches existing report style
+  y = 32;
   pdf.setFillColor(...COLORS.primaryLight);
-  pdf.rect(0, y, PAGE_WIDTH, 28, 'F');
-  pdf.setTextColor(...COLORS.white);
-  pdf.setFontSize(20);
+  pdf.rect(0, y, PAGE_WIDTH, 35, 'F');
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(22);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('TEAM DIAGNOSTIC REPORT', PAGE_WIDTH / 2, y + 12, { align: 'center' });
-  pdf.setFontSize(10);
+  pdf.text('TEAM DIAGNOSTIC REPORT', PAGE_WIDTH / 2, y + 13, { align: 'center' });
+  pdf.setFontSize(11);
   pdf.setFont('helvetica', 'normal');
+  pdf.text('COMPREHENSIVE REPORT', PAGE_WIDTH / 2, y + 22, { align: 'center' });
+  pdf.setFontSize(9);
   pdf.text(
-    `${companyName || 'Your Organization'} \u2022 ${analysis.teamSize} Team Members \u2022 ${new Date(analysis.generatedAt).toLocaleDateString()}`,
-    PAGE_WIDTH / 2, y + 21,
+    `${companyName || 'Your Organization'} \u2022 ${teamSize} Team Members \u2022 ${new Date(analysis.generatedAt).toLocaleDateString()}`,
+    PAGE_WIDTH / 2, y + 29,
     { align: 'center' }
   );
-  pdf.setTextColor(...COLORS.text);
-  y += 36;
+  pdf.setTextColor(0, 0, 0);
+  y += 43;
 
   // Score badges
   const badgeWidth = 70;
   const badgeX1 = PAGE_WIDTH / 2 - badgeWidth - 5;
   const badgeX2 = PAGE_WIDTH / 2 + 5;
-  
+
   pdf.setFillColor(...COLORS.blueLight);
   pdf.roundedRect(badgeX1, y, badgeWidth, 20, 3, 3, 'F');
   pdf.setFontSize(8);
@@ -218,9 +303,9 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   pdf.text('Mission Alignment', badgeX1 + badgeWidth / 2, y + 7, { align: 'center' });
   pdf.setFontSize(14);
   pdf.setFont('helvetica', 'bold');
-  const missionColor = analysis.missionAlignmentScore >= 70 ? COLORS.green : analysis.missionAlignmentScore >= 50 ? COLORS.amber : COLORS.red;
+  const missionColor = missionScore >= 70 ? COLORS.green : missionScore >= 50 ? COLORS.amber : COLORS.red;
   pdf.setTextColor(...missionColor);
-  pdf.text(`${analysis.missionAlignmentScore}%`, badgeX1 + badgeWidth / 2, y + 16, { align: 'center' });
+  pdf.text(`${missionScore}%`, badgeX1 + badgeWidth / 2, y + 16, { align: 'center' });
 
   pdf.setFillColor(...COLORS.greenLight);
   pdf.roundedRect(badgeX2, y, badgeWidth, 20, 3, 3, 'F');
@@ -230,48 +315,14 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   pdf.text('Health Score', badgeX2 + badgeWidth / 2, y + 7, { align: 'center' });
   pdf.setFontSize(14);
   pdf.setFont('helvetica', 'bold');
-  const healthColor = analysis.overallHealthScore >= 70 ? COLORS.green : analysis.overallHealthScore >= 50 ? COLORS.amber : COLORS.red;
+  const healthColor = healthScore >= 70 ? COLORS.green : healthScore >= 50 ? COLORS.amber : COLORS.red;
   pdf.setTextColor(...healthColor);
-  pdf.text(`${analysis.overallHealthScore}%`, badgeX2 + badgeWidth / 2, y + 16, { align: 'center' });
-  pdf.setTextColor(...COLORS.text);
+  pdf.text(`${healthScore}%`, badgeX2 + badgeWidth / 2, y + 16, { align: 'center' });
+  pdf.setTextColor(0, 0, 0);
   y += 28;
 
-  // ====== HOW TO READ THIS REPORT ======
-  y = drawSectionTitle(pdf, 'How to Read This Report', y);
-  applySmallText(pdf);
-  const guideItems = [
-    ['Your Context', 'Summary of the mission, team details, and insights you provided during setup.'],
-    ['Strategic Assessment', 'Executive summary analyzing your team\'s strengths, gaps, and strategic recommendations.'],
-    ['Mission Alignment', 'How well your team\'s capabilities match what your mission requires for success.'],
-    ['Health Score', 'Overall team capability coverage, balance, and risk exposure assessment.'],
-    ['Gap Analysis', 'Visual comparison of current team capabilities vs. what your mission requires.'],
-    ['Hiring Recommendations', 'Ideal candidate profiles with specific FIT score targets and interview guidance.'],
-  ];
-  const colWidth = CONTENT_WIDTH / 3;
-  for (let row = 0; row < 2; row++) {
-    y = ensureSpace(pdf, y, 16);
-    for (let col = 0; col < 3; col++) {
-      const idx = row * 3 + col;
-      const item = guideItems[idx];
-      const cx = MARGIN_LEFT + col * colWidth + 2;
-      pdf.setFontSize(8);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(...COLORS.textSecondary);
-      pdf.text(item[0], cx, y);
-      pdf.setFontSize(7);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(...COLORS.textMuted);
-      const descLines = wrapText(pdf, item[1], colWidth - 6);
-      descLines.forEach((line, li) => {
-        pdf.text(line, cx, y + 4 + li * 3.2);
-      });
-    }
-    y += 16;
-  }
-  y += 4;
-
   // ====== YOUR CONTEXT ======
-  y = drawSectionTitle(pdf, 'Your Context', y);
+  y = addSectionHeader(pdf, 'YOUR CONTEXT', y);
   const contextItems: [string, string][] = [];
   if (project.missionStatement) contextItems.push(['Mission Statement', project.missionStatement]);
   if (project.teamStage) contextItems.push(['Team Stage', project.teamStage.replace(/_/g, ' ')]);
@@ -323,11 +374,8 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   // ====== CANDIDATES ASSESSED ======
   const assessedMembers = teamMembers.filter((m: any) => m.fitScores && Object.keys(m.fitScores).length > 0);
   if (assessedMembers.length > 0) {
-    y = drawSectionTitle(pdf, `Candidates Assessed (${assessedMembers.length})`, y);
-    applySmallText(pdf);
-    pdf.setTextColor(...COLORS.textMuted);
-    y = drawWrappedText(pdf, `This analysis is based on FIT assessment scores from ${assessedMembers.length} team member${assessedMembers.length !== 1 ? 's' : ''}.`, MARGIN_LEFT + 4, y, CONTENT_WIDTH - 8);
-    y += 3;
+    y = addSectionHeader(pdf, `CANDIDATES ASSESSED (${assessedMembers.length})`, y);
+    y = addDescriptionBox(pdf, `This analysis is based on FIT assessment scores from ${assessedMembers.length} team member${assessedMembers.length !== 1 ? 's' : ''}.`, y);
 
     const cols = 3;
     const cellW = CONTENT_WIDTH / cols;
@@ -361,7 +409,8 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   // ====== STRATEGIC ASSESSMENT ======
   if (analysis.executiveSummary) {
     y = newPage(pdf);
-    y = drawSectionTitle(pdf, 'Strategic Assessment', y);
+    y = addSectionHeader(pdf, 'STRATEGIC ASSESSMENT', y);
+    y = addDescriptionBox(pdf, 'AI-generated executive summary analyzing your team\'s strengths, gaps, and strategic recommendations based on all available assessment data.', y);
     applyBodyText(pdf);
     const paragraphs = analysis.executiveSummary.split('\n\n');
     for (const para of paragraphs) {
@@ -374,26 +423,26 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   // ====== MISSION ALIGNMENT SCORE ======
   if (missionAnalysis) {
     y = ensureSpace(pdf, y, 60);
-    y = drawSectionTitle(pdf, 'Mission Alignment Score Explained', y);
-    applyBodyText(pdf);
-    y = drawWrappedText(
-      pdf,
-      `Your Mission Fit score of ${analysis.missionAlignmentScore}% measures how well your team's capabilities align with what your mission requires. Based on your mission statement, we've identified which behavioral skills are most critical for your success.`,
-      MARGIN_LEFT + 4, y, CONTENT_WIDTH - 8
+    y = addSectionHeader(pdf, 'MISSION ALIGNMENT SCORE', y);
+    y = addDescriptionBox(pdf,
+      `Your Mission Fit score of ${missionScore}% measures how well your team's capabilities align with what your mission requires. Based on your mission statement, we've identified which behavioral skills are most critical for your success.`,
+      y
     );
-    y += 4;
 
     if (missionAnalysis.summary) {
-      y = ensureSpace(pdf, y, 15);
-      pdf.setFillColor(...COLORS.bgLight);
+      applyBodyText(pdf);
       const summaryLines = wrapText(pdf, missionAnalysis.summary, CONTENT_WIDTH - 16);
-      const summaryHeight = summaryLines.length * 4.5 + 8;
-      pdf.roundedRect(MARGIN_LEFT + 2, y - 2, CONTENT_WIDTH - 4, summaryHeight, 2, 2, 'F');
+      const summaryBoxH = summaryLines.length * 4.5 + 12;
+      y = ensureSpace(pdf, y, summaryBoxH);
+
+      pdf.setFillColor(...COLORS.descBox);
+      pdf.roundedRect(MARGIN_LEFT + 2, y - 2, CONTENT_WIDTH - 4, summaryBoxH, 2, 2, 'F');
+
       applyLabelText(pdf);
       pdf.setFontSize(7);
       pdf.setTextColor(...COLORS.textMuted);
       pdf.text('MISSION ANALYSIS', MARGIN_LEFT + 6, y + 2);
-      y += 6;
+      y += 8;
       applyBodyText(pdf);
       for (const line of summaryLines) {
         pdf.text(line, MARGIN_LEFT + 6, y);
@@ -447,37 +496,36 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
 
   // ====== HEALTH SCORE EXPLAINED ======
   y = newPage(pdf);
-  y = drawSectionTitle(pdf, 'Health Score Explained', y);
-  applyBodyText(pdf);
-  y = drawWrappedText(
-    pdf,
-    `Your Team Health Score of ${analysis.overallHealthScore}% is a composite metric that tells you how well-equipped your team is to achieve your mission. It combines capability strength, coverage breadth, and risk exposure into a single number.`,
-    MARGIN_LEFT + 4, y, CONTENT_WIDTH - 8
+  y = addSectionHeader(pdf, 'HEALTH SCORE EXPLAINED', y);
+  y = addDescriptionBox(pdf,
+    `Your Team Health Score of ${healthScore}% is a composite metric that tells you how well-equipped your team is to achieve your mission. It combines capability strength, coverage breadth, and risk exposure into a single number.`,
+    y
   );
-  y += 6;
 
-  // How it's calculated
-  y = ensureSpace(pdf, y, 50);
-  pdf.setFillColor(...COLORS.bgLight);
-  pdf.roundedRect(MARGIN_LEFT + 2, y - 2, CONTENT_WIDTH - 4, 46, 2, 2, 'F');
-  applyLabelText(pdf);
-  pdf.setFontSize(7);
-  pdf.setTextColor(...COLORS.textMuted);
-  pdf.text('HOW IT\'S CALCULATED', MARGIN_LEFT + 6, y + 2);
-  y += 8;
-
+  // How it's calculated - dynamic height
   const healthComponents = [
     { pct: '40%', title: 'Capability Strength', desc: 'Average FIT scores across all capabilities.', color: COLORS.green },
     { pct: '30%', title: 'Capability Coverage', desc: 'Whether you have at least one team member meeting target threshold for each capability.', color: COLORS.blue },
     { pct: '30%', title: 'Risk & Gap Penalties', desc: 'Deductions for critical gaps (-8 pts), warnings (-4 pts), and minor risks (-2 pts).', color: COLORS.amber },
   ];
 
+  const calcBoxH = healthComponents.length * 11.5 + 12;
+  y = ensureSpace(pdf, y, calcBoxH);
+  const calcBoxStartY = y - 2;
+  pdf.setFillColor(...COLORS.descBox);
+  pdf.roundedRect(MARGIN_LEFT + 2, calcBoxStartY, CONTENT_WIDTH - 4, calcBoxH, 2, 2, 'F');
+  applyLabelText(pdf);
+  pdf.setFontSize(7);
+  pdf.setTextColor(...COLORS.textMuted);
+  pdf.text('HOW IT\'S CALCULATED', MARGIN_LEFT + 6, y + 2);
+  y += 8;
+
   for (const comp of healthComponents) {
     pdf.setFillColor(...comp.color);
     pdf.circle(MARGIN_LEFT + 10, y + 1, 3, 'F');
     pdf.setFontSize(5);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(...COLORS.white);
+    pdf.setTextColor(255, 255, 255);
     pdf.text(comp.pct, MARGIN_LEFT + 10, y + 2.5, { align: 'center' });
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');
@@ -491,21 +539,23 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   y += 4;
 
   // Score meaning
-  y = ensureSpace(pdf, y, 28);
-  pdf.setFillColor(...COLORS.bgLight);
-  pdf.roundedRect(MARGIN_LEFT + 2, y - 2, CONTENT_WIDTH - 4, 26, 2, 2, 'F');
-  applyLabelText(pdf);
-  pdf.setFontSize(7);
-  pdf.setTextColor(...COLORS.textMuted);
-  pdf.text('WHAT THE SCORE MEANS', MARGIN_LEFT + 6, y + 2);
-  y += 7;
-
   const scoreMeanings = [
     { range: '80-100%', desc: 'Excellent \u2014 Well-balanced and mission-ready', color: COLORS.green },
     { range: '65-79%', desc: 'Good \u2014 Solid foundation, some areas need attention', color: [16, 185, 129] as [number, number, number] },
     { range: '50-64%', desc: 'Fair \u2014 Notable gaps may impact mission success', color: COLORS.amber },
     { range: 'Below 50%', desc: 'Needs Attention \u2014 Significant gaps requiring action', color: COLORS.red },
   ];
+
+  const scoreBoxH = scoreMeanings.length * 4.5 + 10;
+  y = ensureSpace(pdf, y, scoreBoxH);
+  const scoreBoxStartY = y - 2;
+  pdf.setFillColor(...COLORS.descBox);
+  pdf.roundedRect(MARGIN_LEFT + 2, scoreBoxStartY, CONTENT_WIDTH - 4, scoreBoxH, 2, 2, 'F');
+  applyLabelText(pdf);
+  pdf.setFontSize(7);
+  pdf.setTextColor(...COLORS.textMuted);
+  pdf.text('WHAT THE SCORE MEANS', MARGIN_LEFT + 6, y + 2);
+  y += 7;
 
   for (const sm of scoreMeanings) {
     pdf.setFillColor(...sm.color);
@@ -523,14 +573,11 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   // ====== CAPABILITY GAP ANALYSIS ======
   if (analysis.capabilityGapMatrix?.length > 0) {
     y = newPage(pdf);
-    y = drawSectionTitle(pdf, 'Capability Gap Analysis', y);
-    applyBodyText(pdf);
-    y = drawWrappedText(
-      pdf,
+    y = addSectionHeader(pdf, 'CAPABILITY GAP ANALYSIS', y);
+    y = addDescriptionBox(pdf,
       'Compare your team\'s current capability levels against what\'s needed for mission success. The gap score shows how much additional capacity would strengthen each area.',
-      MARGIN_LEFT + 4, y, CONTENT_WIDTH - 8
+      y
     );
-    y += 4;
 
     const strengthToScore: Record<string, number> = { strong: 85, adequate: 65, weak: 40, critical: 20 };
     const priorityToTarget: Record<string, number> = { critical: 90, high: 80, medium: 65, low: 50 };
@@ -542,13 +589,14 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
       const gapColor = gap >= 30 ? COLORS.red : gap >= 15 ? COLORS.amber : COLORS.green;
       const barColor = CAP_COLORS[item.code] || COLORS.primaryLight;
       const analysisText = item.gapAnalysis || '';
-      const analysisLines = Math.ceil(analysisText.length / 70);
-      const estimatedH = 30 + analysisLines * 4;
 
-      y = ensureSpace(pdf, y, estimatedH);
+      // Measure content height first
+      applySmallText(pdf);
+      const analysisLines = analysisText ? wrapText(pdf, analysisText, CONTENT_WIDTH - 16) : [];
+      const contentH = 24 + (analysisLines.length > 0 ? analysisLines.length * 3.8 + 4 : 0);
 
-      pdf.setFillColor(...COLORS.bgLight);
-      pdf.roundedRect(MARGIN_LEFT + 2, y - 2, CONTENT_WIDTH - 4, estimatedH, 2, 2, 'F');
+      y = ensureSpace(pdf, y, contentH + 4);
+      const blockStartY = y - 2;
 
       drawCapabilityBadge(pdf, item.code, MARGIN_LEFT + 6, y + 6, 7);
       pdf.setFontSize(10);
@@ -573,10 +621,22 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
       pdf.text(`Target: ${targetScore}%`, MARGIN_LEFT + 6 + 40, y);
       y += 5;
 
-      if (analysisText) {
+      if (analysisLines.length > 0) {
         applySmallText(pdf);
-        y = drawWrappedText(pdf, analysisText, MARGIN_LEFT + 6, y, CONTENT_WIDTH - 16, 3.8);
+        for (const line of analysisLines) {
+          pdf.text(line, MARGIN_LEFT + 6, y);
+          y += 3.8;
+        }
       }
+
+      // Draw background box behind content
+      const blockH = y - blockStartY + 2;
+      // We need to draw bg first then re-render - use a simpler approach: just add border
+      pdf.setDrawColor(...COLORS.border);
+      pdf.setLineWidth(0.3);
+      pdf.roundedRect(MARGIN_LEFT + 2, blockStartY, CONTENT_WIDTH - 4, blockH, 2, 2, 'S');
+      pdf.setLineWidth(0.2);
+
       y += 6;
     }
   }
@@ -587,14 +647,11 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
     if (y > MARGIN_TOP + 80) {
       y = newPage(pdf);
     }
-    y = drawSectionTitle(pdf, 'Team Cumulative Capability Profile', y);
-    applyBodyText(pdf);
-    y = drawWrappedText(
-      pdf,
+    y = addSectionHeader(pdf, 'TEAM CUMULATIVE CAPABILITY PROFILE', y);
+    y = addDescriptionBox(pdf,
       `Combined scores across all FIT capabilities for ${teamMembers.length} team member${teamMembers.length !== 1 ? 's' : ''}. Maximum possible score per capability: ${teamMembers.length * 100}.`,
-      MARGIN_LEFT + 4, y, CONTENT_WIDTH - 8
+      y
     );
-    y += 6;
 
     const maxPossible = teamMembers.length * 100;
     const barAreaWidth = CONTENT_WIDTH - 50;
@@ -634,20 +691,20 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
     if (y > MARGIN_TOP + 100) {
       y = newPage(pdf);
     }
-    y = drawSectionTitle(pdf, 'Deep Contextual Insights', y);
+    y = addSectionHeader(pdf, 'DEEP CONTEXTUAL INSIGHTS', y);
 
     for (const insight of analysis.contextualInsights) {
+      applyBodyText(pdf);
       const lines = wrapText(pdf, insight, CONTENT_WIDTH - 16);
-      const blockH = lines.length * 4 + 8;
+      const blockH = lines.length * 4.5 + 6;
       y = ensureSpace(pdf, y, blockH);
 
       pdf.setFillColor(...COLORS.amberLight);
       pdf.roundedRect(MARGIN_LEFT + 2, y - 2, CONTENT_WIDTH - 4, blockH, 2, 2, 'F');
-      applyBodyText(pdf);
-      let iy = y + 3;
+      let iy = y + 2;
       for (const line of lines) {
         pdf.text(line, MARGIN_LEFT + 6, iy);
-        iy += 4;
+        iy += 4.5;
       }
       y += blockH + 3;
     }
@@ -657,7 +714,8 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   // ====== IDEAL CANDIDATE PROFILE ======
   if (analysis.idealCandidateProfile?.summary) {
     y = newPage(pdf);
-    y = drawSectionTitle(pdf, 'Your Ideal Next Hire', y);
+    y = addSectionHeader(pdf, 'YOUR IDEAL NEXT HIRE', y);
+    y = addDescriptionBox(pdf, 'AI-recommended candidate profile based on your team\'s current gaps and mission requirements.', y);
     applyBodyText(pdf);
     y = drawWrappedText(pdf, analysis.idealCandidateProfile.summary, MARGIN_LEFT + 4, y, CONTENT_WIDTH - 8);
     y += 6;
@@ -720,7 +778,8 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   // ====== RECOMMENDED HIRE PROFILES ======
   if (analysis.idealHireProfiles?.length > 0) {
     y = newPage(pdf);
-    y = drawSectionTitle(pdf, 'Recommended Hire Profiles', y);
+    y = addSectionHeader(pdf, 'RECOMMENDED HIRE PROFILES', y);
+    y = addDescriptionBox(pdf, 'Prioritized hiring recommendations with specific role profiles, FIT score targets, key behaviors to seek, and red flags to watch for.', y);
 
     for (const profile of analysis.idealHireProfiles) {
       const rationaleLines = Math.ceil((profile.rationale || '').length / 70);
@@ -731,15 +790,12 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
 
       y = ensureSpace(pdf, y, Math.min(estimatedH, 60));
 
-      pdf.setFillColor(...COLORS.bgLight);
-      const blockStartY = y - 2;
-
       // Priority badge
       pdf.setFillColor(...COLORS.primaryLight);
       pdf.roundedRect(MARGIN_LEFT + 4, y - 1, 22, 6, 2, 2, 'F');
       pdf.setFontSize(7);
       pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(...COLORS.white);
+      pdf.setTextColor(255, 255, 255);
       pdf.text(`Priority #${profile.priority}`, MARGIN_LEFT + 15, y + 3, { align: 'center' });
 
       pdf.setFontSize(12);
@@ -853,19 +909,23 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
     if (y > MARGIN_TOP + 120) {
       y = newPage(pdf);
     }
-    y = drawSectionTitle(pdf, 'Risk Alerts', y);
+    y = addSectionHeader(pdf, 'RISK ALERTS', y);
 
     for (const alert of analysis.riskAlerts) {
-      const descLines = Math.ceil((alert.description || '').length / 70);
-      const recLines = Math.ceil((alert.recommendation || '').length / 70);
-      const blockH = 14 + descLines * 4 + recLines * 4;
-      y = ensureSpace(pdf, y, blockH);
-
       const alertBg = alert.severity === 'critical' ? COLORS.redLight : alert.severity === 'warning' ? COLORS.amberLight : COLORS.blueLight;
+      const severityColor = alert.severity === 'critical' ? COLORS.red : alert.severity === 'warning' ? COLORS.amber : COLORS.blue;
+
+      // Measure content first
+      applySmallText(pdf);
+      const descLines = alert.description ? wrapText(pdf, alert.description, CONTENT_WIDTH - 16) : [];
+      const recLines = alert.recommendation ? wrapText(pdf, alert.recommendation, CONTENT_WIDTH - 16) : [];
+      const blockH = 10 + descLines.length * 3.8 + (recLines.length > 0 ? recLines.length * 3.8 + 4 : 0);
+
+      y = ensureSpace(pdf, y, blockH + 4);
+
       pdf.setFillColor(...alertBg);
       pdf.roundedRect(MARGIN_LEFT + 2, y - 2, CONTENT_WIDTH - 4, blockH, 2, 2, 'F');
 
-      const severityColor = alert.severity === 'critical' ? COLORS.red : alert.severity === 'warning' ? COLORS.amber : COLORS.blue;
       pdf.setFontSize(9);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(...severityColor);
@@ -873,23 +933,28 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
       pdf.setTextColor(...COLORS.text);
       pdf.text(alert.title, MARGIN_LEFT + 12, y + 2);
 
-      // Severity badge
       pdf.setFontSize(6);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(...severityColor);
-      pdf.text(alert.severity.toUpperCase(), PAGE_WIDTH - MARGIN_RIGHT - 8, y + 2, { align: 'right' });
+      pdf.text((alert.severity || '').toUpperCase(), PAGE_WIDTH - MARGIN_RIGHT - 8, y + 2, { align: 'right' });
 
       y += 7;
-      applySmallText(pdf);
-      if (alert.description) {
-        y = drawWrappedText(pdf, alert.description, MARGIN_LEFT + 6, y, CONTENT_WIDTH - 16, 3.8);
+      if (descLines.length > 0) {
+        applySmallText(pdf);
+        for (const line of descLines) {
+          pdf.text(line, MARGIN_LEFT + 6, y);
+          y += 3.8;
+        }
         y += 2;
       }
-      if (alert.recommendation) {
+      if (recLines.length > 0) {
         pdf.setFontSize(8);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(...COLORS.primaryLight);
-        y = drawWrappedText(pdf, alert.recommendation, MARGIN_LEFT + 6, y, CONTENT_WIDTH - 16, 3.8);
+        for (const line of recLines) {
+          pdf.text(line, MARGIN_LEFT + 6, y);
+          y += 3.8;
+        }
       }
       y += 6;
     }
@@ -904,7 +969,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   pdf.roundedRect(MARGIN_LEFT, y, CONTENT_WIDTH, 50, 3, 3, 'F');
   pdf.setFontSize(12);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(...COLORS.white);
+  pdf.setTextColor(255, 255, 255);
   pdf.text('Additional Services on Request', MARGIN_LEFT + 8, y + 10);
   pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
@@ -926,20 +991,18 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
     const sy = y + 24 + row * 12;
     pdf.setFontSize(7);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(255, 255, 255, 230);
+    pdf.setTextColor(255, 255, 255);
     pdf.text('\u2022 ' + services[si], sx, sy);
   }
-  pdf.setTextColor(...COLORS.text);
+  pdf.setTextColor(0, 0, 0);
 
   // ====== ADD HEADERS AND FOOTERS TO ALL PAGES ======
   const pageCount = pdf.getNumberOfPages();
   totalPages = pageCount;
   for (let i = 1; i <= pageCount; i++) {
     pdf.setPage(i);
+    addHeader(pdf);
     addFooter(pdf, i);
-    if (i > 1) {
-      addHeader(pdf);
-    }
   }
 
   const filename = `Team-Diagnostic-Report-${(companyName || 'Report').replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
