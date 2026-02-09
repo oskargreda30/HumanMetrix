@@ -5520,6 +5520,212 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     yPos += candidateCardHeight + 10;
   }
 
+  // ========== SKILL GAP HEATMAP ==========
+  if (data.candidateEntries.length > 0) {
+    const allSkills: Array<{ skillName: string; requiredScore: number; criticality: string }> = [];
+    const heatmapRoleSkills = data.roleSnapshot.requiredSkillScores;
+    const heatmapCriticality = heatmapRoleSkills?.skillCriticality || {};
+    const heatmapCritNames = data.criticalSkillNames ? new Set(data.criticalSkillNames) : null;
+    if (heatmapRoleSkills?.fitSkills) {
+      Object.entries(heatmapRoleSkills.fitSkills).forEach(([name, req]) => {
+        const crit = heatmapCritNames ? (heatmapCritNames.has(name) ? 'critical' : 'standard') : (heatmapCriticality[name] || 'standard');
+        allSkills.push({ skillName: name, requiredScore: req as number, criticality: crit });
+      });
+    }
+    if (heatmapRoleSkills?.aiReadinessSkills) {
+      Object.entries(heatmapRoleSkills.aiReadinessSkills).forEach(([name, req]) => {
+        const crit = heatmapCritNames ? (heatmapCritNames.has(name) ? 'critical' : 'standard') : (heatmapCriticality[name] || 'standard');
+        allSkills.push({ skillName: name, requiredScore: req as number, criticality: crit });
+      });
+    }
+    allSkills.sort((a, b) => b.requiredScore - a.requiredScore);
+
+    if (allSkills.length > 0) {
+      pdf.addPage();
+      addBackgroundPattern(pdf, pageWidth, pageHeight);
+      addHeader(pdf, pageWidth);
+      yPos = 32;
+
+      yPos = addSectionHeader(pdf, 'SKILL GAP HEATMAP', yPos, pageWidth);
+      yPos += 2;
+
+      const heatmapDesc = 'Visual overview of candidate scores across all required skills. Green indicates the candidate meets or exceeds the requirement, yellow is close but below, and red signals a significant gap.';
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'normal');
+      const heatDescLines = pdf.splitTextToSize(heatmapDesc, contentWidth - 8);
+      const heatDescH = Math.max(10, heatDescLines.length * 4 + 4);
+      pdf.setFillColor(240, 249, 255);
+      pdf.roundedRect(MARGIN, yPos - 2, contentWidth, heatDescH, 2, 2, 'F');
+      pdf.setTextColor(71, 85, 105);
+      pdf.text(heatDescLines, MARGIN + 4, yPos + 4);
+      yPos += heatDescH + 5;
+
+      const sortedHeatCandidates = [...data.candidateEntries].sort((a, b) => (b.overallFit ?? 0) - (a.overallFit ?? 0));
+      const maxHeatCandidates = Math.min(sortedHeatCandidates.length, 6);
+      const heatCandidates = sortedHeatCandidates.slice(0, maxHeatCandidates);
+
+      const skillColW = 55;
+      const reqColW = 16;
+      const remainingW = contentWidth - skillColW - reqColW;
+      const cellW = Math.min(remainingW / maxHeatCandidates, 30);
+      const cellH = 10;
+      const headerH = 14;
+      const tableStartX = MARGIN;
+      const tableW = skillColW + reqColW + cellW * maxHeatCandidates;
+
+      const drawHeatmapHeader = () => {
+        pdf.setFillColor(59, 130, 246);
+        pdf.roundedRect(tableStartX, yPos, tableW, headerH, 2, 2, 'F');
+        pdf.setFontSize(6.5);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(255, 255, 255);
+        pdf.text('Skill', tableStartX + 3, yPos + headerH / 2 + 1.5);
+        pdf.text('Req', tableStartX + skillColW + 2, yPos + headerH / 2 + 1.5);
+        heatCandidates.forEach((cand, ci) => {
+          const colX = tableStartX + skillColW + reqColW + ci * cellW;
+          let dispName = cand.userName.split(' ')[0];
+          if (dispName.length > 8) dispName = dispName.slice(0, 7) + '.';
+          pdf.text(dispName, colX + 2, yPos + headerH / 2 + 1.5);
+        });
+        yPos += headerH;
+      };
+
+      let pageGridTop = yPos;
+      drawHeatmapHeader();
+      pageGridTop = yPos - headerH;
+
+      const drawPageBorders = (gridTopY: number) => {
+        pdf.setDrawColor(219, 234, 254);
+        pdf.setLineWidth(0.2);
+        pdf.line(tableStartX + skillColW, gridTopY, tableStartX + skillColW, yPos);
+        pdf.line(tableStartX + skillColW + reqColW, gridTopY, tableStartX + skillColW + reqColW, yPos);
+        for (let ci = 1; ci < maxHeatCandidates; ci++) {
+          const lx = tableStartX + skillColW + reqColW + ci * cellW;
+          pdf.line(lx, gridTopY, lx, yPos);
+        }
+        pdf.setDrawColor(191, 219, 254);
+        pdf.setLineWidth(0.3);
+        pdf.roundedRect(tableStartX, gridTopY, tableW, yPos - gridTopY, 2, 2, 'S');
+      };
+
+      allSkills.forEach((skill, si) => {
+        if (yPos > pageHeight - 25) {
+          drawPageBorders(pageGridTop);
+          pdf.addPage();
+          addBackgroundPattern(pdf, pageWidth, pageHeight);
+          addHeader(pdf, pageWidth);
+          yPos = 35;
+          pageGridTop = yPos;
+          drawHeatmapHeader();
+          pageGridTop = yPos - headerH;
+        }
+
+        const rowY = yPos;
+
+        if (si % 2 === 0) {
+          pdf.setFillColor(249, 250, 251);
+        } else {
+          pdf.setFillColor(255, 255, 255);
+        }
+        pdf.rect(tableStartX, rowY, tableW, cellH, 'F');
+
+        pdf.setFontSize(6.5);
+        pdf.setFont('helvetica', skill.criticality === 'critical' ? 'bold' : 'normal');
+        pdf.setTextColor(17, 24, 39);
+        let skillLabel = skill.skillName;
+        const maxSkillW = skillColW - 6;
+        while (pdf.getTextWidth(skillLabel) > maxSkillW && skillLabel.length > 3) {
+          skillLabel = skillLabel.slice(0, -1);
+        }
+        if (skillLabel !== skill.skillName) skillLabel = skillLabel.trim() + '..';
+        pdf.text(skillLabel, tableStartX + 3, rowY + cellH / 2 + 1.5);
+
+        if (skill.criticality === 'critical') {
+          pdf.setFillColor(239, 68, 68);
+          pdf.circle(tableStartX + skillColW - 4, rowY + cellH / 2, 1, 'F');
+        }
+
+        pdf.setFontSize(6.5);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(107, 114, 128);
+        pdf.text(`${skill.requiredScore}+`, tableStartX + skillColW + 2, rowY + cellH / 2 + 1.5);
+
+        heatCandidates.forEach((cand, ci) => {
+          const colX = tableStartX + skillColW + reqColW + ci * cellW;
+          const skillData = cand.skillScores?.find(s => s.skillName === skill.skillName);
+          const score = skillData?.score;
+          const hasData = skillData?.dataAvailable !== false && score != null;
+
+          if (hasData && score != null) {
+            const meetsReq = score >= skill.requiredScore;
+            const isClose = score >= 60 && !meetsReq;
+            const cellBg: [number, number, number] = meetsReq ? [220, 252, 231] : isClose ? [254, 249, 195] : [254, 226, 226];
+            const cellText: [number, number, number] = meetsReq ? [22, 101, 52] : isClose ? [133, 77, 14] : [153, 27, 27];
+
+            pdf.setFillColor(cellBg[0], cellBg[1], cellBg[2]);
+            pdf.rect(colX + 1, rowY + 1, cellW - 2, cellH - 2, 'F');
+
+            pdf.setFontSize(7);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(cellText[0], cellText[1], cellText[2]);
+            pdf.text(`${score}`, colX + cellW / 2, rowY + cellH / 2 + 1.5, { align: 'center' });
+          } else {
+            pdf.setFillColor(243, 244, 246);
+            pdf.rect(colX + 1, rowY + 1, cellW - 2, cellH - 2, 'F');
+            pdf.setFontSize(6);
+            pdf.setFont('helvetica', 'italic');
+            pdf.setTextColor(156, 163, 175);
+            pdf.text('-', colX + cellW / 2, rowY + cellH / 2 + 1.5, { align: 'center' });
+          }
+        });
+
+        pdf.setDrawColor(229, 231, 235);
+        pdf.setLineWidth(0.15);
+        pdf.line(tableStartX, rowY + cellH, tableStartX + tableW, rowY + cellH);
+
+        yPos += cellH;
+      });
+
+      drawPageBorders(pageGridTop);
+
+      yPos += 4;
+
+      if (yPos > pageHeight - 15) {
+        pdf.addPage();
+        addBackgroundPattern(pdf, pageWidth, pageHeight);
+        addHeader(pdf, pageWidth);
+        yPos = 35;
+      }
+
+      // Legend
+      const legendY = yPos;
+      const legendItems = [
+        { label: 'Meets required', bg: [220, 252, 231] as [number, number, number], text: [22, 101, 52] as [number, number, number] },
+        { label: 'Close (60+)', bg: [254, 249, 195] as [number, number, number], text: [133, 77, 14] as [number, number, number] },
+        { label: 'Below threshold', bg: [254, 226, 226] as [number, number, number], text: [153, 27, 27] as [number, number, number] },
+      ];
+      let legendX = tableStartX + 2;
+      legendItems.forEach(item => {
+        pdf.setFillColor(item.bg[0], item.bg[1], item.bg[2]);
+        pdf.roundedRect(legendX, legendY, 6, 6, 1, 1, 'F');
+        pdf.setFontSize(6.5);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(item.text[0], item.text[1], item.text[2]);
+        pdf.text(item.label, legendX + 8, legendY + 4.5);
+        legendX += pdf.getTextWidth(item.label) + 16;
+      });
+
+      pdf.setFillColor(239, 68, 68);
+      pdf.circle(legendX + 1, legendY + 3, 1, 'F');
+      pdf.setFontSize(6.5);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('Critical skill', legendX + 4, legendY + 4.5);
+
+      yPos += 12;
+    }
+  }
+
   // ========== AI-POWERED STRATEGIC INSIGHTS ==========
   if (data.aiInsights) {
     pdf.addPage();
