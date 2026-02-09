@@ -2400,9 +2400,9 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                                   {promptData ? (
                                     <div className="flex items-center gap-2">
                                       <span className="text-lg text-primary">{promptData.totalScore}/100</span>
-                                      {promptData.percentile && promptData.percentile > 0 && (
+                                      {promptData.percentile != null && promptData.percentile > 0 ? (
                                         <Badge variant="secondary">{promptData.percentile}th percentile</Badge>
-                                      )}
+                                      ) : null}
                                     </div>
                                   ) : (
                                     <span className="text-muted-foreground">—</span>
