@@ -472,7 +472,9 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
         pdf.setFontSize(9);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(...COLORS.textSecondary);
-        pdf.text(cap.name || CAP_NAMES[cap.code] || cap.code, MARGIN_LEFT + 13, y + 2);
+        const capNameText = cap.name || CAP_NAMES[cap.code] || cap.code;
+        pdf.text(capNameText, MARGIN_LEFT + 14, y + 2);
+        const capNameWidth = pdf.getTextWidth(capNameText);
 
         const priorityColors: Record<string, [number, number, number]> = {
           critical: COLORS.red,
@@ -483,12 +485,12 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
         pdf.setFontSize(7);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(...(priorityColors[cap.priority] || COLORS.textMuted));
-        pdf.text(`${cap.priority} priority`, MARGIN_LEFT + 13 + pdf.getTextWidth(cap.name || CAP_NAMES[cap.code] || cap.code) + 4, y + 2);
+        pdf.text(`${cap.priority} priority`, MARGIN_LEFT + 14 + capNameWidth + 4, y + 2);
 
         if (cap.reasoning) {
           applySmallText(pdf);
           y += 6;
-          y = drawWrappedText(pdf, cap.reasoning, MARGIN_LEFT + 13, y, CONTENT_WIDTH - 17, 3.8);
+          y = drawWrappedText(pdf, cap.reasoning, MARGIN_LEFT + 14, y, CONTENT_WIDTH - 18, 3.8);
         }
         y += 4;
       }
@@ -621,7 +623,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
       pdf.setFontSize(10);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(...COLORS.textSecondary);
-      pdf.text(item.capability || CAP_NAMES[item.code] || item.code, MARGIN_LEFT + 16, y + 3);
+      pdf.text(item.capability || CAP_NAMES[item.code] || item.code, MARGIN_LEFT + 18, y + 3);
 
       pdf.setFontSize(8);
       pdf.setFont('helvetica', 'bold');
@@ -743,16 +745,18 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
         pdf.setFontSize(9);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(...COLORS.textSecondary);
-        pdf.text(CAP_NAMES[code] || code, MARGIN_LEFT + 14, y + 2);
+        const capName = CAP_NAMES[code] || code;
+        pdf.text(capName, MARGIN_LEFT + 16, y + 2);
+        const nameWidth = pdf.getTextWidth(capName);
         pdf.setFontSize(8);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(...COLORS.primaryLight);
-        pdf.text(`${targets.min}-${targets.ideal}%`, MARGIN_LEFT + 14 + pdf.getTextWidth(CAP_NAMES[code] || code) + 4, y + 2);
+        pdf.text(`${targets.min}-${targets.ideal}%`, MARGIN_LEFT + 16 + nameWidth + 4, y + 2);
 
         if (reasoning) {
           y += 5;
           applySmallText(pdf);
-          y = drawWrappedText(pdf, reasoning, MARGIN_LEFT + 14, y, CONTENT_WIDTH - 20, 3.8);
+          y = drawWrappedText(pdf, reasoning, MARGIN_LEFT + 16, y, CONTENT_WIDTH - 22, 3.8);
         }
         y += 4;
       }
@@ -965,36 +969,67 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   }
 
   // ====== ADDITIONAL SERVICES ======
-  y = ensureSpace(pdf, y, 55);
-  pdf.setFillColor(...COLORS.primaryLight);
-  pdf.roundedRect(MARGIN_LEFT, y, CONTENT_WIDTH, 50, 3, 3, 'F');
-  pdf.setFontSize(12);
+  y = ensureSpace(pdf, y, 80);
+  y = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', y);
+  y += 3;
+
+  pdf.setFontSize(8);
+  pdf.setTextColor(...COLORS.textMuted);
+  pdf.text('Contact our team to unlock these premium insights for your hiring decisions:', MARGIN_LEFT + 2, y);
+  y += 8;
+
+  const additionalServices = [
+    { name: 'Suggested Interview Questions', description: 'AI-generated questions based on candidates\' assessment results and identified skill gaps' },
+    { name: 'Team Composition Analysis', description: 'Analysis of how candidates would complement your existing team dynamics' },
+    { name: 'Time to Productivity Estimate', description: 'Projected onboarding timeline based on skill readiness and learning agility' },
+    { name: 'Hiring Risk Analysis', description: 'Comprehensive risk assessment highlighting potential challenges and mitigations' },
+    { name: 'Development Investment Cost', description: 'Estimated training and development investment to close identified skill gaps' },
+    { name: 'Cohort Benchmarking', description: 'Compare team performance against industry cohorts and best-in-class benchmarks' },
+  ];
+
+  for (let si = 0; si < additionalServices.length; si++) {
+    const service = additionalServices[si];
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    const descLines = pdf.splitTextToSize(service.description, CONTENT_WIDTH - 18);
+    const serviceHeight = 7 + descLines.length * 4 + 4;
+    y = ensureSpace(pdf, y, serviceHeight);
+
+    pdf.setFillColor(...COLORS.primaryLight);
+    pdf.roundedRect(MARGIN_LEFT + 2, y - 2, 6, 6, 1, 1, 'F');
+    pdf.setFontSize(7);
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`${si + 1}`, MARGIN_LEFT + 5, y + 2, { align: 'center' });
+
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(...COLORS.text);
+    pdf.text(service.name, MARGIN_LEFT + 12, y + 2);
+
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(...COLORS.textMuted);
+    for (let di = 0; di < descLines.length; di++) {
+      pdf.text(descLines[di], MARGIN_LEFT + 12, y + 7 + di * 4);
+    }
+
+    y += serviceHeight;
+  }
+
+  y += 6;
+
+  y = ensureSpace(pdf, y, 20);
+  pdf.setFillColor(239, 246, 255);
+  pdf.setDrawColor(...COLORS.primaryLight);
+  pdf.roundedRect(MARGIN_LEFT, y, CONTENT_WIDTH, 14, 2, 2, 'FD');
+  pdf.setFontSize(9);
+  pdf.setTextColor(...COLORS.primary);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(255, 255, 255);
-  pdf.text('Additional Services on Request', MARGIN_LEFT + 8, y + 10);
+  pdf.text('Contact the HumanMetrix team to learn more about these services', MARGIN_LEFT + 5, y + 5);
   pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
-  pdf.text('Contact our team to unlock these premium insights for your hiring decisions', MARGIN_LEFT + 8, y + 17);
-
-  const services = [
-    'Suggested Interview Questions',
-    'Team Composition Analysis',
-    'Time to Productivity Estimate',
-    'Hiring Risk Analysis',
-    'Development Investment Cost',
-    'Cohort Benchmarking',
-  ];
-  const svcColW = (CONTENT_WIDTH - 16) / 3;
-  for (let si = 0; si < services.length; si++) {
-    const col = si % 3;
-    const row = Math.floor(si / 3);
-    const sx = MARGIN_LEFT + 8 + col * svcColW;
-    const sy = y + 24 + row * 12;
-    pdf.setFontSize(7);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(255, 255, 255);
-    pdf.text('\u2022 ' + services[si], sx, sy);
-  }
+  pdf.text('hello@humanmetrix.co.uk', MARGIN_LEFT + 5, y + 10);
   pdf.setTextColor(0, 0, 0);
 
   // ====== ADD HEADERS AND FOOTERS TO ALL PAGES ======
