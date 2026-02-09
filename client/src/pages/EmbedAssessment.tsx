@@ -657,8 +657,13 @@ export default function EmbedAssessment() {
         // but the client uses per-question timing
         const assessmentType = data.assessmentType?.replace(/-/g, '_');
         if (assessmentType === 'prompt_architecture') {
-          console.log(`[EmbedAssessment] Prompt Architecture: using per-question timer (120s)`);
-          setTimeRemaining(120); // 2 minutes per question
+          if (data.timeRemaining > 0 && data.timeRemaining <= 120) {
+            console.log(`[EmbedAssessment] Prompt Architecture: resuming with ${data.timeRemaining}s remaining`);
+            setTimeRemaining(data.timeRemaining);
+          } else {
+            console.log(`[EmbedAssessment] Prompt Architecture: using per-question timer (120s)`);
+            setTimeRemaining(120);
+          }
         } else {
           setTimeRemaining(data.timeRemaining);
         }
@@ -897,11 +902,15 @@ export default function EmbedAssessment() {
         // For Prompt Architecture, always use per-question timer (2 min) since the client uses per-question timing
         const assessmentType = session?.assessmentType?.replace(/-/g, '_');
         if (assessmentType === 'prompt_architecture') {
-          console.log(`[EmbedAssessment] Prompt Architecture: using per-question timer (120s)`);
-          setTimeRemaining(120); // 2 minutes per question
+          if (startData.timeRemaining > 0 && startData.timeRemaining <= 120) {
+            console.log(`[EmbedAssessment] Prompt Architecture: resuming with ${startData.timeRemaining}s remaining`);
+            setTimeRemaining(startData.timeRemaining);
+          } else {
+            console.log(`[EmbedAssessment] Prompt Architecture: using per-question timer (120s)`);
+            setTimeRemaining(120);
+          }
         } else {
           setTimeRemaining(startData.timeRemaining);
-          // Track if server says timer already expired (not applicable for per-question timing)
           if (startData.timeRemaining <= 0) {
             timerExpiredFromServerRef.current = true;
           }

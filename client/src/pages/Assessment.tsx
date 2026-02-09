@@ -172,7 +172,11 @@ export default function Assessment() {
       
       const isPromptArch = assessment?.assessmentType === 'prompt_architecture';
       if (isPromptArch) {
-        setTimeRemaining(120);
+        if (data.resumed && data.timeRemaining != null && data.timeRemaining > 0 && data.timeRemaining <= 120) {
+          setTimeRemaining(data.timeRemaining);
+        } else {
+          setTimeRemaining(120);
+        }
       } else if (data.timeRemaining !== undefined) {
         setTimeRemaining(data.timeRemaining);
       }
