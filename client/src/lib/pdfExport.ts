@@ -1183,34 +1183,47 @@ export async function exportComparisonPDF(data: ComparisonData) {
     pdf.text(aiqDesc, 20, yPos);
     yPos += 5;
     
-    // AIQ candidates in boxes - horizontal layout to save space
+    // AIQ candidates in boxes - two-column layout: name+score left, assessment right
     const aiqBoxWidth = (pageWidth - 40 - (data.candidates.length - 1) * 4) / data.candidates.length;
-    const aiqBoxHeight = 18;
+    const aiqBoxHeight = 16;
     let aiqBoxX = 20;
+    const aiqPadding = 4;
+    const aiqInnerWidth = aiqBoxWidth - (aiqPadding * 2);
+    const aiqLeftColWidth = aiqInnerWidth * 0.6;
+    const aiqRightColWidth = aiqInnerWidth * 0.4;
+    
+    const ellipsizeText = (pdf: any, text: string, maxWidth: number): string => {
+      if (pdf.getTextWidth(text) <= maxWidth) return text;
+      let truncated = text;
+      while (truncated.length > 1 && pdf.getTextWidth(truncated + '...') > maxWidth) {
+        truncated = truncated.substring(0, truncated.length - 1);
+      }
+      return truncated + '...';
+    };
     
     data.candidates.forEach((candidate, index) => {
       const aiqData = data.aiqAssessments?.[index];
       const candidateColor = CANDIDATE_COLORS[index] || [100, 100, 100];
       
-      // Draw box with light background and colored outline only
       pdf.setFillColor(248, 250, 252);
       pdf.setDrawColor(candidateColor[0], candidateColor[1], candidateColor[2]);
       pdf.setLineWidth(0.5);
       pdf.roundedRect(aiqBoxX, yPos, aiqBoxWidth, aiqBoxHeight, 2, 2, 'FD');
       
-      const textStartX = aiqBoxX + 4;
+      const textStartX = aiqBoxX + aiqPadding;
+      const rightAlignX = aiqBoxX + aiqBoxWidth - aiqPadding;
+      const verticalCenter = yPos + (aiqBoxHeight / 2);
       
-      // Candidate name
       const name = candidate.user.firstName || candidate.user.lastName
         ? `${candidate.user.firstName || ''} ${candidate.user.lastName || ''}`.trim()
         : `Candidate ${index + 1}`;
-      const maxNameLen = Math.floor(aiqBoxWidth / 3);
-      const shortName = name.length > maxNameLen ? name.substring(0, maxNameLen - 2) + '...' : name;
       
-      pdf.setFontSize(8);
+      // Left side: Name (top line) and Score (bottom line)
+      pdf.setFontSize(9);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(candidateColor[0], candidateColor[1], candidateColor[2]);
-      pdf.text(shortName, textStartX, yPos + 5);
+      const displayName = ellipsizeText(pdf, name, aiqLeftColWidth);
+      pdf.text(displayName, textStartX, verticalCenter - 1.5);
       
       if (aiqData) {
         const aiqBand = getAIQBandInterpretation(aiqData.totalScore);
@@ -1222,21 +1235,23 @@ export async function exportComparisonPDF(data: ComparisonData) {
           return [239, 68, 68];
         };
         
-        // Score
+        // Score below name
         pdf.setFontSize(8);
         pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(55, 65, 81);
-        pdf.text(`Score: ${aiqData.totalScore}/100`, textStartX, yPos + 10);
+        pdf.setTextColor(100, 116, 139);
+        pdf.text(`${aiqData.totalScore}/100`, textStartX, verticalCenter + 3.5);
         
-        // Status with band color - use smaller font to fit full text
+        // Right side: Assessment band label, right-aligned and ellipsized to fit
         const bandColor = getBandColor(aiqData.totalScore);
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(bandColor[0], bandColor[1], bandColor[2]);
-        pdf.setFontSize(7);
-        pdf.text(aiqBand.title, textStartX, yPos + 15);
+        const displayBand = ellipsizeText(pdf, aiqBand.title, aiqRightColWidth);
+        pdf.text(displayBand, rightAlignX, verticalCenter + 1, { align: 'right' });
       } else {
         pdf.setFontSize(8);
         pdf.setTextColor(150, 150, 150);
-        pdf.text('N/A', textStartX, yPos + 10);
+        pdf.text('N/A', textStartX, verticalCenter + 4);
       }
       
       aiqBoxX += aiqBoxWidth + 4;
