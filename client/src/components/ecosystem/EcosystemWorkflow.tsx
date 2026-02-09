@@ -193,6 +193,7 @@ export function EcosystemWorkflow({
   const [showRegenConfirm, setShowRegenConfirm] = useState(false);
   const [showAnalysisLoading, setShowAnalysisLoading] = useState(false);
   const [analysisLoadingComplete, setAnalysisLoadingComplete] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   // Team member dialog
   const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
@@ -634,9 +635,7 @@ export function EcosystemWorkflow({
 
     try {
       await generateAnalysis.mutateAsync({ projectId });
-      // Refetch project to show results
       await refetchProject();
-      // Mark loading as complete - the transition callback will handle the rest
       setAnalysisLoadingComplete(true);
     } catch (error: any) {
       setShowAnalysisLoading(false);
@@ -762,20 +761,19 @@ export function EcosystemWorkflow({
         return;
       }
 
-      // Show loading screen
       setShowAnalysisLoading(true);
       setAnalysisLoadingComplete(false);
+      setIsRegenerating(true);
 
       try {
         await generateAnalysis.mutateAsync({ projectId, isRegeneration: true });
         await refetchProject();
         queryClient.invalidateQueries({ queryKey: ['/api/partner/me'] });
-        setIsEditingForm(false);
-        // Mark loading as complete - the transition callback will handle the rest
         setAnalysisLoadingComplete(true);
       } catch (error: any) {
         setShowAnalysisLoading(false);
         setAnalysisLoadingComplete(false);
+        setIsRegenerating(false);
         const msg = error?.message || "Could not regenerate analysis.";
         const isCreditsError = msg.toLowerCase().includes("insufficient credits");
         toast({
@@ -1777,14 +1775,18 @@ export function EcosystemWorkflow({
             <AnalysisLoadingScreen
               isComplete={analysisLoadingComplete}
               averageTimeSeconds={30}
-              message="Generating Team Diagnostic Report..."
+              message={isRegenerating ? "Regenerating Team Diagnostic Report..." : "Generating Team Diagnostic Report..."}
               onTransitionComplete={() => {
+                const wasRegeneration = isRegenerating;
                 setShowAnalysisLoading(false);
                 setAnalysisLoadingComplete(false);
+                setIsRegenerating(false);
                 setIsEditingForm(false);
                 toast({
-                  title: "Report generated",
-                  description: "Your Team Diagnostic Report is ready to view.",
+                  title: wasRegeneration ? "Report regenerated" : "Report generated",
+                  description: wasRegeneration 
+                    ? `${ECOSYSTEM_CREDITS_REQUIRED} credits used for regeneration.`
+                    : "Your Team Diagnostic Report is ready to view.",
                 });
                 setTimeout(() => {
                   const reportSection = document.querySelector('[data-testid="section-team-diagnostic-report"]');

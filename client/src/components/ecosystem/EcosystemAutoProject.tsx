@@ -246,16 +246,6 @@ export function EcosystemAutoProject({
     setIsCreatingProject(true);
     
     const oldProjectId = projectId;
-    setProjectId(null);
-    
-    if (oldProjectId) {
-      queryClient.removeQueries({ 
-        predicate: (query) => {
-          const key = query.queryKey[0];
-          return typeof key === 'string' && key.includes(`/api/ecosystem/projects/${oldProjectId}`);
-        }
-      });
-    }
     
     try {
       console.log("[Ecosystem] Sending POST /api/ecosystem/projects", { name: sanitizedName, partnerId });
@@ -266,6 +256,16 @@ export function EcosystemAutoProject({
       
       console.log("[Ecosystem] Analysis created successfully:", project?.id);
       setPendingProjectName(sanitizedName);
+      
+      if (oldProjectId) {
+        queryClient.removeQueries({ 
+          predicate: (query) => {
+            const key = query.queryKey[0];
+            return typeof key === 'string' && key.includes(`/api/ecosystem/projects/${oldProjectId}`);
+          }
+        });
+      }
+      
       switchToProject(project.id);
       setShowNewAnalysisDialog(false);
       setNewAnalysisName("");
@@ -278,7 +278,7 @@ export function EcosystemAutoProject({
       });
     } catch (err: any) {
       console.error("[Ecosystem] Failed to create analysis:", err);
-      setProjectId(oldProjectId);
+      setPendingProjectName(null);
       const errorMsg = err?.message || "Unable to create analysis. Please try again.";
       setDialogError(errorMsg);
       toast({

@@ -942,12 +942,13 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
     const weakAreas: string[] = [];
     const strongAreas: string[] = [];
     if (topFitData) {
-      const fitScore = (topFitData as any).totalScore || 0;
+      const fitScores = Object.values(topFitData.scores || {}).filter((v): v is number => typeof v === 'number' && v > 0);
+      const fitScore = fitScores.length > 0 ? Math.round(fitScores.reduce((a, b) => a + b, 0) / fitScores.length) : 0;
       if (fitScore >= 75) strongAreas.push('behavioral competencies');
       else if (fitScore < 60) weakAreas.push('behavioral skills');
     }
     if (topAiData) {
-      const aiScores = Object.values(topAiData.scores || {}) as number[];
+      const aiScores = Object.values(topAiData.scores || {}).filter((v): v is number => typeof v === 'number' && v > 0);
       const aiScore = aiScores.length > 0 ? Math.round(aiScores.reduce((a, b) => a + b, 0) / aiScores.length) : 0;
       if (aiScore >= 75) strongAreas.push('AI readiness');
       else if (aiScore < 60) weakAreas.push('AI readiness');
