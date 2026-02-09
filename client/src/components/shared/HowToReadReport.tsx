@@ -139,58 +139,45 @@ export function HowToReadReport({ reportType }: HowToReadReportProps) {
       <div className="p-6">
         <div className="flex items-center gap-2 mb-2">
           <FileText className="h-5 w-5 text-primary" />
-          <h3 className="text-lg font-bold">How to Read This Role Fit Analysis</h3>
+          <h3 className="text-lg font-bold">How to Read This Report</h3>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
-          A guide to interpreting candidate-role alignment data
+          A step-by-step guide to understanding this candidate's fit for the role
         </p>
         <div className="grid gap-4 md:grid-cols-2">
           <div className="flex gap-3">
             <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
             <div>
-              <p className="font-medium text-sm">Role Alignment Tiers</p>
-              <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1 mt-1">
-                <Badge className="bg-green-500 text-white text-[10px] px-1 py-0">75%+</Badge> <span>Excellent match,</span>
-                <Badge className="bg-amber-500 text-white text-[10px] px-1 py-0">50-74%</Badge> <span>Good match,</span>
-                <Badge className="bg-red-500 text-white text-[10px] px-1 py-0">&lt;50%</Badge> <span>Development needed</span>
-              </div>
+              <p className="font-medium text-sm">Overall Role Fit Score</p>
+              <p className="text-xs text-muted-foreground">The weighted average of all skill scores against role requirements. 80%+ = Strong fit, 60-79% = Good potential, Below 60% = Development needed.</p>
             </div>
           </div>
           <div className="flex gap-3">
             <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
             <div>
-              <p className="font-medium text-sm">Skill Criticality</p>
-              <p className="text-xs text-muted-foreground">
-                Skills marked with <Badge className="bg-blue-600 text-white text-[10px] px-1 py-0 mx-1">C</Badge> are critical for success in this role
-              </p>
+              <p className="font-medium text-sm">Skill Alignments (FIT & AI Readiness)</p>
+              <p className="text-xs text-muted-foreground">Compare candidate scores vs. role requirements. Look for <Badge className="bg-blue-600 text-white text-[10px] px-1 py-0 mx-0.5">C</Badge> marked skills - these are critical for success.</p>
             </div>
           </div>
           <div className="flex gap-3">
             <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
             <div>
-              <p className="font-medium text-sm">Understanding Trait Scores</p>
-              <p className="text-xs text-muted-foreground">FIT and AI Readiness are <strong>trait-based</strong>. Higher scores indicate stronger trait presence.</p>
+              <p className="font-medium text-sm">Critical Skills Analysis</p>
+              <p className="text-xs text-muted-foreground">Summary of skills marked as critical for this role. Shows how many critical requirements are met vs. gaps needing development.</p>
             </div>
           </div>
           <div className="flex gap-3">
             <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
             <div>
-              <p className="font-medium text-sm">Prompt Architecture Scores</p>
-              <p className="text-xs text-muted-foreground">Measures <strong>AI prompt engineering</strong> ability across 7 progressive levels.</p>
+              <p className="font-medium text-sm">Cohort Benchmarking</p>
+              <p className="text-xs text-muted-foreground">How this candidate ranks vs. all other candidates who've taken assessments. Percentile shows relative standing.</p>
             </div>
           </div>
           <div className="flex gap-3">
             <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
             <div>
-              <p className="font-medium text-sm">AIQ (Algorithmic Integrity Quotient)</p>
-              <p className="text-xs text-muted-foreground">Assesses <strong>ethical AI decision-making</strong> - balancing efficiency, fairness, and transparency.</p>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">6</div>
-            <div>
-              <p className="font-medium text-sm">Gap Analysis</p>
-              <p className="text-xs text-muted-foreground">Gaps show difference between candidate score and role requirement, helping identify development needs.</p>
+              <p className="font-medium text-sm">Alternative Roles</p>
+              <p className="text-xs text-muted-foreground">If candidate isn't ideal for this role, see which other roles in your organization might be a better match.</p>
             </div>
           </div>
         </div>
