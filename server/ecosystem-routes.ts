@@ -1611,13 +1611,12 @@ export function registerEcosystemRoutes(app: Express): void {
         if (!partnerForRegen) {
           return res.status(403).json({ error: "Partner account not found" });
         }
-        const totalAvailable = partnerForRegen.testsPurchased + (partnerForRegen.freeTestsAllocated || 0);
-        const remaining = totalAvailable - partnerForRegen.testsConsumed;
-        if (remaining < ECOSYSTEM_CREDITS_REQUIRED) {
+        const regenBalance = await storage.getPartnerQuotaBalance(partnerForRegen.id);
+        if (regenBalance.remaining < ECOSYSTEM_CREDITS_REQUIRED) {
           return res.status(400).json({
-            error: `Insufficient credits. This service requires ${ECOSYSTEM_CREDITS_REQUIRED} credits. You have ${remaining} credits remaining.`,
+            error: `Insufficient credits. This service requires ${ECOSYSTEM_CREDITS_REQUIRED} credits. You have ${regenBalance.remaining} credits remaining.`,
             creditsRequired: ECOSYSTEM_CREDITS_REQUIRED,
-            creditsRemaining: remaining,
+            creditsRemaining: regenBalance.remaining,
           });
         }
       } else {
@@ -2060,14 +2059,13 @@ export function registerEcosystemRoutes(app: Express): void {
       
       // Check if partner has enough credits (20 credits required)
       const ECOSYSTEM_CREDITS_REQUIRED = 20;
-      const totalAvailable = partner.testsPurchased + (partner.freeTestsAllocated || 0);
-      const remaining = totalAvailable - partner.testsConsumed;
+      const creditBalance = await storage.getPartnerQuotaBalance(partner.id);
       
-      if (remaining < ECOSYSTEM_CREDITS_REQUIRED) {
+      if (creditBalance.remaining < ECOSYSTEM_CREDITS_REQUIRED) {
         return res.status(400).json({ 
-          error: `Insufficient credits. This service requires ${ECOSYSTEM_CREDITS_REQUIRED} credits. You have ${remaining} credits remaining.`,
+          error: `Insufficient credits. This service requires ${ECOSYSTEM_CREDITS_REQUIRED} credits. You have ${creditBalance.remaining} credits remaining.`,
           creditsRequired: ECOSYSTEM_CREDITS_REQUIRED,
-          creditsRemaining: remaining
+          creditsRemaining: creditBalance.remaining
         });
       }
       
@@ -2089,7 +2087,7 @@ export function registerEcosystemRoutes(app: Express): void {
       res.json({ 
         success: true, 
         creditsConsumed: ECOSYSTEM_CREDITS_REQUIRED,
-        creditsRemaining: remaining - ECOSYSTEM_CREDITS_REQUIRED
+        creditsRemaining: creditBalance.remaining - ECOSYSTEM_CREDITS_REQUIRED
       });
     } catch (error: any) {
       console.error("[Ecosystem] Error consuming credits:", error);

@@ -2205,21 +2205,32 @@ export class DatabaseStorage implements IStorage {
       testsPurchased: partnerAccounts.testsPurchased,
       testsConsumed: partnerAccounts.testsConsumed,
       freeTestsAllocated: partnerAccounts.freeTestsAllocated,
+      freeTestsExpiresAt: partnerAccounts.freeTestsExpiresAt,
     }).from(partnerAccounts).where(eq(partnerAccounts.id, partnerId));
     
     if (!partner) {
       return { testsPurchased: 0, testsConsumed: 0, remaining: 0, freeTestsAllocated: 0 };
     }
     
-    // Total available = purchased credits + free tests allocated
+    // Check if free tests have expired (expire at end of the expiry day)
+    const now = new Date();
+    let freeTestsExpired = false;
+    if (partner.freeTestsExpiresAt) {
+      const expiryDate = new Date(partner.freeTestsExpiresAt);
+      expiryDate.setHours(23, 59, 59, 999);
+      freeTestsExpired = now > expiryDate;
+    }
+    const effectiveFreeTests = freeTestsExpired ? 0 : (partner.freeTestsAllocated || 0);
+    
+    // Total available = purchased credits + active free tests
     // Remaining = total available - consumed
-    const totalAvailable = partner.testsPurchased + (partner.freeTestsAllocated || 0);
+    const totalAvailable = partner.testsPurchased + effectiveFreeTests;
     
     return {
       testsPurchased: totalAvailable, // Return total available (purchased + free) for backward compatibility
       testsConsumed: partner.testsConsumed,
       remaining: totalAvailable - partner.testsConsumed,
-      freeTestsAllocated: partner.freeTestsAllocated || 0,
+      freeTestsAllocated: effectiveFreeTests,
     };
   }
 
@@ -3928,8 +3939,8 @@ export class DatabaseStorage implements IStorage {
 
     const testsUsed = Number(result[0]?.count || 0);
 
-    const balance = await this.getPartnerBalance(partnerId);
-    const remaining = balance ? Math.max(0, (balance.testsPurchased + (balance.freeTestsAllocated || 0)) - balance.testsConsumed) : 0;
+    const quotaBalance = await this.getPartnerQuotaBalance(partnerId);
+    const remaining = Math.max(0, quotaBalance.remaining);
 
     return { testsUsed, remaining };
   }
