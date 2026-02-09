@@ -4488,13 +4488,22 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
 
     const safeStrengths = candidate.strengths || [];
     const safeRiskFlags = candidate.riskFlags || [];
-    const firstStrength = safeStrengths.length > 0 ? extractText(safeStrengths[0]) : '';
-    const notesRaw = safeRiskFlags.length > 0
-      ? String(safeRiskFlags[0])
-      : firstStrength.replace('Strong ', '');
-    const notesLines = pdf.splitTextToSize(notesRaw || 'No notes', col.notes - 6);
-    const displayLines = notesLines.slice(0, 2);
-    const rowHeight = Math.max(16, 6 + displayLines.length * 4.5);
+    const noteParts: string[] = [];
+    if (safeStrengths.length > 0) {
+      const s = extractText(safeStrengths[0]).replace('Strong ', '');
+      if (s) noteParts.push(`Strength: ${s}`);
+    }
+    if (safeStrengths.length > 1) {
+      const s2 = extractText(safeStrengths[1]).replace('Strong ', '');
+      if (s2) noteParts.push(`Also strong: ${s2}`);
+    }
+    if (safeRiskFlags.length > 0) {
+      noteParts.push(`Risk: ${String(safeRiskFlags[0])}`);
+    }
+    const notesRaw = noteParts.length > 0 ? noteParts.join(' | ') : 'No notes';
+    const notesLines = pdf.splitTextToSize(notesRaw, col.notes - 6);
+    const displayLines = notesLines.slice(0, 3);
+    const rowHeight = Math.max(18, 6 + displayLines.length * 4.5);
 
     // Alternating row background
     if (idx % 2 === 0) {
@@ -4748,11 +4757,17 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
           const fillW = Math.max(1, (score / 100) * barW);
           pdf.roundedRect(barStartX, barY, fillW, barH, 1, 1, 'F');
 
-          // Required threshold line
+          // Required threshold line (dashed)
           const threshX = barStartX + (criticalSkill.requiredScore / 100) * barW;
           pdf.setDrawColor(17, 24, 39);
           pdf.setLineWidth(0.4);
-          pdf.line(threshX, barY - 0.5, threshX, barY + barH + 0.5);
+          let dY = barY - 0.5;
+          const dEnd = barY + barH + 0.5;
+          while (dY < dEnd) {
+            const segEnd = Math.min(dY + 1, dEnd);
+            pdf.line(threshX, dY, threshX, segEnd);
+            dY = segEnd + 0.8;
+          }
 
           // Score text
           pdf.setFont('helvetica', 'bold');
@@ -5218,7 +5233,13 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
         const thresholdX = barX + (clampedReq / 100) * barWidth;
         pdf.setDrawColor(17, 24, 39);
         pdf.setLineWidth(0.5);
-        pdf.line(thresholdX, yPos - 1, thresholdX, yPos + 7);
+        let dYt = yPos - 1;
+        const dEndt = yPos + 7;
+        while (dYt < dEndt) {
+          const segEnd = Math.min(dYt + 1, dEndt);
+          pdf.line(thresholdX, dYt, thresholdX, segEnd);
+          dYt = segEnd + 0.8;
+        }
 
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(fillColor[0], fillColor[1], fillColor[2]);
@@ -5306,7 +5327,13 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
         const thresholdX = barX + (clampedReq / 100) * barWidth;
         pdf.setDrawColor(17, 24, 39);
         pdf.setLineWidth(0.5);
-        pdf.line(thresholdX, yPos - 1, thresholdX, yPos + 7);
+        let dYt = yPos - 1;
+        const dEndt = yPos + 7;
+        while (dYt < dEndt) {
+          const segEnd = Math.min(dYt + 1, dEndt);
+          pdf.line(thresholdX, dYt, thresholdX, segEnd);
+          dYt = segEnd + 0.8;
+        }
 
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(fillColor[0], fillColor[1], fillColor[2]);
