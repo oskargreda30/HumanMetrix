@@ -223,7 +223,6 @@ export function EcosystemWorkflow({
   const [expandedStep, setExpandedStep] = useState<number>(1);
   const isInitialLoadRef = useRef(true);
   const lastProjectStepRef = useRef<number | null>(null);
-  const lastInitializedProjectIdRef = useRef<string | null>(null);
 
   // Scroll to a specific step card with header offset
   const scrollToStep = useCallback((stepNumber: number) => {
@@ -258,14 +257,24 @@ export function EcosystemWorkflow({
     scrollToStep(stepNumber);
   }, [scrollToStep]);
 
+  // Track previous projectId to clear stale cache on switch
+  const prevProjectIdRef = useRef<string>(projectId);
+  
   // Reset all state when projectId changes (switching projects)
   // This ensures new projects start with completely empty form fields
   useEffect(() => {
+    const prevId = prevProjectIdRef.current;
+    prevProjectIdRef.current = projectId;
+    
+    // Remove stale query cache for the old project so it can't leak into new project
+    if (prevId && prevId !== projectId) {
+      queryClient.removeQueries({ queryKey: [`/api/ecosystem/projects/${prevId}`] });
+    }
+    
     setIsEditingForm(false);
     setIsGenerating(false);
     isInitialLoadRef.current = true;
     lastProjectStepRef.current = null;
-    lastInitializedProjectIdRef.current = null;
     
     setMissionStatement("");
     setCompanyEthos("");
@@ -293,13 +302,11 @@ export function EcosystemWorkflow({
   }, [projectId]);
   
   // Initialize form from project data
-  // Guards: only populate when project.id matches current projectId AND
-  // we haven't already initialized this exact project (prevents stale cache re-population)
+  // Only populate when fetched project matches the current projectId
+  // The stale cache for the old project is removed in the reset effect above,
+  // so `project` here will only contain data for the current projectId
   useEffect(() => {
     if (!project || project.id !== projectId) return;
-    if (lastInitializedProjectIdRef.current === project.id && !isInitialLoadRef.current) return;
-    
-    lastInitializedProjectIdRef.current = project.id;
     
     setMissionStatement(project.missionStatement || "");
     setCompanyEthos(project.companyEthos || "");
