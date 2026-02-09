@@ -4122,9 +4122,8 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   // Card 1: Top Performer
   const topPerformerName = String(data.summaryInsights.topPerformer?.userName || 'N/A');
   const topPerformerFitVal = data.summaryInsights.topPerformer?.overallFit ?? 0;
-  const topTierColor: [number, number, number] = topPerformerFitVal >= 80 ? [34, 197, 94] : topPerformerFitVal >= 60 ? [234, 179, 8] : [239, 68, 68];
 
-  drawSummaryCard(MARGIN, topTierColor);
+  drawSummaryCard(MARGIN, [59, 130, 246]);
   pdf.setFontSize(7);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(107, 114, 128);
@@ -4138,7 +4137,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
 
   pdf.setFontSize(18);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(topTierColor[0], topTierColor[1], topTierColor[2]);
+  pdf.setTextColor(59, 130, 246);
   pdf.text(`${topPerformerFitVal}%`, MARGIN + CARD_PADDING, yPos + 29);
   pdf.setFontSize(7);
   pdf.setFont('helvetica', 'normal');
@@ -4170,9 +4169,9 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   const badgeY = yPos + 14;
   const badgeW = (cardWidth - CARD_PADDING * 2 - 6) / 3;
   const distributionData = [
-    { count: data.summaryInsights.fitDistribution.strong, label: 'Strong', bg: [220, 252, 231] as [number, number, number], text: [22, 101, 52] as [number, number, number] },
-    { count: data.summaryInsights.fitDistribution.moderate, label: 'Moderate', bg: [254, 249, 195] as [number, number, number], text: [133, 77, 14] as [number, number, number] },
-    { count: data.summaryInsights.fitDistribution.developmentNeeded, label: 'Needs Dev', bg: [254, 226, 226] as [number, number, number], text: [153, 27, 27] as [number, number, number] },
+    { count: data.summaryInsights.fitDistribution.strong, label: 'Strong', bg: [229, 231, 235] as [number, number, number], text: [55, 65, 81] as [number, number, number] },
+    { count: data.summaryInsights.fitDistribution.moderate, label: 'Moderate', bg: [229, 231, 235] as [number, number, number], text: [55, 65, 81] as [number, number, number] },
+    { count: data.summaryInsights.fitDistribution.developmentNeeded, label: 'Needs Dev', bg: [229, 231, 235] as [number, number, number], text: [55, 65, 81] as [number, number, number] },
   ];
 
   distributionData.forEach((d, i) => {
@@ -4279,25 +4278,34 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     pdf.setTextColor(71, 85, 105);
     pdf.text(diffDescLines, MARGIN + 4, yPos + 4);
     yPos += diffDescH + 3;
-    pdf.setFillColor(240, 249, 255);
-    pdf.setDrawColor(191, 219, 254);
-    pdf.setLineWidth(0.3);
     const diffItems = data.summaryInsights.keyDifferentiators.slice(0, 3);
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica', 'normal');
-    const diffMaxTextW = contentWidth - CARD_PADDING * 2 - 4;
-    const wrappedDiffLines: string[] = [];
-    diffItems.forEach((d) => {
-      const lines = pdf.splitTextToSize(`\u2022 ${d}`, diffMaxTextW);
-      wrappedDiffLines.push(...lines.slice(0, 2));
+    const diffMaxTextW = contentWidth - 16;
+    const ROW_HEIGHT = 12;
+    const totalDiffHeight = diffItems.length * ROW_HEIGHT + 4;
+
+    diffItems.forEach((d, idx) => {
+      const rowY = yPos + idx * ROW_HEIGHT;
+      const isEven = idx % 2 === 0;
+      pdf.setFillColor(isEven ? 245 : 249, isEven ? 247 : 250, isEven ? 250 : 251);
+      pdf.roundedRect(MARGIN, rowY, contentWidth, ROW_HEIGHT, idx === 0 ? 2 : 0, idx === 0 ? 2 : 0, 'F');
+      if (idx === diffItems.length - 1) {
+        pdf.setFillColor(isEven ? 245 : 249, isEven ? 247 : 250, isEven ? 250 : 251);
+        pdf.roundedRect(MARGIN, rowY, contentWidth, ROW_HEIGHT, 0, 0, 'F');
+        pdf.roundedRect(MARGIN, rowY, contentWidth, ROW_HEIGHT, 2, 2, 'F');
+      }
+      pdf.setFillColor(59, 130, 246);
+      pdf.circle(MARGIN + 6, rowY + ROW_HEIGHT / 2, 1.2, 'F');
+      pdf.setFontSize(7.5);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(30, 41, 59);
+      const truncatedText = pdf.splitTextToSize(String(d), diffMaxTextW)[0];
+      pdf.text(truncatedText, MARGIN + 11, rowY + ROW_HEIGHT / 2 + 1.5);
     });
-    const diffBoxHeight = 6 + wrappedDiffLines.length * 4.5;
-    pdf.roundedRect(MARGIN, yPos, contentWidth, diffBoxHeight, 2, 2, 'FD');
-    pdf.setTextColor(30, 64, 175);
-    wrappedDiffLines.forEach((line, i) => {
-      pdf.text(line, MARGIN + CARD_PADDING, yPos + 4 + (i * 4.5));
-    });
-    yPos += diffBoxHeight + BLOCK_SPACING;
+
+    pdf.setDrawColor(219, 234, 254);
+    pdf.setLineWidth(0.3);
+    pdf.roundedRect(MARGIN, yPos, contentWidth, totalDiffHeight - 4, 2, 2, 'S');
+    yPos += totalDiffHeight + BLOCK_SPACING;
   }
 
   // ========== PROMPT ARCHITECTURE AI ANALYSIS (if available) ==========
