@@ -114,28 +114,37 @@ export default function Assessment() {
   currentQuestionRef.current = currentQuestion;
   timeRemainingRef.current = timeRemaining;
 
-  const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
 
   useEffect(() => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (!isMobile || !window.visualViewport) return;
+    if (!isMobile) return;
 
-    const vv = window.visualViewport;
-    const handleResize = () => {
-      const offset = window.innerHeight - vv.height;
-      setKeyboardOffset(offset > 50 ? offset : 0);
+    let scrollTimer: NodeJS.Timeout;
+
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') {
+        setKeyboardOpen(true);
+        scrollTimer = setTimeout(() => {
+          navBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 400);
+      }
     };
 
-    const handleScroll = () => {
-      const offset = window.innerHeight - vv.height;
-      setKeyboardOffset(offset > 50 ? offset : 0);
+    const handleFocusOut = (e: FocusEvent) => {
+      const related = e.relatedTarget as HTMLElement | null;
+      if (!related || (related.tagName !== 'TEXTAREA' && related.tagName !== 'INPUT')) {
+        setKeyboardOpen(false);
+      }
     };
 
-    vv.addEventListener('resize', handleResize);
-    vv.addEventListener('scroll', handleScroll);
+    document.addEventListener('focusin', handleFocusIn);
+    document.addEventListener('focusout', handleFocusOut);
     return () => {
-      vv.removeEventListener('resize', handleResize);
-      vv.removeEventListener('scroll', handleScroll);
+      clearTimeout(scrollTimer);
+      document.removeEventListener('focusin', handleFocusIn);
+      document.removeEventListener('focusout', handleFocusOut);
     };
   }, []);
 
@@ -1051,7 +1060,7 @@ export default function Assessment() {
               </Card>
 
               {/* Navigation - fixed at bottom on mobile so keyboard doesn't hide buttons */}
-              <div ref={navBarRef} className={`${keyboardOffset > 0 ? 'fixed left-0 right-0 z-30' : 'sticky bottom-0 z-30'} bg-background/95 backdrop-blur-sm py-3 px-4 ${keyboardOffset > 0 ? '' : '-mx-4'} border-t border-border/50 flex flex-wrap gap-3 justify-between md:static md:z-auto md:bg-transparent md:backdrop-blur-none md:py-0 md:px-0 md:mx-0 md:border-t-0 md:mt-6`} style={keyboardOffset > 0 ? { bottom: `${keyboardOffset}px` } : undefined}>
+              <div ref={navBarRef} className="mt-6 py-3 flex flex-wrap gap-3 justify-between" style={keyboardOpen ? { marginBottom: '60vh' } : undefined}>
                 {!submitMutation.isPending && !isPromptArchitecture && (
                   <Button
                     variant="outline"
