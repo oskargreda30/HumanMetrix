@@ -241,47 +241,9 @@ export default function MyResults() {
     );
   }
   
-  // Check if all REQUIRED assessment types are completed
-  // For partner view: just check if there are unlocked results
-  // For B2C: check if all required assessments are complete
-  // Normalize assessment type names for comparison (e.g., "ai-readiness" -> "ai_readiness")
-  const normalizeType = (type: string) => type.toLowerCase().replace(/-/g, '_');
-  const uniqueAssessmentTypes = new Set(completedResults.map((r: any) => normalizeType(r.assessmentType)));
-  const allAssessmentsCompleted = isPartnerView 
-    ? completedResults.length > 0  // Partner view: just need at least one unlocked result
-    : (selectedBatch 
-      ? selectedBatch.allItemsCompleted  // For batch view, use batch completion status
-      : (requiredAssessmentTypes.length > 0 && requiredAssessmentTypes.every(type => uniqueAssessmentTypes.has(normalizeType(type)))));
+  const uniqueAssessmentTypes = new Set(completedResults.map((r: any) => r.assessmentType));
 
-  // FIRST: Check if all assessments are completed (before showing payment gate)
-  // For partner view, skip this check if we have no results (they'll see empty state later)
-  if (!allAssessmentsCompleted && !isPartnerView) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navigation />
-        <main className="flex-grow flex items-center justify-center p-4">
-          <Card className="p-12 text-center max-w-md">
-            <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="text-2xl font-bold mb-2">
-              {completedResults.length === 0 ? 'No Results Yet' : 'Assessments In Progress'}
-            </h2>
-            <p className="text-muted-foreground mb-6">
-              {completedResults.length === 0 
-                ? 'Complete your assessments to view your comprehensive results.' 
-                : `You've completed ${uniqueAssessmentTypes.size} of ${requiredAssessmentTypes.length} required assessments. Complete all assessments to view your results.`
-              }
-            </p>
-            <Link href="/dashboard">
-              <Button>Go to Dashboard</Button>
-            </Link>
-          </Card>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  // SECOND: Show payment gate if user hasn't paid for results access
+  // Show payment gate if user hasn't paid for results access
   // Skip payment gate for partner view (partner results are already unlocked when purchased)
   // For batch view, check if THAT batch is paid
   // For global view, require payment if ANY purchase is unpaid (all-or-nothing approach)
