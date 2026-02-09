@@ -106,7 +106,8 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { countryCode, currency, formatLocalCurrency, getLocalPriceNumber } = useCurrency();
   
-  const candidateView = new URLSearchParams(window.location.search).get('view') === 'candidate';
+  const searchParams = new URLSearchParams(window.location.search);
+  const candidateView = searchParams.get('view') === 'candidate' || searchParams.has('scrollToSeries');
 
   if (!authLoading && user) {
     if (user.role === 'super_admin') {
