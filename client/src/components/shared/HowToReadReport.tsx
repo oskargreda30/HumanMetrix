@@ -78,54 +78,50 @@ export function HowToReadReport({ reportType }: HowToReadReportProps) {
             <h3 className="text-lg font-bold">How to Use This Comparison</h3>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
-            A guide to evaluating candidates side-by-side
+            A guide to comparing 2 candidates side-by-side
           </p>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
               <div>
-                <p className="font-medium text-sm">Score Comparison</p>
-                <p className="text-xs text-muted-foreground">Compare candidates across all 4 assessment types. Higher scores indicate stronger capabilities.</p>
+                <p className="font-medium text-sm">Candidate Overview</p>
+                <p className="text-xs text-muted-foreground">Quick view of each candidate's assessment completion. All 4 assessments should be completed for a complete picture.</p>
               </div>
             </div>
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
               <div>
-                <p className="font-medium text-sm">Skill-Level Detail</p>
-                <p className="text-xs text-muted-foreground">Drill into individual skills to see where each candidate excels or needs development.</p>
+                <p className="font-medium text-sm">Composite Score</p>
+                <p className="text-xs text-muted-foreground">Weighted average across all assessments. Use the sliders to adjust weights based on role priorities (e.g., higher AI Readiness for tech roles).</p>
               </div>
             </div>
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
               <div>
-                <p className="font-medium text-sm">Colour Indicators</p>
-                <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1 mt-1">
-                  <Badge className="bg-green-500 text-white text-[10px] px-1 py-0">75%+</Badge> <span>Strong,</span>
-                  <Badge className="bg-amber-500 text-white text-[10px] px-1 py-0">50-74%</Badge> <span>Developing,</span>
-                  <Badge className="bg-red-500 text-white text-[10px] px-1 py-0">&lt;50%</Badge> <span>Needs Attention</span>
-                </div>
+                <p className="font-medium text-sm">Skill-by-Skill Breakdown</p>
+                <p className="text-xs text-muted-foreground">Radar charts and tables show each candidate's strengths. Look for the highest scores in skills critical to your role.</p>
               </div>
             </div>
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
               <div>
-                <p className="font-medium text-sm">Prompt Architecture Scores</p>
-                <p className="text-xs text-muted-foreground">Measures <strong>AI prompt engineering</strong> ability across 7 progressive levels.</p>
+                <p className="font-medium text-sm">Role Fit Analysis (Separate Tool)</p>
+                <p className="text-xs text-muted-foreground">For detailed role-specific analysis including cohort benchmarking and hiring recommendations, use the Role Fit tab with individual candidates.</p>
               </div>
             </div>
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
               <div>
-                <p className="font-medium text-sm">AIQ (Algorithmic Integrity Quotient)</p>
-                <p className="text-xs text-muted-foreground">Assesses <strong>ethical AI decision-making</strong> - balancing efficiency, fairness, and transparency.</p>
+                <p className="font-medium text-sm">Read the Recommendations</p>
+                <p className="text-xs text-muted-foreground">Review strengths, development areas, and AI-generated insights for each candidate to inform your final decision.</p>
               </div>
             </div>
-            <div className="flex gap-3">
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">6</div>
-              <div>
-                <p className="font-medium text-sm">Holistic Decision</p>
-                <p className="text-xs text-muted-foreground">Consider role requirements, team dynamics, and cultural fit alongside these scores.</p>
-              </div>
+          </div>
+          <div className="flex gap-3 mt-4 pt-4 border-t">
+            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-xs font-bold">?</div>
+            <div>
+              <p className="font-medium text-sm">What Each Assessment Measures</p>
+              <p className="text-xs text-muted-foreground"><strong>FIT:</strong> Behavioral traits like resilience, curiosity, ethics (predictors of cultural fit). &nbsp;<strong>AI Readiness:</strong> Technical AI skills including prompt engineering and data fluency. &nbsp;<strong>Prompt Architecture:</strong> Real-world prompt writing ability across difficulty levels. &nbsp;<strong>AIQ:</strong> AI ethics, judgment, and responsible AI awareness.</p>
             </div>
           </div>
         </div>
