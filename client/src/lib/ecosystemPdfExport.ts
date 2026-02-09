@@ -6,7 +6,7 @@ const PAGE_WIDTH = 210;
 const PAGE_HEIGHT = 297;
 const MARGIN_LEFT = 20;
 const MARGIN_RIGHT = 20;
-const MARGIN_TOP = 32;
+const MARGIN_TOP = 36;
 const MARGIN_BOTTOM = 20;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
 const COLORS = {
@@ -130,6 +130,7 @@ function addDescriptionBox(pdf: jsPDF, text: string, yPos: number): number {
   applySmallText(pdf);
   const lines = pdf.splitTextToSize(text, CONTENT_WIDTH - 8);
   const boxH = Math.max(10, lines.length * 4 + 4);
+  yPos = ensureSpace(pdf, yPos, boxH + 3);
   pdf.setFillColor(...COLORS.descBox);
   pdf.setDrawColor(...COLORS.descBox);
   pdf.roundedRect(MARGIN_LEFT, yPos - 2, CONTENT_WIDTH, boxH, 2, 2, 'F');
@@ -277,14 +278,14 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   pdf.setTextColor(255, 255, 255);
   pdf.setFontSize(22);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('TEAM DIAGNOSTIC REPORT', PAGE_WIDTH / 2, y + 13, { align: 'center' });
+  pdf.text('TEAM DIAGNOSTIC REPORT', PAGE_WIDTH / 2, y + 12, { align: 'center' });
   pdf.setFontSize(11);
   pdf.setFont('helvetica', 'normal');
-  pdf.text('COMPREHENSIVE REPORT', PAGE_WIDTH / 2, y + 22, { align: 'center' });
+  pdf.text('COMPREHENSIVE REPORT', PAGE_WIDTH / 2, y + 20, { align: 'center' });
   pdf.setFontSize(9);
   pdf.text(
     `${companyName || 'Your Organization'} \u2022 ${teamSize} Team Members \u2022 ${new Date(analysis.generatedAt).toLocaleDateString()}`,
-    PAGE_WIDTH / 2, y + 29,
+    PAGE_WIDTH / 2, y + 27,
     { align: 'center' }
   );
   pdf.setTextColor(0, 0, 0);
@@ -509,7 +510,17 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
     { pct: '30%', title: 'Risk & Gap Penalties', desc: 'Deductions for critical gaps (-8 pts), warnings (-4 pts), and minor risks (-2 pts).', color: COLORS.amber },
   ];
 
-  const calcBoxH = healthComponents.length * 11.5 + 12;
+  // Measure each component's description height for accurate box sizing
+  applySmallText(pdf);
+  let totalCompH = 8;
+  const compMeasurements: { lines: string[]; lineH: number }[] = [];
+  for (const comp of healthComponents) {
+    const descLines = pdf.splitTextToSize(comp.desc, CONTENT_WIDTH - 24);
+    const itemH = 4.5 + descLines.length * 3.5 + 3;
+    compMeasurements.push({ lines: descLines, lineH: itemH });
+    totalCompH += itemH;
+  }
+  const calcBoxH = totalCompH + 4;
   y = ensureSpace(pdf, y, calcBoxH);
   const calcBoxStartY = y - 2;
   pdf.setFillColor(...COLORS.descBox);
@@ -520,7 +531,9 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   pdf.text('HOW IT\'S CALCULATED', MARGIN_LEFT + 6, y + 2);
   y += 8;
 
-  for (const comp of healthComponents) {
+  for (let ci = 0; ci < healthComponents.length; ci++) {
+    const comp = healthComponents[ci];
+    const measurement = compMeasurements[ci];
     pdf.setFillColor(...comp.color);
     pdf.circle(MARGIN_LEFT + 10, y + 1, 3, 'F');
     pdf.setFontSize(5);
@@ -533,8 +546,11 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
     pdf.text(comp.title, MARGIN_LEFT + 16, y + 2);
     applySmallText(pdf);
     y += 4.5;
-    pdf.text(comp.desc, MARGIN_LEFT + 16, y);
-    y += 7;
+    for (const line of measurement.lines) {
+      pdf.text(line, MARGIN_LEFT + 16, y);
+      y += 3.5;
+    }
+    y += 3;
   }
   y += 4;
 
@@ -596,7 +612,10 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
       const contentH = 24 + (analysisLines.length > 0 ? analysisLines.length * 3.8 + 4 : 0);
 
       y = ensureSpace(pdf, y, contentH + 4);
-      const blockStartY = y - 2;
+
+      // Draw light background BEFORE content
+      pdf.setFillColor(248, 250, 252);
+      pdf.roundedRect(MARGIN_LEFT + 2, y - 2, CONTENT_WIDTH - 4, contentH + 2, 2, 2, 'F');
 
       drawCapabilityBadge(pdf, item.code, MARGIN_LEFT + 6, y + 6, 7);
       pdf.setFontSize(10);
@@ -629,14 +648,6 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
         }
       }
 
-      // Draw background box behind content
-      const blockH = y - blockStartY + 2;
-      // We need to draw bg first then re-render - use a simpler approach: just add border
-      pdf.setDrawColor(...COLORS.border);
-      pdf.setLineWidth(0.3);
-      pdf.roundedRect(MARGIN_LEFT + 2, blockStartY, CONTENT_WIDTH - 4, blockH, 2, 2, 'S');
-      pdf.setLineWidth(0.2);
-
       y += 6;
     }
   }
@@ -644,9 +655,6 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   // ====== TEAM CUMULATIVE CAPABILITY PROFILE ======
   if (cumulativeScores.length > 0) {
     y = ensureSpace(pdf, y, 80);
-    if (y > MARGIN_TOP + 80) {
-      y = newPage(pdf);
-    }
     y = addSectionHeader(pdf, 'TEAM CUMULATIVE CAPABILITY PROFILE', y);
     y = addDescriptionBox(pdf,
       `Combined scores across all FIT capabilities for ${teamMembers.length} team member${teamMembers.length !== 1 ? 's' : ''}. Maximum possible score per capability: ${teamMembers.length * 100}.`,
@@ -654,7 +662,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
     );
 
     const maxPossible = teamMembers.length * 100;
-    const barAreaWidth = CONTENT_WIDTH - 50;
+    const barAreaWidth = CONTENT_WIDTH - 65;
 
     for (const item of cumulativeScores) {
       y = ensureSpace(pdf, y, 14);
@@ -688,9 +696,6 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   // ====== DEEP CONTEXTUAL INSIGHTS ======
   if (analysis.contextualInsights?.length > 0) {
     y = ensureSpace(pdf, y, 40);
-    if (y > MARGIN_TOP + 100) {
-      y = newPage(pdf);
-    }
     y = addSectionHeader(pdf, 'DEEP CONTEXTUAL INSIGHTS', y);
 
     for (const insight of analysis.contextualInsights) {
@@ -845,6 +850,8 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
         const maxItems = Math.max(profile.keyBehaviors?.length || 0, profile.redFlags?.length || 0);
         y = ensureSpace(pdf, y, 10 + maxItems * 5);
 
+        let colEndY = y;
+
         if (hasBehaviors) {
           let by = y;
           pdf.setFontSize(7);
@@ -865,6 +872,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
             }
             by += 0.5;
           }
+          colEndY = Math.max(colEndY, by);
         }
 
         if (hasRedFlags) {
@@ -888,11 +896,10 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
             }
             ry += 0.5;
           }
+          colEndY = Math.max(colEndY, ry);
         }
 
-        const maxBH = (profile.keyBehaviors?.length || 0) * 5 + 6;
-        const maxRH = (profile.redFlags?.length || 0) * 5 + 6;
-        y += Math.max(maxBH, maxRH) + 2;
+        y = colEndY + 2;
       }
 
       // Divider between profiles
@@ -906,9 +913,6 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   // ====== RISK ALERTS ======
   if (analysis.riskAlerts?.length > 0) {
     y = ensureSpace(pdf, y, 40);
-    if (y > MARGIN_TOP + 120) {
-      y = newPage(pdf);
-    }
     y = addSectionHeader(pdf, 'RISK ALERTS', y);
 
     for (const alert of analysis.riskAlerts) {
@@ -962,9 +966,6 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
 
   // ====== ADDITIONAL SERVICES ======
   y = ensureSpace(pdf, y, 55);
-  if (y > MARGIN_TOP + 140) {
-    y = newPage(pdf);
-  }
   pdf.setFillColor(...COLORS.primaryLight);
   pdf.roundedRect(MARGIN_LEFT, y, CONTENT_WIDTH, 50, 3, 3, 'F');
   pdf.setFontSize(12);
