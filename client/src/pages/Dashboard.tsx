@@ -106,22 +106,10 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { countryCode, currency, formatLocalCurrency, getLocalPriceNumber } = useCurrency();
   
-  const searchParams = new URLSearchParams(window.location.search);
-  const candidateView = searchParams.get('view') === 'candidate' || searchParams.has('scrollToSeries');
-
-  if (!authLoading && user) {
-    if (user.role === 'super_admin') {
-      return <Redirect to="/admin/dashboard" />;
-    }
-    
-    if (user.role === 'partner_admin' && !candidateView) {
-      return <Redirect to="/partner" />;
-    }
-    
-    if (user.role === 'organization_admin') {
-      return <Redirect to="/admin/dashboard" />;
-    }
-  }
+  const initialSearchParams = new URLSearchParams(window.location.search);
+  const [candidateView] = useState(() => 
+    initialSearchParams.get('view') === 'candidate' || initialSearchParams.has('scrollToSeries')
+  );
   
   // Change password state
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
@@ -559,6 +547,20 @@ export default function Dashboard() {
     let timer = setTimeout(tryScroll, 500);
     return () => clearTimeout(timer);
   }, [scrollToSeriesId, partnerTestingSeries]);
+
+  if (!authLoading && user) {
+    if (user.role === 'super_admin') {
+      return <Redirect to="/admin/dashboard" />;
+    }
+    
+    if (user.role === 'partner_admin' && !candidateView) {
+      return <Redirect to="/partner" />;
+    }
+    
+    if (user.role === 'organization_admin') {
+      return <Redirect to="/admin/dashboard" />;
+    }
+  }
 
   if (assessmentsLoading || purchasesLoading || partnerSeriesLoading) {
     return (
