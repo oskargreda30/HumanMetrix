@@ -5,7 +5,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Users, BarChart3, AlertCircle, Download, Award, Brain, Target, Sparkles, TrendingUp, TrendingDown, Trophy, AlertTriangle, Minus, ChevronUp, ChevronDown, Scale, FileText, Camera, MessageSquare, Clock, ShieldAlert, DollarSign, RefreshCw, Info } from "lucide-react";
+import { Loader2, Users, BarChart3, AlertCircle, Download, Award, Brain, Target, Sparkles, TrendingUp, TrendingDown, Trophy, AlertTriangle, Minus, ChevronUp, ChevronDown, Scale, FileText, Camera, Clock, RefreshCw, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -33,7 +33,8 @@ import { useToast } from "@/hooks/use-toast";
 import { FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym } from "@/lib/assessmentSkills";
 import logoUrl from "@assets/logo_HumanMetrix_big_1766783080540.png";
 import SkillsLegend from "@/components/SkillsLegend";
-import { EnquiryModal } from "@/components/EnquiryModal";
+import { HowToReadReport } from "@/components/shared/HowToReadReport";
+import { AdditionalServicesSection } from "@/components/shared/AdditionalServicesSection";
 
 const CHART_COLORS = [
   "hsl(var(--chart-1))",
@@ -149,7 +150,6 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
   const [comparisonTriggered, setComparisonTriggered] = useState(false);
   const [loadingTransitionComplete, setLoadingTransitionComplete] = useState(false);
   const [isRerunning, setIsRerunning] = useState(false);
-  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
   const [hoveredSkill, setHoveredSkill] = useState<string | null>(null);
   const handleMouseMove = useCallback((state: any) => {
     if (state && state.activeLabel) {
@@ -1327,76 +1327,8 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                 </div>
               </div>
 
-              {/* Executive Summary - Guide for Hiring Managers */}
               {!isCapturingPDF && (
-              <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <FileText className="h-5 w-5 text-primary" />
-                    How to Use This Comparison
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    A guide to comparing {selectedCandidates.length} candidates side-by-side
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {/* Step 1 */}
-                    <div className="flex gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
-                      <div>
-                        <p className="font-medium text-sm">Candidate Overview</p>
-                        <p className="text-xs text-muted-foreground">Quick view of each candidate's assessment completion. All 4 assessments should be completed for a complete picture.</p>
-                      </div>
-                    </div>
-                    {/* Step 2 */}
-                    <div className="flex gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
-                      <div>
-                        <p className="font-medium text-sm">Composite Score</p>
-                        <p className="text-xs text-muted-foreground">Weighted average across all assessments. Use the sliders to adjust weights based on role priorities (e.g., higher AI Readiness for tech roles).</p>
-                      </div>
-                    </div>
-                    {/* Step 3 */}
-                    <div className="flex gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
-                      <div>
-                        <p className="font-medium text-sm">Skill-by-Skill Breakdown</p>
-                        <p className="text-xs text-muted-foreground">Radar charts and tables show each candidate's strengths. Look for the highest scores in skills critical to your role.</p>
-                      </div>
-                    </div>
-                    {/* Step 4 */}
-                    <div className="flex gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
-                      <div>
-                        <p className="font-medium text-sm">Role Fit Analysis (Separate Tool)</p>
-                        <p className="text-xs text-muted-foreground">For detailed role-specific analysis including cohort benchmarking and hiring recommendations, use the Role Fit tab with individual candidates.</p>
-                      </div>
-                    </div>
-                    {/* Step 5 */}
-                    <div className="flex gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
-                      <div>
-                        <p className="font-medium text-sm">Read the Recommendations</p>
-                        <p className="text-xs text-muted-foreground">Review strengths, development areas, and AI-generated insights for each candidate to inform your final decision.</p>
-                      </div>
-                    </div>
-                    {/* What assessments mean */}
-                    <div className="flex gap-3 md:col-span-2">
-                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center text-xs font-bold">?</div>
-                      <div>
-                        <p className="font-medium text-sm">What Each Assessment Measures</p>
-                        <p className="text-xs text-muted-foreground">
-                          <span className="font-medium">FIT:</span> Behavioral traits like resilience, curiosity, ethics (predictors of cultural fit). 
-                          <span className="font-medium ml-2">AI Readiness:</span> Technical AI skills including prompt engineering and data fluency. 
-                          <span className="font-medium ml-2">Prompt Architecture:</span> Real-world prompt writing ability across difficulty levels. 
-                          <span className="font-medium ml-2">AIQ:</span> AI ethics, judgment, and responsible AI awareness.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                <HowToReadReport reportType="comparison" />
               )}
 
               {/* Summary Cards - Candidate Details & Assessment Status */}
@@ -2761,17 +2693,13 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
               </div>
               {/* End of Report Container */}
 
-              {/* Comparison Insights and Hiring Recommendation - AI-powered section */}
               {config.insightsEndpoint && (
-              <Card className="bg-gradient-to-r from-purple-500/10 via-purple-500/5 to-transparent border-purple-500/20" data-testid="card-ai-insights">
+              <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent" data-testid="card-ai-insights">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Brain className="h-5 w-5 text-purple-500" />
-                    Comparison Insights and Hiring Recommendation
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    AI-Generated Insights
                   </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    AI-generated analysis and recommendations based on comprehensive assessment data
-                  </p>
                 </CardHeader>
                 <CardContent>
                   {!comparison?.aiInsights && !comparison?.hasSkillData && 
@@ -2780,13 +2708,13 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                    !comparison?.promptArchitectureAssessments?.some(a => a !== null) &&
                    !comparison?.aiqAssessments?.some(a => a !== null) ? (
                     <div className="text-center py-8 text-muted-foreground">
-                      <Brain className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
+                      <Sparkles className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
                       <p className="text-sm">No assessment data available for insights generation.</p>
                       <p className="text-xs mt-2">Complete assessments to enable AI-powered analysis.</p>
                     </div>
                   ) : comparison?.aiInsights ? (
                     <div className="prose prose-sm dark:prose-invert max-w-none" data-testid="text-ai-insights">
-                      {comparison.aiInsights.split('\n\n').map((paragraph, idx) => {
+                      {comparison.aiInsights.split('\n\n').map((paragraph: string, idx: number) => {
                         const headingMatch = paragraph.match(/^\*\*(.+?)\*\*/);
                         if (headingMatch) {
                           const heading = headingMatch[1];
@@ -2794,7 +2722,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                           return (
                             <div key={idx} className="mb-4">
                               <h4 className="font-semibold text-foreground flex items-center gap-2 mb-2">
-                                <Sparkles className="h-4 w-4 text-purple-500" />
+                                <Sparkles className="h-4 w-4 text-primary" />
                                 {heading}
                               </h4>
                               {content && <p className="text-muted-foreground text-sm leading-relaxed">{content}</p>}
@@ -2808,7 +2736,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                     </div>
                   ) : (
                     <div className="text-center py-8 text-muted-foreground">
-                      <Brain className="h-12 w-12 mx-auto mb-4 text-purple-500/30" />
+                      <Sparkles className="h-12 w-12 mx-auto mb-4 text-primary/30" />
                       <p className="text-sm">AI insights could not be generated for this comparison.</p>
                     </div>
                   )}
@@ -2816,88 +2744,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
               </Card>
               )}
 
-              {/* Additional Services On Request */}
-              <Card className="border-primary/20 bg-primary">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-white">
-                    <Sparkles className="h-5 w-5 text-white" />
-                    Additional Services on Request
-                  </CardTitle>
-                  <p className="text-sm text-white/80">
-                    Contact our team to unlock these premium insights for your hiring decisions
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                      <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                        <MessageSquare className="h-4 w-4 text-white" />
-                        Suggested Interview Questions
-                      </h4>
-                      <p className="text-sm text-white/70">
-                        AI-generated questions based on candidates' assessment results and skill gaps
-                      </p>
-                    </div>
-                    <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                      <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                        <Users className="h-4 w-4 text-white" />
-                        Team Composition Fit
-                      </h4>
-                      <p className="text-sm text-white/70">
-                        Analysis of how candidates would complement your existing team dynamics
-                      </p>
-                    </div>
-                    <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                      <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                        <Clock className="h-4 w-4 text-white" />
-                        Time to Productivity Estimate
-                      </h4>
-                      <p className="text-sm text-white/70">
-                        Projected onboarding timeline based on skill readiness and learning agility
-                      </p>
-                    </div>
-                    <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                      <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                        <ShieldAlert className="h-4 w-4 text-white" />
-                        Hiring Risk Analysis
-                      </h4>
-                      <p className="text-sm text-white/70">
-                        Comprehensive risk assessment highlighting potential challenges and mitigations
-                      </p>
-                    </div>
-                    <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                      <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                        <DollarSign className="h-4 w-4 text-white" />
-                        Development Investment Cost
-                      </h4>
-                      <p className="text-sm text-white/70">
-                        Estimated training and development investment to close identified skill gaps
-                      </p>
-                    </div>
-                    <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                      <Badge className="bg-amber-500 text-white border-amber-600 text-xs mb-2">Coming Soon</Badge>
-                      <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                        <TrendingUp className="h-4 w-4 text-white" />
-                        Cohort Benchmarking
-                      </h4>
-                      <p className="text-sm text-white/70">
-                        Compare candidate performance against industry benchmarks and similar cohorts
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-4 text-center">
-                    <Button 
-                      variant="outline" 
-                      className="border-white text-white hover:bg-white/20"
-                      onClick={() => setShowEnquiryModal(true)}
-                      data-testid="button-contact-team-comparison"
-                    >
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Speak to the Team
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <AdditionalServicesSection enquiryContext="Comparison Report - Premium Services" />
 
               {/* Skills Legend */}
               <SkillsLegend />
@@ -3064,11 +2911,6 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
         </div>
       )}
 
-      <EnquiryModal 
-        open={showEnquiryModal} 
-        onOpenChange={setShowEnquiryModal}
-        context="Comparison Report - Enterprise Services"
-      />
     </div>
   );
 }
