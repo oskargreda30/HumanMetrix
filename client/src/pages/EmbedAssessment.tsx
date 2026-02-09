@@ -2530,7 +2530,7 @@ export default function EmbedAssessment() {
   const accentColor = branding?.accentColor || '#06b6d4';
 
   return (
-    <div className={`${bgMain} min-h-[100dvh] pt-3 md:pt-4 pb-4 px-4`} data-testid="embed-assessment">
+    <div className={`${bgMain} min-h-[100dvh] pt-3 md:pt-4 pb-20 md:pb-4 px-4`} data-testid="embed-assessment">
       <div className="max-w-2xl mx-auto">
         {/* Multi-assessment progress indicator */}
         {isMultiAssessment && (
@@ -2681,7 +2681,7 @@ export default function EmbedAssessment() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-between mt-6 gap-3">
+        <div className={`fixed bottom-0 left-0 right-0 z-30 ${isLight ? 'bg-gray-50/95' : 'bg-slate-900/95'} backdrop-blur-sm py-3 px-4 border-t ${isLight ? 'border-gray-200' : 'border-slate-700/50'} flex justify-between gap-3 md:relative md:bottom-auto md:left-auto md:right-auto md:z-auto md:bg-transparent md:backdrop-blur-none md:py-0 md:px-0 md:border-t-0 md:mt-6`}>
           {isPromptArchitecture ? (
             <div />
           ) : (
