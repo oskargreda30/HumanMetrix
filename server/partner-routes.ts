@@ -3094,16 +3094,21 @@ export function registerPartnerRoutes(app: Express) {
         completedAt: new Date(),
       });
       
+      const dashboardUrl = userExists 
+        ? `${baseUrl}/dashboard?view=candidate&scrollToSeries=${invitation.id}`
+        : null;
+      
       res.json({
         success: true,
         userExists,
         email: invitation.email,
         completedAssessments: completedTypes,
+        unpaidCount,
         bundlePrice: bundlePriceDisplay,
         originalPrice: originalPriceDisplay,
         discountPercentage,
         freeUnlockDate: freeUnlockDate.toISOString(),
-        dashboardUrl: userExists ? `${baseUrl}/dashboard` : null,
+        dashboardUrl,
         createAccountUrl: !userExists ? `${baseUrl}/register?email=${encodeURIComponent(invitation.email)}&invite=${token}` : null,
         paymentUrl,
       });

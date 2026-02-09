@@ -391,6 +391,7 @@ export default function EmbedAssessment() {
   const [invitationCompletionData, setInvitationCompletionData] = useState<{
     userExists: boolean;
     email: string;
+    unpaidCount: number;
     bundlePrice: string;
     originalPrice: string;
     discountPercentage: number;
@@ -1478,6 +1479,7 @@ export default function EmbedAssessment() {
             setInvitationCompletionData({
               userExists: data.userExists,
               email: data.email,
+              unpaidCount: data.unpaidCount ?? data.completedAssessments?.length ?? 1,
               bundlePrice: data.bundlePrice,
               originalPrice: data.originalPrice,
               discountPercentage: data.discountPercentage,
@@ -1951,23 +1953,23 @@ export default function EmbedAssessment() {
                 </p>
               </div>
 
-              {/* Pricing Bundle Section */}
+              {/* Pricing Bundle Section - only show when there are unpaid results */}
               {isLoadingCompletion ? (
                 <div className="flex items-center justify-center py-6">
                   <Loader2 className="h-6 w-6 animate-spin text-cyan-500" />
                 </div>
-              ) : invitationCompletionData && (
+              ) : invitationCompletionData && invitationCompletionData.unpaidCount > 0 && (
                 <div className={`${bgCardAlt} p-4 rounded-lg border border-amber-500/30 mb-4`}>
                   <div className="text-center mb-3">
                     <p className="text-sm font-medium text-amber-400">Unlock Your Full Results</p>
-                    {invitationCompletionData.discountPercentage > 0 && (
+                    {invitationCompletionData.unpaidCount > 1 && invitationCompletionData.discountPercentage > 0 && (
                       <span className="inline-block bg-amber-500/20 text-amber-400 text-xs px-2 py-0.5 rounded-full mt-1">
                         {invitationCompletionData.discountPercentage}% Bundle Discount
                       </span>
                     )}
                   </div>
                   <div className="flex items-center justify-center gap-3">
-                    {invitationCompletionData.discountPercentage > 0 && (
+                    {invitationCompletionData.unpaidCount > 1 && invitationCompletionData.discountPercentage > 0 && (
                       <span className="text-lg line-through text-slate-500">{invitationCompletionData.originalPrice}</span>
                     )}
                     <span className="text-2xl font-bold text-green-400">{invitationCompletionData.bundlePrice}</span>
