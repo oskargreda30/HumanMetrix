@@ -1943,8 +1943,11 @@ export async function exportComparisonPDF(data: ComparisonData) {
     }
   ];
   
+  const isLastService = (i: number) => i === comparisonAdditionalServices.length - 1;
   comparisonAdditionalServices.forEach((service, index) => {
-    yPos = ensurePageSpace(pdf, yPos, 18, pageHeight, pageWidth);
+    // For the last item, request enough space for itself + contact box (28mm) to keep them together
+    const spaceNeeded = isLastService(index) ? 46 : 18;
+    yPos = ensurePageSpace(pdf, yPos, spaceNeeded, pageHeight, pageWidth);
     
     // Service number badge
     pdf.setFillColor(59, 130, 246);
@@ -1974,7 +1977,8 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   yPos += 6;
   
-  // Contact info box
+  // Contact info box - ensure it stays on same page as extra offerings
+  yPos = ensurePageSpace(pdf, yPos, 22, pageHeight, pageWidth);
   pdf.setFillColor(239, 246, 255);
   pdf.setDrawColor(59, 130, 246);
   pdf.roundedRect(20, yPos, pageWidth - 40, 16, 2, 2, 'FD');
@@ -3029,7 +3033,10 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   ];
   
   additionalServices.forEach((service, index) => {
-    yPos = ensurePageSpace(pdf, yPos, 10, pageHeight, pageWidth);
+    // For the last item, request enough space for itself + contact box to keep them together
+    const isLast = index === additionalServices.length - 1;
+    const spaceNeeded = isLast ? 36 : 10;
+    yPos = ensurePageSpace(pdf, yPos, spaceNeeded, pageHeight, pageWidth);
     
     // Service number badge
     pdf.setFillColor(59, 130, 246);
@@ -3059,7 +3066,8 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   yPos += 5;
   
-  // Contact info box
+  // Contact info box - ensure it stays on same page as extra offerings
+  yPos = ensurePageSpace(pdf, yPos, 18, pageHeight, pageWidth);
   pdf.setFillColor(239, 246, 255); // Light blue
   pdf.setDrawColor(59, 130, 246);
   pdf.roundedRect(20, yPos, pageWidth - 40, 12, 2, 2, 'FD');
