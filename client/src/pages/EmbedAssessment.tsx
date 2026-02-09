@@ -416,6 +416,7 @@ export default function EmbedAssessment() {
   const paQuestionAdvancingRef = useRef<boolean>(false); // Re-entry guard for PA per-question auto-advance
   const transitionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const pendingScoresRef = useRef<any>(null); // Store scores for transition
+  const navBarRef = useRef<HTMLDivElement>(null);
   
   const isMultiAssessment = assessmentQueue.length > 1;
   const currentAssessmentType = assessmentQueue[currentAssessmentIndex] || assessmentQueue[0];
@@ -433,6 +434,23 @@ export default function EmbedAssessment() {
   const textMuted = isLight ? "text-gray-500" : "text-slate-400";
   const borderColor = isLight ? "border-gray-300" : "border-slate-600";
   const inputBg = isLight ? "bg-white border-gray-300 text-gray-900" : "bg-slate-900 border-slate-600 text-white";
+
+  useEffect(() => {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (!isMobile || !window.visualViewport) return;
+
+    const vv = window.visualViewport;
+    const handleResize = () => {
+      if (vv.height < window.innerHeight * 0.75) {
+        setTimeout(() => {
+          navBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+      }
+    };
+
+    vv.addEventListener('resize', handleResize);
+    return () => vv.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     // Demo mode - show sample assessment without real session
@@ -2681,7 +2699,7 @@ export default function EmbedAssessment() {
           </CardContent>
         </Card>
 
-        <div className={`sticky bottom-0 z-30 ${isLight ? 'bg-gray-50/95' : 'bg-slate-900/95'} backdrop-blur-sm py-3 px-4 -mx-4 border-t ${isLight ? 'border-gray-200' : 'border-slate-700/50'} flex justify-between gap-3 md:static md:z-auto md:bg-transparent md:backdrop-blur-none md:py-0 md:px-0 md:mx-0 md:border-t-0 md:mt-6`}>
+        <div ref={navBarRef} className={`sticky bottom-0 z-30 ${isLight ? 'bg-gray-50/95' : 'bg-slate-900/95'} backdrop-blur-sm py-3 px-4 -mx-4 border-t ${isLight ? 'border-gray-200' : 'border-slate-700/50'} flex justify-between gap-3 md:static md:z-auto md:bg-transparent md:backdrop-blur-none md:py-0 md:px-0 md:mx-0 md:border-t-0 md:mt-6`}>
           {isPromptArchitecture ? (
             <div />
           ) : (
