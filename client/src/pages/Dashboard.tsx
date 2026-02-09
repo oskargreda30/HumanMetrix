@@ -492,6 +492,7 @@ export default function Dashboard() {
       const provider = params.get("provider");
       const intentId = params.get("intent_id");
       const seriesId = params.get("seriesId");
+      const scrollToSeriesParam = params.get("scrollToSeries");
 
       if (partnerPurchase === "success" && (sessionId || intentId)) {
         try {
@@ -518,6 +519,9 @@ export default function Dashboard() {
           title: "Purchase Cancelled",
           description: "You can unlock your results anytime from your dashboard or wait for 30-day auto-unlock.",
         });
+        window.history.replaceState({}, '', '/dashboard');
+      } else if (scrollToSeriesParam) {
+        setScrollToSeriesId(scrollToSeriesParam);
         window.history.replaceState({}, '', '/dashboard');
       }
     };

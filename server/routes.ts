@@ -3572,6 +3572,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
               assessmentTypes: assessmentTypesForEmail,
               partnerCompanyName: partnerName,
               hasExistingAccount: !!user,
+              partnerInvitationId: purchase.partnerInvitationId,
             });
             console.log(`[Partner Results] Sent results ready email to ${user.email}`);
           }

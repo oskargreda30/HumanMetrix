@@ -244,12 +244,14 @@ export default function MyResults() {
   // Check if all REQUIRED assessment types are completed
   // For partner view: just check if there are unlocked results
   // For B2C: check if all required assessments are complete
-  const uniqueAssessmentTypes = new Set(completedResults.map((r: any) => r.assessmentType));
+  // Normalize assessment type names for comparison (e.g., "ai-readiness" -> "ai_readiness")
+  const normalizeType = (type: string) => type.toLowerCase().replace(/-/g, '_');
+  const uniqueAssessmentTypes = new Set(completedResults.map((r: any) => normalizeType(r.assessmentType)));
   const allAssessmentsCompleted = isPartnerView 
     ? completedResults.length > 0  // Partner view: just need at least one unlocked result
     : (selectedBatch 
       ? selectedBatch.allItemsCompleted  // For batch view, use batch completion status
-      : (requiredAssessmentTypes.length > 0 && requiredAssessmentTypes.every(type => uniqueAssessmentTypes.has(type))));
+      : (requiredAssessmentTypes.length > 0 && requiredAssessmentTypes.every(type => uniqueAssessmentTypes.has(normalizeType(type)))));
 
   // FIRST: Check if all assessments are completed (before showing payment gate)
   // For partner view, skip this check if we have no results (they'll see empty state later)

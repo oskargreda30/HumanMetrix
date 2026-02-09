@@ -3780,6 +3780,7 @@ export interface ResultsReadyEmailDetails {
   partnerCompanyName: string;
   hasExistingAccount: boolean;
   sessionId?: string;
+  partnerInvitationId?: string;
 }
 
 export async function sendResultsReadyEmail(details: ResultsReadyEmailDetails) {
@@ -3795,12 +3796,16 @@ export async function sendResultsReadyEmail(details: ResultsReadyEmailDetails) {
   let ctaLabel: string;
   let ctaNote: string;
   
+  const dashboardPath = details.partnerInvitationId 
+    ? `dashboard?scrollToSeries=${details.partnerInvitationId}`
+    : 'dashboard';
+  
   if (details.hasExistingAccount) {
-    ctaUrl = `${baseUrl}/my-results?scrollTo=latest`;
+    ctaUrl = `${baseUrl}/${dashboardPath}`;
     ctaLabel = 'View Your Results';
     ctaNote = 'Log in to your HumanMetrix account to view your detailed results and insights.';
   } else {
-    ctaUrl = `${baseUrl}/auth?email=${encodeURIComponent(details.email)}&redirect=${encodeURIComponent('my-results?scrollTo=latest')}`;
+    ctaUrl = `${baseUrl}/auth?email=${encodeURIComponent(details.email)}&redirect=${encodeURIComponent(dashboardPath)}`;
     ctaLabel = 'Create Account & View Results';
     ctaNote = 'Create a free HumanMetrix account to access your detailed results and insights.';
   }
