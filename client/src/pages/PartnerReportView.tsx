@@ -622,8 +622,6 @@ function ComparisonReportContent({ reportData }: { reportData: any }) {
 
   const candidateNames = extractCandidateNames();
 
-  const radarData = reportData.radarData || [];
-
   return (
     <>
       <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
@@ -723,96 +721,6 @@ function ComparisonReportContent({ reportData }: { reportData: any }) {
         </CardContent>
       </Card>
 
-      {radarData.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-blue-500" />
-              Skill Comparison Radar
-            </CardTitle>
-            <CardDescription>Visual comparison of candidate skills across all assessment areas</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-96 bg-white dark:bg-gray-900 rounded-lg p-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="65%">
-                  <PolarGrid stroke="#e2e8f0" />
-                  <PolarAngleAxis dataKey="skill" tick={{ fontSize: 9, fill: '#64748b' }} />
-                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 9, fill: '#94a3b8' }} />
-                  {candidateNames.map((name: string, idx: number) => (
-                    <Radar
-                      key={idx}
-                      name={name}
-                      dataKey={`candidate${idx}`}
-                      stroke={CHART_COLORS[idx] || '#666'}
-                      fill={CHART_COLORS[idx] || '#666'}
-                      fillOpacity={0.15}
-                      strokeWidth={2}
-                    />
-                  ))}
-                  <Legend />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {reportData.skillComparison && reportData.skillComparison.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Skill-by-Skill Comparison
-            </CardTitle>
-            <CardDescription>Detailed score breakdown for each assessed skill</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3" data-testid="list-skill-comparison">
-              {reportData.skillComparison.map((skill: any, idx: number) => (
-                <div key={idx} className="p-3 rounded-lg border bg-card" data-testid={`row-skill-comparison-${idx}`}>
-                  <div className="font-medium text-sm mb-2">{skill.skillName}</div>
-                  <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${candidateCount}, 1fr)` }}>
-                    {skill.scores.map((score: number | null, cIdx: number) => (
-                      <div key={cIdx} className="space-y-1" data-testid={`cell-skill-${idx}-candidate-${cIdx}`}>
-                        <div className="flex justify-between gap-1 text-xs">
-                          <span className="truncate text-muted-foreground">{candidateNames[cIdx] || `Candidate ${cIdx + 1}`}</span>
-                          <span className={`font-medium ${score !== null && score !== undefined ? getScoreColor(score) : 'text-muted-foreground'}`}>
-                            {score !== null && score !== undefined ? `${score}%` : '-'}
-                          </span>
-                        </div>
-                        <Progress value={score ?? 0} className="h-2" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {Array.from({ length: candidateCount }, (_, idx) => {
-        const fitData = reportData.fitAssessments?.[idx];
-        const aiData = reportData.aiReadinessAssessments?.[idx];
-        const promptData = reportData.promptArchitectureAssessments?.[idx];
-        const aiqData = reportData.aiqAssessments?.[idx];
-        const name = candidateNames[idx] || `Candidate ${idx + 1}`;
-
-        if (!fitData && !aiData && !promptData && !aiqData) return null;
-
-        return (
-          <div key={idx}>
-            <Separator className="my-8" />
-            <CandidateAssessmentSection
-              candidateData={{ fitData, aiData, promptData, aiqData }}
-              candidateIndex={idx}
-              candidateName={name}
-              color={CHART_COLORS[idx] || '#666'}
-            />
-          </div>
-        );
-      })}
 
       {reportData.fitAssessments?.some((a: any) => a !== null) && (
         <Card data-testid="section-fit-comparison">
