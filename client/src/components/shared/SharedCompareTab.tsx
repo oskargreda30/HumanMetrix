@@ -43,12 +43,12 @@ const CHART_COLORS = [
 
 // Concrete colors for PDF export (CSS variables don't work in html2canvas)
 const PDF_CHART_COLORS = [
-  "#4A7FA8", // Steel blue
-  "#6A9BC5", // Medium blue
-  "#8AB5D5", // Light blue
+  "#2563EB", // Bold blue
+  "#059669", // Emerald green
+  "#D97706", // Amber orange
 ];
 
-const MULTI_CANDIDATE_COLORS = ['#4A7FA8', '#6A9BC5', '#8AB5D5', '#3D6F96', '#7BAAD0'];
+const MULTI_CANDIDATE_COLORS = ['#2563EB', '#059669', '#D97706', '#DC2626', '#7C3AED'];
 
 // Role definitions with skill weightings for suitability scoring
 // Uses the same keys as FIT_SKILLS and AI_READINESS_SKILLS
@@ -2546,8 +2546,8 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                                   dataKey={`candidate${index}`}
                                   stroke={isCapturingPDF ? PDF_CHART_COLORS[index] : MULTI_CANDIDATE_COLORS[index % MULTI_CANDIDATE_COLORS.length]}
                                   fill={isCapturingPDF ? PDF_CHART_COLORS[index] : MULTI_CANDIDATE_COLORS[index % MULTI_CANDIDATE_COLORS.length]}
-                                  fillOpacity={0.15}
-                                  strokeWidth={2}
+                                  fillOpacity={0.12}
+                                  strokeWidth={2.5}
                                   isAnimationActive={!isCapturingPDF}
                                 />
                               ))}
@@ -2975,8 +2975,8 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                       dataKey={`candidate${index}`}
                       stroke={PDF_CHART_COLORS[index]}
                       fill={PDF_CHART_COLORS[index]}
-                      fillOpacity={0.15}
-                      strokeWidth={2}
+                      fillOpacity={0.12}
+                      strokeWidth={2.5}
                       isAnimationActive={false}
                     />
                   ))}
