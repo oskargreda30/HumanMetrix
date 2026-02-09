@@ -2074,48 +2074,20 @@ function TeamAnalysisResults({
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
   
-  // PDF Export handler
+  // PDF Export handler - programmatic jsPDF with section-aware page breaks
   const handleExportPDF = async () => {
-    if (!reportRef.current) return;
-    
     setIsExportingPDF(true);
     try {
-      const { jsPDF } = await import('jspdf');
-      const html2canvas = (await import('html2canvas')).default;
+      const { generateEcosystemPdf } = await import('@/lib/ecosystemPdfExport');
       
-      const element = reportRef.current;
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
+      await generateEcosystemPdf({
+        companyName,
+        project,
+        analysis,
+        missionAnalysis,
+        teamMembers,
+        cumulativeScores,
       });
-      
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      
-      // Handle multi-page if content is longer than one page
-      const pageHeight = pdfHeight;
-      let heightLeft = imgHeight * ratio;
-      let position = 0;
-      
-      pdf.addImage(imgData, 'PNG', imgX, position, imgWidth * ratio, imgHeight * ratio);
-      heightLeft -= pageHeight;
-      
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight * ratio;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', imgX, position, imgWidth * ratio, imgHeight * ratio);
-        heightLeft -= pageHeight;
-      }
-      
-      pdf.save(`Team-Diagnostic-Report-${companyName.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`);
       
       toast({
         title: "PDF exported",
@@ -2572,30 +2544,9 @@ function TeamAnalysisResults({
 
         {analysis.riskAlerts && analysis.riskAlerts.length > 0 && (
           <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-              Factors Affecting Your Score
+            <p className="text-xs text-muted-foreground">
+              See the <span className="font-medium">Risk Alerts</span> section below for specific factors affecting your score.
             </p>
-            <p className="text-xs text-muted-foreground mb-3">
-              These are the specific issues identified that are reducing your team's health score:
-            </p>
-            <div className="space-y-2">
-              {analysis.riskAlerts.slice(0, 5).map((alert, i) => (
-                <div key={i} className="flex items-start gap-2 text-sm">
-                  <AlertTriangle className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
-                    alert.severity === "critical" ? "text-red-500" : "text-amber-500"
-                  }`} />
-                  <div>
-                    <span className="text-foreground">{alert.title}</span>
-                    {alert.severity === "critical" && (
-                      <span className="text-xs text-red-500 ml-2">(-8 points)</span>
-                    )}
-                    {alert.severity === "warning" && (
-                      <span className="text-xs text-amber-500 ml-2">(-4 points)</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         )}
       </div>
