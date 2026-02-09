@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import {
   Loader2, FileText, TrendingUp, TrendingDown, BarChart3, Target, User, Award,
-  Brain, Sparkles, ArrowLeft, Calendar, Shield, Lightbulb, BookOpen, Users
+  Brain, Sparkles, ArrowLeft, Calendar, Shield, Lightbulb, BookOpen, Users, AlertCircle
 } from "lucide-react";
 import {
   RadarChart,
@@ -17,6 +17,13 @@ import {
   PolarRadiusAxis,
   ResponsiveContainer,
   Legend,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  Cell,
 } from "recharts";
 import { calculateAverageScore, FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym, getAIReadinessScore, normalizeAIReadinessScores } from "@/lib/assessmentSkills";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
@@ -47,6 +54,147 @@ function getHowToReadReportType(reportType: string): ReportType {
   return 'individual';
 }
 
+const SECTION_ICONS: Record<string, { color: string; icon: any }> = {
+  'ROLE SUITABILITY': { color: 'text-blue-600 dark:text-blue-400', icon: Target },
+  'OPTIMAL ENVIRONMENT': { color: 'text-teal-600 dark:text-teal-400', icon: Users },
+  'KEY STRENGTHS': { color: 'text-green-600 dark:text-green-400', icon: TrendingUp },
+  'DEVELOPMENT FOCUS': { color: 'text-amber-600 dark:text-amber-400', icon: Target },
+  'OVERALL ASSESSMENT AND RECOMMENDATION': { color: 'text-purple-600 dark:text-purple-400', icon: Award },
+  'KEY DIFFERENTIATORS': { color: 'text-blue-600 dark:text-blue-400', icon: TrendingUp },
+  'COMPLEMENTARY STRENGTHS': { color: 'text-green-600 dark:text-green-400', icon: Award },
+  'HIRING CONSIDERATION': { color: 'text-purple-600 dark:text-purple-400', icon: Sparkles },
+};
+
+function MarkdownContent({ text, testId }: { text: string; testId?: string }) {
+  const paragraphs = text.split('\n\n').filter(p => p.trim());
+
+  const renderInlineFormatting = (content: string) => {
+    const parts = content.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, i) => {
+      const boldMatch = part.match(/^\*\*(.+)\*\*$/);
+      if (boldMatch) {
+        return <strong key={i} className="font-semibold text-foreground">{boldMatch[1]}</strong>;
+      }
+      return <span key={i}>{part}</span>;
+    });
+  };
+
+  const parsedSections: Array<{ heading: string; content: string; color: string; icon: any }> = [];
+  let currentSection: { heading: string; content: string; color: string; icon: any } | null = null;
+
+  for (const para of paragraphs) {
+    const headingMatch = para.match(/^\*\*([A-Z][A-Z\s&]+(?:AND\s+[A-Z]+)?)\*\*[:\s]*([\s\S]*)/);
+    if (headingMatch) {
+      if (currentSection) parsedSections.push(currentSection);
+      const headingKey = headingMatch[1].trim();
+      const sectionMeta = SECTION_ICONS[headingKey] || { color: 'text-primary', icon: Sparkles };
+      currentSection = {
+        heading: headingKey,
+        content: headingMatch[2].trim(),
+        color: sectionMeta.color,
+        icon: sectionMeta.icon,
+      };
+    } else if (currentSection) {
+      currentSection.content += '\n\n' + para;
+    } else {
+      const headingOnlyMatch = para.match(/^\*\*(.+?)\*\*\s*$/);
+      if (headingOnlyMatch) {
+        if (currentSection) parsedSections.push(currentSection);
+        const headingKey = headingOnlyMatch[1].trim();
+        const sectionMeta = SECTION_ICONS[headingKey] || { color: 'text-primary', icon: Sparkles };
+        currentSection = {
+          heading: headingKey,
+          content: '',
+          color: sectionMeta.color,
+          icon: sectionMeta.icon,
+        };
+      } else {
+        if (currentSection) parsedSections.push(currentSection);
+        currentSection = null;
+        parsedSections.push({ heading: '', content: para, color: '', icon: null });
+      }
+    }
+  }
+  if (currentSection) parsedSections.push(currentSection);
+
+  if (parsedSections.length === 0) {
+    return (
+      <div data-testid={testId} className="prose prose-sm max-w-none dark:prose-invert">
+        <p className="text-sm text-muted-foreground leading-relaxed">{text}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4" data-testid={testId}>
+      {parsedSections.map((section, idx) => {
+        if (section.heading && section.icon) {
+          const IconComponent = section.icon;
+          const lines = section.content.split('\n').filter(l => l.trim());
+          const hasBullets = lines.some(l => /^\s*[-•]\s/.test(l));
+
+          return (
+            <div key={idx} className="p-4 rounded-lg bg-muted/30 border">
+              <h4 className={`text-sm font-bold ${section.color} uppercase tracking-wide mb-3 flex items-center gap-2`}>
+                <IconComponent className="h-4 w-4" />
+                {section.heading}
+              </h4>
+              {hasBullets ? (
+                <ul className="space-y-1.5">
+                  {lines.map((line, i) => {
+                    const cleanLine = line.replace(/^\s*[-•]\s*/, '').trim();
+                    if (!cleanLine) return null;
+                    return (
+                      <li key={i} className="text-sm text-muted-foreground leading-relaxed flex items-start gap-2">
+                        <span className={`mt-1.5 h-1.5 w-1.5 rounded-full flex-shrink-0 ${section.color.split(' ').map(c => c.replace('text-', 'bg-')).join(' ')}`} />
+                        {renderInlineFormatting(cleanLine)}
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <div className="space-y-2">
+                  {lines.map((line, i) => (
+                    <p key={i} className="text-sm text-muted-foreground leading-relaxed">
+                      {renderInlineFormatting(line.trim())}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        const lines = section.content.split('\n').filter(l => l.trim());
+        const hasBullets = lines.some(l => /^\s*[-•]\s/.test(l));
+
+        if (hasBullets) {
+          return (
+            <ul key={idx} className="space-y-1.5 pl-1">
+              {lines.map((line, i) => {
+                const cleanLine = line.replace(/^\s*[-•]\s*/, '').trim();
+                if (!cleanLine) return null;
+                return (
+                  <li key={i} className="text-sm text-muted-foreground leading-relaxed flex items-start gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full flex-shrink-0 bg-primary" />
+                    {renderInlineFormatting(cleanLine)}
+                  </li>
+                );
+              })}
+            </ul>
+          );
+        }
+
+        return (
+          <p key={idx} className="text-sm text-muted-foreground leading-relaxed">
+            {renderInlineFormatting(section.content)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 function ReportHeader({ title, createdAt, reportType, cached }: { title: string; createdAt?: string; reportType?: string; cached?: boolean }) {
   const reportTypeLabels: Record<string, string> = {
     individual: 'Individual Assessment Report',
@@ -54,6 +202,7 @@ function ReportHeader({ title, createdAt, reportType, cached }: { title: string;
     role_fit_single: 'Role Fit Analysis',
     role_fit_multi: 'Multi-Candidate Role Fit',
     profile_insights: 'Profile Insights Report',
+    compare_insights: 'Comparison Insights Report',
     assessment: 'Assessment Report',
   };
 
@@ -440,9 +589,7 @@ function IndividualReportContent({ reportData }: { reportData: any }) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="prose prose-sm max-w-none dark:prose-invert">
-              <p className="whitespace-pre-wrap" data-testid="text-ai-insights">{reportData.aiInsights}</p>
-            </div>
+            <MarkdownContent text={reportData.aiInsights} testId="text-ai-insights" />
           </CardContent>
         </Card>
       )}
@@ -667,6 +814,250 @@ function ComparisonReportContent({ reportData }: { reportData: any }) {
         );
       })}
 
+      {reportData.fitAssessments?.some((a: any) => a !== null) && (
+        <Card data-testid="section-fit-comparison">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Award className="h-5 w-5" />
+              FIT Assessment Comparison
+            </CardTitle>
+            <CardDescription>Behavioral skills assessment (6 core competencies)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-8">
+              <div>
+                <h3 className="font-semibold mb-4">Combined Comparison</h3>
+                <div className="bg-white dark:bg-gray-900 p-4 rounded-lg overflow-visible">
+                  <ResponsiveContainer width="100%" height={400}>
+                    <RadarChart cx="50%" cy="50%" outerRadius="75%" data={FIT_SKILLS.map(skill => {
+                      const dataPoint: any = { skill: getSkillAcronym(skill.displayName) };
+                      for (let i = 0; i < candidateCount; i++) {
+                        const fitData = reportData.fitAssessments?.[i];
+                        if (fitData) dataPoint[`candidate${i}`] = fitData.scores[skill.key] || 0;
+                      }
+                      return dataPoint;
+                    })}>
+                      <PolarGrid stroke="#e2e8f0" />
+                      <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11, fill: '#64748b', fontWeight: 500 }} />
+                      <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} />
+                      <RechartsTooltip />
+                      {candidateNames.map((_: string, idx: number) => {
+                        if (!reportData.fitAssessments?.[idx]) return null;
+                        return (
+                          <Radar key={idx} name={candidateNames[idx]} dataKey={`candidate${idx}`}
+                            stroke={CHART_COLORS[idx]} fill={CHART_COLORS[idx]} fillOpacity={0.15} strokeWidth={2} />
+                        );
+                      })}
+                      <Legend />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-4">Individual Assessments</h3>
+                <div className="grid gap-6 md:grid-cols-2">
+                  {Array.from({ length: candidateCount }, (_, idx) => {
+                    const fitData = reportData.fitAssessments?.[idx];
+                    if (!fitData) {
+                      return (
+                        <div key={idx} className="flex flex-col items-center justify-center p-8 border rounded-lg bg-muted/20">
+                          <AlertCircle className="h-8 w-8 mb-2 text-muted-foreground opacity-50" />
+                          <p className="text-sm font-medium">{candidateNames[idx]}</p>
+                          <Badge variant="outline" className="mt-2">Not Completed</Badge>
+                        </div>
+                      );
+                    }
+                    const barData = FIT_SKILLS.map(skill => ({
+                      skill: getSkillAcronym(skill.displayName),
+                      fullName: skill.displayName,
+                      score: fitData.scores[skill.key] || 0,
+                    })).sort((a, b) => b.score - a.score);
+                    return (
+                      <div key={idx} className="space-y-3">
+                        <div className="text-center">
+                          <p className="font-medium" style={{ color: CHART_COLORS[idx] }}>{candidateNames[idx]}</p>
+                          <p className="text-xs text-muted-foreground">Avg: {calculateAverageScore(fitData.scores)}%</p>
+                        </div>
+                        <div className="bg-white dark:bg-gray-900 p-3 rounded-lg overflow-visible" data-testid={`chart-fit-individual-${idx}`}>
+                          <ResponsiveContainer width="100%" height={barData.length * 40 + 40}>
+                            <BarChart data={barData} layout="vertical" margin={{ top: 5, right: 40, left: 5, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+                              <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                              <YAxis type="category" dataKey="skill" tick={{ fontSize: 11, fill: '#64748b', fontWeight: 500 }} width={40} />
+                              <RechartsTooltip formatter={(value: number) => [`${value}%`, 'Score']}
+                                labelFormatter={(label: string) => barData.find(d => d.skill === label)?.fullName || label} />
+                              <Bar dataKey="score" radius={[0, 4, 4, 0]}>
+                                {barData.map((entry, i) => (
+                                  <Cell key={i} fill={`hsl(210, 60%, ${65 - (entry.score / 100) * 25}%)`} />
+                                ))}
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {reportData.aiReadinessAssessments?.some((a: any) => a !== null) && (
+        <Card data-testid="section-ai-readiness-comparison">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Brain className="h-5 w-5" />
+              AI Readiness Comparison
+            </CardTitle>
+            <CardDescription>Technical AI capabilities assessment (9 skills)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-8">
+              <div>
+                <h3 className="font-semibold mb-4">Combined Comparison</h3>
+                <div className="bg-white dark:bg-gray-900 p-4 rounded-lg overflow-visible">
+                  <ResponsiveContainer width="100%" height={500}>
+                    <RadarChart cx="50%" cy="50%" outerRadius="75%" data={AI_READINESS_SKILLS.map(skill => {
+                      const dataPoint: any = { skill: getSkillAcronym(skill.displayName) };
+                      for (let i = 0; i < candidateCount; i++) {
+                        const aiData = reportData.aiReadinessAssessments?.[i];
+                        if (aiData) dataPoint[`candidate${i}`] = getAIReadinessScore(aiData.scores, skill.key);
+                      }
+                      return dataPoint;
+                    })}>
+                      <PolarGrid stroke="#e2e8f0" />
+                      <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11, fill: '#64748b', fontWeight: 500 }} />
+                      <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} />
+                      <RechartsTooltip />
+                      {candidateNames.map((_: string, idx: number) => {
+                        if (!reportData.aiReadinessAssessments?.[idx]) return null;
+                        return (
+                          <Radar key={idx} name={candidateNames[idx]} dataKey={`candidate${idx}`}
+                            stroke={CHART_COLORS[idx]} fill={CHART_COLORS[idx]} fillOpacity={0.15} strokeWidth={2} />
+                        );
+                      })}
+                      <Legend />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-4">Individual Assessments</h3>
+                <div className="grid gap-6 md:grid-cols-2">
+                  {Array.from({ length: candidateCount }, (_, idx) => {
+                    const aiData = reportData.aiReadinessAssessments?.[idx];
+                    if (!aiData) {
+                      return (
+                        <div key={idx} className="flex flex-col items-center justify-center p-8 border rounded-lg bg-muted/20">
+                          <AlertCircle className="h-8 w-8 mb-2 text-muted-foreground opacity-50" />
+                          <p className="text-sm font-medium">{candidateNames[idx]}</p>
+                          <Badge variant="outline" className="mt-2">Not Completed</Badge>
+                        </div>
+                      );
+                    }
+                    const barData = AI_READINESS_SKILLS.map(skill => ({
+                      skill: getSkillAcronym(skill.displayName),
+                      fullName: skill.displayName,
+                      score: getAIReadinessScore(aiData.scores, skill.key),
+                    })).sort((a, b) => b.score - a.score);
+                    return (
+                      <div key={idx} className="space-y-3">
+                        <div className="text-center">
+                          <p className="font-medium" style={{ color: CHART_COLORS[idx] }}>{candidateNames[idx]}</p>
+                          <p className="text-xs text-muted-foreground">Avg: {calculateAverageScore(aiData.scores)}%</p>
+                        </div>
+                        <div className="bg-white dark:bg-gray-900 p-3 rounded-lg overflow-visible" data-testid={`chart-ai-individual-${idx}`}>
+                          <ResponsiveContainer width="100%" height={barData.length * 40 + 40}>
+                            <BarChart data={barData} layout="vertical" margin={{ top: 5, right: 40, left: 5, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+                              <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                              <YAxis type="category" dataKey="skill" tick={{ fontSize: 11, fill: '#64748b', fontWeight: 500 }} width={55} />
+                              <RechartsTooltip formatter={(value: number) => [`${value}%`, 'Score']}
+                                labelFormatter={(label: string) => barData.find(d => d.skill === label)?.fullName || label} />
+                              <Bar dataKey="score" radius={[0, 4, 4, 0]}>
+                                {barData.map((entry, i) => (
+                                  <Cell key={i} fill={`hsl(270, 50%, ${65 - (entry.score / 100) * 25}%)`} />
+                                ))}
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {reportData.promptArchitectureAssessments?.some((a: any) => a !== null) && (
+        <Card data-testid="section-prompt-comparison">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-orange-500" />
+              Prompt Architecture Comparison
+            </CardTitle>
+            <CardDescription>Progressive difficulty levels with dimensional scoring</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${candidateCount}, 1fr)` }}>
+              {Array.from({ length: candidateCount }, (_, idx) => {
+                const promptData = reportData.promptArchitectureAssessments?.[idx];
+                return (
+                  <div key={idx} className="text-center p-4 rounded-lg border bg-card">
+                    <p className="font-medium mb-1" style={{ color: CHART_COLORS[idx] }}>{candidateNames[idx]}</p>
+                    {promptData ? (
+                      <>
+                        <div className={`text-3xl font-bold ${getScoreColor(promptData.totalScore)}`}>{promptData.totalScore}%</div>
+                        <div className="text-xs text-muted-foreground mt-1">{getPromptArchBandInterpretation(promptData.totalScore).title}</div>
+                      </>
+                    ) : (
+                      <Badge variant="outline">Not Completed</Badge>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {reportData.aiqAssessments?.some((a: any) => a !== null) && (
+        <Card data-testid="section-aiq-comparison">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-green-500" />
+              AIQ (Ethics) Comparison
+            </CardTitle>
+            <CardDescription>Algorithmic Integrity Quotient scores</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${candidateCount}, 1fr)` }}>
+              {Array.from({ length: candidateCount }, (_, idx) => {
+                const aiqData = reportData.aiqAssessments?.[idx];
+                return (
+                  <div key={idx} className="text-center p-4 rounded-lg border bg-card">
+                    <p className="font-medium mb-1" style={{ color: CHART_COLORS[idx] }}>{candidateNames[idx]}</p>
+                    {aiqData ? (
+                      <>
+                        <div className={`text-3xl font-bold ${getScoreColor(aiqData.totalScore)}`}>{aiqData.totalScore}%</div>
+                        <div className="text-xs text-muted-foreground mt-1">{getAIQBandInterpretation(aiqData.totalScore).title}</div>
+                      </>
+                    ) : (
+                      <Badge variant="outline">Not Completed</Badge>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {reportData.aiInsights && (
         <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
           <CardHeader>
@@ -676,9 +1067,7 @@ function ComparisonReportContent({ reportData }: { reportData: any }) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="prose prose-sm max-w-none dark:prose-invert">
-              <p className="whitespace-pre-wrap" data-testid="text-ai-insights">{reportData.aiInsights}</p>
-            </div>
+            <MarkdownContent text={reportData.aiInsights} testId="text-ai-insights" />
           </CardContent>
         </Card>
       )}
@@ -922,9 +1311,7 @@ function RoleFitReportContent({ reportData }: { reportData: any }) {
             )}
           </CardHeader>
           <CardContent>
-            <div className="prose prose-sm max-w-none dark:prose-invert">
-              <p className="whitespace-pre-wrap" data-testid="text-prompt-role-fit">{reportData.promptRoleFitAnalysis}</p>
-            </div>
+            <MarkdownContent text={reportData.promptRoleFitAnalysis} testId="text-prompt-role-fit" />
           </CardContent>
         </Card>
       )}
@@ -941,9 +1328,7 @@ function RoleFitReportContent({ reportData }: { reportData: any }) {
             )}
           </CardHeader>
           <CardContent>
-            <div className="prose prose-sm max-w-none dark:prose-invert">
-              <p className="whitespace-pre-wrap" data-testid="text-aiq-role-fit">{reportData.aiqRoleFitAnalysis}</p>
-            </div>
+            <MarkdownContent text={reportData.aiqRoleFitAnalysis} testId="text-aiq-role-fit" />
           </CardContent>
         </Card>
       )}
@@ -980,9 +1365,7 @@ function RoleFitReportContent({ reportData }: { reportData: any }) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="prose prose-sm max-w-none dark:prose-invert">
-              <p className="whitespace-pre-wrap" data-testid="text-final-recommendation">{reportData.finalRecommendation}</p>
-            </div>
+            <MarkdownContent text={reportData.finalRecommendation} testId="text-final-recommendation" />
           </CardContent>
         </Card>
       )}
@@ -1022,9 +1405,46 @@ function ProfileInsightsContent({ reportData }: { reportData: any }) {
         </CardHeader>
         <CardContent>
           {reportData.insights ? (
-            <div className="prose prose-sm max-w-none dark:prose-invert">
-              <div className="whitespace-pre-wrap" data-testid="text-profile-insights">{reportData.insights}</div>
-            </div>
+            <MarkdownContent text={reportData.insights} testId="text-profile-insights" />
+          ) : (
+            <p className="text-muted-foreground" data-testid="text-no-insights">No insights available.</p>
+          )}
+        </CardContent>
+      </Card>
+    </>
+  );
+}
+
+function CompareInsightsContent({ reportData }: { reportData: any }) {
+  return (
+    <>
+      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            Candidate Comparison Insights
+          </CardTitle>
+          <CardDescription>
+            AI-generated comparison of {reportData.candidateCount || 2} candidates
+            {reportData.generatedAt && (
+              <span className="ml-2 text-xs">
+                Generated {new Date(reportData.generatedAt).toLocaleDateString()}
+              </span>
+            )}
+          </CardDescription>
+        </CardHeader>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            AI Analysis
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {reportData.insights ? (
+            <MarkdownContent text={reportData.insights} testId="text-compare-insights" />
           ) : (
             <p className="text-muted-foreground" data-testid="text-no-insights">No insights available.</p>
           )}
@@ -1118,6 +1538,7 @@ export default function PartnerReportView() {
   const isComparison = reportType === 'comparison';
   const isRoleFit = reportType === 'role_fit_single' || reportType === 'role_fit_multi';
   const isProfileInsights = reportType === 'profile_insights';
+  const isCompareInsights = reportType === 'compare_insights';
 
   const cleanTitle = (reportData.title || 'Report Details').replace(/for\s+undefined/gi, '').replace(/\s{2,}/g, ' ').trim();
 
@@ -1131,16 +1552,17 @@ export default function PartnerReportView() {
           cached={reportData.cached}
         />
 
-        <HowToReadReport reportType={howToReadType} />
+        {(isIndividual || isComparison || isRoleFit) && <HowToReadReport reportType={howToReadType} />}
 
-        <ScoringMethodologySection />
+        {(isIndividual || isComparison || isRoleFit) && <ScoringMethodologySection />}
 
         <div className="space-y-6" data-testid="report-content">
           {isIndividual && <IndividualReportContent reportData={reportData} />}
           {isComparison && <ComparisonReportContent reportData={reportData} />}
           {isRoleFit && <RoleFitReportContent reportData={reportData} />}
           {isProfileInsights && <ProfileInsightsContent reportData={reportData} />}
-          {!isIndividual && !isComparison && !isRoleFit && !isProfileInsights && (
+          {isCompareInsights && <CompareInsightsContent reportData={reportData} />}
+          {!isIndividual && !isComparison && !isRoleFit && !isProfileInsights && !isCompareInsights && (
             <GenericReportContent reportData={reportData} />
           )}
         </div>
