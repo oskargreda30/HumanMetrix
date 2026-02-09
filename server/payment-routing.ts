@@ -21,33 +21,39 @@ export function getPaymentProviders(partnerPaymentProvider?: string): PaymentPro
   const stripeAvailable = isStripeConfigured();
 
   if (!airwallexAvailable && !stripeAvailable) {
+    console.error('[Payment Routing] No payment provider configured!');
     throw new Error('No payment provider is configured. Please set up Airwallex or Stripe credentials.');
   }
 
+  let config: PaymentProviderConfig;
+
   if (partnerPaymentProvider === 'stripe') {
     if (!stripeAvailable) {
-      return { primary: 'airwallex', fallback: null };
+      config = { primary: 'airwallex', fallback: null };
+    } else {
+      config = {
+        primary: 'stripe',
+        fallback: airwallexAvailable ? 'airwallex' : null,
+      };
     }
-    return {
-      primary: 'stripe',
-      fallback: airwallexAvailable ? 'airwallex' : null,
-    };
-  }
-
-  if (partnerPaymentProvider === 'airwallex') {
+  } else if (partnerPaymentProvider === 'airwallex') {
     if (!airwallexAvailable) {
-      return { primary: 'stripe', fallback: null };
+      config = { primary: 'stripe', fallback: null };
+    } else {
+      config = {
+        primary: 'airwallex',
+        fallback: stripeAvailable ? 'stripe' : null,
+      };
     }
-    return {
-      primary: 'airwallex',
-      fallback: stripeAvailable ? 'stripe' : null,
+  } else {
+    config = {
+      primary: airwallexAvailable ? 'airwallex' : 'stripe',
+      fallback: airwallexAvailable && stripeAvailable ? 'stripe' : null,
     };
   }
 
-  return {
-    primary: airwallexAvailable ? 'airwallex' : 'stripe',
-    fallback: airwallexAvailable && stripeAvailable ? 'stripe' : null,
-  };
+  console.log(`[Payment Routing] Selected: primary=${config.primary}, fallback=${config.fallback || 'none'} (airwallex=${airwallexAvailable ? 'yes' : 'no'}, stripe=${stripeAvailable ? 'yes' : 'no'}, partnerPref=${partnerPaymentProvider || 'default'})`);
+  return config;
 }
 
 export function supportsOffSessionBilling(provider: PaymentProvider): boolean {

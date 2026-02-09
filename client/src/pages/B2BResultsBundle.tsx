@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle, Clock, Lock, CreditCard, Package, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 interface BundleResultsData {
   email: string;
@@ -47,6 +48,7 @@ function formatAssessmentName(type: string): string {
 export default function B2BResultsBundle() {
   const [, setLocation] = useLocation();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const { toast } = useToast();
 
   const params = new URLSearchParams(window.location.search);
   const email = params.get("email");
@@ -93,13 +95,19 @@ export default function B2BResultsBundle() {
             intentId: result.intentId,
             clientSecret: result.clientSecret,
             currency: result.currency || 'GBP',
+            countryCode: countryCode || 'GB',
             airwallexEnv: result.airwallexEnv,
             successUrl: `${window.location.origin}/b2b-payment-callback?provider=airwallex&bundle=true&email=${encodeURIComponent(email || '')}&partner=${partnerId || ''}&intent_id=${result.intentId}`,
             failUrl: `${window.location.origin}/b2b-results-bundle?email=${encodeURIComponent(email || '')}&partner=${partnerId || ''}&country=${countryCode || 'GB'}`,
           });
           return;
-        } catch (err) {
+        } catch (err: any) {
           console.error('Airwallex redirect failed:', err);
+          toast({
+            title: "Payment redirect failed",
+            description: "Unable to open payment page. Please try again.",
+            variant: "destructive",
+          });
           setIsCheckingOut(false);
           return;
         }

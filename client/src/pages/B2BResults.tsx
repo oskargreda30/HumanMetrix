@@ -103,13 +103,19 @@ export default function B2BResults() {
             intentId: result.intentId,
             clientSecret: result.clientSecret,
             currency: result.currency || 'GBP',
+            countryCode: countryCode || 'GB',
             airwallexEnv: result.airwallexEnv,
             successUrl: `${window.location.origin}/b2b-payment-callback?provider=airwallex&b2b_session=${sessionId}&intent_id=${result.intentId}`,
             failUrl: `${window.location.origin}/b2b-results?session=${sessionId}&country=${countryCode}`,
           });
           return;
-        } catch (err) {
+        } catch (err: any) {
           console.error('Airwallex redirect failed:', err);
+          toast({
+            title: "Payment redirect failed",
+            description: "Unable to open payment page. Please try again.",
+            variant: "destructive",
+          });
           setIsCheckingOut(false);
           setCheckoutType(null);
           return;

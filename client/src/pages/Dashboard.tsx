@@ -393,13 +393,19 @@ export default function Dashboard() {
             intentId: data.intentId,
             clientSecret: data.clientSecret,
             currency: data.currency || 'GBP',
+            countryCode: countryCode || 'GB',
             airwallexEnv: data.airwallexEnv,
             successUrl: `${window.location.origin}/dashboard?partner_purchase=success&provider=airwallex&intent_id=${data.intentId}`,
             failUrl: `${window.location.origin}/dashboard?partner_purchase=cancelled`,
           });
           return;
-        } catch (err) {
+        } catch (err: any) {
           console.error('Airwallex redirect failed:', err);
+          toast({
+            title: "Payment redirect failed",
+            description: "Unable to open payment page. Please try again.",
+            variant: "destructive",
+          });
         }
       }
       if (data.url) {

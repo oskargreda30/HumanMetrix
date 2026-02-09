@@ -1636,17 +1636,13 @@ export default function PartnerDashboard() {
       }
       if (data.paymentProvider === 'airwallex' && data.intentId && data.clientSecret) {
         try {
-          const { init } = await import('@airwallex/components-sdk');
-          const sdkEnv = data.airwallexEnv === 'demo' ? 'demo' : 'prod';
-          const { payments } = await init({
-            env: sdkEnv,
-            enabledElements: ['payments'],
-          });
-          payments.redirectToCheckout({
-            mode: 'payment',
-            intent_id: data.intentId,
-            client_secret: data.clientSecret,
+          const { redirectToAirwallexCheckout } = await import('@/lib/airwallexCheckout');
+          await redirectToAirwallexCheckout({
+            intentId: data.intentId,
+            clientSecret: data.clientSecret,
             currency: data.currency || 'GBP',
+            countryCode: 'GB',
+            airwallexEnv: data.airwallexEnv,
             successUrl: `${window.location.origin}/partner-package-success?provider=airwallex&packageId=${data.packageId}`,
             failUrl: `${window.location.origin}/partner?tab=billing&purchase_cancelled=true`,
           });
