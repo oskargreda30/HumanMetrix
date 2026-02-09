@@ -19,6 +19,7 @@ import { exportRoleFitPDF } from "@/lib/pdfExport";
 import SkillsLegend from "@/components/SkillsLegend";
 import { CriticalSkillsAnalysis } from "@/components/shared/CriticalSkillsAnalysis";
 import { EnquiryModal } from "@/components/EnquiryModal";
+import { HowToReadReport } from "@/components/shared/HowToReadReport";
 
 function stripMarkdown(text: string): string {
   return text
@@ -505,57 +506,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
             </div>
           </div>
 
-          {/* Executive Summary - Guide for Hiring Managers */}
-          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <FileText className="h-5 w-5 text-primary" />
-                How to Read This Report
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                A step-by-step guide to understanding this candidate's fit for the {selectedRoleData?.name} role
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
-                  <div>
-                    <p className="font-medium text-sm">Overall Role Fit Score</p>
-                    <p className="text-xs text-muted-foreground">The weighted average of all skill scores against role requirements. <span className="font-medium">80%+ = Strong fit</span>, 60-79% = Good potential, Below 60% = Development needed.</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
-                  <div>
-                    <p className="font-medium text-sm">Skill Alignments (FIT & AI Readiness)</p>
-                    <span className="text-xs text-muted-foreground">Compare candidate scores vs. role requirements. Look for <Badge className="text-[10px] px-1 py-0 h-4 bg-blue-600">C</Badge> marked skills - these are <span className="font-medium">critical</span> for success.</span>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
-                  <div>
-                    <p className="font-medium text-sm">Critical Skills Analysis</p>
-                    <p className="text-xs text-muted-foreground">Summary of skills marked as critical for this role. Shows how many critical requirements are met vs. gaps needing development.</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
-                  <div>
-                    <p className="font-medium text-sm">Cohort Benchmarking</p>
-                    <p className="text-xs text-muted-foreground">How this candidate ranks vs. all other candidates who've taken assessments. Percentile shows relative standing.</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
-                  <div>
-                    <p className="font-medium text-sm">Alternative Roles</p>
-                    <p className="text-xs text-muted-foreground">If candidate isn't ideal for this role, see which other roles in your organization might be a better match.</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <HowToReadReport reportType="rolefit" />
 
           {/* Overall Fit Score */}
           <Card>

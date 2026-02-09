@@ -1462,8 +1462,6 @@ export default function PartnerReportView() {
 
         {(isIndividual || isComparison || isRoleFit) && <HowToReadReport reportType={howToReadType} />}
 
-        {(isIndividual || isComparison || isRoleFit) && <ScoringMethodologySection />}
-
         <div className="space-y-6" data-testid="report-content">
           {isIndividual && <IndividualReportContent reportData={reportData} />}
           {isComparison && <ComparisonReportContent reportData={reportData} />}

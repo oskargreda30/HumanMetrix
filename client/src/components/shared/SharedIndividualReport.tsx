@@ -26,6 +26,7 @@ import SkillsLegend from "@/components/SkillsLegend";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { EnquiryModal } from "@/components/EnquiryModal";
+import { HowToReadReport } from "@/components/shared/HowToReadReport";
 
 const CHART_COLOR = "#5B8DB8";
 
@@ -520,63 +521,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
             </CardContent>
           </Card>
 
-          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-            <CardHeader className="pb-2 md:pb-3 p-3 md:p-6">
-              <CardTitle className="flex items-center gap-2 text-sm md:text-lg text-foreground">
-                <BookOpen className="h-4 w-4 md:h-5 md:w-5 text-primary" />
-                How to Read This Report
-              </CardTitle>
-              <p className="text-xs md:text-sm text-muted-foreground">
-                A guide to understanding {getCandidateName(selectedCandidateData)}'s assessment results
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
-                  <div>
-                    <p className="font-semibold text-sm text-foreground">Understanding Trait-Based Scores</p>
-                    <p className="text-xs text-muted-foreground">FIT and AI Readiness are <span className="font-medium">trait-based assessments</span>. A high score means the trait is strongly present - whether this is beneficial depends on what the specific role requires.</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
-                  <div>
-                    <p className="font-semibold text-sm text-foreground">FIT Assessment (Behavioral)</p>
-                    <p className="text-xs text-muted-foreground">Measures 6 behavioral traits (e.g., High Agency, Resilience). Higher scores = stronger trait presence. Match against role requirements to assess fit.</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
-                  <div>
-                    <p className="font-semibold text-sm text-foreground">AI Readiness (Technical)</p>
-                    <p className="text-xs text-muted-foreground">Measures 9 AI-related capabilities. Higher scores indicate stronger aptitude in each area. Compare to role requirements for relevance.</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">4</div>
-                  <div>
-                    <p className="font-semibold text-sm text-foreground">Prompt Architecture</p>
-                    <p className="text-xs text-muted-foreground">Evaluates AI prompt engineering skills across 7 difficulty levels. Each level tests clarity, structure, and creativity in prompt design.</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
-                  <div>
-                    <p className="font-semibold text-sm text-foreground">AIQ (Ethics)</p>
-                    <p className="text-xs text-muted-foreground">Algorithmic Integrity Quotient - measures understanding of AI ethics, bias, fairness, and responsible AI practices. Single overall score.</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">6</div>
-                  <div>
-                    <p className="font-semibold text-sm text-foreground">Trait Profile Summary</p>
-                    <p className="text-xs text-muted-foreground">Top 3 highest and lowest scoring traits across FIT and AI Readiness. Use Role Fit analysis to determine which traits matter for specific positions.</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <HowToReadReport reportType="individual" />
 
           {(fitData || aiData) && (
             <Card data-testid="card-strengths-weaknesses">
