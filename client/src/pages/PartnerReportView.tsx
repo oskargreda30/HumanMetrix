@@ -4,7 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, FileText, TrendingUp, TrendingDown, BarChart3, Target, User, Award, Brain, Sparkles, ArrowLeft } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import {
+  Loader2, FileText, TrendingUp, TrendingDown, BarChart3, Target, User, Award,
+  Brain, Sparkles, ArrowLeft, Calendar, Shield, Lightbulb, BookOpen
+} from "lucide-react";
 import {
   RadarChart,
   Radar,
@@ -15,11 +19,21 @@ import {
 } from "recharts";
 import { calculateAverageScore, FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym, getAIReadinessScore, normalizeAIReadinessScores } from "@/lib/assessmentSkills";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
+import { HowToReadReport, type ReportType } from "@/components/shared/HowToReadReport";
+import SkillsLegend from "@/components/SkillsLegend";
+import { AdditionalServicesSection } from "@/components/shared/AdditionalServicesSection";
+import hmLogoPath from "@assets/Gemini_Generated_Image_misel3misel3mise-removebg-preview_1762775600899.png";
 
 const getScoreColor = (score: number) => {
-  if (score >= 80) return 'text-green-600';
-  if (score >= 60) return 'text-amber-600';
+  if (score >= 75) return 'text-green-600';
+  if (score >= 50) return 'text-amber-600';
   return 'text-red-600';
+};
+
+const getScoreBgColor = (score: number) => {
+  if (score >= 75) return 'bg-green-500';
+  if (score >= 50) return 'bg-amber-500';
+  return 'bg-red-500';
 };
 
 const getPromptArchBandInterpretation = (score: number): { title: string; description: string } => {
@@ -30,48 +44,97 @@ const getPromptArchBandInterpretation = (score: number): { title: string; descri
   return { title: "Foundational Level", description: "Early stage in prompt engineering development." };
 };
 
-export default function PartnerReportView() {
-  const params = useParams<{ reportId: string }>();
-  const reportId = params.reportId;
+function getHowToReadReportType(reportType: string): ReportType {
+  if (reportType === 'comparison') return 'comparison';
+  if (reportType === 'role_fit_single' || reportType === 'role_fit_multi') return 'rolefit';
+  return 'individual';
+}
 
-  const { data: reportData, isLoading, error } = useQuery<any>({
-    queryKey: ['/api/partner/me/analysis-reports', reportId],
-    enabled: !!reportId,
-  });
+function ReportHeader({ title, createdAt, reportType, cached }: { title: string; createdAt?: string; reportType?: string; cached?: boolean }) {
+  const reportTypeLabels: Record<string, string> = {
+    individual: 'Individual Assessment Report',
+    comparison: 'Candidate Comparison Report',
+    role_fit_single: 'Role Fit Analysis',
+    role_fit_multi: 'Multi-Candidate Role Fit',
+    profile_insights: 'Profile Insights Report',
+    assessment: 'Assessment Report',
+  };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading report...</p>
+  const typeLabel = reportType ? reportTypeLabels[reportType] || 'Analysis Report' : 'Analysis Report';
+
+  return (
+    <div className="mb-8">
+      <div className="flex items-center gap-3 mb-4">
+        <img src={hmLogoPath} alt="HumanMetrix" className="h-10 w-10" data-testid="img-report-logo" />
+        <div>
+          <h2 className="text-sm font-medium text-primary tracking-wide uppercase" data-testid="text-report-brand">HumanMetrix</h2>
+          <p className="text-xs text-muted-foreground">{typeLabel}</p>
         </div>
       </div>
-    );
-  }
-
-  if (error || !reportData) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="max-w-md w-full mx-4">
-          <CardContent className="pt-6 text-center">
-            <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-lg font-semibold mb-2">Report Not Found</h2>
-            <p className="text-muted-foreground mb-4">This report could not be loaded. You may need to be logged in to view it.</p>
-            <div className="flex gap-2 justify-center">
-              <Link href="/partner">
-                <Button variant="outline" data-testid="button-back-dashboard">
-                  <ArrowLeft className="h-4 w-4 mr-1" />
-                  Back to Dashboard
-                </Button>
-              </Link>
+      <Separator className="mb-4" />
+      <div className="flex items-start justify-between gap-2 flex-wrap">
+        <div>
+          <h1 className="text-xl md:text-2xl font-bold" data-testid="text-report-title">
+            {title || 'Report Details'}
+          </h1>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <div className="flex items-center gap-1 text-sm text-muted-foreground" data-testid="text-report-date">
+              <Calendar className="h-3.5 w-3.5" />
+              Generated on {createdAt ? new Date(createdAt).toLocaleString() : 'N/A'}
             </div>
-          </CardContent>
-        </Card>
+            {cached && <Badge variant="secondary" className="text-xs">Saved Report</Badge>}
+          </div>
+        </div>
+        <Link href="/partner">
+          <Button variant="outline" size="sm" data-testid="button-back-dashboard">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Dashboard
+          </Button>
+        </Link>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
+function ScoringMethodologySection() {
+  return (
+    <Card className="mb-6" data-testid="section-scoring-methodology">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Shield className="h-5 w-5 text-primary" />
+          Scoring Methodology
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="p-3 rounded-lg bg-muted/30">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-3 h-3 rounded-full bg-green-500" />
+              <span className="font-medium text-sm">Strong (75%+)</span>
+            </div>
+            <p className="text-xs text-muted-foreground">Demonstrates well-developed capability in this area</p>
+          </div>
+          <div className="p-3 rounded-lg bg-muted/30">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-3 h-3 rounded-full bg-amber-500" />
+              <span className="font-medium text-sm">Developing (50-74%)</span>
+            </div>
+            <p className="text-xs text-muted-foreground">Shows foundational capability with room for growth</p>
+          </div>
+          <div className="p-3 rounded-lg bg-muted/30">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-3 h-3 rounded-full bg-red-500" />
+              <span className="font-medium text-sm">Needs Attention (&lt;50%)</span>
+            </div>
+            <p className="text-xs text-muted-foreground">Requires focused development in this area</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function IndividualReportContent({ reportData }: { reportData: any }) {
   const fitData = reportData.fitAssessments?.[0];
   const aiData = reportData.aiReadinessAssessments?.[0];
   const promptData = reportData.promptArchitectureAssessments?.[0];
@@ -115,7 +178,7 @@ export default function PartnerReportView() {
     };
   };
 
-  const renderIndividualReport = () => (
+  return (
     <>
       <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
         <CardHeader className="pb-3">
@@ -354,93 +417,221 @@ export default function PartnerReportView() {
           </CardHeader>
           <CardContent>
             <div className="prose prose-sm max-w-none dark:prose-invert">
-              <p className="whitespace-pre-wrap">{reportData.aiInsights}</p>
+              <p className="whitespace-pre-wrap" data-testid="text-ai-insights">{reportData.aiInsights}</p>
             </div>
           </CardContent>
         </Card>
       )}
     </>
   );
+}
 
-  const renderRoleFitReport = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Target className="h-5 w-5 text-primary" />
-          Role Fit Analysis
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="flex items-center gap-4">
-          <div className={`text-4xl font-bold ${getScoreColor(reportData.overallFit || 0)}`} data-testid="text-overall-fit">
-            {reportData.overallFit || 0}%
-          </div>
-          <div>
-            <div className="font-semibold">Overall Fit Score</div>
-            <div className="text-sm text-muted-foreground">
-              {(reportData.overallFit || 0) >= 70 ? 'Strong candidate match' :
-               (reportData.overallFit || 0) >= 50 ? 'Moderate candidate match' : 'Limited candidate match'}
+function RoleFitReportContent({ reportData }: { reportData: any }) {
+  return (
+    <>
+      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5 text-primary" />
+            Role Fit Analysis
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center gap-4" data-testid="container-overall-fit">
+            <div className="relative h-20 w-20 flex-shrink-0">
+              <svg className="h-20 w-20 -rotate-90" viewBox="0 0 36 36">
+                <path
+                  d="M18 2.0845
+                    a 15.9155 15.9155 0 0 1 0 31.831
+                    a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  className="text-muted/20"
+                />
+                <path
+                  d="M18 2.0845
+                    a 15.9155 15.9155 0 0 1 0 31.831
+                    a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  strokeWidth="3"
+                  strokeDasharray={`${reportData.overallFit || 0}, 100`}
+                  className={
+                    (reportData.overallFit || 0) >= 75 ? 'stroke-green-500' :
+                    (reportData.overallFit || 0) >= 50 ? 'stroke-amber-500' : 'stroke-red-500'
+                  }
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className={`text-lg font-bold ${getScoreColor(reportData.overallFit || 0)}`} data-testid="text-overall-fit">
+                  {reportData.overallFit || 0}%
+                </span>
+              </div>
+            </div>
+            <div>
+              <div className="font-semibold text-lg">Overall Fit Score</div>
+              <div className="text-sm text-muted-foreground">
+                {(reportData.overallFit || 0) >= 75 ? 'Strong candidate match - excellent alignment with role requirements' :
+                 (reportData.overallFit || 0) >= 50 ? 'Moderate candidate match - some areas may need development' :
+                 'Limited candidate match - significant gaps identified'}
+              </div>
             </div>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        {reportData.skillAlignments && reportData.skillAlignments.length > 0 && (
-          <div className="space-y-3">
-            <h4 className="font-semibold">Skill Alignment</h4>
-            {reportData.skillAlignments.map((skill: any, idx: number) => {
-              const gap = skill.candidateScore - skill.requiredScore;
-              return (
-                <div key={idx} className="p-3 rounded-lg border bg-card">
-                  <div className="flex justify-between items-center gap-1 mb-2 flex-wrap">
-                    <span className="font-medium">{skill.skillName}</span>
-                    <Badge variant={gap >= 0 ? "default" : "destructive"}>
-                      {gap >= 0 ? `+${gap}%` : `${gap}%`}
-                    </Badge>
+      {reportData.skillAlignments && reportData.skillAlignments.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Skill Alignment Breakdown
+            </CardTitle>
+            <CardDescription>Detailed comparison of candidate scores against role requirements</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3" data-testid="list-skill-alignments">
+              {reportData.skillAlignments.map((skill: any, idx: number) => {
+                const gap = skill.candidateScore - skill.requiredScore;
+                return (
+                  <div key={idx} className="p-4 rounded-lg border bg-card" data-testid={`row-skill-alignment-${idx}`}>
+                    <div className="flex justify-between items-center gap-1 mb-3 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium" data-testid={`text-skill-name-${idx}`}>{skill.skillName}</span>
+                        {skill.critical && (
+                          <Badge className="bg-blue-600 text-white text-[10px] px-1.5 py-0">Critical</Badge>
+                        )}
+                      </div>
+                      <Badge
+                        variant={gap >= 0 ? "default" : "destructive"}
+                        data-testid={`badge-skill-gap-${idx}`}
+                      >
+                        {gap >= 0 ? `+${gap}%` : `${gap}%`} gap
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <div className="text-xs text-muted-foreground mb-1">Candidate Score</div>
+                        <div className="flex items-center gap-2">
+                          <Progress value={skill.candidateScore} className="h-2 flex-1" />
+                          <span className={`text-sm font-medium ${getScoreColor(skill.candidateScore)}`} data-testid={`text-candidate-score-${idx}`}>
+                            {skill.candidateScore}%
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground mb-1">Required Score</div>
+                        <div className="flex items-center gap-2">
+                          <Progress value={skill.requiredScore} className="h-2 flex-1" />
+                          <span className="text-sm font-medium text-muted-foreground" data-testid={`text-required-score-${idx}`}>
+                            {skill.requiredScore}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex gap-4 text-sm flex-wrap">
-                    <span>Candidate: <span className={getScoreColor(skill.candidateScore)}>{skill.candidateScore}%</span></span>
-                    <span>Required: {skill.requiredScore}%</span>
-                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {reportData.skillGaps && reportData.skillGaps.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingDown className="h-5 w-5 text-amber-500" />
+              Key Skill Gaps
+            </CardTitle>
+            <CardDescription>Areas where candidate scores fall below role requirements</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2" data-testid="list-skill-gaps">
+              {reportData.skillGaps.map((gap: any, idx: number) => (
+                <div key={idx} className="flex items-center justify-between gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800" data-testid={`row-skill-gap-${idx}`}>
+                  <span className="font-medium text-sm">{gap.skillName || gap.skill}</span>
+                  <Badge variant="destructive" className="text-xs">
+                    -{Math.abs(gap.gap || gap.difference || 0)}%
+                  </Badge>
                 </div>
-              );
-            })}
-          </div>
-        )}
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-        {reportData.analysis && (
-          <div className="p-4 bg-muted/50 rounded-lg">
-            <h4 className="font-semibold mb-2 flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
+      {reportData.recommendations && reportData.recommendations.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lightbulb className="h-5 w-5 text-primary" />
+              Recommendations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3" data-testid="list-recommendations">
+              {reportData.recommendations.map((rec: any, idx: number) => (
+                <div key={idx} className="flex gap-3 p-3 rounded-lg bg-muted/30" data-testid={`row-recommendation-${idx}`}>
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
+                    {idx + 1}
+                  </div>
+                  <p className="text-sm">{typeof rec === 'string' ? rec : rec.text || rec.recommendation || JSON.stringify(rec)}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {reportData.analysis && (
+        <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
               AI Analysis
-            </h4>
-            <p className="text-sm whitespace-pre-wrap">{reportData.analysis}</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="prose prose-sm max-w-none dark:prose-invert">
+              <p className="whitespace-pre-wrap" data-testid="text-role-fit-analysis">{reportData.analysis}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </>
   );
+}
 
-  const renderProfileInsights = () => (
+function ProfileInsightsContent({ reportData }: { reportData: any }) {
+  return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
           Profile Insights
         </CardTitle>
+        <CardDescription>AI-generated analysis of candidate profile and potential</CardDescription>
       </CardHeader>
       <CardContent>
         {reportData.insights ? (
           <div className="prose prose-sm max-w-none dark:prose-invert">
-            <div className="whitespace-pre-wrap">{reportData.insights}</div>
+            <div className="whitespace-pre-wrap" data-testid="text-profile-insights">{reportData.insights}</div>
           </div>
         ) : (
-          <p className="text-muted-foreground">No insights available.</p>
+          <p className="text-muted-foreground" data-testid="text-no-insights">No insights available.</p>
         )}
       </CardContent>
     </Card>
   );
+}
 
-  const renderGenericReport = () => (
+function GenericReportContent({ reportData }: { reportData: any }) {
+  const displayData = { ...reportData };
+  delete displayData.id;
+  delete displayData.partnerId;
+
+  return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
@@ -450,46 +641,116 @@ export default function PartnerReportView() {
       </CardHeader>
       <CardContent>
         <pre className="text-xs bg-muted/50 p-4 rounded-lg overflow-auto max-h-[70vh]" data-testid="text-report-raw">
-          {JSON.stringify(reportData, null, 2)}
+          {JSON.stringify(displayData, null, 2)}
         </pre>
       </CardContent>
     </Card>
   );
+}
 
-  const renderReportContent = () => {
-    if (reportData.reportType === 'individual' || reportData.reportType === 'comparison') {
-      return renderIndividualReport();
-    }
-    if (reportData.reportType === 'role_fit_single' || reportData.reportType === 'role_fit_multi') {
-      return renderRoleFitReport();
-    }
-    if (reportData.reportType === 'profile_insights') {
-      return renderProfileInsights();
-    }
-    return renderGenericReport();
-  };
+function ReportDisclaimer() {
+  return (
+    <div className="mt-8 mb-4 p-4 bg-muted/30 rounded-lg border" data-testid="section-disclaimer">
+      <p className="text-xs text-muted-foreground text-center">
+        <strong>Disclaimer:</strong> This report is generated using AI-powered assessment technology by HumanMetrix.
+        Results should be used as one input among several in making hiring or development decisions.
+        Scores reflect responses at the time of assessment and may change over time.
+        For questions about this report, contact{' '}
+        <a href="mailto:hello@humanmetrix.co.uk" className="text-primary underline">hello@humanmetrix.co.uk</a>
+      </p>
+    </div>
+  );
+}
+
+export default function PartnerReportView() {
+  const params = useParams<{ reportId: string }>();
+  const reportId = params.reportId;
+
+  const { data: reportData, isLoading, error } = useQuery<any>({
+    queryKey: ['/api/partner/me/analysis-reports', reportId],
+    enabled: !!reportId,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading report...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !reportData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Card className="max-w-md w-full mx-4">
+          <CardContent className="pt-6 text-center">
+            <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-lg font-semibold mb-2">Report Not Found</h2>
+            <p className="text-muted-foreground mb-4">This report could not be loaded. You may need to be logged in to view it.</p>
+            <div className="flex gap-2 justify-center">
+              <Link href="/partner">
+                <Button variant="outline" data-testid="button-back-dashboard">
+                  <ArrowLeft className="h-4 w-4 mr-1" />
+                  Back to Dashboard
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const reportType = reportData.reportType || 'individual';
+  const howToReadType = getHowToReadReportType(reportType);
+  const isIndividualOrComparison = reportType === 'individual' || reportType === 'comparison';
+  const isRoleFit = reportType === 'role_fit_single' || reportType === 'role_fit_multi';
+  const isProfileInsights = reportType === 'profile_insights';
+
+  const cleanTitle = (reportData.title || 'Report Details').replace(/for\s+undefined/gi, '').replace(/\s{2,}/g, ' ').trim();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pt-16 md:pt-8">
       <div className="max-w-5xl mx-auto p-4 md:p-8">
-        <div className="flex items-center justify-between gap-2 mb-6 flex-wrap">
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold" data-testid="text-report-title">{reportData.title || 'Report Details'}</h1>
-            <p className="text-sm text-muted-foreground" data-testid="text-report-date">
-              Generated on {reportData.createdAt ? new Date(reportData.createdAt).toLocaleString() : 'N/A'}
-              {reportData.cached && <Badge variant="secondary" className="ml-2 text-xs">Cached</Badge>}
-            </p>
-          </div>
-          <Link href="/partner">
-            <Button variant="outline" size="sm" data-testid="button-back-dashboard">
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Dashboard
-            </Button>
-          </Link>
-        </div>
+        <ReportHeader
+          title={cleanTitle}
+          createdAt={reportData.createdAt}
+          reportType={reportType}
+          cached={reportData.cached}
+        />
+
+        <HowToReadReport reportType={howToReadType} />
+
+        <ScoringMethodologySection />
 
         <div className="space-y-6" data-testid="report-content">
-          {renderReportContent()}
+          {isIndividualOrComparison && <IndividualReportContent reportData={reportData} />}
+          {isRoleFit && <RoleFitReportContent reportData={reportData} />}
+          {isProfileInsights && <ProfileInsightsContent reportData={reportData} />}
+          {!isIndividualOrComparison && !isRoleFit && !isProfileInsights && (
+            <GenericReportContent reportData={reportData} />
+          )}
+        </div>
+
+        {(isIndividualOrComparison || isRoleFit) && (
+          <div className="mt-8">
+            <SkillsLegend />
+          </div>
+        )}
+
+        <div className="mt-8">
+          <AdditionalServicesSection />
+        </div>
+
+        <ReportDisclaimer />
+
+        <div className="text-center mt-4 mb-8">
+          <p className="text-xs text-muted-foreground">
+            Powered by HumanMetrix AI Assessment Platform
+          </p>
         </div>
       </div>
     </div>
