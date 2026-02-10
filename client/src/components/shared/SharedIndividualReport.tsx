@@ -8,11 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
   ResponsiveContainer,
   RadarChart,
   Radar,
@@ -21,14 +16,12 @@ import {
   PolarRadiusAxis,
 } from "recharts";
 import { useToast } from "@/hooks/use-toast";
-import { FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym, getAIReadinessScore, normalizeAIReadinessScores, transformToRadarData, isSkillBasedAssessment, formatAssessmentType } from "@/lib/assessmentSkills";
+import { calculateAverageScore, FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym, getAIReadinessScore, normalizeAIReadinessScores, transformToRadarData, isSkillBasedAssessment, formatAssessmentType } from "@/lib/assessmentSkills";
 import SkillsLegend from "@/components/SkillsLegend";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { EnquiryModal } from "@/components/EnquiryModal";
 import { HowToReadReport } from "@/components/shared/HowToReadReport";
-
-const CHART_COLOR = "#5B8DB8";
 
 export interface SharedIndividualReportConfig {
   candidatesEndpoint: string;
@@ -136,46 +129,17 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-amber-600';
+    if (score >= 75) return 'text-green-600';
+    if (score >= 50) return 'text-amber-600';
     return 'text-red-600';
   };
 
-  const getScoreBadgeVariant = (score: number): "default" | "secondary" | "destructive" => {
-    if (score >= 80) return 'default';
-    if (score >= 60) return 'secondary';
-    return 'destructive';
-  };
-
   const getPromptArchBandInterpretation = (score: number): { title: string; description: string } => {
-    if (score >= 80) {
-      return {
-        title: "Expert Prompt Engineer",
-        description: "Demonstrates mastery of prompt engineering across all difficulty levels. Crafts highly effective prompts with exceptional clarity, structure, and creative problem-solving."
-      };
-    }
-    if (score >= 70) {
-      return {
-        title: "Advanced Prompt Skills",
-        description: "Shows strong prompt engineering capabilities with consistent performance across complexity levels. Effectively structures prompts for optimal AI responses."
-      };
-    }
-    if (score >= 50) {
-      return {
-        title: "Competent Practitioner",
-        description: "Demonstrates solid foundational skills in prompt construction. Handles standard scenarios well with room for growth in complex or nuanced prompting situations."
-      };
-    }
-    if (score >= 30) {
-      return {
-        title: "Developing Skills",
-        description: "Shows basic understanding of prompt engineering principles. Would benefit from training on advanced techniques, context setting, and iterative refinement."
-      };
-    }
-    return {
-      title: "Foundational Level",
-      description: "Early stage in prompt engineering development. Requires structured learning on clarity, context relevance, and effective AI communication strategies."
-    };
+    if (score >= 80) return { title: "Expert Prompt Engineer", description: "Demonstrates mastery of prompt engineering across all difficulty levels." };
+    if (score >= 70) return { title: "Advanced Prompt Skills", description: "Shows strong prompt engineering capabilities with consistent performance." };
+    if (score >= 50) return { title: "Competent Practitioner", description: "Demonstrates solid foundational skills in prompt construction." };
+    if (score >= 30) return { title: "Developing Skills", description: "Shows basic understanding of prompt engineering principles." };
+    return { title: "Foundational Level", description: "Early stage in prompt engineering development." };
   };
 
   const fitData = candidateReport?.fitAssessments?.[0];
@@ -457,64 +421,42 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
             </div>
           </div>
 
-          <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20" data-testid="card-candidate-summary">
-            <CardContent className="pt-4 md:pt-6 p-3 md:p-6">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
-                <div className="shrink-0">
-                  <div className="flex items-center gap-2 md:gap-3">
-                    <div className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                      <User className="h-5 w-5 md:h-6 md:w-6 text-primary" />
-                    </div>
-                    <div className="min-w-0">
-                      <h2 className="text-sm md:text-lg font-bold text-foreground truncate">{getCandidateName(selectedCandidateData)}</h2>
-                      <p className="text-[11px] md:text-xs text-muted-foreground break-all leading-tight">{selectedCandidateData.user.email}</p>
-                    </div>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3b82f6' }} />
+            <h3 className="text-lg font-semibold" data-testid="text-candidate-name-0">{getCandidateName(selectedCandidateData)}</h3>
+          </div>
+
+          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent" data-testid="card-candidate-summary">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5 text-primary" />
+                Assessment Overview
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="text-center p-4 rounded-lg border bg-card" data-testid="card-fit-score-0">
+                  <div className="text-sm text-muted-foreground mb-1">FIT Score</div>
+                  <div className={`text-2xl font-bold ${fitData ? getScoreColor(calculateAverageScore(fitData.scores)) : 'text-muted-foreground'}`}>
+                    {fitData ? `${calculateAverageScore(fitData.scores)}%` : '-'}
                   </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 md:gap-2">
-                    {(() => {
-                      const topFitSkill = fitData 
-                        ? Object.entries(fitData.scores).sort((a, b) => (b[1] as number) - (a[1] as number))[0] 
-                        : null;
-                      return (
-                        <div className="text-center p-1.5 md:p-2.5 rounded-lg border bg-card">
-                          <div className="text-[9px] md:text-xs text-muted-foreground mb-0.5">FIT Top Skill</div>
-                          <div className="text-[10px] md:text-sm font-medium text-foreground mb-0.5 truncate">{topFitSkill ? topFitSkill[0] : '-'}</div>
-                          <div className={`text-base md:text-xl font-bold ${topFitSkill ? getScoreColor(topFitSkill[1] as number) : 'text-muted-foreground'}`}>
-                            {topFitSkill ? `${topFitSkill[1]}%` : '-'}
-                          </div>
-                        </div>
-                      );
-                    })()}
-                    {(() => {
-                      const topAISkill = aiData && Object.keys(normalizedAIScores).length > 0
-                        ? Object.entries(normalizedAIScores).sort((a, b) => (b[1] as number) - (a[1] as number))[0]
-                        : null;
-                      return (
-                        <div className="text-center p-1.5 md:p-2.5 rounded-lg border bg-card">
-                          <div className="text-[9px] md:text-xs text-muted-foreground mb-0.5">AI Readiness Top</div>
-                          <div className="text-[10px] md:text-sm font-medium text-foreground mb-0.5 truncate">{topAISkill ? topAISkill[0] : '-'}</div>
-                          <div className={`text-base md:text-xl font-bold ${topAISkill ? getScoreColor(topAISkill[1] as number) : 'text-muted-foreground'}`}>
-                            {topAISkill ? `${topAISkill[1]}%` : '-'}
-                          </div>
-                        </div>
-                      );
-                    })()}
-                    <div className="text-center p-1.5 md:p-2.5 rounded-lg border bg-card">
-                      <div className="text-[9px] md:text-xs text-muted-foreground mb-0.5">Prompt Architecture</div>
-                      <div className="text-[10px] md:text-sm font-medium text-foreground mb-0.5">&nbsp;</div>
-                      <div className={`text-base md:text-xl font-bold ${promptData ? getScoreColor(promptData.totalScore) : 'text-muted-foreground'}`}>
-                        {promptData ? `${promptData.totalScore}%` : '-'}
-                      </div>
-                    </div>
-                    <div className="text-center p-1.5 md:p-2.5 rounded-lg border bg-card">
-                      <div className="text-[9px] md:text-xs text-muted-foreground mb-0.5">AIQ (Ethics)</div>
-                      <div className="text-[10px] md:text-sm font-medium text-foreground mb-0.5">&nbsp;</div>
-                      <div className={`text-base md:text-xl font-bold ${aiqData ? getScoreColor(aiqData.totalScore) : 'text-muted-foreground'}`}>
-                        {aiqData ? `${aiqData.totalScore}%` : '-'}
-                      </div>
-                    </div>
+                <div className="text-center p-4 rounded-lg border bg-card" data-testid="card-ai-readiness-score-0">
+                  <div className="text-sm text-muted-foreground mb-1">AI Readiness</div>
+                  <div className={`text-2xl font-bold ${aiData ? getScoreColor(calculateAverageScore(aiData.scores)) : 'text-muted-foreground'}`}>
+                    {aiData ? `${calculateAverageScore(aiData.scores)}%` : '-'}
+                  </div>
+                </div>
+                <div className="text-center p-4 rounded-lg border bg-card" data-testid="card-prompt-score-0">
+                  <div className="text-sm text-muted-foreground mb-1">Prompt Architecture</div>
+                  <div className={`text-2xl font-bold ${promptData ? getScoreColor(promptData.totalScore) : 'text-muted-foreground'}`}>
+                    {promptData ? `${promptData.totalScore}%` : '-'}
+                  </div>
+                </div>
+                <div className="text-center p-4 rounded-lg border bg-card" data-testid="card-aiq-score-0">
+                  <div className="text-sm text-muted-foreground mb-1">AIQ (Ethics)</div>
+                  <div className={`text-2xl font-bold ${aiqData ? getScoreColor(aiqData.totalScore) : 'text-muted-foreground'}`}>
+                    {aiqData ? `${aiqData.totalScore}%` : '-'}
                   </div>
                 </div>
               </div>
@@ -530,9 +472,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                   <Award className="h-5 w-5" />
                   Trait Profile Summary
                 </CardTitle>
-                <CardDescription>
-                  Highest and lowest scoring traits. Whether these align with role requirements determines fit.
-                </CardDescription>
+                <CardDescription>Highest and lowest scoring traits across assessments</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-6 md:grid-cols-2">
@@ -541,32 +481,31 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                       <TrendingUp className="h-4 w-4" />
                       Highest Scoring Traits
                     </h4>
-                    <div className="space-y-3">
+                    <div className="space-y-3" data-testid="list-strengths-0">
                       {getStrengthsAndWeaknesses().strengths.map((skill, i) => (
-                        <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20">
+                        <div key={i} className="flex items-center justify-between gap-1 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20" data-testid={`row-strength-0-${i}`}>
                           <div>
-                            <span className="font-medium">{skill.name}</span>
+                            <span className="font-medium" data-testid={`text-strength-name-0-${i}`}>{skill.name}</span>
                             <Badge variant="outline" className="ml-2 text-xs">{skill.category}</Badge>
                           </div>
-                          <span className="font-bold text-blue-600">{skill.score}</span>
+                          <span className="font-bold text-blue-600" data-testid={`text-strength-score-0-${i}`}>{skill.score}%</span>
                         </div>
                       ))}
                     </div>
                   </div>
-                  
                   <div>
                     <h4 className="flex items-center gap-2 mb-4 font-semibold text-slate-600 dark:text-slate-400">
                       <TrendingDown className="h-4 w-4" />
                       Lowest Scoring Traits
                     </h4>
-                    <div className="space-y-3">
+                    <div className="space-y-3" data-testid="list-weaknesses-0">
                       {getStrengthsAndWeaknesses().weaknesses.map((skill, i) => (
-                        <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-950/20">
+                        <div key={i} className="flex items-center justify-between gap-1 p-3 rounded-lg bg-slate-50 dark:bg-slate-950/20" data-testid={`row-weakness-0-${i}`}>
                           <div>
-                            <span className="font-medium">{skill.name}</span>
+                            <span className="font-medium" data-testid={`text-weakness-name-0-${i}`}>{skill.name}</span>
                             <Badge variant="outline" className="ml-2 text-xs">{skill.category}</Badge>
                           </div>
-                          <span className="font-bold text-slate-600 dark:text-slate-400">{skill.score}</span>
+                          <span className="font-bold text-slate-600 dark:text-slate-400" data-testid={`text-weakness-score-0-${i}`}>{skill.score}%</span>
                         </div>
                       ))}
                     </div>
@@ -583,37 +522,26 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                   <Target className="h-5 w-5 text-blue-500" />
                   FIT Assessment Details
                 </CardTitle>
-                <CardDescription>
-                  Behavioral trait scores - higher values indicate stronger trait presence
-                </CardDescription>
+                <CardDescription>Behavioral trait scores - higher values indicate stronger trait presence</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-6 lg:grid-cols-2">
-                  <div ref={fitChartRef} className="h-96 bg-white dark:bg-gray-900 rounded-lg p-4">
+                  <div ref={fitChartRef} className="h-72 bg-white dark:bg-gray-900 rounded-lg p-2">
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart data={fitRadarData} cx="50%" cy="50%" outerRadius="70%">
                         <PolarGrid stroke="#e2e8f0" />
                         <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11, fill: '#64748b' }} />
                         <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 9, fill: '#94a3b8' }} />
-                        <Radar
-                          dataKey="score"
-                          stroke="#3b82f6"
-                          fill="#3b82f6"
-                          fillOpacity={0.25}
-                          strokeWidth={2}
-                        />
+                        <Radar dataKey="score" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.25} strokeWidth={2} />
                       </RadarChart>
                     </ResponsiveContainer>
                   </div>
-                  
-                  <div className="space-y-3">
-                    {Object.entries(fitData.scores)
-                      .sort(([, a], [, b]) => (b as number) - (a as number))
-                      .map(([skill, score]) => (
-                      <div key={skill} className="space-y-1">
-                        <div className="flex justify-between text-sm">
-                          <span>{skill}</span>
-                          <span className={`font-medium ${getScoreColor(score as number)}`}>{score as number}%</span>
+                  <div className="space-y-3" data-testid="list-fit-skills-0">
+                    {Object.entries(fitData.scores || {}).map(([skill, score]) => (
+                      <div key={skill} className="space-y-1" data-testid={`row-fit-skill-0-${skill}`}>
+                        <div className="flex justify-between gap-1 text-sm">
+                          <span data-testid={`text-fit-skill-name-0-${skill}`}>{skill}</span>
+                          <span className={`font-medium ${getScoreColor(score as number)}`} data-testid={`text-fit-skill-score-0-${skill}`}>{score as number}%</span>
                         </div>
                         <Progress value={score as number} className="h-2" />
                       </div>
@@ -631,9 +559,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                   <Brain className="h-5 w-5 text-purple-500" />
                   AI Readiness Assessment Details
                 </CardTitle>
-                <CardDescription>
-                  Technical capability scores - higher values indicate stronger aptitude in each area
-                </CardDescription>
+                <CardDescription>AI-related capabilities and technical readiness scores</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-6 lg:grid-cols-2">
@@ -643,25 +569,16 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                         <PolarGrid stroke="#e2e8f0" />
                         <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10, fill: '#64748b' }} />
                         <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 9, fill: '#94a3b8' }} />
-                        <Radar
-                          dataKey="score"
-                          stroke="#8b5cf6"
-                          fill="#8b5cf6"
-                          fillOpacity={0.25}
-                          strokeWidth={2}
-                        />
+                        <Radar dataKey="score" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.25} strokeWidth={2} />
                       </RadarChart>
                     </ResponsiveContainer>
                   </div>
-                  
-                  <div className="space-y-3">
-                    {Object.entries(normalizedAIScores)
-                      .sort(([, a], [, b]) => (b as number) - (a as number))
-                      .map(([skill, score]) => (
-                      <div key={skill} className="space-y-1">
-                        <div className="flex justify-between text-sm">
-                          <span className="truncate max-w-[200px]">{skill}</span>
-                          <span className={`font-medium ${getScoreColor(score as number)}`}>{score as number}%</span>
+                  <div className="space-y-3 max-h-72 overflow-y-auto" data-testid="list-ai-skills-0">
+                    {Object.entries(normalizedAIScores).map(([skill, score]) => (
+                      <div key={skill} className="space-y-1" data-testid={`row-ai-skill-0-${skill}`}>
+                        <div className="flex justify-between gap-1 text-sm">
+                          <span className="truncate" data-testid={`text-ai-skill-name-0-${skill}`}>{skill}</span>
+                          <span className={`font-medium ${getScoreColor(score as number)}`} data-testid={`text-ai-skill-score-0-${skill}`}>{score as number}%</span>
                         </div>
                         <Progress value={score as number} className="h-2" />
                       </div>
@@ -675,199 +592,68 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
           {promptData && (
             <Card data-testid="card-prompt-details">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-foreground">
-                  <FileText className="h-5 w-5 text-green-500" />
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-orange-500" />
                   Prompt Architecture Assessment
                 </CardTitle>
-                <CardDescription>
-                  AI prompt engineering capabilities across 7 difficulty levels
-                </CardDescription>
+                <CardDescription>Prompt engineering skills across difficulty levels</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid md:grid-cols-2 gap-4 mb-6">
-                  <div className="p-4 rounded-lg bg-muted/50 border">
-                    <Badge 
-                      variant={promptData.totalScore >= 70 ? "default" : promptData.totalScore >= 50 ? "secondary" : "outline"}
-                      className="mb-3"
-                    >
-                      {getPromptArchBandInterpretation(promptData.totalScore).title}
-                    </Badge>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {getPromptArchBandInterpretation(promptData.totalScore).description}
-                    </p>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className={`text-4xl font-bold ${getScoreColor(promptData.totalScore)}`}>
+                    {promptData.totalScore}%
                   </div>
-                  <div className="text-center p-6 rounded-lg bg-muted flex flex-col items-center justify-center">
-                    <div className={`text-5xl font-bold ${getScoreColor(promptData.totalScore)}`}>
-                      {promptData.totalScore}%
-                    </div>
-                    <div className="text-sm text-muted-foreground mt-2">Overall Prompt Architecture Score</div>
+                  <div>
+                    <div className="font-semibold">{getPromptArchBandInterpretation(promptData.totalScore).title}</div>
+                    <div className="text-sm text-muted-foreground">{getPromptArchBandInterpretation(promptData.totalScore).description}</div>
                   </div>
                 </div>
-                
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-foreground">Level Breakdown (7 Levels)</h4>
-                  {promptData.levels && promptData.levels.length > 0 ? (
-                    <div className="space-y-3">
-                      {(() => {
-                        // Check if this is imported data (level 0 entry indicates summary/imported data)
-                        const importedEntry = promptData.levels.find((l: any) => l.level === 0 || l.isImported);
-                        
-                        // If imported, show a banner with summary scores above the 7-level breakdown
-                        let importedBanner = null;
-                        if (importedEntry) {
-                          const importedScores = importedEntry.scores || {};
-                          const getImportedScore = (key: string): number => {
-                            if (importedScores[key] !== undefined) return importedScores[key];
-                            if (importedScores[key.charAt(0).toUpperCase() + key.slice(1)] !== undefined) {
-                              return importedScores[key.charAt(0).toUpperCase() + key.slice(1)];
-                            }
-                            return 0;
-                          };
-                          
-                          importedBanner = (
-                            <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 mb-4" data-testid="imported-assessment-banner">
-                              <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
-                                This assessment was imported from external source. Summary scores shown below.
-                              </p>
-                              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                                <div className="text-center p-2 bg-white/50 dark:bg-slate-800/50 rounded" data-testid="imported-score-clarity">
-                                  <div className="text-lg font-bold text-foreground">{getImportedScore('clarity')}/20</div>
-                                  <div className="text-xs text-muted-foreground">Clarity</div>
-                                </div>
-                                <div className="text-center p-2 bg-white/50 dark:bg-slate-800/50 rounded" data-testid="imported-score-structure">
-                                  <div className="text-lg font-bold text-foreground">{getImportedScore('structure')}/20</div>
-                                  <div className="text-xs text-muted-foreground">Structure</div>
-                                </div>
-                                <div className="text-center p-2 bg-white/50 dark:bg-slate-800/50 rounded" data-testid="imported-score-context">
-                                  <div className="text-lg font-bold text-foreground">{getImportedScore('contextRelevance')}/20</div>
-                                  <div className="text-xs text-muted-foreground">Context</div>
-                                </div>
-                                <div className="text-center p-2 bg-white/50 dark:bg-slate-800/50 rounded" data-testid="imported-score-creativity">
-                                  <div className="text-lg font-bold text-foreground">{getImportedScore('creativity')}/20</div>
-                                  <div className="text-xs text-muted-foreground">Creativity</div>
-                                </div>
-                                <div className="text-center p-2 bg-white/50 dark:bg-slate-800/50 rounded" data-testid="imported-score-iterative">
-                                  <div className="text-lg font-bold text-foreground">{getImportedScore('iterativeImprovement')}/20</div>
-                                  <div className="text-xs text-muted-foreground">Iterative</div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        }
-                        
-                        // Ensure all 7 levels are shown, filling missing ones with placeholders
-                        const levelMap = new Map(promptData.levels.filter((l: any) => l.level !== 0).map((l: any) => [l.level, l]));
-                        const allLevels = [1, 2, 3, 4, 5, 6, 7].map(levelNum => {
-                          const existingLevel = levelMap.get(levelNum);
-                          if (existingLevel) return existingLevel;
-                          // Placeholder for missing levels
-                          return {
-                            level: levelNum,
-                            scores: { clarity: 0, structure: 0, contextRelevance: 0, creativity: 0, iterativeImprovement: 0 },
-                            totalScore: 0,
-                            feedback: 'Not completed',
-                            isMissing: true,
-                          };
-                        });
-                        
-                        const levelsContent = allLevels.map((level: any, idx: number) => {
-                          const scores = level.scores || {};
-                          
-                          const getScore = (key: string): number => {
-                            if (scores[key] !== undefined) return scores[key];
-                            if (scores[key.charAt(0).toUpperCase() + key.slice(1)] !== undefined) {
-                              return scores[key.charAt(0).toUpperCase() + key.slice(1)];
-                            }
-                            return 0;
-                          };
-                          
-                          return (
-                            <div key={level.level || idx} className={`space-y-2 ${level.isMissing ? 'opacity-50' : ''}`} data-testid={`pa-level-${level.level}`}>
-                              <div className="flex items-center justify-between">
-                                <span className="font-medium text-sm text-foreground">
-                                  Level {level.level}
-                                </span>
-                                <Badge variant={level.isMissing ? "outline" : getScoreBadgeVariant(level.totalScore)}>
-                                  {level.isMissing ? 'N/A' : `${level.totalScore}%`}
-                                </Badge>
-                              </div>
-                              <div className="h-4 bg-blue-100 dark:bg-blue-950 rounded-full overflow-hidden">
-                                <div 
-                                  className="h-full rounded-full transition-all bg-blue-500"
-                                  style={{ 
-                                    width: `${level.totalScore}%`,
-                                    opacity: 0.4 + (level.totalScore / 100) * 0.6
-                                  }}
-                                />
-                              </div>
-                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                                <span>Clarity: {getScore('clarity')}/20</span>
-                                <span>Structure: {getScore('structure')}/20</span>
-                                <span>Context: {getScore('contextRelevance')}/20</span>
-                                <span>Creativity: {getScore('creativity')}/20</span>
-                                <span>Iterative: {getScore('iterativeImprovement')}/20</span>
-                              </div>
-                            </div>
-                          );
-                        });
-                        
-                        // Return both the imported banner (if exists) and the 7 levels
-                        return (
-                          <>
-                            {importedBanner}
-                            {levelsContent}
-                          </>
-                        );
-                      })()}
-                    </div>
-                  ) : (
-                    <div className="p-4 rounded-lg bg-muted/50 text-center text-muted-foreground">
-                      <p className="text-sm">Per-level evaluation data not available for this assessment.</p>
-                      <p className="text-xs mt-1">This assessment was completed before detailed level tracking was implemented.</p>
-                    </div>
-                  )}
-                </div>
+                {promptData.scores && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="grid-prompt-levels-0">
+                    {Object.entries(promptData.scores).map(([level, score]) => (
+                      <div key={level} className="text-center p-3 rounded-lg border bg-card" data-testid={`card-prompt-level-0-${level}`}>
+                        <div className="text-xs text-muted-foreground mb-1">{level}</div>
+                        <div className={`text-xl font-bold ${getScoreColor(score as number)}`}>{score as number}%</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
 
-          {aiqData && (() => {
-            const aiqBandInfo = getAIQBandInterpretation(aiqData.totalScore);
-            return (
-              <Card data-testid="card-aiq-details">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Award className="h-5 w-5 text-amber-500" />
-                    AIQ Assessment
-                  </CardTitle>
-                  <CardDescription>
-                    Algorithmic Integrity Quotient - AI ethics and responsibility
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="p-4 rounded-lg bg-muted/50 border">
-                      <Badge 
-                        variant={aiqData.totalScore >= 80 ? "default" : aiqData.totalScore >= 60 ? "secondary" : "outline"}
-                        className="mb-3"
-                      >
-                        {aiqBandInfo.title}
-                      </Badge>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {aiqBandInfo.description}
-                      </p>
-                    </div>
-                    <div className="text-center p-6 rounded-lg bg-muted flex flex-col items-center justify-center">
-                      <div className={`text-5xl font-bold ${getScoreColor(aiqData.totalScore)}`}>
-                        {aiqData.totalScore}%
-                      </div>
-                      <div className="text-sm text-muted-foreground mt-2">Overall AIQ Score</div>
-                    </div>
+          {aiqData && (
+            <Card data-testid="card-aiq-details">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-green-500" />
+                  AIQ Assessment (AI Ethics)
+                </CardTitle>
+                <CardDescription>Algorithmic Integrity Quotient - understanding of AI ethics and responsible AI</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className={`text-4xl font-bold ${getScoreColor(aiqData.totalScore)}`}>
+                    {aiqData.totalScore}%
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })()}
+                  <div>
+                    <div className="font-semibold">{getAIQBandInterpretation(aiqData.totalScore).title}</div>
+                    <div className="text-sm text-muted-foreground">{getAIQBandInterpretation(aiqData.totalScore).description}</div>
+                  </div>
+                </div>
+                {aiqData.scores && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" data-testid="grid-aiq-categories-0">
+                    {Object.entries(aiqData.scores).map(([key, score]) => (
+                      <div key={key} className="text-center p-3 rounded-lg border bg-card" data-testid={`card-aiq-category-0-${key}`}>
+                        <div className="text-xs text-muted-foreground mb-1">{key.replace(/_/g, ' ')}</div>
+                        <div className={`text-xl font-bold ${getScoreColor(score as number)}`}>{score as number}%</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           <Card data-testid="card-profile-insights">
             <CardHeader>
