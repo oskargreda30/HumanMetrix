@@ -515,9 +515,9 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
 
   // How it's calculated - dynamic height
   const healthComponents = [
-    { pct: '40%', title: 'Capability Strength', desc: 'Average FIT scores across all capabilities.', color: COLORS.green },
-    { pct: '30%', title: 'Capability Coverage', desc: 'Whether you have at least one team member meeting target threshold for each capability.', color: COLORS.blue },
-    { pct: '30%', title: 'Risk & Gap Penalties', desc: 'Deductions for critical gaps (-8 pts), warnings (-4 pts), and minor risks (-2 pts).', color: COLORS.amber },
+    { pct: '40%', title: 'Capability Strength', desc: 'Average FIT scores across all capabilities.', color: [30, 64, 175] as [number, number, number] },
+    { pct: '30%', title: 'Capability Coverage', desc: 'Whether you have at least one team member meeting target threshold for each capability.', color: [59, 130, 246] as [number, number, number] },
+    { pct: '30%', title: 'Risk & Gap Penalties', desc: 'Deductions for critical gaps (-8 pts), warnings (-4 pts), and minor risks (-2 pts).', color: [100, 160, 220] as [number, number, number] },
   ];
 
   // Measure each component's description height for accurate box sizing
@@ -566,10 +566,10 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
 
   // Score meaning
   const scoreMeanings = [
-    { range: '80-100%', desc: 'Excellent \u2014 Well-balanced and mission-ready', color: COLORS.green },
-    { range: '65-79%', desc: 'Good \u2014 Solid foundation, some areas need attention', color: [16, 185, 129] as [number, number, number] },
-    { range: '50-64%', desc: 'Fair \u2014 Notable gaps may impact mission success', color: COLORS.amber },
-    { range: 'Below 50%', desc: 'Needs Attention \u2014 Significant gaps requiring action', color: COLORS.red },
+    { range: '80-100%', desc: 'Excellent \u2014 Well-balanced and mission-ready', color: [30, 64, 175] as [number, number, number] },
+    { range: '65-79%', desc: 'Good \u2014 Solid foundation, some areas need attention', color: [59, 130, 246] as [number, number, number] },
+    { range: '50-64%', desc: 'Fair \u2014 Notable gaps may impact mission success', color: [147, 180, 220] as [number, number, number] },
+    { range: 'Below 50%', desc: 'Needs Attention \u2014 Significant gaps requiring action', color: [190, 200, 215] as [number, number, number] },
   ];
 
   const scoreBoxH = scoreMeanings.length * 4.5 + 10;
