@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, User, Award, Brain, Target, TrendingUp, TrendingDown, FileText, Sparkles, Download, MessageSquare, Users, Clock, ShieldAlert, DollarSign, Lightbulb, RefreshCw, Rocket, BarChart3, Mail, ChevronUp, AlertCircle } from "lucide-react";
+import { Loader2, User, Award, Brain, Target, TrendingUp, TrendingDown, FileText, Sparkles, Download, MessageSquare, Users, Clock, ShieldAlert, DollarSign, Lightbulb, RefreshCw, BarChart3, Mail, ChevronUp, AlertCircle } from "lucide-react";
 import { AnalysisLoadingScreen } from "./AnalysisLoadingScreen";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,8 +20,8 @@ import { calculateAverageScore, FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym
 import SkillsLegend from "@/components/SkillsLegend";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { EnquiryModal } from "@/components/EnquiryModal";
 import { HowToReadReport } from "@/components/shared/HowToReadReport";
+import { AdditionalServicesSection } from "@/components/shared/AdditionalServicesSection";
 
 export interface SharedIndividualReportConfig {
   candidatesEndpoint: string;
@@ -64,7 +64,6 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
   const [loadingTransitionComplete, setLoadingTransitionComplete] = useState(false);
   const [isRerunning, setIsRerunning] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
   const { toast } = useToast();
   
   const fitChartRef = useRef<HTMLDivElement>(null);
@@ -807,89 +806,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
             </CardContent>
           </Card>
 
-          <Card className="border-primary/20 bg-primary">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
-                <Sparkles className="h-5 w-5 text-white" />
-                Enterprise Services
-              </CardTitle>
-              <p className="text-sm text-white/80">
-                Enhance your hiring decisions with premium services
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                    <Rocket className="h-4 w-4 text-white" />
-                    Onboarding Service
-                  </h4>
-                  <p className="text-sm text-white/70">
-                    Time to Productivity Estimate and Hiring Risk Analysis to optimize your onboarding process
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                    <MessageSquare className="h-4 w-4 text-white" />
-                    Suggested Interview Questions
-                  </h4>
-                  <p className="text-sm text-white/70">
-                    AI-generated questions to dig deeper into assessment results and explore trait gaps
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                    <Users className="h-4 w-4 text-white" />
-                    Team Composition Fit
-                  </h4>
-                  <p className="text-sm text-white/70">
-                    Analysis of how this candidate would complement your existing team dynamics
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                    <Clock className="h-4 w-4 text-white" />
-                    Time to Productivity Estimate
-                  </h4>
-                  <p className="text-sm text-white/70">
-                    Projected onboarding timeline based on skill readiness and learning agility
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
-                    <BarChart3 className="h-4 w-4 text-white" />
-                    Candidate Comparison Tool
-                  </h4>
-                  <p className="text-sm text-white/70">
-                    Compare multiple candidates side-by-side across all assessment dimensions with visual analytics
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <h4 className="font-medium flex items-center gap-2 text-white">
-                      <TrendingUp className="h-4 w-4 text-white shrink-0" />
-                      Cohort Benchmarking
-                    </h4>
-                    <Badge className="bg-amber-500 text-white border-amber-600 text-xs shrink-0">Coming Soon</Badge>
-                  </div>
-                  <p className="text-sm text-white/70">
-                    Compare candidate performance against industry benchmarks and peer organizations
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4 text-center">
-                <Button 
-                  variant="outline" 
-                  className="border-white text-white"
-                  onClick={() => setShowEnquiryModal(true)}
-                  data-testid="button-contact-team-individual"
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Speak to the Team
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <AdditionalServicesSection enquiryContext="Individual Report - Enterprise Services" />
 
           {(fitData || aiData) && (
             <SkillsLegend className="mt-4" />
@@ -952,11 +869,6 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
         </Card>
       )}
 
-      <EnquiryModal 
-        open={showEnquiryModal} 
-        onOpenChange={setShowEnquiryModal}
-        context="Individual Report - Enterprise Services"
-      />
     </div>
   );
 }
