@@ -814,25 +814,6 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
       y += 2;
     }
 
-    const keyTraits = analysis.idealCandidateProfile.keyTraits;
-    if (keyTraits?.length > 0) {
-      y = ensureSpace(pdf, y, 10 + keyTraits.length * 5);
-      applyLabelText(pdf);
-      pdf.setFontSize(7);
-      pdf.setTextColor(...COLORS.green);
-      pdf.text('KEY TRAITS TO SEEK', MARGIN_LEFT + 4, y);
-      y += 5;
-      applyBodyText(pdf);
-      for (const trait of keyTraits) {
-        y = ensureSpace(pdf, y, 6);
-        pdf.setFontSize(6);
-        pdf.setTextColor(...COLORS.green);
-        pdf.text('\u2713', MARGIN_LEFT + 6, y);
-        applyBodyText(pdf);
-        y = drawWrappedText(pdf, trait, MARGIN_LEFT + 12, y, CONTENT_WIDTH - 18, 4);
-        y += 2;
-      }
-    }
   }
 
   // ====== RECOMMENDED HIRE PROFILES ======
