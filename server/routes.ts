@@ -14412,16 +14412,7 @@ Format your response as JSON with this structure:
       }
 
       // Check for existing cached report BEFORE consuming credits (unless forceRefresh is requested)
-      if (forceRefresh) {
-        const existingReport = await storage.findExistingPartnerReport(
-          partner.id,
-          'profile_insights',
-          [candidateId]
-        );
-        if (existingReport) {
-          await storage.deletePartnerAnalysisReport(existingReport.id);
-        }
-      } else {
+      if (!forceRefresh) {
         const existingReport = await storage.findExistingPartnerReport(
           partner.id,
           'profile_insights',
@@ -14659,16 +14650,7 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
       const cachedReportType = candidateIds.length === 1 ? 'individual' : 'comparison';
       let hasIncompleteCachedReport = false;
       
-      if (forceRefresh) {
-        const existingReport = await storage.findExistingPartnerReport(
-          partner.id,
-          cachedReportType,
-          candidateIds
-        );
-        if (existingReport) {
-          await storage.deletePartnerAnalysisReport(existingReport.id);
-        }
-      } else {
+      if (!forceRefresh) {
         const existingReport = await storage.findExistingPartnerReport(
           partner.id,
           cachedReportType,
@@ -14684,10 +14666,6 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
               generatedAt: existingReport.createdAt,
               reportId: existingReport.id,
             });
-          }
-          // Invalidate old reports without critical gap penalty scoring (version < 2)
-          if (existingReport) {
-            await storage.deletePartnerAnalysisReport(existingReport.id);
           }
           hasIncompleteCachedReport = false;
         }
@@ -15111,16 +15089,7 @@ Keep each section concise (2-3 sentences). Use professional but accessible langu
       const candidateIds = candidateNames.map((n: any) => n.id || n.email || n.name);
 
       // Check for cached insights (delete old if forceRefresh)
-      if (forceRefresh) {
-        const existingReport = await storage.findExistingPartnerReport(
-          partner.id,
-          'compare_insights',
-          candidateIds
-        );
-        if (existingReport) {
-          await storage.deletePartnerAnalysisReport(existingReport.id);
-        }
-      } else {
+      if (!forceRefresh) {
         const existingReport = await storage.findExistingPartnerReport(
           partner.id,
           'compare_insights',
@@ -15509,17 +15478,7 @@ Use the candidates' actual names. Be specific and actionable.`;
       let hadInvalidatedOldReport = false;
 
       // Check for existing cached report (unless forceRefresh is requested)
-      if (forceRefresh === 'true') {
-        const existingReport = await storage.findExistingPartnerReport(
-          partner.id,
-          'role_fit_single',
-          [candidateId as string],
-          jobRoleId as string
-        );
-        if (existingReport) {
-          await storage.deletePartnerAnalysisReport(existingReport.id);
-        }
-      } else {
+      if (forceRefresh !== 'true') {
         const existingReport = await storage.findExistingPartnerReport(
           partner.id,
           'role_fit_single',
@@ -15543,7 +15502,6 @@ Use the candidates' actual names. Be specific and actionable.`;
             });
           }
           if (hasOldCriticality || !hasFinalRecommendation || !hasCurrentScoring) {
-            await storage.deletePartnerAnalysisReport(existingReport.id);
             hadInvalidatedOldReport = true;
           }
         }
@@ -16554,17 +16512,7 @@ Be direct and specific to the role. No general background on AI ethics.`;
       }
 
       // Check for existing cached report (unless forceRefresh is requested)
-      if (forceRefresh) {
-        const existingReport = await storage.findExistingPartnerReport(
-          partner.id,
-          'role_fit_multi',
-          candidateIds,
-          jobRoleId
-        );
-        if (existingReport) {
-          await storage.deletePartnerAnalysisReport(existingReport.id);
-        }
-      } else {
+      if (!forceRefresh) {
         const existingReport = await storage.findExistingPartnerReport(
           partner.id,
           'role_fit_multi',
@@ -17373,17 +17321,7 @@ Be thorough, professional, and reference specific data points from the assessmen
       const candidateIds = candidateEntries.map((c: any) => c.userId);
 
       // Check for existing cached insights (delete old if forceRefresh)
-      if (forceRefresh) {
-        const existingReport = await storage.findExistingPartnerReport(
-          partner.id,
-          'multi_candidate_insights',
-          candidateIds,
-          roleSnapshot.roleId
-        );
-        if (existingReport) {
-          await storage.deletePartnerAnalysisReport(existingReport.id);
-        }
-      } else {
+      if (!forceRefresh) {
         const existingReport = await storage.findExistingPartnerReport(
           partner.id,
           'multi_candidate_insights',
