@@ -453,21 +453,29 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
     }
 
     if (missionAnalysis.capabilityPriorities?.length > 0) {
-      y = ensureSpace(pdf, y, 12);
+      const sorted = [...missionAnalysis.capabilityPriorities].sort((a: any, b: any) => {
+        const order: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+        return (order[a.priority] ?? 3) - (order[b.priority] ?? 3);
+      });
+
+      applySmallText(pdf);
+      let totalSectionH = 10;
+      for (const cap of sorted) {
+        const reasoningLines = cap.reasoning ? wrapText(pdf, cap.reasoning, CONTENT_WIDTH - 18) : [];
+        totalSectionH += 6 + (reasoningLines.length > 0 ? reasoningLines.length * 3.8 + 2 : 0) + 4;
+      }
+
+      if (y + totalSectionH > PAGE_HEIGHT - MARGIN_BOTTOM) {
+        y = newPage(pdf);
+      }
+
       applyLabelText(pdf);
       pdf.setFontSize(7);
       pdf.setTextColor(...COLORS.textMuted);
       pdf.text('WHY THESE CAPABILITIES MATTER FOR YOUR MISSION', MARGIN_LEFT + 4, y);
       y += 6;
 
-      const sorted = [...missionAnalysis.capabilityPriorities].sort((a: any, b: any) => {
-        const order: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
-        return (order[a.priority] ?? 3) - (order[b.priority] ?? 3);
-      });
-
       for (const cap of sorted) {
-        const estimatedH = Math.ceil((cap.reasoning || '').length / 70) * 4 + 14;
-        y = ensureSpace(pdf, y, estimatedH);
         drawCapabilityBadge(pdf, cap.code, MARGIN_LEFT + 4, y + 5);
         pdf.setFontSize(9);
         pdf.setFont('helvetica', 'bold');
@@ -608,49 +616,50 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
       const barColor = CAP_COLORS[item.code] || COLORS.primaryLight;
       const analysisText = item.gapAnalysis || '';
 
-      // Measure content height first
       applySmallText(pdf);
+      pdf.setFontSize(7);
       const analysisLines = analysisText ? wrapText(pdf, analysisText, CONTENT_WIDTH - 16) : [];
-      const contentH = 24 + (analysisLines.length > 0 ? analysisLines.length * 3.8 + 4 : 0);
+      const contentH = 18 + (analysisLines.length > 0 ? analysisLines.length * 3.2 + 2 : 0);
 
-      y = ensureSpace(pdf, y, contentH + 4);
+      y = ensureSpace(pdf, y, contentH + 2);
 
-      // Draw light background BEFORE content
       pdf.setFillColor(248, 250, 252);
-      pdf.roundedRect(MARGIN_LEFT + 2, y - 2, CONTENT_WIDTH - 4, contentH + 2, 2, 2, 'F');
+      pdf.roundedRect(MARGIN_LEFT + 2, y - 1, CONTENT_WIDTH - 4, contentH, 2, 2, 'F');
 
-      drawCapabilityBadge(pdf, item.code, MARGIN_LEFT + 6, y + 6, 7);
-      pdf.setFontSize(10);
+      drawCapabilityBadge(pdf, item.code, MARGIN_LEFT + 6, y + 5, 6);
+      pdf.setFontSize(8.5);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(...COLORS.textSecondary);
-      pdf.text(item.capability || CAP_NAMES[item.code] || item.code, MARGIN_LEFT + 18, y + 3);
+      pdf.text(item.capability || CAP_NAMES[item.code] || item.code, MARGIN_LEFT + 16, y + 2.5);
 
-      pdf.setFontSize(8);
+      pdf.setFontSize(7);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(...gapColor);
       const gapText = gap > 0 ? `+${gap} gap` : 'On target';
-      pdf.text(gapText, PAGE_WIDTH - MARGIN_RIGHT - 6, y + 3, { align: 'right' });
+      pdf.text(gapText, PAGE_WIDTH - MARGIN_RIGHT - 6, y + 2.5, { align: 'right' });
 
-      y += 10;
-      drawHorizontalBar(pdf, MARGIN_LEFT + 6, y, CONTENT_WIDTH - 16, currentScore, targetScore, barColor);
       y += 8;
+      drawHorizontalBar(pdf, MARGIN_LEFT + 6, y, CONTENT_WIDTH - 16, currentScore, targetScore, barColor);
+      y += 6;
 
-      pdf.setFontSize(7);
+      pdf.setFontSize(6);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(...COLORS.textMuted);
       pdf.text(`Current: ${currentScore}%`, MARGIN_LEFT + 6, y);
-      pdf.text(`Target: ${targetScore}%`, MARGIN_LEFT + 6 + 40, y);
-      y += 5;
+      pdf.text(`Target: ${targetScore}%`, MARGIN_LEFT + 6 + 30, y);
+      y += 3.5;
 
       if (analysisLines.length > 0) {
-        applySmallText(pdf);
+        pdf.setFontSize(7);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(...COLORS.textSecondary);
         for (const line of analysisLines) {
           pdf.text(line, MARGIN_LEFT + 6, y);
-          y += 3.8;
+          y += 3.2;
         }
       }
 
-      y += 6;
+      y += 3;
     }
   }
 
@@ -668,7 +677,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
 
     for (const item of cumulativeScores) {
       y = ensureSpace(pdf, y, 14);
-      const barColor = CAP_COLORS[item.code] || COLORS.primaryLight;
+      const barColor: [number, number, number] = [100, 130, 180];
       const pct = maxPossible > 0 ? Math.round((item.score / maxPossible) * 100) : 0;
 
       drawCapabilityBadge(pdf, item.code, MARGIN_LEFT + 4, y + 5, 7);
