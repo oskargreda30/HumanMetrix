@@ -193,10 +193,10 @@ function ReportHeader({ title, createdAt, reportType, cached }: { title: string;
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Link href="/partner">
-            <Button variant="outline" size="sm" data-testid="button-back-dashboard">
+          <Link href="/partner?tab=results">
+            <Button variant="outline" size="sm" data-testid="button-back-results">
               <ArrowLeft className="h-4 w-4 mr-1" />
-              Dashboard
+              Saved Results
             </Button>
           </Link>
         </div>
