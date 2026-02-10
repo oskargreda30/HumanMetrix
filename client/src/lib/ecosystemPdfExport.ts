@@ -19,28 +19,23 @@ const COLORS = {
   bgLight: [240, 249, 255] as [number, number, number],
   bgSection: [243, 244, 246] as [number, number, number],
   border: [229, 231, 235] as [number, number, number],
-  green: [22, 163, 74] as [number, number, number],
-  greenLight: [220, 252, 231] as [number, number, number],
-  amber: [217, 119, 6] as [number, number, number],
-  amberLight: [254, 243, 199] as [number, number, number],
-  red: [220, 38, 38] as [number, number, number],
-  redLight: [254, 226, 226] as [number, number, number],
   blue: [37, 99, 235] as [number, number, number],
   blueLight: [219, 234, 254] as [number, number, number],
-  purple: [147, 51, 234] as [number, number, number],
-  cyan: [6, 182, 212] as [number, number, number],
-  rose: [225, 29, 72] as [number, number, number],
+  blueDark: [30, 64, 175] as [number, number, number],
+  blueMid: [59, 130, 246] as [number, number, number],
+  slate: [100, 116, 139] as [number, number, number],
+  warmDark: [180, 60, 60] as [number, number, number],
   descBox: [240, 249, 255] as [number, number, number],
   descText: [71, 85, 105] as [number, number, number],
 };
 
 const CAP_COLORS: Record<string, [number, number, number]> = {
-  HA: [59, 130, 246],
-  IC: [147, 51, 234],
-  RA: [22, 163, 74],
-  EE: [225, 29, 72],
-  GM: [217, 119, 6],
-  IA: [6, 182, 212],
+  HA: [30, 64, 175],
+  IC: [59, 130, 246],
+  RA: [100, 116, 180],
+  EE: [120, 100, 160],
+  GM: [80, 140, 200],
+  IA: [50, 100, 150],
 };
 
 const CAP_NAMES: Record<string, string> = {
@@ -304,11 +299,11 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   pdf.text('Mission Alignment', badgeX1 + badgeWidth / 2, y + 7, { align: 'center' });
   pdf.setFontSize(14);
   pdf.setFont('helvetica', 'bold');
-  const missionColor = missionScore >= 70 ? COLORS.green : missionScore >= 50 ? COLORS.amber : COLORS.red;
+  const missionColor = missionScore >= 70 ? COLORS.blueDark : missionScore >= 50 ? COLORS.slate : COLORS.warmDark;
   pdf.setTextColor(...missionColor);
   pdf.text(`${missionScore}%`, badgeX1 + badgeWidth / 2, y + 16, { align: 'center' });
 
-  pdf.setFillColor(...COLORS.greenLight);
+  pdf.setFillColor(...COLORS.blueLight);
   pdf.roundedRect(badgeX2, y, badgeWidth, 20, 3, 3, 'F');
   pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
@@ -316,7 +311,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   pdf.text('Health Score', badgeX2 + badgeWidth / 2, y + 7, { align: 'center' });
   pdf.setFontSize(14);
   pdf.setFont('helvetica', 'bold');
-  const healthColor = healthScore >= 70 ? COLORS.green : healthScore >= 50 ? COLORS.amber : COLORS.red;
+  const healthColor = healthScore >= 70 ? COLORS.blueDark : healthScore >= 50 ? COLORS.slate : COLORS.warmDark;
   pdf.setTextColor(...healthColor);
   pdf.text(`${healthScore}%`, badgeX2 + badgeWidth / 2, y + 16, { align: 'center' });
   pdf.setTextColor(0, 0, 0);
@@ -485,9 +480,9 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
         const capNameWidth = pdf.getTextWidth(capNameText);
 
         const priorityColors: Record<string, [number, number, number]> = {
-          critical: COLORS.red,
-          high: COLORS.amber,
-          medium: COLORS.blue,
+          critical: COLORS.warmDark,
+          high: COLORS.blueDark,
+          medium: COLORS.blueMid,
           low: COLORS.textMuted,
         };
         pdf.setFontSize(7);
@@ -612,7 +607,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
       const currentScore = item.currentScore ?? strengthToScore[item.teamStrength] ?? 50;
       const targetScore = item.targetScore ?? priorityToTarget[item.missionPriority] ?? 70;
       const gap = Math.max(0, targetScore - currentScore);
-      const gapColor = gap >= 30 ? COLORS.red : gap >= 15 ? COLORS.amber : COLORS.green;
+      const gapColor = gap >= 30 ? COLORS.warmDark : gap >= 15 ? COLORS.slate : COLORS.blueMid;
       const barColor = CAP_COLORS[item.code] || COLORS.primaryLight;
       const analysisText = item.gapAnalysis || '';
 
@@ -720,10 +715,10 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
       strategic_risk: 'STRATEGIC RISK',
     };
     const categoryColors: Record<string, [number, number, number]> = {
-      team_dynamics: COLORS.blue,
-      future_needs: COLORS.green,
-      post_hire_outlook: COLORS.purple,
-      strategic_risk: COLORS.amber,
+      team_dynamics: COLORS.blueDark,
+      future_needs: COLORS.blueMid,
+      post_hire_outlook: COLORS.slate,
+      strategic_risk: [50, 100, 150],
     };
 
     for (const insight of analysis.contextualInsights) {
@@ -892,12 +887,12 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
           let by = y;
           pdf.setFontSize(7);
           pdf.setFont('helvetica', 'bold');
-          pdf.setTextColor(...COLORS.green);
+          pdf.setTextColor(...COLORS.blueDark);
           pdf.text('LOOK FOR', MARGIN_LEFT + 6, by);
           by += 4;
           applySmallText(pdf);
           for (const behavior of profile.keyBehaviors) {
-            pdf.setTextColor(...COLORS.green);
+            pdf.setTextColor(...COLORS.blueDark);
             pdf.setFontSize(6);
             pdf.text('\u2022', MARGIN_LEFT + 8, by);
             applySmallText(pdf);
@@ -916,12 +911,12 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
           const rfX = MARGIN_LEFT + 6 + (CONTENT_WIDTH - 12) / 2 + 4;
           pdf.setFontSize(7);
           pdf.setFont('helvetica', 'bold');
-          pdf.setTextColor(...COLORS.red);
+          pdf.setTextColor(...COLORS.warmDark);
           pdf.text('RED FLAGS', rfX, ry);
           ry += 4;
           applySmallText(pdf);
           for (const flag of profile.redFlags) {
-            pdf.setTextColor(...COLORS.red);
+            pdf.setTextColor(...COLORS.warmDark);
             pdf.setFontSize(6);
             pdf.text('\u2022', rfX + 2, ry);
             applySmallText(pdf);
@@ -952,8 +947,8 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
     y = addSectionHeader(pdf, 'RISK ALERTS', y);
 
     for (const alert of analysis.riskAlerts) {
-      const alertBg = alert.severity === 'critical' ? COLORS.redLight : alert.severity === 'warning' ? COLORS.amberLight : COLORS.blueLight;
-      const severityColor = alert.severity === 'critical' ? COLORS.red : alert.severity === 'warning' ? COLORS.amber : COLORS.blue;
+      const alertBg = alert.severity === 'critical' ? [245, 235, 240] as [number, number, number] : alert.severity === 'warning' ? COLORS.bgSection : COLORS.blueLight;
+      const severityColor = alert.severity === 'critical' ? COLORS.warmDark : alert.severity === 'warning' ? COLORS.slate : COLORS.blueMid;
 
       // Measure content first
       applySmallText(pdf);
