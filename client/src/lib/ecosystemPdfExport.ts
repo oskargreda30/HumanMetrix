@@ -449,7 +449,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
         pdf.text(line, MARGIN_LEFT + 6, y);
         y += 4.5;
       }
-      y += 4;
+      y += 8;
     }
 
     if (missionAnalysis.capabilityPriorities?.length > 0) {
@@ -526,7 +526,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   const compMeasurements: { lines: string[]; lineH: number }[] = [];
   for (const comp of healthComponents) {
     const descLines = pdf.splitTextToSize(comp.desc, CONTENT_WIDTH - 24);
-    const itemH = 4.5 + descLines.length * 3.5 + 3;
+    const itemH = 4.5 + descLines.length * 3.5 + 6;
     compMeasurements.push({ lines: descLines, lineH: itemH });
     totalCompH += itemH;
   }
@@ -560,7 +560,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
       pdf.text(line, MARGIN_LEFT + 16, y);
       y += 3.5;
     }
-    y += 3;
+    y += 6;
   }
   y += 4;
 
@@ -659,7 +659,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
         }
       }
 
-      y += 3;
+      y += 6;
     }
   }
 
@@ -737,7 +737,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
       const blockH = (title ? 8 : 0) + analysisLines.length * 4.2 + 8;
       y = ensureSpace(pdf, y, blockH);
 
-      pdf.setFillColor(...COLORS.amberLight);
+      pdf.setFillColor(...COLORS.blueLight);
       pdf.roundedRect(MARGIN_LEFT + 2, y - 2, CONTENT_WIDTH - 4, blockH, 2, 2, 'F');
 
       let iy = y + 2;
@@ -764,7 +764,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
         pdf.text(line, MARGIN_LEFT + 6, iy);
         iy += 4.2;
       }
-      y += blockH + 3;
+      y += blockH + 6;
     }
     y += 4;
   }
