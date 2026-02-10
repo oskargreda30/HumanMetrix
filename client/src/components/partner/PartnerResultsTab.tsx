@@ -353,7 +353,7 @@ export default function PartnerResultsTab() {
                             {getReportTypeBadge()}
                           </div>
                           <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                            <span>{new Date(report.createdAt).toLocaleDateString()}</span>
+                            <span>{new Date(report.createdAt).toLocaleString()}</span>
                             <span>·</span>
                             <span>{report.summary.candidateCount}</span>
                             {report.summary.overallFit !== undefined && (
@@ -764,21 +764,6 @@ export default function PartnerResultsTab() {
                   </Dialog>
                 </div>
               </CardHeader>
-              
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {candidate.results?.map((result: any) => (
-                    <Badge 
-                      key={result.id} 
-                      variant={result.status === 'completed' ? 'default' : 'secondary'}
-                      data-testid={`badge-result-${result.id}`}
-                    >
-                      {formatAssessmentType(result.assessmentType)}
-                      {result.totalScore !== null && ` (${result.totalScore}%)`}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
             </Card>
           ))}
         </div>
