@@ -608,28 +608,66 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                     <div className="text-sm text-muted-foreground">{getPromptArchBandInterpretation(promptData.totalScore).description}</div>
                   </div>
                 </div>
-                {(() => {
-                  const levelNames = ['Foundational', 'Intermediate', 'Advanced', 'Expert'];
-                  const levelScores: Record<string, number> = promptData.scores || {};
-                  if (!promptData.scores && promptData.levels && Array.isArray(promptData.levels)) {
-                    promptData.levels.forEach((lvl: any) => {
-                      const idx = typeof lvl.level === 'number' ? lvl.level - 1 : parseInt(lvl.level) - 1;
-                      if (idx >= 0 && idx < levelNames.length && lvl.totalScore != null) {
-                        levelScores[levelNames[idx]] = lvl.totalScore;
-                      }
-                    });
-                  }
-                  return Object.keys(levelScores).length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="grid-prompt-levels-0">
-                      {Object.entries(levelScores).map(([level, score]) => (
-                        <div key={level} className="text-center p-3 rounded-lg border bg-card" data-testid={`card-prompt-level-0-${level}`}>
-                          <div className="text-xs text-muted-foreground mb-1">{level}</div>
-                          <div className={`text-xl font-bold ${getScoreColor(score as number)}`}>{score as number}%</div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
+                {promptData.levels && Array.isArray(promptData.levels) && promptData.levels.length > 0 && (
+                  <div className="overflow-x-auto" data-testid="grid-prompt-levels-0">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-2 md:p-3 font-medium text-xs md:text-sm">Level</th>
+                          <th className="text-left p-2 md:p-3 font-medium text-xs md:text-sm">Dimension</th>
+                          <th className="text-left p-2 md:p-3 font-medium text-xs md:text-sm">Score</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[1, 2, 3, 4, 5, 6, 7].map((level) => {
+                          const dimensions = ['clarity', 'structure', 'contextRelevance', 'creativity', 'iterativeImprovement'];
+                          const dimensionLabels: Record<string, string> = {
+                            clarity: 'Clarity',
+                            structure: 'Structure',
+                            contextRelevance: 'Context Relevance',
+                            creativity: 'Creativity',
+                            iterativeImprovement: 'Iterative Improvement',
+                          };
+                          const levelData = promptData.levels.find((l: any) => l.level === level);
+
+                          return dimensions.map((dimension, dimIndex) => {
+                            const score = levelData?.scores?.[dimension] ?? levelData?.evaluationScores?.[dimension];
+                            return (
+                              <tr key={`${level}-${dimension}`} className={dimIndex === 0 ? 'border-t-2' : 'border-t'}>
+                                {dimIndex === 0 && (
+                                  <td className="p-2 md:p-3 font-semibold align-top text-xs md:text-sm" rowSpan={5}>
+                                    Level {level}
+                                  </td>
+                                )}
+                                <td className="p-2 md:p-3 text-xs md:text-sm">{dimensionLabels[dimension]}</td>
+                                <td className="p-2 md:p-3">
+                                  {score !== undefined && score !== null ? (
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-semibold text-xs md:text-sm">{score}/20</span>
+                                      <div className="h-2 rounded-full bg-primary/20" style={{ width: '60px' }}>
+                                        <div className="h-full rounded-full bg-primary" style={{ width: `${(score / 20) * 100}%` }} />
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <span className="text-muted-foreground text-xs md:text-sm">—</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          });
+                        })}
+                        <tr className="border-t-2 font-semibold bg-muted/30">
+                          <td className="p-2 md:p-3 text-xs md:text-sm" colSpan={2}>Total Score</td>
+                          <td className="p-2 md:p-3">
+                            <span className={`text-lg font-bold ${getScoreColor(promptData.totalScore)}`}>
+                              {promptData.totalScore}%
+                            </span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
