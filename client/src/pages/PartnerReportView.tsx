@@ -267,11 +267,12 @@ function ReportHeader({ title, createdAt, reportType, cached, onExportPDF, isExp
   );
 }
 
-function CandidateAssessmentSection({ candidateData, candidateIndex, candidateName, color }: {
+function CandidateAssessmentSection({ candidateData, candidateIndex, candidateName, color, renderAfterOverview }: {
   candidateData: { fitData: any; aiData: any; promptData: any; aiqData: any };
   candidateIndex: number;
   candidateName: string;
   color: string;
+  renderAfterOverview?: React.ReactNode;
 }) {
   const { fitData, aiData, promptData, aiqData } = candidateData;
 
@@ -356,6 +357,8 @@ function CandidateAssessmentSection({ candidateData, candidateIndex, candidateNa
           </div>
         </CardContent>
       </Card>
+
+      {renderAfterOverview}
 
       {(fitData || aiData) && (
         <Card>
@@ -565,6 +568,7 @@ function IndividualReportContent({ reportData }: { reportData: any }) {
         candidateIndex={0}
         candidateName={candidateName}
         color={CHART_COLORS[0]}
+        renderAfterOverview={<HowToReadReport reportType="individual" />}
       />
 
       {reportData.aiInsights && (
@@ -1579,7 +1583,7 @@ export default function PartnerReportView() {
           isExporting={isExporting}
         />
 
-        {(isIndividual || isComparison || isRoleFit) && <HowToReadReport reportType={howToReadType} />}
+        {(isComparison || isRoleFit) && <HowToReadReport reportType={howToReadType} />}
 
         <div className="space-y-6" data-testid="report-content">
           {isIndividual && <IndividualReportContent reportData={reportData} />}
