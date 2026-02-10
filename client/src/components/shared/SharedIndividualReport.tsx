@@ -423,7 +423,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
 
           <div className="flex items-center gap-2 mb-2">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3b82f6' }} />
-            <h3 className="text-lg font-semibold" data-testid="text-candidate-name-0">{getCandidateName(selectedCandidateData)}</h3>
+            <h3 className="text-lg font-semibold text-white" data-testid="text-candidate-name-0">{getCandidateName(selectedCandidateData)}</h3>
           </div>
 
           <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent" data-testid="card-candidate-summary">
