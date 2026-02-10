@@ -248,14 +248,14 @@ export function SharedCompareTab({ config, staticData }: SharedCompareTabProps) 
 
       await document.fonts.ready;
 
-      const captureOpts = { backgroundColor: '#ffffff', scale: 1, useCORS: true, logging: false, imageTimeout: 5000 };
+      const captureOpts = { backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false, imageTimeout: 5000 };
 
       const captureElement = async (id: string): Promise<string | null> => {
         try {
           const el = document.getElementById(id);
           if (!el) return null;
           const canvas = await html2canvas(el, captureOpts);
-          return canvas.toDataURL('image/jpeg', 0.55);
+          return canvas.toDataURL('image/png');
         } catch (err) {
           console.error(`Error capturing ${id}:`, err);
           return null;
