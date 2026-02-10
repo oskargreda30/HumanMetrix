@@ -246,18 +246,16 @@ export function SharedCompareTab({ config, staticData }: SharedCompareTabProps) 
         description: "Capturing charts and preparing your report...",
       });
 
-      // Wait for charts to render and fonts to load
-      await new Promise(resolve => setTimeout(resolve, 200));
       await document.fonts.ready;
 
-      const captureOpts = { backgroundColor: '#ffffff', scale: 1.5, useCORS: true, logging: false };
+      const captureOpts = { backgroundColor: '#ffffff', scale: 1, useCORS: true, logging: false, imageTimeout: 5000 };
 
       const captureElement = async (id: string): Promise<string | null> => {
         try {
           const el = document.getElementById(id);
           if (!el) return null;
           const canvas = await html2canvas(el, captureOpts);
-          return canvas.toDataURL('image/jpeg', 0.7);
+          return canvas.toDataURL('image/jpeg', 0.55);
         } catch (err) {
           console.error(`Error capturing ${id}:`, err);
           return null;
@@ -429,8 +427,6 @@ export function SharedCompareTab({ config, staticData }: SharedCompareTabProps) 
         description: "Capturing the comparison view...",
       });
 
-      // Wait for state change to render charts without animations
-      await new Promise(resolve => setTimeout(resolve, 300));
       await document.fonts.ready;
       
       // Wait for two animation frames to ensure charts are fully rendered
@@ -483,7 +479,7 @@ export function SharedCompareTab({ config, staticData }: SharedCompareTabProps) 
       const uniqueBoundaries = Array.from(new Set(sectionBoundaries)).sort((a, b) => a - b);
       
       const elementHeight = reportElement.scrollHeight;
-      const scale = Math.min(2, 16000 / elementHeight);
+      const scale = Math.min(1.2, 16000 / elementHeight);
       
       console.log("Screen capture: Element height", elementHeight, "scale", scale);
       
@@ -605,7 +601,7 @@ export function SharedCompareTab({ config, staticData }: SharedCompareTabProps) 
             0, 0, canvas.width, canvasSliceHeight
           );
           
-          const sliceImgData = sliceCanvas.toDataURL('image/jpeg', 0.7);
+          const sliceImgData = sliceCanvas.toDataURL('image/jpeg', 0.55);
           
           if (pageNum > 1) {
             pdf.addPage();

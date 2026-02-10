@@ -497,7 +497,6 @@ export default function MultiCandidateRoleFitTab() {
     });
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 300));
       await document.fonts.ready;
       
       let barChartImage: string | null = null;
@@ -505,11 +504,11 @@ export default function MultiCandidateRoleFitTab() {
         try {
           const canvas = await html2canvas(chartRef.current, {
             backgroundColor: '#ffffff',
-            scale: 2,
+            scale: 1,
             useCORS: true,
             logging: false,
           });
-          barChartImage = canvas.toDataURL('image/png');
+          barChartImage = canvas.toDataURL('image/jpeg', 0.55);
         } catch (err) {
           console.error('Error capturing bar chart:', err);
         }
