@@ -9,7 +9,6 @@ const DARK_PATH_PATTERNS = [
   '/invite/',
   '/b2b-payment-callback',
   '/guest-invite/',
-  '/partner/report/',
 ];
 
 function isCurrentPathDark(): boolean {

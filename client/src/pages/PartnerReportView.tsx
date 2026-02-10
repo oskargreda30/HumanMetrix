@@ -14,7 +14,6 @@ import { SharedIndividualReport } from "@/components/shared/SharedIndividualRepo
 import { SharedCompareTab } from "@/components/shared/SharedCompareTab";
 import { SharedSingleCandidateRoleFit } from "@/components/shared/SharedSingleCandidateRoleFit";
 import PartnerMultiCandidateRoleFitTab from "@/components/partner/PartnerMultiCandidateRoleFitTab";
-import { useDarkBody } from "@/hooks/use-dark-body";
 
 const SECTION_ICONS: Record<string, { color: string; icon: any }> = {
   'ROLE SUITABILITY': { color: 'text-blue-600 dark:text-blue-400', icon: Target },
@@ -324,7 +323,6 @@ function ReportDisclaimer() {
 }
 
 export default function PartnerReportView() {
-  useDarkBody();
   const params = useParams<{ reportId: string }>();
   const reportId = params.reportId;
   const { data: reportData, isLoading, error } = useQuery<any>({
@@ -334,10 +332,10 @@ export default function PartnerReportView() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-slate-400">Loading report...</p>
+          <p className="text-muted-foreground">Loading report...</p>
         </div>
       </div>
     );
@@ -345,7 +343,7 @@ export default function PartnerReportView() {
 
   if (error || !reportData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <Card className="max-w-md w-full mx-4">
           <CardContent className="pt-6 text-center">
             <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -375,7 +373,7 @@ export default function PartnerReportView() {
   const cleanTitle = (reportData.title || 'Report Details').replace(/for\s+undefined/gi, '').replace(/\s{2,}/g, ' ').trim();
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 pt-16 md:pt-8">
+    <div className="min-h-screen bg-white text-foreground pt-16 md:pt-8">
       <div className="max-w-5xl mx-auto p-4 md:p-8">
         <ReportHeader
           title={cleanTitle}
