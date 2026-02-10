@@ -553,11 +553,11 @@ export default function PartnerMultiCandidateRoleFitTab({ staticData }: PartnerM
         try {
           const canvas = await html2canvas(chartRef.current, {
             backgroundColor: '#ffffff',
-            scale: 1,
+            scale: 2,
             useCORS: true,
             logging: false,
           });
-          barChartImage = canvas.toDataURL('image/jpeg', 0.55);
+          barChartImage = canvas.toDataURL('image/jpeg', 0.85);
         } catch (err) {
           console.error('Error capturing bar chart:', err);
         }

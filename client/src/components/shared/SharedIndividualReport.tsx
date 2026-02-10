@@ -253,11 +253,11 @@ export function SharedIndividualReport({ config, staticData }: SharedIndividualR
           const h2c = (await import('html2canvas')).default;
           const canvas = await h2c(fitChartRef.current, {
             backgroundColor: '#ffffff',
-            scale: 1,
+            scale: 2,
             useCORS: true,
             logging: false,
           });
-          fitChartImage = canvas.toDataURL('image/jpeg', 0.55);
+          fitChartImage = canvas.toDataURL('image/jpeg', 0.85);
         }
       } catch (err) {
         console.warn('Could not capture FIT chart:', err);
@@ -268,11 +268,11 @@ export function SharedIndividualReport({ config, staticData }: SharedIndividualR
           const h2c = (await import('html2canvas')).default;
           const canvas = await h2c(aiChartRef.current, {
             backgroundColor: '#ffffff',
-            scale: 1,
+            scale: 2,
             useCORS: true,
             logging: false,
           });
-          aiChartImage = canvas.toDataURL('image/jpeg', 0.55);
+          aiChartImage = canvas.toDataURL('image/jpeg', 0.85);
         }
       } catch (err) {
         console.warn('Could not capture AI chart:', err);

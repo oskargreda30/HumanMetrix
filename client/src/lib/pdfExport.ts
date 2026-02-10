@@ -997,7 +997,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       const xPos = columnStart + (columnWidth - chartWidth) / 2;
       const chartYPos = yPos + Math.floor(index / chartsPerRow) * (chartHeight + 5);
       
-      pdf.addImage(image, 'PNG', xPos, chartYPos, chartWidth, chartHeight);
+      pdf.addImage(image, 'JPEG', xPos, chartYPos, chartWidth, chartHeight);
     });
     
     yPos += Math.ceil(fitCharts.length / chartsPerRow) * (chartHeight + 5) + 3;
@@ -1080,7 +1080,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
       const xPos = columnStart + (aiColumnWidth - aiChartWidth) / 2;
       const chartYPos = yPos + Math.floor(index / aiChartsPerRow) * (aiChartHeight + 5);
       
-      pdf.addImage(image, 'PNG', xPos, chartYPos, aiChartWidth, aiChartHeight);
+      pdf.addImage(image, 'JPEG', xPos, chartYPos, aiChartWidth, aiChartHeight);
     });
     
     yPos += Math.ceil(aiCharts.length / aiChartsPerRow) * (aiChartHeight + 5) + 3;
@@ -1159,7 +1159,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
     const chartHeight = imgProps.height * scale;
     const xPos = (pageWidth - chartWidth) / 2;
     
-    pdf.addImage(data.overallSkillsChartImage, 'PNG', xPos, yPos, chartWidth, chartHeight);
+    pdf.addImage(data.overallSkillsChartImage, 'JPEG', xPos, yPos, chartWidth, chartHeight);
     yPos += chartHeight + 8;
   }
   

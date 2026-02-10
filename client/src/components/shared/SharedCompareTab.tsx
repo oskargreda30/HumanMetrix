@@ -255,7 +255,7 @@ export function SharedCompareTab({ config, staticData }: SharedCompareTabProps) 
           const el = document.getElementById(id);
           if (!el) return null;
           const canvas = await html2canvas(el, captureOpts);
-          return canvas.toDataURL('image/png');
+          return canvas.toDataURL('image/jpeg', 0.85);
         } catch (err) {
           console.error(`Error capturing ${id}:`, err);
           return null;
@@ -601,7 +601,7 @@ export function SharedCompareTab({ config, staticData }: SharedCompareTabProps) 
             0, 0, canvas.width, canvasSliceHeight
           );
           
-          const sliceImgData = sliceCanvas.toDataURL('image/jpeg', 0.55);
+          const sliceImgData = sliceCanvas.toDataURL('image/jpeg', 0.85);
           
           if (pageNum > 1) {
             pdf.addPage();
