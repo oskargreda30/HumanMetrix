@@ -1149,9 +1149,9 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
             </Card>
           )}
 
-          <AdditionalServicesSection enquiryContext="Role Fit Analysis - Premium Services" />
-
           <SkillsLegend />
+
+          <AdditionalServicesSection enquiryContext="Role Fit Analysis - Premium Services" />
 
           {/* Bottom PDF Export Button */}
           <div className="flex justify-end gap-3 pt-4">
