@@ -608,16 +608,28 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                     <div className="text-sm text-muted-foreground">{getPromptArchBandInterpretation(promptData.totalScore).description}</div>
                   </div>
                 </div>
-                {promptData.scores && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="grid-prompt-levels-0">
-                    {Object.entries(promptData.scores).map(([level, score]) => (
-                      <div key={level} className="text-center p-3 rounded-lg border bg-card" data-testid={`card-prompt-level-0-${level}`}>
-                        <div className="text-xs text-muted-foreground mb-1">{level}</div>
-                        <div className={`text-xl font-bold ${getScoreColor(score as number)}`}>{score as number}%</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {(() => {
+                  const levelNames = ['Foundational', 'Intermediate', 'Advanced', 'Expert'];
+                  const levelScores: Record<string, number> = promptData.scores || {};
+                  if (!promptData.scores && promptData.levels && Array.isArray(promptData.levels)) {
+                    promptData.levels.forEach((lvl: any) => {
+                      const idx = typeof lvl.level === 'number' ? lvl.level - 1 : parseInt(lvl.level) - 1;
+                      if (idx >= 0 && idx < levelNames.length && lvl.totalScore != null) {
+                        levelScores[levelNames[idx]] = lvl.totalScore;
+                      }
+                    });
+                  }
+                  return Object.keys(levelScores).length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="grid-prompt-levels-0">
+                      {Object.entries(levelScores).map(([level, score]) => (
+                        <div key={level} className="text-center p-3 rounded-lg border bg-card" data-testid={`card-prompt-level-0-${level}`}>
+                          <div className="text-xs text-muted-foreground mb-1">{level}</div>
+                          <div className={`text-xl font-bold ${getScoreColor(score as number)}`}>{score as number}%</div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           )}
