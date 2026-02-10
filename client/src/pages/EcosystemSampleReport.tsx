@@ -52,9 +52,26 @@ Key recommendation: Your next hire should prioritize Innovation and Foresight ca
     { code: "T", name: "Trust", capability: "Trust", currentScore: 78, targetScore: 75, priority: "low", gapAnalysis: "Exceeds target. Team demonstrates high reliability and integrity in all interactions." },
   ],
   contextualInsights: [
-    "Your delayed tasks around 'product roadmap planning' directly correlate with the team's Innovation and Foresight gaps. Consider redistributing strategic planning responsibilities or bringing in external expertise.",
-    "The conflict around 'feature prioritization' reflects competing priorities between client demands (high Trust) and innovation needs (low Innovation). A structured prioritization framework could help bridge this tension.",
-    "Your mention of an 'overloaded tech lead' suggests over-reliance on a single individual for creative problem-solving. This creates a bottleneck and succession risk.",
+    {
+      title: "Execution-Heavy Culture Masks Innovation Deficit",
+      category: "team_dynamics",
+      analysis: "Your team's high Trust and Influence scores indicate a well-coordinated execution engine, but the significant Innovation gap (58% vs 85% target) suggests the team has optimized for delivery at the expense of creative problem-solving. The delayed 'product roadmap planning' tasks confirm this pattern — the team excels at building what's defined but struggles to define what should be built next."
+    },
+    {
+      title: "Scaling Will Demand Strategic Foresight Capability",
+      category: "future_needs",
+      analysis: "As your company moves from product-market fit to scaling, the Foresight gap (52% vs 82% target) becomes increasingly critical. Industry benchmarks show that teams entering growth phases without strong strategic planning capability experience 40% longer decision cycles. Your current challenges around feature prioritization will compound as the product portfolio expands and market dynamics shift."
+    },
+    {
+      title: "Right Hire Could Unlock Team's Strategic Potential",
+      category: "post_hire_outlook",
+      analysis: "Adding a strategic product thinker with strong Innovation (82-90%) and Foresight (78-85%) scores would fundamentally shift team dynamics. The current overloaded tech lead would be freed from strategic planning, allowing them to focus on technical excellence. The new hire would also model creative problem-solving behaviors, gradually elevating the team's overall Innovation capability through collaboration."
+    },
+    {
+      title: "Single-Point-of-Failure Risk in Creative Problem-Solving",
+      category: "strategic_risk",
+      analysis: "Your mention of an 'overloaded tech lead' combined with low team-wide Innovation scores reveals a critical succession risk. If this individual departs, the team would lack any meaningful creative and strategic capability. Additionally, the persistent conflict around feature prioritization suggests decision fatigue that, left unaddressed, could lead to team burnout and talent attrition within 12-18 months."
+    },
   ],
   idealCandidateProfile: {
     summary: "Your ideal next hire is a strategic product thinker who can bridge the gap between technical execution and market vision. They should excel at identifying emerging opportunities and translating them into actionable initiatives.",
@@ -643,12 +660,32 @@ export default function EcosystemSampleReport() {
               <Lightbulb className="h-4 w-4 text-amber-500" />
               Deep Contextual Insights
             </h4>
-            <div className="space-y-3">
-              {sampleAnalysis.contextualInsights.map((insight, i) => (
-                <div key={i} className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-                  <p className="text-sm">{insight}</p>
-                </div>
-              ))}
+            <div className="space-y-4">
+              {sampleAnalysis.contextualInsights.map((insight, i) => {
+                const categoryConfig: Record<string, { label: string; icon: typeof Users; color: string }> = {
+                  team_dynamics: { label: 'Team Dynamics', icon: Users, color: 'text-blue-600 dark:text-blue-400' },
+                  future_needs: { label: 'Future Needs', icon: TrendingUp, color: 'text-emerald-600 dark:text-emerald-400' },
+                  post_hire_outlook: { label: 'Post-Hire Outlook', icon: UserPlus, color: 'text-violet-600 dark:text-violet-400' },
+                  strategic_risk: { label: 'Strategic Risk', icon: ShieldAlert, color: 'text-amber-600 dark:text-amber-400' },
+                };
+                const config = categoryConfig[insight.category];
+                const CategoryIcon = config?.icon || Lightbulb;
+
+                return (
+                  <div key={i} className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CategoryIcon className={`h-4 w-4 ${config?.color || 'text-amber-500'}`} />
+                      <span className="font-medium text-sm">{insight.title}</span>
+                      {config && (
+                        <Badge variant="outline" className="text-xs ml-auto">
+                          {config.label}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">{insight.analysis}</p>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

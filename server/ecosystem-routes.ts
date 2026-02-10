@@ -230,7 +230,14 @@ const contextualGapAnalysisResponseSchema = z.object({
     reasoning: z.string().optional(),
     businessImpact: z.string().optional(),
   })),
-  contextualInsights: z.array(z.string()).default([]),
+  contextualInsights: z.array(z.union([
+    z.string(),
+    z.object({
+      title: z.string(),
+      category: z.enum(["team_dynamics", "future_needs", "post_hire_outlook", "strategic_risk"]).default("team_dynamics"),
+      analysis: z.string(),
+    }),
+  ])).default([]),
   idealCandidateProfile: z.object({
     summary: z.string().default(""),
     fitTargets: z.record(z.object({
@@ -614,6 +621,13 @@ Your task: Analyze the gap between what this team HAS and what they NEED based o
 3. Team dynamics - how do current scores interact with stated problems?
 4. Strategic timing - given their stage and hiring plans, what's most urgent?
 
+For contextualInsights, generate exactly 4-5 deep, analytical insights across these categories:
+- "team_dynamics": Patterns in how the team currently operates, hidden correlations between scores and behaviors
+- "future_needs": What capabilities the company will need as it scales or evolves, based on industry trends and their stage
+- "post_hire_outlook": How bringing on the recommended hire would change team dynamics, close gaps, and shift the capability balance
+- "strategic_risk": Longer-term risks if current gaps persist, including competitive disadvantage, burnout patterns, or organizational blind spots
+Each insight must connect multiple data points and provide actionable analysis, not just restate scores.
+
 IMPORTANT: Generate realistic, varied score targets. Do NOT use round numbers like 70, 75, 80. Use specific numbers like 73, 82, 67 based on your contextual analysis.`;
 
   const userPrompt = `Analyze capability gaps for this team:
@@ -669,7 +683,11 @@ Return JSON with this structure:
     }
   ],
   "contextualInsights": [
-    "Insight connecting multiple data points, e.g., 'The team's pattern of avoiding client-facing work correlates with lower Interpersonal Agility scores, suggesting a systematic gap rather than individual preference'"
+    {
+      "title": "Short descriptive heading for this insight",
+      "category": "team_dynamics|future_needs|post_hire_outlook|strategic_risk",
+      "analysis": "2-3 detailed sentences providing deep analysis. Connect multiple data points - team scores, deep dive answers, mission requirements, and industry context. Be specific about cause-and-effect relationships and what this means for the organization."
+    }
   ],
   "idealCandidateProfile": {
     "summary": "2-3 paragraph description of the ideal next hire based on all context. Be specific about personality, work style, and what they bring to the team.",

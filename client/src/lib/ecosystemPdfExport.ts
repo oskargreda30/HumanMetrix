@@ -706,21 +706,63 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
 
   // ====== DEEP CONTEXTUAL INSIGHTS ======
   if (analysis.contextualInsights?.length > 0) {
-    y = ensureSpace(pdf, y, 40);
+    y = newPage(pdf);
     y = addSectionHeader(pdf, 'DEEP CONTEXTUAL INSIGHTS', y);
+    y = addDescriptionBox(pdf,
+      'Forward-looking analysis connecting your team\'s current capability profile with organizational context, future needs, and strategic considerations.',
+      y
+    );
+
+    const categoryLabels: Record<string, string> = {
+      team_dynamics: 'TEAM DYNAMICS',
+      future_needs: 'FUTURE NEEDS',
+      post_hire_outlook: 'POST-HIRE OUTLOOK',
+      strategic_risk: 'STRATEGIC RISK',
+    };
+    const categoryColors: Record<string, [number, number, number]> = {
+      team_dynamics: COLORS.blue,
+      future_needs: COLORS.green,
+      post_hire_outlook: COLORS.purple,
+      strategic_risk: COLORS.amber,
+    };
 
     for (const insight of analysis.contextualInsights) {
+      const isStructured = typeof insight === 'object' && insight.title;
+      const analysisText = isStructured ? insight.analysis : (typeof insight === 'string' ? insight : '');
+      const title = isStructured ? insight.title : '';
+      const category = isStructured ? insight.category : '';
+
       applyBodyText(pdf);
-      const lines = wrapText(pdf, insight, CONTENT_WIDTH - 16);
-      const blockH = lines.length * 4.5 + 6;
+      const analysisLines = wrapText(pdf, analysisText, CONTENT_WIDTH - 16);
+      const blockH = (title ? 8 : 0) + analysisLines.length * 4.2 + 8;
       y = ensureSpace(pdf, y, blockH);
 
       pdf.setFillColor(...COLORS.amberLight);
       pdf.roundedRect(MARGIN_LEFT + 2, y - 2, CONTENT_WIDTH - 4, blockH, 2, 2, 'F');
+
       let iy = y + 2;
-      for (const line of lines) {
+
+      if (title) {
+        if (category && categoryLabels[category]) {
+          const catColor = categoryColors[category] || COLORS.textMuted;
+          pdf.setFontSize(6);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setTextColor(...catColor);
+          pdf.text(categoryLabels[category], PAGE_WIDTH - MARGIN_RIGHT - 6, iy + 1, { align: 'right' });
+        }
+
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(...COLORS.text);
+        pdf.text(title, MARGIN_LEFT + 6, iy + 1);
+        iy += 7;
+      }
+
+      applyBodyText(pdf);
+      pdf.setTextColor(...COLORS.textSecondary);
+      for (const line of analysisLines) {
         pdf.text(line, MARGIN_LEFT + 6, iy);
-        iy += 4.5;
+        iy += 4.2;
       }
       y += blockH + 3;
     }

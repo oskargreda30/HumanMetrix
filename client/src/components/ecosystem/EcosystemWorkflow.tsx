@@ -2876,12 +2876,39 @@ function TeamAnalysisResults({
             <Lightbulb className="h-4 w-4 text-amber-500" />
             Deep Contextual Insights
           </h4>
-          <div className="space-y-3">
-            {analysis.contextualInsights.map((insight: string, i: number) => (
-              <div key={i} className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg" data-testid={`text-insight-${i}`}>
-                <p className="text-sm">{insight}</p>
-              </div>
-            ))}
+          <div className="space-y-4">
+            {analysis.contextualInsights.map((insight: any, i: number) => {
+              const isStructured = typeof insight === 'object' && insight.title;
+              const categoryConfig: Record<string, { label: string; icon: typeof Users; color: string }> = {
+                team_dynamics: { label: 'Team Dynamics', icon: Users, color: 'text-blue-600 dark:text-blue-400' },
+                future_needs: { label: 'Future Needs', icon: TrendingUp, color: 'text-emerald-600 dark:text-emerald-400' },
+                post_hire_outlook: { label: 'Post-Hire Outlook', icon: UserPlus, color: 'text-violet-600 dark:text-violet-400' },
+                strategic_risk: { label: 'Strategic Risk', icon: ShieldAlert, color: 'text-amber-600 dark:text-amber-400' },
+              };
+              const config = isStructured ? categoryConfig[insight.category] : null;
+              const CategoryIcon = config?.icon || Lightbulb;
+
+              return (
+                <div key={i} className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg" data-testid={`text-insight-${i}`}>
+                  {isStructured ? (
+                    <>
+                      <div className="flex items-center gap-2 mb-2">
+                        <CategoryIcon className={`h-4 w-4 ${config?.color || 'text-amber-500'}`} />
+                        <span className="font-medium text-sm">{insight.title}</span>
+                        {config && (
+                          <Badge variant="outline" className="text-xs ml-auto">
+                            {config.label}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">{insight.analysis}</p>
+                    </>
+                  ) : (
+                    <p className="text-sm">{typeof insight === 'string' ? insight : JSON.stringify(insight)}</p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
