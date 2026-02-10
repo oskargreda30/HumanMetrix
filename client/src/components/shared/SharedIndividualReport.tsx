@@ -857,6 +857,10 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
             </CardContent>
           </Card>
 
+          {(fitData || aiData) && (
+            <SkillsLegend className="mt-4" />
+          )}
+
           <Card className="border-primary/20 bg-primary">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
@@ -940,10 +944,6 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
               </div>
             </CardContent>
           </Card>
-
-          {(fitData || aiData) && (
-            <SkillsLegend className="mt-4" />
-          )}
 
           <div className="flex justify-end gap-2">
             <Button 
