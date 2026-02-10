@@ -8,7 +8,8 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import {
   Loader2, FileText, TrendingUp, TrendingDown, BarChart3, Target, User, Award,
-  Brain, Sparkles, ArrowLeft, Calendar, Shield, Lightbulb, BookOpen, Users, AlertCircle, Download
+  Brain, Sparkles, ArrowLeft, Calendar, Shield, Lightbulb, BookOpen, Users, AlertCircle, Download,
+  Rocket, MessageSquare, Clock
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -31,7 +32,7 @@ import { calculateAverageScore, FIT_SKILLS, AI_READINESS_SKILLS, getSkillAcronym
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import { HowToReadReport, type ReportType } from "@/components/shared/HowToReadReport";
 import SkillsLegend from "@/components/SkillsLegend";
-import { AdditionalServicesSection } from "@/components/shared/AdditionalServicesSection";
+import { EnquiryModal } from "@/components/EnquiryModal";
 import hmLogoPath from "@assets/Gemini_Generated_Image_misel3misel3mise-removebg-preview_1762775600899.png";
 
 const CHART_COLORS = ['#3b82f6', '#f97316', '#10b981', '#8b5cf6', '#ec4899'];
@@ -1394,6 +1395,7 @@ export default function PartnerReportView() {
   const reportId = params.reportId;
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
+  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
 
   const { data: reportData, isLoading, error } = useQuery<any>({
     queryKey: ['/api/partner/me/analysis-reports', reportId],
@@ -1603,7 +1605,89 @@ export default function PartnerReportView() {
         )}
 
         <div className="mt-8">
-          <AdditionalServicesSection />
+          <Card className="border-primary/20 bg-primary">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Sparkles className="h-5 w-5 text-white" />
+                Enterprise Services
+              </CardTitle>
+              <p className="text-sm text-white/80">
+                Enhance your hiring decisions with premium services
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                    <Rocket className="h-4 w-4 text-white" />
+                    Onboarding Service
+                  </h4>
+                  <p className="text-sm text-white/70">
+                    Time to Productivity Estimate and Hiring Risk Analysis to optimize your onboarding process
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                    <MessageSquare className="h-4 w-4 text-white" />
+                    Suggested Interview Questions
+                  </h4>
+                  <p className="text-sm text-white/70">
+                    AI-generated questions to dig deeper into assessment results and explore trait gaps
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                    <Users className="h-4 w-4 text-white" />
+                    Team Composition Fit
+                  </h4>
+                  <p className="text-sm text-white/70">
+                    Analysis of how this candidate would complement your existing team dynamics
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                    <Clock className="h-4 w-4 text-white" />
+                    Time to Productivity Estimate
+                  </h4>
+                  <p className="text-sm text-white/70">
+                    Projected onboarding timeline based on skill readiness and learning agility
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                  <h4 className="font-medium flex items-center gap-2 mb-2 text-white">
+                    <BarChart3 className="h-4 w-4 text-white" />
+                    Candidate Comparison Tool
+                  </h4>
+                  <p className="text-sm text-white/70">
+                    Compare multiple candidates side-by-side across all assessment dimensions with visual analytics
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-white/10 border border-white/20">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <h4 className="font-medium flex items-center gap-2 text-white">
+                      <TrendingUp className="h-4 w-4 text-white shrink-0" />
+                      Cohort Benchmarking
+                    </h4>
+                    <Badge className="bg-amber-500 text-white border-amber-600 text-xs shrink-0">Coming Soon</Badge>
+                  </div>
+                  <p className="text-sm text-white/70">
+                    Compare candidate performance against industry benchmarks and peer organizations
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 text-center">
+                <Button 
+                  variant="outline" 
+                  className="border-white text-white"
+                  onClick={() => setShowEnquiryModal(true)}
+                  data-testid="button-contact-team-analysis"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Speak to the Team
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <ReportDisclaimer />
@@ -1636,6 +1720,12 @@ export default function PartnerReportView() {
           </p>
         </div>
       </div>
+
+      <EnquiryModal 
+        open={showEnquiryModal} 
+        onOpenChange={setShowEnquiryModal}
+        context="Analysis Report - Enterprise Services"
+      />
     </div>
   );
 }
