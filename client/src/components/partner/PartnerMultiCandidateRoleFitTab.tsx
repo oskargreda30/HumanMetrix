@@ -247,7 +247,14 @@ const formatReportDate = (dateStr: string) => {
   return `${datePart} at ${timePart}`;
 };
 
-export default function PartnerMultiCandidateRoleFitTab() {
+interface PartnerMultiCandidateRoleFitTabProps {
+  staticData?: {
+    comparison: MultiCandidateComparison;
+  };
+}
+
+export default function PartnerMultiCandidateRoleFitTab({ staticData }: PartnerMultiCandidateRoleFitTabProps = {}) {
+  const isStaticMode = !!staticData;
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
   const [selectedRole, setSelectedRole] = useState("");
   const [isExporting, setIsExporting] = useState(false);
@@ -274,10 +281,12 @@ export default function PartnerMultiCandidateRoleFitTab() {
 
   const { data: candidates } = useQuery<any[]>({
     queryKey: ['/api/partner/me/candidates'],
+    enabled: !isStaticMode,
   });
 
   const { data: roles } = useQuery<any[]>({
     queryKey: ['/api/partner/me/roles'],
+    enabled: !isStaticMode,
   });
 
   const selectedRoleData = roles?.find((r) => r.id === selectedRole);
@@ -431,10 +440,11 @@ export default function PartnerMultiCandidateRoleFitTab() {
   });
 
   const comparison = compareMutation.data as MultiCandidateComparison | undefined;
+  const effectiveComparison = isStaticMode ? staticData!.comparison : comparison;
 
   const multiCriticalSkills = useMemo(() => {
-    if (!comparison) return [];
-    const roleSkills = comparison.roleSnapshot.requiredSkillScores;
+    if (!effectiveComparison) return [];
+    const roleSkills = effectiveComparison.roleSnapshot.requiredSkillScores;
     const skillCriticality = roleSkills?.skillCriticality || {};
     const result: Array<{ skillName: string; requiredScore: number; category: 'fit' | 'ai_readiness' | 'prompt_architecture' | 'aiq' }> = [];
     if (roleSkills?.fitSkills) {
@@ -467,7 +477,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
     }
     result.sort((a, b) => b.requiredScore - a.requiredScore);
     return result.slice(0, 6);
-  }, [comparison]);
+  }, [effectiveComparison]);
 
   const multiCriticalSkillNames = useMemo(() => new Set(multiCriticalSkills.map(s => s.skillName)), [multiCriticalSkills]);
 
@@ -505,9 +515,8 @@ export default function PartnerMultiCandidateRoleFitTab() {
   const canCompare = selectedCandidates.length >= 2 && selectedRole && selectedRoleData?.requiredSkillScores;
 
   const prepareBarChartData = () => {
-    if (!comparison) return [];
-    // Only include candidates with valid data in the chart
-    const validEntries = comparison.candidateEntries
+    if (!effectiveComparison) return [];
+    const validEntries = effectiveComparison.candidateEntries
       .filter((entry) => entry.overallFit != null && entry.fitTier !== 'insufficient-data')
       .sort((a, b) => (b.overallFit || 0) - (a.overallFit || 0));
     
@@ -528,7 +537,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
   };
 
   const handleExportPDF = async () => {
-    if (!comparison) return;
+    if (!effectiveComparison) return;
     
     setIsExporting(true);
     toast({
@@ -556,13 +565,13 @@ export default function PartnerMultiCandidateRoleFitTab() {
       }
       
       await exportMultiCandidateComparisonPDF({
-        roleSnapshot: comparison.roleSnapshot,
-        candidateEntries: comparison.candidateEntries,
-        summaryInsights: comparison.summaryInsights,
+        roleSnapshot: effectiveComparison.roleSnapshot,
+        candidateEntries: effectiveComparison.candidateEntries,
+        summaryInsights: effectiveComparison.summaryInsights,
         barChartImage,
         criticalSkillNames: multiCriticalSkills.map(s => s.skillName),
-        aiInsights: comparison.aiInsights || null,
-        recommendation: comparison.summaryInsights?.recommendation || null,
+        aiInsights: effectiveComparison.aiInsights || null,
+        recommendation: effectiveComparison.summaryInsights?.recommendation || null,
       });
       
       toast({
@@ -582,16 +591,16 @@ export default function PartnerMultiCandidateRoleFitTab() {
   };
 
   const prepareSkillHeatmapData = () => {
-    if (!comparison || comparison.candidateEntries.length === 0) return [];
+    if (!effectiveComparison || effectiveComparison.candidateEntries.length === 0) return [];
     
     const allSkills = new Set<string>();
-    comparison.candidateEntries.forEach(entry => {
+    effectiveComparison.candidateEntries.forEach(entry => {
       entry.skillScores.forEach(skill => allSkills.add(skill.skillName));
     });
 
     return Array.from(allSkills).map(skillName => {
       const row: any = { skillName };
-      comparison.candidateEntries.forEach((entry, idx) => {
+      effectiveComparison.candidateEntries.forEach((entry, idx) => {
         const skill = entry.skillScores.find(s => s.skillName === skillName);
         row[`candidate${idx}`] = skill?.score ?? 0;
         row[`required${idx}`] = skill?.requiredScore ?? 0;
@@ -602,6 +611,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
 
   return (
     <div className="space-y-6">
+      {!isStaticMode && (
       <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-3 md:p-4">
         <div className="flex items-start gap-2 md:gap-3">
           <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-blue-500 flex-shrink-0 mt-0.5" />
@@ -615,7 +625,9 @@ export default function PartnerMultiCandidateRoleFitTab() {
           </div>
         </div>
       </div>
+      )}
 
+      {!isStaticMode && (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -734,8 +746,9 @@ export default function PartnerMultiCandidateRoleFitTab() {
           </div>
         </CardContent>
       </Card>
+      )}
 
-      {compareMutation.isPending && (
+      {!isStaticMode && compareMutation.isPending && (
         <AnalysisLoadingScreen
           isComplete={false}
           averageTimeSeconds={30}
@@ -743,28 +756,29 @@ export default function PartnerMultiCandidateRoleFitTab() {
         />
       )}
 
-      {comparison && !compareMutation.isPending && (
+      {((isStaticMode && effectiveComparison) || (comparison && !compareMutation.isPending)) && (
         <>
           {/* Report Header with Date, Re-run, and Export PDF */}
           <div className="flex flex-wrap items-center justify-between gap-2 mb-4 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 p-3">
             <div className="flex items-center gap-2">
-              {(comparison as any)?.generatedAt && (
+              {!isStaticMode && (effectiveComparison as any)?.generatedAt && (
                 <div className="flex items-center gap-1.5 text-xs text-white/80" data-testid="text-multi-rolefit-report-date">
-                  {(comparison as any)?.cached ? (
+                  {(effectiveComparison as any)?.cached ? (
                     <>
                       <Clock className="h-3 w-3" />
-                      <span>Cached — {formatReportDate((comparison as any).generatedAt)}</span>
+                      <span>Cached — {formatReportDate((effectiveComparison as any).generatedAt)}</span>
                     </>
                   ) : (
                     <>
                       <Sparkles className="h-3 w-3" />
-                      <span>Generated {formatReportDate((comparison as any).generatedAt)}</span>
+                      <span>Generated {formatReportDate((effectiveComparison as any).generatedAt)}</span>
                     </>
                   )}
                 </div>
               )}
             </div>
             <div className="flex items-center gap-2 flex-wrap">
+              {!isStaticMode && (
               <Button
                 variant="outline"
                 size="sm"
@@ -780,6 +794,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                 <RefreshCw className="h-3 w-3 mr-1" />
                 Re-run Analysis ({selectedCandidates.length} credits)
               </Button>
+              )}
               <Button
                 size="sm"
                 onClick={handleExportPDF}
@@ -804,7 +819,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
           <HowToReadReport reportType="rolefit_multi" />
 
           {/* Hiring Recommendation - Most Important Section */}
-          {comparison.summaryInsights.recommendation && (
+          {effectiveComparison!.summaryInsights.recommendation && (
             <Card className="border-2 border-border">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -821,19 +836,19 @@ export default function PartnerMultiCandidateRoleFitTab() {
                         1
                       </div>
                       <div>
-                        <div className="text-xl font-bold">{comparison.summaryInsights.recommendation.recommendedCandidate}</div>
+                        <div className="text-xl font-bold">{effectiveComparison!.summaryInsights.recommendation!.recommendedCandidate}</div>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-2xl font-bold text-foreground">{comparison.summaryInsights.recommendation.fitScore}%</span>
-                          {getFitTierBadge(comparison.summaryInsights.recommendation.fitTier)}
+                          <span className="text-2xl font-bold text-foreground">{effectiveComparison!.summaryInsights.recommendation!.fitScore}%</span>
+                          {getFitTierBadge(effectiveComparison!.summaryInsights.recommendation!.fitTier)}
                         </div>
                       </div>
                     </div>
                     
-                    {(comparison.summaryInsights.recommendation.reasons?.length || 0) > 0 && (
+                    {(effectiveComparison!.summaryInsights.recommendation!.reasons?.length || 0) > 0 && (
                       <div className="p-4 bg-muted rounded-lg">
                         <h4 className="font-semibold text-foreground mb-2">Why This Candidate?</h4>
                         <ul className="space-y-2">
-                          {comparison.summaryInsights.recommendation.reasons.map((reason, i) => (
+                          {effectiveComparison!.summaryInsights.recommendation!.reasons.map((reason, i) => (
                             <li key={i} className="text-sm flex items-start gap-2">
                               <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                               <span>{reason}</span>
@@ -843,11 +858,11 @@ export default function PartnerMultiCandidateRoleFitTab() {
                       </div>
                     )}
 
-                    {(comparison.summaryInsights.recommendation.criticalSkillAdvantages?.length || 0) > 0 && (
+                    {(effectiveComparison!.summaryInsights.recommendation!.criticalSkillAdvantages?.length || 0) > 0 && (
                       <div className="p-4 bg-muted rounded-lg">
                         <h4 className="font-semibold text-foreground mb-2">Critical Skill Advantages</h4>
                         <div className="flex flex-wrap gap-2">
-                          {comparison.summaryInsights.recommendation.criticalSkillAdvantages.map((adv, i) => (
+                          {effectiveComparison!.summaryInsights.recommendation!.criticalSkillAdvantages.map((adv, i) => (
                             <Badge key={i} variant="secondary">
                               {adv}
                             </Badge>
@@ -858,7 +873,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                   </div>
 
                   {/* Runner-Up Alternative */}
-                  {comparison.summaryInsights.runnerUp && (
+                  {effectiveComparison!.summaryInsights.runnerUp && (
                     <div className="space-y-4 border-l-2 border-gray-200 dark:border-gray-700 pl-6">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-full bg-gray-400 flex items-center justify-center text-white text-lg font-bold">
@@ -866,32 +881,32 @@ export default function PartnerMultiCandidateRoleFitTab() {
                         </div>
                         <div>
                           <div className="text-sm text-muted-foreground">Runner-Up Alternative</div>
-                          <div className="text-lg font-bold">{comparison.summaryInsights.runnerUp.name}</div>
+                          <div className="text-lg font-bold">{effectiveComparison!.summaryInsights.runnerUp.name}</div>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-lg font-semibold">{comparison.summaryInsights.runnerUp.fitScore}%</span>
-                            {getFitTierBadge(comparison.summaryInsights.runnerUp.fitTier)}
+                            <span className="text-lg font-semibold">{effectiveComparison!.summaryInsights.runnerUp.fitScore}%</span>
+                            {getFitTierBadge(effectiveComparison!.summaryInsights.runnerUp.fitTier)}
                           </div>
                         </div>
                       </div>
 
-                      {(comparison.summaryInsights.runnerUp.consideration?.length || 0) > 0 && (
+                      {(effectiveComparison!.summaryInsights.runnerUp.consideration?.length || 0) > 0 && (
                         <div className="p-3 bg-muted rounded-lg">
                           <h4 className="font-medium text-sm mb-2">Why Consider as Alternative?</h4>
                           <ul className="space-y-1">
-                            {comparison.summaryInsights.runnerUp.consideration.map((c, i) => (
+                            {effectiveComparison!.summaryInsights.runnerUp.consideration.map((c, i) => (
                               <li key={i} className="text-sm text-muted-foreground">{c}</li>
                             ))}
                           </ul>
                         </div>
                       )}
 
-                      {(comparison.summaryInsights.runnerUp.advantagesOverTop?.length || 0) > 0 && (
+                      {(effectiveComparison!.summaryInsights.runnerUp.advantagesOverTop?.length || 0) > 0 && (
                         <div className="p-3 bg-muted rounded-lg">
                           <h4 className="font-medium text-sm text-foreground mb-2">
                             Where Runner-Up Outperforms
                           </h4>
                           <div className="flex flex-wrap gap-2">
-                            {comparison.summaryInsights.runnerUp.advantagesOverTop.map((adv, i) => (
+                            {effectiveComparison!.summaryInsights.runnerUp.advantagesOverTop.map((adv, i) => (
                               <Badge key={i} variant="outline">
                                 {adv}
                               </Badge>
@@ -930,7 +945,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                 }
                 
                 // Show ALL candidates - including those with insufficient data
-                const allCandidates = comparison.candidateEntries;
+                const allCandidates = effectiveComparison!.candidateEntries;
                 // Sort: ranked candidates first (by rank), then insufficient data
                 const sortedCandidates = [...allCandidates].sort((a, b) => {
                   // Use hasSufficientData to determine if candidate should be at end
@@ -1084,7 +1099,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
 
           {/* Critical Skills Deep Dive — uses component-level multiCriticalSkillNames */}
           {(() => {
-            const roleSkills = comparison.roleSnapshot.requiredSkillScores;
+            const roleSkills = effectiveComparison!.roleSnapshot.requiredSkillScores;
 
             const criticalSkillsData: CriticalSkillMultiData[] = [];
 
@@ -1092,7 +1107,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
               if (!skillsMap) return;
               Object.entries(skillsMap).forEach(([skillName, requiredScore]) => {
                 if (multiCriticalSkillNames.has(skillName)) {
-                  const candidates = comparison.candidateEntries.map(candidate => {
+                  const candidates = effectiveComparison!.candidateEntries.map(candidate => {
                     const skill = findSkillInScores(candidate.skillScores, skillName);
                     const hasData = skill?.dataAvailable !== false && skill?.score != null;
                     return {
@@ -1127,14 +1142,14 @@ export default function PartnerMultiCandidateRoleFitTab() {
             return (
               <MultiCandidateCriticalSkillsAnalysis 
                 skills={criticalSkillsData}
-                roleName={comparison.roleSnapshot.roleName}
+                roleName={effectiveComparison!.roleSnapshot.roleName}
               />
             );
           })()}
 
           {/* Prompt Architecture Comparison Section */}
           {(() => {
-            const paRoleSkills = comparison.roleSnapshot.requiredSkillScores || {};
+            const paRoleSkills = effectiveComparison!.roleSnapshot.requiredSkillScores || {};
             const REQUIRED_PA_SCORE = paRoleSkills.promptArchitectureScore || 62;
             return (
           <Card data-testid="card-prompt-architecture-comparison">
@@ -1149,7 +1164,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
             </CardHeader>
             <CardContent className="pt-4">
               {(() => {
-                const candidatesWithPA = comparison.candidateEntries.filter(
+                const candidatesWithPA = effectiveComparison!.candidateEntries.filter(
                   (c: CandidateEntry) => c.promptArchitectureScore != null && c.promptArchitectureScore !== undefined
                 );
                 
@@ -1175,7 +1190,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                         </tr>
                       </thead>
                       <tbody>
-                        {comparison.candidateEntries.map((candidate: CandidateEntry, idx: number) => {
+                        {effectiveComparison!.candidateEntries.map((candidate: CandidateEntry, idx: number) => {
                           const hasScore = candidate.promptArchitectureScore != null;
                           const score = candidate.promptArchitectureScore || 0;
                           const meetsRequirement = hasScore && REQUIRED_PA_SCORE != null && score >= REQUIRED_PA_SCORE;
@@ -1227,7 +1242,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
 
           {/* AIQ (Algorithmic Integrity Quotient) Comparison Section */}
           {(() => {
-            const aiqRoleSkills = comparison.roleSnapshot.requiredSkillScores || {};
+            const aiqRoleSkills = effectiveComparison!.roleSnapshot.requiredSkillScores || {};
             const REQUIRED_AIQ_SCORE = aiqRoleSkills.aiqScore || 62;
             return (
           <Card data-testid="card-aiq-comparison">
@@ -1242,7 +1257,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
             </CardHeader>
             <CardContent className="pt-4">
               {(() => {
-                const candidatesWithAIQ = comparison.candidateEntries.filter(
+                const candidatesWithAIQ = effectiveComparison!.candidateEntries.filter(
                   (c: CandidateEntry) => c.aiqScore != null && c.aiqScore !== undefined
                 );
                 
@@ -1268,7 +1283,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                         </tr>
                       </thead>
                       <tbody>
-                        {comparison.candidateEntries.map((candidate: CandidateEntry, idx: number) => {
+                        {effectiveComparison!.candidateEntries.map((candidate: CandidateEntry, idx: number) => {
                           const hasScore = candidate.aiqScore != null;
                           const score = candidate.aiqScore || 0;
                           const meetsRequirement = hasScore && REQUIRED_AIQ_SCORE != null && score >= REQUIRED_AIQ_SCORE;
@@ -1330,10 +1345,10 @@ export default function PartnerMultiCandidateRoleFitTab() {
               </p>
             </CardHeader>
             <CardContent>
-              {comparison?.aiInsights ? (
+              {effectiveComparison?.aiInsights ? (
                 <div className="space-y-4" data-testid="text-ai-insights">
                   {(() => {
-                    const lines = comparison.aiInsights.split('\n');
+                    const lines = effectiveComparison.aiInsights!.split('\n');
                     const elements: JSX.Element[] = [];
                     let bulletBuffer: string[] = [];
                     let lineIdx = 0;
@@ -1448,7 +1463,7 @@ export default function PartnerMultiCandidateRoleFitTab() {
                     1
                   </span>
                   <span className="text-sm text-muted-foreground">
-                    Conduct final-round interviews with {comparison.summaryInsights.recommendation?.recommendedCandidate || 'the top candidate'} focusing on team dynamics and cultural alignment
+                    Conduct final-round interviews with {effectiveComparison!.summaryInsights.recommendation?.recommendedCandidate || 'the top candidate'} focusing on team dynamics and cultural alignment
                   </span>
                 </li>
                 <li className="flex items-start gap-3">

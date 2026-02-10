@@ -109,6 +109,16 @@ type RoleAlignment = {
 
 interface SharedSingleCandidateRoleFitProps {
   config: SharedRoleFitConfig;
+  staticData?: {
+    alignment: RoleAlignment;
+    candidateData: { user: { id: string; email: string; firstName?: string; lastName?: string }; results?: any[] };
+    roleData: { id: string; name: string; description?: string; requiredSkillScores?: Record<string, any> };
+    criticalSkillNames?: string[];
+    fitAssessment?: any;
+    aiReadinessAssessment?: any;
+    promptArchitectureAssessment?: any;
+    aiqAssessment?: any;
+  };
 }
 
 const formatReportDate = (dateStr: string) => {
@@ -118,7 +128,8 @@ const formatReportDate = (dateStr: string) => {
   return `${datePart} at ${timePart}`;
 };
 
-export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRoleFitProps) {
+export function SharedSingleCandidateRoleFit({ config, staticData }: SharedSingleCandidateRoleFitProps) {
+  const isStaticMode = !!staticData;
   const [selectedCandidate, setSelectedCandidate] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
   const [analysisTriggered, setAnalysisTriggered] = useState(false);
@@ -129,10 +140,12 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
 
   const { data: candidates, isLoading: isLoadingCandidates } = useQuery<any[]>({
     queryKey: [config.candidatesEndpoint],
+    enabled: !isStaticMode,
   });
 
   const { data: roles, isLoading: isLoadingRoles, error: rolesError } = useQuery<any[]>({
     queryKey: [config.rolesEndpoint],
+    enabled: !isStaticMode,
   });
 
   const getPercentileBadge = (percentile: number) => {
@@ -181,7 +194,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
       if (!response.ok) throw new Error('Failed to fetch role alignment');
       return response.json();
     },
-    enabled: !!selectedCandidate && !!selectedRole && analysisTriggered,
+    enabled: !isStaticMode && !!selectedCandidate && !!selectedRole && analysisTriggered,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
@@ -243,11 +256,15 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
   const selectedCandidateData = candidates?.find((c) => c.user.id === selectedCandidate);
   const selectedRoleData = roles?.find((r) => r.id === selectedRole);
 
+  const effectiveAlignment = isStaticMode ? staticData!.alignment : alignment;
+  const effectiveCandidateData = isStaticMode ? staticData!.candidateData : selectedCandidateData;
+  const effectiveRoleData = isStaticMode ? staticData!.roleData : selectedRoleData;
+
   const top6CriticalNames = useMemo(() => {
-    if (!alignment) return new Set<string>();
+    if (!effectiveAlignment) return new Set<string>();
     const allSkills = [
-      ...(alignment.fitSkillAlignments || []),
-      ...(alignment.aiReadinessSkillAlignments || [])
+      ...(effectiveAlignment.fitSkillAlignments || []),
+      ...(effectiveAlignment.aiReadinessSkillAlignments || [])
     ];
     return new Set(
       allSkills
@@ -256,16 +273,16 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
         .slice(0, 6)
         .map((s: any) => s.skillName)
     );
-  }, [alignment]);
+  }, [effectiveAlignment]);
 
   const handleExportPDF = async () => {
-    if (!alignment || !selectedCandidateData || !selectedRoleData) return;
+    if (!effectiveAlignment || !effectiveCandidateData || !effectiveRoleData) return;
     
     try {
       await exportRoleFitPDF({
-        candidate: selectedCandidateData,
-        role: selectedRoleData,
-        alignment: alignment,
+        candidate: effectiveCandidateData,
+        role: effectiveRoleData,
+        alignment: effectiveAlignment,
         criticalSkillNames: Array.from(top6CriticalNames),
       });
       toast({
@@ -322,7 +339,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
 
   return (
     <div className="space-y-6">
-      {config.contextType === 'partner' && (
+      {!isStaticMode && config.contextType === 'partner' && (
         <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4">
           <div className="flex items-start gap-3">
             <Sparkles className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
@@ -338,6 +355,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
         </div>
       )}
       
+      {!isStaticMode && (
       <Card>
         <CardHeader>
           <CardTitle>Role Alignment Analysis</CardTitle>
@@ -437,8 +455,9 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
           )}
         </CardContent>
       </Card>
+      )}
 
-      {analysisTriggered && (!loadingTransitionComplete || isRerunning) && (
+      {!isStaticMode && analysisTriggered && (!loadingTransitionComplete || isRerunning) && (
         <AnalysisLoadingScreen 
           isComplete={!isFetchingAlignment && !!alignment}
           averageTimeSeconds={25}
@@ -453,29 +472,29 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
         />
       )}
 
-      {alignment && loadingTransitionComplete && !isRerunning && (
+      {((isStaticMode && effectiveAlignment) || (alignment && loadingTransitionComplete && !isRerunning)) && (
         <div className="space-y-6">
           {/* Report Header with Date, Re-run, and Export PDF */}
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 p-3">
             <div className="flex items-center gap-2">
-              {config.contextType === 'partner' && (alignment as any)?.generatedAt && (
+              {!isStaticMode && config.contextType === 'partner' && (effectiveAlignment as any)?.generatedAt && (
                 <div className="flex items-center gap-1.5 text-xs text-white/80" data-testid="text-rolefit-report-date">
-                  {(alignment as any)?.cached ? (
+                  {(effectiveAlignment as any)?.cached ? (
                     <>
                       <Clock className="h-3 w-3" />
-                      <span>Cached — {formatReportDate((alignment as any).generatedAt)}</span>
+                      <span>Cached — {formatReportDate((effectiveAlignment as any).generatedAt)}</span>
                     </>
                   ) : (
                     <>
                       <Sparkles className="h-3 w-3" />
-                      <span>Generated {formatReportDate((alignment as any).generatedAt)}</span>
+                      <span>Generated {formatReportDate((effectiveAlignment as any).generatedAt)}</span>
                     </>
                   )}
                 </div>
               )}
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              {config.contextType === 'partner' && (
+              {!isStaticMode && config.contextType === 'partner' && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -515,31 +534,31 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                   <Target className="h-5 w-5" />
                   Overall Role Fit Score
                 </CardTitle>
-                {getFitTierBadge(getOverallFitTier(alignment.overallFit))}
+                {getFitTierBadge(getOverallFitTier(effectiveAlignment.overallFit))}
               </div>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-4">
                 <div className="text-4xl font-bold">
-                  {alignment.overallFit !== null ? `${alignment.overallFit}%` : 'N/A'}
+                  {effectiveAlignment.overallFit !== null ? `${effectiveAlignment.overallFit}%` : 'N/A'}
                 </div>
                 <div className="flex-1">
                   <Progress 
-                    value={alignment.overallFit || 0} 
+                    value={effectiveAlignment.overallFit || 0} 
                     className="h-3"
                   />
                 </div>
               </div>
               
-              {alignment.dataCoverage && (
+              {effectiveAlignment.dataCoverage && (
                 <div className="mt-4 p-3 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-2 text-sm">
                     <span className="font-medium">Data Coverage:</span>
-                    <span>{alignment.dataCoverage.percentage}% ({alignment.dataCoverage.assessedSkillCount}/{alignment.dataCoverage.totalRequiredSkills} skills assessed)</span>
+                    <span>{effectiveAlignment.dataCoverage.percentage}% ({effectiveAlignment.dataCoverage.assessedSkillCount}/{effectiveAlignment.dataCoverage.totalRequiredSkills} skills assessed)</span>
                   </div>
-                  {alignment.dataCoverage.missingAssessments.length > 0 && (
+                  {effectiveAlignment.dataCoverage.missingAssessments.length > 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      Missing: {alignment.dataCoverage.missingAssessments.join(', ')}
+                      Missing: {effectiveAlignment.dataCoverage.missingAssessments.join(', ')}
                     </p>
                   )}
                 </div>
@@ -558,7 +577,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3">
-                  {alignment.strengths.map((strength, index) => {
+                  {effectiveAlignment.strengths.map((strength, index) => {
                     const isObject = typeof strength === 'object' && strength !== null;
                     const summary = stripMarkdown(isObject ? strength.summary : String(strength));
                     const description = isObject && strength.description ? stripMarkdown(strength.description) : null;
@@ -574,7 +593,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                       </li>
                     );
                   })}
-                  {alignment.strengths.length === 0 && (
+                  {effectiveAlignment.strengths.length === 0 && (
                     <li className="text-sm text-muted-foreground">No significant strengths identified</li>
                   )}
                 </ul>
@@ -590,7 +609,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3">
-                  {alignment.gaps.map((gap, index) => {
+                  {effectiveAlignment.gaps.map((gap, index) => {
                     const isObject = typeof gap === 'object' && gap !== null;
                     const summary = stripMarkdown(isObject ? gap.summary : String(gap));
                     const description = isObject && gap.description ? stripMarkdown(gap.description) : null;
@@ -606,7 +625,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                       </li>
                     );
                   })}
-                  {alignment.gaps.length === 0 && (
+                  {effectiveAlignment.gaps.length === 0 && (
                     <li className="text-sm text-muted-foreground">No significant gaps identified</li>
                   )}
                 </ul>
@@ -652,7 +671,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
 
             return (
               <>
-                {alignment.fitSkillAlignments && alignment.fitSkillAlignments.length > 0 && (
+                {effectiveAlignment.fitSkillAlignments && effectiveAlignment.fitSkillAlignments.length > 0 && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
@@ -662,14 +681,14 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {alignment.fitSkillAlignments.map(renderSkillBar)}
+                        {effectiveAlignment.fitSkillAlignments.map(renderSkillBar)}
                       </div>
                       <CriticalityLegend />
                     </CardContent>
                   </Card>
                 )}
 
-                {alignment.aiReadinessSkillAlignments && alignment.aiReadinessSkillAlignments.length > 0 && (
+                {effectiveAlignment.aiReadinessSkillAlignments && effectiveAlignment.aiReadinessSkillAlignments.length > 0 && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
@@ -679,7 +698,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {alignment.aiReadinessSkillAlignments.map(renderSkillBar)}
+                        {effectiveAlignment.aiReadinessSkillAlignments.map(renderSkillBar)}
                       </div>
                       <CriticalityLegend />
                     </CardContent>
@@ -692,8 +711,8 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
           {/* Critical Skills Analysis — uses component-level top6CriticalNames */}
           {(() => {
             const allSkills = [
-              ...(alignment.fitSkillAlignments || []),
-              ...(alignment.aiReadinessSkillAlignments || [])
+              ...(effectiveAlignment.fitSkillAlignments || []),
+              ...(effectiveAlignment.aiReadinessSkillAlignments || [])
             ];
             const criticalSkills = allSkills
               .filter((s: any) => top6CriticalNames.has(s.skillName))
@@ -724,7 +743,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
             };
             
             const getWhyItMatters = (skillName: string) => {
-              return whyItMatters[skillName] || `This skill is essential for success in the ${selectedRoleData?.name || 'selected'} role.`;
+              return whyItMatters[skillName] || `This skill is essential for success in the ${effectiveRoleData?.name || 'selected'} role.`;
             };
 
             const getGapText = (candidateScore: number | null, requiredScore: number) => {
@@ -791,7 +810,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                     <div className="mt-6 p-4 bg-slate-100 dark:bg-slate-800 rounded-lg border">
                       <h4 className="font-bold text-lg mb-2">Critical Skills Summary</h4>
                       <p className="text-sm text-muted-foreground">
-                        {selectedCandidateData?.user?.firstName || selectedCandidateData?.user?.email || 'This candidate'} requires development in {criticalGaps.length} of {criticalSkills.length} critical skills.
+                        {effectiveCandidateData?.user?.firstName || effectiveCandidateData?.user?.email || 'This candidate'} requires development in {criticalGaps.length} of {criticalSkills.length} critical skills.
                         {criticalGaps.length > 0 && ' These gaps should be addressed through structured training before full role responsibilities are assumed.'}
                         {criticalGaps.length === 0 && noDataCritical.length === 0 && ' All critical skill requirements have been met.'}
                         {noDataCritical.length > 0 && ` ${noDataCritical.length} critical skill${noDataCritical.length > 1 ? 's are' : ' is'} awaiting assessment data.`}
@@ -804,7 +823,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
           })()}
 
           {/* Cohort Benchmarking */}
-          {alignment.cohortBenchmarks && (alignment.cohortBenchmarks.fit || alignment.cohortBenchmarks.ai_readiness || alignment.cohortBenchmarks.prompt_architecture || alignment.cohortBenchmarks.aiq) && (
+          {effectiveAlignment.cohortBenchmarks && (effectiveAlignment.cohortBenchmarks.fit || effectiveAlignment.cohortBenchmarks.ai_readiness || effectiveAlignment.cohortBenchmarks.prompt_architecture || effectiveAlignment.cohortBenchmarks.aiq) && (
             <Card data-testid="card-cohort-benchmarking">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -816,7 +835,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                 </p>
               </CardHeader>
               <CardContent>
-                {alignment.cohortBenchmarks.overall && (
+                {effectiveAlignment.cohortBenchmarks.overall && (
                   <div className="mb-6 p-4 bg-muted/50 rounded-lg border">
                     <div className="flex items-center justify-between">
                       <div>
@@ -826,10 +845,10 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                         </p>
                       </div>
                       <Badge 
-                        variant={alignment.cohortBenchmarks.overall.percentile >= 75 ? 'default' : alignment.cohortBenchmarks.overall.percentile >= 50 ? 'secondary' : 'outline'}
+                        variant={effectiveAlignment.cohortBenchmarks.overall.percentile >= 75 ? 'default' : effectiveAlignment.cohortBenchmarks.overall.percentile >= 50 ? 'secondary' : 'outline'}
                         className="text-lg px-4 py-2"
                       >
-                        {alignment.cohortBenchmarks.overall.position}
+                        {effectiveAlignment.cohortBenchmarks.overall.position}
                       </Badge>
                     </div>
                   </div>
@@ -846,62 +865,62 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                       </tr>
                     </thead>
                     <tbody>
-                      {alignment.cohortBenchmarks.fit && (
+                      {effectiveAlignment.cohortBenchmarks.fit && (
                         <tr className="border-b">
                           <td className="py-2 md:py-3 px-2 md:px-3">
                             <span className="hidden md:inline">FIT Assessment (Behavioral)</span>
                             <span className="md:hidden">FIT</span>
                           </td>
-                          <td className="text-center px-1 md:px-3">{alignment.cohortBenchmarks.fit.skillCount}</td>
-                          <td className="text-center px-1 md:px-3">{alignment.cohortBenchmarks.fit.percentile}th</td>
+                          <td className="text-center px-1 md:px-3">{effectiveAlignment.cohortBenchmarks.fit.skillCount}</td>
+                          <td className="text-center px-1 md:px-3">{effectiveAlignment.cohortBenchmarks.fit.percentile}th</td>
                           <td className="text-center px-1 md:px-3">
-                            <Badge variant={alignment.cohortBenchmarks.fit.percentile >= 50 ? 'default' : 'outline'} className="text-[10px] md:text-xs px-1 md:px-2">
-                              {alignment.cohortBenchmarks.fit.percentile >= 50 ? 'Above' : 'Below'}
+                            <Badge variant={effectiveAlignment.cohortBenchmarks.fit.percentile >= 50 ? 'default' : 'outline'} className="text-[10px] md:text-xs px-1 md:px-2">
+                              {effectiveAlignment.cohortBenchmarks.fit.percentile >= 50 ? 'Above' : 'Below'}
                             </Badge>
                           </td>
                         </tr>
                       )}
-                      {alignment.cohortBenchmarks.ai_readiness && (
+                      {effectiveAlignment.cohortBenchmarks.ai_readiness && (
                         <tr className="border-b">
                           <td className="py-2 md:py-3 px-2 md:px-3">
                             <span className="hidden md:inline">AI Readiness Assessment</span>
                             <span className="md:hidden">AI Ready</span>
                           </td>
-                          <td className="text-center px-1 md:px-3">{alignment.cohortBenchmarks.ai_readiness.skillCount}</td>
-                          <td className="text-center px-1 md:px-3">{alignment.cohortBenchmarks.ai_readiness.percentile}th</td>
+                          <td className="text-center px-1 md:px-3">{effectiveAlignment.cohortBenchmarks.ai_readiness.skillCount}</td>
+                          <td className="text-center px-1 md:px-3">{effectiveAlignment.cohortBenchmarks.ai_readiness.percentile}th</td>
                           <td className="text-center px-1 md:px-3">
-                            <Badge variant={alignment.cohortBenchmarks.ai_readiness.percentile >= 50 ? 'default' : 'outline'} className="text-[10px] md:text-xs px-1 md:px-2">
-                              {alignment.cohortBenchmarks.ai_readiness.percentile >= 50 ? 'Above' : 'Below'}
+                            <Badge variant={effectiveAlignment.cohortBenchmarks.ai_readiness.percentile >= 50 ? 'default' : 'outline'} className="text-[10px] md:text-xs px-1 md:px-2">
+                              {effectiveAlignment.cohortBenchmarks.ai_readiness.percentile >= 50 ? 'Above' : 'Below'}
                             </Badge>
                           </td>
                         </tr>
                       )}
-                      {alignment.cohortBenchmarks.prompt_architecture && (
+                      {effectiveAlignment.cohortBenchmarks.prompt_architecture && (
                         <tr className="border-b">
                           <td className="py-2 md:py-3 px-2 md:px-3">
                             <span className="hidden md:inline">Prompt Architecture</span>
                             <span className="md:hidden">Prompt</span>
                           </td>
                           <td className="text-center px-1 md:px-3">1</td>
-                          <td className="text-center px-1 md:px-3">{alignment.cohortBenchmarks.prompt_architecture.percentile}th</td>
+                          <td className="text-center px-1 md:px-3">{effectiveAlignment.cohortBenchmarks.prompt_architecture.percentile}th</td>
                           <td className="text-center px-1 md:px-3">
-                            <Badge variant={alignment.cohortBenchmarks.prompt_architecture.percentile >= 50 ? 'default' : 'outline'} className="text-[10px] md:text-xs px-1 md:px-2">
-                              {alignment.cohortBenchmarks.prompt_architecture.percentile >= 50 ? 'Above' : 'Below'}
+                            <Badge variant={effectiveAlignment.cohortBenchmarks.prompt_architecture.percentile >= 50 ? 'default' : 'outline'} className="text-[10px] md:text-xs px-1 md:px-2">
+                              {effectiveAlignment.cohortBenchmarks.prompt_architecture.percentile >= 50 ? 'Above' : 'Below'}
                             </Badge>
                           </td>
                         </tr>
                       )}
-                      {alignment.cohortBenchmarks.aiq && (
+                      {effectiveAlignment.cohortBenchmarks.aiq && (
                         <tr>
                           <td className="py-2 md:py-3 px-2 md:px-3">
                             <span className="hidden md:inline">Artificial Intelligence Quotient (AIQ)</span>
                             <span className="md:hidden">AIQ</span>
                           </td>
                           <td className="text-center px-1 md:px-3">1</td>
-                          <td className="text-center px-1 md:px-3">{alignment.cohortBenchmarks.aiq.percentile}th</td>
+                          <td className="text-center px-1 md:px-3">{effectiveAlignment.cohortBenchmarks.aiq.percentile}th</td>
                           <td className="text-center px-1 md:px-3">
-                            <Badge variant={alignment.cohortBenchmarks.aiq.percentile >= 50 ? 'default' : 'outline'} className="text-[10px] md:text-xs px-1 md:px-2">
-                              {alignment.cohortBenchmarks.aiq.percentile >= 50 ? 'Above' : 'Below'}
+                            <Badge variant={effectiveAlignment.cohortBenchmarks.aiq.percentile >= 50 ? 'default' : 'outline'} className="text-[10px] md:text-xs px-1 md:px-2">
+                              {effectiveAlignment.cohortBenchmarks.aiq.percentile >= 50 ? 'Above' : 'Below'}
                             </Badge>
                           </td>
                         </tr>
@@ -910,7 +929,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                   </table>
                 </div>
 
-                {!alignment.cohortBenchmarks.prompt_architecture && !alignment.cohortBenchmarks.aiq && (
+                {!effectiveAlignment.cohortBenchmarks.prompt_architecture && !effectiveAlignment.cohortBenchmarks.aiq && (
                   <p className="text-xs text-muted-foreground mt-4">
                     Note: Some assessment type benchmarks may not be available if there are insufficient completed assessments
                   </p>
@@ -936,9 +955,9 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                   <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin text-primary" />
                   <p className="text-sm text-muted-foreground">Analyzing prompt engineering fit...</p>
                 </div>
-              ) : alignment?.promptRoleFitAnalysis ? (
+              ) : effectiveAlignment?.promptRoleFitAnalysis ? (
                 <div className="space-y-4" data-testid="text-prompt-role-fit-analysis">
-                  {alignment?.promptRoleFitAnalysis?.split('\n\n').map((paragraph, idx) => (
+                  {effectiveAlignment?.promptRoleFitAnalysis?.split('\n\n').map((paragraph, idx) => (
                     <p key={idx} className="text-sm text-muted-foreground leading-relaxed">
                       {paragraph}
                     </p>
@@ -969,9 +988,9 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
                   <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin text-primary" />
                   <p className="text-sm text-muted-foreground">Analyzing AIQ role fit...</p>
                 </div>
-              ) : alignment?.aiqRoleFitAnalysis ? (
+              ) : effectiveAlignment?.aiqRoleFitAnalysis ? (
                 <div className="space-y-4" data-testid="text-aiq-role-fit-analysis">
-                  {alignment?.aiqRoleFitAnalysis?.split('\n\n').map((paragraph, idx) => (
+                  {effectiveAlignment?.aiqRoleFitAnalysis?.split('\n\n').map((paragraph, idx) => (
                     <p key={idx} className="text-sm text-muted-foreground leading-relaxed">
                       {paragraph}
                     </p>
@@ -986,7 +1005,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
           </Card>
 
           {/* Role Flexibility Analysis */}
-          {alignment.roleFlexibility && alignment.roleFlexibility.length > 0 && (
+          {effectiveAlignment.roleFlexibility && effectiveAlignment.roleFlexibility.length > 0 && (
             <Card data-testid="card-role-flexibility">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -999,7 +1018,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {alignment.roleFlexibility.map((role) => (
+                  {effectiveAlignment.roleFlexibility.map((role) => (
                     <div 
                       key={role.roleId} 
                       className="p-3 rounded-lg bg-muted/50 border"
@@ -1066,8 +1085,8 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
           )}
 
           {/* Final Recommendation */}
-          {alignment.finalRecommendation && (() => {
-            let cleanedText = alignment.finalRecommendation
+          {effectiveAlignment.finalRecommendation && (() => {
+            let cleanedText = effectiveAlignment.finalRecommendation
               .replace(/OVERALL ASSESSMENT:.*?\n/gi, '')
               .replace(/KEY STRENGTHS:[\s\S]*?(?=\n\n[A-Z]|DEVELOPMENT AREAS:|COHORT CONTEXT:|HIRING RECOMMENDATION:|ALTERNATIVE ROLE|$)/gi, '')
               .replace(/DEVELOPMENT AREAS:[\s\S]*?(?=\n\n[A-Z]|COHORT CONTEXT:|HIRING RECOMMENDATION:|ALTERNATIVE ROLE|$)/gi, '')
@@ -1126,7 +1145,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
           })()}
 
           {/* Recommended Next Steps */}
-          {alignment.nextSteps && alignment.nextSteps.length > 0 && (
+          {effectiveAlignment.nextSteps && effectiveAlignment.nextSteps.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -1136,7 +1155,7 @@ export function SharedSingleCandidateRoleFit({ config }: SharedSingleCandidateRo
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3">
-                  {alignment.nextSteps.map((step, index) => (
+                  {effectiveAlignment.nextSteps.map((step, index) => (
                     <li key={index} className="flex items-start gap-3" data-testid={`list-item-next-step-${index}`}>
                       <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-medium">
                         {index + 1}

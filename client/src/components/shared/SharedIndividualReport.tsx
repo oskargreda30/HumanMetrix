@@ -56,6 +56,11 @@ interface CandidateData {
 
 interface SharedIndividualReportProps {
   config: SharedIndividualReportConfig;
+  staticData?: {
+    candidateReport: any;
+    candidateName: string;
+    candidateEmail: string;
+  };
 }
 
 const formatReportDate = (dateStr: string) => {
@@ -65,7 +70,8 @@ const formatReportDate = (dateStr: string) => {
   return `${datePart} at ${timePart}`;
 };
 
-export function SharedIndividualReport({ config }: SharedIndividualReportProps) {
+export function SharedIndividualReport({ config, staticData }: SharedIndividualReportProps) {
+  const isStaticMode = !!staticData;
   const [selectedCandidate, setSelectedCandidate] = useState<string>('');
   const [reportTriggered, setReportTriggered] = useState(false);
   const [loadingTransitionComplete, setLoadingTransitionComplete] = useState(false);
@@ -80,6 +86,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
 
   const { data: candidates, isLoading } = useQuery<CandidateData[]>({
     queryKey: [config.candidatesEndpoint],
+    enabled: !isStaticMode,
   });
 
   const { data: candidateReport, isLoading: isLoadingReport, isFetching: isFetchingReport, error: reportError } = useQuery<any>({
@@ -95,7 +102,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
       if (!response.ok) throw new Error('Failed to fetch candidate report');
       return response.json();
     },
-    enabled: !!selectedCandidate && reportTriggered,
+    enabled: !isStaticMode && !!selectedCandidate && reportTriggered,
   });
 
   useEffect(() => {
@@ -121,6 +128,9 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
   // Insights are now generated server-side during the report call (kept for backwards compatibility)
 
   const selectedCandidateData = candidates?.find(c => c.user.id === selectedCandidate);
+
+  const effectiveCandidateReport = isStaticMode ? staticData!.candidateReport : candidateReport;
+  const effectiveCandidateData: CandidateData | undefined = isStaticMode ? { user: { id: 'static', email: staticData!.candidateEmail, firstName: staticData!.candidateName.split(' ')[0], lastName: staticData!.candidateName.split(' ').slice(1).join(' ') }, results: [] } : selectedCandidateData;
 
   // AI insights are now generated server-side during the report call
   // candidateReport.aiInsights contains the pre-loaded insights
@@ -178,10 +188,10 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
     };
   };
 
-  const fitData = candidateReport?.fitAssessments?.[0];
-  const aiData = candidateReport?.aiReadinessAssessments?.[0];
-  const promptData = candidateReport?.promptArchitectureAssessments?.[0];
-  const aiqData = candidateReport?.aiqAssessments?.[0];
+  const fitData = effectiveCandidateReport?.fitAssessments?.[0];
+  const aiData = effectiveCandidateReport?.aiReadinessAssessments?.[0];
+  const promptData = effectiveCandidateReport?.promptArchitectureAssessments?.[0];
+  const aiqData = effectiveCandidateReport?.aiqAssessments?.[0];
 
   const fitRadarData = fitData ? FIT_SKILLS.map(skill => ({
     skill: getSkillAcronym(skill.displayName),
@@ -224,7 +234,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
   };
 
   const handleExportPDF = async () => {
-    if (!selectedCandidateData || !candidateReport || !candidateReport?.aiInsights) return;
+    if (!effectiveCandidateData || !effectiveCandidateReport || !effectiveCandidateReport?.aiInsights) return;
     
     setIsExporting(true);
     try {
@@ -273,9 +283,9 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
 
       await exportIndividualReportPDF({
         candidate: {
-          firstName: selectedCandidateData.user.firstName,
-          lastName: selectedCandidateData.user.lastName,
-          email: selectedCandidateData.user.email,
+          firstName: effectiveCandidateData.user.firstName,
+          lastName: effectiveCandidateData.user.lastName,
+          email: effectiveCandidateData.user.email,
         },
         fitAssessment: fitData ? { scores: fitData.scores, completedAt: fitData.completedAt } : null,
         aiReadinessAssessment: aiData ? { scores: aiData.scores, completedAt: aiData.completedAt } : null,
@@ -290,7 +300,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
           scores: aiqData.scores,
           completedAt: aiqData.completedAt,
         } : null,
-        aiInsights: candidateReport.aiInsights,
+        aiInsights: effectiveCandidateReport.aiInsights,
         fitChartImage,
         aiChartImage,
       });
@@ -313,7 +323,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {config.contextType === 'partner' && (
+      {!isStaticMode && config.contextType === 'partner' && (
         <div className="p-3 md:p-4 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800">
           <div className="flex items-start gap-2 md:gap-3">
             <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
@@ -329,6 +339,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
         </div>
       )}
 
+      {!isStaticMode && (
       <Card>
         <CardHeader className="p-3 md:p-6">
           <CardTitle className="flex items-center gap-2 text-base md:text-lg">
@@ -368,8 +379,9 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
           )}
         </CardContent>
       </Card>
+      )}
 
-      {isLoading && (
+      {!isStaticMode && isLoading && (
         <Card>
           <CardContent className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -377,7 +389,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
         </Card>
       )}
 
-      {selectedCandidate && reportTriggered && (!loadingTransitionComplete || isRerunning) && (
+      {!isStaticMode && selectedCandidate && reportTriggered && (!loadingTransitionComplete || isRerunning) && (
         <AnalysisLoadingScreen 
           isComplete={!isFetchingReport && !!candidateReport}
           averageTimeSeconds={20}
@@ -392,7 +404,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
         />
       )}
 
-      {selectedCandidate && reportTriggered && loadingTransitionComplete && !isRerunning && candidateReport && selectedCandidateData && (
+      {((isStaticMode && effectiveCandidateReport && effectiveCandidateData) || (selectedCandidate && reportTriggered && loadingTransitionComplete && !isRerunning && candidateReport && selectedCandidateData)) && (
         <div id="individual-report-content" className="space-y-8 md:space-y-10">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3 md:mb-4">
             <div className="flex items-center gap-2">
@@ -400,24 +412,24 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                 <FileText className="h-4 w-4 md:h-6 md:w-6 text-blue-300" />
                 Individual Candidate Report
               </h2>
-              {config.contextType === 'partner' && candidateReport?.generatedAt && (
+              {!isStaticMode && config.contextType === 'partner' && effectiveCandidateReport?.generatedAt && (
                 <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-blue-100" data-testid="text-individual-report-date-top">
-                  {candidateReport?.cached ? (
+                  {effectiveCandidateReport?.cached ? (
                     <>
                       <Clock className="h-3 w-3" />
-                      <span>Cached — {formatReportDate(candidateReport.generatedAt)}</span>
+                      <span>Cached — {formatReportDate(effectiveCandidateReport.generatedAt)}</span>
                     </>
                   ) : (
                     <>
                       <Sparkles className="h-3 w-3" />
-                      <span>Generated {formatReportDate(candidateReport.generatedAt)}</span>
+                      <span>Generated {formatReportDate(effectiveCandidateReport.generatedAt)}</span>
                     </>
                   )}
                 </div>
               )}
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              {config.contextType === 'partner' && (
+              {!isStaticMode && config.contextType === 'partner' && (
                 <Button 
                   variant="outline"
                   size="sm"
@@ -466,8 +478,8 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                       <User className="h-5 w-5 md:h-6 md:w-6 text-primary" />
                     </div>
                     <div className="min-w-0">
-                      <h2 className="text-sm md:text-lg font-bold text-foreground truncate">{getCandidateName(selectedCandidateData)}</h2>
-                      <p className="text-[11px] md:text-xs text-muted-foreground break-all leading-tight">{selectedCandidateData.user.email}</p>
+                      <h2 className="text-sm md:text-lg font-bold text-foreground truncate">{getCandidateName(effectiveCandidateData)}</h2>
+                      <p className="text-[11px] md:text-xs text-muted-foreground break-all leading-tight">{effectiveCandidateData!.user.email}</p>
                     </div>
                   </div>
                 </div>
@@ -876,11 +888,11 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                 Profile Insights and Recommendations
               </CardTitle>
               <CardDescription>
-                Analysis of {getCandidateName(selectedCandidateData)}'s profile with role fit recommendations
+                Analysis of {getCandidateName(effectiveCandidateData)}'s profile with role fit recommendations
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {(!candidateReport?.fitAssessments?.[0] && !candidateReport?.aiReadinessAssessments?.[0] && !candidateReport?.promptArchitectureAssessments?.[0] && !candidateReport?.aiqAssessments?.[0]) ? (
+              {(!effectiveCandidateReport?.fitAssessments?.[0] && !effectiveCandidateReport?.aiReadinessAssessments?.[0] && !effectiveCandidateReport?.promptArchitectureAssessments?.[0] && !effectiveCandidateReport?.aiqAssessments?.[0]) ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <AlertCircle className="h-12 w-12 mx-auto mb-4 text-amber-500/50" />
                   <p className="text-sm font-medium">No Assessment Data Available</p>
@@ -892,7 +904,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                   <p className="text-sm">Generating profile insights...</p>
                   <p className="text-xs mt-2">Analyzing assessment data across all dimensions.</p>
                 </div>
-              ) : candidateReport?.aiInsights ? (
+              ) : effectiveCandidateReport?.aiInsights ? (
                 <div className="space-y-6" data-testid="text-profile-insights">
                   {(() => {
                     const sections = [
@@ -905,7 +917,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                     
                     const parsedSections = sections.map((section) => {
                       const regex = new RegExp(`\\*\\*${section.key}\\*\\*[:\\s]*([\\s\\S]*?)(?=\\n\\s*\\*\\*[A-Z]|$)`, 'i');
-                      const match = candidateReport?.aiInsights?.match(regex);
+                      const match = effectiveCandidateReport?.aiInsights?.match(regex);
                       let content = match?.[1]?.trim();
                       if (content) {
                         content = content
@@ -920,7 +932,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                     }).filter(s => s.content);
                     
                     if (parsedSections.length === 0) {
-                      return candidateReport?.aiInsights?.split('\n').map((paragraph: string, i: number) => (
+                      return effectiveCandidateReport?.aiInsights?.split('\n').map((paragraph: string, i: number) => (
                         paragraph.trim() && <p key={i} className="text-sm text-muted-foreground mb-3">{paragraph}</p>
                       ));
                     }
@@ -967,7 +979,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                 Recommended Next Steps
               </CardTitle>
               <CardDescription>
-                Based on assessment results, consider these next steps for {getCandidateName(selectedCandidateData)}
+                Based on assessment results, consider these next steps for {getCandidateName(effectiveCandidateData)}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1112,7 +1124,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
           <div className="flex justify-end gap-2">
             <Button 
               onClick={handleExportPDF}
-              disabled={isExporting || !candidateReport?.aiInsights || false /* no secondary loading */}
+              disabled={isExporting || !effectiveCandidateReport?.aiInsights || false /* no secondary loading */}
               data-testid="button-export-individual-report"
             >
               {isExporting ? (
@@ -1120,7 +1132,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Exporting...
                 </>
-              ) : (!candidateReport?.fitAssessments?.[0] && !candidateReport?.aiReadinessAssessments?.[0] && !candidateReport?.promptArchitectureAssessments?.[0] && !candidateReport?.aiqAssessments?.[0]) ? (
+              ) : (!effectiveCandidateReport?.fitAssessments?.[0] && !effectiveCandidateReport?.aiReadinessAssessments?.[0] && !effectiveCandidateReport?.promptArchitectureAssessments?.[0] && !effectiveCandidateReport?.aiqAssessments?.[0]) ? (
                 <>
                   <AlertCircle className="h-4 w-4 mr-2" />
                   No Data
@@ -1130,7 +1142,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Analyzing...
                 </>
-              ) : !candidateReport?.aiInsights ? (
+              ) : !effectiveCandidateReport?.aiInsights ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Analyzing...
@@ -1155,7 +1167,7 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
         </div>
       )}
 
-      {!selectedCandidate && !isLoading && (
+      {!isStaticMode && !selectedCandidate && !isLoading && (
         <Card>
           <CardContent className="text-center py-12">
             <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -1166,11 +1178,13 @@ export function SharedIndividualReport({ config }: SharedIndividualReportProps) 
         </Card>
       )}
 
-      <EnquiryModal 
-        open={showEnquiryModal} 
-        onOpenChange={setShowEnquiryModal}
-        context="Individual Report - Enterprise Services"
-      />
+      {!isStaticMode && (
+        <EnquiryModal 
+          open={showEnquiryModal} 
+          onOpenChange={setShowEnquiryModal}
+          context="Individual Report - Enterprise Services"
+        />
+      )}
     </div>
   );
 }

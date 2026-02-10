@@ -128,6 +128,10 @@ export interface SharedCompareTabConfig {
 
 interface SharedCompareTabProps {
   config: SharedCompareTabConfig;
+  staticData?: {
+    comparison: ComparisonData;
+    candidates: Array<{ user: { id: string; email: string; firstName?: string; lastName?: string } }>;
+  };
 }
 
 const formatReportDate = (dateStr: string) => {
@@ -137,7 +141,8 @@ const formatReportDate = (dateStr: string) => {
   return `${datePart} at ${timePart}`;
 };
 
-export function SharedCompareTab({ config }: SharedCompareTabProps) {
+export function SharedCompareTab({ config, staticData }: SharedCompareTabProps) {
+  const isStaticMode = !!staticData;
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [assessmentWeights, setAssessmentWeights] = useState({
@@ -165,10 +170,12 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
 
   const { data: candidates, isLoading } = useQuery<any[]>({
     queryKey: [config.candidatesEndpoint],
+    enabled: !isStaticMode,
   });
 
   const { data: dbRoles } = useQuery<any[]>({
     queryKey: [config.rolesEndpoint],
+    enabled: !isStaticMode,
   });
 
   const { data: comparison, isLoading: isComparing, isFetching: isFetchingComparison, error: comparisonError, refetch: runComparison } = useQuery<ComparisonData>({
@@ -184,7 +191,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
       if (!response.ok) throw new Error('Failed to fetch comparison');
       return response.json();
     },
-    enabled: selectedCandidates.length >= 2 && comparisonTriggered,
+    enabled: !isStaticMode && selectedCandidates.length >= 2 && comparisonTriggered,
   });
 
   useEffect(() => {
@@ -227,8 +234,11 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
     .map(id => candidates?.find((c) => c.user.id === id))
     .filter((c): c is NonNullable<typeof c> => c !== undefined);
 
+  const effectiveComparison = isStaticMode ? staticData!.comparison : comparison;
+  const effectiveCandidateData = isStaticMode ? staticData!.candidates : selectedCandidateData;
+
   const handleExportPDF = async () => {
-    if (!comparison || !selectedCandidateData) return;
+    if (!effectiveComparison || !effectiveCandidateData) return;
     
     try {
       toast({
@@ -258,19 +268,19 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
       const capturePromises: Promise<string | null>[] = [];
       const captureKeys: string[] = [];
 
-      for (let i = 0; i < selectedCandidateData.length; i++) {
+      for (let i = 0; i < effectiveCandidateData.length; i++) {
         captureKeys.push(`fit-${i}`);
-        capturePromises.push(comparison.fitAssessments?.[i] ? captureElement(`pdf-comparison-fit-${i}`) : Promise.resolve(null));
+        capturePromises.push(effectiveComparison.fitAssessments?.[i] ? captureElement(`pdf-comparison-fit-${i}`) : Promise.resolve(null));
         captureKeys.push(`ai-${i}`);
-        capturePromises.push(comparison.aiReadinessAssessments?.[i] ? captureElement(`pdf-comparison-ai-${i}`) : Promise.resolve(null));
+        capturePromises.push(effectiveComparison.aiReadinessAssessments?.[i] ? captureElement(`pdf-comparison-ai-${i}`) : Promise.resolve(null));
       }
 
       captureKeys.push('fit-combined');
-      capturePromises.push(comparison.fitAssessments?.some(a => a !== null) ? captureElement('pdf-comparison-fit-overlapping') : Promise.resolve(null));
+      capturePromises.push(effectiveComparison.fitAssessments?.some(a => a !== null) ? captureElement('pdf-comparison-fit-overlapping') : Promise.resolve(null));
       captureKeys.push('ai-combined');
-      capturePromises.push(comparison.aiReadinessAssessments?.some(a => a !== null) ? captureElement('pdf-comparison-ai-overlapping') : Promise.resolve(null));
+      capturePromises.push(effectiveComparison.aiReadinessAssessments?.some(a => a !== null) ? captureElement('pdf-comparison-ai-overlapping') : Promise.resolve(null));
       captureKeys.push('overall');
-      capturePromises.push(comparison.hasSkillData ? captureElement('pdf-comparison-overall-skills-hidden') : Promise.resolve(null));
+      capturePromises.push(effectiveComparison.hasSkillData ? captureElement('pdf-comparison-overall-skills-hidden') : Promise.resolve(null));
 
       const captureResults = await Promise.all(capturePromises);
 
@@ -280,7 +290,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
 
       const fitChartImages: (string | null)[] = [];
       const aiChartImages: (string | null)[] = [];
-      for (let i = 0; i < selectedCandidateData.length; i++) {
+      for (let i = 0; i < effectiveCandidateData.length; i++) {
         fitChartImages.push(resultMap.get(`fit-${i}`) ?? null);
         aiChartImages.push(resultMap.get(`ai-${i}`) ?? null);
       }
@@ -294,13 +304,13 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
       const comparisonNextSteps = recommendations?.nextSteps;
 
       await exportComparisonPDF({
-        candidates: selectedCandidateData,
-        skillComparison: comparison.skillComparison,
-        averageScores: comparison.averageScores,
-        fitAssessments: comparison.fitAssessments || [],
-        aiReadinessAssessments: comparison.aiReadinessAssessments || [],
-        promptArchitectureAssessments: comparison.promptArchitectureAssessments || [],
-        aiqAssessments: comparison.aiqAssessments || [],
+        candidates: effectiveCandidateData,
+        skillComparison: effectiveComparison.skillComparison,
+        averageScores: effectiveComparison.averageScores,
+        fitAssessments: effectiveComparison.fitAssessments || [],
+        aiReadinessAssessments: effectiveComparison.aiReadinessAssessments || [],
+        promptArchitectureAssessments: effectiveComparison.promptArchitectureAssessments || [],
+        aiqAssessments: effectiveComparison.aiqAssessments || [],
         fitChartImages,
         aiChartImages,
         fitCombinedChartImage,
@@ -328,10 +338,10 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
   };
 
   const handleScreenCapturePDF = async () => {
-    if (!comparison || !selectedCandidateData || !reportContainerRef.current) {
+    if (!effectiveComparison || !effectiveCandidateData || !reportContainerRef.current) {
       console.log("Screen capture PDF: Missing required data", { 
-        comparison: !!comparison, 
-        selectedCandidateData: !!selectedCandidateData, 
+        comparison: !!effectiveComparison, 
+        selectedCandidateData: !!effectiveCandidateData, 
         reportContainerRef: !!reportContainerRef.current 
       });
       return;
@@ -613,7 +623,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
         }
       }
 
-      const candidateNames = selectedCandidateData.map((c: any) => 
+      const candidateNames = effectiveCandidateData.map((c: any) => 
         getCandidateName(c)
       ).join('_vs_').substring(0, 50);
       
@@ -656,11 +666,11 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
 
   // Helper: Get all skills for a candidate across all assessments
   const getAllCandidateSkills = (candidateIndex: number): Record<string, number> => {
-    if (!comparison) return {};
+    if (!effectiveComparison) return {};
     const skills: Record<string, number> = {};
     
     // FIT skills
-    const fitData = comparison.fitAssessments?.[candidateIndex];
+    const fitData = effectiveComparison.fitAssessments?.[candidateIndex];
     if (fitData) {
       Object.entries(fitData.scores).forEach(([key, value]) => {
         skills[key] = value;
@@ -668,7 +678,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
     }
     
     // AI Readiness skills
-    const aiData = comparison.aiReadinessAssessments?.[candidateIndex];
+    const aiData = effectiveComparison.aiReadinessAssessments?.[candidateIndex];
     if (aiData) {
       Object.entries(aiData.scores).forEach(([key, value]) => {
         skills[key] = value;
@@ -683,12 +693,12 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
 
   // Helper: Calculate average score across candidates for a skill
   const calculateSkillAverage = (skillName: string): number => {
-    if (!comparison || !selectedCandidateData) return 0;
+    if (!effectiveComparison || !effectiveCandidateData) return 0;
     
     let total = 0;
     let count = 0;
     
-    selectedCandidateData.forEach((_: any, index: number) => {
+    effectiveCandidateData.forEach((_: any, index: number) => {
       const skills = getAllCandidateSkills(index);
       if (skills[skillName] !== undefined) {
         total += skills[skillName];
@@ -856,12 +866,12 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
   // Helper: Generate comparison recommendations (single source of truth for dashboard and PDF)
   // Works with or without role selection - uses role fit when available, otherwise uses composite scores
   const generateComparisonRecommendations = (): { employerRecommendation: string; nextSteps: string[] } | null => {
-    if (!selectedCandidateData || selectedCandidateData.length === 0) return null;
+    if (!effectiveCandidateData || effectiveCandidateData.length === 0) return null;
     
     // Use role fit scores if a role is selected, otherwise use composite scores
     const hasRoleSelected = !!selectedRole;
     
-    const candidateScores = selectedCandidateData.map((candidate: any, index: number) => ({
+    const candidateScores = effectiveCandidateData.map((candidate: any, index: number) => ({
       name: getCandidateName(candidate),
       score: hasRoleSelected 
         ? calculateRoleSuitability(index, selectedRole) 
@@ -905,12 +915,12 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
     
     // Check for candidates with missing assessments
     const candidatesWithMissingAssessments: Array<{ name: string; missing: string[] }> = [];
-    selectedCandidateData?.forEach((candidate: any, index: number) => {
+    effectiveCandidateData?.forEach((candidate: any, index: number) => {
       const missing: string[] = [];
-      if (!comparison?.fitAssessments?.[index]) missing.push('FIT');
-      if (!comparison?.aiReadinessAssessments?.[index]) missing.push('AI Readiness');
-      if (!comparison?.promptArchitectureAssessments?.[index]) missing.push('Prompt Architecture');
-      if (!comparison?.aiqAssessments?.[index]) missing.push('AIQ');
+      if (!effectiveComparison?.fitAssessments?.[index]) missing.push('FIT');
+      if (!effectiveComparison?.aiReadinessAssessments?.[index]) missing.push('AI Readiness');
+      if (!effectiveComparison?.promptArchitectureAssessments?.[index]) missing.push('Prompt Architecture');
+      if (!effectiveComparison?.aiqAssessments?.[index]) missing.push('AIQ');
       if (missing.length > 0) {
         candidatesWithMissingAssessments.push({ name: getCandidateName(candidate), missing });
       }
@@ -932,11 +942,11 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
     }
     
     // Identify specific skill gaps for top candidate
-    const topCandidateIndex = selectedCandidateData.findIndex((c: any) => getCandidateName(c) === topCandidate.name);
-    const topFitData = comparison?.fitAssessments?.[topCandidateIndex];
-    const topAiData = comparison?.aiReadinessAssessments?.[topCandidateIndex];
-    const topAiqData = comparison?.aiqAssessments?.[topCandidateIndex];
-    const topPromptData = comparison?.promptArchitectureAssessments?.[topCandidateIndex];
+    const topCandidateIndex = effectiveCandidateData.findIndex((c: any) => getCandidateName(c) === topCandidate.name);
+    const topFitData = effectiveComparison?.fitAssessments?.[topCandidateIndex];
+    const topAiData = effectiveComparison?.aiReadinessAssessments?.[topCandidateIndex];
+    const topAiqData = effectiveComparison?.aiqAssessments?.[topCandidateIndex];
+    const topPromptData = effectiveComparison?.promptArchitectureAssessments?.[topCandidateIndex];
     
     // Build assessment-specific insights
     const weakAreas: string[] = [];
@@ -1030,12 +1040,12 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
   // Helper: Calculate composite score across all assessments
   // Respects user-set zero weights (excludes those assessments). Returns 0 when all weights are zero.
   const calculateCompositeScore = (candidateIndex: number): number => {
-    if (!comparison) return 0;
+    if (!effectiveComparison) return 0;
     
     const assessmentData: Array<{ score: number; weight: number }> = [];
     
     // FIT average (filter non-numeric and zero values)
-    const fitData = comparison.fitAssessments?.[candidateIndex];
+    const fitData = effectiveComparison.fitAssessments?.[candidateIndex];
     if (fitData) {
       const fitScores = Object.values(fitData.scores).filter((v): v is number => typeof v === 'number' && v > 0);
       if (fitScores.length > 0) {
@@ -1045,7 +1055,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
     }
     
     // AI Readiness average (filter non-numeric and zero values)
-    const aiData = comparison.aiReadinessAssessments?.[candidateIndex];
+    const aiData = effectiveComparison.aiReadinessAssessments?.[candidateIndex];
     if (aiData) {
       const aiScores = Object.values(aiData.scores).filter((v): v is number => typeof v === 'number' && v > 0);
       if (aiScores.length > 0) {
@@ -1055,13 +1065,13 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
     }
     
     // Prompt Architecture
-    const promptData = comparison.promptArchitectureAssessments?.[candidateIndex];
+    const promptData = effectiveComparison.promptArchitectureAssessments?.[candidateIndex];
     if (promptData) {
       assessmentData.push({ score: promptData.totalScore, weight: assessmentWeights.promptArchitecture });
     }
     
     // AIQ
-    const aiqData = comparison.aiqAssessments?.[candidateIndex];
+    const aiqData = effectiveComparison.aiqAssessments?.[candidateIndex];
     if (aiqData) {
       assessmentData.push({ score: aiqData.totalScore, weight: assessmentWeights.aiq });
     }
@@ -1103,9 +1113,9 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
 
   // Calculate rankings based on composite scores
   const getRankings = (): Array<{ candidateIndex: number; score: number; rank: number }> => {
-    if (!selectedCandidateData) return [];
+    if (!effectiveCandidateData) return [];
     
-    const scores = selectedCandidateData.map((_: any, index: number) => ({
+    const scores = effectiveCandidateData.map((_: any, index: number) => ({
       candidateIndex: index,
       score: calculateCompositeScore(index),
       rank: 0,
@@ -1122,7 +1132,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
   return (
     <div className="h-full overflow-auto space-y-4 md:space-y-6">
       {/* Credit usage notice for partners */}
-      {config.contextType === 'partner' && (
+      {!isStaticMode && config.contextType === 'partner' && (
         <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-3 md:p-4">
           <div className="flex items-start gap-2 md:gap-3">
             <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-blue-500 flex-shrink-0 mt-0.5" />
@@ -1138,7 +1148,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
         </div>
       )}
       
-      <Card>
+      {!isStaticMode && (<Card>
         <CardHeader className="p-3 md:p-6">
           <CardTitle className="text-base md:text-lg">Select Candidates to Compare</CardTitle>
           <p className="text-xs md:text-sm text-muted-foreground">
@@ -1193,9 +1203,9 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
             <p className="text-center py-6 md:py-8 text-xs md:text-sm text-muted-foreground">No candidates available</p>
           )}
         </CardContent>
-      </Card>
+      </Card>)}
 
-      {selectedCandidates.length >= 2 && !comparisonTriggered && (
+      {!isStaticMode && selectedCandidates.length >= 2 && !comparisonTriggered && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-8 md:py-12 p-3 md:p-6">
             <Users className="h-8 w-8 md:h-12 md:w-12 mb-3 md:mb-4 text-primary/50" />
@@ -1215,7 +1225,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
         </Card>
       )}
 
-      {selectedCandidates.length >= 2 && comparisonTriggered && (!loadingTransitionComplete || isRerunning) && (
+      {!isStaticMode && selectedCandidates.length >= 2 && comparisonTriggered && (!loadingTransitionComplete || isRerunning) && (
         <AnalysisLoadingScreen
           isComplete={!isFetchingComparison && !!comparison}
           averageTimeSeconds={25}
@@ -1230,9 +1240,9 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
         />
       )}
 
-      {selectedCandidates.length >= 2 && comparisonTriggered && loadingTransitionComplete && !isRerunning && (
+      {((isStaticMode && effectiveComparison && effectiveCandidateData) || (selectedCandidates.length >= 2 && comparisonTriggered && loadingTransitionComplete && !isRerunning)) && (
         <>
-          {!comparison ? (
+          {!effectiveComparison ? (
             <Card>
               <CardContent className="flex justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -1259,7 +1269,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                     </div>
                     
                     <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {selectedCandidateData?.map((candidate: any, index: number) => (
+                      {effectiveCandidateData?.map((candidate: any, index: number) => (
                         <div key={candidate.user.id} className="p-3 border rounded-lg bg-gray-50">
                           <div className="flex items-center gap-2 mb-1">
                             <div 
@@ -1270,7 +1280,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                           </div>
                           <p className="text-sm text-gray-600">{candidate.user.email}</p>
                           <p className="text-sm font-medium mt-1">
-                            Composite Score: <span style={{ color: '#0ea5e9' }}>{Math.round(comparison.averageScores[index])}%</span>
+                            Composite Score: <span style={{ color: '#0ea5e9' }}>{Math.round(effectiveComparison.averageScores[index])}%</span>
                           </p>
                         </div>
                       ))}
@@ -1281,24 +1291,24 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
               {/* Report Header with Date, Re-run, and Export PDF */}
               <div className="flex flex-wrap items-center justify-between gap-2 mb-4 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 p-3">
                 <div className="flex items-center gap-2">
-                  {config.contextType === 'partner' && (comparison as any)?.generatedAt && (
+                  {!isStaticMode && config.contextType === 'partner' && (effectiveComparison as any)?.generatedAt && (
                     <div className="flex items-center gap-1.5 text-xs text-white/80" data-testid="text-compare-report-date">
-                      {(comparison as any)?.cached ? (
+                      {(effectiveComparison as any)?.cached ? (
                         <>
                           <Clock className="h-3 w-3" />
-                          <span>Cached — {formatReportDate((comparison as any).generatedAt)}</span>
+                          <span>Cached — {formatReportDate((effectiveComparison as any).generatedAt)}</span>
                         </>
                       ) : (
                         <>
                           <Sparkles className="h-3 w-3" />
-                          <span>Generated {formatReportDate((comparison as any).generatedAt)}</span>
+                          <span>Generated {formatReportDate((effectiveComparison as any).generatedAt)}</span>
                         </>
                       )}
                     </div>
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  {config.contextType === 'partner' && (
+                  {!isStaticMode && config.contextType === 'partner' && (
                     <Button
                       variant="outline"
                       size="sm"
@@ -1344,11 +1354,11 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                 </CardHeader>
                 <CardContent>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {selectedCandidateData?.map((candidate: any, index: number) => {
-                  const fitCompleted = comparison.fitAssessments?.[index] !== null;
-                  const aiReadinessCompleted = comparison.aiReadinessAssessments?.[index] !== null;
-                  const promptCompleted = comparison.promptArchitectureAssessments?.[index] !== null;
-                  const aiqCompleted = comparison.aiqAssessments?.[index] !== null;
+                {effectiveCandidateData?.map((candidate: any, index: number) => {
+                  const fitCompleted = effectiveComparison.fitAssessments?.[index] !== null;
+                  const aiReadinessCompleted = effectiveComparison.aiReadinessAssessments?.[index] !== null;
+                  const promptCompleted = effectiveComparison.promptArchitectureAssessments?.[index] !== null;
+                  const aiqCompleted = effectiveComparison.aiqAssessments?.[index] !== null;
                   const totalCompleted = [fitCompleted, aiReadinessCompleted, promptCompleted, aiqCompleted].filter(Boolean).length;
 
                   return (
@@ -1422,7 +1432,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
               {/* ========== ENHANCED ANALYSIS SECTION ========== */}
               
               {/* 1. Composite Score & Ranking */}
-              {comparison.hasSkillData && (
+              {effectiveComparison.hasSkillData && (
                 <Card data-testid="card-composite-ranking">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -1489,7 +1499,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                       {/* Rankings */}
                       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
                         {getRankings().map((ranking) => {
-                          const candidate = selectedCandidateData?.[ranking.candidateIndex];
+                          const candidate = effectiveCandidateData?.[ranking.candidateIndex];
                           if (!candidate) return null;
                           
                           return (
@@ -1545,7 +1555,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
               )}
 
               {/* 2. Role Suitability Scoring - TEMPORARILY DISABLED */}
-              {false && comparison?.hasSkillData && (
+              {false && effectiveComparison?.hasSkillData && (
                 <Card data-testid="card-role-suitability" data-report-section="role-suitability">
                   <CardHeader>
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1596,7 +1606,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                           
                           {/* Role fit scores */}
                           <div className="grid gap-4 md:grid-cols-3">
-                            {selectedCandidateData?.map((candidate: any, index: number) => {
+                            {effectiveCandidateData?.map((candidate: any, index: number) => {
                               const suitability = calculateRoleSuitabilityWithCoverage(index, selectedRole);
                               const performance = getPerformanceLevel(suitability.score);
                               const hasPartialData = suitability.coverage < 100;
@@ -1667,7 +1677,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                           {/* Role Suitability Explanation */}
                           {(() => {
                         const roleData = getSelectedRoleData();
-                        const roleScores = selectedCandidateData?.map((candidate: any, index: number) => ({
+                        const roleScores = effectiveCandidateData?.map((candidate: any, index: number) => ({
                           name: getCandidateName(candidate),
                           score: calculateRoleSuitability(index, selectedRole),
                           index,
@@ -1748,7 +1758,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
               )}
 
               {/* 3. Head-to-Head Skill Breakdown Table */}
-              {comparison.hasSkillData && (
+              {effectiveComparison.hasSkillData && (
                 <Card data-testid="card-head-to-head" data-report-section="head-to-head">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-base md:text-lg">
@@ -1765,7 +1775,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                         <thead>
                           <tr className="border-b">
                             <th className="text-left p-2 md:p-3 font-medium min-w-[100px] md:min-w-[150px]">Skill</th>
-                            {selectedCandidateData?.map((candidate: any, index: number) => (
+                            {effectiveCandidateData?.map((candidate: any, index: number) => (
                               <th key={candidate.user.id} className="text-center p-2 md:p-3 font-medium min-w-[60px] md:min-w-[100px]">
                                 <span style={{ color: CHART_COLORS[index] }} className="text-xs md:text-sm truncate block max-w-[60px] md:max-w-none">
                                   {getCandidateName(candidate).split(' ')[0]}
@@ -1778,8 +1788,8 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                         <tbody>
                           {/* FIT Skills */}
                           {FIT_SKILLS.map((skill) => {
-                            const scores = selectedCandidateData?.map((_: any, index: number) => {
-                              const fitData = comparison.fitAssessments?.[index];
+                            const scores = effectiveCandidateData?.map((_: any, index: number) => {
+                              const fitData = effectiveComparison.fitAssessments?.[index];
                               return fitData?.scores[skill.key] ?? null;
                             }) || [];
                             
@@ -1815,8 +1825,8 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                           })}
                           {/* AI Readiness Skills */}
                           {AI_READINESS_SKILLS.map((skill) => {
-                            const scores = selectedCandidateData?.map((_: any, index: number) => {
-                              const aiData = comparison.aiReadinessAssessments?.[index];
+                            const scores = effectiveCandidateData?.map((_: any, index: number) => {
+                              const aiData = effectiveComparison.aiReadinessAssessments?.[index];
                               return aiData?.scores[skill.key] ?? null;
                             }) || [];
                             
@@ -1851,9 +1861,9 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                             );
                           })}
                           {/* Prompt Architecture Total */}
-                          {comparison.promptArchitectureAssessments?.some(a => a !== null) && (() => {
-                            const scores = selectedCandidateData?.map((_: any, index: number) => {
-                              const promptData = comparison.promptArchitectureAssessments?.[index];
+                          {effectiveComparison.promptArchitectureAssessments?.some(a => a !== null) && (() => {
+                            const scores = effectiveCandidateData?.map((_: any, index: number) => {
+                              const promptData = effectiveComparison.promptArchitectureAssessments?.[index];
                               return promptData?.totalScore ?? null;
                             }) || [];
                             
@@ -1888,9 +1898,9 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                             );
                           })()}
                           {/* AIQ Total */}
-                          {comparison.aiqAssessments?.some(a => a !== null) && (() => {
-                            const scores = selectedCandidateData?.map((_: any, index: number) => {
-                              const aiqData = comparison.aiqAssessments?.[index];
+                          {effectiveComparison.aiqAssessments?.some(a => a !== null) && (() => {
+                            const scores = effectiveCandidateData?.map((_: any, index: number) => {
+                              const aiqData = effectiveComparison.aiqAssessments?.[index];
                               return aiqData?.totalScore ?? null;
                             }) || [];
                             
@@ -1932,7 +1942,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
               )}
 
               {/* 4. Strengths & Weaknesses Summary - Clean horizontal bar design */}
-              {comparison.hasSkillData && (
+              {effectiveComparison.hasSkillData && (
                 <Card data-testid="card-strengths-weaknesses" data-report-section="strengths-weaknesses">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -1945,7 +1955,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                   </CardHeader>
                   <CardContent>
                     <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                      {selectedCandidateData?.map((candidate: any, index: number) => {
+                      {effectiveCandidateData?.map((candidate: any, index: number) => {
                         const { strengths, weaknesses } = getStrengthsAndWeaknesses(index);
                         
                         return (
@@ -2013,7 +2023,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
               {/* ========== END ENHANCED ANALYSIS SECTION ========== */}
 
               {/* FIT Assessment Comparison */}
-              {comparison.fitAssessments?.some(a => a !== null) && (
+              {effectiveComparison.fitAssessments?.some(a => a !== null) && (
                 <Card data-report-section="fit-assessment">
                   <CardHeader>
                     <div className="flex items-center justify-between flex-wrap gap-2">
@@ -2051,8 +2061,8 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                             <RadarChart cx="50%" cy="50%" outerRadius="75%" data={(() => {
                               return FIT_SKILLS.map(skill => {
                                 const dataPoint: any = { skill: getSkillAcronym(skill.displayName) };
-                                selectedCandidateData?.forEach((candidate: any, index: number) => {
-                                  const fitData = comparison.fitAssessments?.[index];
+                                effectiveCandidateData?.forEach((candidate: any, index: number) => {
+                                  const fitData = effectiveComparison.fitAssessments?.[index];
                                   if (fitData) {
                                     dataPoint[candidate.user.id] = fitData.scores[skill.key] || 0;
                                   }
@@ -2064,8 +2074,8 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                               <PolarAngleAxis dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} />
                               <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} axisLine={false} />
                               <RechartsTooltip />
-                              {selectedCandidateData?.map((candidate: any, index: number) => {
-                                if (!comparison.fitAssessments?.[index]) return null;
+                              {effectiveCandidateData?.map((candidate: any, index: number) => {
+                                if (!effectiveComparison.fitAssessments?.[index]) return null;
                                 return (
                                   <Radar
                                     key={candidate.user.id}
@@ -2093,8 +2103,8 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                       <div>
                         <h3 className="font-semibold mb-4">Individual Assessments</h3>
                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                          {selectedCandidateData?.map((candidate: any, index: number) => {
-                            const fitData = comparison.fitAssessments?.[index];
+                          {effectiveCandidateData?.map((candidate: any, index: number) => {
+                            const fitData = effectiveComparison.fitAssessments?.[index];
                             
                             if (!fitData) {
                               return (
@@ -2154,7 +2164,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
               )}
 
               {/* AI Readiness Comparison */}
-              {comparison.aiReadinessAssessments?.some(a => a !== null) && (
+              {effectiveComparison.aiReadinessAssessments?.some(a => a !== null) && (
                 <Card data-report-section="ai-readiness">
                   <CardHeader>
                     <div className="flex items-center justify-between flex-wrap gap-2">
@@ -2192,8 +2202,8 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                             <RadarChart cx="50%" cy="50%" outerRadius="75%" data={(() => {
                               return AI_READINESS_SKILLS.map(skill => {
                                 const dataPoint: any = { skill: getSkillAcronym(skill.displayName) };
-                                selectedCandidateData?.forEach((candidate: any, index: number) => {
-                                  const aiData = comparison.aiReadinessAssessments?.[index];
+                                effectiveCandidateData?.forEach((candidate: any, index: number) => {
+                                  const aiData = effectiveComparison.aiReadinessAssessments?.[index];
                                   if (aiData) {
                                     dataPoint[candidate.user.id] = aiData.scores[skill.key] || 0;
                                   }
@@ -2205,8 +2215,8 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                               <PolarAngleAxis dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} />
                               <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} axisLine={false} />
                               <RechartsTooltip />
-                              {selectedCandidateData?.map((candidate: any, index: number) => {
-                                if (!comparison.aiReadinessAssessments?.[index]) return null;
+                              {effectiveCandidateData?.map((candidate: any, index: number) => {
+                                if (!effectiveComparison.aiReadinessAssessments?.[index]) return null;
                                 return (
                                   <Radar
                                     key={candidate.user.id}
@@ -2234,8 +2244,8 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                       <div>
                         <h3 className="font-semibold mb-4">Individual Assessments</h3>
                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                          {selectedCandidateData?.map((candidate: any, index: number) => {
-                            const aiReadinessData = comparison.aiReadinessAssessments?.[index];
+                          {effectiveCandidateData?.map((candidate: any, index: number) => {
+                            const aiReadinessData = effectiveComparison.aiReadinessAssessments?.[index];
                             
                             if (!aiReadinessData) {
                               return (
@@ -2295,7 +2305,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
               )}
 
               {/* Prompt Architecture Comparison */}
-              {comparison.promptArchitectureAssessments?.some(a => a !== null) && (
+              {effectiveComparison.promptArchitectureAssessments?.some(a => a !== null) && (
                 <Card data-report-section="prompt-architecture">
                   <CardHeader>
                     <div className="flex items-center justify-between flex-wrap gap-2">
@@ -2333,7 +2343,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                           <tr className="border-b">
                             <th className="text-left p-3 font-medium">Level</th>
                             <th className="text-left p-3 font-medium">Dimension</th>
-                            {selectedCandidateData?.map((candidate: any, index: number) => (
+                            {effectiveCandidateData?.map((candidate: any, index: number) => (
                               <th key={candidate.user.id} className="text-left p-3 font-medium">
                                 <span style={{ color: CHART_COLORS[index] }}>
                                   {getCandidateName(candidate)}
@@ -2361,8 +2371,8 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                                   </td>
                                 )}
                                 <td className="p-3 text-sm">{dimensionLabels[dimension as keyof typeof dimensionLabels]}</td>
-                                {selectedCandidateData?.map((candidate: any, candIndex: number) => {
-                                  const promptData = comparison.promptArchitectureAssessments?.[candIndex];
+                                {effectiveCandidateData?.map((candidate: any, candIndex: number) => {
+                                  const promptData = effectiveComparison.promptArchitectureAssessments?.[candIndex];
                                   
                                   if (!promptData) {
                                     return (
@@ -2401,8 +2411,8 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                           })}
                           <tr className="border-t-2 font-semibold bg-muted/30">
                             <td className="p-3" colSpan={2}>Total Score</td>
-                            {selectedCandidateData?.map((candidate: any, index: number) => {
-                              const promptData = comparison.promptArchitectureAssessments?.[index];
+                            {effectiveCandidateData?.map((candidate: any, index: number) => {
+                              const promptData = effectiveComparison.promptArchitectureAssessments?.[index];
                               return (
                                 <td key={candidate.user.id} className="p-3">
                                   {promptData ? (
@@ -2427,7 +2437,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
               )}
 
               {/* AIQ Comparison */}
-              {comparison.aiqAssessments?.some(a => a !== null) && (
+              {effectiveComparison.aiqAssessments?.some(a => a !== null) && (
                 <Card data-report-section="aiq-assessment">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -2440,8 +2450,8 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                   </CardHeader>
                   <CardContent>
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                      {selectedCandidateData?.map((candidate: any, index: number) => {
-                        const aiqData = comparison.aiqAssessments?.[index];
+                      {effectiveCandidateData?.map((candidate: any, index: number) => {
+                        const aiqData = effectiveComparison.aiqAssessments?.[index];
                         
                         if (!aiqData) {
                           return (
@@ -2483,9 +2493,9 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                     
                     {/* AIQ Comparison Explanation */}
                     {(() => {
-                      const aiqScores = selectedCandidateData?.map((candidate: any, index: number) => ({
+                      const aiqScores = effectiveCandidateData?.map((candidate: any, index: number) => ({
                         name: getCandidateName(candidate),
-                        score: comparison.aiqAssessments?.[index]?.totalScore ?? null,
+                        score: effectiveComparison.aiqAssessments?.[index]?.totalScore ?? null,
                         index,
                       })).filter((c: any) => c.score !== null).sort((a: any, b: any) => b.score - a.score) as Array<{name: string; score: number; index: number}>;
                       
@@ -2520,7 +2530,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
               )}
 
               {/* Overall Skill Comparison */}
-              {comparison.hasSkillData && (
+              {effectiveComparison.hasSkillData && (
                 <Card data-report-section="overall-skills">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -2534,12 +2544,12 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                   <CardContent>
                     <div className="space-y-8">
                       {/* Skills Radar Chart */}
-                      {comparison.radarData && comparison.radarData.length > 0 && (
+                      {effectiveComparison.radarData && effectiveComparison.radarData.length > 0 && (
                         <div>
                           <h3 className="font-semibold mb-4">All Skills Combined</h3>
                           <div id="pdf-comparison-overall-skills" className="bg-white p-4 md:p-6 rounded-lg overflow-visible">
                           <ResponsiveContainer width="100%" height={500} className="min-h-[400px] md:min-h-[500px]">
-                            <RadarChart cx="50%" cy="50%" outerRadius="75%" data={comparison.radarData.map(item => ({
+                            <RadarChart cx="50%" cy="50%" outerRadius="75%" data={effectiveComparison.radarData.map(item => ({
                               ...item,
                               skill: getSkillAcronym(item.skill)
                             }))}>
@@ -2547,7 +2557,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                               <PolarAngleAxis dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} />
                               <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} axisLine={false} />
                               <RechartsTooltip />
-                              {selectedCandidateData?.map((candidate: any, index: number) => (
+                              {effectiveCandidateData?.map((candidate: any, index: number) => (
                                 <Radar
                                   key={candidate.user.id}
                                   name={getCandidateName(candidate)}
@@ -2579,14 +2589,14 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                         </div>
                         
                         <div className="space-y-4 text-sm text-muted-foreground">
-                          {selectedCandidateData && (() => {
+                          {effectiveCandidateData && (() => {
                             // Fixed 25% equal weights for consistency with PDF export
                             const calculateFixedComposite = (candIndex: number): number => {
-                              if (!comparison) return 0;
+                              if (!effectiveComparison) return 0;
                               const assessmentData: Array<{ score: number; weight: number }> = [];
                               const equalWeight = 25;
                               
-                              const fitData = comparison.fitAssessments?.[candIndex];
+                              const fitData = effectiveComparison.fitAssessments?.[candIndex];
                               if (fitData) {
                                 const fitScores = Object.values(fitData.scores).filter((v): v is number => typeof v === 'number' && v > 0);
                                 if (fitScores.length > 0) {
@@ -2595,7 +2605,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                                 }
                               }
                               
-                              const aiData = comparison.aiReadinessAssessments?.[candIndex];
+                              const aiData = effectiveComparison.aiReadinessAssessments?.[candIndex];
                               if (aiData) {
                                 const aiScores = Object.values(aiData.scores).filter((v): v is number => typeof v === 'number' && v > 0);
                                 if (aiScores.length > 0) {
@@ -2604,10 +2614,10 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                                 }
                               }
                               
-                              const promptData = comparison.promptArchitectureAssessments?.[candIndex];
+                              const promptData = effectiveComparison.promptArchitectureAssessments?.[candIndex];
                               if (promptData) assessmentData.push({ score: promptData.totalScore, weight: equalWeight });
                               
-                              const aiqData = comparison.aiqAssessments?.[candIndex];
+                              const aiqData = effectiveComparison.aiqAssessments?.[candIndex];
                               if (aiqData) assessmentData.push({ score: aiqData.totalScore, weight: equalWeight });
                               
                               if (assessmentData.length === 0) return 0;
@@ -2621,7 +2631,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                             const currentRoleData = getSelectedRoleData();
                             const currentRoleName = currentRoleData?.name || 'Selected Role';
                             
-                            const rankedCandidates = selectedCandidateData.map((candidate: any, index: number) => ({
+                            const rankedCandidates = effectiveCandidateData.map((candidate: any, index: number) => ({
                               name: getCandidateName(candidate),
                               index,
                               compositeScore: calculateFixedComposite(index),
@@ -2702,19 +2712,19 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {!comparison?.aiInsights && !comparison?.hasSkillData && 
-                   !comparison?.fitAssessments?.some(a => a !== null) &&
-                   !comparison?.aiReadinessAssessments?.some(a => a !== null) &&
-                   !comparison?.promptArchitectureAssessments?.some(a => a !== null) &&
-                   !comparison?.aiqAssessments?.some(a => a !== null) ? (
+                  {!effectiveComparison?.aiInsights && !effectiveComparison?.hasSkillData && 
+                   !effectiveComparison?.fitAssessments?.some(a => a !== null) &&
+                   !effectiveComparison?.aiReadinessAssessments?.some(a => a !== null) &&
+                   !effectiveComparison?.promptArchitectureAssessments?.some(a => a !== null) &&
+                   !effectiveComparison?.aiqAssessments?.some(a => a !== null) ? (
                     <div className="text-center py-8 text-muted-foreground">
                       <Sparkles className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
                       <p className="text-sm">No assessment data available for insights generation.</p>
                       <p className="text-xs mt-2">Complete assessments to enable AI-powered analysis.</p>
                     </div>
-                  ) : comparison?.aiInsights ? (
+                  ) : effectiveComparison?.aiInsights ? (
                     <div className="prose prose-sm dark:prose-invert max-w-none" data-testid="text-ai-insights">
-                      {comparison.aiInsights.split('\n\n').map((paragraph: string, idx: number) => {
+                      {effectiveComparison.aiInsights.split('\n\n').map((paragraph: string, idx: number) => {
                         const headingMatch = paragraph.match(/^\*\*(.+?)\*\*/);
                         if (headingMatch) {
                           const heading = headingMatch[1];
@@ -2750,7 +2760,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
               <SkillsLegend />
 
 
-              {!comparison.hasSkillData && (
+              {!effectiveComparison.hasSkillData && (
                 <Card>
                   <CardContent className="text-center py-12">
                     <AlertCircle className="h-12 w-12 mx-auto mb-4 text-amber-500 opacity-50" />
@@ -2767,7 +2777,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
         </>
       )}
 
-      {selectedCandidates.length === 1 && (
+      {!isStaticMode && selectedCandidates.length === 1 && (
         <Card>
           <CardContent className="text-center py-12">
             <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -2779,7 +2789,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
       )}
 
       {/* Bottom Export and Back to Top buttons */}
-      {comparison && selectedCandidates.length >= 2 && comparisonTriggered && (
+      {effectiveComparison && ((isStaticMode && effectiveCandidateData) || (selectedCandidates.length >= 2 && comparisonTriggered)) && (
         <div className="flex justify-end gap-3 pt-4">
           <Button
             variant="default"
@@ -2815,10 +2825,10 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
       )}
 
       {/* Hidden radar charts for PDF export */}
-      {comparison && selectedCandidates.length >= 2 && comparisonTriggered && (
+      {effectiveComparison && ((isStaticMode && effectiveCandidateData) || (selectedCandidates.length >= 2 && comparisonTriggered)) && (
         <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
           {/* FIT radar charts */}
-          {comparison.fitAssessments?.map((fitData, index) => {
+          {effectiveComparison.fitAssessments?.map((fitData, index) => {
             if (!fitData) return null;
             
             const radarData = FIT_SKILLS.map(skill => ({
@@ -2833,7 +2843,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                 style={{ width: '560px', height: '420px', backgroundColor: 'white', padding: '32px' }}
               >
                 <h3 style={{ textAlign: 'center', marginBottom: '10px', color: CHART_COLORS[index] }}>
-                  {getCandidateName(selectedCandidateData?.[index])} - FIT
+                  {getCandidateName(effectiveCandidateData?.[index])} - FIT
                 </h3>
                 <ResponsiveContainer width="100%" height="90%">
                   <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
@@ -2848,7 +2858,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
           })}
 
           {/* AI Readiness radar charts */}
-          {comparison.aiReadinessAssessments?.map((aiData, index) => {
+          {effectiveComparison.aiReadinessAssessments?.map((aiData, index) => {
             if (!aiData) return null;
             
             const radarData = AI_READINESS_SKILLS.map(skill => ({
@@ -2863,7 +2873,7 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
                 style={{ width: '560px', height: '420px', backgroundColor: 'white', padding: '32px' }}
               >
                 <h3 style={{ textAlign: 'center', marginBottom: '10px', color: CHART_COLORS[index] }}>
-                  {getCandidateName(selectedCandidateData?.[index])} - AI Readiness
+                  {getCandidateName(effectiveCandidateData?.[index])} - AI Readiness
                 </h3>
                 <ResponsiveContainer width="100%" height="90%">
                   <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
@@ -2878,20 +2888,20 @@ export function SharedCompareTab({ config }: SharedCompareTabProps) {
           })}
 
           {/* Overall Skills Comparison chart - hidden for PDF capture */}
-          {comparison.radarData && comparison.radarData.length > 0 && (
+          {effectiveComparison.radarData && effectiveComparison.radarData.length > 0 && (
             <div 
               id="pdf-comparison-overall-skills-hidden"
               style={{ width: '1000px', height: '750px', backgroundColor: 'white', padding: '20px 40px 40px 40px' }}
             >
               <ResponsiveContainer width="100%" height="100%">
-                <RadarChart cx="50%" cy="50%" outerRadius="75%" data={comparison.radarData.map(item => ({
+                <RadarChart cx="50%" cy="50%" outerRadius="75%" data={effectiveComparison.radarData.map(item => ({
                   ...item,
                   skill: getSkillAcronym(item.skill)
                 }))}>
                   <PolarGrid stroke="#e5e7eb" />
                   <PolarAngleAxis dataKey="skill" tick={{ fill: '#374151', fontSize: 11, fontWeight: 500 }} />
                   <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#9ca3af', fontSize: 10 }} axisLine={false} />
-                  {selectedCandidateData?.map((candidate: any, index: number) => (
+                  {effectiveCandidateData?.map((candidate: any, index: number) => (
                     <Radar
                       key={candidate.user.id}
                       name={getCandidateName(candidate)}

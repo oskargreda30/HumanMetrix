@@ -43,6 +43,12 @@ Key features include:
 - **Super Admin Dashboards**: Advanced analytics covering user activity, assessment funnels, partner health scoring, revenue, geographic data, SLA monitoring, audit logging, profit analytics (revenue vs. OpenAI costs), and results retention consent. Includes Monitoring tab with Email Logs, Logs tab with App Logs (CloudWatch-like real-time log streaming with filtering by level/source/time) and Audit Logs subtabs, (tracks all sent emails with filtering by recipient type/status), Active Sessions management (view/force-logout), and Health subtabs.
 - **Accounting Integration**: Xero integration for expense tracking and revenue synchronization.
 
+### Shared Report Components (staticData Pattern)
+Report rendering uses shared components (SharedIndividualReport, SharedCompareTab, SharedSingleCandidateRoleFit, PartnerMultiCandidateRoleFitTab) with a `staticData` prop for dual-mode rendering:
+- **Interactive mode** (Analysis tab): Components fetch data via API queries, show candidate/role selectors, credit info, re-run buttons
+- **Static mode** (Results tab / PartnerReportView): Components accept pre-loaded data via `staticData`, disable all queries (`enabled: !isStaticMode`), hide interactive UI elements
+This ensures saved reports render identically to freshly generated ones, using the Analysis tab rendering as the master template.
+
 ### System Design Choices
 The architecture emphasizes modularity with clear separation of frontend and backend. It employs a scalable database schema, secure session-based authentication with CSRF protection, and a comprehensive API-driven approach. Content-aware PDF rendering ensures readability. Scalability is achieved through database optimizations, API rate limiting, request deduplication, lazy module loading, static asset caching, and HTTP Keep-Alive. Route-based code splitting using `React.lazy()` optimizes initial load times. Logging sanitizes sensitive data and input validation is centralized. Custom accessible dropdowns enhance usability. Comprehensive SEO is implemented with a centralized component, rich meta tags, structured data, sitemap, and `robots.txt`.
 
