@@ -1001,7 +1001,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   }
 
   // ====== ADDITIONAL SERVICES ======
-  y = ensureSpace(pdf, y, 80);
+  y = newPage(pdf);
   y = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', y);
   y += 3;
 
