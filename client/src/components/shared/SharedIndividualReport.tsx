@@ -407,8 +407,8 @@ export function SharedIndividualReport({ config, staticData }: SharedIndividualR
         <div id="individual-report-content" className="space-y-8 md:space-y-10">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3 md:mb-4">
             <div className="flex items-center gap-2">
-              <h2 className="text-base md:text-2xl font-bold text-white flex items-center gap-1.5 md:gap-2">
-                <FileText className="h-4 w-4 md:h-6 md:w-6 text-blue-300" />
+              <h2 className="text-base md:text-2xl font-bold text-foreground flex items-center gap-1.5 md:gap-2">
+                <FileText className="h-4 w-4 md:h-6 md:w-6 text-blue-500" />
                 Individual Candidate Report
               </h2>
               {!isStaticMode && config.contextType === 'partner' && effectiveCandidateReport?.generatedAt && (
@@ -1156,7 +1156,6 @@ export function SharedIndividualReport({ config, staticData }: SharedIndividualR
             <Button 
               variant="outline"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="text-white border-white/50"
               data-testid="button-back-to-top-individual"
             >
               <ChevronUp className="h-4 w-4 mr-2" />

@@ -1285,10 +1285,10 @@ export function SharedCompareTab({ config, staticData }: SharedCompareTabProps) 
                 )}
 
               {/* Report Header with Date, Re-run, and Export PDF */}
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-4 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4 rounded-lg bg-muted/50 border p-3">
                 <div className="flex items-center gap-2">
                   {!isStaticMode && config.contextType === 'partner' && (effectiveComparison as any)?.generatedAt && (
-                    <div className="flex items-center gap-1.5 text-xs text-white/80" data-testid="text-compare-report-date">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="text-compare-report-date">
                       {(effectiveComparison as any)?.cached ? (
                         <>
                           <Clock className="h-3 w-3" />
@@ -1316,7 +1316,6 @@ export function SharedCompareTab({ config, staticData }: SharedCompareTabProps) 
                       }}
                       disabled={isFetchingComparison}
                       data-testid="button-rerun-comparison-analysis"
-                      className="border-white/30 text-white/90"
                     >
                       <RefreshCw className="h-3 w-3 mr-1" />
                       Re-run Analysis ({selectedCandidates.length} credits)
@@ -2811,7 +2810,7 @@ export function SharedCompareTab({ config, staticData }: SharedCompareTabProps) 
             variant="outline"
             size="lg"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="gap-2 text-white border-white/50 hover:bg-white/10"
+            className="gap-2"
             data-testid="button-back-to-top-compare-bottom"
           >
             <ChevronUp className="h-5 w-5" />
