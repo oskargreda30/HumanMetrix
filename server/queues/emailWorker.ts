@@ -13,14 +13,9 @@ function formatAssessmentName(type: string): string {
   return names[type] || type;
 }
 
-let sendGridInitialized = false;
-let cachedFromEmail: string = '';
-
+// WARNING: Never cache the SendGrid client - access tokens expire.
+// Always fetch fresh credentials before each send.
 async function getSendGridClient() {
-  if (sendGridInitialized && cachedFromEmail) {
-    return { client: sgMail, fromEmail: cachedFromEmail };
-  }
-
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY 
     ? 'repl ' + process.env.REPL_IDENTITY 
@@ -47,9 +42,7 @@ async function getSendGridClient() {
   }
   
   sgMail.setApiKey(connectionSettings.settings.api_key);
-  cachedFromEmail = connectionSettings.settings.from_email;
-  sendGridInitialized = true;
-  return { client: sgMail, fromEmail: cachedFromEmail };
+  return { client: sgMail, fromEmail: connectionSettings.settings.from_email };
 }
 
 function getGmailTransporter() {

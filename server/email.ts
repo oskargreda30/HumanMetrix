@@ -123,10 +123,12 @@ function initGmail(): boolean {
 }
 
 // SendGrid configuration (primary provider)
-let sendGridInitialized = false;
+// WARNING: Never cache the SendGrid client - access tokens expire.
+// Always fetch fresh credentials before each send.
+let sendGridAvailable = false;
 let fromEmail: string = '';
 
-async function getSendGridCredentials() {
+async function getFreshSendGridClient(): Promise<{ client: typeof sgMail; fromEmail: string }> {
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY 
     ? 'repl ' + process.env.REPL_IDENTITY 
@@ -151,27 +153,26 @@ async function getSendGridCredentials() {
   if (!connectionSettings || (!connectionSettings.settings.api_key || !connectionSettings.settings.from_email)) {
     throw new Error('SendGrid not connected - please configure the SendGrid integration');
   }
-  return { apiKey: connectionSettings.settings.api_key, email: connectionSettings.settings.from_email };
+
+  sgMail.setApiKey(connectionSettings.settings.api_key);
+  fromEmail = connectionSettings.settings.from_email;
+  return { client: sgMail, fromEmail };
 }
 
 async function initSendGrid(): Promise<boolean> {
-  if (sendGridInitialized) return true;
-  
   try {
-    const { apiKey, email } = await getSendGridCredentials();
-    sgMail.setApiKey(apiKey);
-    fromEmail = email;
-    sendGridInitialized = true;
-    return true;
+    const { fromEmail } = await getFreshSendGridClient();
+    sendGridAvailable = !!fromEmail;
+    return sendGridAvailable;
   } catch (error: any) {
     console.error('❌ SendGrid initialization failed:', error.message);
+    sendGridAvailable = false;
     return false;
   }
 }
 
 function getTransporter() {
-  // For backward compatibility - returns a truthy value if SendGrid is initialized
-  return sendGridInitialized ? sgMail : null;
+  return sendGridAvailable ? sgMail : null;
 }
 
 // Initialize email system on startup
@@ -209,19 +210,15 @@ interface EmailMessage {
   }>;
 }
 
-// Send email via SendGrid
+// Send email via SendGrid - fetches fresh credentials each time (tokens expire)
 async function sendViaSendGrid(msg: EmailMessage): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  await initSendGrid();
-  if (!sendGridInitialized) {
-    return { success: false, error: 'SendGrid not initialized' };
-  }
-  
   try {
+    const { client, fromEmail } = await getFreshSendGridClient();
     const sendgridMsg = {
       ...msg,
       from: msg.from || { email: fromEmail, name: 'HumanMetrix' },
     };
-    const [response] = await sgMail.send(sendgridMsg as any);
+    const [response] = await client.send(sendgridMsg as any);
     const messageId = response.headers['x-message-id'];
     return { success: true, messageId };
   } catch (error: any) {
