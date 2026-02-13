@@ -39,7 +39,7 @@ async function retryWithBackoff<T>(
 // Level descriptions for prompt architecture tasks
 export const PA_LEVEL_DESCRIPTIONS: Record<string, string> = {
   "1": "Write a prompt to ask for the capital city of France and 3 interesting facts about it.",
-  "2": "List the top 5 programming languages for web development in 2024, formatted as a numbered list with descriptions.",
+  "2": "List the top 5 programming languages for web development in 2026, formatted as a numbered list with descriptions.",
   "3": "Explain quantum computing as a senior physics professor to undergraduate students.",
   "4": "Debug a Python function for finding duplicates with 4 steps: analyze, identify bug, explain, correct.",
   "5": "Generate a 100-word eco-friendly water bottle description with 3 benefits for millennials.",

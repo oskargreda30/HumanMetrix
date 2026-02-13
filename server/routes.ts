@@ -24536,7 +24536,7 @@ async function calculatePromptArchitectureScores(
   
   const levelDescriptions: Record<string, string> = {
     "1": "Write a prompt to ask for the capital city of France and 3 interesting facts about it.",
-    "2": "List the top 5 programming languages for web development in 2024, formatted as a numbered list with descriptions.",
+    "2": "List the top 5 programming languages for web development in 2026, formatted as a numbered list with descriptions.",
     "3": "Explain quantum computing as a senior physics professor to undergraduate students.",
     "4": "Debug a Python function for finding duplicates with 4 steps: analyze, identify bug, explain, correct.",
     "5": "Generate a 100-word eco-friendly water bottle description with 3 benefits for millennials.",
@@ -24720,8 +24720,8 @@ const GOLDEN_SET_PROMPTS = [
   {
     name: "L2-Structured-Good",
     level: 2,
-    taskDescription: "Write a prompt asking the AI to list the top 5 programming languages for web development in 2024, formatted as a numbered list with a brief one-sentence description for each.",
-    promptText: "Please provide a numbered list of the top 5 programming languages for web development in 2024. For each language, include: 1) The language name, 2) A one-sentence description of its primary use case and popularity. Format each entry on its own line.",
+    taskDescription: "Write a prompt asking the AI to list the top 5 programming languages for web development in 2026, formatted as a numbered list with a brief one-sentence description for each.",
+    promptText: "Please provide a numbered list of the top 5 programming languages for web development in 2026. For each language, include: 1) The language name, 2) A one-sentence description of its primary use case and popularity. Format each entry on its own line.",
     expectedScores: { clarity: 19, structure: 18, contextRelevance: 18, creativity: 14, iterativeImprovement: 12, totalScore: 81 }
   },
   {

@@ -2248,7 +2248,7 @@ export default function EmbedAssessment() {
                 <li>Answer each question honestly and thoughtfully</li>
                 <li>There are no right or wrong answers</li>
                 <li>Your progress will be saved automatically</li>
-                <li>{isCurrentPromptArchitecture ? "You have 3 minutes per question (7 levels)" : "You have 20-21 minutes to complete " + (isMultiAssessment ? "each assessment" : "the assessment")}</li>
+                <li>{isCurrentPromptArchitecture ? "You have 3 minutes per question (7 levels)" : "You have 20 minutes to complete " + (isMultiAssessment ? "each assessment" : "the assessment")}</li>
               </ul>
             </div>
 
