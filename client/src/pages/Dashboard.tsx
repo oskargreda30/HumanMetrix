@@ -49,49 +49,49 @@ const getAssessmentMetadata = (type: string) => {
   const metadata: Record<string, { icon: any; description: string; questions: number; minutes: number; iconBg: string }> = {
     'fit': {
       icon: Brain,
-      description: 'Assess behavioral and workplace skills',
+      description: 'Measures 6 core behavioral and workplace competencies',
       questions: 15,
       minutes: 20,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'ai_readiness': {
       icon: Sparkles,
-      description: 'Evaluate AI integration readiness',
+      description: 'Evaluates candidates\' readiness to work with AI systems',
       questions: 21,
       minutes: 20,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'ai-readiness': {
       icon: Sparkles,
-      description: 'Evaluate AI integration readiness',
+      description: 'Evaluates candidates\' readiness to work with AI systems',
       questions: 21,
       minutes: 20,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'prompt_architecture': {
       icon: Code,
-      description: 'Test AI prompt engineering skills',
+      description: 'Measures prompt engineering and AI communication skills',
       questions: 7,
-      minutes: 14,
+      minutes: 21,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'prompt-architecture': {
       icon: Code,
-      description: 'Test AI prompt engineering skills',
+      description: 'Measures prompt engineering and AI communication skills',
       questions: 7,
-      minutes: 14,
+      minutes: 21,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'prompt': {
       icon: Code,
-      description: 'Test AI prompt engineering skills',
+      description: 'Measures prompt engineering and AI communication skills',
       questions: 7,
-      minutes: 14,
+      minutes: 21,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'aiq': {
       icon: Scale,
-      description: 'Assess ethical AI decision-making',
+      description: 'Measures candidates\' ethical AI reasoning and judgment',
       questions: 8,
       minutes: 20,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'

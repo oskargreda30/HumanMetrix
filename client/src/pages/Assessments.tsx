@@ -21,6 +21,7 @@ const assessments = [
     id: "fit",
     title: "FIT Assessment",
     description: "Measure 6 core behavioral and workplace skills",
+    employerDescription: "Measures candidates across 6 core behavioral and workplace competencies to assess cultural fit and role suitability.",
     questionCount: 15,
     duration: "20 min",
     icon: Brain,
@@ -31,6 +32,7 @@ const assessments = [
     id: "ai_readiness",
     title: "AI Readiness Assessment",
     description: "Comprehensive evaluation of your ability to work effectively with AI systems, from prompt engineering to ethical AI usage.",
+    employerDescription: "Evaluates candidates' ability to work effectively with AI systems, covering prompt engineering, data fluency, and ethical AI usage.",
     questionCount: 21,
     duration: "20 min",
     icon: Sparkles,
@@ -41,6 +43,7 @@ const assessments = [
     id: "prompt_architecture",
     title: "Prompt Architecture Assessment",
     description: "Test your ability to design effective prompts across 7 progressive difficulty levels, evaluated by an AI model.",
+    employerDescription: "Assesses candidates' prompt engineering skills across 7 progressive difficulty levels, with AI-evaluated scoring.",
     questionCount: 7,
     duration: "21 min",
     icon: Code2,
@@ -51,6 +54,7 @@ const assessments = [
     id: "aiq",
     title: "Algorithmic Integrity Quotient (AIQ)",
     description: "Evaluate your understanding of AI ethics, bias, fairness, and responsible deployment practices.",
+    employerDescription: "Measures candidates' understanding of AI ethics, bias, fairness, and responsible deployment practices.",
     questionCount: 8,
     duration: "20 min",
     icon: Shield,
@@ -256,7 +260,7 @@ export default function Assessments() {
                   key={assessment.id}
                   id={assessment.id}
                   title={assessment.title}
-                  description={assessment.description}
+                  description={viewMode === 'employer' ? assessment.employerDescription : assessment.description}
                   questionCount={assessment.questionCount}
                   duration={assessment.duration}
                   icon={assessment.icon}

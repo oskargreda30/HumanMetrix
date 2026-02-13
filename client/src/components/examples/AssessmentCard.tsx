@@ -18,7 +18,7 @@ export default function AssessmentCardExample() {
       <AssessmentCard
         id="ai-readiness"
         title="AI Readiness Assessment"
-        description="Comprehensive evaluation of your ability to work effectively with AI systems, from prompt engineering to ethical AI usage."
+        description="Evaluates candidates' ability to work effectively with AI systems, from prompt engineering to ethical AI usage."
         questionCount={21}
         duration="20 min"
         price="£5"
@@ -29,9 +29,9 @@ export default function AssessmentCardExample() {
       <AssessmentCard
         id="prompt-architecture"
         title="Prompt Architecture"
-        description="Test your ability to design effective prompts across 7 progressive difficulty levels, evaluated by an AI model."
+        description="Assesses candidates' prompt engineering skills across 7 progressive difficulty levels, with AI-evaluated scoring."
         questionCount={7}
-        duration="25 min"
+        duration="21 min"
         price="£5"
         icon={Code2}
         status="available"
@@ -40,7 +40,7 @@ export default function AssessmentCardExample() {
       <AssessmentCard
         id="aiq"
         title="Algorithmic Integrity Quotient"
-        description="Evaluate your understanding of AI ethics, bias, fairness, and responsible deployment practices."
+        description="Measures candidates' understanding of AI ethics, bias, fairness, and responsible deployment practices."
         questionCount={8}
         duration="20 min"
         price="£4"
