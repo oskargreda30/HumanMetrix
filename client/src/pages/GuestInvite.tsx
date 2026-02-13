@@ -21,11 +21,12 @@ interface InvitationData {
   assessmentTypes: string[];
   assessmentStatuses: AssessmentStatus[];
   partnerName: string;
-  partnerId: string;
+  partnerId: string | null;
   expiresAt: string | null;
   status: string;
   allComplete: boolean;
   hasExistingAccount: boolean;
+  isAdminInvite?: boolean;
 }
 
 const ASSESSMENT_NAMES: Record<string, string> = {
@@ -108,6 +109,24 @@ export default function GuestInvite() {
     if (authLoading || loading) return;
     if (!currentUser || !invitation) return;
     
+    // For admin invitations with logged-in user, redirect to dashboard to take assessments normally
+    if (invitation.isAdminInvite) {
+      earlyRedirectRef.current = true;
+      if (invitation.allComplete) {
+        toast({
+          title: "Welcome back!",
+          description: "All assessments are complete. Redirecting to your dashboard...",
+        });
+      } else {
+        toast({
+          title: "Welcome!",
+          description: "Redirecting to your dashboard to start your assessments...",
+        });
+      }
+      window.location.href = '/dashboard';
+      return;
+    }
+    
     // If user is already logged in and all assessments are complete, redirect directly to dashboard
     if (invitation.allComplete && invitation.hasExistingAccount) {
       earlyRedirectRef.current = true;
@@ -173,6 +192,8 @@ export default function GuestInvite() {
   }, [token, toast, fetchInvitation]);
 
   useEffect(() => {
+    // Skip auto-start for admin invitations - they use the standard B2C flow via dashboard
+    if (invitation?.isAdminInvite) return;
     if (invitation && !invitation.allComplete && !currentSessionId && !creatingSession) {
       startNextAssessment(invitation);
     } else if (invitation?.allComplete) {
@@ -396,6 +417,85 @@ export default function GuestInvite() {
 
   if (!invitation) {
     return null;
+  }
+
+  // Admin invitations - show login prompt for non-logged-in users (before showingResults check)
+  if (invitation.isAdminInvite && !currentUser) {
+    return (
+      <div className="min-h-[100dvh] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10" />
+        
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
+        
+        <Card className="relative w-full max-w-lg bg-white/95 backdrop-blur-sm shadow-2xl border-0">
+          <CardHeader className="text-center pb-4">
+            <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 flex items-center justify-center">
+              <Mail className="w-8 h-8 text-white" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-slate-900" data-testid="text-admin-invite-title">
+              {invitation.allComplete ? "Assessments Complete!" : "You're Invited!"}
+            </CardTitle>
+            <CardDescription className="text-slate-600 text-base mt-2">
+              {invitation.allComplete 
+                ? `Great job${invitation.name ? `, ${invitation.name.split(" ")[0]}` : ""}! You've completed all ${invitation.assessmentTypes.length} assessment${invitation.assessmentTypes.length > 1 ? 's' : ''}. Log in to view your results.`
+                : `${invitation.partnerName} has invited you to take ${invitation.assessmentTypes.length} assessment${invitation.assessmentTypes.length > 1 ? 's' : ''}.`
+              }
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent className="space-y-6">
+            <div className="bg-slate-50 rounded-lg p-4">
+              <h4 className="font-medium text-slate-900 mb-3">{invitation.allComplete ? "Completed Assessments:" : "Assigned Assessments:"}</h4>
+              <div className="space-y-2">
+                {invitation.assessmentStatuses.map((assessment) => (
+                  <div key={assessment.type} className="flex items-center gap-2 text-sm">
+                    {assessment.status === 'completed' ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <ArrowRight className="h-4 w-4 text-slate-400" />
+                    )}
+                    <span className="text-slate-700">{ASSESSMENT_NAMES[assessment.type] || assessment.type}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="border rounded-lg p-4 bg-cyan-50 border-cyan-200">
+              <div className="flex items-start gap-3">
+                <User className="h-5 w-5 text-cyan-600 mt-0.5" />
+                <div>
+                  <h4 className="font-medium text-slate-900">{invitation.allComplete ? "Log in to view results" : "Log in to get started"}</h4>
+                  <p className="text-sm text-slate-600 mt-1">
+                    Check your email for your login credentials. {invitation.allComplete ? "Log in to view your detailed results on your dashboard." : "Once logged in, you'll be able to start your assessments from your dashboard."}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex flex-col gap-3">
+              <Button
+                onClick={() => setLocation("/login")}
+                className="w-full"
+                data-testid="button-login-admin-invite"
+              >
+                Log In
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                onClick={() => setLocation("/")}
+                className="text-slate-500"
+                data-testid="button-go-home-admin"
+              >
+                Return Home
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   if (showingResults || invitation.allComplete) {

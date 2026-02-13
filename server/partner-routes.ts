@@ -5706,8 +5706,68 @@ export function registerGuestAssessmentRoutes(app: Express) {
       }
       
       const invitation = await storage.getPartnerCandidateInvitationByToken(token);
+      
+      // If not found in partner invitations, check admin invitations table as fallback
       if (!invitation) {
-        return res.status(404).json({ error: "Invitation not found or invalid" });
+        const adminInvitation = await storage.getInvitationByToken(token);
+        if (!adminInvitation) {
+          return res.status(404).json({ error: "Invitation not found or invalid" });
+        }
+        
+        // Check if admin invitation has expired
+        if (adminInvitation.expiresAt && new Date(adminInvitation.expiresAt) < new Date()) {
+          return res.status(410).json({ error: "Invitation has expired" });
+        }
+        
+        // Admin invitations create user accounts upfront, so user should already exist
+        const existingUser = await storage.getUserByEmail(adminInvitation.candidateEmail);
+        const hasExistingAccount = !!existingUser;
+        
+        // Get inviter info for display
+        const inviter = await storage.getUser(adminInvitation.sentBy);
+        const inviterName = inviter?.firstName || inviter?.name || 'HumanMetrix';
+        
+        // For admin invitations, check completion status from user's assessment results
+        const assessmentTypes = (adminInvitation.assessmentTypes as string[]).map((t: string) => normalizeAssessmentId(t));
+        let assessmentStatuses = assessmentTypes.map((type: string) => ({
+          type,
+          status: 'not_started' as string,
+          sessionId: null as string | null,
+        }));
+        
+        if (existingUser) {
+          const userResults = await storage.getResultsByUser(existingUser.id);
+          assessmentStatuses = assessmentTypes.map((type: string) => {
+            const result = userResults.find((r: any) => normalizeAssessmentId(r.assessmentType) === type);
+            return {
+              type,
+              status: result ? 'completed' : 'not_started',
+              sessionId: null,
+            };
+          });
+        }
+        
+        const allComplete = assessmentStatuses.every((s: any) => s.status === 'completed');
+        
+        // Update admin invitation status if all complete
+        if (allComplete && adminInvitation.status !== 'completed') {
+          await storage.updateInvitationStatus(adminInvitation.id, 'completed', new Date());
+        }
+        
+        return res.json({
+          id: adminInvitation.id,
+          email: adminInvitation.candidateEmail,
+          name: adminInvitation.candidateName,
+          assessmentTypes,
+          assessmentStatuses,
+          partnerName: inviterName,
+          partnerId: null,
+          expiresAt: adminInvitation.expiresAt,
+          status: allComplete ? 'completed' : adminInvitation.status,
+          allComplete,
+          hasExistingAccount,
+          isAdminInvite: true,
+        });
       }
       
       // Check if invitation has expired
@@ -5777,6 +5837,28 @@ export function registerGuestAssessmentRoutes(app: Express) {
       
       const invitation = await storage.getPartnerCandidateInvitationByToken(token);
       if (!invitation) {
+        // Check admin invitations - admin invites already create accounts upfront
+        const adminInvitation = await storage.getInvitationByToken(token);
+        if (adminInvitation) {
+          const existingUser = await storage.getUserByEmail(adminInvitation.candidateEmail);
+          if (existingUser) {
+            // Auto-login existing user
+            req.session.userId = existingUser.id;
+            await new Promise<void>((resolve, reject) => {
+              req.session.save((err: any) => {
+                if (err) reject(err);
+                else resolve();
+              });
+            });
+            return res.json({ 
+              success: true, 
+              message: "You have been logged in.",
+              existingAccount: true,
+              redirectTo: '/dashboard'
+            });
+          }
+          return res.status(400).json({ error: "Account not found. Please contact your administrator." });
+        }
         return res.status(404).json({ error: "Invitation not found" });
       }
       
@@ -5900,6 +5982,14 @@ export function registerGuestAssessmentRoutes(app: Express) {
       
       const invitation = await storage.getPartnerCandidateInvitationByToken(token);
       if (!invitation) {
+        // Check admin invitations - admin invites don't use partner sessions
+        const adminInvitation = await storage.getInvitationByToken(token);
+        if (adminInvitation) {
+          return res.status(400).json({ 
+            error: "Admin invitations use the standard assessment flow. Please log in to take your assessments.",
+            isAdminInvite: true
+          });
+        }
         return res.status(404).json({ error: "Invitation not found" });
       }
       
