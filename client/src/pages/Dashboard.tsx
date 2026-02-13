@@ -1702,7 +1702,11 @@ export default function Dashboard() {
                 className="space-y-3"
               >
                 {/* Bulk Purchase Option */}
-                {pricingData.hasBulkDiscount && (
+                {pricingData.hasBulkDiscount && (() => {
+                  const allTotal = pricingData.assessments.reduce((sum, a) => sum + parseFloat(a.priceDisplay.replace(/[^\d.]/g, '')), 0);
+                  const allOriginalDisplay = `${pricingData.currencySymbol}${Math.round(allTotal).toLocaleString()}`;
+                  const allDiscountedDisplay = `${pricingData.currencySymbol}${Math.round(allTotal * 0.75).toLocaleString()}`;
+                  return (
                   <div 
                     className={`border rounded-lg p-4 cursor-pointer transition-colors ${purchaseMode === 'bulk' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
                     onClick={() => setPurchaseMode('bulk')}
@@ -1720,15 +1724,16 @@ export default function Dashboard() {
                           Best value - unlock all your results at once
                         </p>
                         <p className="text-lg font-semibold mt-2">
-                          {pricingData.bulkTotal.priceDisplay}
+                          {allDiscountedDisplay}
                           <span className="text-sm text-muted-foreground line-through ml-2">
-                            {pricingData.bulkTotal.originalPriceDisplay}
+                            {allOriginalDisplay}
                           </span>
                         </p>
                       </div>
                     </div>
                   </div>
-                )}
+                  );
+                })()}
                 
                 {/* Individual Purchase Option */}
                 <div 
@@ -1879,7 +1884,10 @@ export default function Dashboard() {
                 <>
                   <CreditCard className="mr-2 h-4 w-4" />
                   {purchaseMode === 'bulk' 
-                    ? `Unlock All - ${pricingData?.bulkTotal.priceDisplay || ''}`
+                    ? (() => {
+                        const allTotal = pricingData?.assessments.reduce((sum, a) => sum + parseFloat(a.priceDisplay.replace(/[^\d.]/g, '')), 0) || 0;
+                        return `Unlock All - ${pricingData?.currencySymbol || ''}${Math.round(allTotal * 0.75).toLocaleString()}`;
+                      })()
                     : (() => {
                         const selected = pricingData?.assessments.filter(a => selectedAssessments.has(a.type)) || [];
                         const totalAssessments = pricingData?.assessments.length || 0;
