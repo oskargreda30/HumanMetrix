@@ -4127,7 +4127,7 @@ export function registerPartnerRoutes(app: Express) {
 
       const airwallexFn = async (): Promise<PaymentCheckoutResult> => {
         const airwallexAmount = formatAmountForAirwallex(stripeAmount);
-        const merchantOrderId = `b2b_result_${sessionId}_${Date.now()}`;
+        const merchantOrderId = `b2b_res_${sessionId.substring(0, 8)}_${Date.now()}`;
         const intent = await createPaymentIntent({
           amount: airwallexAmount,
           currency: stripeCurrency.toUpperCase(),
@@ -5139,7 +5139,8 @@ export function registerPartnerRoutes(app: Express) {
 
       const airwallexFn = async (): Promise<PaymentCheckoutResult> => {
         const airwallexAmount = formatAmountForAirwallex(stripeAmount);
-        const merchantOrderId = `b2b_bundle_${email}_${Date.now()}`;
+        const emailHash = email.substring(0, 8).replace(/[^a-zA-Z0-9]/g, '');
+        const merchantOrderId = `b2b_bnd_${emailHash}_${Date.now()}`;
         const intent = await createPaymentIntent({
           amount: airwallexAmount,
           currency: currencyCode.toUpperCase(),
