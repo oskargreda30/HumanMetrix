@@ -395,6 +395,21 @@ export default function PartnersTab() {
     },
   });
 
+  const switchPaymentProviderMutation = useMutation({
+    mutationFn: async ({ partnerId, provider }: { partnerId: string; provider: 'stripe' | 'airwallex' }) => {
+      const response = await apiRequest("PUT", `/api/admin/partners/${partnerId}`, { paymentProvider: provider });
+      return response.json();
+    },
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/partners"] });
+      setDetailPartner(prev => prev && prev.id === updated.id ? { ...prev, paymentProvider: updated.paymentProvider } : prev);
+      toast({ title: "Payment Provider Updated", description: `Switched to ${updated.paymentProvider === 'airwallex' ? 'Airwallex' : 'Stripe'} successfully.` });
+    },
+    onError: (error: any) => {
+      toast({ title: "Update Failed", description: error.message || "Failed to switch payment provider", variant: "destructive" });
+    },
+  });
+
   const handleUpdatePartner = () => {
     // Build the full phone number with country code
     const fullPhone = editPhone ? `${editSelectedPhoneCountryData?.dialCode || ""} ${editPhone}`.trim() : "";
@@ -1620,16 +1635,41 @@ export default function PartnersTab() {
                         className="h-8 object-contain rounded"
                         data-testid="img-payment-provider-logo"
                       />
-                      <div>
+                      <div className="flex-1">
                         <div className="text-white font-medium capitalize" data-testid="text-payment-provider-name">
                           {detailPartner.paymentProvider === 'airwallex' ? 'Airwallex' : 'Stripe'}
                         </div>
                         <div className="text-white/50 text-xs">
-                          {detailPartner.paymentProvider === 'airwallex'
-                            ? 'Primary payment provider'
-                            : 'Payment provider'}
+                          Active payment provider
                         </div>
                       </div>
+                      <Select
+                        value={detailPartner.paymentProvider}
+                        disabled={switchPaymentProviderMutation.isPending}
+                        onValueChange={(value: string) => {
+                          if (value !== detailPartner.paymentProvider) {
+                            switchPaymentProviderMutation.mutate({ partnerId: detailPartner.id, provider: value as 'stripe' | 'airwallex' });
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="w-[140px] bg-white/10 border-white/20 text-white disabled:opacity-50" data-testid="select-payment-provider">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="airwallex">
+                            <div className="flex items-center gap-2">
+                              <img src={airwallexLogo} alt="Airwallex" className="h-4 w-4 object-contain rounded-sm" />
+                              Airwallex
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="stripe">
+                            <div className="flex items-center gap-2">
+                              <img src={stripeLogo} alt="Stripe" className="h-4 w-4 object-contain rounded-sm" />
+                              Stripe
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </div>
@@ -3353,13 +3393,24 @@ export default function PartnersTab() {
                           <div>{partner.companyName || partner.name}</div>
                           {partner.companyName && <div className="text-sm text-white/60">{partner.name}</div>}
                         </div>
-                        <img
-                          src={partner.paymentProvider === 'airwallex' ? airwallexLogo : stripeLogo}
-                          alt={partner.paymentProvider === 'airwallex' ? 'Airwallex' : 'Stripe'}
-                          className="h-5 w-5 object-contain rounded-sm shrink-0"
-                          title={partner.paymentProvider === 'airwallex' ? 'Airwallex' : 'Stripe'}
-                          data-testid={`img-provider-${partner.id}`}
-                        />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const newProvider = partner.paymentProvider === 'airwallex' ? 'stripe' : 'airwallex';
+                            switchPaymentProviderMutation.mutate({ partnerId: partner.id, provider: newProvider });
+                          }}
+                          disabled={switchPaymentProviderMutation.isPending}
+                          className="shrink-0 rounded-sm hover:ring-2 hover:ring-cyan-400/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={`${partner.paymentProvider === 'airwallex' ? 'Airwallex' : 'Stripe'} — click to switch`}
+                          data-testid={`button-switch-provider-${partner.id}`}
+                        >
+                          <img
+                            src={partner.paymentProvider === 'airwallex' ? airwallexLogo : stripeLogo}
+                            alt={partner.paymentProvider === 'airwallex' ? 'Airwallex' : 'Stripe'}
+                            className="h-5 w-5 object-contain rounded-sm"
+                            data-testid={`img-provider-${partner.id}`}
+                          />
+                        </button>
                       </div>
                     </TableCell>
                     <TableCell className="text-white/80 text-sm">

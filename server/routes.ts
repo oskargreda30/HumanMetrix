@@ -18455,7 +18455,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       
       const { 
         name, companyName, email, monthlyQuota, pricePerAssessment, isActive, stripeCustomerId, organizationId,
-        billingType, freeTestsAllocated, paymentTermsDays, invoiceNotes, invoiceContact,
+        billingType, paymentProvider, freeTestsAllocated, paymentTermsDays, invoiceNotes, invoiceContact,
         billingCycleAnchor, prepaidBalance, stripePaymentMethodId,
         country, phone, currency, notifyPartner
       } = req.body;
@@ -18478,6 +18478,15 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       const validBillingTypes = ['payg', 'subscription', 'enterprise'];
       const selectedBillingType = billingType && validBillingTypes.includes(billingType) ? billingType : partner.billingType;
       
+      // Validate payment provider if provided
+      const validPaymentProviders = ['stripe', 'airwallex'];
+      if (paymentProvider !== undefined && !validPaymentProviders.includes(paymentProvider)) {
+        return res.status(400).json({ message: "Invalid payment provider. Must be 'stripe' or 'airwallex'." });
+      }
+      const selectedPaymentProvider = paymentProvider && validPaymentProviders.includes(paymentProvider)
+        ? paymentProvider
+        : partner.paymentProvider;
+      
       await storage.updatePartnerAccount(req.params.id, {
         name: name ?? partner.name,
         companyName: companyName ?? partner.companyName,
@@ -18493,6 +18502,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         currency: currency !== undefined ? currency : partner.currency,
         // Billing type and related fields
         billingType: selectedBillingType,
+        paymentProvider: selectedPaymentProvider,
         freeTestsAllocated: freeTestsAllocated !== undefined ? freeTestsAllocated : partner.freeTestsAllocated,
         // Prepaid fields
         prepaidBalance: prepaidBalance !== undefined ? prepaidBalance : partner.prepaidBalance,
