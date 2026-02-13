@@ -590,7 +590,6 @@ export default function SystemSettingsTab() {
           )}
         </CardContent>
       </Card>
-      )}
     </div>
   );
 }
