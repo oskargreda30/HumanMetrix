@@ -8,7 +8,7 @@ import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema, B2B_VOLUME_TIERS, CREDIT_EXPIRATION_MONTHS, getTrialQuotaForTier } from "@shared/schema";
 import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, calculateStripeAmountFromTotalPence, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES, roundPriceUp, formatPrice, getCurrencyForCountry } from "@shared/currencies";
 import { db } from "./db";
-import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, broadcastMessages, SYSTEM_SETTING_KEYS, auditLogs, errorLogs, partnerInvoices, invitations, partnerCandidateInvitations, candidateNotes, emailLogs, sessions, appLogs, partnerAccounts, partnerTeamMembers, type PartnerAccount, type AssessmentSession } from "@shared/schema";
+import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, broadcastMessages, SYSTEM_SETTING_KEYS, auditLogs, errorLogs, partnerInvoices, invitations, partnerCandidateInvitations, candidateNotes, emailLogs, sessions, appLogs, partnerAccounts, partnerTeamMembers, jobRoles, type PartnerAccount, type AssessmentSession } from "@shared/schema";
 import { eq, desc, sql, and, or, gte, isNotNull, inArray } from "drizzle-orm";
 import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPartnerWelcomeEmail, sendGeneralEnquiryEmail, sendB2BResultsEmail, sendPaymentReceiptWithPdf, type PdfReceiptEmailDetails } from "./email";
 import { generateReceiptPDF, generateInvoicePDF, generateInvoiceReceiptNumber, type ReceiptData } from "./generateReceipt";
@@ -18060,6 +18060,45 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
     } catch (error) {
       console.error("Error deleting system setting:", error);
       res.status(500).json({ message: "Failed to delete system setting" });
+    }
+  });
+
+  // Temporary endpoint to restore job_roles deleted during cleanup
+  app.post("/api/admin/restore-job-roles", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      const roles = req.body.roles;
+      if (!Array.isArray(roles) || roles.length === 0) {
+        return res.status(400).json({ message: "No roles provided" });
+      }
+      let inserted = 0;
+      for (const role of roles) {
+        try {
+          await db.insert(jobRoles).values({
+            id: role.id,
+            name: role.name,
+            description: role.description,
+            domain: role.domain,
+            competencies: role.competencies,
+            requiredSkillScores: role.requiredSkillScores,
+            isCustom: role.isCustom,
+            createdBy: role.createdBy || null,
+            createdAt: role.createdAt ? new Date(role.createdAt) : new Date(),
+            updatedAt: role.updatedAt ? new Date(role.updatedAt) : new Date(),
+          }).onConflictDoNothing();
+          inserted++;
+        } catch (e: any) {
+          console.error(`Failed to insert role ${role.name}:`, e.message);
+        }
+      }
+      res.json({ message: `Restored ${inserted} of ${roles.length} job roles` });
+    } catch (error: any) {
+      console.error("Error restoring job roles:", error);
+      res.status(500).json({ message: error.message });
     }
   });
 
