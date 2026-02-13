@@ -3404,12 +3404,15 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         isBulkPurchase: isBulk ? 'true' : 'false',
       };
       
+      console.log(`[Partner Results Checkout] Creating checkout: currency=${stripeCurrency}, localCurrency=${localCurrencyCode}, stripeAmount=${stripeAmount}, discountedLocalPrice=${discountedLocalPrice}, isBulk=${isBulk}, assessments=${assessmentTypesList}, purchaseId=${purchaseRecord.id}`);
+      
       // Candidate-facing payment: always use Airwallex primary (partner preference only applies to partner's own payments)
       const { primary: prPrimary, fallback: prFallback } = getPaymentProviders();
       
       const airwallexPrFn = async (): Promise<PaymentCheckoutResult> => {
         const airwallexAmount = formatAmountForAirwallex(stripeAmount);
         const merchantOrderId = `partner_results_${purchaseRecord.id}_${Date.now()}`;
+        console.log(`[Partner Results Checkout] Airwallex attempt: amount=${airwallexAmount}, currency=${stripeCurrency.toUpperCase()}, merchantOrderId=${merchantOrderId}`);
         const intent = await createPaymentIntent({
           amount: airwallexAmount,
           currency: stripeCurrency.toUpperCase(),
@@ -3433,6 +3436,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       };
       
       const stripePrFn = async (): Promise<PaymentCheckoutResult> => {
+        console.log(`[Partner Results Checkout] Stripe attempt: currency=${stripeCurrency}, unitAmount=${stripeAmount}, email=${user.email}`);
         const session = await stripe.checkout.sessions.create({
           customer_email: user.email,
           line_items: lineItems,
@@ -3464,8 +3468,10 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         res.json({ provider: 'stripe', url: prResult.url });
       }
     } catch (error: any) {
-      console.error("Error creating partner results checkout session:", error);
-      res.status(500).json({ message: "Failed to create checkout session: " + error.message });
+      const errorDetail = error.message || 'Unknown error';
+      const errorType = error.type || error.code || 'UNKNOWN';
+      console.error(`[Partner Results Checkout] FAILED: type=${errorType}, message=${errorDetail}`, error.stack ? error.stack.split('\n').slice(0, 5).join('\n') : '');
+      res.status(500).json({ message: "Failed to create checkout session. Please try again or contact support.", detail: errorDetail });
     }
   });
 

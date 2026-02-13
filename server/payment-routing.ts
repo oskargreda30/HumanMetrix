@@ -90,7 +90,9 @@ export async function createCheckoutWithFallback(
   try {
     return await primaryFn();
   } catch (primaryError: any) {
-    console.error(`[Payment Routing] Primary provider (${primaryProvider}) failed:`, primaryError.message);
+    const primaryDetail = primaryError.message || String(primaryError);
+    const primaryCode = primaryError.statusCode || primaryError.status || primaryError.code || '';
+    console.error(`[Payment Routing] Primary provider (${primaryProvider}) failed: code=${primaryCode}, message=${primaryDetail}`);
 
     if (fallbackFn && fallbackProvider) {
       console.log(`[Payment Routing] Attempting fallback provider (${fallbackProvider})...`);
@@ -99,8 +101,10 @@ export async function createCheckoutWithFallback(
         console.log(`[Payment Routing] Fallback provider (${fallbackProvider}) succeeded`);
         return result;
       } catch (fallbackError: any) {
-        console.error(`[Payment Routing] Fallback provider (${fallbackProvider}) also failed:`, fallbackError.message);
-        throw new Error(`Both payment providers failed. Primary (${primaryProvider}): ${primaryError.message}. Fallback (${fallbackProvider}): ${fallbackError.message}`);
+        const fallbackDetail = fallbackError.message || String(fallbackError);
+        const fallbackCode = fallbackError.statusCode || fallbackError.status || fallbackError.code || '';
+        console.error(`[Payment Routing] Fallback provider (${fallbackProvider}) also failed: code=${fallbackCode}, message=${fallbackDetail}`);
+        throw new Error(`Both payment providers failed. Primary (${primaryProvider}): ${primaryDetail}. Fallback (${fallbackProvider}): ${fallbackDetail}`);
       }
     }
 
