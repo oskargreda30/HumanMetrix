@@ -18176,35 +18176,38 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       await deleteFromTable('assessment_sessions_b2c', sql`DELETE FROM assessment_sessions WHERE partner_id IS NULL AND external_email IS NOT NULL AND LOWER(external_email) NOT IN (${sql.join(protectedEmails.map(e => sql`${e.toLowerCase()}`), sql`, `)})`);
       
       // Phase 7: Partner data for non-protected partners
-      if (protectedPartnerIds.length > 0) {
-        const notProtectedPartnerSql = sql`partner_id NOT IN (${sql.join(protectedPartnerIds.map(id => sql`${id}`), sql`, `)})`;
+      const partnerCondition = protectedPartnerIds.length > 0
+        ? sql`partner_id NOT IN (${sql.join(protectedPartnerIds.map(id => sql`${id}`), sql`, `)})`
+        : sql`1=1`;
+      const partnerIdCondition = protectedPartnerIds.length > 0
+        ? sql`id NOT IN (${sql.join(protectedPartnerIds.map(id => sql`${id}`), sql`, `)})`
+        : sql`1=1`;
         
-        await deleteFromTable('partner_notifications', sql`DELETE FROM partner_notifications WHERE ${notProtectedPartnerSql}`);
-        await deleteFromTable('partner_notification_recipients', sql`DELETE FROM partner_notification_recipients WHERE partner_id NOT IN (${sql.join(protectedPartnerIds.map(id => sql`${id}`), sql`, `)})`);
-        await deleteFromTable('partner_candidate_invitations', sql`DELETE FROM partner_candidate_invitations WHERE ${notProtectedPartnerSql}`);
-        await deleteFromTable('partner_candidate_imports', sql`DELETE FROM partner_candidate_imports WHERE ${notProtectedPartnerSql}`);
-        await deleteFromTable('partner_api_keys', sql`DELETE FROM partner_api_keys WHERE ${notProtectedPartnerSql}`);
-        await deleteFromTable('partner_webhooks', sql`DELETE FROM partner_webhooks WHERE ${notProtectedPartnerSql}`);
-        await deleteFromTable('partner_ats_integrations', sql`DELETE FROM partner_ats_integrations WHERE ${notProtectedPartnerSql}`);
-        await deleteFromTable('partner_scheduled_exports', sql`DELETE FROM partner_scheduled_exports WHERE ${notProtectedPartnerSql}`);
-        await deleteFromTable('partner_overage_ledger', sql`DELETE FROM partner_overage_ledger WHERE ${notProtectedPartnerSql}`);
-        await deleteFromTable('partner_analysis_reports', sql`DELETE FROM partner_analysis_reports WHERE ${notProtectedPartnerSql}`);
-        await deleteFromTable('revenue_sync_logs_partner', sql`DELETE FROM revenue_sync_logs WHERE partner_invoice_id IN (SELECT id FROM partner_invoices WHERE ${notProtectedPartnerSql})`);
-        await deleteFromTable('partner_monthly_usage', sql`DELETE FROM partner_monthly_usage WHERE ${notProtectedPartnerSql}`);
-        await deleteFromTable('partner_invoices', sql`DELETE FROM partner_invoices WHERE ${notProtectedPartnerSql}`);
-        await deleteFromTable('partner_test_packages', sql`DELETE FROM partner_test_packages WHERE ${notProtectedPartnerSql}`);
-        await deleteFromTable('partner_enquiries', sql`DELETE FROM partner_enquiries WHERE ${notProtectedPartnerSql}`);
-        await deleteFromTable('billing_change_requests', sql`DELETE FROM billing_change_requests WHERE ${notProtectedPartnerSql}`);
-        await deleteFromTable('auto_top_up_retries', sql`DELETE FROM auto_top_up_retries WHERE ${notProtectedPartnerSql}`);
-        await deleteFromTable('partner_organisations', sql`DELETE FROM partner_organisations WHERE ${notProtectedPartnerSql}`);
-        await deleteFromTable('partner_accounts', sql`DELETE FROM partner_accounts WHERE id NOT IN (${sql.join(protectedPartnerIds.map(id => sql`${id}`), sql`, `)})`);
-      }
+      await deleteFromTable('partner_notifications', sql`DELETE FROM partner_notifications WHERE ${partnerCondition}`);
+      await deleteFromTable('partner_notification_recipients', sql`DELETE FROM partner_notification_recipients WHERE ${partnerCondition}`);
+      await deleteFromTable('partner_candidate_invitations', sql`DELETE FROM partner_candidate_invitations WHERE ${partnerCondition}`);
+      await deleteFromTable('partner_candidate_imports', sql`DELETE FROM partner_candidate_imports WHERE ${partnerCondition}`);
+      await deleteFromTable('partner_api_keys', sql`DELETE FROM partner_api_keys WHERE ${partnerCondition}`);
+      await deleteFromTable('partner_webhooks', sql`DELETE FROM partner_webhooks WHERE ${partnerCondition}`);
+      await deleteFromTable('partner_ats_integrations', sql`DELETE FROM partner_ats_integrations WHERE ${partnerCondition}`);
+      await deleteFromTable('partner_scheduled_exports', sql`DELETE FROM partner_scheduled_exports WHERE ${partnerCondition}`);
+      await deleteFromTable('partner_overage_ledger', sql`DELETE FROM partner_overage_ledger WHERE ${partnerCondition}`);
+      await deleteFromTable('partner_analysis_reports', sql`DELETE FROM partner_analysis_reports WHERE ${partnerCondition}`);
+      await deleteFromTable('revenue_sync_logs_partner', sql`DELETE FROM revenue_sync_logs WHERE partner_invoice_id IN (SELECT id FROM partner_invoices WHERE ${partnerCondition})`);
+      await deleteFromTable('partner_monthly_usage', sql`DELETE FROM partner_monthly_usage WHERE ${partnerCondition}`);
+      await deleteFromTable('partner_invoices', sql`DELETE FROM partner_invoices WHERE ${partnerCondition}`);
+      await deleteFromTable('partner_test_packages', sql`DELETE FROM partner_test_packages WHERE ${partnerCondition}`);
+      await deleteFromTable('partner_enquiries', sql`DELETE FROM partner_enquiries WHERE ${partnerCondition}`);
+      await deleteFromTable('billing_change_requests', sql`DELETE FROM billing_change_requests WHERE ${partnerCondition}`);
+      await deleteFromTable('auto_top_up_retries', sql`DELETE FROM auto_top_up_retries WHERE ${partnerCondition}`);
+      await deleteFromTable('partner_organisations', sql`DELETE FROM partner_organisations WHERE ${partnerCondition}`);
+      await deleteFromTable('partner_accounts', sql`DELETE FROM partner_accounts WHERE ${partnerIdCondition}`);
       
-      // Phase 8: Standalone/global tables cleanup
-      await deleteFromTable('multi_candidate_comparisons', sql`DELETE FROM multi_candidate_comparisons WHERE created_by NOT IN ${protectedIdsSql}`);
-      await deleteFromTable('job_roles', sql`DELETE FROM job_roles WHERE created_by NOT IN ${protectedIdsSql}`);
-      await deleteFromTable('broadcast_messages', sql`DELETE FROM broadcast_messages WHERE created_by NOT IN ${protectedIdsSql}`);
-      await deleteFromTable('expenses', sql`DELETE FROM expenses WHERE created_by NOT IN ${protectedIdsSql}`);
+      // Phase 8: Standalone/global tables cleanup (handle NULL created_by with IS NULL OR)
+      await deleteFromTable('multi_candidate_comparisons', sql`DELETE FROM multi_candidate_comparisons WHERE created_by IS NULL OR created_by NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('job_roles', sql`DELETE FROM job_roles WHERE created_by IS NULL OR created_by NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('broadcast_messages', sql`DELETE FROM broadcast_messages WHERE created_by IS NULL OR created_by NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('expenses', sql`DELETE FROM expenses WHERE created_by IS NULL OR created_by NOT IN ${protectedIdsSql}`);
       await deleteFromTable('bug_reports', sql`DELETE FROM bug_reports`);
       await deleteFromTable('email_logs', sql`DELETE FROM email_logs`);
       await deleteFromTable('app_logs', sql`DELETE FROM app_logs`);
