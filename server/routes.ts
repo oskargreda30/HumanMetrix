@@ -18205,7 +18205,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       
       // Phase 8: Standalone/global tables cleanup (handle NULL created_by with IS NULL OR)
       await deleteFromTable('multi_candidate_comparisons', sql`DELETE FROM multi_candidate_comparisons WHERE created_by IS NULL OR created_by NOT IN ${protectedIdsSql}`);
-      await deleteFromTable('job_roles', sql`DELETE FROM job_roles WHERE created_by IS NULL OR created_by NOT IN ${protectedIdsSql}`);
+      // job_roles are shared platform resources - do not delete
       await deleteFromTable('broadcast_messages', sql`DELETE FROM broadcast_messages WHERE created_by IS NULL OR created_by NOT IN ${protectedIdsSql}`);
       await deleteFromTable('expenses', sql`DELETE FROM expenses WHERE created_by IS NULL OR created_by NOT IN ${protectedIdsSql}`);
       await deleteFromTable('bug_reports', sql`DELETE FROM bug_reports`);
