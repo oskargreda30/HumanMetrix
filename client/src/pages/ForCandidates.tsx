@@ -198,8 +198,8 @@ export default function ForCandidates() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
               <Link href="/assessments?view=candidate">
-                <Button size="lg" data-testid="button-start-assessments">
-                  Start Assessments
+                <Button size="lg" data-testid="button-get-started">
+                  Get Started
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
