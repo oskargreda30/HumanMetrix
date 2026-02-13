@@ -5,7 +5,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Settings, FlaskConical, RefreshCw, Shield, AlertTriangle, CheckCircle2, Mail, Database, Briefcase } from "lucide-react";
+import { Loader2, Settings, FlaskConical, RefreshCw, Shield, AlertTriangle, CheckCircle2, Mail, Database, Briefcase, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -34,6 +35,9 @@ type EmailProviderData = {
 export default function SystemSettingsTab() {
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const [showCleanupDialog, setShowCleanupDialog] = useState(false);
+  const [cleanupConfirmText, setCleanupConfirmText] = useState('');
+  const [cleanupResult, setCleanupResult] = useState<{ totalDeleted: number; details: { table: string; deleted: number }[]; protectedUsers: string[] } | null>(null);
   
   // Check if we're in development (localhost or replit.dev)
   const isDevelopment = typeof window !== 'undefined' && 
@@ -96,6 +100,29 @@ export default function SystemSettingsTab() {
     },
   });
 
+
+  const cleanupMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/data-cleanup", { confirmText: cleanupConfirmText });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setCleanupResult(data);
+      setShowCleanupDialog(false);
+      setCleanupConfirmText('');
+      toast({
+        title: "Data Cleanup Complete",
+        description: `Successfully deleted ${data.totalDeleted} rows across ${data.details.length} tables.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Data Cleanup Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const getSettingValue = (key: string, defaultValue: any = false): any => {
     const setting = settings?.find(s => s.key === key);
@@ -458,6 +485,109 @@ export default function SystemSettingsTab() {
               <code>./scripts/run-tests-before-deploy.sh && npm run build</code>
             </div>
           </div>
+        </CardContent>
+      </Card>
+      )}
+
+      <Card className="border-destructive/50">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Trash2 className="h-5 w-5 text-destructive" />
+            <CardTitle data-testid="text-data-cleanup-title">Data Cleanup</CardTitle>
+          </div>
+          <CardDescription>
+            Remove all non-essential data from the database. This action is irreversible.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-sm space-y-2">
+            <p className="font-medium text-destructive">Protected accounts (will NOT be deleted):</p>
+            <ul className="list-disc list-inside text-muted-foreground">
+              <li>daena@humanmetrix.co.uk</li>
+              <li>gredaoskar@gmail.com</li>
+              <li>assessments@humanmetrix.co.uk</li>
+              <li>quin@humanmetrix.co.uk</li>
+            </ul>
+            <p className="text-muted-foreground mt-2">
+              All other users, their assessment data, partner accounts, sessions, purchases, and related records will be permanently deleted.
+            </p>
+          </div>
+
+          {cleanupResult && (
+            <div className="p-3 rounded-md bg-green-500/10 border border-green-500/20 text-sm space-y-2">
+              <p className="font-medium text-green-600 dark:text-green-400">
+                <CheckCircle2 className="inline h-4 w-4 mr-1" />
+                Cleanup completed: {cleanupResult.totalDeleted} total rows deleted
+              </p>
+              <div className="max-h-48 overflow-y-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-1">Table</th>
+                      <th className="text-right py-1">Rows Deleted</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cleanupResult.details.map((d, i) => (
+                      <tr key={i} className="border-b border-muted/30">
+                        <td className="py-1 font-mono">{d.table}</td>
+                        <td className="text-right py-1">{d.deleted}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-muted-foreground text-xs mt-1">
+                Protected users: {cleanupResult.protectedUsers.join(', ')}
+              </p>
+            </div>
+          )}
+
+          {!showCleanupDialog ? (
+            <Button
+              variant="destructive"
+              onClick={() => setShowCleanupDialog(true)}
+              data-testid="button-start-cleanup"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Start Data Cleanup
+            </Button>
+          ) : (
+            <div className="space-y-3 p-4 rounded-md border border-destructive/30 bg-destructive/5">
+              <div className="flex items-center gap-2 text-destructive font-medium">
+                <AlertTriangle className="h-5 w-5" />
+                <span>Confirm Destructive Action</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Type <strong>DELETE ALL DATA</strong> below to confirm:
+              </p>
+              <Input
+                value={cleanupConfirmText}
+                onChange={(e) => setCleanupConfirmText(e.target.value)}
+                placeholder="Type DELETE ALL DATA"
+                data-testid="input-cleanup-confirm"
+              />
+              <div className="flex gap-2">
+                <Button
+                  variant="destructive"
+                  disabled={cleanupConfirmText !== 'DELETE ALL DATA' || cleanupMutation.isPending}
+                  onClick={() => cleanupMutation.mutate()}
+                  data-testid="button-confirm-cleanup"
+                >
+                  {cleanupMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  {cleanupMutation.isPending ? 'Cleaning up...' : 'Confirm Deletion'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => { setShowCleanupDialog(false); setCleanupConfirmText(''); }}
+                  disabled={cleanupMutation.isPending}
+                  data-testid="button-cancel-cleanup"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
       )}

@@ -8,8 +8,8 @@ import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema, B2B_VOLUME_TIERS, CREDIT_EXPIRATION_MONTHS, getTrialQuotaForTier } from "@shared/schema";
 import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, calculateStripeAmountFromTotalPence, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES, roundPriceUp, formatPrice, getCurrencyForCountry } from "@shared/currencies";
 import { db } from "./db";
-import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, broadcastMessages, SYSTEM_SETTING_KEYS, auditLogs, errorLogs, partnerInvoices, invitations, partnerCandidateInvitations, candidateNotes, emailLogs, sessions, appLogs, type PartnerAccount, type AssessmentSession } from "@shared/schema";
-import { eq, desc, sql, and, or, gte, isNotNull } from "drizzle-orm";
+import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, broadcastMessages, SYSTEM_SETTING_KEYS, auditLogs, errorLogs, partnerInvoices, invitations, partnerCandidateInvitations, candidateNotes, emailLogs, sessions, appLogs, partnerAccounts, partnerTeamMembers, type PartnerAccount, type AssessmentSession } from "@shared/schema";
+import { eq, desc, sql, and, or, gte, isNotNull, inArray } from "drizzle-orm";
 import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPartnerWelcomeEmail, sendGeneralEnquiryEmail, sendB2BResultsEmail, sendPaymentReceiptWithPdf, type PdfReceiptEmailDetails } from "./email";
 import { generateReceiptPDF, generateInvoicePDF, generateInvoiceReceiptNumber, type ReceiptData } from "./generateReceipt";
 import { generateTemporaryPassword } from "./passwordUtils";
@@ -18060,6 +18060,181 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
     } catch (error) {
       console.error("Error deleting system setting:", error);
       res.status(500).json({ message: "Failed to delete system setting" });
+    }
+  });
+
+  app.post("/api/admin/data-cleanup", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'super_admin') {
+        return res.status(403).json({ message: "Forbidden: Super admin access required" });
+      }
+      
+      const { confirmText } = req.body;
+      if (confirmText !== 'DELETE ALL DATA') {
+        return res.status(400).json({ message: "Invalid confirmation text" });
+      }
+      
+      const protectedEmails = [
+        'daena@humanmetrix.co.uk',
+        'gredaoskar@gmail.com',
+        'assessments@humanmetrix.co.uk',
+        'quin@humanmetrix.co.uk'
+      ];
+      
+      console.log(`[Data Cleanup] Started by super admin ${user.email}. Protected emails: ${protectedEmails.join(', ')}`);
+      
+      const protectedUsers = await db.select({ id: users.id, email: users.email })
+        .from(users)
+        .where(sql`LOWER(${users.email}) IN (${sql.join(protectedEmails.map(e => sql`${e.toLowerCase()}`), sql`, `)})`);
+      
+      const protectedUserIds = protectedUsers.map(u => u.id);
+      
+      if (protectedUserIds.length === 0) {
+        return res.status(400).json({ message: "No protected users found in database. Aborting for safety." });
+      }
+      
+      console.log(`[Data Cleanup] Found ${protectedUserIds.length} protected users: ${protectedUsers.map(u => u.email).join(', ')}`);
+      
+      const deletionLog: { table: string; deleted: number }[] = [];
+      
+      const deleteFromTable = async (tableName: string, condition: any) => {
+        const result = await db.execute(condition);
+        const count = Number(result.rowCount || 0);
+        if (count > 0) {
+          deletionLog.push({ table: tableName, deleted: count });
+          console.log(`[Data Cleanup] Deleted ${count} rows from ${tableName}`);
+        }
+        return count;
+      };
+      
+      const protectedIdsSql = sql`(${sql.join(protectedUserIds.map(id => sql`${id}`), sql`, `)})`;
+      
+      // Phase 1: Delete tables with no FK dependents (leaf tables)
+      // Tables referencing assessment_results
+      await deleteFromTable('aiq_rationales', sql`DELETE FROM aiq_rationales WHERE result_id IN (SELECT id FROM assessment_results WHERE user_id NOT IN ${protectedIdsSql})`);
+      await deleteFromTable('prompt_architecture_evaluations', sql`DELETE FROM prompt_architecture_evaluations WHERE result_id IN (SELECT id FROM assessment_results WHERE user_id NOT IN ${protectedIdsSql})`);
+      
+      // Tables referencing users directly (leaf tables)
+      await deleteFromTable('admin_notifications', sql`DELETE FROM admin_notifications WHERE user_id NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('user_references', sql`DELETE FROM user_references WHERE user_id NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('marketing_optins', sql`DELETE FROM marketing_optins WHERE email NOT IN (${sql.join(protectedEmails.map(e => sql`${e}`), sql`, `)})`);
+      await deleteFromTable('cached_role_alignments', sql`DELETE FROM cached_role_alignments WHERE user_id NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('candidate_tags', sql`DELETE FROM candidate_tags WHERE user_id NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('candidate_notes', sql`DELETE FROM candidate_notes WHERE user_id NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('report_exports', sql`DELETE FROM report_exports WHERE created_by NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('ai_usage_costs', sql`DELETE FROM ai_usage_costs WHERE user_id NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('audit_logs', sql`DELETE FROM audit_logs WHERE user_id IS NULL OR user_id NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('error_logs', sql`DELETE FROM error_logs WHERE user_id IS NULL OR user_id NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('partner_result_purchases', sql`DELETE FROM partner_result_purchases WHERE user_id NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('email_verification_codes', sql`DELETE FROM email_verification_codes`);
+      
+      // Phase 2: Delete purchase chain
+      await deleteFromTable('purchase_items', sql`DELETE FROM purchase_items WHERE purchase_id IN (SELECT id FROM purchases WHERE user_id NOT IN ${protectedIdsSql})`);
+      await deleteFromTable('purchases', sql`DELETE FROM purchases WHERE user_id NOT IN ${protectedIdsSql}`);
+      
+      // Phase 3: Assessment results (after aiq_rationales and prompt_architecture_evaluations)
+      await deleteFromTable('assessment_results', sql`DELETE FROM assessment_results WHERE user_id NOT IN ${protectedIdsSql}`);
+      
+      // Phase 4: Partner-related cascade
+      // Get partner accounts owned by protected users
+      const protectedPartnerAccounts = await db.select({ id: partnerAccounts.id })
+        .from(partnerAccounts)
+        .innerJoin(partnerTeamMembers, eq(partnerTeamMembers.partnerId, partnerAccounts.id))
+        .where(and(
+          inArray(partnerTeamMembers.userId, protectedUserIds),
+          eq(partnerTeamMembers.role, 'owner')
+        ));
+      const protectedPartnerIds = protectedPartnerAccounts.map(p => p.id);
+      
+      // Delete partner team members for non-protected partners (by partner_id, not user_id, to avoid FK issues)
+      if (protectedPartnerIds.length > 0) {
+        await deleteFromTable('partner_team_members', sql`DELETE FROM partner_team_members WHERE partner_id NOT IN (${sql.join(protectedPartnerIds.map(id => sql`${id}`), sql`, `)})`);
+      } else {
+        await deleteFromTable('partner_team_members', sql`DELETE FROM partner_team_members`);
+      }
+      
+      // Phase 5: Ecosystem data  
+      await deleteFromTable('ecosystem_team_members', sql`DELETE FROM ecosystem_team_members WHERE project_id IN (SELECT id FROM ecosystem_projects WHERE user_id NOT IN ${protectedIdsSql})`);
+      await deleteFromTable('ecosystem_projects', sql`DELETE FROM ecosystem_projects WHERE user_id NOT IN ${protectedIdsSql}`);
+      
+      // Phase 6: Assessment sessions and dependent tables
+      // First delete tables that reference assessment_sessions
+      await deleteFromTable('email_verification_codes_sessions', sql`DELETE FROM email_verification_codes WHERE session_id IS NOT NULL AND session_id IN (SELECT id FROM assessment_sessions WHERE partner_id IS NOT NULL AND partner_id NOT IN (${protectedPartnerIds.length > 0 ? sql.join(protectedPartnerIds.map(id => sql`${id}`), sql`, `) : sql`'none'`}))`);
+      
+      // Webhook delivery logs and quota ledger reference assessment_sessions
+      await deleteFromTable('webhook_delivery_logs', sql`DELETE FROM webhook_delivery_logs WHERE partner_id NOT IN (${protectedPartnerIds.length > 0 ? sql.join(protectedPartnerIds.map(id => sql`${id}`), sql`, `) : sql`'none'`})`);
+      await deleteFromTable('usage_events', sql`DELETE FROM usage_events WHERE partner_id NOT IN (${protectedPartnerIds.length > 0 ? sql.join(protectedPartnerIds.map(id => sql`${id}`), sql`, `) : sql`'none'`})`);
+      await deleteFromTable('partner_quota_ledger', sql`DELETE FROM partner_quota_ledger WHERE partner_id NOT IN (${protectedPartnerIds.length > 0 ? sql.join(protectedPartnerIds.map(id => sql`${id}`), sql`, `) : sql`'none'`})`);
+      
+      // Delete assessment sessions not belonging to protected partners
+      await deleteFromTable('assessment_sessions', sql`DELETE FROM assessment_sessions WHERE partner_id IS NOT NULL AND partner_id NOT IN (${protectedPartnerIds.length > 0 ? sql.join(protectedPartnerIds.map(id => sql`${id}`), sql`, `) : sql`'none'`})`);
+      // Delete B2C sessions by non-protected users 
+      await deleteFromTable('assessment_sessions_b2c', sql`DELETE FROM assessment_sessions WHERE partner_id IS NULL AND external_email IS NOT NULL AND LOWER(external_email) NOT IN (${sql.join(protectedEmails.map(e => sql`${e.toLowerCase()}`), sql`, `)})`);
+      
+      // Phase 7: Partner data for non-protected partners
+      if (protectedPartnerIds.length > 0) {
+        const notProtectedPartnerSql = sql`partner_id NOT IN (${sql.join(protectedPartnerIds.map(id => sql`${id}`), sql`, `)})`;
+        
+        await deleteFromTable('partner_notifications', sql`DELETE FROM partner_notifications WHERE ${notProtectedPartnerSql}`);
+        await deleteFromTable('partner_notification_recipients', sql`DELETE FROM partner_notification_recipients WHERE partner_id NOT IN (${sql.join(protectedPartnerIds.map(id => sql`${id}`), sql`, `)})`);
+        await deleteFromTable('partner_candidate_invitations', sql`DELETE FROM partner_candidate_invitations WHERE ${notProtectedPartnerSql}`);
+        await deleteFromTable('partner_candidate_imports', sql`DELETE FROM partner_candidate_imports WHERE ${notProtectedPartnerSql}`);
+        await deleteFromTable('partner_api_keys', sql`DELETE FROM partner_api_keys WHERE ${notProtectedPartnerSql}`);
+        await deleteFromTable('partner_webhooks', sql`DELETE FROM partner_webhooks WHERE ${notProtectedPartnerSql}`);
+        await deleteFromTable('partner_ats_integrations', sql`DELETE FROM partner_ats_integrations WHERE ${notProtectedPartnerSql}`);
+        await deleteFromTable('partner_scheduled_exports', sql`DELETE FROM partner_scheduled_exports WHERE ${notProtectedPartnerSql}`);
+        await deleteFromTable('partner_overage_ledger', sql`DELETE FROM partner_overage_ledger WHERE ${notProtectedPartnerSql}`);
+        await deleteFromTable('partner_analysis_reports', sql`DELETE FROM partner_analysis_reports WHERE ${notProtectedPartnerSql}`);
+        await deleteFromTable('partner_monthly_usage', sql`DELETE FROM partner_monthly_usage WHERE ${notProtectedPartnerSql}`);
+        await deleteFromTable('partner_invoices', sql`DELETE FROM partner_invoices WHERE ${notProtectedPartnerSql}`);
+        await deleteFromTable('partner_test_packages', sql`DELETE FROM partner_test_packages WHERE ${notProtectedPartnerSql}`);
+        await deleteFromTable('partner_enquiries', sql`DELETE FROM partner_enquiries WHERE ${notProtectedPartnerSql}`);
+        await deleteFromTable('billing_change_requests', sql`DELETE FROM billing_change_requests WHERE ${notProtectedPartnerSql}`);
+        await deleteFromTable('auto_top_up_retries', sql`DELETE FROM auto_top_up_retries WHERE ${notProtectedPartnerSql}`);
+        await deleteFromTable('partner_organisations', sql`DELETE FROM partner_organisations WHERE ${notProtectedPartnerSql}`);
+        await deleteFromTable('partner_accounts', sql`DELETE FROM partner_accounts WHERE id NOT IN (${sql.join(protectedPartnerIds.map(id => sql`${id}`), sql`, `)})`);
+      }
+      
+      // Phase 8: Standalone/global tables cleanup
+      await deleteFromTable('multi_candidate_comparisons', sql`DELETE FROM multi_candidate_comparisons WHERE created_by NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('job_roles', sql`DELETE FROM job_roles WHERE created_by NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('broadcast_messages', sql`DELETE FROM broadcast_messages WHERE created_by NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('expenses', sql`DELETE FROM expenses WHERE created_by NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('bug_reports', sql`DELETE FROM bug_reports`);
+      await deleteFromTable('email_logs', sql`DELETE FROM email_logs`);
+      await deleteFromTable('app_logs', sql`DELETE FROM app_logs`);
+      await deleteFromTable('stripe_webhook_events', sql`DELETE FROM stripe_webhook_events`);
+      await deleteFromTable('golden_set_results', sql`DELETE FROM golden_set_results`);
+      
+      // Phase 9: Invitations
+      await deleteFromTable('invitations', sql`DELETE FROM invitations WHERE sent_by NOT IN ${protectedIdsSql}`);
+      
+      // Phase 10: Sessions (auth sessions)
+      await deleteFromTable('sessions', sql`DELETE FROM sessions WHERE 1=1`);
+      
+      // Phase 11: Delete non-protected users  
+      await deleteFromTable('users', sql`DELETE FROM users WHERE id NOT IN ${protectedIdsSql}`);
+      
+      // Phase 12: Clean up orphaned organizations
+      await deleteFromTable('organizations', sql`DELETE FROM organizations WHERE id NOT IN (SELECT DISTINCT organization_id FROM users WHERE organization_id IS NOT NULL) AND id NOT IN (SELECT DISTINCT organization_id FROM partner_accounts WHERE organization_id IS NOT NULL)`);
+      
+      const totalDeleted = deletionLog.reduce((sum, entry) => sum + entry.deleted, 0);
+      
+      console.log(`[Data Cleanup] Completed. Total rows deleted: ${totalDeleted}`);
+      console.log(`[Data Cleanup] Details:`, JSON.stringify(deletionLog));
+      
+      res.json({ 
+        success: true, 
+        totalDeleted,
+        details: deletionLog,
+        protectedUsers: protectedUsers.map(u => u.email),
+      });
+    } catch (error: any) {
+      console.error("[Data Cleanup] Error:", error);
+      res.status(500).json({ message: `Data cleanup failed: ${error.message}` });
     }
   });
 
