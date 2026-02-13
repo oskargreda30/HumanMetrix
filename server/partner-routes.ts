@@ -3337,7 +3337,7 @@ export function registerPartnerRoutes(app: Express) {
             isBundle: String(isBundle),
           },
         });
-        return { provider: 'stripe', url: stripeSession.url };
+        return { provider: 'stripe', url: stripeSession.url, sessionId: stripeSession.id };
       };
 
       const result = await createCheckoutWithFallback(primary, fallback, airwallexFn, stripeFn);
@@ -4181,7 +4181,7 @@ export function registerPartnerRoutes(app: Express) {
           },
           customer_email: session.externalEmail || undefined,
         });
-        return { provider: 'stripe', url: checkoutSession.url };
+        return { provider: 'stripe', url: checkoutSession.url, sessionId: checkoutSession.id };
       };
 
       const result = await createCheckoutWithFallback(primary, fallback, airwallexFn, stripeFn);
@@ -5196,7 +5196,7 @@ export function registerPartnerRoutes(app: Express) {
             countryCode: countryCode || 'GB',
           },
         });
-        return { provider: 'stripe', url: session.url };
+        return { provider: 'stripe', url: session.url, sessionId: session.id };
       };
 
       const result = await createCheckoutWithFallback(primary, fallbackProvider, airwallexFn, stripeFn);

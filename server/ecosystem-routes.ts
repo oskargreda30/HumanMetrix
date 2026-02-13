@@ -21,6 +21,8 @@ import {
   getStripeCurrencyCode, 
   COUNTRY_CURRENCY_MAP
 } from "@shared/currencies";
+import { createPaymentIntent, formatAmountForAirwallex, airwallexEnv } from "./airwallex";
+import { getPaymentProviders, createCheckoutWithFallback, type PaymentCheckoutResult } from "./payment-routing";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2024-11-20.acacia" as any,
@@ -1944,38 +1946,78 @@ export function registerEcosystemRoutes(app: Express): void {
       // Get base URL for redirects
       const baseUrl = getBaseUrl(req);
 
-      // Create Stripe checkout session
-      const session = await stripe.checkout.sessions.create({
-        customer_email: user.email,
-        adaptive_pricing: { enabled: false }, // Disable currency selection
-        line_items: [{
-          price_data: {
-            currency: stripeCurrency,
-            product_data: {
-              name: "Ecosystem Team Diagnostic Report",
-              description: "AI-powered team capability analysis with gap identification and hire recommendations",
-            },
-            unit_amount: adjustedPrice,
-          },
-          quantity: 1,
-        }],
-        mode: "payment",
-        allow_promotion_codes: true, // Enable promo codes like FREE
-        payment_intent_data: {
-          receipt_email: user.email, // Send receipt email
-        },
-        success_url: `${baseUrl}${returnPath || '/ecosystem/start'}?project=${projectId}&payment=success`,
-        cancel_url: `${baseUrl}${returnPath || '/ecosystem/start'}?project=${projectId}&payment=cancelled`,
-        metadata: {
-          type: "ecosystem_project",
-          projectId: projectId,
-          userId: user.id,
-          countryCode: userCountry,
-          localCurrency: localCurrencyCode,
-        },
-      });
+      const ecoMeta = {
+        type: "ecosystem_project",
+        projectId: projectId,
+        userId: user.id,
+        countryCode: userCountry,
+        localCurrency: localCurrencyCode,
+      };
 
-      res.json({ url: session.url, sessionId: session.id });
+      const { primary: ecoPrimary, fallback: ecoFallback } = getPaymentProviders();
+
+      const airwallexEcoFn = async (): Promise<PaymentCheckoutResult> => {
+        const airwallexAmount = formatAmountForAirwallex(adjustedPrice);
+        const merchantOrderId = `ecosystem_${projectId}_${Date.now()}`;
+        const intent = await createPaymentIntent({
+          amount: airwallexAmount,
+          currency: stripeCurrency.toUpperCase(),
+          merchantOrderId,
+          returnUrl: `${baseUrl}${returnPath || '/ecosystem/start'}?project=${projectId}&payment=success&provider=airwallex`,
+          customerEmail: user.email,
+          description: 'Ecosystem Team Diagnostic Report',
+          metadata: ecoMeta,
+        });
+        return {
+          provider: 'airwallex',
+          intentId: intent.id,
+          clientSecret: intent.clientSecret,
+          amount: airwallexAmount,
+          currency: stripeCurrency.toUpperCase(),
+          returnUrl: `${baseUrl}${returnPath || '/ecosystem/start'}?project=${projectId}&payment=success&provider=airwallex`,
+        };
+      };
+
+      const stripeEcoFn = async (): Promise<PaymentCheckoutResult> => {
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
+          adaptive_pricing: { enabled: false },
+          customer_email: user.email,
+          line_items: [{
+            price_data: {
+              currency: stripeCurrency,
+              product_data: {
+                name: "Ecosystem Team Diagnostic Report",
+                description: "AI-powered team capability analysis with gap identification and hire recommendations",
+              },
+              unit_amount: adjustedPrice,
+            },
+            quantity: 1,
+          }],
+          mode: "payment",
+          allow_promotion_codes: true,
+          success_url: `${baseUrl}${returnPath || '/ecosystem/start'}?project=${projectId}&payment=success&session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${baseUrl}${returnPath || '/ecosystem/start'}?project=${projectId}&payment=cancelled`,
+          metadata: ecoMeta,
+        });
+        return { provider: 'stripe', url: session.url, sessionId: session.id };
+      };
+
+      const ecoResult = await createCheckoutWithFallback(ecoPrimary, ecoFallback, airwallexEcoFn, stripeEcoFn);
+
+      if (ecoResult.provider === 'airwallex') {
+        res.json({
+          provider: 'airwallex',
+          airwallexEnv,
+          intentId: ecoResult.intentId,
+          clientSecret: ecoResult.clientSecret,
+          amount: ecoResult.amount,
+          currency: ecoResult.currency,
+          returnUrl: ecoResult.returnUrl,
+        });
+      } else {
+        res.json({ provider: 'stripe', url: ecoResult.url, sessionId: ecoResult.sessionId });
+      }
     } catch (error: any) {
       console.error("[Ecosystem] Error creating checkout session:", error);
       res.status(500).json({ error: "Failed to create checkout session" });

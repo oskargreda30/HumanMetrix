@@ -1494,6 +1494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stripeResultsFn = async (): Promise<PaymentCheckoutResult> => {
         const session = await stripe.checkout.sessions.create({
           payment_method_types: ['card'],
+          adaptive_pricing: { enabled: false },
           customer_email: user.email,
           line_items: [
             {
@@ -2858,7 +2859,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         const merchantOrderId = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
         const intent = await createPaymentIntent({
           amount: airwallexAmount,
-          currency: localCurrencyCode.toUpperCase(),
+          currency: stripeCurrency.toUpperCase(),
           merchantOrderId,
           returnUrl: `${baseUrl}/purchase/success`,
           customerEmail,
@@ -2870,13 +2871,15 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
           intentId: intent.id,
           clientSecret: intent.clientSecret,
           amount: airwallexAmount,
-          currency: localCurrencyCode.toUpperCase(),
+          currency: stripeCurrency.toUpperCase(),
           returnUrl: `${baseUrl}/purchase/success`,
         };
       };
       
       const stripeGuestFn = async (): Promise<PaymentCheckoutResult> => {
         const session = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
+          adaptive_pricing: { enabled: false },
           customer_email: customerEmail,
           line_items: lineItems,
           mode: "payment",
@@ -3126,7 +3129,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         const merchantOrderId = `checkout_${userId}_${Date.now()}`;
         const intent = await createPaymentIntent({
           amount: airwallexAmount,
-          currency: localCurrencyCode.toUpperCase(),
+          currency: stripeCurrency.toUpperCase(),
           merchantOrderId,
           returnUrl: `${baseUrl}/purchase/success`,
           customerEmail: user.email,
@@ -3138,16 +3141,19 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
           intentId: intent.id,
           clientSecret: intent.clientSecret,
           amount: airwallexAmount,
-          currency: localCurrencyCode.toUpperCase(),
+          currency: stripeCurrency.toUpperCase(),
           returnUrl: `${baseUrl}/purchase/success`,
         };
       };
       
       const stripeCheckoutFn = async (): Promise<PaymentCheckoutResult> => {
         const session = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
+          adaptive_pricing: { enabled: false },
           customer_email: user.email,
           line_items: lineItems,
           mode: "payment",
+          allow_promotion_codes: true,
           success_url: `${baseUrl}/purchase/success?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${baseUrl}/dashboard?payment=cancelled`,
           metadata: checkoutMeta,
@@ -3438,6 +3444,8 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       const stripePrFn = async (): Promise<PaymentCheckoutResult> => {
         console.log(`[Partner Results Checkout] Stripe attempt: currency=${stripeCurrency}, unitAmount=${stripeAmount}, email=${user.email}`);
         const session = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
+          adaptive_pricing: { enabled: false },
           customer_email: user.email,
           line_items: lineItems,
           mode: "payment",
@@ -12035,6 +12043,7 @@ Return valid JSON with only the requested fields.`;
         }
         
         const session = await stripeClient.checkout.sessions.create({
+          payment_method_types: ['card'],
           mode: 'payment',
           adaptive_pricing: { enabled: false },
           customer: customerId,
@@ -19105,6 +19114,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
         
         const session = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
           mode: 'payment',
           adaptive_pricing: { enabled: false },
           customer: partner.stripeCustomerId || undefined,
@@ -20086,11 +20096,12 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       const { primary: invPrimary, fallback: invFallback } = getPaymentProviders(partner.paymentProvider);
       
       const airwallexInvFn = async (): Promise<PaymentCheckoutResult> => {
+        const invCurrency = (invoice.currency || 'GBP').toUpperCase();
         const paymentIntent = await createPaymentIntent({
           amount: formatAmountForAirwallex(invoice.totalAmount),
-          currency: invoice.currency || 'gbp',
+          currency: invCurrency,
           merchantOrderId: `invoice_${invoice.id}`,
-          returnUrl: `${baseUrl}/admin/invoices?payment_success=true&invoice=${invoice.id}`,
+          returnUrl: `${baseUrl}/admin/invoices?payment_success=true&invoice=${invoice.id}&provider=airwallex`,
           customerEmail: partner.billingEmail || partner.email,
           description: `Invoice ${invoice.invoiceNumber} - HumanMetrix`,
           metadata: invoiceMeta,
@@ -20099,11 +20110,15 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
           provider: 'airwallex',
           intentId: paymentIntent.id,
           clientSecret: paymentIntent.clientSecret,
+          amount: formatAmountForAirwallex(invoice.totalAmount),
+          currency: invCurrency,
+          returnUrl: `${baseUrl}/admin/invoices?payment_success=true&invoice=${invoice.id}&provider=airwallex`,
         };
       };
       
       const stripeInvFn = async (): Promise<PaymentCheckoutResult> => {
         const session = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
           mode: 'payment',
           adaptive_pricing: { enabled: false },
           customer: partner.stripeCustomerId || undefined,
