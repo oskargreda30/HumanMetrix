@@ -758,7 +758,7 @@ export default function PartnerMultiCandidateRoleFitTab({ staticData }: PartnerM
       {((isStaticMode && effectiveComparison) || (comparison && !compareMutation.isPending)) && (
         <>
           {/* Report Header with Date, Re-run, and Export PDF */}
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-4 rounded-lg bg-muted/50 border p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4 rounded-lg bg-card border border-border p-3">
             <div className="flex items-center gap-2">
               {!isStaticMode && (effectiveComparison as any)?.generatedAt && (
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="text-multi-rolefit-report-date">
@@ -1562,7 +1562,7 @@ export default function PartnerMultiCandidateRoleFitTab({ staticData }: PartnerM
           <SkillsLegend />
 
           {/* Export PDF and Back to Top Buttons - Bottom of Dashboard */}
-          <div className="flex justify-end gap-4 pt-6 pb-4">
+          <div className="flex justify-end gap-4 pt-6 pb-4 rounded-lg bg-card border border-border p-3">
             <Button
               onClick={handleExportPDF}
               disabled={isExporting}
@@ -1582,7 +1582,7 @@ export default function PartnerMultiCandidateRoleFitTab({ staticData }: PartnerM
               )}
             </Button>
             <Button
-              variant="default"
+              variant="outline"
               size="lg"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               data-testid="button-back-to-top-bottom"

@@ -1285,7 +1285,7 @@ export function SharedCompareTab({ config, staticData }: SharedCompareTabProps) 
                 )}
 
               {/* Report Header with Date, Re-run, and Export PDF */}
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-4 rounded-lg bg-muted/50 border p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4 rounded-lg bg-card border border-border p-3">
                 <div className="flex items-center gap-2">
                   {!isStaticMode && config.contextType === 'partner' && (effectiveComparison as any)?.generatedAt && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="text-compare-report-date">
@@ -2785,7 +2785,7 @@ export function SharedCompareTab({ config, staticData }: SharedCompareTabProps) 
 
       {/* Bottom Export and Back to Top buttons */}
       {effectiveComparison && ((isStaticMode && effectiveCandidateData) || (selectedCandidates.length >= 2 && comparisonTriggered)) && (
-        <div className="flex justify-end gap-3 pt-4">
+        <div className="flex justify-end gap-3 pt-4 rounded-lg bg-card border border-border p-3">
           <Button
             variant="default"
             size="lg"

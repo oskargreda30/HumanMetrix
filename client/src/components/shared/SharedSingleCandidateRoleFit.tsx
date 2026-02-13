@@ -475,7 +475,7 @@ export function SharedSingleCandidateRoleFit({ config, staticData }: SharedSingl
       {((isStaticMode && effectiveAlignment) || (alignment && loadingTransitionComplete && !isRerunning)) && (
         <div className="space-y-6">
           {/* Report Header with Date, Re-run, and Export PDF */}
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/50 border p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-card border border-border p-3">
             <div className="flex items-center gap-2">
               {!isStaticMode && config.contextType === 'partner' && (effectiveAlignment as any)?.generatedAt && (
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="text-rolefit-report-date">
@@ -1172,7 +1172,7 @@ export function SharedSingleCandidateRoleFit({ config, staticData }: SharedSingl
           <AdditionalServicesSection enquiryContext="Role Fit Analysis - Premium Services" />
 
           {/* Bottom PDF Export Button */}
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="flex justify-end gap-3 pt-4 rounded-lg bg-card border border-border p-3">
             <Button
               variant="default"
               size="lg"

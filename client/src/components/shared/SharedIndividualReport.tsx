@@ -405,14 +405,14 @@ export function SharedIndividualReport({ config, staticData }: SharedIndividualR
 
       {((isStaticMode && effectiveCandidateReport && effectiveCandidateData) || (selectedCandidate && reportTriggered && loadingTransitionComplete && !isRerunning && candidateReport && selectedCandidateData)) && (
         <div id="individual-report-content" className="space-y-8 md:space-y-10">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-3 md:mb-4">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3 md:mb-4 rounded-lg bg-card border border-border p-3">
+            <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-base md:text-2xl font-bold text-foreground flex items-center gap-1.5 md:gap-2">
                 <FileText className="h-4 w-4 md:h-6 md:w-6 text-blue-500" />
                 Individual Candidate Report
               </h2>
               {!isStaticMode && config.contextType === 'partner' && effectiveCandidateReport?.generatedAt && (
-                <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-blue-100" data-testid="text-individual-report-date-top">
+                <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-muted-foreground" data-testid="text-individual-report-date-top">
                   {effectiveCandidateReport?.cached ? (
                     <>
                       <Clock className="h-3 w-3" />
@@ -440,7 +440,6 @@ export function SharedIndividualReport({ config, staticData }: SharedIndividualR
                   }}
                   disabled={isFetchingReport}
                   data-testid="button-rerun-individual-analysis"
-                  className="text-xs md:text-sm border-blue-300/50 text-blue-100"
                 >
                   <RefreshCw className="h-3 w-3 mr-1" />
                   Re-run Analysis (1 credit)
@@ -451,7 +450,6 @@ export function SharedIndividualReport({ config, staticData }: SharedIndividualR
                 onClick={handleExportPDF}
                 disabled={isExporting}
                 data-testid="button-export-pdf-top"
-                className="text-xs md:text-sm"
               >
                 {isExporting ? (
                   <>
@@ -1120,7 +1118,7 @@ export function SharedIndividualReport({ config, staticData }: SharedIndividualR
             <SkillsLegend className="mt-4" />
           )}
 
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 rounded-lg bg-card border border-border p-3">
             <Button 
               onClick={handleExportPDF}
               disabled={isExporting || !effectiveCandidateReport?.aiInsights || false /* no secondary loading */}
