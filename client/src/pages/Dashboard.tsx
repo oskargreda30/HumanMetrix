@@ -384,8 +384,8 @@ export default function Dashboard() {
             currency: data.currency || 'GBP',
             countryCode: countryCode || 'GB',
             airwallexEnv: data.airwallexEnv,
-            successUrl: `${window.location.origin}/dashboard?partner_purchase=success&provider=airwallex&intent_id=${data.intentId}&seriesId=${lockedResultsDialog?.seriesId || ''}`,
-            failUrl: `${window.location.origin}/dashboard?partner_purchase=cancelled`,
+            successUrl: `${window.location.origin}/dashboard?view=candidate&partner_purchase=success&provider=airwallex&intent_id=${data.intentId}&seriesId=${lockedResultsDialog?.seriesId || ''}`,
+            failUrl: `${window.location.origin}/dashboard?view=candidate&partner_purchase=cancelled`,
           });
           return;
         } catch (err: any) {
@@ -549,7 +549,7 @@ export default function Dashboard() {
   }, [scrollToSeriesId, partnerTestingSeries]);
 
   if (!authLoading && user) {
-    if (user.role === 'super_admin') {
+    if (user.role === 'super_admin' && !candidateView) {
       return <Redirect to="/admin/dashboard" />;
     }
     
@@ -557,7 +557,7 @@ export default function Dashboard() {
       return <Redirect to="/partner" />;
     }
     
-    if (user.role === 'organization_admin') {
+    if (user.role === 'organization_admin' && !candidateView) {
       return <Redirect to="/admin/dashboard" />;
     }
   }

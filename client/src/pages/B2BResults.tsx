@@ -167,7 +167,7 @@ export default function B2BResults() {
       queryClient.clear();
       
       setTimeout(() => {
-        setLocation(result.redirectTo || "/dashboard");
+        setLocation(result.redirectTo || "/dashboard?view=candidate");
       }, 1000);
     } catch (err: any) {
       setIsProcessingAccount(false);

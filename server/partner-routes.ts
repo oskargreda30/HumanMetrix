@@ -4688,18 +4688,11 @@ export function registerPartnerRoutes(app: Express) {
         
         console.log(`[B2B Create Account] User ${email} logged in successfully`);
         
-        const isPartnerAdmin = user!.role === 'partner_admin';
-        
         const sessionMeta = session.metadata as any;
         const scrollSeriesId = sessionMeta?.invitationId || null;
-        let redirectUrl = "/dashboard";
-        if (isPartnerAdmin && scrollSeriesId) {
-          redirectUrl = `/dashboard?view=candidate&scrollToSeries=${scrollSeriesId}`;
-        } else if (isPartnerAdmin) {
-          redirectUrl = "/dashboard?view=candidate";
-        } else if (scrollSeriesId) {
-          redirectUrl = `/dashboard?scrollToSeries=${scrollSeriesId}`;
-        }
+        let redirectUrl = scrollSeriesId 
+          ? `/dashboard?view=candidate&scrollToSeries=${scrollSeriesId}` 
+          : "/dashboard?view=candidate";
         
         res.json({
           success: true,
@@ -5859,7 +5852,7 @@ export function registerGuestAssessmentRoutes(app: Express) {
               success: true, 
               message: "You have been logged in.",
               existingAccount: true,
-              redirectTo: '/dashboard'
+              redirectTo: '/dashboard?view=candidate'
             });
           }
           return res.status(400).json({ error: "Account not found. Please contact your administrator." });
@@ -5890,16 +5883,10 @@ export function registerGuestAssessmentRoutes(app: Express) {
         const { sendB2BResultsReadyEmail } = await import('./email');
         const displayName = existingUser.firstName || existingUser.name || existingUser.username || invitation.email.split('@')[0];
         
-        const isPartnerAdmin = existingUser.role === 'partner_admin';
         const invitationId = invitation.id;
-        let guestRedirectUrl = "/dashboard";
-        if (isPartnerAdmin && invitationId) {
-          guestRedirectUrl = `/dashboard?view=candidate&scrollToSeries=${invitationId}`;
-        } else if (isPartnerAdmin) {
-          guestRedirectUrl = "/dashboard?view=candidate";
-        } else if (invitationId) {
-          guestRedirectUrl = `/dashboard?scrollToSeries=${invitationId}`;
-        }
+        let guestRedirectUrl = invitationId 
+          ? `/dashboard?view=candidate&scrollToSeries=${invitationId}` 
+          : "/dashboard?view=candidate";
         
         try {
           await sendB2BResultsReadyEmail({
@@ -5970,7 +5957,7 @@ export function registerGuestAssessmentRoutes(app: Express) {
         success: true, 
         message: "Account created successfully. Check your email for login credentials.",
         userId: newUser.id,
-        redirectTo: '/dashboard'
+        redirectTo: '/dashboard?view=candidate'
       });
     } catch (error) {
       console.error("Error creating account:", error);

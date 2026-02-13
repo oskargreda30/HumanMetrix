@@ -3424,7 +3424,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
           amount: airwallexAmount,
           currency: stripeCurrency.toUpperCase(),
           merchantOrderId,
-          returnUrl: `${baseUrl}/dashboard?partner_purchase=success`,
+          returnUrl: `${baseUrl}/dashboard?view=candidate&partner_purchase=success`,
           customerEmail: user.email,
           description: `Results Access: ${assessmentTypesList}${discountDescription ? ' (' + discountDescription + ')' : ''}`,
           metadata: purchaseMeta,
@@ -3438,7 +3438,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
           clientSecret: intent.clientSecret,
           amount: airwallexAmount,
           currency: stripeCurrency.toUpperCase(),
-          returnUrl: `${baseUrl}/dashboard?partner_purchase=success`,
+          returnUrl: `${baseUrl}/dashboard?view=candidate&partner_purchase=success`,
         };
       };
       
@@ -3451,8 +3451,8 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
           line_items: lineItems,
           mode: "payment",
           allow_promotion_codes: true,
-          success_url: `${baseUrl}/dashboard?partner_purchase=success&session_id={CHECKOUT_SESSION_ID}&seriesId=${partnerInvitationId}`,
-          cancel_url: `${baseUrl}/dashboard?partner_purchase=cancelled`,
+          success_url: `${baseUrl}/dashboard?view=candidate&partner_purchase=success&session_id={CHECKOUT_SESSION_ID}&seriesId=${partnerInvitationId}`,
+          cancel_url: `${baseUrl}/dashboard?view=candidate&partner_purchase=cancelled`,
           metadata: purchaseMeta,
         });
         await storage.updatePartnerResultPurchase(purchaseRecord.id, {
