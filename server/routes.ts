@@ -1456,7 +1456,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           free: true,
         });
       }
-      // Airwallex primary, Stripe fallback for B2C payments
+      // Candidate-facing payments always default to Airwallex
       const paymentMeta = {
         userId: userId.toString(),
         purchaseId: unpaidPurchase.id.toString(),
@@ -1467,7 +1467,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isVPN: isVPN ? 'true' : 'false',
       };
       
-      const { primary, fallback } = getPaymentProviders();
+      const { primary, fallback } = getPaymentProviders('airwallex');
       
       const airwallexResultsFn = async (): Promise<PaymentCheckoutResult> => {
         const airwallexAmount = formatAmountForAirwallex(stripeAmount);
@@ -2847,7 +2847,8 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         localCurrency: localCurrencyCode,
       };
       
-      const { primary: guestPrimary, fallback: guestFallback } = getPaymentProviders();
+      // Candidate-facing payments always default to Airwallex
+      const { primary: guestPrimary, fallback: guestFallback } = getPaymentProviders('airwallex');
       
       const airwallexGuestFn = async (): Promise<PaymentCheckoutResult> => {
         let totalAmount = baseFeeInLocalCurrency;
@@ -3107,7 +3108,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      // Airwallex primary, Stripe fallback for B2C checkout
+      // Candidate-facing payments always default to Airwallex
       const baseUrl = getRoutesBaseUrl(req);
       const checkoutMeta = {
         userId: userId.toString(),
@@ -3117,7 +3118,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         localCurrency: localCurrencyCode,
       };
       
-      const { primary, fallback } = getPaymentProviders();
+      const { primary, fallback } = getPaymentProviders('airwallex');
       
       const airwallexCheckoutFn = async (): Promise<PaymentCheckoutResult> => {
         let totalAmount = baseFeeInLocalCurrency;
@@ -3412,8 +3413,8 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       
       console.log(`[Partner Results Checkout] Creating checkout: currency=${stripeCurrency}, localCurrency=${localCurrencyCode}, stripeAmount=${stripeAmount}, discountedLocalPrice=${discountedLocalPrice}, isBulk=${isBulk}, assessments=${assessmentTypesList}, purchaseId=${purchaseRecord.id}`);
       
-      // Candidate-facing payment: always use Airwallex primary (partner preference only applies to partner's own payments)
-      const { primary: prPrimary, fallback: prFallback } = getPaymentProviders();
+      // Candidate-facing payments always default to Airwallex
+      const { primary: prPrimary, fallback: prFallback } = getPaymentProviders('airwallex');
       
       const airwallexPrFn = async (): Promise<PaymentCheckoutResult> => {
         const airwallexAmount = formatAmountForAirwallex(stripeAmount);
