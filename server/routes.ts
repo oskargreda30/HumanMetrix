@@ -3418,7 +3418,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       
       const airwallexPrFn = async (): Promise<PaymentCheckoutResult> => {
         const airwallexAmount = formatAmountForAirwallex(stripeAmount);
-        const merchantOrderId = `partner_results_${purchaseRecord.id}_${Date.now()}`;
+        const merchantOrderId = `pr_${purchaseRecord.id}_${Date.now()}`;
         console.log(`[Partner Results Checkout] Airwallex attempt: amount=${airwallexAmount}, currency=${stripeCurrency.toUpperCase()}, merchantOrderId=${merchantOrderId}`);
         const intent = await createPaymentIntent({
           amount: airwallexAmount,
