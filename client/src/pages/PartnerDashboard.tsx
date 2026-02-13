@@ -1340,7 +1340,9 @@ export default function PartnerDashboard() {
     const symbol = partnerCurrencySymbols[partnerCurrency] || partnerCurrency + ' ';
     const isZeroDecimal = pricing?.isZeroDecimal || false;
     const amount = isZeroDecimal ? amountInSmallestUnit : amountInSmallestUnit / 100;
-    return `${symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+    const hasDecimals = !isZeroDecimal && (amountInSmallestUnit % 100 !== 0);
+    const fractionDigits = hasDecimals ? 2 : 0;
+    return `${symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits })}`;
   };
 
   // Billing change request data
