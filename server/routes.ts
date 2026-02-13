@@ -18209,13 +18209,29 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       await deleteFromTable('stripe_webhook_events', sql`DELETE FROM stripe_webhook_events`);
       await deleteFromTable('golden_set_results', sql`DELETE FROM golden_set_results`);
       
-      // Phase 9: Invitations
+      // Phase 9: Clean up remaining user FK references that may exist in protected partner data
+      await deleteFromTable('billing_change_requests_by_user', sql`DELETE FROM billing_change_requests WHERE requested_by_user_id NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('billing_change_requests_reviewed', sql`DELETE FROM billing_change_requests WHERE reviewed_by_user_id IS NOT NULL AND reviewed_by_user_id NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('partner_enquiries_by_user', sql`DELETE FROM partner_enquiries WHERE requested_by_user_id IS NOT NULL AND requested_by_user_id NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('partner_enquiries_reviewed', sql`DELETE FROM partner_enquiries WHERE reviewed_by_user_id IS NOT NULL AND reviewed_by_user_id NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('partner_analysis_reports_by_user', sql`DELETE FROM partner_analysis_reports WHERE generated_by_user_id IS NOT NULL AND generated_by_user_id NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('partner_candidate_imports_by_user', sql`DELETE FROM partner_candidate_imports WHERE created_by_user_id IS NOT NULL AND created_by_user_id NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('partner_invoices_by_user', sql`DELETE FROM partner_invoices WHERE sent_by_user_id IS NOT NULL AND sent_by_user_id NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('partner_notifications_by_user', sql`DELETE FROM partner_notifications WHERE actor_user_id IS NOT NULL AND actor_user_id NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('partner_team_members_invited', sql`DELETE FROM partner_team_members WHERE invited_by_user_id IS NOT NULL AND invited_by_user_id NOT IN ${protectedIdsSql} AND user_id NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('candidate_notes_created', sql`DELETE FROM candidate_notes WHERE created_by IS NOT NULL AND created_by NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('candidate_tags_created', sql`DELETE FROM candidate_tags WHERE created_by IS NOT NULL AND created_by NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('error_logs_resolved', sql`DELETE FROM error_logs WHERE resolved_by IS NOT NULL AND resolved_by NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('system_settings_updated', sql`UPDATE system_settings SET updated_by = NULL WHERE updated_by IS NOT NULL AND updated_by NOT IN ${protectedIdsSql}`);
+      await deleteFromTable('xero_integration_connected', sql`UPDATE xero_integration SET connected_by = NULL WHERE connected_by IS NOT NULL AND connected_by NOT IN ${protectedIdsSql}`);
+      
+      // Phase 10: Invitations
       await deleteFromTable('invitations', sql`DELETE FROM invitations WHERE sent_by NOT IN ${protectedIdsSql}`);
       
-      // Phase 10: Sessions (auth sessions)
+      // Phase 11: Sessions (auth sessions)
       await deleteFromTable('sessions', sql`DELETE FROM sessions WHERE 1=1`);
       
-      // Phase 11: Delete non-protected users  
+      // Phase 12: Delete non-protected users  
       await deleteFromTable('users', sql`DELETE FROM users WHERE id NOT IN ${protectedIdsSql}`);
       
       // Phase 12: Clean up orphaned organizations
