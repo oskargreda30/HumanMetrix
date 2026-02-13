@@ -66,6 +66,7 @@ const PartnerReportView = lazy(() => import("@/pages/PartnerReportView"));
 const SampleIndividualReport = lazy(() => import("@/pages/SampleIndividualReport"));
 const SampleComparisonReport = lazy(() => import("@/pages/SampleComparisonReport"));
 const SampleRoleFitReport = lazy(() => import("@/pages/SampleRoleFitReport"));
+const SampleMultiCandidateRoleFitReport = lazy(() => import("@/pages/SampleMultiCandidateRoleFitReport"));
 const EcosystemSampleReport = lazy(() => import("@/pages/EcosystemSampleReport"));
 const EcosystemStart = lazy(() => import("@/pages/EcosystemStart"));
 const GuestInvite = lazy(() => import("@/pages/GuestInvite"));
@@ -108,6 +109,7 @@ function Router() {
         <Route path="/sample-report/individual" component={SampleIndividualReport} />
         <Route path="/sample-report/comparison" component={SampleComparisonReport} />
         <Route path="/sample-report/role-fit" component={SampleRoleFitReport} />
+        <Route path="/sample-report/multi-role-fit" component={SampleMultiCandidateRoleFitReport} />
         <Route path="/articles" component={Articles} />
         <Route path="/articles/how-to-pass-psychometric-tests-job-interviews" component={ArticlePsychometricTests} />
         <Route path="/articles/role-of-psychometric-testing-in-recruitment" component={ArticleRecruitmentTesting} />

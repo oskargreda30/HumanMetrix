@@ -36,9 +36,9 @@ const reports = [
     icon: UsersRound,
     title: "Multiple Candidate Role Fit Report",
     description: "Compare multiple candidates against a specific role with cohort benchmarking and ranked recommendations",
-    link: "",
+    link: "/sample-report/multi-role-fit",
     testId: "multi-rolefit",
-    comingSoon: true,
+    comingSoon: false,
     category: "employer" as const,
   },
 ];
