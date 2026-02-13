@@ -525,7 +525,7 @@ export default function PartnersTab() {
   }, [partners, searchQuery, statusFilter, sortField, sortDirection]);
 
   const [billingType, setBillingType] = useState<"payg" | "subscription" | "enterprise">("payg");
-  const [paymentProvider, setPaymentProvider] = useState<"stripe" | "airwallex">("stripe");
+  const [paymentProvider, setPaymentProvider] = useState<"stripe" | "airwallex">("airwallex");
   const [freeTests, setFreeTests] = useState<number>(0);
   const [paymentTerms, setPaymentTerms] = useState<number>(30);
   const [billingCycleAnchor, setBillingCycleAnchor] = useState<number>(1);
