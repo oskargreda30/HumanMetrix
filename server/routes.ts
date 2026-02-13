@@ -18133,6 +18133,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       
       // Phase 2: Delete purchase chain
       await deleteFromTable('purchase_items', sql`DELETE FROM purchase_items WHERE purchase_id IN (SELECT id FROM purchases WHERE user_id NOT IN ${protectedIdsSql})`);
+      await deleteFromTable('revenue_sync_logs', sql`DELETE FROM revenue_sync_logs WHERE purchase_id IN (SELECT id FROM purchases WHERE user_id NOT IN ${protectedIdsSql})`);
       await deleteFromTable('purchases', sql`DELETE FROM purchases WHERE user_id NOT IN ${protectedIdsSql}`);
       
       // Phase 3: Assessment results (after aiq_rationales and prompt_architecture_evaluations)
@@ -18188,6 +18189,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         await deleteFromTable('partner_scheduled_exports', sql`DELETE FROM partner_scheduled_exports WHERE ${notProtectedPartnerSql}`);
         await deleteFromTable('partner_overage_ledger', sql`DELETE FROM partner_overage_ledger WHERE ${notProtectedPartnerSql}`);
         await deleteFromTable('partner_analysis_reports', sql`DELETE FROM partner_analysis_reports WHERE ${notProtectedPartnerSql}`);
+        await deleteFromTable('revenue_sync_logs_partner', sql`DELETE FROM revenue_sync_logs WHERE partner_invoice_id IN (SELECT id FROM partner_invoices WHERE ${notProtectedPartnerSql})`);
         await deleteFromTable('partner_monthly_usage', sql`DELETE FROM partner_monthly_usage WHERE ${notProtectedPartnerSql}`);
         await deleteFromTable('partner_invoices', sql`DELETE FROM partner_invoices WHERE ${notProtectedPartnerSql}`);
         await deleteFromTable('partner_test_packages', sql`DELETE FROM partner_test_packages WHERE ${notProtectedPartnerSql}`);
