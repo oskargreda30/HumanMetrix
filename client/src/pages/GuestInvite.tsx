@@ -123,18 +123,18 @@ export default function GuestInvite() {
           description: "Redirecting to your dashboard to start your assessments...",
         });
       }
-      window.location.href = '/dashboard';
+      window.location.href = '/dashboard?view=candidate';
       return;
     }
     
-    // If user is already logged in and all assessments are complete, redirect directly to dashboard
+    // If user is already logged in and all assessments are complete, redirect directly to candidate dashboard
     if (invitation.allComplete && invitation.hasExistingAccount) {
       earlyRedirectRef.current = true;
       toast({
         title: "Welcome back!",
         description: "Redirecting to your dashboard...",
       });
-      window.location.href = '/dashboard';
+      window.location.href = `/dashboard?view=candidate&scrollToSeries=${invitation.id || ''}`;
       return;
     }
   }, [authLoading, loading, currentUser, invitation, toast]);

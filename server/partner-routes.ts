@@ -1867,11 +1867,16 @@ export function registerPartnerRoutes(app: Express) {
                 const bundleUser = await storage.getUserByEmail(candidateEmail);
                 const bundleCandidateName = bundleInvitation?.name || bundleUser?.name || bundleUser?.username || undefined;
                 
+                const bundlePaidSessions = completedSessions.filter((s: any) => s.resultsPaymentStatus === 'paid');
+                const bundleUnpaidSessions = completedSessions.filter((s: any) => s.resultsPaymentStatus !== 'paid');
+                
                 await sendB2BAllCompleteEmail({
                   email: candidateEmail,
                   candidateName: bundleCandidateName,
                   partnerCompanyName: partner.companyName || partner.name,
                   completedAssessments: bundleAssessmentTypes,
+                  paidAssessments: bundlePaidSessions.map(s => s.assessmentType),
+                  unpaidAssessments: bundleUnpaidSessions.map(s => s.assessmentType),
                   paymentUrl: bundlePaymentUrl,
                   bundlePrice: bundleDiscountedDisplay,
                   originalTotalPrice: bundleOriginalDisplay,
