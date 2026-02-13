@@ -103,7 +103,7 @@ export default function SystemSettingsTab() {
 
   const cleanupMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/admin/data-cleanup", { confirmText: cleanupConfirmText });
+      const res = await apiRequest("POST", "/api/admin/data-cleanup", { confirmText: cleanupConfirmText }, { timeoutMs: 120000 });
       return res.json();
     },
     onSuccess: (data) => {
