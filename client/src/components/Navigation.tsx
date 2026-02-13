@@ -212,13 +212,25 @@ export default function Navigation({ assessmentMode = false }: NavigationProps) 
                         Login
                       </Button>
                     </Link>
-                    <Button 
+                    {location === '/for-candidates' ? (
+                      <Link href="/assessments?view=candidate">
+                        <Button 
+                          className="bg-cyan-500 hover:bg-cyan-600 text-white border-0"
+                          data-testid="button-get-started-nav"
+                        >
+                          Get Started
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Button 
                         className="bg-cyan-500 hover:bg-cyan-600 text-white border-0"
                         onClick={() => setShowContactDialog(true)}
                         data-testid="button-contact-us"
                       >
                         Contact Us
                       </Button>
+                    )}
                   </>
                 )
               )}
@@ -304,13 +316,26 @@ export default function Navigation({ assessmentMode = false }: NavigationProps) 
                         Login
                       </Button>
                     </Link>
-                    <Button 
+                    {location === '/for-candidates' ? (
+                      <Link href="/assessments?view=candidate">
+                        <Button 
+                          className="w-full bg-cyan-500 hover:bg-cyan-600 text-white border-0"
+                          onClick={() => setMobileMenuOpen(false)}
+                          data-testid="button-mobile-get-started-nav"
+                        >
+                          Get Started
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Button 
                         className="w-full bg-cyan-500 hover:bg-cyan-600 text-white border-0" 
                         onClick={() => { setMobileMenuOpen(false); setShowContactDialog(true); }} 
                         data-testid="button-mobile-contact-us"
                       >
                         Contact Us
                       </Button>
+                    )}
                   </>
                 )
               )}
