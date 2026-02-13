@@ -932,24 +932,24 @@ export default function Assessment() {
           {/* Only show content after instructions dialog is dismissed and assessment started */}
           {!showInstructions && resultId && (
             <>
-              {/* Header */}
-              <div className="mb-8">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h1 className="text-2xl md:text-3xl font-bold mb-2">
+              {/* Header - sticky below nav so timer is always visible */}
+              <div className="sticky top-16 z-40 pb-4 -mx-4 px-4 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8 bg-background pt-2">
+                <div className="flex items-start justify-between mb-3 gap-3">
+                  <div className="min-w-0">
+                    <h1 className="text-lg md:text-2xl font-bold mb-1 truncate">
                       {formatAssessmentName(assessment.assessmentType)} Assessment
                     </h1>
-                    <p className="text-muted-foreground whitespace-nowrap">
+                    <p className="text-muted-foreground text-sm whitespace-nowrap">
                       Question {currentQuestion + 1} of {questions.length}
                     </p>
                   </div>
-                  <div className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-lg border-2 ${
+                  <div className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-lg border-2 flex-shrink-0 ${
                     timeRemaining <= (isPromptArchitecture ? 30 : 300) 
                       ? 'bg-destructive/10 text-destructive border-destructive/50 animate-pulse' 
                       : 'bg-primary/10 border-primary/30'
                   }`}>
-                    <Clock className="h-5 w-5 md:h-5 md:w-5" />
-                    <span className="text-xl md:text-lg font-bold tabular-nums" data-testid="timer-display">
+                    <Clock className="h-4 w-4 md:h-5 md:w-5" />
+                    <span className="text-lg md:text-xl font-bold tabular-nums" data-testid="timer-display">
                       {formatTime(timeRemaining)}
                     </span>
                   </div>

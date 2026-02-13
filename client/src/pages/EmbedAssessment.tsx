@@ -2608,9 +2608,10 @@ export default function EmbedAssessment() {
             </div>
           </div>
         )}
-        <div className="mb-6">
+        {/* Header - sticky so timer is always visible */}
+        <div className={`sticky top-0 z-40 pb-3 -mx-4 px-4 pt-2 ${isLight ? 'bg-white' : 'bg-slate-900'}`}>
           <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1 min-w-0">
               <Badge 
                 className="border w-fit"
                 style={{ 
