@@ -47,7 +47,7 @@ export default function Assessment() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [resultId, setResultId] = useState<string | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState(1200); // 20 minutes in seconds (2 minutes per question for Prompt Architecture)
+  const [timeRemaining, setTimeRemaining] = useState(1200); // 20 minutes in seconds (3 minutes per question for Prompt Architecture)
   const [showTimeWarning, setShowTimeWarning] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true); // Show instructions before starting
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
@@ -172,10 +172,10 @@ export default function Assessment() {
       
       const isPromptArch = assessment?.assessmentType === 'prompt_architecture';
       if (isPromptArch) {
-        if (data.resumed && data.timeRemaining != null && data.timeRemaining > 0 && data.timeRemaining <= 120) {
+        if (data.resumed && data.timeRemaining != null && data.timeRemaining > 0 && data.timeRemaining <= 180) {
           setTimeRemaining(data.timeRemaining);
         } else {
-          setTimeRemaining(120);
+          setTimeRemaining(180);
         }
       } else if (data.timeRemaining !== undefined) {
         setTimeRemaining(data.timeRemaining);
@@ -636,7 +636,7 @@ export default function Assessment() {
                   setShowTimesUp(false);
                   paQuestionAdvancingRef.current = false;
                   setCurrentQuestion(curQ + 1);
-                  setTimeRemaining(120);
+                  setTimeRemaining(180);
                   setShowTimeWarning(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 1500);
@@ -746,7 +746,7 @@ export default function Assessment() {
             "Write clear, specific prompts that address the given scenario",
             "Include relevant context and constraints in your prompts",
             "Think about structure and how to guide the AI effectively",
-            "You have 2 minutes per level (14 minutes total for all 7 levels)",
+            "You have 3 minutes per level (21 minutes total for all 7 levels)",
           ]
         };
       case "aiq":
@@ -800,9 +800,9 @@ export default function Assessment() {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
       
-      // For Prompt Architecture, reset timer to 2 minutes for each new question
+      // For Prompt Architecture, reset timer to 3 minutes for each new question
       if (isPromptArchitecture) {
-        setTimeRemaining(120); // Reset to 2 minutes
+        setTimeRemaining(180); // Reset to 3 minutes
         setShowTimeWarning(false); // Reset warning state
       }
       

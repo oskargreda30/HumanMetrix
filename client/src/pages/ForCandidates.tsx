@@ -76,7 +76,7 @@ const assessments = [
   {
     name: "Prompt Architecture",
     description: "Test your ability to effectively communicate with AI systems",
-    duration: "14 min",
+    duration: "21 min",
   },
   {
     name: "Algorithmic Integrity (AIQ)",

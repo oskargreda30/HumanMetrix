@@ -260,9 +260,9 @@ const contactFormSchema = z.object({
 
 // Get time limit in seconds for each assessment type
 function getAssessmentTimeLimit(assessmentType: string): number {
-  // Prompt Architecture: 14 minutes (2 min per level × 7 levels)
+  // Prompt Architecture: 21 minutes (3 min per level × 7 levels)
   if (assessmentType === 'prompt_architecture') {
-    return 840; // 14 minutes in seconds
+    return 1260; // 21 minutes in seconds
   }
   // All other assessments: 20 minutes
   return 1200;

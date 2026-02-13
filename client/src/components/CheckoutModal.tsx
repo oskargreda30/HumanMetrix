@@ -46,7 +46,7 @@ const assessments = [
     id: "prompt_architecture",
     name: "Prompt Architecture Assessment",
     description: "7 progressive levels",
-    duration: "14 min",
+    duration: "21 min",
   },
   {
     id: "aiq",

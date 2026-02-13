@@ -654,16 +654,16 @@ export default function EmbedAssessment() {
       // Set timer from server-provided remaining time for resumed assessments
       if (data.status === "started" && data.timeRemaining != null) {
         console.log(`[EmbedAssessment] Resuming with ${data.timeRemaining}s remaining`);
-        // For Prompt Architecture, always use per-question timer (2 min) since the server tracks total time
+        // For Prompt Architecture, always use per-question timer (3 min) since the server tracks total time
         // but the client uses per-question timing
         const assessmentType = data.assessmentType?.replace(/-/g, '_');
         if (assessmentType === 'prompt_architecture') {
-          if (data.timeRemaining > 0 && data.timeRemaining <= 120) {
+          if (data.timeRemaining > 0 && data.timeRemaining <= 180) {
             console.log(`[EmbedAssessment] Prompt Architecture: resuming with ${data.timeRemaining}s remaining`);
             setTimeRemaining(data.timeRemaining);
           } else {
-            console.log(`[EmbedAssessment] Prompt Architecture: using per-question timer (120s)`);
-            setTimeRemaining(120);
+            console.log(`[EmbedAssessment] Prompt Architecture: using per-question timer (180s)`);
+            setTimeRemaining(180);
           }
         } else {
           setTimeRemaining(data.timeRemaining);
@@ -900,15 +900,15 @@ export default function EmbedAssessment() {
       // Use server-provided timeRemaining (either full time for fresh start or remaining time for resume)
       if (startData.timeRemaining != null) {
         console.log(`[EmbedAssessment] Starting with ${startData.timeRemaining}s remaining`);
-        // For Prompt Architecture, always use per-question timer (2 min) since the client uses per-question timing
+        // For Prompt Architecture, always use per-question timer (3 min) since the client uses per-question timing
         const assessmentType = session?.assessmentType?.replace(/-/g, '_');
         if (assessmentType === 'prompt_architecture') {
-          if (startData.timeRemaining > 0 && startData.timeRemaining <= 120) {
+          if (startData.timeRemaining > 0 && startData.timeRemaining <= 180) {
             console.log(`[EmbedAssessment] Prompt Architecture: resuming with ${startData.timeRemaining}s remaining`);
             setTimeRemaining(startData.timeRemaining);
           } else {
-            console.log(`[EmbedAssessment] Prompt Architecture: using per-question timer (120s)`);
-            setTimeRemaining(120);
+            console.log(`[EmbedAssessment] Prompt Architecture: using per-question timer (180s)`);
+            setTimeRemaining(180);
           }
         } else {
           setTimeRemaining(startData.timeRemaining);
@@ -1022,7 +1022,7 @@ export default function EmbedAssessment() {
   const getTimeLimit = () => {
     if (!session) return 1200;
     const type = session.assessmentType.replace(/-/g, '_');
-    if (type === 'prompt_architecture') return 840; // 14 minutes (2 minutes per level × 7 levels)
+    if (type === 'prompt_architecture') return 1260; // 21 minutes (3 minutes per level × 7 levels)
     return 1200; // 20 minutes for other assessments
   };
 
@@ -1145,7 +1145,7 @@ export default function EmbedAssessment() {
       // Don't reset if server already indicated timer expired
       // Don't reset if navigating backward - keep the current timer running
       if (!timerExpiredFromServerRef.current && navigationDirectionRef.current !== 'backward') {
-        setTimeRemaining(120); // Reset to 2 minutes per question
+        setTimeRemaining(180); // Reset to 3 minutes per question
         setShowTimeWarning(false);
       }
       // Reset direction after handling
@@ -1312,8 +1312,8 @@ export default function EmbedAssessment() {
     hasSubmittedRef.current = false;
     timerExpiredHandledRef.current = false; // Reset expiry guard for new assessment
     
-    // Reset timer for next assessment (20 min for regular, 14 min for prompt architecture)
-    setTimeRemaining(nextType === "prompt_architecture" ? 840 : 1200);
+    // Reset timer for next assessment (20 min for regular, 21 min for prompt architecture)
+    setTimeRemaining(nextType === "prompt_architecture" ? 1260 : 1200);
     setShowTimeWarning(false);
     timerExpiredFromServerRef.current = false; // Reset expired flag for new assessment
     
@@ -2248,7 +2248,7 @@ export default function EmbedAssessment() {
                 <li>Answer each question honestly and thoughtfully</li>
                 <li>There are no right or wrong answers</li>
                 <li>Your progress will be saved automatically</li>
-                <li>{isCurrentPromptArchitecture ? "You have 2 minutes per question (7 levels)" : "You have 14-20 minutes to complete " + (isMultiAssessment ? "each assessment" : "the assessment")}</li>
+                <li>{isCurrentPromptArchitecture ? "You have 3 minutes per question (7 levels)" : "You have 20-21 minutes to complete " + (isMultiAssessment ? "each assessment" : "the assessment")}</li>
               </ul>
             </div>
 

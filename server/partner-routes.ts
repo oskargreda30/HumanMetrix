@@ -1096,7 +1096,7 @@ export function registerPartnerRoutes(app: Express) {
         let timeRemaining: number | null = null;
         if (session.status === 'started' && session.startedAt) {
           const normalizedType = session.assessmentType.replace(/-/g, '_');
-          const timeLimitSeconds = normalizedType === 'prompt_architecture' ? 120 : 1200; // 2 min or 20 min
+          const timeLimitSeconds = normalizedType === 'prompt_architecture' ? 180 : 1200; // 3 min or 20 min
           
           // Use saved remaining time if available (from when user closed tab)
           // This implements "pause on close" - timer freezes when tab is closed
@@ -1347,7 +1347,7 @@ export function registerPartnerRoutes(app: Express) {
         // so subsequent fetches use the resumed timer position
         if (session.status === "started") {
           const normalizedType = session.assessmentType.replace(/-/g, '_');
-          const timeLimitSeconds = normalizedType === 'prompt_architecture' ? 120 : 1200;
+          const timeLimitSeconds = normalizedType === 'prompt_architecture' ? 180 : 1200;
           let timeRemaining = timeLimitSeconds;
           
           if (session.pausedTimeRemainingMs != null) {
@@ -1461,7 +1461,7 @@ export function registerPartnerRoutes(app: Express) {
         
         // Return full time limit for freshly started assessment
         const normalizedType = session.assessmentType.replace(/-/g, '_');
-        const timeRemaining = normalizedType === 'prompt_architecture' ? 120 : 1200;
+        const timeRemaining = normalizedType === 'prompt_architecture' ? 180 : 1200;
         
         res.json({
           sessionId: session.id,
@@ -1518,7 +1518,7 @@ export function registerPartnerRoutes(app: Express) {
         // Validate to prevent client manipulation: time can only decrease, not increase
         if (typeof timeRemainingMs === 'number' && timeRemainingMs >= 0) {
           const normalizedType = session.assessmentType.replace(/-/g, '_');
-          const maxTimeMs = (normalizedType === 'prompt_architecture' ? 120 : 1200) * 1000;
+          const maxTimeMs = (normalizedType === 'prompt_architecture' ? 180 : 1200) * 1000;
           
           // Determine the maximum allowed remaining time:
           // 1. If pausedTimeRemainingMs is set, new value must be <= that (time can only decrease)

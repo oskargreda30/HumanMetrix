@@ -18,7 +18,7 @@ const ASSESSMENT_TYPES = ['fit', 'ai_readiness', 'prompt_architecture', 'aiq'] a
 const TIME_LIMITS: Record<string, number> = {
   fit: 1200, // 20 minutes
   ai_readiness: 1200, // 20 minutes
-  prompt_architecture: 840, // 14 minutes (2 min × 7 levels)
+  prompt_architecture: 1260, // 21 minutes (3 min × 7 levels)
   aiq: 1200, // 20 minutes
 };
 
@@ -62,8 +62,8 @@ describe('Assessment Configuration', () => {
       expect(TIME_LIMITS.ai_readiness).toBe(1200);
     });
 
-    it('should set 14 minutes for Prompt Architecture', () => {
-      expect(TIME_LIMITS.prompt_architecture).toBe(840);
+    it('should set 21 minutes for Prompt Architecture', () => {
+      expect(TIME_LIMITS.prompt_architecture).toBe(1260);
     });
 
     it('should set 20 minutes for AIQ', () => {
@@ -392,15 +392,15 @@ describe('OpenAI Integration Patterns', () => {
 
 describe('Prompt Architecture Levels', () => {
   const LEVELS = ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7'];
-  const TIME_PER_LEVEL = 120; // 2 minutes in seconds
+  const TIME_PER_LEVEL = 180; // 3 minutes in seconds
 
   it('should have 7 levels', () => {
     expect(LEVELS.length).toBe(7);
   });
 
-  it('should have correct total time (14 minutes)', () => {
+  it('should have correct total time (21 minutes)', () => {
     const totalTime = LEVELS.length * TIME_PER_LEVEL;
-    expect(totalTime).toBe(840);
+    expect(totalTime).toBe(1260);
   });
 
   describe('Level Scoring', () => {
