@@ -4,7 +4,9 @@ import AssessmentCard from "@/components/AssessmentCard";
 import RoadmapSection from "@/components/RoadmapSection";
 import B2BPricingCalculator from "@/components/B2BPricingCalculator";
 import { Button } from "@/components/ui/button";
-import { Brain, Sparkles, Code2, Shield, ShoppingCart, Building2, User, CheckCircle, ArrowRight, Users, BarChart3 } from "lucide-react";
+import { Brain, Sparkles, Code2, Shield, ShoppingCart, Building2, User, CheckCircle, ArrowRight, Users, BarChart3, Clock, FileText } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
 import { useBasket } from "@/contexts/BasketContext";
@@ -226,49 +228,122 @@ export default function Assessments() {
               {viewMode === 'employer' ? 'Our Assessment Suite' : 'Available Assessments'}
             </h2>
             
-            {/* Team Analysis Assessments - Employer view only */}
-            {viewMode === 'employer' && (
-              <div className="mb-6 md:mb-8">
-                <h3 className="text-xs md:text-lg font-semibold mb-3 md:mb-4 text-cyan-400">Team Analysis</h3>
-                <div className="grid md:grid-cols-2 gap-4 md:gap-6">
-                  {teamAssessments.map((assessment) => (
-                    <AssessmentCard
-                      key={assessment.id}
-                      id={assessment.id}
-                      title={assessment.title}
-                      description={assessment.description}
-                      questionCount={assessment.questionCount}
-                      duration={assessment.duration}
-                      icon={assessment.icon}
-                      status={assessment.status}
-                      tag={assessment.tag}
-                      showPricing={false}
-                      hideQuestionCount={true}
-                    />
-                  ))}
+            {viewMode === 'employer' ? (
+              <>
+                {/* Team Analysis Section */}
+                <div className="mb-8 md:mb-12">
+                  <div className="flex items-center gap-3 mb-4 md:mb-6">
+                    <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg bg-cyan-500/15 flex items-center justify-center flex-shrink-0">
+                      <Users className="h-4 w-4 md:h-5 md:w-5 text-cyan-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm md:text-xl font-semibold text-white">Team Analysis</h3>
+                      <p className="text-[10px] md:text-sm text-blue-100/50">Assess team dynamics, capability gaps, and workforce readiness</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-3 md:gap-4">
+                    {teamAssessments.map((assessment) => {
+                      const TeamIcon = assessment.icon;
+                      return (
+                        <Card key={assessment.id} className="p-4 md:p-5 hover-elevate transition-all bg-[#1a2744]/50 border-cyan-400/20">
+                          <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
+                            <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
+                              <div className="h-10 w-10 md:h-12 md:w-12 rounded-lg bg-cyan-500/10 flex items-center justify-center flex-shrink-0">
+                                <TeamIcon className="h-5 w-5 md:h-6 md:w-6 text-cyan-400" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                  <h4 className="text-sm md:text-lg font-semibold text-white" data-testid={`text-team-assessment-${assessment.id}`}>{assessment.title}</h4>
+                                  {assessment.tag && (
+                                    <Badge variant="outline" className="text-[10px] md:text-xs border-cyan-400/50 text-cyan-300">{assessment.tag}</Badge>
+                                  )}
+                                </div>
+                                <p className="text-xs md:text-sm text-blue-100/60 leading-relaxed">{assessment.description}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 md:gap-6 ml-[52px] md:ml-0 flex-shrink-0">
+                              <div className="flex items-center gap-1.5 text-blue-100/50 text-xs md:text-sm">
+                                <Clock className="h-3 w-3 md:h-4 md:w-4" />
+                                <span>{assessment.duration}</span>
+                              </div>
+                              {assessment.status === 'coming-soon' ? (
+                                <Badge variant="secondary" className="text-[10px] md:text-xs">Coming Soon</Badge>
+                              ) : (
+                                <Badge variant="secondary" className="text-[10px] md:text-xs bg-cyan-500/20 text-cyan-300 border-cyan-400/30">Available</Badge>
+                              )}
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
                 </div>
+
+                {/* Divider */}
+                <div className="border-t border-cyan-400/10 mb-8 md:mb-12" />
+
+                {/* Individual Assessments Section */}
+                <div>
+                  <div className="flex items-center gap-3 mb-4 md:mb-6">
+                    <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg bg-cyan-500/15 flex items-center justify-center flex-shrink-0">
+                      <User className="h-4 w-4 md:h-5 md:w-5 text-cyan-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm md:text-xl font-semibold text-white">Individual Assessments</h3>
+                      <p className="text-[10px] md:text-sm text-blue-100/50">Evaluate individual candidates across behavioral, AI, and ethical competencies</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-3 md:gap-4">
+                    {assessments.map((assessment) => {
+                      const IndIcon = assessment.icon;
+                      return (
+                        <Card key={assessment.id} className="p-4 md:p-5 hover-elevate transition-all bg-[#1a2744]/50 border-cyan-400/20">
+                          <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
+                            <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
+                              <div className="h-10 w-10 md:h-12 md:w-12 rounded-lg bg-cyan-500/10 flex items-center justify-center flex-shrink-0">
+                                <IndIcon className="h-5 w-5 md:h-6 md:w-6 text-cyan-400" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-sm md:text-lg font-semibold text-white mb-1" data-testid={`text-ind-assessment-${assessment.id}`}>{assessment.title}</h4>
+                                <p className="text-xs md:text-sm text-blue-100/60 leading-relaxed">{assessment.employerDescription}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 md:gap-6 ml-[52px] md:ml-0 flex-shrink-0">
+                              <div className="flex items-center gap-1.5 text-blue-100/50 text-xs md:text-sm whitespace-nowrap">
+                                <FileText className="h-3 w-3 md:h-4 md:w-4" />
+                                <span>{assessment.questionCount} questions</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-blue-100/50 text-xs md:text-sm whitespace-nowrap">
+                                <Clock className="h-3 w-3 md:h-4 md:w-4" />
+                                <span>{assessment.duration}</span>
+                              </div>
+                              <Badge variant="secondary" className="text-[10px] md:text-xs bg-cyan-500/20 text-cyan-300 border-cyan-400/30">Available</Badge>
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Candidate view - keep original grid layout */
+              <div className="grid md:grid-cols-2 gap-4 md:gap-6">
+                {assessments.map((assessment) => (
+                  <AssessmentCard
+                    key={assessment.id}
+                    id={assessment.id}
+                    title={assessment.title}
+                    description={assessment.description}
+                    questionCount={assessment.questionCount}
+                    duration={assessment.duration}
+                    icon={assessment.icon}
+                    price={assessment.price}
+                    showPricing={true}
+                  />
+                ))}
               </div>
             )}
-            
-            {/* Individual Assessments */}
-            {viewMode === 'employer' && (
-              <h3 className="text-xs md:text-lg font-semibold mb-3 md:mb-4 text-cyan-400">Individual Assessments</h3>
-            )}
-            <div className="grid md:grid-cols-2 gap-4 md:gap-6">
-              {assessments.map((assessment) => (
-                <AssessmentCard
-                  key={assessment.id}
-                  id={assessment.id}
-                  title={assessment.title}
-                  description={viewMode === 'employer' ? assessment.employerDescription : assessment.description}
-                  questionCount={assessment.questionCount}
-                  duration={assessment.duration}
-                  icon={assessment.icon}
-                  price={assessment.price}
-                  showPricing={viewMode === 'candidate'}
-                />
-              ))}
-            </div>
             
             {/* CTA Section - different for each view mode */}
             <div className="mt-6 md:mt-8 flex flex-col items-center gap-3">
