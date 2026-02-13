@@ -224,9 +224,11 @@ export default function Assessments() {
           </div>
 
           <div className="mb-12 md:mb-16">
-            <h2 className="text-sm md:text-xl lg:text-2xl font-bold mb-4 md:mb-6 text-white">
-              {viewMode === 'employer' ? 'Our Assessment Suite' : 'Available Assessments'}
-            </h2>
+            {viewMode !== 'employer' && (
+              <h2 className="text-sm md:text-xl lg:text-2xl font-bold mb-4 md:mb-6 text-white">
+                Available Assessments
+              </h2>
+            )}
             
             {viewMode === 'employer' ? (
               <>
