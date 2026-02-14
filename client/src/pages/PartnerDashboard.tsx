@@ -2495,10 +2495,10 @@ export default function PartnerDashboard() {
                           </div>
                           <div>
                             <div className={`font-semibold ${isUrgent ? 'text-amber-700 dark:text-amber-400' : 'text-cyan-700 dark:text-cyan-400'}`}>
-                              {isUrgent ? 'Free Tests Expiring Soon!' : 'Free Tests Available'}
+                              {isUrgent ? 'Free Credits Expiring Soon!' : 'Free Credits Available'}
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              You have <strong>{freeTestsRemaining}</strong> complimentary test{freeTestsRemaining !== 1 ? 's' : ''} that expire{freeTestsRemaining === 1 ? 's' : ''} in <strong>{daysRemaining} day{daysRemaining !== 1 ? 's' : ''}</strong>
+                              You have <strong>{freeTestsRemaining}</strong> complimentary credit{freeTestsRemaining !== 1 ? 's' : ''} that expire{freeTestsRemaining === 1 ? 's' : ''} in <strong>{daysRemaining} day{daysRemaining !== 1 ? 's' : ''}</strong>
                               {' '}({expiryDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })})
                             </div>
                           </div>
@@ -2941,10 +2941,10 @@ export default function PartnerDashboard() {
                         </div>
                         <div>
                           <div className={`font-semibold ${isUrgent ? 'text-amber-700 dark:text-amber-400' : 'text-cyan-700 dark:text-cyan-400'}`}>
-                            Free Tests: <strong>{daysRemaining} day{daysRemaining !== 1 ? 's' : ''}</strong> remaining
+                            Free Credits: <strong>{daysRemaining} day{daysRemaining !== 1 ? 's' : ''}</strong> remaining
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {freeTestsRemaining} complimentary test{freeTestsRemaining !== 1 ? 's' : ''} expire{freeTestsRemaining === 1 ? 's' : ''} on {expiryDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            {freeTestsRemaining} complimentary credit{freeTestsRemaining !== 1 ? 's' : ''} expire{freeTestsRemaining === 1 ? 's' : ''} on {expiryDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </div>
                         </div>
                       </div>
