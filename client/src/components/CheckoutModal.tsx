@@ -553,7 +553,7 @@ export default function CheckoutModal({
             className="w-full"
             size="lg"
             onClick={handleProceedClick}
-            disabled={isProcessing || selectedAssessments.size === 0 || isCheckingEmail}
+            disabled={isProcessing || selectedAssessments.size === 0 || isCheckingEmail || (isExistingUser && !isAuthenticated && !password.trim())}
             data-testid="checkout-button-proceed"
           >
             {isProcessing ? "Processing..." : (
