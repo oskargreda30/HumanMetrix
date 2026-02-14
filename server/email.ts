@@ -441,6 +441,34 @@ async function sendEmail(msg: EmailMessage, logContext?: EmailLogContext): Promi
   return { success: false };
 }
 
+// Retry sending an email directly via Gmail (used when SendGrid bounces)
+export async function retrySendViaGmail(msg: EmailMessage, logContext?: EmailLogContext): Promise<{ success: boolean; messageId?: string }> {
+  console.log(`[Email] Retrying via Gmail after SendGrid bounce for: ${Array.isArray(msg.to) ? msg.to.join(', ') : msg.to}`);
+  const result = await sendViaGmail(msg);
+  
+  if (result.success && logContext) {
+    logEmailToDb({
+      recipientEmail: Array.isArray(msg.to) ? msg.to.join(", ") : msg.to,
+      recipientName: logContext.recipientName,
+      recipientType: logContext.recipientType,
+      subject: msg.subject,
+      emailType: logContext.emailType,
+      provider: 'gmail',
+      status: 'sent',
+      messageId: result.messageId,
+      metadata: { ...logContext.metadata, retryReason: 'sendgrid_bounce' },
+    });
+  }
+  
+  if (result.success) {
+    console.log(`[Email] Gmail retry successful for: ${Array.isArray(msg.to) ? msg.to.join(', ') : msg.to} (ID: ${result.messageId})`);
+  } else {
+    console.error(`[Email] Gmail retry also failed for: ${Array.isArray(msg.to) ? msg.to.join(', ') : msg.to} - ${result.error}`);
+  }
+  
+  return result;
+}
+
 // Generic partner email function for simple notifications with optional logging
 export async function sendPartnerEmail(options: { 
   to: string; 
@@ -459,7 +487,7 @@ export async function sendPartnerEmail(options: {
 }
 
 
-export async function sendInvitationEmail(invitation: Invitation, inviterName: string) {
+export async function sendInvitationEmail(invitation: Invitation, inviterName: string, options?: { forceGmail?: boolean }) {
   // Format assessment names nicely
   const formattedAssessments = invitation.assessmentTypes.map(formatAssessmentName);
   const assessmentListHtml = formattedAssessments.map(a => `<li>${a}</li>`).join('');
@@ -547,15 +575,20 @@ This invitation expires on ${new Date(invitation.expiresAt).toLocaleDateString('
     `.trim(),
   };
 
-  const result = await sendEmail(msg, {
+  const logContext: EmailLogContext = {
     recipientType: 'b2b_test_taker',
     emailType: 'invitation',
     recipientName: invitation.candidateName,
     metadata: { invitationId: invitation.id, assessmentTypes: invitation.assessmentTypes },
-  });
+  };
+
+  const result = options?.forceGmail
+    ? await retrySendViaGmail(msg, logContext)
+    : await sendEmail(msg, logContext);
   if (result.success) {
-    console.log(`[Email] Invitation email sent to ${invitation.candidateEmail} (ID: ${result.messageId})`);
+    console.log(`[Email] Invitation email sent to ${invitation.candidateEmail} via ${options?.forceGmail ? 'Gmail (forced)' : 'default'} (ID: ${result.messageId})`);
   }
+  return result;
 }
 
 export async function sendPasswordResetEmail(email: string, name: string, resetToken: string) {
@@ -2413,7 +2446,7 @@ interface PartnerBulkInvitationDetails {
 }
 
 // Send bulk invitation email from partner to candidate
-export async function sendPartnerBulkInvitationEmail(details: PartnerBulkInvitationDetails) {
+export async function sendPartnerBulkInvitationEmail(details: PartnerBulkInvitationDetails, options?: { forceGmail?: boolean }) {
   const assessmentNames = details.assessmentTypes.map(formatAssessmentName);
   const assessmentListHtml = assessmentNames.map(a => `<li>${a}</li>`).join('');
   const assessmentListText = assessmentNames.join(', ');
@@ -2552,7 +2585,7 @@ Powered by HumanMetrix - AI Assessment Platform
     `.trim(),
   };
 
-  const result = await sendEmail(msg, {
+  const logContext: EmailLogContext = {
     recipientType: 'b2b_test_taker',
     recipientName: details.candidateName || undefined,
     emailType: 'invitation',
@@ -2560,9 +2593,13 @@ Powered by HumanMetrix - AI Assessment Platform
       partnerCompanyName: details.partnerCompanyName,
       assessmentTypes: details.assessmentTypes.join(', '),
     },
-  });
+  };
+
+  const result = options?.forceGmail
+    ? await retrySendViaGmail(msg, logContext)
+    : await sendEmail(msg, logContext);
   if (result.success) {
-    console.log(`[Email] Partner bulk invitation email sent to ${details.candidateEmail} (ID: ${result.messageId})`);
+    console.log(`[Email] Partner bulk invitation email sent to ${details.candidateEmail} via ${options?.forceGmail ? 'Gmail (forced)' : 'default'} (ID: ${result.messageId})`);
   }
   return { success: result.success, messageId: result.messageId };
 }

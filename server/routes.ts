@@ -10,7 +10,7 @@ import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, conv
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, broadcastMessages, SYSTEM_SETTING_KEYS, auditLogs, errorLogs, partnerInvoices, invitations, partnerCandidateInvitations, candidateNotes, emailLogs, sessions, appLogs, partnerAccounts, partnerTeamMembers, jobRoles, type PartnerAccount, type AssessmentSession } from "@shared/schema";
 import { eq, desc, sql, and, or, gte, isNotNull, inArray } from "drizzle-orm";
-import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPartnerWelcomeEmail, sendGeneralEnquiryEmail, sendB2BResultsEmail, sendPaymentReceiptWithPdf, type PdfReceiptEmailDetails } from "./email";
+import { sendInvitationEmail, sendContactFormEmail, sendWelcomeEmailWithPassword, sendPartnerWelcomeEmail, sendGeneralEnquiryEmail, sendB2BResultsEmail, sendPaymentReceiptWithPdf, sendPartnerBulkInvitationEmail, type PdfReceiptEmailDetails } from "./email";
 import { generateReceiptPDF, generateInvoicePDF, generateInvoiceReceiptNumber, type ReceiptData } from "./generateReceipt";
 import { generateTemporaryPassword } from "./passwordUtils";
 import { getQueueStats } from "./queues";
@@ -2258,17 +2258,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const eventType = event.event;
         const email = event.email?.toLowerCase();
         
-        // Handle bounce, dropped, and blocked events
-        if (['bounce', 'dropped', 'blocked', 'deferred'].includes(eventType) && email) {
+        // Handle bounce, dropped, and blocked events - auto-retry via Gmail
+        if (['bounce', 'dropped', 'blocked'].includes(eventType) && email) {
           console.log(`[SendGrid Webhook] Email ${eventType} for: ${email}, reason: ${event.reason || event.response || 'Unknown'}`);
           
-          const bounceInfo = {
-            emailBounced: true,
-            bounceReason: event.reason || event.response || `Email ${eventType}`,
-            bouncedAt: new Date(),
-          };
+          const bounceReason = event.reason || event.response || `Email ${eventType}`;
           
-          // Find and update regular invitations
+          // Find and update regular invitations, then retry via Gmail
           const regularInvitations = await db
             .select()
             .from(schema.invitations)
@@ -2276,31 +2272,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           for (const invitation of regularInvitations) {
             if (!invitation.emailBounced) {
+              // Mark as bounced FIRST to prevent duplicate retries from webhook replays
               await db
                 .update(schema.invitations)
-                .set(bounceInfo)
+                .set({ emailBounced: true, bounceReason: `SendGrid ${eventType}: ${bounceReason} - Retrying via Gmail...`, bouncedAt: new Date() })
                 .where(eq(schema.invitations.id, invitation.id));
               
-              console.log(`[SendGrid Webhook] Marked invitation ${invitation.id} as bounced`);
+              console.log(`[SendGrid Webhook] Auto-retrying B2C invitation ${invitation.id} via Gmail...`);
+              const sentByUser = await db.select().from(users).where(eq(users.id, invitation.sentBy)).limit(1);
+              const inviterName = sentByUser[0]?.name || 'HumanMetrix';
+              
+              const retryResult = await sendInvitationEmail(invitation, inviterName, { forceGmail: true });
+              
+              if (retryResult?.success) {
+                console.log(`[SendGrid Webhook] Gmail retry SUCCEEDED for invitation ${invitation.id} to ${email}`);
+                await db
+                  .update(schema.invitations)
+                  .set({ emailBounced: false, bounceReason: `SendGrid ${eventType}: ${bounceReason} - Auto-retried via Gmail successfully` })
+                  .where(eq(schema.invitations.id, invitation.id));
+              } else {
+                console.log(`[SendGrid Webhook] Gmail retry FAILED for invitation ${invitation.id}`);
+                await db
+                  .update(schema.invitations)
+                  .set({ bounceReason: `SendGrid ${eventType}: ${bounceReason} - Gmail retry also failed` })
+                  .where(eq(schema.invitations.id, invitation.id));
+              }
             }
           }
           
-          // Find and update partner candidate invitations
-          const partnerInvitations = await db
+          // Find and update partner candidate invitations, then retry via Gmail
+          const partnerInvitationsList = await db
             .select()
             .from(partnerCandidateInvitations)
             .where(eq(partnerCandidateInvitations.email, email));
           
-          for (const invitation of partnerInvitations) {
+          for (const invitation of partnerInvitationsList) {
             if (!invitation.emailBounced) {
+              // Mark as bounced FIRST to prevent duplicate retries from webhook replays
               await db
                 .update(partnerCandidateInvitations)
-                .set(bounceInfo)
+                .set({ emailBounced: true, bounceReason: `SendGrid ${eventType}: ${bounceReason} - Retrying via Gmail...`, bouncedAt: new Date() })
                 .where(eq(partnerCandidateInvitations.id, invitation.id));
               
-              console.log(`[SendGrid Webhook] Marked partner invitation ${invitation.id} as bounced`);
+              console.log(`[SendGrid Webhook] Auto-retrying partner invitation ${invitation.id} via Gmail...`);
+              const partner = await db.select().from(partnerAccounts).where(eq(partnerAccounts.id, invitation.partnerId)).limit(1);
+              
+              if (partner[0]) {
+                const retryResult = await sendPartnerBulkInvitationEmail({
+                  candidateEmail: invitation.email || email,
+                  candidateName: invitation.name || undefined,
+                  assessmentTypes: invitation.assessmentTypes || [],
+                  inviteToken: invitation.inviteToken,
+                  partnerCompanyName: partner[0].companyName,
+                  partnerLogoUrl: partner[0].logoUrl,
+                  partnerPrimaryColor: partner[0].primaryBrandColor,
+                  expiresAt: invitation.expiresAt || undefined,
+                }, { forceGmail: true });
+                
+                if (retryResult.success) {
+                  console.log(`[SendGrid Webhook] Gmail retry SUCCEEDED for partner invitation ${invitation.id} to ${email}`);
+                  await db
+                    .update(partnerCandidateInvitations)
+                    .set({ emailBounced: false, bounceReason: `SendGrid ${eventType}: ${bounceReason} - Auto-retried via Gmail successfully` })
+                    .where(eq(partnerCandidateInvitations.id, invitation.id));
+                } else {
+                  console.log(`[SendGrid Webhook] Gmail retry FAILED for partner invitation ${invitation.id}`);
+                  await db
+                    .update(partnerCandidateInvitations)
+                    .set({ bounceReason: `SendGrid ${eventType}: ${bounceReason} - Gmail retry also failed` })
+                    .where(eq(partnerCandidateInvitations.id, invitation.id));
+                }
+              } else {
+                console.log(`[SendGrid Webhook] No partner found for invitation ${invitation.id} - marked as bounced`);
+              }
             }
           }
+        }
+        
+        // Handle deferred events (log but don't retry yet - email may still be delivered)
+        if (eventType === 'deferred' && email) {
+          console.log(`[SendGrid Webhook] Email deferred for: ${email}, reason: ${event.reason || event.response || 'Unknown'} - will be retried by SendGrid automatically`);
         }
       }
       
