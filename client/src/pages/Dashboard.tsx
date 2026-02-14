@@ -908,7 +908,7 @@ export default function Dashboard() {
           <div className="flex flex-col">
 
           {(partnerTestingSeries || []).length > 0 && (
-            <section className="mb-12" style={{ order: showPartnerFirst ? 0 : 4 }}>
+            <section className="mb-12" style={{ order: showPartnerFirst ? 0 : 5 }}>
               <h2 className="text-xl md:text-2xl font-semibold mb-4 text-white">Partner Testing Series</h2>
               <p className="text-white/70 text-sm mb-4">
                 Assessments completed via partner invitations
@@ -1072,7 +1072,7 @@ export default function Dashboard() {
           )}
 
           {/* Available Assessments */}
-          <section id="b2c-testing-series" className="mb-12" style={{ order: showPartnerFirst ? 1 : 0 }}>
+          <section id="b2c-testing-series" className="mb-12" style={{ order: (availableAssessments && availableAssessments.length > 0) ? (showPartnerFirst ? 1 : 0) : (showPartnerFirst ? 3 : 2) }}>
             <h2 className="text-xl md:text-2xl font-semibold mb-4 text-white">Available Assessments</h2>
             {availableAssessments && availableAssessments.length > 0 ? (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1170,7 +1170,7 @@ export default function Dashboard() {
           </section>
 
           {/* Add to Testing Suite - Show assessments not currently in the active suite */}
-          <div style={{ order: showPartnerFirst ? 2 : 1 }}>
+          <div style={{ order: showPartnerFirst ? 4 : 3 }}>
           {(() => {
             // All available assessment types
             const allAssessmentTypes = ['fit', 'ai_readiness', 'prompt_architecture', 'aiq'];
@@ -1292,7 +1292,7 @@ export default function Dashboard() {
 
           {/* Completed Testing Series (Batches) */}
           {purchasesWithCompletedResults.length > 0 && (
-            <section className="mb-12" style={{ order: showPartnerFirst ? 3 : 2 }}>
+            <section className="mb-12" style={{ order: (availableAssessments && availableAssessments.length > 0) ? (showPartnerFirst ? 2 : 1) : (showPartnerFirst ? 1 : 0) }}>
               <h2 className="text-xl md:text-2xl font-semibold mb-4 text-white">Your Results</h2>
               <div className="space-y-6">
                 {[...purchasesWithCompletedResults].reverse().map((purchase: any, index: number) => {
