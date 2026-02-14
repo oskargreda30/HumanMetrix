@@ -4349,18 +4349,22 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
               const alreadyConsumed = existingResult?.status === 'completed' || existingResult?.status === 'abandoned';
               
               if (!alreadyConsumed) {
+                // Skip if this assessment type already exists from a purchase (avoid duplicates)
+                if (purchasedAssessmentTypes.has(normalizedType) && availableAssessments.some(a => a.source === 'purchase' && normalizeAssessmentId(a.assessmentType) === normalizedType)) {
+                  continue;
+                }
+                
                 // Only add if we haven't already added this assessment type from THIS invitation
                 // Use invitation-specific key to allow same type from different invitations
                 const invitationTypeKey = `${invitation.id}::${normalizedType}`;
                 if (!addedAssessmentTypes.has(invitationTypeKey)) {
-                  // Create a synthetic ID for invitation-based assessments (using :: separator to avoid UUID/type conflicts)
                   availableAssessments.push({
                     purchaseItemId: `invitation::${invitation.id}::${normalizedType}`,
                     assessmentType: normalizedType,
                     status: 'ready',
                     source: 'invitation',
                     invitationId: invitation.id,
-                    canRemove: false, // Invitation-based assessments cannot be removed
+                    canRemove: false,
                   });
                   addedAssessmentTypes.add(invitationTypeKey);
                 }
@@ -4390,6 +4394,11 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
               const partnerResultConsumed = existingPartnerResult?.status === 'completed' || existingPartnerResult?.status === 'abandoned';
               
               if (!partnerResultConsumed) {
+                // Skip if this assessment type already exists from a purchase (avoid duplicates)
+                if (purchasedAssessmentTypes.has(normalizedType) && availableAssessments.some(a => a.source === 'purchase' && normalizeAssessmentId(a.assessmentType) === normalizedType)) {
+                  continue;
+                }
+                
                 // Use partner invitation-specific key to track which assessments we've added
                 const partnerInvTypeKey = `partner::${partnerInv.id}::${normalizedType}`;
                 
