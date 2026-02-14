@@ -2552,7 +2552,15 @@ Powered by HumanMetrix - AI Assessment Platform
     `.trim(),
   };
 
-  const result = await sendEmail(msg);
+  const result = await sendEmail(msg, {
+    recipientType: 'b2b_test_taker',
+    recipientName: details.candidateName || undefined,
+    emailType: 'invitation',
+    metadata: {
+      partnerCompanyName: details.partnerCompanyName,
+      assessmentTypes: details.assessmentTypes.join(', '),
+    },
+  });
   if (result.success) {
     console.log(`[Email] Partner bulk invitation email sent to ${details.candidateEmail} (ID: ${result.messageId})`);
   }
