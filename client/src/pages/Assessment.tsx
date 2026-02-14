@@ -8,10 +8,11 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Loader2, CheckCircle2, Clock, AlertCircle, Info, AlertTriangle } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, AlertCircle, Info, AlertTriangle, ArrowLeft, ArrowRight } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getFITQuestions, getAIReadinessQuestions, getAIQQuestions } from "@shared/questions";
@@ -792,15 +793,6 @@ export default function Assessment() {
   };
 
   const handleNext = () => {
-    if (!answers[currentQ.id]) {
-      toast({
-        title: "Please select an answer",
-        description: "You must answer the current question before proceeding",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
       
@@ -811,8 +803,11 @@ export default function Assessment() {
         setTimerResetKey(timerResetKeyRef.current);
       }
       
-      // Scroll to top of page after moving to next question
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (window.innerWidth < 768) {
+        window.scrollTo({ top: 0, behavior: "instant" });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
   };
 
@@ -823,15 +818,6 @@ export default function Assessment() {
   };
 
   const handleSubmit = () => {
-    if (Object.keys(answers).length < questions.length) {
-      toast({
-        title: "Incomplete assessment",
-        description: "Please answer all questions before submitting",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     // Stop the timer IMMEDIATELY when user clicks submit
     setIsSubmitting(true);
     // Set synchronous flag to prevent any race conditions with abandon
@@ -938,33 +924,33 @@ export default function Assessment() {
           {!showInstructions && resultId && (
             <>
               {/* Header - sticky below nav so timer is always visible */}
-              <div className="sticky top-16 z-40 pb-4 -mx-4 px-4 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8 bg-background pt-2">
-                <div className="flex items-start justify-between mb-3 gap-3">
-                  <div className="min-w-0">
-                    <h1 className="text-lg md:text-2xl font-bold mb-1 truncate">
-                      {formatAssessmentName(assessment.assessmentType)} Assessment
-                    </h1>
-                    <p className="text-muted-foreground text-sm whitespace-nowrap">
+              <div className="sticky top-16 z-40 pb-3 -mx-4 px-4 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8 bg-background pt-2">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <Badge className="border w-fit bg-primary/10 text-primary border-primary/30">
+                      {formatAssessmentName(assessment.assessmentType)}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
                       Question {currentQuestion + 1} of {questions.length}
-                    </p>
+                    </span>
                   </div>
-                  <div className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-lg border-2 flex-shrink-0 ${
+                  <div className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 flex-shrink-0 ${
                     timeRemaining <= (isPromptArchitecture ? 30 : 300) 
                       ? 'bg-destructive/10 text-destructive border-destructive/50 animate-pulse' 
                       : 'bg-primary/10 border-primary/30'
                   }`}>
-                    <Clock className="h-4 w-4 md:h-5 md:w-5" />
-                    <span className="text-lg md:text-xl font-bold tabular-nums" data-testid="timer-display">
+                    <Clock className="h-5 w-5" />
+                    <span className="text-lg font-bold tabular-nums" data-testid="timer-display">
                       {formatTime(timeRemaining)}
                     </span>
                   </div>
                 </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary transition-all duration-300"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
+                <Progress value={progress} className="h-2" />
+                {showTimeWarning && (
+                  <div className="mt-2 text-sm text-center text-destructive">
+                    {isPromptArchitecture ? '30 seconds remaining!' : '5 minutes remaining!'}
+                  </div>
+                )}
               </div>
 
 
@@ -985,150 +971,149 @@ export default function Assessment() {
               )}
 
               {/* Question */}
-              <Card className="p-8 mb-6">
-                {isPromptArchitecture ? (
-                  // Prompt Architecture text input
-                  <div>
-                    <div className="mb-6">
-                      <div className="flex items-center justify-between mb-3">
-                        <h2 className="text-2xl font-bold">Level {(currentQ as any).level}</h2>
+              <Card>
+                <CardContent className="pt-6">
+                  {isPromptArchitecture ? (
+                    // Prompt Architecture text input
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge className="bg-purple-500/20 text-purple-500 dark:text-purple-400 border-purple-500/30">
+                          Level {(currentQ as any).level}
+                        </Badge>
                         <span className="text-sm text-muted-foreground">{(currentQ as any).title}</span>
                       </div>
-                      <p className="text-muted-foreground mb-4">{(currentQ as any).description}</p>
-                    </div>
-                    
-                    <div className="mb-6 p-4 bg-muted rounded-lg">
-                      <h3 className="font-semibold mb-2">Scenario:</h3>
-                      <p className="text-sm">{currentQ.text}</p>
-                    </div>
-                    
-                    <div className="mb-6 p-4 bg-primary/5 border-l-4 border-primary rounded-lg">
-                      <h3 className="font-semibold mb-2">Task:</h3>
-                      <p className="text-sm">{(currentQ as any).taskInstructions}</p>
-                      <p className="text-xs text-amber-600 dark:text-amber-500 mt-3 font-medium">
-                        ⚠️ Candidate is measured on their creativity, copying the above question will score 0 points.
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor={`prompt-${currentQ.id}`} className="text-base font-semibold mb-2 block">
-                        Your Prompt:
-                      </Label>
+                      <p className="text-muted-foreground text-sm mb-4">{(currentQ as any).description}</p>
+                      <div className="bg-muted p-4 rounded-lg mb-4">
+                        <h3 className="font-semibold mb-2">Scenario</h3>
+                        <p className="text-muted-foreground text-sm">{currentQ.text}</p>
+                      </div>
+                      {(currentQ as any).taskInstructions && (
+                        <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg mb-4">
+                          <h3 className="font-semibold text-primary mb-2">Your Task</h3>
+                          <p className="text-muted-foreground text-sm">{(currentQ as any).taskInstructions}</p>
+                        </div>
+                      )}
                       <Textarea
                         id={`prompt-${currentQ.id}`}
-                        placeholder="Write your prompt here... Be specific, clear, and creative!"
+                        placeholder="Write your prompt here..."
                         value={answers[currentQ.id] || ""}
                         onChange={handleTextChange}
                         onPaste={(e) => {
                           e.preventDefault();
                         }}
                         disabled={isSubmitting}
-                        className="min-h-[200px] text-base disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="min-h-[150px] text-base disabled:opacity-60 disabled:cursor-not-allowed"
                         data-testid={`input-prompt-${currentQ.id}`}
                       />
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Your prompt will be evaluated by an AI model on clarity, structure, context relevance, creativity, and iterative improvement.
+                      <p className="text-xs text-destructive mt-1">
+                        Pasting is disabled. Copied content will score zero.
                       </p>
                     </div>
-                  </div>
-                ) : (
-                  // Multiple choice questions (FIT, AI Readiness, AIQ)
-                  <div>
-                    <h2 className="text-base md:text-lg font-semibold mb-6">{currentQ.text}</h2>
-                    <RadioGroup
-                      value={answers[currentQ.id] || ""}
-                      onValueChange={handleAnswerChange}
-                    >
-                      {(currentQ as any).options?.map((option: any) => (
-                        <div 
-                          key={option.value} 
-                          className="flex items-start space-x-3 mb-4 p-4 rounded-lg hover-elevate active-elevate-2 cursor-pointer"
-                          onClick={() => handleAnswerChange(option.value)}
-                          data-testid={`answer-container-${currentQ.id}-${option.value}`}
-                        >
-                          <RadioGroupItem
-                            value={option.value}
-                            id={`${currentQ.id}-${option.value}`}
-                            data-testid={`radio-${currentQ.id}-${option.value}`}
-                            className="mt-0.5 pointer-events-none"
-                          />
-                          <Label
-                            htmlFor={`${currentQ.id}-${option.value}`}
-                            className="flex-1 cursor-pointer pointer-events-none"
+                  ) : (
+                    // Multiple choice questions (FIT, AI Readiness, AIQ)
+                    <div>
+                      <h2 className="text-lg font-semibold mb-6">{currentQ.text}</h2>
+                      <RadioGroup
+                        value={answers[currentQ.id] || ""}
+                        onValueChange={handleAnswerChange}
+                      >
+                        {(currentQ as any).options?.map((option: any) => (
+                          <div 
+                            key={option.value} 
+                            className="flex items-start space-x-3 mb-3 p-4 rounded-lg bg-muted hover-elevate active-elevate-2 cursor-pointer"
+                            onClick={() => handleAnswerChange(option.value)}
+                            data-testid={`answer-container-${currentQ.id}-${option.value}`}
                           >
-                            <span className="text-sm">
-                              <span className="font-medium">{option.value}.</span>{" "}
-                              <span className="text-muted-foreground">{option.text}</span>
-                            </span>
-                          </Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  </div>
-                )}
+                            <RadioGroupItem
+                              value={option.value}
+                              id={`${currentQ.id}-${option.value}`}
+                              data-testid={`radio-${currentQ.id}-${option.value}`}
+                              className="mt-0.5 pointer-events-none"
+                            />
+                            <Label
+                              htmlFor={`${currentQ.id}-${option.value}`}
+                              className="flex-1 cursor-pointer pointer-events-none"
+                            >
+                              <span className="text-sm">
+                                <span className="font-medium">{option.value}.</span>{" "}
+                                <span className="text-muted-foreground">{option.text}</span>
+                              </span>
+                            </Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
+                    </div>
+                  )}
+                </CardContent>
               </Card>
 
-              {/* Navigation - fixed at bottom on mobile so keyboard doesn't hide buttons */}
-              <div ref={navBarRef} className="mt-6 py-3 flex flex-wrap gap-3 justify-between" style={keyboardOpen ? { marginBottom: '60vh' } : undefined}>
-                {!submitMutation.isPending && !isPromptArchitecture ? (
+              {/* Navigation */}
+              <div ref={navBarRef} className="mt-6 py-3 flex justify-between gap-3" style={keyboardOpen ? { marginBottom: '60vh' } : undefined}>
+                {isPromptArchitecture ? (
+                  <div />
+                ) : (
                   <Button
                     variant="outline"
                     onClick={handlePrevious}
                     disabled={currentQuestion === 0}
                     data-testid="button-previous"
                   >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
                     Previous
                   </Button>
-                ) : (
-                  <div />
                 )}
                 
                 {currentQuestion === questions.length - 1 ? (
-                  submitMutation.isPending ? (
-                    isPromptArchitecture ? (
-                      <div className="flex-1 space-y-3" data-testid="evaluation-progress-container">
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-2">
-                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                            <span className="font-medium">
-                              {evaluationProgress < 100 ? 'Evaluating your answers...' : 'Finishing up...'}
-                            </span>
-                          </div>
-                          <span className="text-muted-foreground">{Math.round(evaluationProgress)}%</span>
-                        </div>
-                        <Progress 
-                          value={evaluationProgress} 
-                          className="h-2" 
-                          indicatorClassName="transition-transform duration-300 ease-out"
-                          data-testid="evaluation-progress-bar" 
-                        />
-                        <p className="text-xs text-muted-foreground text-center">
-                          AI is analyzing your responses. This typically takes 1-2 minutes.
-                        </p>
-                      </div>
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={!answers[currentQ.id] || submitMutation.isPending}
+                    className="bg-green-600 text-white"
+                    data-testid="button-submit-assessment"
+                  >
+                    {submitMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        {isPromptArchitecture ? "Analysing..." : "Submitting..."}
+                      </>
                     ) : (
-                      <Button disabled className="flex-1 sm:flex-none" data-testid="button-submitting">
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Submitting...
-                      </Button>
-                    )
-                  ) : (
-                    <Button
-                      onClick={handleSubmit}
-                      disabled={submitMutation.isPending}
-                      data-testid="button-submit-assessment"
-                      className="flex-1 sm:flex-none"
-                    >
-                      <CheckCircle2 className="mr-2 h-4 w-4" />
-                      Submit Assessment
-                    </Button>
-                  )
+                      "Submit Assessment"
+                    )}
+                  </Button>
                 ) : (
-                  <Button onClick={handleNext} data-testid="button-next">
+                  <Button 
+                    onClick={handleNext} 
+                    disabled={!answers[currentQ.id]}
+                    data-testid="button-next"
+                  >
                     Next
+                    <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 )}
               </div>
+
+              {/* Evaluation progress for Prompt Architecture */}
+              {submitMutation.isPending && isPromptArchitecture && (
+                <div className="px-2" data-testid="evaluation-progress-container">
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      <span className="font-medium">
+                        {evaluationProgress < 100 ? 'Evaluating your answers...' : 'Finishing up...'}
+                      </span>
+                    </div>
+                    <span className="text-muted-foreground">{Math.round(evaluationProgress)}%</span>
+                  </div>
+                  <Progress 
+                    value={evaluationProgress} 
+                    className="h-2" 
+                    indicatorClassName="transition-transform duration-300 ease-out"
+                    data-testid="evaluation-progress-bar" 
+                  />
+                  <p className="text-xs text-muted-foreground text-center mt-1.5">
+                    AI is analyzing your responses. This typically takes 1-2 minutes.
+                  </p>
+                </div>
+              )}
             </>
           )}
         </div>
