@@ -403,6 +403,7 @@ export default function EmbedAssessment() {
     paymentUrl: string;
   } | null>(null);
   const [isLoadingCompletion, setIsLoadingCompletion] = useState(false);
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const hasSubmittedRef = useRef<boolean>(false);
   const hasCalledCompletionRef = useRef<boolean>(false);
   const startCallInProgressRef = useRef<boolean>(false); // Prevent concurrent /start calls
@@ -2014,10 +2015,33 @@ export default function EmbedAssessment() {
                     <Button
                       className="w-full"
                       style={{ backgroundColor: primaryColor }}
-                      onClick={() => { const target = window.top || window; target.location.href = invitationCompletionData.createAccountUrl || '/login'; }}
+                      disabled={isCreatingAccount}
+                      onClick={async () => {
+                        if (!inviteToken) return;
+                        setIsCreatingAccount(true);
+                        try {
+                          const res = await fetch(`/api/guest/invite/${inviteToken}/create-account`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                          });
+                          const data = await res.json();
+                          if (data.success) {
+                            const target = window.top || window;
+                            target.location.href = data.redirectTo || '/dashboard?view=candidate';
+                          } else {
+                            const target = window.top || window;
+                            target.location.href = `/login?email=${encodeURIComponent(invitationCompletionData.email)}`;
+                          }
+                        } catch {
+                          const target = window.top || window;
+                          target.location.href = `/login?email=${encodeURIComponent(invitationCompletionData.email)}`;
+                        } finally {
+                          setIsCreatingAccount(false);
+                        }
+                      }}
                       data-testid="button-create-account"
                     >
-                      Create Account to View Results
+                      {isCreatingAccount ? 'Creating Account...' : 'Create Account to View Results'}
                     </Button>
                     <p className={`text-xs ${textMuted}`}>
                       Already have an account?{' '}

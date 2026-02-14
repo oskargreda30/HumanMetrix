@@ -5960,11 +5960,16 @@ export function registerGuestAssessmentRoutes(app: Express) {
       // Link partner assessment results to new user
       await linkPartnerResultsToUser(newUser.id, invitation);
       
+      const invitationId = invitation.id;
+      const redirectTo = invitationId 
+        ? `/dashboard?view=candidate&scrollToSeries=${invitationId}` 
+        : '/dashboard?view=candidate';
+      
       res.json({ 
         success: true, 
         message: "Account created successfully. Check your email for login credentials.",
         userId: newUser.id,
-        redirectTo: '/dashboard?view=candidate'
+        redirectTo,
       });
     } catch (error) {
       console.error("Error creating account:", error);
