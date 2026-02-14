@@ -117,8 +117,7 @@ export default function MyResults() {
     if (hasScrolledRef.current) return;
     if (resultsLoading) return;
     
-    const shouldScroll = scrollToAssessment || purchaseId;
-    if (!shouldScroll) return;
+    if (!scrollToAssessment) return;
 
     let targetId: string | null = null;
 
