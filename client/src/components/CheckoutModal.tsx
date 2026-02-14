@@ -302,7 +302,7 @@ export default function CheckoutModal({
         setIsProcessing(false);
         onOpenChange(false);
         // Use window.location to ensure full page reload with session
-        window.location.href = "/dashboard";
+        window.location.href = "/dashboard?scrollToB2C=true";
         return;
       }
       
@@ -322,8 +322,8 @@ export default function CheckoutModal({
           setLocation("/login?message=check-email");
         }, 2000);
       } else {
-        // For authenticated users, navigate immediately with refresh flag
-        window.location.href = "/dashboard";
+        // For authenticated users, navigate immediately and scroll to B2C section
+        window.location.href = "/dashboard?scrollToB2C=true";
       }
     } catch (error: any) {
       const errorMessage = error.message || "Failed to process request. Please try again.";

@@ -108,7 +108,7 @@ export default function Dashboard() {
   
   const initialSearchParams = new URLSearchParams(window.location.search);
   const [candidateView] = useState(() => 
-    initialSearchParams.get('view') === 'candidate' || initialSearchParams.has('scrollToSeries')
+    initialSearchParams.get('view') === 'candidate' || initialSearchParams.has('scrollToSeries') || initialSearchParams.has('scrollToB2C')
   );
   
   // Change password state
@@ -471,6 +471,7 @@ export default function Dashboard() {
 
   // Track which series to scroll to after purchase
   const [scrollToSeriesId, setScrollToSeriesId] = useState<string | null>(null);
+  const [scrollToB2C, setScrollToB2C] = useState(false);
 
   // Handle partner results purchase success
   useEffect(() => {
@@ -482,6 +483,7 @@ export default function Dashboard() {
       const intentId = params.get("intent_id");
       const seriesId = params.get("seriesId");
       const scrollToSeriesParam = params.get("scrollToSeries");
+      const scrollToB2CParam = params.get("scrollToB2C");
 
       if (partnerPurchase === "success" && (sessionId || intentId)) {
         try {
@@ -511,6 +513,9 @@ export default function Dashboard() {
         window.history.replaceState({}, '', '/dashboard');
       } else if (scrollToSeriesParam) {
         setScrollToSeriesId(scrollToSeriesParam);
+        window.history.replaceState({}, '', '/dashboard');
+      } else if (scrollToB2CParam) {
+        setScrollToB2C(true);
         window.history.replaceState({}, '', '/dashboard');
       }
     };
@@ -547,6 +552,32 @@ export default function Dashboard() {
     let timer = setTimeout(tryScroll, 500);
     return () => clearTimeout(timer);
   }, [scrollToSeriesId, partnerTestingSeries]);
+
+  // Scroll to B2C testing series section after checkout
+  useEffect(() => {
+    if (!scrollToB2C) return;
+    
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    const tryScroll = () => {
+      const element = document.getElementById('b2c-testing-series');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setScrollToB2C(false);
+      } else {
+        attempts++;
+        if (attempts < maxAttempts) {
+          timer = setTimeout(tryScroll, 500);
+        } else {
+          setScrollToB2C(false);
+        }
+      }
+    };
+    
+    let timer = setTimeout(tryScroll, 500);
+    return () => clearTimeout(timer);
+  }, [scrollToB2C, assessments]);
 
   if (!authLoading && user) {
     if (user.role === 'super_admin' && !candidateView) {
@@ -859,8 +890,173 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* Partner Testing Series (from partner invitations) - shown first */}
+          {(partnerTestingSeries || []).length > 0 && (
+            <section className="mb-12">
+              <h2 className="text-xl md:text-2xl font-semibold mb-4 text-white">Partner Testing Series</h2>
+              <p className="text-white/70 text-sm mb-4">
+                Assessments completed via partner invitations
+              </p>
+              <div className="space-y-6">
+                {[...(partnerTestingSeries || [])].sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()).map((series: any, index: number) => {
+                  const progressPercentage = Math.round((series.completedCount / series.totalCount) * 100);
+                  const isAllComplete = series.allComplete;
+                  
+                  return (
+                    <Card key={series.id} id={`partner-series-${series.id}`} className="p-6 hover-elevate transition-all">
+                      <div className="flex flex-col md:flex-row items-start gap-6">
+                        <div className="flex-shrink-0">
+                          <div 
+                            className="relative w-20 h-20" 
+                            role="img" 
+                            aria-label={`${series.completedCount} of ${series.totalCount} assessments completed, ${progressPercentage}% complete`}
+                          >
+                            <svg className="w-20 h-20 transform -rotate-90" aria-hidden="true">
+                              <circle cx="40" cy="40" r="36" stroke="currentColor" strokeWidth="6" fill="none" className="text-muted/20" />
+                              <circle cx="40" cy="40" r="36" stroke="currentColor" strokeWidth="6" fill="none"
+                                strokeDasharray={`${2 * Math.PI * 36}`}
+                                strokeDashoffset={`${2 * Math.PI * 36 * (1 - progressPercentage / 100)}`}
+                                className={isAllComplete ? "text-cyan-500" : "text-blue-500"}
+                                strokeLinecap="round"
+                              />
+                            </svg>
+                            <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                              <span className="text-lg font-bold">{progressPercentage}%</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start gap-2 mb-2">
+                            {isAllComplete ? (
+                              <CheckCircle2 className="h-5 w-5 text-cyan-500 flex-shrink-0 mt-0.5" />
+                            ) : (
+                              <Clock className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                            )}
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="text-lg font-semibold">Partner Series #{index + 1}</h3>
+                                <Badge className="bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-500/20">
+                                  {series.partnerName}
+                                </Badge>
+                                {(() => {
+                                  const hasAnyResult = (series.results || []).length > 0;
+                                  const hasInProgress = (series.results || []).some((r: any) => r.status === 'in_progress' || r.status === 'started');
+                                  if (isAllComplete) {
+                                    return (<Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20 gap-1"><CheckCircle2 className="h-3 w-3" />Completed</Badge>);
+                                  } else if (hasInProgress || (hasAnyResult && series.completedCount > 0)) {
+                                    return (<Badge className="bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20 gap-1"><Clock className="h-3 w-3" />In Progress</Badge>);
+                                  } else {
+                                    return (<Badge className="bg-muted text-muted-foreground border-muted-foreground/20 gap-1"><PlayCircle className="h-3 w-3" />Not Started</Badge>);
+                                  }
+                                })()}
+                                {isAllComplete && (() => {
+                                  const unlockedCount = (series.results || []).filter((r: any) => r.isUnlocked).length;
+                                  const totalCompleted = (series.results || []).filter((r: any) => r.status === 'completed').length;
+                                  const hasPartialUnlock = unlockedCount > 0 && unlockedCount < totalCompleted;
+                                  if (series.resultsUnlocked) {
+                                    return (<Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 gap-1"><Unlock className="h-3 w-3" />{series.isPurchased ? 'Purchased' : 'Auto-Unlocked'}</Badge>);
+                                  } else if (hasPartialUnlock) {
+                                    return (<Badge className="bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20 gap-1"><Unlock className="h-3 w-3" />{unlockedCount} of {totalCompleted} Unlocked</Badge>);
+                                  } else {
+                                    return (<Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 gap-1"><Lock className="h-3 w-3" />Scores Locked</Badge>);
+                                  }
+                                })()}
+                              </div>
+                            </div>
+                          </div>
+
+                          <p className="text-sm text-muted-foreground mb-3">
+                            <span className="font-medium">{series.completedCount} of {series.totalCount}</span> assessments completed
+                            {series.completedAt && (<span className="ml-2">• {format(new Date(series.completedAt), 'MMM d, yyyy')}</span>)}
+                            {isAllComplete && !series.resultsUnlocked && series.autoUnlockDate && (
+                              <span className="ml-2 text-amber-600 dark:text-amber-400">• Auto-unlocks {format(new Date(series.autoUnlockDate), 'MMM d, yyyy')}</span>
+                            )}
+                          </p>
+
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            {(series.assessmentTypes || []).map((assessmentType: string) => {
+                              const normalizedType = assessmentType.toLowerCase().replace(/-/g, '_');
+                              const metadata = getAssessmentMetadata(normalizedType);
+                              const ResultIcon = metadata.icon;
+                              const result = (series.results || []).find((r: any) => r.assessmentType.toLowerCase().replace(/-/g, '_') === normalizedType);
+                              const isCompleted = result?.status === 'completed';
+                              const isInProgress = result?.status === 'in_progress' || result?.status === 'started';
+                              const isAbandoned = result?.status === 'abandoned';
+                              const isUnlocked = result?.isUnlocked || series.resultsUnlocked;
+                              let badgeClassName = "gap-1.5 py-1 ";
+                              if (isCompleted) { badgeClassName += "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"; }
+                              else if (isInProgress) { badgeClassName += "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"; }
+                              else if (isAbandoned) { badgeClassName += "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800"; }
+                              else { badgeClassName += "bg-muted/50 border-muted-foreground/20"; }
+                              return (
+                                <Badge key={assessmentType} variant="outline" className={badgeClassName} data-testid={`badge-assessment-${normalizedType}`}>
+                                  <ResultIcon className="h-3 w-3" />
+                                  {formatAssessmentName(normalizedType)}
+                                  {isCompleted ? (
+                                    isUnlocked && result?.totalScore ? (<span className="text-cyan-600 dark:text-cyan-400 ml-1">{result.totalScore}%</span>) : (<Lock className="h-3 w-3 text-amber-500 ml-1" />)
+                                  ) : isInProgress ? (<Clock className="h-3 w-3 text-blue-500 ml-1" />
+                                  ) : isAbandoned ? (<span className="text-orange-600 dark:text-orange-400 text-xs ml-1">Incomplete</span>
+                                  ) : (<span className="text-muted-foreground text-xs ml-1">Not started</span>)}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-2 md:w-48">
+                          {(() => {
+                            const completedResults = (series.results || []).filter((r: any) => r.status === 'completed');
+                            const hasCompletedResults = completedResults.length > 0;
+                            const lockedResults = completedResults.filter((r: any) => !r.isUnlocked && !series.resultsUnlocked);
+                            const hasLockedResults = lockedResults.length > 0;
+                            const unlockedResults = completedResults.filter((r: any) => r.isUnlocked || series.resultsUnlocked);
+                            const hasUnlockedResults = unlockedResults.length > 0;
+                            const isIncomplete = !series.allComplete;
+                            return (
+                              <>
+                                {hasCompletedResults && (<p className="text-sm text-muted-foreground font-medium text-center">Results shared with {series.partnerName}</p>)}
+                                {isIncomplete && series.inviteToken && (
+                                  <Link href={`/start-assessment?token=${series.inviteToken}`}>
+                                    <Button className="mt-2 w-full" variant="default" data-testid={`button-resume-testing-${series.id}`}>
+                                      <PlayCircle className="mr-2 h-4 w-4" />Resume Testing
+                                    </Button>
+                                  </Link>
+                                )}
+                                {hasUnlockedResults && (
+                                  unlockedResults.length > 1 ? (
+                                    <Button className="mt-2 w-full" variant={isIncomplete ? "outline" : "default"} data-testid={`button-view-partner-results-${series.id}`}
+                                      onClick={() => { setResultSelectionDialog({ seriesId: series.id, partnerName: series.partnerName, unlockedResults: unlockedResults.map((r: any) => ({ id: r.id, assessmentType: r.assessmentType, totalScore: r.totalScore })) }); }}>
+                                      <FileText className="mr-2 h-4 w-4" />View Results
+                                    </Button>
+                                  ) : (
+                                    <Link href={`/my-results?partnerInvitationId=${series.id}`}>
+                                      <Button className="mt-2 w-full" variant={isIncomplete ? "outline" : "default"} data-testid={`button-view-partner-results-${series.id}`}>
+                                        <FileText className="mr-2 h-4 w-4" />View Results
+                                      </Button>
+                                    </Link>
+                                  )
+                                )}
+                                {hasLockedResults && (
+                                  <Button onClick={() => { setLockedResultsDialog({ seriesId: series.id, partnerName: series.partnerName, autoUnlockDate: series.autoUnlockDate, completedResults: lockedResults }); }}
+                                    className="mt-2" variant="outline" data-testid={`button-results-${series.id}`}>
+                                    <Lock className="mr-2 h-4 w-4" />Unlock Results
+                                  </Button>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
           {/* Available Assessments */}
-          <section className="mb-12">
+          <section id="b2c-testing-series" className="mb-12">
             <h2 className="text-xl md:text-2xl font-semibold mb-4 text-white">Available Assessments</h2>
             {availableAssessments && availableAssessments.length > 0 ? (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1256,316 +1452,6 @@ export default function Dashboard() {
             </section>
           )}
 
-          {/* Partner Testing Series (from partner invitations) */}
-          {(partnerTestingSeries || []).length > 0 && (
-            <section className="mb-12">
-              <h2 className="text-xl md:text-2xl font-semibold mb-4 text-white">Partner Testing Series</h2>
-              <p className="text-white/70 text-sm mb-4">
-                Assessments completed via partner invitations
-              </p>
-              <div className="space-y-6">
-                {[...(partnerTestingSeries || [])].sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()).map((series: any, index: number) => {
-                  const progressPercentage = Math.round((series.completedCount / series.totalCount) * 100);
-                  const isAllComplete = series.allComplete;
-                  
-                  return (
-                    <Card key={series.id} id={`partner-series-${series.id}`} className="p-6 hover-elevate transition-all">
-                      <div className="flex flex-col md:flex-row items-start gap-6">
-                        {/* Progress Circle */}
-                        <div className="flex-shrink-0">
-                          <div 
-                            className="relative w-20 h-20" 
-                            role="img" 
-                            aria-label={`${series.completedCount} of ${series.totalCount} assessments completed, ${progressPercentage}% complete`}
-                          >
-                            <svg className="w-20 h-20 transform -rotate-90" aria-hidden="true">
-                              <circle
-                                cx="40"
-                                cy="40"
-                                r="36"
-                                stroke="currentColor"
-                                strokeWidth="6"
-                                fill="none"
-                                className="text-muted/20"
-                              />
-                              <circle
-                                cx="40"
-                                cy="40"
-                                r="36"
-                                stroke="currentColor"
-                                strokeWidth="6"
-                                fill="none"
-                                strokeDasharray={`${2 * Math.PI * 36}`}
-                                strokeDashoffset={`${2 * Math.PI * 36 * (1 - progressPercentage / 100)}`}
-                                className={isAllComplete ? "text-cyan-500" : "text-blue-500"}
-                                strokeLinecap="round"
-                              />
-                            </svg>
-                            <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
-                              <span className="text-lg font-bold">{progressPercentage}%</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start gap-2 mb-2">
-                            {isAllComplete ? (
-                              <CheckCircle2 className="h-5 w-5 text-cyan-500 flex-shrink-0 mt-0.5" />
-                            ) : (
-                              <Clock className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                            )}
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <h3 className="text-lg font-semibold">
-                                  Partner Series #{index + 1}
-                                </h3>
-                                <Badge className="bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-500/20">
-                                  {series.partnerName}
-                                </Badge>
-                                {/* Series Status Badge */}
-                                {(() => {
-                                  const hasAnyResult = (series.results || []).length > 0;
-                                  const hasInProgress = (series.results || []).some(
-                                    (r: any) => r.status === 'in_progress' || r.status === 'started'
-                                  );
-                                  
-                                  if (isAllComplete) {
-                                    return (
-                                      <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20 gap-1">
-                                        <CheckCircle2 className="h-3 w-3" />
-                                        Completed
-                                      </Badge>
-                                    );
-                                  } else if (hasInProgress || (hasAnyResult && series.completedCount > 0)) {
-                                    return (
-                                      <Badge className="bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20 gap-1">
-                                        <Clock className="h-3 w-3" />
-                                        In Progress
-                                      </Badge>
-                                    );
-                                  } else {
-                                    return (
-                                      <Badge className="bg-muted text-muted-foreground border-muted-foreground/20 gap-1">
-                                        <PlayCircle className="h-3 w-3" />
-                                        Not Started
-                                      </Badge>
-                                    );
-                                  }
-                                })()}
-                                {/* Unlock status badge */}
-                                {isAllComplete && (() => {
-                                  // Check for partial unlock (some results unlocked, some not)
-                                  const unlockedCount = (series.results || []).filter((r: any) => r.isUnlocked).length;
-                                  const totalCompleted = (series.results || []).filter((r: any) => r.status === 'completed').length;
-                                  const hasPartialUnlock = unlockedCount > 0 && unlockedCount < totalCompleted;
-                                  
-                                  if (series.resultsUnlocked) {
-                                    return (
-                                      <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 gap-1">
-                                        <Unlock className="h-3 w-3" />
-                                        {series.isPurchased ? 'Purchased' : 'Auto-Unlocked'}
-                                      </Badge>
-                                    );
-                                  } else if (hasPartialUnlock) {
-                                    return (
-                                      <Badge className="bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20 gap-1">
-                                        <Unlock className="h-3 w-3" />
-                                        {unlockedCount} of {totalCompleted} Unlocked
-                                      </Badge>
-                                    );
-                                  } else {
-                                    return (
-                                      <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 gap-1">
-                                        <Lock className="h-3 w-3" />
-                                        Scores Locked
-                                      </Badge>
-                                    );
-                                  }
-                                })()}
-                              </div>
-                            </div>
-                          </div>
-
-                          <p className="text-sm text-muted-foreground mb-3">
-                            <span className="font-medium">{series.completedCount} of {series.totalCount}</span> assessments completed
-                            {series.completedAt && (
-                              <span className="ml-2">• {format(new Date(series.completedAt), 'MMM d, yyyy')}</span>
-                            )}
-                            {/* Auto-unlock countdown */}
-                            {isAllComplete && !series.resultsUnlocked && series.autoUnlockDate && (
-                              <span className="ml-2 text-amber-600 dark:text-amber-400">
-                                • Auto-unlocks {format(new Date(series.autoUnlockDate), 'MMM d, yyyy')}
-                              </span>
-                            )}
-                          </p>
-
-                          {/* All Assessments with Status */}
-                          <div className="flex flex-wrap gap-2 mb-4">
-                            {(series.assessmentTypes || []).map((assessmentType: string) => {
-                              // Normalize type for consistent matching (handle both - and _ variants)
-                              const normalizedType = assessmentType.toLowerCase().replace(/-/g, '_');
-                              const metadata = getAssessmentMetadata(normalizedType);
-                              const ResultIcon = metadata.icon;
-                              
-                              // Find the result for this assessment type (normalize both sides)
-                              const result = (series.results || []).find(
-                                (r: any) => r.assessmentType.toLowerCase().replace(/-/g, '_') === normalizedType
-                              );
-                              
-                              const isCompleted = result?.status === 'completed';
-                              const isInProgress = result?.status === 'in_progress' || result?.status === 'started';
-                              const isAbandoned = result?.status === 'abandoned';
-                              const isUnlocked = result?.isUnlocked || series.resultsUnlocked;
-                              
-                              // Determine badge styling based on status
-                              let badgeClassName = "gap-1.5 py-1 ";
-                              if (isCompleted) {
-                                badgeClassName += "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800";
-                              } else if (isInProgress) {
-                                badgeClassName += "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800";
-                              } else if (isAbandoned) {
-                                badgeClassName += "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800";
-                              } else {
-                                badgeClassName += "bg-muted/50 border-muted-foreground/20";
-                              }
-                              
-                              return (
-                                <Badge 
-                                  key={assessmentType} 
-                                  variant="outline" 
-                                  className={badgeClassName}
-                                  data-testid={`badge-assessment-${normalizedType}`}
-                                >
-                                  <ResultIcon className="h-3 w-3" />
-                                  {formatAssessmentName(normalizedType)}
-                                  {isCompleted ? (
-                                    isUnlocked && result?.totalScore ? (
-                                      <span className="text-cyan-600 dark:text-cyan-400 ml-1">
-                                        {result.totalScore}%
-                                      </span>
-                                    ) : (
-                                      <Lock className="h-3 w-3 text-amber-500 ml-1" />
-                                    )
-                                  ) : isInProgress ? (
-                                    <Clock className="h-3 w-3 text-blue-500 ml-1" />
-                                  ) : isAbandoned ? (
-                                    <span className="text-orange-600 dark:text-orange-400 text-xs ml-1">Incomplete</span>
-                                  ) : (
-                                    <span className="text-muted-foreground text-xs ml-1">Not started</span>
-                                  )}
-                                </Badge>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {/* Action */}
-                        <div className="flex flex-col gap-2 md:w-48">
-                          {(() => {
-                            // Check if there are any completed results (regardless of all complete)
-                            const completedResults = (series.results || [])
-                              .filter((r: any) => r.status === 'completed');
-                            const hasCompletedResults = completedResults.length > 0;
-                            
-                            // Check if there are any locked results (for partial purchase support)
-                            const lockedResults = completedResults
-                              .filter((r: any) => !r.isUnlocked && !series.resultsUnlocked);
-                            const hasLockedResults = lockedResults.length > 0;
-                            
-                            // Check if there are any unlocked results
-                            const unlockedResults = completedResults
-                              .filter((r: any) => r.isUnlocked || series.resultsUnlocked);
-                            const hasUnlockedResults = unlockedResults.length > 0;
-                            
-                            // Check if series is incomplete (more assessments to complete)
-                            const isIncomplete = !series.allComplete;
-                            
-                            return (
-                              <>
-                                {hasCompletedResults && (
-                                  <p className="text-sm text-muted-foreground font-medium text-center">
-                                    Results shared with {series.partnerName}
-                                  </p>
-                                )}
-                                {/* Resume Testing button - shown when series is not complete */}
-                                {isIncomplete && series.inviteToken && (
-                                  <Link href={`/start-assessment?token=${series.inviteToken}`}>
-                                    <Button
-                                      className="mt-2 w-full"
-                                      variant="default"
-                                      data-testid={`button-resume-testing-${series.id}`}
-                                    >
-                                      <PlayCircle className="mr-2 h-4 w-4" />
-                                      Resume Testing
-                                    </Button>
-                                  </Link>
-                                )}
-                                {/* View Results button - shown when any results are unlocked */}
-                                {hasUnlockedResults && (
-                                  unlockedResults.length > 1 ? (
-                                    <Button
-                                      className="mt-2 w-full"
-                                      variant={isIncomplete ? "outline" : "default"}
-                                      data-testid={`button-view-partner-results-${series.id}`}
-                                      onClick={() => {
-                                        setResultSelectionDialog({
-                                          seriesId: series.id,
-                                          partnerName: series.partnerName,
-                                          unlockedResults: unlockedResults.map((r: any) => ({
-                                            id: r.id,
-                                            assessmentType: r.assessmentType,
-                                            totalScore: r.totalScore,
-                                          })),
-                                        });
-                                      }}
-                                    >
-                                      <FileText className="mr-2 h-4 w-4" />
-                                      View Results
-                                    </Button>
-                                  ) : (
-                                    <Link href={`/my-results?partnerInvitationId=${series.id}`}>
-                                      <Button
-                                        className="mt-2 w-full"
-                                        variant={isIncomplete ? "outline" : "default"}
-                                        data-testid={`button-view-partner-results-${series.id}`}
-                                      >
-                                        <FileText className="mr-2 h-4 w-4" />
-                                        View Results
-                                      </Button>
-                                    </Link>
-                                  )
-                                )}
-                                {/* Unlock Results button - shown when any results are locked */}
-                                {hasLockedResults && (
-                                  <Button
-                                    onClick={() => {
-                                      setLockedResultsDialog({
-                                        seriesId: series.id,
-                                        partnerName: series.partnerName,
-                                        autoUnlockDate: series.autoUnlockDate,
-                                        completedResults: lockedResults,
-                                      });
-                                    }}
-                                    className="mt-2"
-                                    variant="outline"
-                                    data-testid={`button-results-${series.id}`}
-                                  >
-                                    <Lock className="mr-2 h-4 w-4" />
-                                    Unlock Results
-                                  </Button>
-                                )}
-                              </>
-                            );
-                          })()}
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
-            </section>
-          )}
         </div>
       </main>
       <div className="relative z-10">
