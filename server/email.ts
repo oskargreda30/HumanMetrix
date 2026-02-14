@@ -364,17 +364,8 @@ interface EmailLogContext {
 
 // Unified email sending with automatic failover and optional logging
 async function sendEmail(msg: EmailMessage, logContext?: EmailLogContext): Promise<{ success: boolean; messageId?: string }> {
-  const recipientEmail = (Array.isArray(msg.to) ? msg.to[0] : msg.to).toLowerCase();
-  const recipientDomain = recipientEmail.split('@')[1] || '';
-  const MICROSOFT_DOMAINS = ['hotmail.com', 'hotmail.co.uk', 'hotmail.fr', 'hotmail.de', 'hotmail.it', 'hotmail.es', 'outlook.com', 'outlook.co.uk', 'outlook.fr', 'outlook.de', 'live.com', 'live.co.uk', 'msn.com', 'windowslive.com'];
-  const isMicrosoftRecipient = MICROSOFT_DOMAINS.includes(recipientDomain);
-  
   const primaryProvider = currentEmailProvider;
   const backupProvider: 'gmail' | 'sendgrid' = primaryProvider === 'sendgrid' ? 'gmail' : 'sendgrid';
-  
-  if (isMicrosoftRecipient) {
-    console.log(`[Email] Microsoft recipient detected (${recipientDomain}) - using default provider (${primaryProvider})`);
-  }
   
   // Try primary provider
   console.log(`[Email] Sending via ${primaryProvider} (primary)...`);
