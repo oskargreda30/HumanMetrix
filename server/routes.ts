@@ -1706,6 +1706,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               partnerCompanyName: 'HumanMetrix',
               hasExistingAccount: true,
               autoLoginToken,
+              purchaseId,
             });
             console.log(`[Payment Callback] ✓ Results ready email sent to ${user.email}`);
           } catch (resultsPdfError) {

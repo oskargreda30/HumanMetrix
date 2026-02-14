@@ -3871,6 +3871,7 @@ export interface ResultsReadyEmailDetails {
   sessionId?: string;
   partnerInvitationId?: string;
   autoLoginToken?: string;
+  purchaseId?: string;
 }
 
 export async function sendResultsReadyEmail(details: ResultsReadyEmailDetails) {
@@ -3888,7 +3889,9 @@ export async function sendResultsReadyEmail(details: ResultsReadyEmailDetails) {
   
   const dashboardPath = details.partnerInvitationId 
     ? `dashboard?view=candidate&scrollToSeries=${details.partnerInvitationId}`
-    : 'dashboard';
+    : details.purchaseId 
+      ? `my-results?purchaseId=${details.purchaseId}`
+      : 'my-results';
   
   if (details.hasExistingAccount) {
     if (details.autoLoginToken) {
