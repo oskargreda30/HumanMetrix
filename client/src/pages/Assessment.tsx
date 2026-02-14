@@ -968,7 +968,7 @@ export default function Assessment() {
                     ? 'bg-red-500/10 text-red-400 border-red-500/50 animate-pulse' 
                     : 'bg-slate-800 border-slate-600'
                 }`}>
-                  <Clock className="h-5 w-5" />
+                  <Clock className={`h-5 w-5 ${timeRemaining <= (isPromptArchitecture ? 30 : 300) ? 'text-red-400' : 'text-cyan-400'}`} />
                   <span className={`text-lg font-bold tabular-nums ${textPrimary}`} data-testid="timer-display">
                     {formatTime(timeRemaining)}
                   </span>
