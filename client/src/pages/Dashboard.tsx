@@ -859,9 +859,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Available Assessments - Only show if user has no active partner testing series */}
-          {/* When user has a partner series (even incomplete), they should complete that first */}
-          {(partnerTestingSeries || []).length === 0 && (
+          {/* Available Assessments */}
           <section className="mb-12">
             <h2 className="text-xl md:text-2xl font-semibold mb-4 text-white">Available Assessments</h2>
             {availableAssessments && availableAssessments.length > 0 ? (
@@ -958,11 +956,9 @@ export default function Dashboard() {
               </Card>
             )}
           </section>
-          )}
 
           {/* Add to Testing Suite - Show assessments not currently in the active suite */}
-          {/* Only show if user has no active partner testing series */}
-          {(partnerTestingSeries || []).length === 0 && (() => {
+          {(() => {
             // All available assessment types
             const allAssessmentTypes = ['fit', 'ai_readiness', 'prompt_architecture', 'aiq'];
             
