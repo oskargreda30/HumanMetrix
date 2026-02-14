@@ -2912,10 +2912,24 @@ interface B2BResultsReadyNotificationDetails {
   candidateName?: string;
   partnerName: string;
   dashboardUrl: string;
+  autoLoginToken?: string;
 }
 
 export async function sendB2BResultsReadyEmail(details: B2BResultsReadyNotificationDetails) {
   const displayName = details.candidateName || details.email;
+  const baseUrl = getBaseUrl();
+  
+  // Build CTA URL with auto-login if token provided
+  let ctaUrl = details.dashboardUrl;
+  if (details.autoLoginToken) {
+    try {
+      const url = new URL(details.dashboardUrl);
+      const redirectPath = url.pathname + url.search;
+      ctaUrl = `${baseUrl}/auto-login/${details.autoLoginToken}?redirect=${encodeURIComponent(redirectPath)}`;
+    } catch {
+      ctaUrl = `${baseUrl}/auto-login/${details.autoLoginToken}?redirect=/dashboard`;
+    }
+  }
   
   const msg = {
     to: details.email,
@@ -2951,12 +2965,11 @@ export async function sendB2BResultsReadyEmail(details: B2BResultsReadyNotificat
               <p>Your assessment results from <strong>${details.partnerName}</strong> are now available on your dashboard.</p>
               
               <div class="info-box">
-                <p style="margin: 0;"><strong>Log in with your existing account</strong> to view your detailed results, insights, and recommendations.</p>
-                <p style="margin: 8px 0 0 0; font-size: 14px; color: #6b7280;">If you've forgotten your password, use the "Forgot Password" link on the login page to reset it.</p>
+                <p style="margin: 0;"><strong>Click the button below</strong> to view your detailed results, insights, and recommendations.</p>
               </div>
               
               <div style="text-align: center;">
-                <a href="${details.dashboardUrl}" class="button" style="color: white !important;">View Your Results</a>
+                <a href="${ctaUrl}" class="button" style="color: white !important;">View Your Results</a>
               </div>
             </div>
             <div class="footer">
@@ -2966,7 +2979,7 @@ export async function sendB2BResultsReadyEmail(details: B2BResultsReadyNotificat
         </body>
       </html>
     `,
-    text: `Hi ${displayName},\n\nYour assessment results from ${details.partnerName} are now available.\n\nLog in with your existing account at ${details.dashboardUrl} to view your detailed results.\n\nIf you've forgotten your password, use the "Forgot Password" link on the login page.\n\n© ${new Date().getFullYear()} HumanMetrix`,
+    text: `Hi ${displayName},\n\nYour assessment results from ${details.partnerName} are now available.\n\nView your results: ${ctaUrl}\n\n© ${new Date().getFullYear()} HumanMetrix`,
   };
 
   const result = await sendEmail(msg);
@@ -3568,12 +3581,15 @@ interface PartnerTeamCredentialsDetails {
   companyName: string;
   role: string;
   temporaryPassword: string;
+  autoLoginToken?: string;
 }
 
 export async function sendPartnerTeamCredentialsEmail(details: PartnerTeamCredentialsDetails): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const baseUrl = getBaseUrl();
   
-  const loginUrl = `${baseUrl}/login`;
+  const loginUrl = details.autoLoginToken 
+    ? `${baseUrl}/auto-login/${details.autoLoginToken}` 
+    : `${baseUrl}/login`;
   const greeting = details.name ? `Hello ${details.name},` : 'Hello,';
   const roleDisplay = details.role === 'admin' ? 'Administrator' : details.role === 'member' ? 'Team Member' : 'Viewer';
   
@@ -3854,6 +3870,7 @@ export interface ResultsReadyEmailDetails {
   hasExistingAccount: boolean;
   sessionId?: string;
   partnerInvitationId?: string;
+  autoLoginToken?: string;
 }
 
 export async function sendResultsReadyEmail(details: ResultsReadyEmailDetails) {
@@ -3874,9 +3891,13 @@ export async function sendResultsReadyEmail(details: ResultsReadyEmailDetails) {
     : 'dashboard';
   
   if (details.hasExistingAccount) {
-    ctaUrl = `${baseUrl}/${dashboardPath}`;
+    if (details.autoLoginToken) {
+      ctaUrl = `${baseUrl}/auto-login/${details.autoLoginToken}?redirect=/${dashboardPath}`;
+    } else {
+      ctaUrl = `${baseUrl}/${dashboardPath}`;
+    }
     ctaLabel = 'View Your Results';
-    ctaNote = 'Log in to your HumanMetrix account to view your detailed results and insights.';
+    ctaNote = 'Click the button below to view your detailed results and insights.';
   } else {
     ctaUrl = `${baseUrl}/auth?email=${encodeURIComponent(details.email)}&redirect=${encodeURIComponent(dashboardPath)}`;
     ctaLabel = 'Create Account & View Results';

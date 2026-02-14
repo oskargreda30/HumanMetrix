@@ -4468,6 +4468,16 @@ export function registerPartnerRoutes(app: Express) {
           try {
             const { sendResultsReadyEmail } = await import("./email");
             const invitationIdForEmail = (session as any).metadata?.invitationId || (session as any).partnerInvitationId || null;
+            let autoLoginToken: string | undefined;
+            if (existingUserForEmail) {
+              try {
+                autoLoginToken = crypto.randomUUID();
+                const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+                await storage.setAutoLoginToken(existingUserForEmail.id, autoLoginToken, autoLoginExpiry);
+              } catch (tokenErr) {
+                console.error("[B2B Payment] Failed to generate auto-login token:", tokenErr);
+              }
+            }
             const emailResult = await sendResultsReadyEmail({
               email: targetEmail,
               candidateName: (session as any).metadata?.candidateName,
@@ -4476,6 +4486,7 @@ export function registerPartnerRoutes(app: Express) {
               hasExistingAccount: !!existingUserForEmail,
               sessionId: b2bSessionId,
               partnerInvitationId: invitationIdForEmail || undefined,
+              autoLoginToken,
             });
             
             if (emailResult.success) {
@@ -4773,6 +4784,17 @@ export function registerPartnerRoutes(app: Express) {
       
       const existingUserForResend = await storage.getUserByEmail(session.externalEmail);
       
+      let autoLoginToken: string | undefined;
+      if (existingUserForResend) {
+        try {
+          autoLoginToken = crypto.randomUUID();
+          const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+          await storage.setAutoLoginToken(existingUserForResend.id, autoLoginToken, autoLoginExpiry);
+        } catch (tokenErr) {
+          console.error("[B2B Resend] Failed to generate auto-login token:", tokenErr);
+        }
+      }
+      
       const { sendResultsReadyEmail } = await import("./email");
       const invitationIdForResend = (session as any).metadata?.invitationId || (session as any).partnerInvitationId || null;
       const emailResult = await sendResultsReadyEmail({
@@ -4783,6 +4805,7 @@ export function registerPartnerRoutes(app: Express) {
         hasExistingAccount: !!existingUserForResend,
         sessionId,
         partnerInvitationId: invitationIdForResend || undefined,
+        autoLoginToken,
       });
       
       if (!emailResult.success) {
@@ -4842,6 +4865,16 @@ export function registerPartnerRoutes(app: Express) {
       
       if (shouldSendEmail) {
         const existingUser = await storage.getUserByEmail(targetEmail);
+        let autoLoginToken: string | undefined;
+        if (existingUser) {
+          try {
+            autoLoginToken = crypto.randomUUID();
+            const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+            await storage.setAutoLoginToken(existingUser.id, autoLoginToken, autoLoginExpiry);
+          } catch (tokenErr) {
+            console.error("[B2B Deliver] Failed to generate auto-login token:", tokenErr);
+          }
+        }
         const { sendResultsReadyEmail } = await import("./email");
         const invitationIdForDeliver = (session as any).metadata?.invitationId || (session as any).partnerInvitationId || null;
         const emailResult = await sendResultsReadyEmail({
@@ -4852,6 +4885,7 @@ export function registerPartnerRoutes(app: Express) {
           hasExistingAccount: !!existingUser,
           sessionId,
           partnerInvitationId: invitationIdForDeliver || undefined,
+          autoLoginToken,
         });
         
         if (!emailResult.success) {
@@ -4922,6 +4956,17 @@ export function registerPartnerRoutes(app: Express) {
       const partnerCompanyName = partner?.companyName || partner?.name || 'HumanMetrix Partner';
       const existingUser = await storage.getUserByEmail(targetEmail);
       
+      let autoLoginToken: string | undefined;
+      if (existingUser) {
+        try {
+          autoLoginToken = crypto.randomUUID();
+          const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+          await storage.setAutoLoginToken(existingUser.id, autoLoginToken, autoLoginExpiry);
+        } catch (tokenErr) {
+          console.error("[B2B Manual Send] Failed to generate auto-login token:", tokenErr);
+        }
+      }
+      
       const { sendResultsReadyEmail } = await import("./email");
       const invitationIdForManual = (session as any).metadata?.invitationId || (session as any).partnerInvitationId || null;
       const emailResult = await sendResultsReadyEmail({
@@ -4932,6 +4977,7 @@ export function registerPartnerRoutes(app: Express) {
         hasExistingAccount: !!existingUser,
         sessionId,
         partnerInvitationId: invitationIdForManual || undefined,
+        autoLoginToken,
       });
       
       if (!emailResult.success) {
@@ -5368,12 +5414,26 @@ export function registerPartnerRoutes(app: Express) {
           const { sendResultsReadyEmail } = await import("./email");
           const bundleInvitationId = validSessions.find(s => (s as any)?.metadata?.invitationId)?.metadata?.invitationId || 
                                      validSessions.find(s => (s as any)?.partnerInvitationId)?.partnerInvitationId || null;
+          let autoLoginToken: string | undefined;
+          if (hasExistingAccount) {
+            try {
+              const existingUserForBundle = await storage.getUserByEmail(email);
+              if (existingUserForBundle) {
+                autoLoginToken = crypto.randomUUID();
+                const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+                await storage.setAutoLoginToken(existingUserForBundle.id, autoLoginToken, autoLoginExpiry);
+              }
+            } catch (tokenErr) {
+              console.error("[Bundle Payment] Failed to generate auto-login token:", tokenErr);
+            }
+          }
           const emailResult = await sendResultsReadyEmail({
             email,
             assessmentTypes: assessmentTypes.length > 0 ? assessmentTypes : ['fit'],
             partnerCompanyName: partnerName,
             hasExistingAccount,
             partnerInvitationId: bundleInvitationId || undefined,
+            autoLoginToken,
           });
           
           if (emailResult.success) {
@@ -5916,11 +5976,20 @@ export function registerGuestAssessmentRoutes(app: Express) {
           : "/dashboard?view=candidate";
         
         try {
+          let autoLoginToken: string | undefined;
+          try {
+            autoLoginToken = crypto.randomUUID();
+            const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+            await storage.setAutoLoginToken(existingUser.id, autoLoginToken, autoLoginExpiry);
+          } catch (tokenErr) {
+            console.error("[GuestInvite] Failed to generate auto-login token:", tokenErr);
+          }
           await sendB2BResultsReadyEmail({
             email: invitation.email,
             candidateName: displayName,
             partnerName: invitation.partnerName || 'your employer',
             dashboardUrl: `${req.protocol}://${req.get('host')}${guestRedirectUrl}`,
+            autoLoginToken,
           });
         } catch (emailErr) {
           console.error(`[GuestInvite] Failed to send results-ready email to ${invitation.email}:`, emailErr);

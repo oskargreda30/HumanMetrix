@@ -1689,6 +1689,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Also send results ready notification email
           try {
+            let autoLoginToken: string | undefined;
+            try {
+              const crypto = await import('crypto');
+              autoLoginToken = crypto.randomUUID();
+              const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+              await storage.setAutoLoginToken(user.id, autoLoginToken, autoLoginExpiry);
+            } catch (tokenErr) {
+              console.error("[Payment Callback] Failed to generate auto-login token:", tokenErr);
+            }
             const { sendResultsReadyEmail } = await import('./email');
             await sendResultsReadyEmail({
               email: user.email,
@@ -1696,6 +1705,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               assessmentTypes,
               partnerCompanyName: 'HumanMetrix',
               hasExistingAccount: true,
+              autoLoginToken,
             });
             console.log(`[Payment Callback] ✓ Results ready email sent to ${user.email}`);
           } catch (resultsPdfError) {
@@ -1938,6 +1948,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const { sendResultsReadyEmail } = await import('./email');
               const existingUser = await storage.getUserByEmail(session.externalEmail);
               const invitationIdFromSession = (session as any).metadata?.invitationId || (session as any).partnerInvitationId || null;
+              let autoLoginToken: string | undefined;
+              if (existingUser) {
+                try {
+                  const crypto = await import('crypto');
+                  autoLoginToken = crypto.randomUUID();
+                  const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+                  await storage.setAutoLoginToken(existingUser.id, autoLoginToken, autoLoginExpiry);
+                } catch (tokenErr) {
+                  console.error("[Airwallex Webhook] Failed to generate auto-login token:", tokenErr);
+                }
+              }
               await sendResultsReadyEmail({
                 email: session.externalEmail,
                 candidateName: session.externalUserId || undefined,
@@ -1946,6 +1967,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 hasExistingAccount: !!existingUser,
                 sessionId,
                 partnerInvitationId: invitationIdFromSession || undefined,
+                autoLoginToken,
               });
               
               // Email sent successfully - update delivery status
@@ -3645,6 +3667,17 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
             const assessmentTypesForEmail = purchasedTypes.length > 0 
               ? purchasedTypes 
               : invitationResults.map((r: any) => r.assessmentType);
+            let autoLoginToken: string | undefined;
+            if (user) {
+              try {
+                const crypto = await import('crypto');
+                autoLoginToken = crypto.randomUUID();
+                const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+                await storage.setAutoLoginToken(user.id, autoLoginToken, autoLoginExpiry);
+              } catch (tokenErr) {
+                console.error("[Partner Results] Failed to generate auto-login token:", tokenErr);
+              }
+            }
             await sendResultsReadyEmail({
               email: user.email,
               candidateName: user.firstName || undefined,
@@ -3652,6 +3685,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
               partnerCompanyName: partnerName,
               hasExistingAccount: !!user,
               partnerInvitationId: purchase.partnerInvitationId,
+              autoLoginToken,
             });
             console.log(`[Partner Results] Sent results ready email to ${user.email}`);
           }
@@ -13640,6 +13674,15 @@ Return valid JSON with only the requested fields.`;
       // Send credentials email if new user was created
       if (temporaryPassword) {
         try {
+          let autoLoginToken: string | undefined;
+          try {
+            const crypto = await import('crypto');
+            autoLoginToken = crypto.randomUUID();
+            const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+            await storage.setAutoLoginToken(newUserId, autoLoginToken, autoLoginExpiry);
+          } catch (tokenErr) {
+            console.error("Failed to generate auto-login token for team credentials:", tokenErr);
+          }
           const { sendPartnerTeamCredentialsEmail } = await import('./email');
           await sendPartnerTeamCredentialsEmail({
             email: member.email.toLowerCase(),
@@ -13647,6 +13690,7 @@ Return valid JSON with only the requested fields.`;
             companyName: partner.companyName || 'HumanMetrix Partner',
             role: member.role || 'member',
             temporaryPassword,
+            autoLoginToken,
           });
         } catch (emailError) {
           console.error("Failed to send credentials email:", emailError);

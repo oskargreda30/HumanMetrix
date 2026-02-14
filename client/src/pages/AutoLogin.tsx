@@ -1,14 +1,25 @@
 import { useEffect, useState } from "react";
-import { useRoute, useLocation } from "wouter";
+import { useRoute, useLocation, useSearch } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Loader2 } from "lucide-react";
 
 export default function AutoLogin() {
   const [, params] = useRoute("/auto-login/:token");
   const [, setLocation] = useLocation();
+  const searchString = useSearch();
   const [error, setError] = useState<string | null>(null);
 
   const token = params?.token;
+  const searchParams = new URLSearchParams(searchString);
+  const rawRedirect = searchParams.get("redirect");
+  
+  const safeRedirect = (() => {
+    if (!rawRedirect) return null;
+    if (!rawRedirect.startsWith("/")) return null;
+    if (rawRedirect.startsWith("//")) return null;
+    if (rawRedirect.includes("://")) return null;
+    return rawRedirect;
+  })();
 
   useEffect(() => {
     if (!token) {
@@ -27,7 +38,9 @@ export default function AutoLogin() {
 
         await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
 
-        if (user.role === 'partner_admin') {
+        if (safeRedirect) {
+          setLocation(safeRedirect);
+        } else if (user.role === 'partner_admin') {
           setLocation("/partner");
         } else if (user.role === 'super_admin') {
           setLocation("/admin");
@@ -45,7 +58,7 @@ export default function AutoLogin() {
     doAutoLogin();
 
     return () => { cancelled = true; };
-  }, [token, setLocation]);
+  }, [token, setLocation, redirect]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0a1628] via-[#0f2035] to-[#0a1628]">
