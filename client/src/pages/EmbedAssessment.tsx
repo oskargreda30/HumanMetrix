@@ -102,6 +102,7 @@ interface AssessmentTimerProps {
   isLight: boolean;
   warningThreshold: number;
   isActive: boolean;
+  resetKey: number;
   onWarning: () => void;
   onExpiry: () => void;
   timeRemainingRef: React.MutableRefObject<number>;
@@ -112,6 +113,7 @@ const AssessmentTimerDisplay = memo(function AssessmentTimerDisplay({
   isLight,
   warningThreshold,
   isActive,
+  resetKey,
   onWarning,
   onExpiry,
   timeRemainingRef,
@@ -129,7 +131,7 @@ const AssessmentTimerDisplay = memo(function AssessmentTimerDisplay({
     setLocalTime(initialTime);
     timeRemainingRef.current = initialTime;
     warningFiredRef.current = initialTime <= warningThreshold;
-  }, [initialTime, timeRemainingRef, warningThreshold]);
+  }, [initialTime, resetKey, timeRemainingRef, warningThreshold]);
 
   useEffect(() => {
     if (intervalRef.current) {
@@ -190,7 +192,7 @@ const AssessmentTimerDisplay = memo(function AssessmentTimerDisplay({
       stopTimer();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isActive, warningThreshold, timeRemainingRef, initialTime]);
+  }, [isActive, warningThreshold, timeRemainingRef, resetKey]);
 
   const mins = Math.floor(Math.max(0, localTime) / 60);
   const secs = Math.max(0, localTime) % 60;
@@ -415,6 +417,7 @@ export default function EmbedAssessment() {
   const [showTimesUp, setShowTimesUp] = useState(false); // "Time's Up" overlay
   const timerExpiredHandledRef = useRef<boolean>(false); // Re-entry guard for full assessment expiry
   const paQuestionAdvancingRef = useRef<boolean>(false); // Re-entry guard for PA per-question auto-advance
+  const [timerResetKey, setTimerResetKey] = useState(0);
   const transitionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const pendingScoresRef = useRef<any>(null); // Store scores for transition
   const navBarRef = useRef<HTMLDivElement>(null);
@@ -1052,9 +1055,11 @@ export default function EmbedAssessment() {
         setShowTimesUp(true);
         setTimeout(() => {
           setShowTimesUp(false);
-          paQuestionAdvancingRef.current = false; // Reset after advance completes
+          paQuestionAdvancingRef.current = false;
           navigationDirectionRef.current = 'forward';
           saveProgressImmediately(currentIndex + 1);
+          setTimeRemaining(180);
+          setTimerResetKey((k) => k + 1);
           setCurrentIndex((prev) => prev + 1);
           if (window.innerWidth < 768) {
             window.scrollTo({ top: 0, behavior: "instant" });
@@ -1145,7 +1150,8 @@ export default function EmbedAssessment() {
       // Don't reset if server already indicated timer expired
       // Don't reset if navigating backward - keep the current timer running
       if (!timerExpiredFromServerRef.current && navigationDirectionRef.current !== 'backward') {
-        setTimeRemaining(180); // Reset to 3 minutes per question
+        setTimeRemaining(180);
+        setTimerResetKey((k) => k + 1);
         setShowTimeWarning(false);
       }
       // Reset direction after handling
@@ -2631,6 +2637,7 @@ export default function EmbedAssessment() {
               isLight={isLight}
               warningThreshold={isPromptArchitecture ? 30 : 300}
               isActive={status === 'started' && !isSubmitting}
+              resetKey={timerResetKey}
               onWarning={handleTimerWarning}
               onExpiry={handleTimerExpiry}
               timeRemainingRef={timeRemainingRef}

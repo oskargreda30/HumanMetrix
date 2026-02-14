@@ -58,6 +58,8 @@ export default function Assessment() {
   const [showLeaveDialog, setShowLeaveDialog] = useState(false); // Show leave confirmation dialog
   const [showTimesUp, setShowTimesUp] = useState(false); // "Time's Up" overlay
   const paQuestionAdvancingRef = useRef<boolean>(false); // Re-entry guard for PA per-question auto-advance
+  const timerResetKeyRef = useRef<number>(0);
+  const [timerResetKey, setTimerResetKey] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
   const hasSubmittedRef = useRef<boolean>(false); // Synchronous flag to prevent abandon after submit
@@ -638,7 +640,8 @@ export default function Assessment() {
                   setCurrentQuestion(curQ + 1);
                   setTimeRemaining(180);
                   setShowTimeWarning(false);
-                  startTimer();
+                  timerResetKeyRef.current += 1;
+                  setTimerResetKey(timerResetKeyRef.current);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 1500);
               } else {
@@ -701,7 +704,7 @@ export default function Assessment() {
       stopTimer();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [resultId, showTimeWarning, submitMutation, isSubmitting, isPromptArchitecture, handlePALastQuestionExpiry, questions.length, toast, setLocation]);
+  }, [resultId, showTimeWarning, submitMutation, isSubmitting, isPromptArchitecture, handlePALastQuestionExpiry, questions.length, toast, setLocation, timerResetKey]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -801,10 +804,11 @@ export default function Assessment() {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
       
-      // For Prompt Architecture, reset timer to 3 minutes for each new question
       if (isPromptArchitecture) {
-        setTimeRemaining(180); // Reset to 3 minutes
-        setShowTimeWarning(false); // Reset warning state
+        setTimeRemaining(180);
+        setShowTimeWarning(false);
+        timerResetKeyRef.current += 1;
+        setTimerResetKey(timerResetKeyRef.current);
       }
       
       // Scroll to top of page after moving to next question
