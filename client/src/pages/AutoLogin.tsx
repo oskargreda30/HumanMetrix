@@ -49,6 +49,26 @@ export default function AutoLogin() {
         }
       } catch (err: any) {
         if (cancelled) return;
+        
+        try {
+          const userRes = await fetch("/api/user", { credentials: "include" });
+          if (userRes.ok) {
+            const user = await userRes.json();
+            if (user && user.id) {
+              if (safeRedirect) {
+                setLocation(safeRedirect);
+              } else if (user.role === 'partner_admin') {
+                setLocation("/partner");
+              } else if (user.role === 'super_admin') {
+                setLocation("/admin");
+              } else {
+                setLocation("/dashboard");
+              }
+              return;
+            }
+          }
+        } catch {}
+        
         const message = err?.message || "Auto-login failed. Please log in manually.";
         setError(message);
         setTimeout(() => setLocation("/login"), 3000);
