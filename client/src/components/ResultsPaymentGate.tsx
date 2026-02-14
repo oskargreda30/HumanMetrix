@@ -82,8 +82,29 @@ export function ResultsPaymentGate() {
       return await response.json();
     },
     onSuccess: async (data: any) => {
+      if (data.provider === 'airwallex' && data.intentId && data.clientSecret) {
+        try {
+          const { redirectToAirwallexCheckout } = await import('@/lib/airwallexCheckout');
+          await redirectToAirwallexCheckout({
+            intentId: data.intentId,
+            clientSecret: data.clientSecret,
+            currency: data.currency || 'GBP',
+            countryCode: countryCode || 'GB',
+            airwallexEnv: data.airwallexEnv,
+            successUrl: `${window.location.origin}/payment-callback?provider=airwallex&intent_id=${data.intentId}`,
+            failUrl: `${window.location.origin}/my-results?purchaseId=${currentPurchase?.id || ''}`,
+          });
+          return;
+        } catch (err: any) {
+          console.error('Airwallex redirect failed:', err);
+          toast({
+            title: "Payment redirect failed",
+            description: "Unable to open payment page. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
       if (data.sessionUrl) {
-        // Redirect to Stripe checkout - use replace to prevent back button issues
         window.location.replace(data.sessionUrl);
       }
     },
@@ -222,7 +243,7 @@ export function ResultsPaymentGate() {
           </Button>
 
           <p className="text-sm text-center text-muted-foreground">
-            Secure payment processed via Stripe
+            Secure payment processed via Airwallex
           </p>
         </div>
       </Card>
