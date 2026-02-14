@@ -2014,7 +2014,7 @@ export default function EmbedAssessment() {
                     <Button
                       className="w-full"
                       style={{ backgroundColor: primaryColor }}
-                      onClick={() => { const target = window.top || window; target.location.href = invitationCompletionData.createAccountUrl || '/register'; }}
+                      onClick={() => { const target = window.top || window; target.location.href = invitationCompletionData.createAccountUrl || '/login'; }}
                       data-testid="button-create-account"
                     >
                       Create Account to View Results
@@ -2028,7 +2028,7 @@ export default function EmbedAssessment() {
                   <Button
                     className="w-full"
                     style={{ backgroundColor: primaryColor }}
-                    onClick={() => { const target = window.top || window; target.location.href = '/register'; }}
+                    onClick={() => { const target = window.top || window; target.location.href = '/login'; }}
                     data-testid="button-create-account"
                   >
                     Create Account

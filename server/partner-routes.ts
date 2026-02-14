@@ -3121,7 +3121,7 @@ export function registerPartnerRoutes(app: Express) {
         discountPercentage,
         freeUnlockDate: freeUnlockDate.toISOString(),
         dashboardUrl,
-        createAccountUrl: !userExists ? `${baseUrl}/register?email=${encodeURIComponent(invitation.email)}&invite=${token}` : null,
+        createAccountUrl: !userExists ? `${baseUrl}/login?email=${encodeURIComponent(invitation.email)}&redirect=/my-results` : null,
         paymentUrl,
       });
     } catch (error) {
