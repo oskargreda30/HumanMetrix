@@ -1605,9 +1605,8 @@ export default function Dashboard() {
               >
                 {/* Bulk Purchase Option */}
                 {pricingData.hasBulkDiscount && (() => {
-                  const allTotal = pricingData.assessments.reduce((sum, a) => sum + parseFloat(a.priceDisplay.replace(/[^\d.]/g, '')), 0);
-                  const allOriginalDisplay = `${pricingData.currencySymbol}${Math.round(allTotal).toLocaleString()}`;
-                  const allDiscountedDisplay = `${pricingData.currencySymbol}${Math.round(allTotal * 0.75).toLocaleString()}`;
+                  const allOriginalDisplay = pricingData.bulkTotal?.originalPriceDisplay || pricingData.individualTotal?.originalPriceDisplay || '';
+                  const allDiscountedDisplay = pricingData.bulkTotal?.priceDisplay || '';
                   return (
                   <div 
                     className={`border rounded-lg p-4 cursor-pointer transition-colors ${purchaseMode === 'bulk' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
@@ -1786,25 +1785,24 @@ export default function Dashboard() {
                 <>
                   <CreditCard className="mr-2 h-4 w-4" />
                   {purchaseMode === 'bulk' 
-                    ? (() => {
-                        const allTotal = pricingData?.assessments.reduce((sum, a) => sum + parseFloat(a.priceDisplay.replace(/[^\d.]/g, '')), 0) || 0;
-                        return `Unlock All - ${pricingData?.currencySymbol || ''}${Math.round(allTotal * 0.75).toLocaleString()}`;
-                      })()
+                    ? `Unlock All - ${pricingData?.bulkTotal?.priceDisplay || ''}`
                     : (() => {
                         const selected = pricingData?.assessments.filter(a => selectedAssessments.has(a.type)) || [];
                         const totalAssessments = pricingData?.assessments.length || 0;
                         const isAllSelected = selected.length === totalAssessments;
                         const isBulkEligible = isAllSelected && selected.length > 1;
-                        const selectedTotal = selected.reduce((sum, a) => sum + parseFloat(a.priceDisplay.replace(/[^\d.]/g, '')), 0);
-                        const finalPrice = isBulkEligible ? Math.round(selectedTotal * 0.75) : Math.round(selectedTotal);
-                        const priceDisplay = `${pricingData?.currencySymbol || ''}${finalPrice.toLocaleString()}`;
                         
                         if (selectedAssessments.size === 0) return 'Select Assessments';
+                        if (isBulkEligible) {
+                          return `Unlock All - ${pricingData?.bulkTotal?.priceDisplay || ''}`;
+                        }
                         if (selectedAssessments.size === 1) {
                           const selectedType = Array.from(selectedAssessments)[0];
                           const selectedAssessment = pricingData?.assessments.find(a => a.type === selectedType);
                           return `Unlock ${formatAssessmentTypeDisplay(selectedType)} - ${selectedAssessment?.priceDisplay || ''}`;
                         }
+                        const selectedTotal = selected.reduce((sum, a) => sum + parseFloat(a.priceDisplay.replace(/[^\d.]/g, '')), 0);
+                        const priceDisplay = `${pricingData?.currencySymbol || ''}${Math.round(selectedTotal).toLocaleString()}`;
                         return `Unlock Selected (${selectedAssessments.size}) - ${priceDisplay}`;
                       })()
                   }
