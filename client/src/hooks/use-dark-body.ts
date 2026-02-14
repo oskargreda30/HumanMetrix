@@ -6,6 +6,7 @@ const DEFAULT_THEME_COLOR = "#0ea5e9";
 const DARK_PATH_PATTERNS = [
   '/start-assessment',
   '/embed/assessment',
+  '/assessment/',
   '/invite/',
   '/b2b-payment-callback',
   '/guest-invite/',

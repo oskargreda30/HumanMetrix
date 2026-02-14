@@ -5,27 +5,16 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Loader2, CheckCircle2, Clock, AlertCircle, Info, AlertTriangle, ArrowLeft, ArrowRight } from "lucide-react";
+import { Loader2, Clock, AlertTriangle, ArrowLeft, ArrowRight } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getFITQuestions, getAIReadinessQuestions, getAIQQuestions } from "@shared/questions";
 import { PROMPT_ARCHITECTURE_LEVELS } from "../data/prompt-architecture-questions";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +27,18 @@ import {
 } from "@/components/ui/alert-dialog";
 import { formatAssessmentName, isAllAssessmentsComplete } from "@/lib/assessmentHelpers";
 import { AssessmentCompletionDialog } from "@/components/AssessmentCompletionDialog";
+import { useDarkBody } from "@/hooks/use-dark-body";
+
+const bgMain = "bg-slate-900";
+const bgCard = "bg-slate-800 border-slate-700";
+const bgCardAlt = "bg-slate-900/50";
+const textPrimary = "text-white";
+const textSecondary = "text-slate-300";
+const textMuted = "text-slate-400";
+const borderColor = "border-slate-600";
+const inputBg = "bg-slate-900 border-slate-600 text-white";
+const primaryColor = '#0891b2';
+const accentColor = '#06b6d4';
 
 export default function Assessment() {
   const { purchaseItemId } = useParams<{ purchaseItemId: string }>();
@@ -45,6 +46,7 @@ export default function Assessment() {
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
   const { questionLocale } = useCurrency();
+  useDarkBody("#0f172a");
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [resultId, setResultId] = useState<string | null>(null);
@@ -778,8 +780,8 @@ export default function Assessment() {
 
   if (loadingAssessments || !assessment || questions.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className={`min-h-[100dvh] flex items-center justify-center ${bgMain}`}>
+        <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
       </div>
     );
   }
@@ -863,285 +865,315 @@ export default function Assessment() {
   // Determine if assessment is actively in progress (started but not completed)
   const isAssessmentInProgress = !!(resultId && !submitMutation.isSuccess && !showInstructions);
 
-  return (
-    <div className="min-h-screen flex flex-col">
-      <Navigation assessmentMode={isAssessmentInProgress} />
-      
-      {/* Instructions Dialog */}
-      <Dialog open={showInstructions && !resultId} onOpenChange={(open) => {
-        if (!open) {
-          // User clicked X or clicked outside - navigate back to dashboard
-          setLocation('/dashboard');
-        }
-      }}>
-        <DialogContent className="max-w-2xl" data-testid="dialog-instructions">
-          <DialogHeader>
-            <DialogTitle className="text-2xl">{instructions.title}</DialogTitle>
-            <DialogDescription className="text-base pt-4">
-              {instructions.description}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="flex items-start gap-3">
-              <Info className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-              <div>
-                <h4 className="font-semibold mb-2">Instructions:</h4>
-                <ul className="space-y-2 list-disc list-inside">
-                  {instructions.tips.map((tip, index) => (
-                    <li key={index} className="text-sm text-muted-foreground">
-                      {tip}
-                    </li>
-                  ))}
-                </ul>
+  // Show instructions screen (matching B2B ready screen)
+  if (showInstructions && !resultId) {
+    return (
+      <div className={`min-h-[100dvh] flex items-center justify-center ${bgMain} p-4`} data-testid="assessment-ready">
+        <Card className={`max-w-lg ${bgCard}`}>
+          <CardHeader className="text-center">
+            <Badge 
+              className="mb-2 mx-auto border w-fit"
+              style={{ 
+                backgroundColor: `${accentColor}20`,
+                color: accentColor,
+                borderColor: `${accentColor}4D`
+              }}
+            >
+              HumanMetrix
+            </Badge>
+            <CardTitle className={`text-2xl ${textPrimary}`}>
+              {instructions.title}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className={`${textSecondary} space-y-3`}>
+              <p>{instructions.description}</p>
+              <ul className={`list-disc list-inside text-sm space-y-1 ${textMuted}`}>
+                {instructions.tips.map((tip, index) => (
+                  <li key={index}>{tip}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="space-y-3">
+              <Button
+                onClick={handleBeginAssessment}
+                disabled={startMutation.isPending}
+                className="w-full"
+                style={{ backgroundColor: primaryColor }}
+                data-testid="button-begin-assessment"
+              >
+                {startMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Starting...
+                  </>
+                ) : (
+                  "Start Assessment"
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                className={`w-full ${borderColor} ${textSecondary}`}
+                onClick={() => setLocation('/dashboard')}
+                data-testid="button-back-to-dashboard"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Dashboard
+              </Button>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-slate-700/30 flex items-center justify-center gap-2">
+              <span className={`text-xs ${textMuted}`}>Powered by</span>
+              <div className="flex items-center gap-1.5">
+                <img 
+                  src="/assets/humanmetrix-logo.png" 
+                  alt="HumanMetrix" 
+                  className="h-5 w-5 object-contain"
+                />
+                <span className={`text-xs font-medium ${textSecondary}`}>HumanMetrix</span>
               </div>
             </div>
-          </div>
-          
-          <DialogFooter>
-            <Button 
-              onClick={handleBeginAssessment} 
-              disabled={startMutation.isPending}
-              className="w-full sm:w-auto"
-              data-testid="button-begin-assessment"
-            >
-              {startMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Starting...
-                </>
-              ) : (
-                "Begin Assessment"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-      <main className="flex-grow py-16 pb-16">
-        <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8">
-          {/* Only show content after instructions dialog is dismissed and assessment started */}
-          {!showInstructions && resultId && (
-            <>
-              {/* Header - sticky below nav so timer is always visible */}
-              <div className="sticky top-16 z-40 pb-3 -mx-4 px-4 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8 bg-background pt-2">
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <div className="flex flex-col gap-1 min-w-0">
-                    <Badge className="border w-fit bg-primary/10 text-primary border-primary/30">
-                      {formatAssessmentName(assessment.assessmentType)}
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">
-                      Question {currentQuestion + 1} of {questions.length}
-                    </span>
-                  </div>
-                  <div className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 flex-shrink-0 ${
-                    timeRemaining <= (isPromptArchitecture ? 30 : 300) 
-                      ? 'bg-destructive/10 text-destructive border-destructive/50 animate-pulse' 
-                      : 'bg-primary/10 border-primary/30'
-                  }`}>
-                    <Clock className="h-5 w-5" />
-                    <span className="text-lg font-bold tabular-nums" data-testid="timer-display">
-                      {formatTime(timeRemaining)}
-                    </span>
-                  </div>
+  return (
+    <div className={`${bgMain} min-h-[100dvh] pt-3 md:pt-4 pb-4 px-4`} data-testid="assessment-started">
+      <div className="max-w-2xl mx-auto">
+        {/* Header - sticky so timer is always visible */}
+        {!showInstructions && resultId && (
+          <>
+            <div className={`sticky top-0 z-40 pb-3 -mx-4 px-4 pt-2 bg-slate-900`}>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex flex-col gap-1 min-w-0">
+                  <Badge 
+                    className="border w-fit"
+                    style={{ 
+                      backgroundColor: `${accentColor}20`,
+                      color: accentColor,
+                      borderColor: `${accentColor}4D`
+                    }}
+                  >
+                    {formatAssessmentName(assessment.assessmentType)}
+                  </Badge>
+                  <span className={`text-sm ${textMuted}`}>
+                    Question {currentQuestion + 1} of {questions.length}
+                  </span>
                 </div>
-                <Progress value={progress} className="h-2" />
-                {showTimeWarning && (
-                  <div className="mt-2 text-sm text-center text-destructive">
-                    {isPromptArchitecture ? '30 seconds remaining!' : '5 minutes remaining!'}
-                  </div>
-                )}
+                <div className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 flex-shrink-0 ${
+                  timeRemaining <= (isPromptArchitecture ? 30 : 300) 
+                    ? 'bg-red-500/10 text-red-400 border-red-500/50 animate-pulse' 
+                    : 'bg-slate-800 border-slate-600'
+                }`}>
+                  <Clock className="h-5 w-5" />
+                  <span className={`text-lg font-bold tabular-nums ${textPrimary}`} data-testid="timer-display">
+                    {formatTime(timeRemaining)}
+                  </span>
+                </div>
               </div>
-
-
-              {showTimesUp && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" data-testid="overlay-times-up">
-                  <div className="text-center animate-in fade-in zoom-in duration-300">
-                    <div className="bg-destructive rounded-full p-6 mx-auto mb-4 w-24 h-24 flex items-center justify-center">
-                      <Clock className="h-12 w-12 text-white" />
-                    </div>
-                    <h2 className="text-3xl font-bold text-white mb-2">Time's Up!</h2>
-                    <p className="text-slate-300 text-lg">
-                      {isPromptArchitecture && currentQuestion < questions.length - 1
-                        ? "Moving to next question..."
-                        : "Auto-submitting your answers..."}
-                    </p>
-                  </div>
+              <Progress value={progress} className="h-2" style={{ '--progress-color': primaryColor } as any} />
+              {showTimeWarning && (
+                <div className="mt-2 text-sm text-center text-red-400">
+                  {isPromptArchitecture ? '30 seconds remaining!' : '5 minutes remaining!'}
                 </div>
               )}
+            </div>
 
-              {/* Question */}
-              <Card>
-                <CardContent className="pt-6">
-                  {isPromptArchitecture ? (
-                    // Prompt Architecture text input
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge className="bg-purple-500/20 text-purple-500 dark:text-purple-400 border-purple-500/30">
-                          Level {(currentQ as any).level}
-                        </Badge>
-                        <span className="text-sm text-muted-foreground">{(currentQ as any).title}</span>
-                      </div>
-                      <p className="text-muted-foreground text-sm mb-4">{(currentQ as any).description}</p>
-                      <div className="bg-muted p-4 rounded-lg mb-4">
-                        <h3 className="font-semibold mb-2">Scenario</h3>
-                        <p className="text-muted-foreground text-sm">{currentQ.text}</p>
-                      </div>
-                      {(currentQ as any).taskInstructions && (
-                        <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg mb-4">
-                          <h3 className="font-semibold text-primary mb-2">Your Task</h3>
-                          <p className="text-muted-foreground text-sm">{(currentQ as any).taskInstructions}</p>
-                        </div>
-                      )}
-                      <Textarea
-                        id={`prompt-${currentQ.id}`}
-                        placeholder="Write your prompt here..."
-                        value={answers[currentQ.id] || ""}
-                        onChange={handleTextChange}
-                        onPaste={(e) => {
-                          e.preventDefault();
-                        }}
-                        disabled={isSubmitting}
-                        className="min-h-[150px] text-base disabled:opacity-60 disabled:cursor-not-allowed"
-                        data-testid={`input-prompt-${currentQ.id}`}
-                      />
-                      <p className="text-xs text-destructive mt-1">
-                        Pasting is disabled. Copied content will score zero.
-                      </p>
-                    </div>
-                  ) : (
-                    // Multiple choice questions (FIT, AI Readiness, AIQ)
-                    <div>
-                      <h2 className="text-lg font-semibold mb-6">{currentQ.text}</h2>
-                      <RadioGroup
-                        value={answers[currentQ.id] || ""}
-                        onValueChange={handleAnswerChange}
-                      >
-                        {(currentQ as any).options?.map((option: any) => (
-                          <div 
-                            key={option.value} 
-                            className="flex items-start space-x-3 mb-3 p-4 rounded-lg bg-muted hover-elevate active-elevate-2 cursor-pointer"
-                            onClick={() => handleAnswerChange(option.value)}
-                            data-testid={`answer-container-${currentQ.id}-${option.value}`}
-                          >
-                            <RadioGroupItem
-                              value={option.value}
-                              id={`${currentQ.id}-${option.value}`}
-                              data-testid={`radio-${currentQ.id}-${option.value}`}
-                              className="mt-0.5 pointer-events-none"
-                            />
-                            <Label
-                              htmlFor={`${currentQ.id}-${option.value}`}
-                              className="flex-1 cursor-pointer pointer-events-none"
-                            >
-                              <span className="text-sm">
-                                <span className="font-medium">{option.value}.</span>{" "}
-                                <span className="text-muted-foreground">{option.text}</span>
-                              </span>
-                            </Label>
-                          </div>
-                        ))}
-                      </RadioGroup>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Navigation */}
-              <div ref={navBarRef} className="mt-6 py-3 flex justify-between gap-3" style={keyboardOpen ? { marginBottom: '60vh' } : undefined}>
-                {isPromptArchitecture ? (
-                  <div />
-                ) : (
-                  <Button
-                    variant="outline"
-                    onClick={handlePrevious}
-                    disabled={currentQuestion === 0}
-                    data-testid="button-previous"
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Previous
-                  </Button>
-                )}
-                
-                {currentQuestion === questions.length - 1 ? (
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={!answers[currentQ.id] || submitMutation.isPending}
-                    className="bg-green-600 text-white"
-                    data-testid="button-submit-assessment"
-                  >
-                    {submitMutation.isPending ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        {isPromptArchitecture ? "Analysing..." : "Submitting..."}
-                      </>
-                    ) : (
-                      "Submit Assessment"
-                    )}
-                  </Button>
-                ) : (
-                  <Button 
-                    onClick={handleNext} 
-                    disabled={!answers[currentQ.id]}
-                    data-testid="button-next"
-                  >
-                    Next
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                )}
-              </div>
-
-              {/* Evaluation progress for Prompt Architecture */}
-              {submitMutation.isPending && isPromptArchitecture && (
-                <div className="px-2" data-testid="evaluation-progress-container">
-                  <div className="flex items-center justify-between text-sm mb-2">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                      <span className="font-medium">
-                        {evaluationProgress < 100 ? 'Evaluating your answers...' : 'Finishing up...'}
-                      </span>
-                    </div>
-                    <span className="text-muted-foreground">{Math.round(evaluationProgress)}%</span>
+            {showTimesUp && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" data-testid="overlay-times-up">
+                <div className="text-center animate-in fade-in zoom-in duration-300">
+                  <div className="bg-red-500 rounded-full p-6 mx-auto mb-4 w-24 h-24 flex items-center justify-center">
+                    <Clock className="h-12 w-12 text-white" />
                   </div>
-                  <Progress 
-                    value={evaluationProgress} 
-                    className="h-2" 
-                    indicatorClassName="transition-transform duration-300 ease-out"
-                    data-testid="evaluation-progress-bar" 
-                  />
-                  <p className="text-xs text-muted-foreground text-center mt-1.5">
-                    AI is analyzing your responses. This typically takes 1-2 minutes.
+                  <h2 className="text-3xl font-bold text-white mb-2">Time's Up!</h2>
+                  <p className="text-slate-300 text-lg">
+                    {isPromptArchitecture && currentQuestion < questions.length - 1
+                      ? "Moving to next question..."
+                      : "Auto-submitting your answers..."}
                   </p>
                 </div>
+              </div>
+            )}
+
+            {/* Question Card */}
+            <Card className={bgCard}>
+              <CardContent className="pt-6">
+                {isPromptArchitecture ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+                        Level {(currentQ as any).level}
+                      </Badge>
+                      <span className={`text-sm ${textMuted}`}>{(currentQ as any).title}</span>
+                    </div>
+                    <p className={`${textSecondary} text-sm mb-4`}>{(currentQ as any).description}</p>
+                    <div className={`${bgCardAlt} p-4 rounded-lg mb-4`}>
+                      <h3 className={`font-semibold ${textPrimary} mb-2`}>Scenario</h3>
+                      <p className={`${textSecondary} text-sm`}>{currentQ.text}</p>
+                    </div>
+                    {(currentQ as any).taskInstructions && (
+                      <div className="bg-cyan-900/20 border border-cyan-500/30 p-4 rounded-lg mb-4">
+                        <h3 className="font-semibold text-cyan-400 mb-2">Your Task</h3>
+                        <p className={`${textSecondary} text-sm`}>{(currentQ as any).taskInstructions}</p>
+                      </div>
+                    )}
+                    <Textarea
+                      id={`prompt-${currentQ.id}`}
+                      placeholder="Write your prompt here..."
+                      value={answers[currentQ.id] || ""}
+                      onChange={handleTextChange}
+                      onPaste={(e) => {
+                        e.preventDefault();
+                      }}
+                      disabled={isSubmitting}
+                      className={`min-h-[150px] ${inputBg}`}
+                      data-testid={`input-prompt-${currentQ.id}`}
+                    />
+                    <p className="text-xs text-red-400 mt-1">
+                      Pasting is disabled. Copied content will score zero.
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <h2 className={`text-lg font-semibold ${textPrimary} mb-6`}>{currentQ.text}</h2>
+                    <RadioGroup
+                      value={answers[currentQ.id] || ""}
+                      onValueChange={handleAnswerChange}
+                    >
+                      {(currentQ as any).options?.map((option: any) => (
+                        <div 
+                          key={option.value} 
+                          className={`flex items-start space-x-3 mb-3 p-4 rounded-lg ${bgCardAlt} hover-elevate active-elevate-2 cursor-pointer`}
+                          onClick={() => handleAnswerChange(option.value)}
+                          data-testid={`answer-container-${currentQ.id}-${option.value}`}
+                        >
+                          <RadioGroupItem
+                            value={option.value}
+                            id={`${currentQ.id}-${option.value}`}
+                            data-testid={`radio-${currentQ.id}-${option.value}`}
+                            className="mt-0.5 pointer-events-none"
+                          />
+                          <Label
+                            htmlFor={`${currentQ.id}-${option.value}`}
+                            className="flex-1 cursor-pointer pointer-events-none"
+                          >
+                            <span className="text-sm">
+                              <span className={`font-medium ${textPrimary}`}>{option.value}.</span>{" "}
+                              <span className={textSecondary}>{option.text}</span>
+                            </span>
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Navigation */}
+            <div ref={navBarRef} className="mt-6 py-3 flex justify-between gap-3" style={keyboardOpen ? { marginBottom: '60vh' } : undefined}>
+              {isPromptArchitecture ? (
+                <div />
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={handlePrevious}
+                  disabled={currentQuestion === 0}
+                  className={`${borderColor} ${textSecondary}`}
+                  data-testid="button-previous"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Previous
+                </Button>
               )}
-            </>
-          )}
-        </div>
-      </main>
-      {/* Footer hidden during active assessment */}
-      {!isAssessmentInProgress && <Footer />}
-      
+              
+              {currentQuestion === questions.length - 1 ? (
+                <Button
+                  onClick={handleSubmit}
+                  disabled={!answers[currentQ.id] || submitMutation.isPending}
+                  className="bg-green-600"
+                  data-testid="button-submit-assessment"
+                >
+                  {submitMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {isPromptArchitecture ? "Analysing..." : "Submitting..."}
+                    </>
+                  ) : (
+                    "Submit Assessment"
+                  )}
+                </Button>
+              ) : (
+                <Button 
+                  onClick={handleNext} 
+                  disabled={!answers[currentQ.id]}
+                  style={{ backgroundColor: primaryColor }}
+                  data-testid="button-next"
+                >
+                  Next
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              )}
+            </div>
+
+            {/* Evaluation progress for Prompt Architecture */}
+            {submitMutation.isPending && isPromptArchitecture && (
+              <div className="mt-4 px-2" data-testid="evaluation-progress-container">
+                <div className="w-full bg-slate-700 rounded-full h-2">
+                  <div 
+                    className="bg-cyan-500 h-2 rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${evaluationProgress}%` }}
+                  />
+                </div>
+                <p className={`text-xs text-center mt-1.5 ${textMuted}`}>
+                  {evaluationProgress < 25 ? "Sending responses to AI engine..." : 
+                   evaluationProgress < 55 ? "Evaluating prompt structure and clarity..." : 
+                   evaluationProgress < 85 ? "Calculating scores and generating feedback..." : 
+                   "Finalising results..."}
+                </p>
+              </div>
+            )}
+
+            <div className="mt-8 pt-4 border-t border-slate-700/50 flex items-center justify-center gap-2">
+              <span className={`text-xs ${textMuted}`}>Powered by</span>
+              <div className="flex items-center gap-1.5">
+                <img 
+                  src="/assets/humanmetrix-logo.png" 
+                  alt="HumanMetrix" 
+                  className="h-5 w-5 object-contain"
+                />
+                <span className={`text-xs font-medium ${textSecondary}`}>HumanMetrix</span>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
       {/* Leave Confirmation Dialog */}
       <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
-        <AlertDialogContent data-testid="leave-assessment-dialog">
+        <AlertDialogContent className="bg-slate-800 border-slate-700">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              Warning: Your test will NOT be submitted
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-left space-y-2">
-              <p>If you leave now, your assessment will <strong>not be submitted</strong> and you will <strong>not receive results</strong>.</p>
-              <p className="text-destructive font-medium">You cannot return to complete this test later.</p>
+            <AlertDialogTitle className="text-white">Leave Assessment?</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-300">
+              You have an assessment in progress. Your answers have been saved, but leaving now may affect your results. Are you sure you want to leave?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-stay">Continue Test</AlertDialogCancel>
+            <AlertDialogCancel 
+              className="bg-slate-700 text-white border-slate-600"
+              data-testid="button-stay"
+            >
+              Stay
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleLeaveAssessment}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-red-500 text-white"
               data-testid="button-leave-assessment"
             >
-              Leave Without Submitting
+              Leave
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
