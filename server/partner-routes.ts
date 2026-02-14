@@ -3057,8 +3057,13 @@ export function registerPartnerRoutes(app: Express) {
       const unpaidCount = completedTypes.length - paidCount;
       const assessmentCount = unpaidCount > 0 ? unpaidCount : completedTypes.length;
       
-      // Calculate PPP-adjusted pricing using B2C retail price (£20.00 per assessment)
-      const totalPricePence = assessmentCount * B2C_RETAIL_PRICE_PER_ASSESSMENT;
+      // Calculate PPP-adjusted pricing matching B2C: BASE_FEE + per-assessment prices
+      const unpaidAssessmentTypes = completedSessions.filter(s => s.resultsPaymentStatus !== 'paid').map(s => s.assessmentType);
+      const assessmentsPricePence = (unpaidCount > 0 ? unpaidAssessmentTypes : completedTypes).reduce((sum, type) => {
+        const normalizedType = normalizeAssessmentId(type);
+        return sum + (ASSESSMENT_PRICES[normalizedType] || 400);
+      }, 0);
+      const totalPricePence = BASE_FEE + assessmentsPricePence;
       const pppTotalPence = getPPPAdjustedPriceInPence(totalPricePence, userCountryCode);
       
       const discountPercentage = assessmentCount >= 2 ? 25 : 0;
@@ -3179,12 +3184,16 @@ export function registerPartnerRoutes(app: Express) {
       const allPaid = completedSessions.every(s => s.resultsPaymentStatus === 'paid');
       const unpaidCount = completedSessions.filter(s => s.resultsPaymentStatus !== 'paid').length;
       
-      // Calculate pricing
-      const pricePerAssessment = 2000; // 20.00 GBP in pence
-      const singleOriginal = pricePerAssessment;
+      // Calculate pricing matching B2C: BASE_FEE + per-assessment prices
+      const unpaidSessions = completedSessions.filter(s => s.resultsPaymentStatus !== 'paid');
+      const assessmentsTotalPence = (unpaidCount > 0 ? unpaidSessions : completedSessions).reduce((sum, s) => {
+        const normalizedType = normalizeAssessmentId(s.assessmentType);
+        return sum + (ASSESSMENT_PRICES[normalizedType] || 400);
+      }, 0);
+      const singleOriginal = BASE_FEE + (ASSESSMENT_PRICES[normalizeAssessmentId(unpaidSessions[0]?.assessmentType || 'fit')] || 400);
       const singleDiscounted = singleOriginal;
       
-      const bundleOriginal = unpaidCount * pricePerAssessment;
+      const bundleOriginal = BASE_FEE + assessmentsTotalPence;
       const bundleDiscountPercent = unpaidCount >= 2 ? 25 : 0;
       const bundleDiscounted = Math.round(bundleOriginal * (1 - bundleDiscountPercent / 100));
       
@@ -3277,17 +3286,22 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(400).json({ error: "No unpaid assessments found" });
       }
       
-      // Calculate price
-      const pricePerAssessment = 2000; // 20.00 GBP in pence
+      // Calculate price matching B2C: BASE_FEE + per-assessment prices
+      const assessmentsTotalPence = unpaidSessions.reduce((sum, s) => {
+        const normalizedType = normalizeAssessmentId(s.assessmentType);
+        return sum + (ASSESSMENT_PRICES[normalizedType] || 400);
+      }, 0);
       let totalPrice: number;
       let description: string;
       
       if (isBundle && unpaidSessions.length > 1) {
         const discountPercent = 25;
-        totalPrice = Math.round(unpaidSessions.length * pricePerAssessment * (1 - discountPercent / 100));
+        const fullPrice = BASE_FEE + assessmentsTotalPence;
+        totalPrice = Math.round(fullPrice * (1 - discountPercent / 100));
         description = `HumanMetrix - Unlock ${unpaidSessions.length} Assessment Results (${discountPercent}% Bundle Discount)`;
       } else {
-        totalPrice = pricePerAssessment;
+        const singleAssessmentPrice = ASSESSMENT_PRICES[normalizeAssessmentId(unpaidSessions[0].assessmentType)] || 400;
+        totalPrice = BASE_FEE + singleAssessmentPrice;
         description = `HumanMetrix - Unlock Assessment Results`;
       }
       

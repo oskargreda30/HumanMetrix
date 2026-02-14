@@ -3302,41 +3302,33 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       // 25% bundle discount, no individual discount (full price)
       const discountRate = (isBulk && resultsToPurchase.length > 1) ? 0.25 : 0;
       
-      // Calculate prices consistently with the pricing endpoint display
-      let sumOfRoundedOriginalPrices = 0;
-      let sumOfDiscountedPrices = 0; // For individual purchases: sum of individually-discounted prices
+      // Calculate prices matching B2C: BASE_FEE + per-assessment prices
+      let sumOfRoundedAssessmentPrices = 0;
       
       for (const result of resultsToPurchase) {
         const normalizedType = normalizeAssessmentId(result.assessmentType);
         const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
-        // B2B pricing: assessment price only (no base fee) - £4-5 per test with PPP
-        const assessmentB2CPrice = assessmentPrice;
         
-        // Calculate PPP-adjusted price in pence
-        const pppB2CPrice = getPPPAdjustedPriceInPence(assessmentB2CPrice, userCountry);
-        
-        // Get the rounded original price (for display consistency)
-        const formattedPrice = formatPrice(pppB2CPrice, userCurrency, { skipPPPAdjustment: true });
+        const pppPrice = getPPPAdjustedPriceInPence(assessmentPrice, userCountry);
+        const formattedPrice = formatPrice(pppPrice, userCurrency, { skipPPPAdjustment: true });
         const roundedPrice = parseFloat(formattedPrice.replace(/[^\d.]/g, ''));
-        sumOfRoundedOriginalPrices += roundedPrice;
-        
-        // For individual pricing: no discount (full price)
-        const discountedPence = pppB2CPrice; // Full price, no discount
-        const discountedFormatted = formatPrice(discountedPence, userCurrency, { skipPPPAdjustment: true });
-        const discountedRounded = parseFloat(discountedFormatted.replace(/[^\d.]/g, ''));
-        sumOfDiscountedPrices += discountedRounded;
+        sumOfRoundedAssessmentPrices += roundedPrice;
       }
       
-      const roundedSumOriginal = roundPriceUp(sumOfRoundedOriginalPrices, userCurrency);
+      // Add BASE_FEE to match B2C pricing
+      const baseFeeAdjusted = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
+      const baseFeeFormatted = formatPrice(baseFeeAdjusted, userCurrency, { skipPPPAdjustment: true });
+      const baseFeeNumeric = parseFloat(baseFeeFormatted.replace(/[^\d.]/g, ''));
       
-      // For bulk (25% off): apply to sum of original rounded prices
-      // For individual (full price): use sum of original prices (no discount)
+      const totalRoundedOriginal = sumOfRoundedAssessmentPrices + baseFeeNumeric;
+      const roundedSumOriginal = roundPriceUp(totalRoundedOriginal, userCurrency);
+      
+      // For bulk (25% off): apply to total (base fee + assessments)
+      // For individual (full price): no discount
       let discountedLocalPrice: number;
       if (isBulk && resultsToPurchase.length > 1) {
-        // 25% off the sum of rounded original prices
         discountedLocalPrice = roundPriceUp(roundedSumOriginal * 0.75, userCurrency);
       } else {
-        // Full price for individual purchases (no discount)
         discountedLocalPrice = roundedSumOriginal;
       }
       
@@ -3671,39 +3663,31 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       // Fetch live exchange rate and lock it for this pricing session
       const exchangeRatesData = await getExchangeRates();
       const lockedExchangeRate = exchangeRatesData.rates?.[localCurrencyCode] ?? userCurrency.exchangeRate;
-      // Calculate pricing: Individual = full price (no discount), Bulk = 25% off B2C
+      // Calculate pricing matching B2C: BASE_FEE + per-assessment prices
       // Individual discount rate: 0% (full price)
       const individualDiscountRate = 0;
       // Bulk discount rate: 25% off
       const bulkDiscountRate = 0.25;
       
-      let totalB2CPriceInPence = 0;
+      let totalAssessmentsPriceInPence = 0;
       let sumOfRoundedOriginalPrices = 0; // Sum of individually-rounded prices for consistency
       const assessmentPrices: { type: string; priceInPence: number; priceDisplay: string; originalPriceDisplay: string }[] = [];
 
       for (const result of purchasableResults) {
         const normalizedType = normalizeAssessmentId(result.assessmentType);
         const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
-        // B2B pricing: assessment price only (no base fee) - £4-5 per test with PPP
-        const assessmentB2CPrice = assessmentPrice;
         
-        // Calculate original B2C price with PPP adjustment
-        const pppB2CPrice = getPPPAdjustedPriceInPence(assessmentB2CPrice, userCountry);
-        const originalPriceDisplay = formatPrice(pppB2CPrice, userCurrency, { skipPPPAdjustment: true });
+        // Calculate original price with PPP adjustment
+        const pppPrice = getPPPAdjustedPriceInPence(assessmentPrice, userCountry);
+        const originalPriceDisplay = formatPrice(pppPrice, userCurrency, { skipPPPAdjustment: true });
         
-        // Extract the numeric value from the formatted price for summing
-        // This ensures bulk price = sum of individual rounded prices (e.g., 220 + 230 = 450, not 440)
         const originalPriceNumeric = parseFloat(originalPriceDisplay.replace(/[^\d.]/g, ''));
         sumOfRoundedOriginalPrices += originalPriceNumeric;
         
-        // Apply individual discount (now 0%) to the LOCAL CURRENCY price, then round UP
-        // With no discount: price remains the same
-        const discountedLocalPrice = originalPriceNumeric * (1 - individualDiscountRate);
-        const roundedDiscountedPrice = roundPriceUp(discountedLocalPrice, userCurrency);
+        const roundedDiscountedPrice = roundPriceUp(originalPriceNumeric, userCurrency);
         const priceDisplay = `${userCurrency.symbol}${roundedDiscountedPrice.toLocaleString()}`;
         
-        // Add the assessment price (B2B uses assessment price only, no base fee)
-        totalB2CPriceInPence += assessmentB2CPrice;
+        totalAssessmentsPriceInPence += assessmentPrice;
         assessmentPrices.push({ 
           type: normalizedType, 
           priceInPence: assessmentPrice,
@@ -3712,28 +3696,29 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
-      // Calculate total B2C price with PPP adjustment - this is the FULL price before any discount
-      const totalPppB2C = getPPPAdjustedPriceInPence(totalB2CPriceInPence, userCountry);
+      // Add BASE_FEE to match B2C pricing
+      const baseFeeAdjusted = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
+      const baseFeeDisplay = formatPrice(baseFeeAdjusted, userCurrency, { skipPPPAdjustment: true });
+      const baseFeeNumeric = parseFloat(baseFeeDisplay.replace(/[^\d.]/g, ''));
       
-      // Use sum of individually-rounded prices for original display (ensures 220+230=450, not 440)
-      const roundedSumOriginal = roundPriceUp(sumOfRoundedOriginalPrices, userCurrency);
+      // Total = base fee + assessments
+      const totalB2CPriceInPence = BASE_FEE + totalAssessmentsPriceInPence;
+      const totalRoundedOriginal = sumOfRoundedOriginalPrices + baseFeeNumeric;
+      
+      const roundedSumOriginal = roundPriceUp(totalRoundedOriginal, userCurrency);
       const originalTotalDisplay = `${userCurrency.symbol}${roundedSumOriginal.toLocaleString()}`;
       
-      // Individual total: 25% off the FULL B2C price
+      // Individual total: full price (no discount)
+      const totalPppB2C = getPPPAdjustedPriceInPence(totalB2CPriceInPence, userCountry);
       const individualTotalPpp = Math.round(totalPppB2C * (1 - individualDiscountRate));
       const individualTotalDisplay = formatPrice(individualTotalPpp, userCurrency, { skipPPPAdjustment: true });
       
-      // Bulk pricing: 25% off the sum of rounded original prices
-      // This ensures discount is applied to the displayed original price
+      // Bulk pricing: 25% off the total (base fee + assessments)
       const hasBulkDiscount = purchasableResults.length > 1;
       const bulkDiscountedLocalPrice = hasBulkDiscount 
         ? roundPriceUp(roundedSumOriginal * (1 - bulkDiscountRate), userCurrency)
         : parseFloat(individualTotalDisplay.replace(/[^\d.]/g, ''));
       const bulkTotalDisplay = `${userCurrency.symbol}${bulkDiscountedLocalPrice.toLocaleString()}`;
-      
-      // Calculate base fee display
-      const baseFeeAdjusted = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
-      const baseFeeDisplay = formatPrice(baseFeeAdjusted, userCurrency, { skipPPPAdjustment: true });
 
       res.json({
         baseFee: BASE_FEE,
@@ -3758,7 +3743,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         hasBulkDiscount,
         individualDiscountRate,
         bulkDiscountRate: hasBulkDiscount ? bulkDiscountRate : individualDiscountRate,
-        lockedExchangeRate, // Exchange rate locked at pricing time for checkout consistency
+        lockedExchangeRate,
       });
     } catch (error: any) {
       console.error("Error getting partner results pricing:", error);
