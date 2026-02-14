@@ -1073,100 +1073,136 @@ export default function Dashboard() {
 
           {/* Available Assessments */}
           <section id="b2c-testing-series" className="mb-12" style={{ order: (availableAssessments && availableAssessments.length > 0) ? (showPartnerFirst ? 1 : 0) : (showPartnerFirst ? 3 : 2) }}>
-            <h2 className="text-xl md:text-2xl font-semibold mb-4 text-white">Available Assessments</h2>
-            {availableAssessments && availableAssessments.length > 0 ? (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {availableAssessments.map((assessment: any) => {
-                  const metadata = getAssessmentMetadata(assessment.assessmentType);
-                  const AssessmentIcon = metadata.icon;
-                  const isInProgress = assessment.status === 'in_progress';
-                  // Can only remove if: canRemove flag is true AND not in progress
-                  const canRemove = assessment.canRemove && !isInProgress;
-                  return (
-                    <Card 
-                      key={assessment.purchaseItemId} 
-                      className="hover-elevate active-elevate-2 transition-all border-2 relative group"
-                    >
-                      <div className="p-4">
-                        {/* Remove assessment button - subtle icon inside card, only show if canRemove and not in progress */}
-                        {canRemove && (
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setAssessmentToRemove({
-                                id: assessment.purchaseItemId,
-                                name: formatAssessmentName(assessment.assessmentType)
-                              });
-                            }}
-                            className="absolute top-2 right-2 p-1 rounded text-gray-500 hover:text-destructive hover:bg-destructive/10 transition-colors"
-                            data-testid={`button-remove-${assessment.assessmentType}`}
-                            aria-label={`Remove ${formatAssessmentName(assessment.assessmentType)} assessment`}
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        )}
-                        <div className="flex items-start gap-3 mb-4">
-                          <div className={`p-2.5 rounded-xl ${metadata.iconBg} text-white shadow-lg flex-shrink-0`}>
-                            <AssessmentIcon className="h-6 w-6" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start gap-2 mb-1 flex-wrap">
-                              <Badge 
-                                variant="secondary" 
-                                className={`flex-shrink-0 text-xs ${
-                                  isInProgress 
-                                    ? 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20' 
-                                    : 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20'
-                                }`}
-                              >
-                                {isInProgress ? 'In Progress' : 'Ready'}
-                              </Badge>
-                              <h3 className="text-lg font-bold leading-tight">{formatAssessmentName(assessment.assessmentType)}</h3>
-                            </div>
+            {(() => {
+              const purchaseAssessments = availableAssessments.filter((a: any) => a.source === 'purchase');
+              const invitationAssessments = availableAssessments.filter((a: any) => a.source === 'invitation');
+              const hasBothSeries = purchaseAssessments.length > 0 && invitationAssessments.length > 0;
+              
+              const renderAssessmentCard = (assessment: any) => {
+                const metadata = getAssessmentMetadata(assessment.assessmentType);
+                const AssessmentIcon = metadata.icon;
+                const isInProgress = assessment.status === 'in_progress';
+                const canRemove = assessment.canRemove && !isInProgress;
+                return (
+                  <Card 
+                    key={assessment.purchaseItemId} 
+                    className="hover-elevate active-elevate-2 transition-all border-2 relative group"
+                  >
+                    <div className="p-4">
+                      {canRemove && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setAssessmentToRemove({
+                              id: assessment.purchaseItemId,
+                              name: formatAssessmentName(assessment.assessmentType)
+                            });
+                          }}
+                          className="absolute top-2 right-2 p-1 rounded text-gray-500 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                          data-testid={`button-remove-${assessment.assessmentType}`}
+                          aria-label={`Remove ${formatAssessmentName(assessment.assessmentType)} assessment`}
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                      <div className="flex items-start gap-3 mb-4">
+                        <div className={`p-2.5 rounded-xl ${metadata.iconBg} text-white shadow-lg flex-shrink-0`}>
+                          <AssessmentIcon className="h-6 w-6" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start gap-2 mb-1 flex-wrap">
+                            <Badge 
+                              variant="secondary" 
+                              className={`flex-shrink-0 text-xs ${
+                                isInProgress 
+                                  ? 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20' 
+                                  : 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20'
+                              }`}
+                            >
+                              {isInProgress ? 'In Progress' : 'Ready'}
+                            </Badge>
+                            <h3 className="text-lg font-bold leading-tight">{formatAssessmentName(assessment.assessmentType)}</h3>
                           </div>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{metadata.description}</p>
-                        <div className="flex items-center gap-4 mb-4 pb-4 border-b">
-                          <div className="flex items-center gap-2 text-sm">
-                            <div className="p-1.5 rounded-md bg-muted">
-                              <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                            </div>
-                            <div>
-                              <div className="font-semibold text-sm">{metadata.questions}</div>
-                              <div className="text-xs text-muted-foreground">questions</div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <div className="p-1.5 rounded-md bg-muted">
-                              <Timer className="h-3.5 w-3.5 text-muted-foreground" />
-                            </div>
-                            <div>
-                              <div className="font-semibold text-sm">{metadata.minutes}</div>
-                              <div className="text-xs text-muted-foreground">minutes</div>
-                            </div>
-                          </div>
-                        </div>
-                        <Link href={`/assessment/${assessment.purchaseItemId}`}>
-                          <Button className="w-full" data-testid={`button-start-${assessment.assessmentType}`}>
-                            {isInProgress ? 'Continue Assessment' : 'Start Assessment'}
-                          </Button>
-                        </Link>
                       </div>
+                      <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{metadata.description}</p>
+                      <div className="flex items-center gap-4 mb-4 pb-4 border-b">
+                        <div className="flex items-center gap-2 text-sm">
+                          <div className="p-1.5 rounded-md bg-muted">
+                            <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-sm">{metadata.questions}</div>
+                            <div className="text-xs text-muted-foreground">questions</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <div className="p-1.5 rounded-md bg-muted">
+                            <Timer className="h-3.5 w-3.5 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-sm">{metadata.minutes}</div>
+                            <div className="text-xs text-muted-foreground">minutes</div>
+                          </div>
+                        </div>
+                      </div>
+                      <Link href={`/assessment/${assessment.purchaseItemId}`}>
+                        <Button className="w-full" data-testid={`button-start-${assessment.assessmentType}`}>
+                          {isInProgress ? 'Continue Assessment' : 'Start Assessment'}
+                        </Button>
+                      </Link>
+                    </div>
+                  </Card>
+                );
+              };
+              
+              if (availableAssessments.length === 0) {
+                return (
+                  <>
+                    <h2 className="text-xl md:text-2xl font-semibold mb-4 text-white">Available Assessments</h2>
+                    <Card className="p-12 text-center">
+                      <p className="text-muted-foreground mb-4">
+                        No assessments available. Get started with a testing series.
+                      </p>
+                      <Link href="/assessments?view=candidate">
+                        <Button data-testid="button-browse-assessments">Browse More Assessments</Button>
+                      </Link>
                     </Card>
-                  );
-                })}
-              </div>
-            ) : (
-              <Card className="p-12 text-center">
-                <p className="text-muted-foreground mb-4">
-                  No assessments available. Get started with a testing series.
-                </p>
-                <Link href="/assessments?view=candidate">
-                  <Button data-testid="button-browse-assessments">Browse More Assessments</Button>
-                </Link>
-              </Card>
-            )}
+                  </>
+                );
+              }
+              
+              if (!hasBothSeries) {
+                return (
+                  <>
+                    <h2 className="text-xl md:text-2xl font-semibold mb-4 text-white">Available Assessments</h2>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {availableAssessments.map(renderAssessmentCard)}
+                    </div>
+                  </>
+                );
+              }
+              
+              return (
+                <div className="space-y-8">
+                  <div>
+                    <h2 className="text-xl md:text-2xl font-semibold mb-2 text-white">Your Testing Series</h2>
+                    <p className="text-sm text-muted-foreground mb-4">Assessments you purchased</p>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {purchaseAssessments.map(renderAssessmentCard)}
+                    </div>
+                  </div>
+                  <div>
+                    <h2 className="text-xl md:text-2xl font-semibold mb-2 text-white">Invited Assessments</h2>
+                    <p className="text-sm text-muted-foreground mb-4">Assessments assigned to you by an organization</p>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {invitationAssessments.map(renderAssessmentCard)}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </section>
 
           {/* Add to Testing Suite - Show assessments not currently in the active suite */}
