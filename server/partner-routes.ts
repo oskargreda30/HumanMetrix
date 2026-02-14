@@ -2650,7 +2650,8 @@ export function registerPartnerRoutes(app: Express) {
         });
       }
       
-      // Send the email
+      const isResume = invitation.status === 'started';
+      
       const emailResult = await sendPartnerBulkInvitationEmail({
         candidateEmail: invitation.email,
         candidateName: invitation.name || undefined,
@@ -2660,6 +2661,7 @@ export function registerPartnerRoutes(app: Express) {
         partnerLogoUrl: partner.logoUrl,
         partnerPrimaryColor: partner.brandingPrimaryColor,
         expiresAt,
+        isResume,
       });
       
       if (!emailResult.success) {
@@ -2677,6 +2679,8 @@ export function registerPartnerRoutes(app: Express) {
         message = "Invitation renewed and email sent. The invitation now has a new expiry date.";
       } else if (isRevoked) {
         message = "Invitation reactivated and email sent.";
+      } else if (isResume) {
+        message = "Reminder email sent to continue their in-progress assessments.";
       } else if (invitation.emailSentAt) {
         message = "Email resent successfully";
       }

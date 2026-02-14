@@ -2408,7 +2408,8 @@ interface PartnerBulkInvitationDetails {
   partnerPrimaryColor?: string | null;
   customMessage?: string | null;
   expiresAt?: Date;
-  temporaryPassword?: string; // Password for new user accounts
+  temporaryPassword?: string;
+  isResume?: boolean;
 }
 
 // Send bulk invitation email from partner to candidate
@@ -2438,7 +2439,9 @@ export async function sendPartnerBulkInvitationEmail(details: PartnerBulkInvitat
   const msg = {
     from: { email: fromEmail, name: `${details.partnerCompanyName} via HumanMetrix` },
     to: details.candidateEmail,
-    subject: `Assessment Invitation from ${details.partnerCompanyName}`,
+    subject: details.isResume 
+      ? `Continue Your Assessments - ${details.partnerCompanyName}`
+      : `Assessment Invitation from ${details.partnerCompanyName}`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -2462,14 +2465,16 @@ export async function sendPartnerBulkInvitationEmail(details: PartnerBulkInvitat
           <div class="container">
             <div class="header">
               ${logoHtml}
-              <p style="margin: 10px 0 0 0; opacity: 0.9;">Assessment Invitation</p>
+              <p style="margin: 10px 0 0 0; opacity: 0.9;">${details.isResume ? 'Assessment Reminder' : 'Assessment Invitation'}</p>
             </div>
             <div class="content">
               <h2>Hello ${candidateName},</h2>
-              <p>${details.partnerCompanyName} has invited you to complete the following assessments:</p>
+              <p>${details.isResume 
+                ? `You have assessments in progress from ${details.partnerCompanyName}. Please continue where you left off:`
+                : `${details.partnerCompanyName} has invited you to complete the following assessments:`}</p>
               
               <div class="assessments">
-                <strong>Assessments to complete:</strong>
+                <strong>${details.isResume ? 'Assessments in progress:' : 'Assessments to complete:'}</strong>
                 <ul>
                   ${assessmentListHtml}
                 </ul>
@@ -2489,10 +2494,12 @@ export async function sendPartnerBulkInvitationEmail(details: PartnerBulkInvitat
               
               ${details.customMessage ? `<div class="custom-message">"${details.customMessage}"</div>` : ''}
               
-              <p>These assessments are designed to evaluate your skills and capabilities. Click the button below to get started:</p>
+              <p>${details.isResume 
+                ? 'Your progress has been saved. Click the button below to pick up where you left off:'
+                : 'These assessments are designed to evaluate your skills and capabilities. Click the button below to get started:'}</p>
               
               <div style="text-align: center;">
-                <a href="${assessmentUrl}" class="button" style="color: white !important;">Start Assessments</a>
+                <a href="${assessmentUrl}" class="button" style="color: white !important;">${details.isResume ? 'Continue Assessments' : 'Start Assessments'}</a>
               </div>
               
               ${expiryDate ? `<p class="expiry-notice">This invitation expires on ${expiryDate}. Please complete the assessments before this date.</p>` : ''}
@@ -2515,11 +2522,13 @@ export async function sendPartnerBulkInvitationEmail(details: PartnerBulkInvitat
       </html>
     `,
     text: `
-Assessment Invitation from ${details.partnerCompanyName}
+${details.isResume ? `Continue Your Assessments - ${details.partnerCompanyName}` : `Assessment Invitation from ${details.partnerCompanyName}`}
 
 Hello ${candidateName},
 
-${details.partnerCompanyName} has invited you to complete the following assessments:
+${details.isResume 
+  ? `You have assessments in progress from ${details.partnerCompanyName}. Please continue where you left off:`
+  : `${details.partnerCompanyName} has invited you to complete the following assessments:`}
 ${assessmentListText}
 
 ${details.temporaryPassword ? `
@@ -2531,7 +2540,7 @@ Password: ${details.temporaryPassword}
 Please save these credentials. You can change your password after logging in.
 
 ` : ''}${details.customMessage ? `Message: "${details.customMessage}"\n` : ''}
-Click the link below to get started:
+${details.isResume ? 'Your progress has been saved. Click the link below to pick up where you left off:' : 'Click the link below to get started:'}
 ${assessmentUrl}
 
 ${expiryDate ? `This invitation expires on ${expiryDate}.` : ''}
