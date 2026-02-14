@@ -365,7 +365,7 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP', billingType =
                     <thead className="bg-muted/50">
                       <tr>
                         <th className="px-3 py-2 text-left font-medium">Month</th>
-                        <th className="px-3 py-2 text-right font-medium">Credits</th>
+                        <th className="px-3 py-2 text-right font-medium">Tests</th>
                         <th className="px-3 py-2 text-right font-medium">Amount</th>
                         <th className="px-3 py-2 text-right font-medium">Status</th>
                       </tr>
@@ -2495,10 +2495,10 @@ export default function PartnerDashboard() {
                           </div>
                           <div>
                             <div className={`font-semibold ${isUrgent ? 'text-amber-700 dark:text-amber-400' : 'text-cyan-700 dark:text-cyan-400'}`}>
-                              {isUrgent ? 'Free Credits Expiring Soon!' : 'Free Credits Available'}
+                              {isUrgent ? 'Free Tests Expiring Soon!' : 'Free Tests Available'}
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              You have <strong>{freeTestsRemaining}</strong> complimentary credit{freeTestsRemaining !== 1 ? 's' : ''} that expire{freeTestsRemaining === 1 ? 's' : ''} in <strong>{daysRemaining} day{daysRemaining !== 1 ? 's' : ''}</strong>
+                              You have <strong>{freeTestsRemaining}</strong> complimentary test{freeTestsRemaining !== 1 ? 's' : ''} that expire{freeTestsRemaining === 1 ? 's' : ''} in <strong>{daysRemaining} day{daysRemaining !== 1 ? 's' : ''}</strong>
                               {' '}({expiryDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })})
                             </div>
                           </div>
@@ -2741,7 +2741,7 @@ export default function PartnerDashboard() {
                         <Card>
                           <CardContent className="pt-6">
                             <div className="text-2xl font-bold">{selectedOrg.stats.totalTests}</div>
-                            <p className="text-sm text-muted-foreground">Total Credits Used</p>
+                            <p className="text-sm text-muted-foreground">Total Tests</p>
                           </CardContent>
                         </Card>
                         <Card>
@@ -2941,10 +2941,10 @@ export default function PartnerDashboard() {
                         </div>
                         <div>
                           <div className={`font-semibold ${isUrgent ? 'text-amber-700 dark:text-amber-400' : 'text-cyan-700 dark:text-cyan-400'}`}>
-                            Free Credits: <strong>{daysRemaining} day{daysRemaining !== 1 ? 's' : ''}</strong> remaining
+                            Free Tests: <strong>{daysRemaining} day{daysRemaining !== 1 ? 's' : ''}</strong> remaining
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {freeTestsRemaining} complimentary credit{freeTestsRemaining !== 1 ? 's' : ''} expire{freeTestsRemaining === 1 ? 's' : ''} on {expiryDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            {freeTestsRemaining} complimentary test{freeTestsRemaining !== 1 ? 's' : ''} expire{freeTestsRemaining === 1 ? 's' : ''} on {expiryDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </div>
                         </div>
                       </div>
@@ -3052,7 +3052,7 @@ export default function PartnerDashboard() {
                                 {projectedNextMonth}
                               </div>
                               <p className="text-xs text-muted-foreground">
-                                Estimated credits needed
+                                Estimated tests needed
                               </p>
                             </div>
 
@@ -4168,7 +4168,7 @@ export default function PartnerDashboard() {
                         <InfoTooltip content="Set up email notifications to alert you when your remaining credits drop below a certain percentage. Helps prevent running out of credits unexpectedly." />
                       </CardTitle>
                       <CardDescription>
-                        Get notified when your credits are running low
+                        Get notified when your test credits are running low
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
@@ -4234,7 +4234,7 @@ export default function PartnerDashboard() {
                           <InfoTooltip content="Automatically purchase a pre-selected credit package when your balance falls below a threshold. Uses your saved payment method. Only available for PAYG accounts." />
                         </CardTitle>
                         <CardDescription>
-                          Automatically purchase more credits when your balance runs low
+                          Automatically purchase more tests when your balance runs low
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-6">
@@ -4252,7 +4252,7 @@ export default function PartnerDashboard() {
                           <div className="space-y-0.5">
                             <Label htmlFor="auto-topup">Enable auto top-up</Label>
                             <p className="text-sm text-muted-foreground">
-                              Automatically purchase credits when remaining credits fall below threshold
+                              Automatically purchase credits when remaining tests fall below threshold
                             </p>
                           </div>
                           <Switch
@@ -4266,7 +4266,7 @@ export default function PartnerDashboard() {
                         {autoTopUpEnabled && (
                           <>
                             <div className="space-y-2">
-                              <Label htmlFor="topup-threshold">Trigger when remaining credits fall below</Label>
+                              <Label htmlFor="topup-threshold">Trigger when remaining tests fall below</Label>
                               <Input
                                 id="topup-threshold"
                                 type="number"
@@ -4782,7 +4782,7 @@ export default function PartnerDashboard() {
                       <div className="lg:col-span-2 border rounded-lg p-4">
                         <div className="mb-4">
                           <div className="flex items-center gap-2">
-                            <h3 className="text-lg font-semibold">Assessments Completed Over Time</h3>
+                            <h3 className="text-lg font-semibold">Tests Completed Over Time</h3>
                             <InfoTooltip content="Shows the volume of completed assessments over time. Use the period selector above to switch between daily, weekly, or monthly views." />
                           </div>
                           <p className="text-sm text-muted-foreground">Number of assessments completed per {analyticsPeriod === 'daily' ? 'day' : analyticsPeriod === 'weekly' ? 'week' : 'month'}</p>
@@ -4822,7 +4822,7 @@ export default function PartnerDashboard() {
                             <h3 className="text-lg font-semibold">By Assessment Type</h3>
                             <InfoTooltip content="Shows how many of each assessment type have been completed, along with the average score for each type." />
                           </div>
-                          <p className="text-sm text-muted-foreground">Breakdown of assessments by type with average scores</p>
+                          <p className="text-sm text-muted-foreground">Breakdown of tests by type with average scores</p>
                         </div>
                         {analytics.byAssessmentType.length > 0 ? (
                           <div className="space-y-4">
@@ -4830,7 +4830,7 @@ export default function PartnerDashboard() {
                               <div key={i} className="flex items-center justify-between">
                                 <div>
                                   <p className="font-medium">{item.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
-                                  <p className="text-sm text-muted-foreground">{item.count} assessments</p>
+                                  <p className="text-sm text-muted-foreground">{item.count} tests</p>
                                 </div>
                                 {item.avgScore !== null && (
                                   <Badge variant="secondary">Avg: {item.avgScore}%</Badge>
@@ -4839,7 +4839,7 @@ export default function PartnerDashboard() {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-muted-foreground text-sm">No completed assessments yet. Data will appear as candidates finish their assessments.</p>
+                          <p className="text-muted-foreground text-sm">No completed assessments yet. Data will appear as candidates finish tests.</p>
                         )}
                       </div>
 
