@@ -4596,13 +4596,19 @@ export function registerPartnerRoutes(app: Express) {
           
           try {
             const { sendWelcomeEmailWithPassword } = await import('./email');
+            const crypto = await import('crypto');
+            
+            const autoLoginToken = crypto.randomUUID();
+            const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+            await storage.setAutoLoginToken(user.id, autoLoginToken, autoLoginExpiry);
             
             await sendWelcomeEmailWithPassword(
               user.email, 
               email.split('@')[0], 
               randomPassword,
               "Thank you for completing your assessment! You can use these credentials to log in and view your results anytime.",
-              'post_payment'
+              'post_payment',
+              autoLoginToken
             );
             emailSent = true;
             console.log(`[B2B Create Account] Welcome email with credentials sent to ${email}`);
@@ -5946,14 +5952,20 @@ export function registerGuestAssessmentRoutes(app: Express) {
         role: 'user',
       });
       
-      // Send welcome email with password (post-assessment context) - non-blocking to avoid delaying redirect
-      import('./email').then(({ sendWelcomeEmailWithPassword }) => {
+      // Generate auto-login token and send welcome email (non-blocking)
+      import('crypto').then(async (crypto) => {
+        const autoLoginToken = crypto.randomUUID();
+        const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        await storage.setAutoLoginToken(newUser.id, autoLoginToken, autoLoginExpiry);
+        
+        const { sendWelcomeEmailWithPassword } = await import('./email');
         sendWelcomeEmailWithPassword(
           invitation.email!,
           firstName,
           temporaryPassword,
           "You've completed your assessments and can now access your results anytime.",
-          'post_payment'
+          'post_payment',
+          autoLoginToken
         ).then(() => {
           console.log(`[GuestInvite] Credentials email sent to ${invitation.email}`);
         }).catch((emailErr) => {

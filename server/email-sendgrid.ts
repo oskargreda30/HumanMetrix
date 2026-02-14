@@ -254,12 +254,15 @@ export async function sendPasswordResetEmail(email: string, name: string, resetT
   }
 }
 
-export async function sendWelcomeEmailWithPassword(email: string, name: string, temporaryPassword: string, note?: string) {
+export async function sendWelcomeEmailWithPassword(email: string, name: string, temporaryPassword: string, note?: string, autoLoginToken?: string) {
   try {
     const { client, fromEmail } = await getSendGridClient();
     
     const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
-    const loginUrl = domain ? `https://${domain}/login` : `http://localhost:5000/login`;
+    const baseUrl = domain ? `https://${domain}` : `http://localhost:5000`;
+    const loginUrl = autoLoginToken 
+      ? `${baseUrl}/auto-login/${autoLoginToken}` 
+      : `${baseUrl}/login`;
     
     const msg = {
       to: email,

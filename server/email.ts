@@ -676,10 +676,13 @@ export async function sendWelcomeEmailWithPassword(
   name: string, 
   temporaryPassword: string, 
   note?: string,
-  context: 'invitation' | 'post_payment' = 'invitation'
+  context: 'invitation' | 'post_payment' = 'invitation',
+  autoLoginToken?: string
 ) {
   const baseUrl = getBaseUrl();
-  const loginUrl = `${baseUrl}/login`;
+  const loginUrl = autoLoginToken 
+    ? `${baseUrl}/auto-login/${autoLoginToken}` 
+    : `${baseUrl}/login`;
   
   // Use different subject line based on context
   const subject = context === 'post_payment' 

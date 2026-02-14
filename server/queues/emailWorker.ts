@@ -128,8 +128,10 @@ async function handleEmailJobViaGmail(data: EmailJobData): Promise<any> {
       return sendViaGmail(email, 'Reset Your Password - HumanMetrix', buildPasswordResetHtml(name, resetUrl), buildPasswordResetText(name, resetUrl));
     }
     case 'welcome': {
-      const { email, name, temporaryPassword, note, context = 'invitation' } = data.payload;
-      const loginUrl = `${baseUrl}/login`;
+      const { email, name, temporaryPassword, note, context = 'invitation', autoLoginToken } = data.payload;
+      const loginUrl = autoLoginToken 
+        ? `${baseUrl}/auto-login/${autoLoginToken}` 
+        : `${baseUrl}/login`;
       const subject = context === 'post_payment' ? 'Your Account Credentials - HumanMetrix' : 'Your Assessment Invitation - HumanMetrix';
       return sendViaGmail(email, subject, buildWelcomeHtml(name, email, temporaryPassword, loginUrl, note), buildWelcomeText(name, email, temporaryPassword, loginUrl, note));
     }
@@ -197,10 +199,12 @@ async function sendPasswordResetEmailSync(client: typeof sgMail, payload: { emai
   return { messageId: response.headers['x-message-id'] };
 }
 
-async function sendWelcomeEmailSync(client: typeof sgMail, payload: { email: string; name: string; temporaryPassword: string; note?: string; context?: 'invitation' | 'post_payment' }) {
-  const { email, name, temporaryPassword, note, context = 'invitation' } = payload;
+async function sendWelcomeEmailSync(client: typeof sgMail, payload: { email: string; name: string; temporaryPassword: string; note?: string; context?: 'invitation' | 'post_payment'; autoLoginToken?: string }) {
+  const { email, name, temporaryPassword, note, context = 'invitation', autoLoginToken } = payload;
   const baseUrl = getBaseUrl();
-  const loginUrl = `${baseUrl}/login`;
+  const loginUrl = autoLoginToken 
+    ? `${baseUrl}/auto-login/${autoLoginToken}` 
+    : `${baseUrl}/login`;
   
   const subject = context === 'post_payment' 
     ? 'Your Account Credentials - HumanMetrix'

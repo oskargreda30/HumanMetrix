@@ -1161,6 +1161,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error(`✗ Failed to send PDF receipt to ${customerEmail}:`, emailError);
       }
       
+      // Generate auto-login token for one-click login from email
+      const autoLoginToken = crypto.randomUUID();
+      const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      await storage.setAutoLoginToken(newUser.id, autoLoginToken, autoLoginExpiry);
+
       // Send welcome email with credentials (post-payment context)
       try {
         await sendWelcomeEmailWithPassword(
@@ -1168,13 +1173,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `${firstName} ${lastName}`,
           temporaryPassword,
           undefined,
-          'post_payment'
+          'post_payment',
+          autoLoginToken
         );
         console.log(`✓ Welcome email sent successfully to ${customerEmail}`);
       } catch (emailError: any) {
         console.error(`✗ Failed to send welcome email to ${customerEmail}:`, emailError);
-        // Don't fail the payment - account is created, just email failed
-        // User can use password reset as fallback
       }
 
       res.json({
@@ -3028,12 +3032,17 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         });
       }
 
+      // Generate auto-login token for one-click login from email
+      const crypto = await import("crypto");
+      const autoLoginToken = crypto.randomUUID();
+      const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      await storage.setAutoLoginToken(newUser.id, autoLoginToken, autoLoginExpiry);
+
       // Send welcome email with login credentials
       try {
-        await sendWelcomeEmailWithPassword(customerEmail, `${firstName} ${lastName}`, temporaryPassword, undefined, 'post_payment');
+        await sendWelcomeEmailWithPassword(customerEmail, `${firstName} ${lastName}`, temporaryPassword, undefined, 'post_payment', autoLoginToken);
       } catch (emailError) {
         console.error("✗ Failed to send welcome email:", emailError);
-        // Don't fail the whole checkout if email fails
       }
 
       res.json({ 
@@ -5435,7 +5444,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         
         // Create user account with organization assignment from invitation
         console.log(`Creating user account for ${validatedData.candidateEmail}${organizationId ? ` in organization ${organizationId}` : ''}`);
-        await storage.createUser({
+        const invitedUser = await storage.createUser({
           email: validatedData.candidateEmail,
           passwordHash,
           firstName,
@@ -5445,6 +5454,11 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
           organizationId: organizationId ?? undefined,
         });
         
+        // Generate auto-login token for one-click login from email
+        const autoLoginToken = crypto.randomUUID();
+        const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        await storage.setAutoLoginToken(invitedUser.id, autoLoginToken, autoLoginExpiry);
+        
         // Send welcome email with credentials
         console.log(`Sending welcome email to ${validatedData.candidateEmail}`);
         try {
@@ -5452,12 +5466,13 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
             validatedData.candidateEmail,
             validatedData.candidateName,
             temporaryPassword,
-            validatedData.message ?? undefined
+            validatedData.message ?? undefined,
+            'invitation',
+            autoLoginToken
           );
           console.log(`Successfully created invitation for ${validatedData.candidateEmail}`);
         } catch (emailError: any) {
           console.error(`✗ Failed to send welcome email to ${validatedData.candidateEmail}:`, emailError.message);
-          // Don't fail invitation - account is created, user can use password reset
         }
       } else {
         // If user exists but has no organization, assign them to the invitation's org
@@ -5595,18 +5610,24 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
           userId = newUser.id;
           requiresLogin = true;
           
+          // Generate auto-login token for one-click login from email
+          const autoLoginToken = crypto.randomUUID();
+          const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+          await storage.setAutoLoginToken(newUser.id, autoLoginToken, autoLoginExpiry);
+          
           console.log(`📧 Sending welcome email to ${email}`);
-          // Send welcome email with credentials
           try {
             await sendWelcomeEmailWithPassword(
               email,
               `${firstName} ${lastName}`,
-              temporaryPassword
+              temporaryPassword,
+              undefined,
+              'invitation',
+              autoLoginToken
             );
             console.log(`✅ Created new user ${email} and sent welcome email`);
           } catch (emailError: any) {
             console.error(`✗ Failed to send welcome email to ${email}:`, emailError.message);
-            // Don't fail registration - account is created, user can use password reset
           }
         } else {
           // User already exists - verify password to authenticate inline
