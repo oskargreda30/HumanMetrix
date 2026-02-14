@@ -1070,7 +1070,7 @@ export default function Assessment() {
 
               {/* Navigation - fixed at bottom on mobile so keyboard doesn't hide buttons */}
               <div ref={navBarRef} className="mt-6 py-3 flex flex-wrap gap-3 justify-between" style={keyboardOpen ? { marginBottom: '60vh' } : undefined}>
-                {!submitMutation.isPending && !isPromptArchitecture && (
+                {!submitMutation.isPending && !isPromptArchitecture ? (
                   <Button
                     variant="outline"
                     onClick={handlePrevious}
@@ -1079,8 +1079,9 @@ export default function Assessment() {
                   >
                     Previous
                   </Button>
+                ) : (
+                  <div />
                 )}
-                {!submitMutation.isPending && isPromptArchitecture && <div />}
                 
                 {currentQuestion === questions.length - 1 ? (
                   submitMutation.isPending ? (
