@@ -577,7 +577,7 @@ export default function Dashboard() {
     
     let timer = setTimeout(tryScroll, 500);
     return () => clearTimeout(timer);
-  }, [scrollToB2C, assessments]);
+  }, [scrollToB2C, availableAssessments]);
 
   if (!authLoading && user) {
     if (user.role === 'super_admin' && !candidateView) {
@@ -607,15 +607,18 @@ export default function Dashboard() {
     (purchase: any) => purchase.completedCount > 0 || purchase.abandonedCount > 0
   );
 
-  // Determine section ordering: compare earliest creation dates
-  const earliestPartnerDate = (partnerTestingSeries || []).length > 0
-    ? Math.min(...(partnerTestingSeries || []).map((s: any) => new Date(s.createdAt).getTime()))
-    : Infinity;
-  const earliestB2CDate = (purchasesWithResults || []).length > 0
-    ? Math.min(...(purchasesWithResults || []).map((p: any) => new Date(p.createdAt).getTime()))
-    : availableAssessments.length > 0
-      ? Math.min(...availableAssessments.map((a: any) => new Date(a.createdAt || Date.now()).getTime()))
-      : Infinity;
+  // Determine section ordering: compare earliest creation dates (safe against missing dates)
+  const getEarliestDate = (items: any[]) => {
+    const dates = items
+      .map((item: any) => item.createdAt ? new Date(item.createdAt).getTime() : NaN)
+      .filter((d: number) => !isNaN(d));
+    return dates.length > 0 ? Math.min(...dates) : Infinity;
+  };
+  const earliestPartnerDate = getEarliestDate(partnerTestingSeries || []);
+  const earliestB2CDate = Math.min(
+    getEarliestDate(purchasesWithResults || []),
+    getEarliestDate(availableAssessments || [])
+  );
   const showPartnerFirst = earliestPartnerDate <= earliestB2CDate;
 
   return (
