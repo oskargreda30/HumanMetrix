@@ -4349,8 +4349,9 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
               const alreadyConsumed = existingResult?.status === 'completed' || existingResult?.status === 'abandoned';
               
               if (!alreadyConsumed) {
-                // Skip if this assessment type already exists from a purchase (avoid duplicates)
-                if (purchasedAssessmentTypes.has(normalizedType) && availableAssessments.some(a => a.source === 'purchase' && normalizeAssessmentId(a.assessmentType) === normalizedType)) {
+                // Skip if this assessment type was purchased (avoid duplicates)
+                // This covers both incomplete (still in availableAssessments) and completed purchases
+                if (purchasedAssessmentTypes.has(normalizedType)) {
                   continue;
                 }
                 
@@ -4394,8 +4395,9 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
               const partnerResultConsumed = existingPartnerResult?.status === 'completed' || existingPartnerResult?.status === 'abandoned';
               
               if (!partnerResultConsumed) {
-                // Skip if this assessment type already exists from a purchase (avoid duplicates)
-                if (purchasedAssessmentTypes.has(normalizedType) && availableAssessments.some(a => a.source === 'purchase' && normalizeAssessmentId(a.assessmentType) === normalizedType)) {
+                // Skip if this assessment type was purchased (avoid duplicates)
+                // This covers both incomplete (still in availableAssessments) and completed purchases
+                if (purchasedAssessmentTypes.has(normalizedType)) {
                   continue;
                 }
                 
