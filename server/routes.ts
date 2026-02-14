@@ -4349,9 +4349,13 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
               const alreadyConsumed = existingResult?.status === 'completed' || existingResult?.status === 'abandoned';
               
               if (!alreadyConsumed) {
-                // Skip if this assessment type was purchased (avoid duplicates)
-                // This covers both incomplete (still in availableAssessments) and completed purchases
-                if (purchasedAssessmentTypes.has(normalizedType)) {
+                // Skip only if this assessment type currently exists as an INCOMPLETE purchase item
+                // (i.e. still showing in availableAssessments from a purchase). 
+                // If the purchase is completed, the invitation is a separate testing series and should show.
+                const hasIncompleteFromPurchase = availableAssessments.some(
+                  a => a.source === 'purchase' && normalizeAssessmentId(a.assessmentType) === normalizedType
+                );
+                if (hasIncompleteFromPurchase) {
                   continue;
                 }
                 
@@ -4395,9 +4399,12 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
               const partnerResultConsumed = existingPartnerResult?.status === 'completed' || existingPartnerResult?.status === 'abandoned';
               
               if (!partnerResultConsumed) {
-                // Skip if this assessment type was purchased (avoid duplicates)
-                // This covers both incomplete (still in availableAssessments) and completed purchases
-                if (purchasedAssessmentTypes.has(normalizedType)) {
+                // Skip only if this assessment type currently exists as an INCOMPLETE purchase item
+                // If the purchase is completed, the partner invitation is a separate testing series
+                const hasIncompleteFromPurchase = availableAssessments.some(
+                  a => a.source === 'purchase' && normalizeAssessmentId(a.assessmentType) === normalizedType
+                );
+                if (hasIncompleteFromPurchase) {
                   continue;
                 }
                 
