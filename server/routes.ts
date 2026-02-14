@@ -18063,50 +18063,6 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
     }
   });
 
-  // Temporary endpoint to restore job_roles deleted during cleanup
-  app.post("/api/admin/restore-job-roles", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      if (!user || user.role !== 'super_admin') {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-      const fs = await import('fs');
-      const path = await import('path');
-      const filePath = path.join(process.cwd(), 'server', 'job_roles_backup.json');
-      if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ message: "Backup file not found" });
-      }
-      const roles = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-      let inserted = 0;
-      let skipped = 0;
-      for (const role of roles) {
-        try {
-          const result = await db.insert(jobRoles).values({
-            id: role.id,
-            name: role.name,
-            description: role.description,
-            domain: role.domain,
-            competencies: role.competencies,
-            requiredSkillScores: role.requiredSkillScores,
-            isCustom: role.isCustom,
-            createdBy: role.createdBy || null,
-            createdAt: role.createdAt ? new Date(role.createdAt) : new Date(),
-            updatedAt: role.updatedAt ? new Date(role.updatedAt) : new Date(),
-          }).onConflictDoNothing();
-          inserted++;
-        } catch (e: any) {
-          console.error(`Failed to insert role ${role.name}:`, e.message);
-          skipped++;
-        }
-      }
-      res.json({ message: `Restored ${inserted} of ${roles.length} job roles (${skipped} failed)` });
-    } catch (error: any) {
-      console.error("Error restoring job roles:", error);
-      res.status(500).json({ message: error.message });
-    }
-  });
-
   app.post("/api/admin/data-cleanup", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;

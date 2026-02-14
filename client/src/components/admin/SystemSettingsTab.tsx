@@ -38,7 +38,6 @@ export default function SystemSettingsTab() {
   const [showCleanupDialog, setShowCleanupDialog] = useState(false);
   const [cleanupConfirmText, setCleanupConfirmText] = useState('');
   const [cleanupResult, setCleanupResult] = useState<{ totalDeleted: number; details: { table: string; deleted: number }[]; protectedUsers: string[] } | null>(null);
-  const [restoreResult, setRestoreResult] = useState<{ success: boolean; message: string } | null>(null);
   
   // Check if we're in development (localhost or replit.dev)
   const isDevelopment = typeof window !== 'undefined' && 
@@ -119,28 +118,6 @@ export default function SystemSettingsTab() {
     onError: (error: Error) => {
       toast({
         title: "Data Cleanup Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const restoreJobRolesMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/admin/restore-job-roles");
-      return res.json();
-    },
-    onSuccess: (data) => {
-      setRestoreResult({ success: true, message: data.message || `Restored ${data.restored} job roles` });
-      toast({
-        title: "Job Roles Restored",
-        description: data.message || `Successfully restored ${data.restored} job roles.`,
-      });
-    },
-    onError: (error: Error) => {
-      setRestoreResult({ success: false, message: error.message });
-      toast({
-        title: "Restore Failed",
         description: error.message,
         variant: "destructive",
       });
@@ -511,36 +488,6 @@ export default function SystemSettingsTab() {
         </CardContent>
       </Card>
       )}
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Database className="h-5 w-5 text-cyan-500" />
-            <CardTitle data-testid="text-restore-job-roles-title">Restore Job Roles</CardTitle>
-          </div>
-          <CardDescription>
-            Restore all 107 standard job role templates from backup. Use this after a data cleanup or if job roles are missing.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {restoreResult && (
-            <div className={`p-3 rounded-md text-sm ${restoreResult.success ? 'bg-green-500/10 border border-green-500/20' : 'bg-destructive/10 border border-destructive/20'}`}>
-              <p className={`font-medium ${restoreResult.success ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
-                {restoreResult.success && <CheckCircle2 className="inline h-4 w-4 mr-1" />}
-                {restoreResult.message}
-              </p>
-            </div>
-          )}
-          <Button
-            onClick={() => restoreJobRolesMutation.mutate()}
-            disabled={restoreJobRolesMutation.isPending}
-            data-testid="button-restore-job-roles"
-          >
-            {restoreJobRolesMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            {restoreJobRolesMutation.isPending ? 'Restoring...' : 'Restore Job Roles'}
-          </Button>
-        </CardContent>
-      </Card>
 
       <Card className="border-destructive/50">
         <CardHeader>
