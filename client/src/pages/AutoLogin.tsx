@@ -58,7 +58,7 @@ export default function AutoLogin() {
     doAutoLogin();
 
     return () => { cancelled = true; };
-  }, [token, setLocation, redirect]);
+  }, [token, setLocation, safeRedirect]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0a1628] via-[#0f2035] to-[#0a1628]">
