@@ -19,7 +19,7 @@ export const PROMPT_ARCHITECTURE_LEVELS: PromptArchitectureLevel[] = [
     title: "Structured Output Request",
     description: "Request information in a specific format",
     scenario: "You need the AI to provide information in a structured way.",
-    taskInstructions: "Write a prompt asking the AI to list the top 5 programming languages for web development in 2024, formatted as a numbered list with a brief one-sentence description for each.",
+    taskInstructions: "Write a prompt asking the AI to list the top 5 programming languages for web development in 2026, formatted as a numbered list with a brief one-sentence description for each.",
   },
   {
     level: 3,

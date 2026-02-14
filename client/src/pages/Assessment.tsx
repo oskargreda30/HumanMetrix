@@ -638,6 +638,7 @@ export default function Assessment() {
                   setCurrentQuestion(curQ + 1);
                   setTimeRemaining(180);
                   setShowTimeWarning(false);
+                  startTimer();
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 1500);
               } else {

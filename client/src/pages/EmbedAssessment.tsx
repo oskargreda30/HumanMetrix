@@ -190,7 +190,7 @@ const AssessmentTimerDisplay = memo(function AssessmentTimerDisplay({
       stopTimer();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isActive, warningThreshold, timeRemainingRef]);
+  }, [isActive, warningThreshold, timeRemainingRef, initialTime]);
 
   const mins = Math.floor(Math.max(0, localTime) / 60);
   const secs = Math.max(0, localTime) % 60;
