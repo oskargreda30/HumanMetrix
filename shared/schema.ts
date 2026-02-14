@@ -1616,6 +1616,8 @@ export const partnerCandidateInvitations = pgTable("partner_candidate_invitation
   emailBounced: boolean("email_bounced").default(false),
   bounceReason: text("bounce_reason"),
   bouncedAt: timestamp("bounced_at"),
+  emailDelivered: boolean("email_delivered").default(false),
+  deliveredAt: timestamp("delivered_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_candidate_invitations_partner").on(table.partnerId),

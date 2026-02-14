@@ -2349,6 +2349,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
+        // Handle delivered events - mark email as confirmed delivered
+        if (eventType === 'delivered' && email) {
+          console.log(`[SendGrid Webhook] Email delivered to: ${email}`);
+          
+          await db
+            .update(partnerCandidateInvitations)
+            .set({ emailDelivered: true, deliveredAt: new Date() })
+            .where(eq(partnerCandidateInvitations.email, email));
+        }
+        
         // Handle deferred events (log but don't retry yet - email may still be delivered)
         if (eventType === 'deferred' && email) {
           console.log(`[SendGrid Webhook] Email deferred for: ${email}, reason: ${event.reason || event.response || 'Unknown'} - will be retried by SendGrid automatically`);

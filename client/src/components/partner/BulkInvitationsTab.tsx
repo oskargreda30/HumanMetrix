@@ -609,8 +609,7 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
   const isPrepaid = billingType === 'prepaid';
   const hasInsufficientTokens = isPrepaid && quota && tokensRequired > quota.testsRemaining;
 
-  const getStatusBadge = (status: string, emailBounced?: boolean, bounceReason?: string | null) => {
-    // Show bounced status if email bounced (overrides sent status)
+  const getStatusBadge = (status: string, emailBounced?: boolean, bounceReason?: string | null, emailDelivered?: boolean) => {
     if (emailBounced) {
       return (
         <Tooltip>
@@ -624,6 +623,10 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
           </TooltipContent>
         </Tooltip>
       );
+    }
+
+    if (emailDelivered && (status === 'sent' || status === 'pending')) {
+      return <Badge variant="outline" className="text-green-600 border-green-600"><CheckCircle className="h-3 w-3 mr-1" />Delivered</Badge>;
     }
     
     switch (status) {
@@ -1057,7 +1060,7 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
                     </div>
                   </div>
                   <div className="text-right flex items-center gap-3">
-                    {getStatusBadge(invitation.status, invitation.emailBounced, invitation.bounceReason)}
+                    {getStatusBadge(invitation.status, invitation.emailBounced, invitation.bounceReason, invitation.emailDelivered)}
                     <div className="text-xs text-muted-foreground">
                       {invitation.createdAt ? new Date(invitation.createdAt).toLocaleDateString() : ''}
                     </div>
