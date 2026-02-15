@@ -1721,7 +1721,19 @@ export default function Dashboard() {
                         {selectedUnlockTypes.size >= 2 && pricingData.hasBulkDiscount && (() => {
                           const selectedAssessments = pricingData.assessments.filter(a => selectedUnlockTypes.has(a.type));
                           const selectedTotal = selectedAssessments.reduce((sum, a) => sum + (a.localPrice || 0), 0);
-                          const discountedTotal = Math.round(selectedTotal * 0.75);
+                          const allSelected = selectedUnlockTypes.size === pricingData.assessments.length;
+                          const discountedDisplay = allSelected 
+                            ? pricingData.bulkTotal?.priceDisplay || ''
+                            : null;
+                          const roundUp = (price: number): number => {
+                            if (price < 100) return Math.ceil(price);
+                            if (price < 1000) return Math.ceil(price / 10) * 10;
+                            if (price < 10000) return Math.ceil(price / 100) * 100;
+                            if (price < 100000) return Math.ceil(price / 1000) * 1000;
+                            if (price < 1000000) return Math.ceil(price / 10000) * 10000;
+                            return Math.ceil(price / 100000) * 100000;
+                          };
+                          const discountedTotal = roundUp(selectedTotal * 0.75);
                           const currencySymbol = pricingData.bulkTotal?.priceDisplay?.replace(/[\d,.\s]/g, '') || '';
                           return (
                             <div className="mt-2 pt-2 border-t border-dashed" data-testid="individual-bundle-discount">
@@ -1731,7 +1743,7 @@ export default function Dashboard() {
                                   <span className="text-sm text-muted-foreground">{selectedUnlockTypes.size} assessments</span>
                                 </div>
                                 <div className="text-right">
-                                  <span className="text-sm font-bold">{currencySymbol}{discountedTotal.toLocaleString()}</span>
+                                  <span className="text-sm font-bold">{discountedDisplay || `${currencySymbol}${discountedTotal.toLocaleString()}`}</span>
                                   <span className="text-xs text-muted-foreground line-through ml-1.5">{currencySymbol}{selectedTotal.toLocaleString()}</span>
                                 </div>
                               </div>
