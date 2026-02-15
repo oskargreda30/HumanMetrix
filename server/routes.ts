@@ -3984,6 +3984,29 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       const allResults = await storage.getResultsByUser(userId);
       const partnerResults = allResults.filter((r: any) => r.partnerInvitationId);
       
+      // Get user email for matching B2B sessions and cross-email lookups
+      const user = await storage.getUser(userId);
+      const userEmail = user?.email;
+      
+      // Also check for partner invitations sent to the user's email where results
+      // might be under a different userId (email mismatch scenario - e.g., user logged in
+      // with different email than the invitation was sent to)
+      if (userEmail) {
+        const existingInvitationIds = new Set(partnerResults.map((r: any) => r.partnerInvitationId));
+        const emailInvitations = await storage.getPartnerCandidateInvitationsByEmail(userEmail);
+        for (const inv of emailInvitations) {
+          if ((inv.status === 'completed' || inv.status === 'started') && !existingInvitationIds.has(inv.id)) {
+            const invResults = await storage.getResultsByPartnerInvitation(inv.id);
+            const crossEmailResults = invResults.filter(
+              (r: any) => !partnerResults.some((pr: any) => pr.id === r.id)
+            );
+            if (crossEmailResults.length > 0) {
+              partnerResults.push(...crossEmailResults);
+            }
+          }
+        }
+      }
+      
       if (partnerResults.length === 0) {
         return res.json([]);
       }
@@ -4004,10 +4027,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         }
         resultsByInvitation[invitationId].push(result);
       }
-      
-      // Get user email for matching B2B sessions
-      const user = await storage.getUser(userId);
-      const userEmail = user?.email;
       
       // Fetch invitation details for each series
       const seriesList = await Promise.all(

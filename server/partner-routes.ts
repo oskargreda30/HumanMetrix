@@ -6048,24 +6048,28 @@ export function registerGuestAssessmentRoutes(app: Express) {
         return res.status(400).json({ error: "Email required to create account" });
       }
       
-      // Check if user already exists
+      const alreadyLoggedInUserId = req.session?.userId;
+      const alreadyLoggedInUser = alreadyLoggedInUserId ? await storage.getUser(alreadyLoggedInUserId) : null;
+      
       const existingUser = await storage.getUserByEmail(invitation.email);
-      if (existingUser) {
-        // Auto-login existing user
-        req.session.userId = existingUser.id;
-        await new Promise<void>((resolve, reject) => {
-          req.session.save((err: any) => {
-            if (err) reject(err);
-            else resolve();
+      
+      const targetUser = alreadyLoggedInUser || existingUser;
+      
+      if (targetUser) {
+        if (!alreadyLoggedInUser || alreadyLoggedInUser.id !== targetUser.id) {
+          req.session.userId = targetUser.id;
+          await new Promise<void>((resolve, reject) => {
+            req.session.save((err: any) => {
+              if (err) reject(err);
+              else resolve();
+            });
           });
-        });
+        }
         
-        // Link partner assessment results to existing user
-        await linkPartnerResultsToUser(existingUser.id, invitation);
+        await linkPartnerResultsToUser(targetUser.id, invitation);
         
-        // Send a results-ready email reminding them of their existing account
         const { sendB2BResultsReadyEmail } = await import('./email');
-        const displayName = existingUser.firstName || existingUser.name || existingUser.username || invitation.email.split('@')[0];
+        const displayName = targetUser.firstName || targetUser.name || targetUser.username || invitation.email.split('@')[0];
         
         const invitationId = invitation.id;
         let guestRedirectUrl = invitationId 
@@ -6077,21 +6081,26 @@ export function registerGuestAssessmentRoutes(app: Express) {
           try {
             autoLoginToken = crypto.randomUUID();
             const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-            await storage.setAutoLoginToken(existingUser.id, autoLoginToken, autoLoginExpiry);
+            await storage.setAutoLoginToken(targetUser.id, autoLoginToken, autoLoginExpiry);
           } catch (tokenErr) {
             console.error("[GuestInvite] Failed to generate auto-login token:", tokenErr);
           }
           await sendB2BResultsReadyEmail({
-            email: invitation.email,
+            email: targetUser.email,
             candidateName: displayName,
             partnerName: invitation.partnerName || 'your employer',
             dashboardUrl: `${req.protocol}://${req.get('host')}${guestRedirectUrl}`,
             autoLoginToken,
           });
         } catch (emailErr) {
-          console.error(`[GuestInvite] Failed to send results-ready email to ${invitation.email}:`, emailErr);
+          console.error(`[GuestInvite] Failed to send results-ready email to ${targetUser.email}:`, emailErr);
         }
-        console.log(`[GuestInvite] Existing user ${existingUser.id} logged in, results-ready email sent to ${invitation.email}`);
+        
+        if (alreadyLoggedInUser && existingUser && alreadyLoggedInUser.id !== existingUser.id) {
+          console.log(`[GuestInvite] Email mismatch: logged in as ${alreadyLoggedInUser.email} (${alreadyLoggedInUser.id}), invitation for ${invitation.email} (${existingUser.id}). Linking results to logged-in user.`);
+        } else {
+          console.log(`[GuestInvite] User ${targetUser.id} (${targetUser.email}) logged in, results linked.`);
+        }
         
         return res.json({ 
           success: true, 
