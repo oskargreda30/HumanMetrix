@@ -1796,6 +1796,16 @@ export function registerPartnerRoutes(app: Express) {
                 emailPaidTypes.add(normalizeAssessmentId(s.assessmentType));
               }
             }
+            // Also check partner_result_purchases for paid types
+            try {
+              const existingPurchaseForBundle = await storage.getPartnerResultPurchase(candidateEmail, session.partnerId);
+              if (existingPurchaseForBundle?.status === 'completed' && existingPurchaseForBundle.purchasedAssessmentTypes) {
+                for (const t of existingPurchaseForBundle.purchasedAssessmentTypes) {
+                  emailPaidTypes.add(normalizeAssessmentId(t));
+                }
+              }
+            } catch (e) { /* ignore */ }
+            
             // Locked types = types that have NO paid session anywhere
             const lockedAssessmentTypes = [...new Set(
               completedSessions
@@ -1803,18 +1813,43 @@ export function registerPartnerRoutes(app: Express) {
                 .filter(t => !emailPaidTypes.has(t))
             )];
             
+            // Server-side series completion check using invitation data
+            const invitationIdForBundle = (updatedSession?.metadata as any)?.invitationId;
+            let seriesComplete = false;
+            let seriesAssessmentTypes: string[] = [];
+            if (invitationIdForBundle) {
+              try {
+                const invitationForBundle = await storage.getPartnerCandidateInvitation(invitationIdForBundle);
+                if (invitationForBundle && invitationForBundle.assessmentTypes) {
+                  seriesAssessmentTypes = invitationForBundle.assessmentTypes.map((t: string) => normalizeAssessmentId(t));
+                  // Check if all types in the invitation series are now completed
+                  const completedTypeSet = new Set(completedSessions.map(s => normalizeAssessmentId(s.assessmentType)));
+                  seriesComplete = seriesAssessmentTypes.every(t => completedTypeSet.has(t));
+                  if (seriesComplete) {
+                    console.log(`[B2B Email] Server-side: invitation series ${invitationIdForBundle} is fully complete (${seriesAssessmentTypes.join(', ')})`);
+                  }
+                }
+              } catch (e) {
+                console.error('[B2B Email] Error checking invitation for bundle:', e);
+              }
+            }
+            
+            // Use either frontend flag OR server-side check for series completion
+            const isSeriesComplete = (isMultiAssessmentSeries && isLastInMultiAssessmentSeries) || seriesComplete;
+            const effectiveSeriesTypes = seriesAssessmentTypes.length > 0 ? seriesAssessmentTypes : multiAssessmentTypes;
+            
             // Only send bundle email if there are MORE than 1 unpaid assessment results
             if (lockedAssessmentTypes.length > 1) {
-              if (isMultiAssessmentSeries && isLastInMultiAssessmentSeries) {
+              if (isSeriesComplete && effectiveSeriesTypes.length > 1) {
                 // Multi-assessment series completed - send bundle for locked series assessments only
-                bundleAssessmentTypes = multiAssessmentTypes.filter(t => lockedAssessmentTypes.includes(normalizeAssessmentId(t)));
+                bundleAssessmentTypes = effectiveSeriesTypes.filter(t => lockedAssessmentTypes.includes(normalizeAssessmentId(t)));
                 if (bundleAssessmentTypes.length > 1) {
                   shouldSendBundleEmail = true;
-                  console.log(`[B2B Email] Multi-assessment series complete (${bundleAssessmentTypes.length} locked tests) for ${candidateEmail} - sending bundle offer with 25% off`);
+                  console.log(`[B2B Email] Series complete (${bundleAssessmentTypes.length} locked tests) for ${candidateEmail} - sending bundle offer with 25% off`);
                 } else {
-                  console.log(`[B2B Email] Multi-assessment series complete but only ${bundleAssessmentTypes.length} locked result(s) - skipping bundle email`);
+                  console.log(`[B2B Email] Series complete but only ${bundleAssessmentTypes.length} locked result(s) - skipping bundle email`);
                 }
-              } else if (allComplete && !isMultiAssessmentSeries) {
+              } else if (allComplete && !isSeriesComplete) {
                 // All 4 assessments complete (non-multi-assessment flow) - send bundle for locked assessments only
                 bundleAssessmentTypes = lockedAssessmentTypes;
                 shouldSendBundleEmail = true;
