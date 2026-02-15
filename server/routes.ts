@@ -6,7 +6,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, populateUser } from "./auth";
 import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema, B2B_VOLUME_TIERS, CREDIT_EXPIRATION_MONTHS, getTrialQuotaForTier } from "@shared/schema";
-import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, calculateStripeAmountFromTotalPence, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES, roundPriceUp, formatPrice, getCurrencyForCountry } from "@shared/currencies";
+import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, calculateStripeAmountFromTotalPence, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES, roundPriceUp, formatPrice, getCurrencyForCountry, calculateCandidatePricing } from "@shared/currencies";
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, broadcastMessages, SYSTEM_SETTING_KEYS, auditLogs, errorLogs, partnerInvoices, invitations, partnerCandidateInvitations, candidateNotes, emailLogs, sessions, appLogs, partnerAccounts, partnerTeamMembers, jobRoles, type PartnerAccount, type AssessmentSession } from "@shared/schema";
 import { eq, desc, sql, and, or, gte, isNotNull, inArray } from "drizzle-orm";
@@ -1362,15 +1362,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Business logic: Pay per purchase cycle - don't charge for previously paid assessments
       // Apply PPP adjustment for user's country (SEA countries now use PPP tier pricing like everyone else)
       
-      // Standard pricing: base fee + assessments with PPP adjustment
-      // Use pricingCountry which is 'GB' for VPN users (full price) or actual country for PPP
-      const adjustedBaseFee = getPPPAdjustedPriceInPence(BASE_FEE, pricingCountry);
-      const assessmentsTotal = requiredAssessmentTypes.reduce((sum, type) => {
-        const normalizedType = normalizeAssessmentId(type);
-        const originalPrice = ASSESSMENT_PRICES[normalizedType] || 0;
-        return sum + getPPPAdjustedPriceInPence(originalPrice, pricingCountry);
-      }, 0);
-      const priceInPence = adjustedBaseFee + assessmentsTotal;
+      // Use canonical pricing function for consistent B2C pricing
+      const b2cItems = requiredAssessmentTypes.map(type => ({
+        type: normalizeAssessmentId(type),
+        priceInPence: ASSESSMENT_PRICES[normalizeAssessmentId(type)] || 0,
+      }));
+      const b2cBasePricing = calculateCandidatePricing(
+        currencyCountry, b2cItems, BASE_FEE,
+        { isVPN }
+      );
+      const priceInPence = b2cBasePricing.subtotalLocal;
       const totalAssessmentCount = requiredAssessmentTypes.length;
       
       // Apply discount codes
@@ -1408,31 +1409,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Otherwise, create Stripe checkout session for results payment
-      // Charge in user's local currency (based on currencyCountry)
+      // Use canonical pricing for consistent Stripe amount calculation
       let stripeCurrency = getStripeCurrencyCode(currencyCountry);
       let currencyCode = COUNTRY_CURRENCY_MAP[currencyCountry.toUpperCase()] || 'GBP';
       
-      // Fetch live exchange rates to match frontend display prices
       const exchangeRatesData = await getExchangeRates();
       const liveExchangeRate = exchangeRatesData.rates?.[currencyCode] ?? undefined;
       
-      // Calculate Stripe amount: sum individually-rounded local prices
-      // This matches frontend display where each component is rounded then summed
-      
-      // Get rounded local price for platform fee (using pricingCountry for PPP)
-      const platformFeeLocal = convertPenceToRoundedLocalCurrency(adjustedBaseFee, currencyCode, liveExchangeRate);
-      
-      // Sum rounded local prices for each assessment (using pricingCountry for PPP)
-      let assessmentsTotalLocal = 0;
-      for (const type of requiredAssessmentTypes) {
-        const normalizedType = normalizeAssessmentId(type);
-        const originalPrice = ASSESSMENT_PRICES[normalizedType] || 0;
-        const adjustedPence = getPPPAdjustedPriceInPence(originalPrice, pricingCountry);
-        assessmentsTotalLocal += convertPenceToRoundedLocalCurrency(adjustedPence, currencyCode, liveExchangeRate);
-      }
+      const b2cCheckoutPricing = calculateCandidatePricing(
+        currencyCountry, b2cItems, BASE_FEE,
+        { exchangeRate: liveExchangeRate, isVPN }
+      );
       
       // Apply discount ratio if applicable
-      let totalLocal = platformFeeLocal + assessmentsTotalLocal;
+      let totalLocal = b2cCheckoutPricing.totalLocal;
       if (discountApplied) {
         const discountRatio = finalPriceInPence / priceInPence;
         totalLocal = Math.round(totalLocal * discountRatio);
@@ -1442,7 +1432,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[Results Payment Debug] PricingCountry: ${pricingCountry}, CurrencyCountry: ${currencyCountry}, isVPN: ${isVPN}`);
       console.log(`[Results Payment Debug] Exchange rate: ${liveExchangeRate}`);
-      console.log(`[Results Payment Debug] Platform fee local: ${platformFeeLocal}, Assessments total local: ${assessmentsTotalLocal}`);
       console.log(`[Results Payment Debug] Total local: ${totalLocal}, Stripe amount: ${stripeAmount}`);
       
       const baseUrl = getRoutesBaseUrl(req);
@@ -3386,26 +3375,17 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       // Use exchange rate from request body if provided, otherwise fetch live rate
       const effectiveExchangeRate = lockedExchangeRate || (await getExchangeRates()).rates?.[localCurrencyCode] || undefined;
       
-      // Sum-of-rounded-items approach: each line item is PPP-adjusted and rounded independently,
-      // then summed for the total. This ensures the charged amount matches what was displayed.
-      const basePppPence = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
-      const baseFeeLocal = convertPenceToRoundedLocalCurrency(basePppPence, localCurrencyCode, effectiveExchangeRate);
-      const effectiveBaseFeeLocal = baseFeeAlreadyPaid ? 0 : baseFeeLocal;
+      // Use canonical pricing function for consistent checkout pricing
+      const checkoutItems = resultsToPurchase.map((result: any) => ({
+        type: normalizeAssessmentId(result.assessmentType),
+        priceInPence: ASSESSMENT_PRICES[normalizeAssessmentId(result.assessmentType)] || 400,
+      }));
+      const checkoutPricing = calculateCandidatePricing(
+        userCountry, checkoutItems, BASE_FEE,
+        { exchangeRate: effectiveExchangeRate, baseFeeAlreadyPaid, bundleDiscount: discountRate * 100 }
+      );
       
-      let assessmentsTotalLocal = 0;
-      for (const result of resultsToPurchase) {
-        const normalizedType = normalizeAssessmentId(result.assessmentType);
-        const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
-        const pppPrice = getPPPAdjustedPriceInPence(assessmentPrice, userCountry);
-        assessmentsTotalLocal += convertPenceToRoundedLocalCurrency(pppPrice, localCurrencyCode, effectiveExchangeRate);
-      }
-      
-      // Total = sum of individually-rounded items, then apply bulk discount if applicable
-      let totalLocal = effectiveBaseFeeLocal + assessmentsTotalLocal;
-      if (discountRate > 0) {
-        totalLocal = Math.round(totalLocal * (1 - discountRate));
-      }
-      
+      let totalLocal = checkoutPricing.totalLocal;
       const stripeAmount = calculateStripeAmountFromRoundedTotal(totalLocal, localCurrencyCode);
       let totalLocalCurrencyAmount = totalLocal;
       
@@ -3751,44 +3731,38 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       const bulkDiscountRate = 0.25;
       const hasBulkDiscount = purchasableResults.length > 1;
       
-      // Build per-assessment breakdown with individually-rounded local prices
-      // Each line item is PPP-adjusted and rounded independently, then summed for the total.
-      // This ensures the displayed line items always add up to the displayed total.
-      const basePppPence = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
-      const baseFeeLocal = convertPenceToRoundedLocalCurrency(basePppPence, localCurrencyCode, lockedExchangeRate);
-      const baseFeeDisplay = formatPrice(basePppPence, userCurrency, { skipPPPAdjustment: true });
+      // Use canonical pricing function for consistent display
+      const purchasableItems = purchasableResults.map(result => ({
+        type: normalizeAssessmentId(result.assessmentType),
+        priceInPence: ASSESSMENT_PRICES[normalizeAssessmentId(result.assessmentType)] || 400,
+      }));
       
-      const effectiveBaseFeeLocal = baseFeeAlreadyPaid ? 0 : baseFeeLocal;
+      const individualPricing = calculateCandidatePricing(
+        userCountry, purchasableItems, BASE_FEE,
+        { exchangeRate: lockedExchangeRate, baseFeeAlreadyPaid }
+      );
       
-      const assessmentPrices: { type: string; priceInPence: number; priceDisplay: string; localPrice: number }[] = [];
-      let assessmentsTotalLocal = 0;
+      const baseFeeDisplay = individualPricing.formatAmount(individualPricing.baseFee.localPrice);
+      const assessmentPrices = individualPricing.assessments.map(a => ({
+        type: a.assessmentType,
+        priceInPence: a.priceInPence,
+        priceDisplay: individualPricing.formatAmount(a.localPrice),
+        localPrice: a.localPrice,
+      }));
       
-      for (const result of purchasableResults) {
-        const normalizedType = normalizeAssessmentId(result.assessmentType);
-        const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
-        const pppPrice = getPPPAdjustedPriceInPence(assessmentPrice, userCountry);
-        const localPrice = convertPenceToRoundedLocalCurrency(pppPrice, localCurrencyCode, lockedExchangeRate);
-        const priceDisplay = formatPrice(pppPrice, userCurrency, { skipPPPAdjustment: true });
-        assessmentPrices.push({ type: normalizedType, priceInPence: assessmentPrice, priceDisplay, localPrice });
-        assessmentsTotalLocal += localPrice;
-      }
+      const individualTotalLocal = individualPricing.totalLocal;
+      const individualTotalStripe = individualPricing.stripeAmount;
+      const individualTotalDisplay = individualPricing.totalDisplay;
       
-      // Total = sum of individually-rounded line items (matches what user sees)
-      const individualTotalLocal = effectiveBaseFeeLocal + assessmentsTotalLocal;
-      const individualTotalStripe = calculateStripeAmountFromRoundedTotal(individualTotalLocal, localCurrencyCode);
-      
-      // Format total using the currency formatter
-      const formatLocalAmount = (amount: number) => {
-        const integerPart = amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, userCurrency.thousandsSeparator);
-        return userCurrency.symbolPosition === 'before'
-          ? `${userCurrency.symbol}${integerPart}`
-          : `${integerPart}${userCurrency.symbol}`;
-      };
-      const individualTotalDisplay = formatLocalAmount(individualTotalLocal);
-      
-      // Bulk pricing: 25% off the sum-of-rounded total
-      const bulkTotalLocal = hasBulkDiscount ? Math.round(individualTotalLocal * (1 - bulkDiscountRate)) : individualTotalLocal;
-      const bulkTotalDisplay = hasBulkDiscount ? formatLocalAmount(bulkTotalLocal) : individualTotalDisplay;
+      // Bulk pricing: 25% off if purchasing all and more than 1
+      const bulkPricing = hasBulkDiscount
+        ? calculateCandidatePricing(
+            userCountry, purchasableItems, BASE_FEE,
+            { exchangeRate: lockedExchangeRate, baseFeeAlreadyPaid, bundleDiscount: 25 }
+          )
+        : individualPricing;
+      const bulkTotalLocal = bulkPricing.totalLocal;
+      const bulkTotalDisplay = bulkPricing.totalDisplay;
 
       res.json({
         baseFee: BASE_FEE,
@@ -3801,7 +3775,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
           discountRate: 0,
         },
         bulkTotal: {
-          priceInPence: hasBulkDiscount ? calculateStripeAmountFromRoundedTotal(bulkTotalLocal, localCurrencyCode) : individualTotalStripe,
+          priceInPence: bulkPricing.stripeAmount,
           priceDisplay: bulkTotalDisplay,
           discountRate: hasBulkDiscount ? bulkDiscountRate : 0,
         },

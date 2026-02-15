@@ -1165,3 +1165,126 @@ export function convertSEALaunchPriceToStripeAmount(
     return roundedPrice * 100;
   }
 }
+
+// ============================================
+// CANONICAL CANDIDATE PRICING CALCULATOR
+// ============================================
+// This is the SINGLE source of truth for all candidate-facing pricing,
+// both B2B and B2C. The ONLY difference between B2B and B2C is that
+// B2B candidates may receive a 25% bundle discount.
+//
+// Formula: For each component (base fee, each assessment):
+//   1. PPP-adjust price in pence
+//   2. Convert to local currency using exchange rate
+//   3. Round via roundPriceUp
+// Then sum all rounded components.
+// Optionally apply bundle discount (25%) on the total.
+
+export interface CandidatePricingOptions {
+  exchangeRate?: number;
+  bundleDiscount?: number;
+  baseFeeAlreadyPaid?: boolean;
+  isVPN?: boolean;
+}
+
+export interface CandidatePricingItem {
+  assessmentType: string;
+  priceInPence: number;
+  pppPriceInPence: number;
+  localPrice: number;
+}
+
+export interface CandidatePricingResult {
+  countryCode: string;
+  currencyCode: string;
+  currency: CurrencyConfig;
+  baseFee: {
+    priceInPence: number;
+    pppPriceInPence: number;
+    localPrice: number;
+    included: boolean;
+  };
+  assessments: CandidatePricingItem[];
+  subtotalLocal: number;
+  bundleDiscountPercent: number;
+  totalLocal: number;
+  stripeAmount: number;
+  stripeCurrency: string;
+  formatAmount: (amount: number) => string;
+  subtotalDisplay: string;
+  totalDisplay: string;
+}
+
+export function calculateCandidatePricing(
+  countryCode: string,
+  assessmentItems: Array<{ type: string; priceInPence: number }>,
+  baseFeeInPence: number,
+  options: CandidatePricingOptions = {}
+): CandidatePricingResult {
+  const {
+    exchangeRate,
+    bundleDiscount = 0,
+    baseFeeAlreadyPaid = false,
+    isVPN = false,
+  } = options;
+
+  const pricingCountry = isVPN ? 'GB' : countryCode.toUpperCase();
+  const currencyCountry = countryCode.toUpperCase();
+  const localCurrencyCode = COUNTRY_CURRENCY_MAP[currencyCountry] || 'GBP';
+  const currency = CURRENCIES[localCurrencyCode] || CURRENCIES['GBP'];
+  const stripeCurrency = localCurrencyCode.toLowerCase();
+
+  const basePppPence = getPPPAdjustedPriceInPence(baseFeeInPence, pricingCountry);
+  const baseFeeLocal = convertPenceToRoundedLocalCurrency(basePppPence, localCurrencyCode, exchangeRate);
+  const effectiveBaseFeeLocal = baseFeeAlreadyPaid ? 0 : baseFeeLocal;
+
+  const assessments: CandidatePricingItem[] = [];
+  let assessmentsTotalLocal = 0;
+
+  for (const item of assessmentItems) {
+    const pppPence = getPPPAdjustedPriceInPence(item.priceInPence, pricingCountry);
+    const localPrice = convertPenceToRoundedLocalCurrency(pppPence, localCurrencyCode, exchangeRate);
+    assessments.push({
+      assessmentType: item.type,
+      priceInPence: item.priceInPence,
+      pppPriceInPence: pppPence,
+      localPrice,
+    });
+    assessmentsTotalLocal += localPrice;
+  }
+
+  const subtotalLocal = effectiveBaseFeeLocal + assessmentsTotalLocal;
+  const totalLocal = bundleDiscount > 0
+    ? Math.round(subtotalLocal * (1 - bundleDiscount / 100))
+    : subtotalLocal;
+
+  const stripeAmount = calculateStripeAmountFromRoundedTotal(totalLocal, localCurrencyCode);
+
+  const formatAmount = (amount: number) => {
+    const integerPart = amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, currency.thousandsSeparator);
+    return currency.symbolPosition === 'before'
+      ? `${currency.symbol}${integerPart}`
+      : `${integerPart}${currency.symbol}`;
+  };
+
+  return {
+    countryCode: currencyCountry,
+    currencyCode: localCurrencyCode,
+    currency,
+    baseFee: {
+      priceInPence: baseFeeInPence,
+      pppPriceInPence: basePppPence,
+      localPrice: baseFeeLocal,
+      included: !baseFeeAlreadyPaid,
+    },
+    assessments,
+    subtotalLocal,
+    bundleDiscountPercent: bundleDiscount,
+    totalLocal,
+    stripeAmount,
+    stripeCurrency,
+    formatAmount,
+    subtotalDisplay: formatAmount(subtotalLocal),
+    totalDisplay: formatAmount(totalLocal),
+  };
+}
