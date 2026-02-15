@@ -131,7 +131,7 @@ export default function GuestInvite() {
           description: "Redirecting to your dashboard to start your assessments...",
         });
       }
-      window.location.href = '/dashboard?view=candidate';
+      window.location.href = `/dashboard?view=candidate&scrollToSeries=${invitation.id || ''}`;
       return;
     }
     
@@ -238,7 +238,7 @@ export default function GuestInvite() {
         });
         
         // Use full page navigation to ensure session cookie is properly recognized
-        window.location.href = data.redirectTo || '/dashboard';
+        window.location.href = data.redirectTo || `/dashboard?view=candidate&scrollToSeries=${invitation?.id || ''}`;
       } catch (err: any) {
         toast({
           title: "Error",

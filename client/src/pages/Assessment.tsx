@@ -325,8 +325,8 @@ export default function Assessment() {
         duration: 3000,
       });
       
-      // Always redirect to dashboard after submission with refresh flag
-      setLocation("/dashboard?refresh=" + Date.now());
+      const scrollParam = assessment?.partnerInvitationId ? `&scrollToSeries=${assessment.partnerInvitationId}` : '';
+      setLocation(`/dashboard?view=candidate&refresh=${Date.now()}${scrollParam}`);
     },
     onError: (error: any) => {
       setIsSubmitting(false); // Reset submitting state on error
@@ -396,9 +396,9 @@ export default function Assessment() {
           variant: "destructive",
         });
       }
-      // Always navigate back to dashboard
       console.log('[Assessment] Navigating to dashboard...');
-      setLocation("/dashboard?refresh=" + Date.now());
+      const scrollParam = assessment?.partnerInvitationId ? `&scrollToSeries=${assessment.partnerInvitationId}` : '';
+      setLocation(`/dashboard?view=candidate&refresh=${Date.now()}${scrollParam}`);
     },
     onError: (error: any) => {
       console.error('[Assessment] Abandon error:', error);
@@ -416,8 +416,8 @@ export default function Assessment() {
         description: error.message || "Failed to mark assessment as incomplete.",
         variant: "destructive",
       });
-      // Still navigate back to dashboard even on error
-      setLocation("/dashboard?refresh=" + Date.now());
+      const scrollParam = assessment?.partnerInvitationId ? `&scrollToSeries=${assessment.partnerInvitationId}` : '';
+      setLocation(`/dashboard?view=candidate&refresh=${Date.now()}${scrollParam}`);
     },
   });
 
@@ -669,7 +669,8 @@ export default function Assessment() {
                     variant: "destructive",
                   });
                   apiRequest("POST", `/api/assessments/${resultId}/abandon`).finally(() => {
-                    setLocation("/dashboard?refresh=" + Date.now());
+                    const scrollParam = assessment?.partnerInvitationId ? `&scrollToSeries=${assessment.partnerInvitationId}` : '';
+                    setLocation(`/dashboard?view=candidate&refresh=${Date.now()}${scrollParam}`);
                   });
                 }
               }
@@ -915,7 +916,10 @@ export default function Assessment() {
               <Button
                 variant="outline"
                 className={`w-full ${borderColor} ${textSecondary}`}
-                onClick={() => setLocation('/dashboard')}
+                onClick={() => {
+                  const scrollParam = assessment?.partnerInvitationId ? `&scrollToSeries=${assessment.partnerInvitationId}` : '';
+                  setLocation(`/dashboard?view=candidate${scrollParam}`);
+                }}
                 data-testid="button-back-to-dashboard"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />

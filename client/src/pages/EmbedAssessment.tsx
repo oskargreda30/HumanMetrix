@@ -1994,7 +1994,7 @@ export default function EmbedAssessment() {
                     <Button
                       className="w-full"
                       style={{ backgroundColor: primaryColor }}
-                      onClick={() => { const target = window.top || window; target.location.href = invitationCompletionData.dashboardUrl || '/dashboard?view=candidate'; }}
+                      onClick={() => { const target = window.top || window; target.location.href = invitationCompletionData.dashboardUrl || `/dashboard?view=candidate`; }}
                       data-testid="button-go-to-dashboard"
                     >
                       Go to Dashboard
@@ -2027,7 +2027,7 @@ export default function EmbedAssessment() {
                           const data = await res.json();
                           if (data.success) {
                             const target = window.top || window;
-                            target.location.href = data.redirectTo || '/dashboard?view=candidate';
+                            target.location.href = data.redirectTo || `/dashboard?view=candidate`;
                           } else {
                             const target = window.top || window;
                             target.location.href = `/login?email=${encodeURIComponent(invitationCompletionData.email)}`;

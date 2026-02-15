@@ -476,7 +476,6 @@ export default function Dashboard() {
   // Track which series to scroll to after purchase
   const [scrollToSeriesId, setScrollToSeriesId] = useState<string | null>(null);
   const [scrollToB2C, setScrollToB2C] = useState(false);
-  const [hasAutoScrolled, setHasAutoScrolled] = useState(false);
 
   // Handle partner results purchase success
   useEffect(() => {
