@@ -3895,7 +3895,7 @@ export async function sendResultsReadyEmail(details: ResultsReadyEmailDetails) {
   
   if (details.hasExistingAccount) {
     if (details.autoLoginToken) {
-      ctaUrl = `${baseUrl}/auto-login/${details.autoLoginToken}?redirect=/${dashboardPath}`;
+      ctaUrl = `${baseUrl}/auto-login/${details.autoLoginToken}?redirect=${encodeURIComponent('/' + dashboardPath)}`;
     } else {
       ctaUrl = `${baseUrl}/${dashboardPath}`;
     }
