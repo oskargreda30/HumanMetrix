@@ -3754,34 +3754,38 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       
       // Build per-assessment breakdown for display
       let totalAssessmentsPriceInPence = 0;
-      const assessmentPrices: { type: string; priceInPence: number; priceDisplay: string }[] = [];
+      const assessmentRawData: { type: string; priceInPence: number }[] = [];
 
       for (const result of purchasableResults) {
         const normalizedType = normalizeAssessmentId(result.assessmentType);
         const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
         totalAssessmentsPriceInPence += assessmentPrice;
-        
-        // Per-assessment display price: PPP-adjust this single assessment, then format
-        const pppPrice = getPPPAdjustedPriceInPence(assessmentPrice, userCountry);
-        const priceDisplay = formatPrice(pppPrice, userCurrency, { skipPPPAdjustment: true });
-        
-        assessmentPrices.push({ 
-          type: normalizedType, 
-          priceInPence: assessmentPrice,
-          priceDisplay,
-        });
+        assessmentRawData.push({ type: normalizedType, priceInPence: assessmentPrice });
       }
 
-      // Computation fee (one-off) display price
-      const baseFeeAdjusted = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
-      const baseFeeDisplay = formatPrice(baseFeeAdjusted, userCurrency, { skipPPPAdjustment: true });
-      
       // --- TOTAL CALCULATION (email-style: sum pence → PPP once → format once) ---
       // This is the authoritative price calculation matching the email's approach
       const effectiveBaseFee = baseFeeAlreadyPaid ? 0 : BASE_FEE;
       const totalPenceBeforePPP = effectiveBaseFee + totalAssessmentsPriceInPence;
       const totalPppAdjusted = getPPPAdjustedPriceInPence(totalPenceBeforePPP, userCountry);
       const individualTotalDisplay = formatPrice(totalPppAdjusted, userCurrency, { skipPPPAdjustment: true });
+
+      // Compute base fee display price (always shown, even when already paid for "Paid" label)
+      const basePppPence = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
+      const baseFeeDisplay = formatPrice(basePppPence, userCurrency, { skipPPPAdjustment: true });
+      
+      // Compute per-assessment display prices independently
+      // Note: Due to roundPriceUp using different granularities at different magnitudes,
+      // independently-formatted line items may not sum exactly to the total.
+      // This is standard commercial rounding behavior — the total is the authoritative
+      // charged amount and always matches the email and checkout exactly.
+      const assessmentPrices: { type: string; priceInPence: number; priceDisplay: string }[] = [];
+      
+      for (const a of assessmentRawData) {
+        const pppPrice = getPPPAdjustedPriceInPence(a.priceInPence, userCountry);
+        const priceDisplay = formatPrice(pppPrice, userCurrency, { skipPPPAdjustment: true });
+        assessmentPrices.push({ type: a.type, priceInPence: a.priceInPence, priceDisplay });
+      }
       
       // Bulk pricing: 25% off the total (only applies when purchasing all completed assessments and > 1)
       const bulkTotalPence = Math.round(totalPppAdjusted * (1 - bulkDiscountRate));
