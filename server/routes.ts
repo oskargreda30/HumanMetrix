@@ -3338,22 +3338,23 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
       const userCurrency = getCurrencyForCountry(userCountry);
 
-      // B2C candidates do NOT get bulk/bundle discounts (only B2B candidates do)
-      
       // Determine if base fee was already paid (either via B2B purchase or B2B session payment)
       const baseFeeAlreadyPaid = existingPurchase?.status === 'completed' || checkoutB2bPaidTypes.size > 0;
       
       // Use exchange rate from request body if provided, otherwise fetch live rate
       const effectiveExchangeRate = lockedExchangeRate || (await getExchangeRates()).rates?.[localCurrencyCode] || undefined;
       
-      // Use canonical pricing function for consistent checkout pricing (no bundle discount for B2C)
+      // Apply 25% bundle discount for B2B candidates unlocking all assessments (2+ tests)
+      const isUnlockAll = !purchasedTypes;
+      const checkoutBundleDiscount = (isUnlockAll && resultsToPurchase.length >= 2) ? 25 : 0;
+      
       const checkoutItems = resultsToPurchase.map((result: any) => ({
         type: normalizeAssessmentId(result.assessmentType),
         priceInPence: ASSESSMENT_PRICES[normalizeAssessmentId(result.assessmentType)] || 400,
       }));
       const checkoutPricing = calculateCandidatePricing(
         userCountry, checkoutItems, BASE_FEE,
-        { exchangeRate: effectiveExchangeRate, baseFeeAlreadyPaid }
+        { exchangeRate: effectiveExchangeRate, baseFeeAlreadyPaid, bundleDiscount: checkoutBundleDiscount }
       );
       
       let totalLocal = checkoutPricing.totalLocal;
@@ -3729,13 +3730,50 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         { exchangeRate: lockedExchangeRate, baseFeeAlreadyPaid }
       );
       
+      // Bake the base fee into per-assessment displayed prices (distribute evenly)
+      const effectiveBaseFeeLocal = baseFeeAlreadyPaid ? 0 : individualPricing.baseFee.localPrice;
+      const assessmentCount = individualPricing.assessments.length;
+      if (assessmentCount === 0) {
+        return res.status(400).json({ message: "No assessments available for pricing" });
+      }
+      const baseFeePerAssessment = Math.floor(effectiveBaseFeeLocal / assessmentCount);
+      const baseFeeRemainder = effectiveBaseFeeLocal - (baseFeePerAssessment * assessmentCount);
+      
+      const assessmentPrices = individualPricing.assessments.map((a, idx) => {
+        const feeShare = baseFeePerAssessment + (idx === 0 ? baseFeeRemainder : 0);
+        const allInPrice = a.localPrice + feeShare;
+        return {
+          type: a.assessmentType,
+          priceInPence: a.priceInPence,
+          priceDisplay: individualPricing.formatAmount(allInPrice),
+          localPrice: allInPrice,
+        };
+      });
+      
+      // Calculate bundle pricing (25% discount for B2B with 2+ tests)
+      const hasBulkDiscount = assessmentCount >= 2;
+      const bulkDiscountRate = hasBulkDiscount ? 25 : 0;
+      
+      let bulkTotal;
+      if (hasBulkDiscount) {
+        const bulkPricing = calculateCandidatePricing(
+          userCountry, purchasableItems, BASE_FEE,
+          { exchangeRate: lockedExchangeRate, baseFeeAlreadyPaid, bundleDiscount: bulkDiscountRate }
+        );
+        bulkTotal = {
+          priceInPence: bulkPricing.stripeAmount,
+          priceDisplay: bulkPricing.totalDisplay,
+          discountRate: bulkDiscountRate,
+        };
+      } else {
+        bulkTotal = {
+          priceInPence: individualPricing.stripeAmount,
+          priceDisplay: individualPricing.totalDisplay,
+          discountRate: 0,
+        };
+      }
+
       const baseFeeDisplay = individualPricing.formatAmount(individualPricing.baseFee.localPrice);
-      const assessmentPrices = individualPricing.assessments.map(a => ({
-        type: a.assessmentType,
-        priceInPence: a.priceInPence,
-        priceDisplay: individualPricing.formatAmount(a.localPrice),
-        localPrice: a.localPrice,
-      }));
 
       res.json({
         baseFee: BASE_FEE,
@@ -3747,18 +3785,14 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
           priceDisplay: individualPricing.totalDisplay,
           discountRate: 0,
         },
-        bulkTotal: {
-          priceInPence: individualPricing.stripeAmount,
-          priceDisplay: individualPricing.totalDisplay,
-          discountRate: 0,
-        },
+        bulkTotal,
         currency: localCurrencyCode,
         currencySymbol: userCurrency.symbol,
         pricingTier,
-        assessmentCount: purchasableResults.length,
-        hasBulkDiscount: false,
+        assessmentCount,
+        hasBulkDiscount,
         individualDiscountRate: 0,
-        bulkDiscountRate: 0,
+        bulkDiscountRate,
         lockedExchangeRate,
       });
     } catch (error: any) {

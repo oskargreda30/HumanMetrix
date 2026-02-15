@@ -231,6 +231,7 @@ export default function Dashboard() {
     completedResults: { id: string; assessmentType: string }[];
   } | null>(null);
   const [selectedUnlockTypes, setSelectedUnlockTypes] = useState<Set<string>>(new Set());
+  const [unlockOption, setUnlockOption] = useState<'all' | 'individual'>('all');
   
   
   
@@ -278,7 +279,20 @@ export default function Dashboard() {
     enabled: !!lockedResultsDialog?.seriesId,
   });
   
+  // Reset state when dialog opens with a new series
+  useEffect(() => {
+    if (lockedResultsDialog) {
+      setUnlockOption('all');
+      setSelectedUnlockTypes(new Set());
+    }
+  }, [lockedResultsDialog?.seriesId]);
   
+  // Auto-select all assessments when pricing loads and unlockOption is 'all'
+  useEffect(() => {
+    if (pricingData && unlockOption === 'all' && pricingData.assessments.length > 1) {
+      setSelectedUnlockTypes(new Set(pricingData.assessments.map((a: any) => a.type)));
+    }
+  }, [pricingData, unlockOption]);
   
   const removeAssessmentMutation = useMutation({
     mutationFn: async (itemId: string) => {
@@ -1603,6 +1617,7 @@ export default function Dashboard() {
         if (!open) {
           setLockedResultsDialog(null);
           setSelectedUnlockTypes(new Set());
+          setUnlockOption('all');
         }
       }}>
         <DialogContent className="max-w-md">
@@ -1623,7 +1638,6 @@ export default function Dashboard() {
           ) : pricingData ? (
             <div className="space-y-4">
               {pricingData.assessments.length === 1 ? (
-                /* Single locked assessment - simple total price */
                 <div className="border rounded-lg p-4">
                   <div className="flex justify-between items-center">
                     <span className="font-medium">{formatAssessmentName(pricingData.assessments[0].type)}</span>
@@ -1631,68 +1645,85 @@ export default function Dashboard() {
                   </div>
                 </div>
               ) : (
-                /* Multiple locked assessments - selection mode */
                 <div className="space-y-3">
-                  <div className="border rounded-lg p-4 space-y-1">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Select Assessments</h4>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          if (selectedUnlockTypes.size === pricingData.assessments.length) {
-                            setSelectedUnlockTypes(new Set());
-                          } else {
-                            setSelectedUnlockTypes(new Set(pricingData.assessments.map(a => a.type)));
-                          }
-                        }}
-                        data-testid="button-toggle-select-all"
-                      >
-                        {selectedUnlockTypes.size === pricingData.assessments.length ? 'Deselect All' : 'Select All'}
-                      </Button>
+                  <label
+                    className={`border rounded-lg p-4 block cursor-pointer transition-colors ${unlockOption === 'all' ? 'border-primary bg-primary/5' : ''}`}
+                    onClick={() => {
+                      setUnlockOption('all');
+                      setSelectedUnlockTypes(new Set(pricingData.assessments.map(a => a.type)));
+                    }}
+                    data-testid="radio-unlock-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${unlockOption === 'all' ? 'border-primary' : 'border-muted-foreground'}`}>
+                        {unlockOption === 'all' && <div className="h-2 w-2 rounded-full bg-primary" />}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium">Unlock All ({pricingData.assessments.length} assessments)</span>
+                          {pricingData.hasBulkDiscount && (
+                            <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 text-xs">{pricingData.bulkDiscountRate}% off</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">Best value - unlock your results at once</p>
+                      </div>
                     </div>
-                    
-                    {pricingData.assessments.map((assessment) => (
-                      <label
-                        key={assessment.type}
-                        className="flex items-center justify-between py-2 cursor-pointer"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Checkbox
-                            checked={selectedUnlockTypes.has(assessment.type)}
-                            onCheckedChange={(checked) => {
-                              const next = new Set(selectedUnlockTypes);
-                              if (checked) {
-                                next.add(assessment.type);
-                              } else {
-                                next.delete(assessment.type);
-                              }
-                              setSelectedUnlockTypes(next);
-                            }}
-                            data-testid={`checkbox-unlock-${assessment.type}`}
-                          />
-                          <span className="text-sm">{formatAssessmentName(assessment.type)}</span>
-                        </div>
-                        <span className="text-sm font-medium">{assessment.priceDisplay}</span>
-                      </label>
-                    ))}
-                    
-                    <div className="pt-3 mt-2 border-t">
-                      {selectedUnlockTypes.size === pricingData.assessments.length ? (
-                        <div className="flex justify-between items-center font-semibold">
-                          <span>Total</span>
-                          <span className="text-lg">{pricingData.individualTotal.priceDisplay}</span>
-                        </div>
-                      ) : selectedUnlockTypes.size > 0 ? (
-                        <div className="flex justify-between items-center font-semibold">
-                          <span>{selectedUnlockTypes.size} assessment{selectedUnlockTypes.size > 1 ? 's' : ''} selected</span>
-                          <span className="text-sm text-muted-foreground">Price at checkout</span>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground text-center">Select assessments to unlock</p>
+                    <div className="mt-2 ml-7">
+                      <span className="text-lg font-bold">{pricingData.bulkTotal.priceDisplay}</span>
+                      {pricingData.hasBulkDiscount && (
+                        <span className="text-sm text-muted-foreground line-through ml-2">{pricingData.individualTotal.priceDisplay}</span>
                       )}
                     </div>
-                  </div>
+                  </label>
+
+                  <label
+                    className={`border rounded-lg p-4 block cursor-pointer transition-colors ${unlockOption === 'individual' ? 'border-primary bg-primary/5' : ''}`}
+                    onClick={() => {
+                      setUnlockOption('individual');
+                      setSelectedUnlockTypes(new Set());
+                    }}
+                    data-testid="radio-unlock-individual"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${unlockOption === 'individual' ? 'border-primary' : 'border-muted-foreground'}`}>
+                        {unlockOption === 'individual' && <div className="h-2 w-2 rounded-full bg-primary" />}
+                      </div>
+                      <div>
+                        <span className="font-medium">Select Individual Assessments</span>
+                        <p className="text-sm text-muted-foreground">Select specific assessments to unlock</p>
+                      </div>
+                    </div>
+
+                    {unlockOption === 'individual' && (
+                      <div className="mt-3 ml-7 space-y-1">
+                        {pricingData.assessments.map((assessment) => (
+                          <label
+                            key={assessment.type}
+                            className="flex items-center justify-between py-2 cursor-pointer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="flex items-center gap-3">
+                              <Checkbox
+                                checked={selectedUnlockTypes.has(assessment.type)}
+                                onCheckedChange={(checked) => {
+                                  const next = new Set(selectedUnlockTypes);
+                                  if (checked) {
+                                    next.add(assessment.type);
+                                  } else {
+                                    next.delete(assessment.type);
+                                  }
+                                  setSelectedUnlockTypes(next);
+                                }}
+                                data-testid={`checkbox-unlock-${assessment.type}`}
+                              />
+                              <span className="text-sm">{formatAssessmentName(assessment.type)}</span>
+                            </div>
+                            <span className="text-sm font-medium">{assessment.priceDisplay}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </label>
                 </div>
               )}
               
@@ -1710,15 +1741,15 @@ export default function Dashboard() {
             <Button
               onClick={() => {
                 if (lockedResultsDialog) {
-                  const allSelected = !pricingData || selectedUnlockTypes.size === pricingData.assessments.length;
+                  const isUnlockAll = unlockOption === 'all' || pricingData?.assessments.length === 1;
                   partnerResultsPurchaseMutation.mutate({
                     partnerInvitationId: lockedResultsDialog.seriesId,
-                    assessmentTypes: allSelected ? undefined : Array.from(selectedUnlockTypes),
+                    assessmentTypes: isUnlockAll ? undefined : Array.from(selectedUnlockTypes),
                     lockedExchangeRate: pricingData?.lockedExchangeRate,
                   });
                 }
               }}
-              disabled={partnerResultsPurchaseMutation.isPending || pricingLoading || selectedUnlockTypes.size === 0}
+              disabled={partnerResultsPurchaseMutation.isPending || pricingLoading || (unlockOption === 'individual' && selectedUnlockTypes.size === 0)}
               data-testid="button-unlock-now"
             >
               {partnerResultsPurchaseMutation.isPending ? (
@@ -1731,9 +1762,11 @@ export default function Dashboard() {
                   <CreditCard className="mr-2 h-4 w-4" />
                   {pricingData?.assessments.length === 1 
                     ? `Unlock Results - ${pricingData?.individualTotal?.priceDisplay || ''}`
-                    : selectedUnlockTypes.size === pricingData?.assessments.length
-                      ? `Unlock All - ${pricingData?.individualTotal?.priceDisplay || ''}`
-                      : `Unlock Selected (${selectedUnlockTypes.size})`
+                    : unlockOption === 'all'
+                      ? `Unlock All - ${pricingData?.bulkTotal?.priceDisplay || pricingData?.individualTotal?.priceDisplay || ''}`
+                      : selectedUnlockTypes.size > 0
+                        ? `Unlock Selected (${selectedUnlockTypes.size})`
+                        : 'Select Assessments'
                   }
                 </>
               )}
