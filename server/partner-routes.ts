@@ -5159,48 +5159,50 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(404).json({ error: "No matching assessments found" });
       }
       
-      // Calculate bundle pricing based on sum of individual discounted prices
-      const userCurrency = getCurrencyForCountry(countryCode);
-      let sumOfIndividualDiscountedPrices = 0;
-      
-      const completedAssessments = [];
-      // Use a Set to deduplicate by assessment type (only include each type once)
+      // Deduplicate sessions by assessment type (only include each type once)
       const seenTypes = new Set<string>();
-      
+      const uniqueSessions: typeof filteredSessions = [];
       for (const session of filteredSessions) {
         const normalizedType = normalizeAssessmentId(session.assessmentType);
-        
-        // Skip if we've already included this assessment type
-        if (seenTypes.has(normalizedType)) {
-          continue;
+        if (!seenTypes.has(normalizedType)) {
+          seenTypes.add(normalizedType);
+          uniqueSessions.push(session);
         }
-        seenTypes.add(normalizedType);
-        
-        const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
-        
-        const indPricing = calculateCandidatePricing(
-          countryCode,
-          [{ type: normalizedType, priceInPence: assessmentPrice }],
-          BASE_FEE,
-          {}
-        );
-        const individualLocalPrice = indPricing.totalLocal;
-        sumOfIndividualDiscountedPrices += individualLocalPrice;
-        
-        completedAssessments.push({
+      }
+      
+      // Build items list for canonical pricing function
+      const bundleItems = uniqueSessions.map(session => {
+        const normalizedType = normalizeAssessmentId(session.assessmentType);
+        return {
+          type: normalizedType,
+          priceInPence: ASSESSMENT_PRICES[normalizedType] || 400,
+        };
+      });
+      
+      // Calculate pricing using canonical function (base fee counted ONCE)
+      const bundleOriginalPricing = calculateCandidatePricing(
+        countryCode, bundleItems, BASE_FEE, {}
+      );
+      const bundleDiscountPercent = 25;
+      const bundleDiscountedPricing = calculateCandidatePricing(
+        countryCode, bundleItems, BASE_FEE,
+        { bundleDiscount: bundleDiscountPercent }
+      );
+      
+      const completedAssessments = uniqueSessions.map(session => {
+        const normalizedType = normalizeAssessmentId(session.assessmentType);
+        const assessmentPricing = bundleOriginalPricing.assessments.find(a => a.assessmentType === normalizedType);
+        const localPrice = assessmentPricing?.localPrice || 0;
+        return {
           type: normalizedType,
           displayName: formatAssessmentTypeName(session.assessmentType),
           completedAt: session.completedAt?.toISOString() || new Date().toISOString(),
-          originalPrice: individualLocalPrice,
-          discountedPrice: individualLocalPrice,
-          originalPriceDisplay: indPricing.totalDisplay,
-          discountedPriceDisplay: indPricing.totalDisplay,
-        });
-      }
-      
-      // Apply bundle discount (25%) to sum of individual prices
-      const bundleDiscountPercent = 25;
-      const bundleDiscountedPrice = Math.round(sumOfIndividualDiscountedPrices * ((100 - bundleDiscountPercent) / 100));
+          originalPrice: localPrice,
+          discountedPrice: localPrice,
+          originalPriceDisplay: bundleOriginalPricing.formatAmount(localPrice),
+          discountedPriceDisplay: bundleOriginalPricing.formatAmount(localPrice),
+        };
+      });
       
       // Free unlock date (30 days from last completion)
       const latestCompletion = filteredSessions.reduce((latest: Date, s: any) => {
@@ -5218,10 +5220,10 @@ export function registerPartnerRoutes(app: Express) {
         currencyCode: COUNTRY_CURRENCY_MAP[countryCode.toUpperCase()] || 'GBP',
         completedAssessments,
         pricing: {
-          sumOfIndividualDiscounted: sumOfIndividualDiscountedPrices,
-          bundleDiscountedPrice,
-          sumOfIndividualDisplay: formatPrice(sumOfIndividualDiscountedPrices, userCurrency),
-          bundleDiscountedDisplay: formatPrice(bundleDiscountedPrice, userCurrency),
+          sumOfIndividualDiscounted: bundleOriginalPricing.totalLocal,
+          bundleDiscountedPrice: bundleDiscountedPricing.totalLocal,
+          sumOfIndividualDisplay: bundleOriginalPricing.totalDisplay,
+          bundleDiscountedDisplay: bundleDiscountedPricing.totalDisplay,
           bundleDiscountPercent,
         },
         freeAccessDate: freeAccessDate.toISOString(),
