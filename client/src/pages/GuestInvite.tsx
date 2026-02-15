@@ -64,6 +64,7 @@ export default function GuestInvite() {
   const [showingResults, setShowingResults] = useState(false);
   const [checkingProgress, setCheckingProgress] = useState(false);
   const [autoLoggingIn, setAutoLoggingIn] = useState(false);
+  const [emailMismatchDetected, setEmailMismatchDetected] = useState(false);
   const autoLoginTriggeredRef = useRef(false);
   const earlyRedirectRef = useRef(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -356,6 +357,8 @@ export default function GuestInvite() {
       const data = await res.json();
       
       if (data.emailMismatch) {
+        setEmailMismatchDetected(true);
+        setCreatingAccount(false);
         toast({
           title: "Results saved",
           description: data.message || `Your results have been linked to ${data.invitationEmail}. Log in with that email to view them.`,
@@ -510,6 +513,74 @@ export default function GuestInvite() {
                 Return Home
               </Button>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const isEmailMismatch = currentUser && invitation.email && 
+    currentUser.email.toLowerCase() !== invitation.email.toLowerCase();
+
+  if (emailMismatchDetected || (isEmailMismatch && (showingResults || invitation.allComplete))) {
+    return (
+      <div className="min-h-[100dvh] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
+        
+        <Card className="relative w-full max-w-lg bg-white/95 backdrop-blur-sm shadow-2xl border-0">
+          <CardHeader className="text-center pb-4">
+            <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 flex items-center justify-center">
+              <Mail className="w-8 h-8 text-white" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-slate-900" data-testid="text-mismatch-title">
+              Assessments Complete
+            </CardTitle>
+            <CardDescription className="text-slate-600 text-base mt-2">
+              Great job! Your results have been saved.
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent className="space-y-6">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div className="flex gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-amber-800">
+                  <p className="font-medium mb-1">Different account detected</p>
+                  <p>You're currently logged in as <strong>{currentUser?.email}</strong>, but this invitation was for <strong>{invitation.email}</strong>.</p>
+                  <p className="mt-2">Your results have been linked to <strong>{invitation.email}</strong>. To view your results, please log in with that email address.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 rounded-lg p-4">
+              <h4 className="font-medium text-slate-900 mb-3">Completed Assessments:</h4>
+              <div className="space-y-2">
+                {invitation.assessmentStatuses.map((assessment) => (
+                  <div key={assessment.type} className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <span>{ASSESSMENT_NAMES[assessment.type] || assessment.type}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <p className="text-sm text-slate-500 text-center">
+              Your results have been sent to <strong className="text-slate-700">{invitation.partnerName || "your employer"}</strong>. Check your email at <strong className="text-slate-700">{invitation.email}</strong> for login instructions.
+            </p>
+            
+            <Button
+              variant="outline"
+              className="w-full"
+              data-testid="button-go-to-login"
+              onClick={() => {
+                window.location.href = '/auth';
+              }}
+            >
+              <ArrowRight className="h-4 w-4 mr-2" />
+              Go to Login
+            </Button>
           </CardContent>
         </Card>
       </div>
