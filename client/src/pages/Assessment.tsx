@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Loader2, Clock, AlertTriangle, ArrowLeft, ArrowRight } from "lucide-react";
+import { Loader2, Clock, AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, Trophy } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { getFITQuestions, getAIReadinessQuestions, getAIQQuestions } from "@shared/questions";
 import { PROMPT_ARCHITECTURE_LEVELS } from "../data/prompt-architecture-questions";
@@ -54,6 +54,9 @@ export default function Assessment() {
   const [showTimeWarning, setShowTimeWarning] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true); // Show instructions before starting
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
+  const [showSeriesComplete, setShowSeriesComplete] = useState(false);
+  const [seriesCompleteInfo, setSeriesCompleteInfo] = useState<{ partnerName: string; completedCount: number; invitationId: string } | null>(null);
+  const seriesRedirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isPaidUser, setIsPaidUser] = useState(true); // Default to true
   const [isSubmitting, setIsSubmitting] = useState(false); // Track if assessment is being submitted
   const [evaluationProgress, setEvaluationProgress] = useState(0); // Displayed progress 0-100 for evaluation
@@ -311,13 +314,33 @@ export default function Assessment() {
       return data;
     },
     onSuccess: async () => {
-      setIsSubmitting(false); // Reset submitting state
+      setIsSubmitting(false);
       await queryClient.invalidateQueries({ queryKey: ["/api/results"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/purchases-with-results"] });
-      // Force refetch to ensure fresh data
       await queryClient.refetchQueries({ queryKey: ["/api/available-assessments"] });
       await queryClient.refetchQueries({ queryKey: ["/api/purchases-with-results"] });
+      
+      if (assessment?.partnerInvitationId) {
+        try {
+          const seriesRes = await fetch("/api/partner-testing-series", { credentials: 'include' });
+          if (seriesRes.ok) {
+            const seriesData = await seriesRes.json();
+            const thisSeries = seriesData.find((s: any) => s.id === assessment.partnerInvitationId);
+            if (thisSeries?.allComplete) {
+              setSeriesCompleteInfo({
+                partnerName: thisSeries.partnerName || 'your partner',
+                completedCount: thisSeries.completedCount,
+                invitationId: assessment.partnerInvitationId,
+              });
+              setShowSeriesComplete(true);
+              return;
+            }
+          }
+        } catch (err) {
+          console.error('[Assessment] Error checking series completion:', err);
+        }
+      }
       
       toast({
         title: "Success",
@@ -420,6 +443,17 @@ export default function Assessment() {
       setLocation(`/dashboard?view=candidate&refresh=${Date.now()}${scrollParam}`);
     },
   });
+
+  // Auto-redirect after series completion screen
+  useEffect(() => {
+    if (!showSeriesComplete || !seriesCompleteInfo) return;
+    seriesRedirectTimerRef.current = setTimeout(() => {
+      setLocation(`/dashboard?view=candidate&scrollToSeries=${seriesCompleteInfo.invitationId}`);
+    }, 4000);
+    return () => {
+      if (seriesRedirectTimerRef.current) clearTimeout(seriesRedirectTimerRef.current);
+    };
+  }, [showSeriesComplete, seriesCompleteInfo, setLocation]);
 
   // Handle leaving the assessment
   const handleLeaveAssessment = useCallback(() => {
@@ -1190,6 +1224,46 @@ export default function Assessment() {
         isPaidUser={isPaidUser}
         completedCount={4}
       />
+
+      {showSeriesComplete && seriesCompleteInfo && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+          <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10" />
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
+          <Card className="relative max-w-lg w-full mx-4 p-8 space-y-6 bg-white/95 backdrop-blur-sm shadow-2xl border-0">
+            <div className="text-center space-y-4">
+              <div className="mx-auto w-20 h-20 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-full flex items-center justify-center">
+                <Trophy className="h-10 w-10 text-cyan-600" />
+              </div>
+              <h1 className="text-2xl font-bold text-slate-900" data-testid="text-series-complete-title">
+                All Assessments Complete!
+              </h1>
+              <p className="text-slate-600">
+                Congratulations! You've successfully completed all {seriesCompleteInfo.completedCount} assessments
+                {seriesCompleteInfo.partnerName !== 'your partner' ? ` with ${seriesCompleteInfo.partnerName}` : ''}.
+              </p>
+              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                <p className="text-sm text-slate-600">
+                  Your results are now available on your dashboard. You can unlock them to view detailed insights and recommendations.
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-2 py-2">
+                <Loader2 className="h-4 w-4 animate-spin text-cyan-600" />
+                <span className="text-slate-500 text-sm">Redirecting to your dashboard...</span>
+              </div>
+              <Button
+                onClick={() => {
+                  setLocation(`/dashboard?view=candidate&scrollToSeries=${seriesCompleteInfo.invitationId}`);
+                }}
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-600"
+                data-testid="button-go-to-dashboard"
+              >
+                Go to Dashboard
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

@@ -3319,6 +3319,12 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         
         purchasedTypes = resultsToPurchase.map((r: any) => normalizeAssessmentId(r.assessmentType));
       }
+      
+      // ALWAYS record which specific types are being purchased, even for "unlock all"
+      // This prevents future assessments from being treated as already purchased
+      if (!purchasedTypes) {
+        purchasedTypes = resultsToPurchase.map((r: any) => normalizeAssessmentId(r.assessmentType));
+      }
 
       // Check if auto-unlocked (30 days after completion)
       const mostRecentCompletion = completedResults
@@ -3344,8 +3350,15 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       // Use exchange rate from request body if provided, otherwise fetch live rate
       const effectiveExchangeRate = lockedExchangeRate || (await getExchangeRates()).rates?.[localCurrencyCode] || undefined;
       
-      // Apply 25% bundle discount for B2B candidates unlocking all assessments (2+ tests)
-      const isUnlockAll = !purchasedTypes;
+      // Apply 25% bundle discount for B2B candidates unlocking all available completed results (2+ tests)
+      // "Unlock all" = purchasing every completed result that isn't already paid for
+      const allUnpaidCompleted = completedResults.filter((r: any) => {
+        const normalizedType = normalizeAssessmentId(r.assessmentType);
+        if (checkoutB2bPaidTypes.has(normalizedType)) return false;
+        if (existingPurchase?.status === 'completed' && existingPurchase.purchasedAssessmentTypes?.includes(normalizedType)) return false;
+        return true;
+      });
+      const isUnlockAll = resultsToPurchase.length === allUnpaidCompleted.length;
       const checkoutBundleDiscount = (isUnlockAll && resultsToPurchase.length >= 2) ? 25 : 0;
       
       const checkoutItems = resultsToPurchase.map((result: any) => ({
@@ -3425,7 +3438,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         isBulkPurchase: 'false',
       };
       
-      console.log(`[Partner Results Checkout] Creating checkout: currency=${stripeCurrency}, localCurrency=${localCurrencyCode}, stripeAmount=${stripeAmount}, assessments=${assessmentTypesList}, purchaseId=${purchaseRecord.id}`);
+      console.log(`[Partner Results Checkout] Creating checkout: currency=${stripeCurrency}, localCurrency=${localCurrencyCode}, stripeAmount=${stripeAmount}, assessments=${assessmentTypesList}, purchaseId=${purchaseRecord.id}, isUnlockAll=${isUnlockAll}, discount=${checkoutBundleDiscount}%, purchasedTypes=${purchasedTypes?.join(',')}, allUnpaid=${allUnpaidCompleted.length}, purchasing=${resultsToPurchase.length}`);
       
       // Candidate-facing payments always default to Airwallex
       const { primary: prPrimary, fallback: prFallback } = getPaymentProviders('airwallex');
@@ -4113,9 +4126,12 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
           // Check payment status
           const purchase = purchasesByInvitation[invitationId];
           const isPurchased = purchase?.status === 'completed';
-          // Get which specific assessment types were purchased (null = all purchased via bulk)
+          // Get which specific assessment types were purchased
           const purchasedTypes = purchase?.purchasedAssessmentTypes || null;
-          const isFullPurchase = isPurchased && !purchasedTypes; // null means all purchased
+          // Full purchase = all completed assessments in the series are covered by the purchase
+          const isFullPurchase = isPurchased && purchasedTypes 
+            ? completedResults.every((r: any) => purchasedTypes.includes(normalizeAssessmentId(r.assessmentType)))
+            : (isPurchased && !purchasedTypes); // Legacy: null means all purchased
           
           // Calculate auto-unlock date (30 days after completion)
           const allComplete = completedResults.length >= invitation.assessmentTypes.length;
