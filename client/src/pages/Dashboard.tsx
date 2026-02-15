@@ -387,7 +387,7 @@ export default function Dashboard() {
             currency: data.currency || 'GBP',
             countryCode: countryCode || 'GB',
             airwallexEnv: data.airwallexEnv,
-            successUrl: `${window.location.origin}/dashboard?view=candidate&partner_purchase=success&provider=airwallex&intent_id=${data.intentId}&seriesId=${lockedResultsDialog?.seriesId || ''}`,
+            successUrl: `${window.location.origin}/b2b-payment-callback?provider=airwallex&intent_id=${data.intentId}&dashboard_return=true&seriesId=${lockedResultsDialog?.seriesId || ''}`,
             failUrl: `${window.location.origin}/dashboard?view=candidate&partner_purchase=cancelled`,
           });
           return;

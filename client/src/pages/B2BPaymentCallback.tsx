@@ -16,6 +16,7 @@ export default function B2BPaymentCallback() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [hasExistingAccount, setHasExistingAccount] = useState(false);
   const [redirectFailed, setRedirectFailed] = useState(false);
+  const [isDashboard, setIsDashboard] = useState(false);
   const processedRef = useRef(false);
   const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -40,6 +41,8 @@ export default function B2BPaymentCallback() {
         const isBundle = params.get("bundle") === "true";
         const provider = params.get("provider");
         const intentId = params.get("intent_id");
+        const isDashboardReturn = params.get("dashboard_return") === "true";
+        const seriesId = params.get("seriesId");
 
         if (!stripeSessionId && !(provider === 'airwallex' && intentId)) {
           throw new Error("Missing session information");
@@ -47,7 +50,12 @@ export default function B2BPaymentCallback() {
 
         let res;
         
-        if (isBundle) {
+        if (isDashboardReturn) {
+          const body = provider === 'airwallex' && intentId
+            ? { intentId, provider: 'airwallex' }
+            : { sessionId: stripeSessionId };
+          res = await apiRequest("POST", "/api/confirm-partner-results-purchase", body);
+        } else if (isBundle) {
           res = await fetch("/api/b2b/results-bundle/process-payment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -81,14 +89,15 @@ export default function B2BPaymentCallback() {
 
         const data = await res.json();
 
-        if (!res.ok || !data.success) {
-          throw new Error(data.error || "Payment processing failed");
+        if (!res.ok || !(data.success || (isDashboardReturn && data.message))) {
+          throw new Error(data.error || data.message || "Payment processing failed");
         }
 
         console.log("[B2B Callback] Payment processed successfully:", {
           email: data.email,
           sessionId: data.sessionId,
           hasExistingAccount: data.hasExistingAccount,
+          isDashboardReturn,
         });
 
         setStatus("success");
@@ -96,7 +105,17 @@ export default function B2BPaymentCallback() {
         setSessionId(data.sessionId || null);
         setHasExistingAccount(data.hasExistingAccount);
 
-        if (data.resultsUrl) {
+        if (isDashboardReturn) {
+          setIsDashboard(true);
+          setMessage("Your results have been unlocked! Redirecting to your dashboard...");
+          queryClient.clear();
+          redirectTimerRef.current = setTimeout(() => {
+            setLocation(`/dashboard?view=candidate&scrollToSeries=${seriesId || ''}`);
+          }, 3000);
+          fallbackTimerRef.current = setTimeout(() => {
+            setRedirectFailed(true);
+          }, 6000);
+        } else if (data.resultsUrl) {
           setMessage("Your results are ready! Redirecting to your results...");
           queryClient.clear();
           redirectTimerRef.current = setTimeout(() => {
@@ -149,11 +168,27 @@ export default function B2BPaymentCallback() {
                 {!redirectFailed && (
                   <div className="flex items-center justify-center gap-2 py-2">
                     <Loader2 className="h-4 w-4 animate-spin text-cyan-600" />
-                    <span className="text-slate-500 text-sm">Redirecting to your results...</span>
+                    <span className="text-slate-500 text-sm">
+                      {isDashboard ? "Redirecting to your dashboard..." : "Redirecting to your results..."}
+                    </span>
                   </div>
                 )}
 
-                {redirectFailed && sessionId && (
+                {redirectFailed && isDashboard && (
+                  <Button
+                    onClick={() => {
+                      queryClient.clear();
+                      setLocation("/dashboard?view=candidate");
+                    }}
+                    className="w-full bg-gradient-to-r from-cyan-500 to-blue-600"
+                    data-testid="button-go-dashboard"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Go to Dashboard
+                  </Button>
+                )}
+
+                {redirectFailed && !isDashboard && sessionId && (
                   <Button
                     onClick={() => {
                       queryClient.clear();
