@@ -4,9 +4,15 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle, Clock, Lock, CreditCard, ArrowRight } from "lucide-react";
-import { format } from "date-fns";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, CheckCircle, Lock, CreditCard, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+interface AssessmentPrice {
+  type: string;
+  priceDisplay: string;
+  localPrice: number;
+}
 
 interface UnlockResultsData {
   email: string;
@@ -18,6 +24,7 @@ interface UnlockResultsData {
     completedAt: string;
     paymentStatus: string;
   }>;
+  assessments: AssessmentPrice[];
   pricing: {
     single: {
       originalPricePence: number;
@@ -34,22 +41,28 @@ interface UnlockResultsData {
       discountPercent: number;
     };
   };
+  hasBulkDiscount: boolean;
+  bulkDiscountRate: number;
   freeAccessDate: string | null;
   allPaid: boolean;
 }
 
 const assessmentNames: Record<string, string> = {
-  fit: "FIT Assessment",
-  ai_readiness: "AI Readiness Assessment",
-  aiq: "AIQ Assessment",
-  prompt_architecture: "Prompt Architecture Assessment",
+  fit: "FIT",
+  ai_readiness: "AI Readiness",
+  aiq: "AIQ",
+  prompt_architecture: "Prompt Architecture",
 };
+
+function formatAssessmentName(type: string): string {
+  return assessmentNames[type.toLowerCase()] || type;
+}
 
 export default function UnlockResults() {
   const [, setLocation] = useLocation();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const [checkoutType, setCheckoutType] = useState<'single' | 'bundle' | null>(null);
-  const [selectedSingleType, setSelectedSingleType] = useState<string | null>(null);
+  const [unlockOption, setUnlockOption] = useState<'all' | 'individual'>('all');
+  const [selectedUnlockTypes, setSelectedUnlockTypes] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const params = new URLSearchParams(window.location.search);
@@ -70,22 +83,24 @@ export default function UnlockResults() {
     enabled: !!email && !!inviteToken,
   });
 
-  const lockedAssessments = data?.completedAssessments.filter(a => a.paymentStatus !== 'paid') || [];
+  const handleCheckout = async () => {
+    if (!inviteToken || !email) return;
 
-  const handleCheckout = async (isBundle: boolean) => {
-    if (!inviteToken) return;
+    const unpaidTypes = data?.assessments?.map(a => a.type) || [];
+    const isSelectAll = unlockOption === 'all' || unpaidTypes.length <= 1;
+    const selectedList = isSelectAll ? unpaidTypes : Array.from(selectedUnlockTypes);
+    const isBundle = selectedList.length >= 2;
 
-    if (!isBundle && lockedAssessments.length > 1 && !selectedSingleType) {
+    if (selectedList.length === 0) {
       toast({
-        title: "Please select an assessment",
-        description: "Choose which assessment result you'd like to unlock.",
+        title: "Please select assessments",
+        description: "Choose which assessment results you'd like to unlock.",
         variant: "destructive",
       });
       return;
     }
     
     setIsCheckingOut(true);
-    setCheckoutType(isBundle ? 'bundle' : 'single');
     
     try {
       const res = await fetch(`/api/unlock-results/checkout`, {
@@ -96,7 +111,7 @@ export default function UnlockResults() {
           inviteToken,
           countryCode, 
           isBundle,
-          selectedType: isBundle ? undefined : (selectedSingleType || lockedAssessments[0]?.assessmentType),
+          selectedTypes: isSelectAll ? undefined : selectedList,
         }),
       });
       
@@ -127,7 +142,6 @@ export default function UnlockResults() {
             variant: "destructive",
           });
           setIsCheckingOut(false);
-          setCheckoutType(null);
           return;
         }
       }
@@ -142,7 +156,6 @@ export default function UnlockResults() {
         variant: "destructive",
       });
       setIsCheckingOut(false);
-      setCheckoutType(null);
     }
   };
 
@@ -214,34 +227,47 @@ export default function UnlockResults() {
     );
   }
 
-  const unpaidCount = lockedAssessments.length;
-  const showBundle = unpaidCount > 1;
+  const unpaidAssessments = data.assessments || [];
+  const showOptions = unpaidAssessments.length > 1;
+
+  const roundUp = (price: number): number => {
+    if (price < 100) return Math.ceil(price);
+    if (price < 1000) return Math.ceil(price / 10) * 10;
+    if (price < 10000) return Math.ceil(price / 100) * 100;
+    if (price < 100000) return Math.ceil(price / 1000) * 1000;
+    if (price < 1000000) return Math.ceil(price / 10000) * 10000;
+    return Math.ceil(price / 100000) * 100000;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 p-4 py-8">
-      <div className="max-w-2xl mx-auto">
-        <Card className="mb-6">
+      <div className="max-w-md mx-auto">
+        <Card>
           <CardHeader className="text-center pb-4">
-            <CardTitle className="text-2xl">Unlock Your Assessment Results</CardTitle>
-            <p className="text-muted-foreground mt-2">
-              Completed with <span className="font-medium">{data.partnerName}</span>
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Lock className="h-5 w-5 text-amber-500" />
+              <CardTitle className="text-xl">Unlock Results</CardTitle>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Your assessment results from <span className="font-medium">{data.partnerName}</span> are currently locked.
             </p>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3 mb-6">
-              <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Completed Assessments</h3>
+            {/* Completed assessments list */}
+            <div className="space-y-2 mb-6">
+              <h3 className="font-medium text-xs text-muted-foreground uppercase tracking-wide">Completed Assessments</h3>
               {data.completedAssessments.map((assessment) => (
-                <div key={assessment.sessionId} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span className="font-medium">{assessmentNames[assessment.assessmentType] || assessment.assessmentType}</span>
+                <div key={assessment.sessionId} className="flex items-center justify-between p-2.5 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2.5">
+                    <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                    <span className="text-sm font-medium">{formatAssessmentName(assessment.assessmentType)}</span>
                   </div>
                   {assessment.paymentStatus === 'paid' ? (
-                    <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                    <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs">
                       Unlocked
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="border-amber-500 text-amber-600">
+                    <Badge variant="outline" className="border-amber-500 text-amber-600 text-xs">
                       <Lock className="h-3 w-3 mr-1" />
                       Locked
                     </Badge>
@@ -250,186 +276,156 @@ export default function UnlockResults() {
               ))}
             </div>
 
-            {lockedAssessments.length === 1 ? (
-              <Card className="border mb-4">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold">Unlock Result</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {assessmentNames[lockedAssessments[0].assessmentType] || lockedAssessments[0].assessmentType}
-                      </p>
+            {/* Pricing options */}
+            {!showOptions ? (
+              /* Single assessment - simple unlock */
+              <div className="border rounded-lg p-4 mb-4">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">{formatAssessmentName(unpaidAssessments[0]?.type || '')}</span>
+                  <span className="text-lg font-semibold">{data.pricing.single.discountedDisplay}</span>
+                </div>
+              </div>
+            ) : (
+              /* Multiple assessments - Unlock All vs Individual selection */
+              <div className="space-y-3 mb-4">
+                {/* Unlock All option */}
+                <label
+                  className={`border rounded-lg p-4 block cursor-pointer transition-colors ${unlockOption === 'all' ? 'border-primary bg-primary/5' : ''}`}
+                  onClick={() => {
+                    setUnlockOption('all');
+                    setSelectedUnlockTypes(new Set(unpaidAssessments.map(a => a.type)));
+                  }}
+                  data-testid="radio-unlock-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${unlockOption === 'all' ? 'border-primary' : 'border-muted-foreground'}`}>
+                      {unlockOption === 'all' && <div className="h-2 w-2 rounded-full bg-primary" />}
                     </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold">
-                        {data.pricing.single.discountedDisplay}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium">Unlock All ({unpaidAssessments.length} assessments)</span>
+                        {data.hasBulkDiscount && (
+                          <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 text-xs">{data.bulkDiscountRate}% off</Badge>
+                        )}
                       </div>
+                      <p className="text-sm text-muted-foreground">Best value - unlock your results at once</p>
                     </div>
                   </div>
-                  <Button 
-                    className="w-full" 
-                    size="lg"
-                    onClick={() => handleCheckout(false)}
-                    disabled={isCheckingOut}
-                    data-testid="button-checkout-single"
-                  >
-                    {isCheckingOut && checkoutType === 'single' ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="mr-2 h-4 w-4" />
-                        Unlock Result
-                      </>
+                  <div className="mt-2 ml-7">
+                    <span className="text-lg font-bold">{data.pricing.bundle.discountedDisplay}</span>
+                    {data.hasBulkDiscount && (
+                      <span className="text-sm text-muted-foreground line-through ml-2">{data.pricing.bundle.originalDisplay}</span>
                     )}
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <>
-                <Card className="border mb-4">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="text-lg font-semibold">Unlock Single Assessment</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Select which assessment result to unlock
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        {data.pricing.single.discountPercent > 0 && (
-                          <div className="text-sm text-muted-foreground line-through">
-                            {data.pricing.single.originalDisplay}
-                          </div>
-                        )}
-                        <div className="text-2xl font-bold">
-                          {data.pricing.single.discountedDisplay}
-                        </div>
-                        {data.pricing.single.discountPercent > 0 && (
-                          <Badge variant="secondary">
-                            {data.pricing.single.discountPercent}% OFF
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
+                  </div>
+                </label>
 
-                    <div className="space-y-2 mb-4">
-                      {lockedAssessments.map((assessment) => (
+                {/* Individual selection option */}
+                <label
+                  className={`border rounded-lg p-4 block cursor-pointer transition-colors ${unlockOption === 'individual' ? 'border-primary bg-primary/5' : ''}`}
+                  onClick={() => {
+                    setUnlockOption('individual');
+                    setSelectedUnlockTypes(new Set());
+                  }}
+                  data-testid="radio-unlock-individual"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${unlockOption === 'individual' ? 'border-primary' : 'border-muted-foreground'}`}>
+                      {unlockOption === 'individual' && <div className="h-2 w-2 rounded-full bg-primary" />}
+                    </div>
+                    <div>
+                      <span className="font-medium">Select Individual Assessments</span>
+                      <p className="text-sm text-muted-foreground">Select specific assessments to unlock</p>
+                    </div>
+                  </div>
+
+                  {unlockOption === 'individual' && (
+                    <div className="mt-3 ml-7 space-y-1">
+                      {unpaidAssessments.map((assessment) => (
                         <label
-                          key={assessment.sessionId}
-                          className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors border ${
-                            selectedSingleType === assessment.assessmentType
-                              ? 'border-primary bg-primary/5'
-                              : 'border-transparent bg-muted/50'
-                          }`}
-                          onClick={() => setSelectedSingleType(assessment.assessmentType)}
-                          data-testid={`radio-single-${assessment.assessmentType}`}
+                          key={assessment.type}
+                          className="flex items-center justify-between py-2 cursor-pointer"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                            selectedSingleType === assessment.assessmentType ? 'border-primary' : 'border-muted-foreground'
-                          }`}>
-                            {selectedSingleType === assessment.assessmentType && (
-                              <div className="h-2 w-2 rounded-full bg-primary" />
-                            )}
+                          <div className="flex items-center gap-3">
+                            <Checkbox
+                              checked={selectedUnlockTypes.has(assessment.type)}
+                              onCheckedChange={(checked) => {
+                                const next = new Set(selectedUnlockTypes);
+                                if (checked) {
+                                  next.add(assessment.type);
+                                } else {
+                                  next.delete(assessment.type);
+                                }
+                                setSelectedUnlockTypes(next);
+                              }}
+                              data-testid={`checkbox-unlock-${assessment.type}`}
+                            />
+                            <span className="text-sm">{formatAssessmentName(assessment.type)}</span>
                           </div>
-                          <span className="font-medium text-sm">
-                            {assessmentNames[assessment.assessmentType] || assessment.assessmentType}
-                          </span>
+                          <span className="text-sm font-medium">{assessment.priceDisplay}</span>
                         </label>
                       ))}
+                      {selectedUnlockTypes.size >= 2 && data.hasBulkDiscount && (() => {
+                        const selectedAssessments = unpaidAssessments.filter(a => selectedUnlockTypes.has(a.type));
+                        const selectedTotal = selectedAssessments.reduce((sum, a) => sum + (a.localPrice || 0), 0);
+                        const allSelected = selectedUnlockTypes.size === unpaidAssessments.length;
+                        const discountedDisplay = allSelected 
+                          ? data.pricing.bundle.discountedDisplay
+                          : null;
+                        const discountedTotal = roundUp(selectedTotal * 0.75);
+                        const currencySymbol = data.pricing.bundle.discountedDisplay?.replace(/[\d,.\s]/g, '') || '';
+                        return (
+                          <div className="mt-2 pt-2 border-t border-dashed" data-testid="individual-bundle-discount">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 text-xs">25% off</Badge>
+                                <span className="text-sm text-muted-foreground">{selectedUnlockTypes.size} assessments</span>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-sm font-bold">{discountedDisplay || `${currencySymbol}${discountedTotal.toLocaleString()}`}</span>
+                                <span className="text-xs text-muted-foreground line-through ml-1.5">{currencySymbol}{selectedTotal.toLocaleString()}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
-
-                    <Button 
-                      className="w-full" 
-                      size="lg"
-                      variant="outline"
-                      onClick={() => handleCheckout(false)}
-                      disabled={isCheckingOut || !selectedSingleType}
-                      data-testid="button-checkout-single"
-                    >
-                      {isCheckingOut && checkoutType === 'single' ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="mr-2 h-4 w-4" />
-                          Unlock Single Result
-                        </>
-                      )}
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {showBundle && (
-                  <Card className="bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-950/30 dark:to-blue-950/30 border-cyan-200 dark:border-cyan-800 mb-4">
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Badge className="bg-green-500 text-white">Best Value</Badge>
-                      </div>
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <h3 className="text-lg font-semibold">Bundle All {unpaidCount} Assessments</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Save more by unlocking all results together
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm text-muted-foreground line-through">
-                            {data.pricing.bundle.originalDisplay}
-                          </div>
-                          <div className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">
-                            {data.pricing.bundle.discountedDisplay}
-                          </div>
-                          <Badge className="bg-cyan-500 text-white">
-                            {data.pricing.bundle.discountPercent}% OFF
-                          </Badge>
-                        </div>
-                      </div>
-                      <Button 
-                        className="w-full" 
-                        size="lg"
-                        onClick={() => handleCheckout(true)}
-                        disabled={isCheckingOut}
-                        data-testid="button-checkout-bundle"
-                      >
-                        {isCheckingOut && checkoutType === 'bundle' ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            <CreditCard className="mr-2 h-4 w-4" />
-                            Unlock All Results
-                          </>
-                        )}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )}
-              </>
-            )}
-
-            {data.freeAccessDate && (
-              <div className="text-center p-4 bg-muted/30 rounded-lg">
-                <div className="flex items-center justify-center gap-2 text-muted-foreground mb-1">
-                  <Clock className="h-4 w-4" />
-                  <span className="text-sm font-medium">Free Access</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Your results will be available for free on{' '}
-                  <span className="font-medium">{format(new Date(data.freeAccessDate), 'd MMMM yyyy')}</span>
-                </p>
+                  )}
+                </label>
               </div>
             )}
+
+            {/* Checkout button */}
+            <Button
+              className="w-full"
+              size="lg"
+              onClick={handleCheckout}
+              disabled={isCheckingOut || (unlockOption === 'individual' && selectedUnlockTypes.size === 0)}
+              data-testid="button-unlock-now"
+            >
+              {isCheckingOut ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  {!showOptions
+                    ? `Unlock Results - ${data.pricing.single.discountedDisplay}`
+                    : unlockOption === 'all'
+                      ? `Unlock All - ${data.pricing.bundle.discountedDisplay}`
+                      : selectedUnlockTypes.size > 0
+                        ? `Unlock Selected (${selectedUnlockTypes.size})`
+                        : 'Select Assessments'
+                  }
+                </>
+              )}
+            </Button>
           </CardContent>
         </Card>
 
-        <div className="text-center text-sm text-muted-foreground">
+        <div className="text-center text-sm text-muted-foreground mt-6">
           <p>Need help? Contact us at hello@humanmetrix.co.uk</p>
         </div>
       </div>

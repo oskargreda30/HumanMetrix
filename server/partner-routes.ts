@@ -3302,6 +3302,11 @@ export function registerPartnerRoutes(app: Express) {
           completedAt: s.completedAt?.toISOString() || null,
           paymentStatus: s.resultsPaymentStatus,
         })),
+        assessments: unlockBundlePricing.individualPrices.map(p => ({
+          type: p.type,
+          priceDisplay: p.display,
+          localPrice: p.localPrice,
+        })),
         pricing: {
           single: {
             originalPricePence: singlePricing.totalLocal,
@@ -3318,6 +3323,9 @@ export function registerPartnerRoutes(app: Express) {
             discountPercent: bundleDiscountPercent,
           },
         },
+        hasBulkDiscount: bundleDiscountPercent > 0,
+        bulkDiscountRate: bundleDiscountPercent,
+        lockedExchangeRate: effectiveRate,
         freeAccessDate: freeAccessDate?.toISOString() || null,
         allPaid,
       });
@@ -3330,7 +3338,7 @@ export function registerPartnerRoutes(app: Express) {
   // Create checkout for unlock results
   app.post("/api/unlock-results/checkout", async (req: Request, res: Response) => {
     try {
-      const { email, inviteToken, countryCode = 'GB', isBundle = false } = req.body;
+      const { email, inviteToken, countryCode = 'GB', isBundle = false, selectedTypes: selectedTypesParam } = req.body;
       
       if (!email || !inviteToken) {
         return res.status(400).json({ error: "Missing required parameters" });
@@ -3351,7 +3359,6 @@ export function registerPartnerRoutes(app: Express) {
       const partnerName = partner?.companyName || "Partner";
       
       // Get unpaid sessions for this invitation
-      const { selectedType } = req.body;
       const unpaidSessions = await db
         .select({ id: assessmentSessions.id, assessmentType: assessmentSessions.assessmentType })
         .from(assessmentSessions)
@@ -3381,28 +3388,43 @@ export function registerPartnerRoutes(app: Express) {
         console.log(`[Unlock Checkout] Using locked exchange rate ${unlockCheckoutLockedRate} for ${currencyCode}`);
       }
       
+      // Determine which sessions to purchase
+      // selectedTypes: specific assessment types to purchase (from individual selection)
+      // isBundle: true = all unpaid sessions (legacy support)
+      const selectedTypes: string[] | undefined = selectedTypesParam;
+      const purchaseAll = isBundle || !selectedTypes;
+      
+      let sessionsToUnlock = unpaidSessions;
+      if (!purchaseAll && selectedTypes && selectedTypes.length > 0) {
+        sessionsToUnlock = unpaidSessions.filter(s => 
+          selectedTypes.some(t => normalizeAssessmentId(t) === normalizeAssessmentId(s.assessmentType))
+        );
+        if (sessionsToUnlock.length === 0) {
+          return res.status(400).json({ error: "No matching unpaid assessments found" });
+        }
+      }
+      
       let totalLocal: number;
       let stripeAmount: number;
       let description: string;
       
-      if (isBundle && unpaidSessions.length > 1) {
-        const bundleItems = unpaidSessions.map(s => ({
-          type: normalizeAssessmentId(s.assessmentType),
-          priceInPence: ASSESSMENT_PRICES[normalizeAssessmentId(s.assessmentType)] || 400,
-        }));
+      const bundleItems = sessionsToUnlock.map(s => ({
+        type: normalizeAssessmentId(s.assessmentType),
+        priceInPence: ASSESSMENT_PRICES[normalizeAssessmentId(s.assessmentType)] || 400,
+      }));
+      
+      const checkoutBundleDiscount = sessionsToUnlock.length >= 2 ? 25 : 0;
+      
+      if (sessionsToUnlock.length >= 2) {
         const checkoutBundlePricing = calculateBundlePricing(
           userCountry, bundleItems, BASE_FEE,
-          { exchangeRate: effectiveRate, bundleDiscount: 25 }
+          { exchangeRate: effectiveRate, bundleDiscount: checkoutBundleDiscount }
         );
         totalLocal = checkoutBundlePricing.discountedTotal;
         stripeAmount = checkoutBundlePricing.stripeAmount;
-        description = `HumanMetrix - Unlock ${unpaidSessions.length} Assessment Results (25% Bundle Discount)`;
+        description = `HumanMetrix - Unlock ${sessionsToUnlock.length} Assessment Results (25% Bundle Discount)`;
       } else {
-        // For single unlock, use selected type if provided, otherwise first unpaid
-        const targetSession = selectedType 
-          ? unpaidSessions.find(s => normalizeAssessmentId(s.assessmentType) === normalizeAssessmentId(selectedType)) || unpaidSessions[0]
-          : unpaidSessions[0];
-        const singleType = normalizeAssessmentId(targetSession.assessmentType);
+        const singleType = normalizeAssessmentId(sessionsToUnlock[0].assessmentType);
         const singlePricing = calculateCandidatePricing(
           userCountry,
           [{ type: singleType, priceInPence: ASSESSMENT_PRICES[singleType] || 400 }],
@@ -3415,10 +3437,7 @@ export function registerPartnerRoutes(app: Express) {
       }
       
       const baseUrl = getBaseUrl(req);
-      const targetSingleSession = selectedType 
-        ? unpaidSessions.find(s => normalizeAssessmentId(s.assessmentType) === normalizeAssessmentId(selectedType)) || unpaidSessions[0]
-        : unpaidSessions[0];
-      const sessionIds = isBundle ? unpaidSessions.map(s => s.id) : [targetSingleSession.id];
+      const sessionIds = sessionsToUnlock.map(s => s.id);
       
       // Candidate-facing payments always use Airwallex as primary (partner preference only applies to partner's own payments)
       const { primary, fallback } = getPaymentProviders('airwallex');
