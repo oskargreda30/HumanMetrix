@@ -1863,26 +1863,29 @@ export function registerPartnerRoutes(app: Express) {
                 const bundleUser = await storage.getUserByEmail(candidateEmail);
                 const bundleCandidateName = bundleInvitation?.name || bundleUser?.name || bundleUser?.username || undefined;
                 
-                const normalizedBundleTypes = bundleAssessmentTypes.map(t => normalizeAssessmentId(t));
                 const mostRecentByType: Record<string, any> = {};
                 for (const s of completedSessions) {
                   const nt = normalizeAssessmentId(s.assessmentType);
-                  if (!normalizedBundleTypes.includes(nt)) continue;
                   if (!mostRecentByType[nt] || (s.completedAt && (!mostRecentByType[nt].completedAt || new Date(s.completedAt) > new Date(mostRecentByType[nt].completedAt)))) {
                     mostRecentByType[nt] = s;
                   }
                 }
                 const deduplicatedSessions = Object.values(mostRecentByType);
-                const bundlePaidTypes = deduplicatedSessions.filter((s: any) => s.resultsPaymentStatus === 'paid').map((s: any) => s.assessmentType);
-                const bundleUnpaidTypes = deduplicatedSessions.filter((s: any) => s.resultsPaymentStatus !== 'paid').map((s: any) => s.assessmentType);
+                const allCompletedTypes = deduplicatedSessions.map((s: any) => normalizeAssessmentId(s.assessmentType));
+                const allPaidTypes = deduplicatedSessions
+                  .filter((s: any) => s.resultsPaymentStatus === 'paid')
+                  .map((s: any) => normalizeAssessmentId(s.assessmentType));
+                const allUnpaidTypes = deduplicatedSessions
+                  .filter((s: any) => s.resultsPaymentStatus !== 'paid')
+                  .map((s: any) => normalizeAssessmentId(s.assessmentType));
                 
                 await sendB2BAllCompleteEmail({
                   email: candidateEmail,
                   candidateName: bundleCandidateName,
                   partnerCompanyName: partner.companyName || partner.name,
-                  completedAssessments: bundleAssessmentTypes,
-                  paidAssessments: bundlePaidTypes,
-                  unpaidAssessments: bundleUnpaidTypes,
+                  completedAssessments: allCompletedTypes,
+                  paidAssessments: allPaidTypes,
+                  unpaidAssessments: allUnpaidTypes,
                   paymentUrl: bundlePaymentUrl,
                   bundlePrice: bundleDiscountedDisplay,
                   originalTotalPrice: bundleOriginalDisplay,
