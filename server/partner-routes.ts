@@ -23,6 +23,7 @@ import { eq, and, sql, or, isNull } from "drizzle-orm";
 import pLimit from "p-limit";
 import { createPaymentIntent, getPaymentIntent, formatAmountForAirwallex, isAirwallexConfigured, airwallexEnv } from "./airwallex";
 import { getPaymentProviders, createCheckoutWithFallback, type PaymentCheckoutResult } from "./payment-routing";
+import { getExchangeRates } from "./exchange-rates";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -3055,9 +3056,12 @@ export function registerPartnerRoutes(app: Express) {
       const unpaidAssessmentTypes = completedSessions.filter(s => s.resultsPaymentStatus !== 'paid').map(s => s.assessmentType);
       const relevantTypes = unpaidCount > 0 ? unpaidAssessmentTypes : completedTypes;
       
+      const exchangeRatesData = await getExchangeRates();
+      const liveRate = exchangeRatesData.rates?.[localCurrencyCode] ?? undefined;
+      
       // Base fee rounded to local currency
       const basePppPence = getPPPAdjustedPriceInPence(BASE_FEE, userCountryCode);
-      const baseFeeLocal = convertPenceToRoundedLocalCurrency(basePppPence, localCurrencyCode);
+      const baseFeeLocal = convertPenceToRoundedLocalCurrency(basePppPence, localCurrencyCode, liveRate);
       
       // Sum individually-rounded assessment prices
       let assessmentsTotalLocal = 0;
@@ -3065,7 +3069,7 @@ export function registerPartnerRoutes(app: Express) {
         const normalizedType = normalizeAssessmentId(type);
         const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
         const pppPrice = getPPPAdjustedPriceInPence(assessmentPrice, userCountryCode);
-        assessmentsTotalLocal += convertPenceToRoundedLocalCurrency(pppPrice, localCurrencyCode);
+        assessmentsTotalLocal += convertPenceToRoundedLocalCurrency(pppPrice, localCurrencyCode, liveRate);
       }
       const totalLocal = baseFeeLocal + assessmentsTotalLocal;
       
@@ -3200,14 +3204,17 @@ export function registerPartnerRoutes(app: Express) {
       const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry] || 'GBP';
       const unpaidSessions = completedSessions.filter(s => s.resultsPaymentStatus !== 'paid');
       
+      const exchangeRatesData = await getExchangeRates();
+      const liveRate = exchangeRatesData.rates?.[localCurrencyCode] ?? undefined;
+      
       // Base fee rounded to local currency
       const basePppPence = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
-      const baseFeeLocal = convertPenceToRoundedLocalCurrency(basePppPence, localCurrencyCode);
+      const baseFeeLocal = convertPenceToRoundedLocalCurrency(basePppPence, localCurrencyCode, liveRate);
       
       // Single assessment pricing: base fee + one assessment, each rounded independently
       const singleAssessmentPrice = ASSESSMENT_PRICES[normalizeAssessmentId(unpaidSessions[0]?.assessmentType || 'fit')] || 400;
       const singlePppPence = getPPPAdjustedPriceInPence(singleAssessmentPrice, userCountry);
-      const singleAssessmentLocal = convertPenceToRoundedLocalCurrency(singlePppPence, localCurrencyCode);
+      const singleAssessmentLocal = convertPenceToRoundedLocalCurrency(singlePppPence, localCurrencyCode, liveRate);
       const singleTotalLocal = baseFeeLocal + singleAssessmentLocal;
       
       // Bundle pricing: base fee + sum of each assessment rounded independently, then 25% discount
@@ -3217,7 +3224,7 @@ export function registerPartnerRoutes(app: Express) {
         const normalizedType = normalizeAssessmentId(s.assessmentType);
         const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
         const pppPrice = getPPPAdjustedPriceInPence(assessmentPrice, userCountry);
-        assessmentsTotalLocal += convertPenceToRoundedLocalCurrency(pppPrice, localCurrencyCode);
+        assessmentsTotalLocal += convertPenceToRoundedLocalCurrency(pppPrice, localCurrencyCode, liveRate);
       }
       const bundleTotalLocal = baseFeeLocal + assessmentsTotalLocal;
       const bundleDiscountPercent = unpaidCount >= 2 ? 25 : 0;
@@ -3331,9 +3338,12 @@ export function registerPartnerRoutes(app: Express) {
       const { getStripeCurrencyCode } = await import("@shared/currencies");
       const stripeCurrency = getStripeCurrencyCode(userCountry);
       
+      const exchangeRatesData = await getExchangeRates();
+      const liveRate = exchangeRatesData.rates?.[currencyCode] ?? undefined;
+      
       // Base fee rounded to local currency
       const basePppPence = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
-      const baseFeeLocal = convertPenceToRoundedLocalCurrency(basePppPence, currencyCode);
+      const baseFeeLocal = convertPenceToRoundedLocalCurrency(basePppPence, currencyCode, liveRate);
       
       let totalLocal: number;
       let description: string;
@@ -3345,7 +3355,7 @@ export function registerPartnerRoutes(app: Express) {
           const normalizedType = normalizeAssessmentId(s.assessmentType);
           const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
           const pppPrice = getPPPAdjustedPriceInPence(assessmentPrice, userCountry);
-          assessmentsTotalLocal += convertPenceToRoundedLocalCurrency(pppPrice, currencyCode);
+          assessmentsTotalLocal += convertPenceToRoundedLocalCurrency(pppPrice, currencyCode, liveRate);
         }
         const fullLocal = baseFeeLocal + assessmentsTotalLocal;
         totalLocal = Math.round(fullLocal * 0.75);
@@ -3353,7 +3363,7 @@ export function registerPartnerRoutes(app: Express) {
       } else {
         const singleAssessmentPrice = ASSESSMENT_PRICES[normalizeAssessmentId(unpaidSessions[0].assessmentType)] || 400;
         const pppPrice = getPPPAdjustedPriceInPence(singleAssessmentPrice, userCountry);
-        const assessmentLocal = convertPenceToRoundedLocalCurrency(pppPrice, currencyCode);
+        const assessmentLocal = convertPenceToRoundedLocalCurrency(pppPrice, currencyCode, liveRate);
         totalLocal = baseFeeLocal + assessmentLocal;
         description = `HumanMetrix - Unlock Assessment Results`;
       }
@@ -4091,18 +4101,21 @@ export function registerPartnerRoutes(app: Express) {
       const userCurrency = getCurrencyForCountry(countryCode);
       const localCurrencyCode = COUNTRY_CURRENCY_MAP[countryCode] || 'GBP';
       
+      const exchangeRatesData = await getExchangeRates();
+      const liveRate = exchangeRatesData.rates?.[localCurrencyCode] ?? undefined;
+      
       // Base fee and individual assessment, each rounded independently
       const basePppPence = getPPPAdjustedPriceInPence(BASE_FEE, countryCode);
-      const baseFeeLocal = convertPenceToRoundedLocalCurrency(basePppPence, localCurrencyCode);
+      const baseFeeLocal = convertPenceToRoundedLocalCurrency(basePppPence, localCurrencyCode, liveRate);
       const assessmentPppPence = getPPPAdjustedPriceInPence(assessmentPrice, countryCode);
-      const assessmentLocal = convertPenceToRoundedLocalCurrency(assessmentPppPence, localCurrencyCode);
+      const assessmentLocal = convertPenceToRoundedLocalCurrency(assessmentPppPence, localCurrencyCode, liveRate);
       const singleTotalLocal = baseFeeLocal + assessmentLocal;
       
       // Bundle pricing: base fee + sum of all assessment prices rounded independently, then 25% discount
       let bundleAssessmentsTotalLocal = 0;
       for (const price of Object.values(ASSESSMENT_PRICES)) {
         const pppPrice = getPPPAdjustedPriceInPence(price, countryCode);
-        bundleAssessmentsTotalLocal += convertPenceToRoundedLocalCurrency(pppPrice, localCurrencyCode);
+        bundleAssessmentsTotalLocal += convertPenceToRoundedLocalCurrency(pppPrice, localCurrencyCode, liveRate);
       }
       const bundleTotalLocal = baseFeeLocal + bundleAssessmentsTotalLocal;
       const bundleDiscountedLocal = Math.round(bundleTotalLocal * 0.75);
@@ -4181,9 +4194,12 @@ export function registerPartnerRoutes(app: Express) {
       const { getStripeCurrencyCode } = await import("@shared/currencies");
       const stripeCurrency = getStripeCurrencyCode(userCountry);
       
+      const exchangeRatesData = await getExchangeRates();
+      const liveRate = exchangeRatesData.rates?.[currencyCode] ?? undefined;
+      
       // Base fee rounded to local currency
       const basePppPence = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
-      const baseFeeLocal = convertPenceToRoundedLocalCurrency(basePppPence, currencyCode);
+      const baseFeeLocal = convertPenceToRoundedLocalCurrency(basePppPence, currencyCode, liveRate);
       
       let totalLocal: number;
       let discountPercent: number;
@@ -4193,7 +4209,7 @@ export function registerPartnerRoutes(app: Express) {
         let bundleAssessmentsTotalLocal = 0;
         for (const price of Object.values(ASSESSMENT_PRICES)) {
           const pppPrice = getPPPAdjustedPriceInPence(price, userCountry);
-          bundleAssessmentsTotalLocal += convertPenceToRoundedLocalCurrency(pppPrice, currencyCode);
+          bundleAssessmentsTotalLocal += convertPenceToRoundedLocalCurrency(pppPrice, currencyCode, liveRate);
         }
         const fullLocal = baseFeeLocal + bundleAssessmentsTotalLocal;
         totalLocal = Math.round(fullLocal * 0.75);
@@ -4201,7 +4217,7 @@ export function registerPartnerRoutes(app: Express) {
         productName = 'HumanMetrix Complete Assessment Bundle';
       } else {
         const assessmentPppPence = getPPPAdjustedPriceInPence(assessmentPrice, userCountry);
-        const assessmentLocal = convertPenceToRoundedLocalCurrency(assessmentPppPence, currencyCode);
+        const assessmentLocal = convertPenceToRoundedLocalCurrency(assessmentPppPence, currencyCode, liveRate);
         totalLocal = baseFeeLocal + assessmentLocal;
         discountPercent = 0;
         productName = `HumanMetrix ${session.assessmentType.toUpperCase()} Assessment Results`;
@@ -5267,8 +5283,11 @@ export function registerPartnerRoutes(app: Express) {
       // Get Stripe currency code
       const currencyCode = COUNTRY_CURRENCY_MAP[(countryCode || 'GB').toUpperCase()] || 'GBP';
       
+      const exchangeRatesData = await getExchangeRates();
+      const liveRate = exchangeRatesData.rates?.[currencyCode] ?? undefined;
+      
       // Convert pence to local currency, then to Stripe amount (handles zero-decimal currencies)
-      const localCurrencyTotal = convertPenceToRoundedLocalCurrency(bundleDiscountedPriceInPence, currencyCode);
+      const localCurrencyTotal = convertPenceToRoundedLocalCurrency(bundleDiscountedPriceInPence, currencyCode, liveRate);
       const stripeAmount = calculateStripeAmountFromRoundedTotal(localCurrencyTotal, currencyCode);
       
       console.log(`[Bundle Checkout] Pence: ${bundleDiscountedPriceInPence}, Local: ${localCurrencyTotal} ${currencyCode}, Stripe: ${stripeAmount}`);
