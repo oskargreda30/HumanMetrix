@@ -6050,26 +6050,66 @@ export function registerGuestAssessmentRoutes(app: Express) {
       
       const alreadyLoggedInUserId = req.session?.userId;
       const alreadyLoggedInUser = alreadyLoggedInUserId ? await storage.getUser(alreadyLoggedInUserId) : null;
-      
       const existingUser = await storage.getUserByEmail(invitation.email);
       
-      const targetUser = alreadyLoggedInUser || existingUser;
+      const isEmailMismatch = alreadyLoggedInUser && 
+        alreadyLoggedInUser.email.toLowerCase() !== invitation.email.toLowerCase();
       
-      if (targetUser) {
-        if (!alreadyLoggedInUser || alreadyLoggedInUser.id !== targetUser.id) {
-          req.session.userId = targetUser.id;
-          await new Promise<void>((resolve, reject) => {
-            req.session.save((err: any) => {
-              if (err) reject(err);
-              else resolve();
-            });
-          });
-        }
-        
-        await linkPartnerResultsToUser(targetUser.id, invitation);
+      if (isEmailMismatch && existingUser) {
+        await linkPartnerResultsToUser(existingUser.id, invitation);
         
         const { sendB2BResultsReadyEmail } = await import('./email');
-        const displayName = targetUser.firstName || targetUser.name || targetUser.username || invitation.email.split('@')[0];
+        const displayName = existingUser.firstName || existingUser.name || existingUser.username || invitation.email.split('@')[0];
+        const invitationId = invitation.id;
+        const guestRedirectUrl = invitationId 
+          ? `/dashboard?view=candidate&scrollToSeries=${invitationId}` 
+          : "/dashboard?view=candidate";
+        
+        try {
+          let autoLoginToken: string | undefined;
+          try {
+            autoLoginToken = crypto.randomUUID();
+            const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+            await storage.setAutoLoginToken(existingUser.id, autoLoginToken, autoLoginExpiry);
+          } catch (tokenErr) {
+            console.error("[GuestInvite] Failed to generate auto-login token:", tokenErr);
+          }
+          await sendB2BResultsReadyEmail({
+            email: invitation.email,
+            candidateName: displayName,
+            partnerName: invitation.partnerName || 'your employer',
+            dashboardUrl: `${req.protocol}://${req.get('host')}${guestRedirectUrl}`,
+            autoLoginToken,
+          });
+        } catch (emailErr) {
+          console.error(`[GuestInvite] Failed to send results-ready email to ${invitation.email}:`, emailErr);
+        }
+        
+        console.log(`[GuestInvite] SECURITY: Email mismatch - logged in as ${alreadyLoggedInUser!.email}, invitation for ${invitation.email}. Results linked to invitation account. Session NOT changed.`);
+        
+        return res.json({ 
+          success: true, 
+          message: `Results linked to ${invitation.email}. Please log in with that email to view your results.`,
+          existingAccount: true,
+          emailMismatch: true,
+          invitationEmail: invitation.email,
+          redirectTo: null,
+        });
+      }
+      
+      if (existingUser) {
+        req.session.userId = existingUser.id;
+        await new Promise<void>((resolve, reject) => {
+          req.session.save((err: any) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+        
+        await linkPartnerResultsToUser(existingUser.id, invitation);
+        
+        const { sendB2BResultsReadyEmail } = await import('./email');
+        const displayName = existingUser.firstName || existingUser.name || existingUser.username || invitation.email.split('@')[0];
         
         const invitationId = invitation.id;
         let guestRedirectUrl = invitationId 
@@ -6081,26 +6121,21 @@ export function registerGuestAssessmentRoutes(app: Express) {
           try {
             autoLoginToken = crypto.randomUUID();
             const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-            await storage.setAutoLoginToken(targetUser.id, autoLoginToken, autoLoginExpiry);
+            await storage.setAutoLoginToken(existingUser.id, autoLoginToken, autoLoginExpiry);
           } catch (tokenErr) {
             console.error("[GuestInvite] Failed to generate auto-login token:", tokenErr);
           }
           await sendB2BResultsReadyEmail({
-            email: targetUser.email,
+            email: invitation.email,
             candidateName: displayName,
             partnerName: invitation.partnerName || 'your employer',
             dashboardUrl: `${req.protocol}://${req.get('host')}${guestRedirectUrl}`,
             autoLoginToken,
           });
         } catch (emailErr) {
-          console.error(`[GuestInvite] Failed to send results-ready email to ${targetUser.email}:`, emailErr);
+          console.error(`[GuestInvite] Failed to send results-ready email to ${invitation.email}:`, emailErr);
         }
-        
-        if (alreadyLoggedInUser && existingUser && alreadyLoggedInUser.id !== existingUser.id) {
-          console.log(`[GuestInvite] Email mismatch: logged in as ${alreadyLoggedInUser.email} (${alreadyLoggedInUser.id}), invitation for ${invitation.email} (${existingUser.id}). Linking results to logged-in user.`);
-        } else {
-          console.log(`[GuestInvite] User ${targetUser.id} (${targetUser.email}) logged in, results linked.`);
-        }
+        console.log(`[GuestInvite] Existing user ${existingUser.id} logged in, results-ready email sent to ${invitation.email}`);
         
         return res.json({ 
           success: true, 
@@ -6108,6 +6143,10 @@ export function registerGuestAssessmentRoutes(app: Express) {
           existingAccount: true,
           redirectTo: guestRedirectUrl
         });
+      }
+      
+      if (isEmailMismatch && !existingUser) {
+        console.log(`[GuestInvite] SECURITY: Email mismatch - logged in as ${alreadyLoggedInUser!.email}, no account for invitation email ${invitation.email}. Session NOT changed, will create new account for invitation email.`);
       }
       
       // Generate temporary password
@@ -6149,7 +6188,25 @@ export function registerGuestAssessmentRoutes(app: Express) {
       });
       console.log(`[GuestInvite] New account created for ${invitation.email}`);
       
-      // Auto-login the new user
+      await linkPartnerResultsToUser(newUser.id, invitation);
+      
+      const invitationId = invitation.id;
+      const redirectTo = invitationId 
+        ? `/dashboard?view=candidate&scrollToSeries=${invitationId}` 
+        : '/dashboard?view=candidate';
+      
+      if (isEmailMismatch) {
+        console.log(`[GuestInvite] SECURITY: Email mismatch on new account - logged in as ${alreadyLoggedInUser!.email}, created account for ${invitation.email}. Session NOT changed.`);
+        return res.json({ 
+          success: true, 
+          message: `Account created for ${invitation.email}. Check that email for login credentials to view your results.`,
+          userId: newUser.id,
+          emailMismatch: true,
+          invitationEmail: invitation.email,
+          redirectTo: null,
+        });
+      }
+      
       req.session.userId = newUser.id;
       await new Promise<void>((resolve, reject) => {
         req.session.save((err: any) => {
@@ -6157,14 +6214,6 @@ export function registerGuestAssessmentRoutes(app: Express) {
           else resolve();
         });
       });
-      
-      // Link partner assessment results to new user
-      await linkPartnerResultsToUser(newUser.id, invitation);
-      
-      const invitationId = invitation.id;
-      const redirectTo = invitationId 
-        ? `/dashboard?view=candidate&scrollToSeries=${invitationId}` 
-        : '/dashboard?view=candidate';
       
       res.json({ 
         success: true, 

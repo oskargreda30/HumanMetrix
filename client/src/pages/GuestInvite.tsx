@@ -110,7 +110,13 @@ export default function GuestInvite() {
     if (authLoading || loading) return;
     if (!currentUser || !invitation) return;
     
-    // For admin invitations with logged-in user, redirect to dashboard to take assessments normally
+    const emailMatches = invitation.email && currentUser.email && 
+      currentUser.email.toLowerCase() === invitation.email.toLowerCase();
+    
+    if (!emailMatches) {
+      return;
+    }
+    
     if (invitation.isAdminInvite) {
       earlyRedirectRef.current = true;
       if (invitation.allComplete) {
@@ -128,7 +134,6 @@ export default function GuestInvite() {
       return;
     }
     
-    // If user is already logged in and all assessments are complete, redirect directly to candidate dashboard
     if (invitation.allComplete && invitation.hasExistingAccount) {
       earlyRedirectRef.current = true;
       toast({
@@ -350,6 +355,14 @@ export default function GuestInvite() {
       
       const data = await res.json();
       
+      if (data.emailMismatch) {
+        toast({
+          title: "Results saved",
+          description: data.message || `Your results have been linked to ${data.invitationEmail}. Log in with that email to view them.`,
+        });
+        return;
+      }
+      
       toast({
         title: data.existingAccount ? "Logged in" : "Account created",
         description: data.existingAccount 
@@ -358,7 +371,6 @@ export default function GuestInvite() {
       });
       
       if (data.redirectTo) {
-        // Use full page navigation to ensure session cookie is properly recognized
         window.location.href = data.redirectTo;
       }
     } catch (err: any) {
