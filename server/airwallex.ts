@@ -182,8 +182,12 @@ export async function confirmPaymentIntent(paymentIntentId: string, returnUrl: s
   return response.json();
 }
 
-export function formatAmountForAirwallex(amountInPence: number): number {
-  return amountInPence / 100;
+export function formatAmountForAirwallex(stripeAmount: number, currencyCode?: string): number {
+  const ZERO_DECIMAL = ['JPY', 'KRW', 'VND', 'CLP', 'PYG', 'GNF', 'KMF', 'MGA', 'RWF', 'UGX', 'VUV', 'XAF', 'XOF', 'XPF', 'BIF', 'DJF'];
+  if (currencyCode && ZERO_DECIMAL.includes(currencyCode.toUpperCase())) {
+    return stripeAmount;
+  }
+  return stripeAmount / 100;
 }
 
 export function formatAmountFromAirwallex(amount: number): number {

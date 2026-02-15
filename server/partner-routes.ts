@@ -1838,27 +1838,20 @@ export function registerPartnerRoutes(app: Express) {
               // Calculate bundle price based on the sum of individual PPP-adjusted discounted prices
               // The bundle discount (25%) is applied on top of the individual discounted prices
               try {
-                // Calculate sum of individual PPP-adjusted discounted prices
-                let sumOfIndividualDiscountedPrices = 0;
-                let sumOfIndividualOriginalPrices = 0;
-                
-                for (const type of bundleAssessmentTypes) {
+                // Calculate bundle total: BASE_FEE (once) + sum of assessment prices, then PPP
+                const bundleAssessmentsPricePence = bundleAssessmentTypes.reduce((sum, type) => {
                   const normalizedType = normalizeAssessmentId(type);
-                  const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
-                  const individualB2CPrice = BASE_FEE + assessmentPrice;
-                  const individualPppPrice = getPPPAdjustedPriceInPence(individualB2CPrice, userCountryCode);
-                  const individualDiscountedPrice = individualPppPrice; // Full price, no individual discount
-                  
-                  sumOfIndividualOriginalPrices += individualPppPrice;
-                  sumOfIndividualDiscountedPrices += individualDiscountedPrice;
-                }
+                  return sum + (ASSESSMENT_PRICES[normalizedType] || 400);
+                }, 0);
+                const bundleTotalPence = BASE_FEE + bundleAssessmentsPricePence;
+                const bundlePppPence = getPPPAdjustedPriceInPence(bundleTotalPence, userCountryCode);
                 
-                // Apply bundle discount (25%) to the sum of individual discounted prices
-                const bundleDiscountedPricePence = Math.round(sumOfIndividualDiscountedPrices * ((100 - bundleDiscountPercent) / 100));
-                const bundleOriginalDisplay = formatPrice(sumOfIndividualDiscountedPrices, userCurrency);
-                const bundleDiscountedDisplay = formatPrice(bundleDiscountedPricePence, userCurrency);
+                // Apply bundle discount (25%)
+                const bundleDiscountedPricePence = Math.round(bundlePppPence * ((100 - bundleDiscountPercent) / 100));
+                const bundleOriginalDisplay = formatPrice(bundlePppPence, userCurrency, { countryCode: userCountryCode, skipPPPAdjustment: true });
+                const bundleDiscountedDisplay = formatPrice(bundleDiscountedPricePence, userCurrency, { countryCode: userCountryCode, skipPPPAdjustment: true });
                 
-                console.log(`[B2B Bundle Pricing] Assessments: ${bundleAssessmentTypes.join(', ')}, Sum of individual discounted: ${sumOfIndividualDiscountedPrices}p (${bundleOriginalDisplay}), ${bundleDiscountPercent}% bundle discount: ${bundleDiscountedPricePence}p (${bundleDiscountedDisplay})`);
+                console.log(`[B2B Bundle Pricing] Assessments: ${bundleAssessmentTypes.join(', ')}, Total PPP: ${bundlePppPence}p (${bundleOriginalDisplay}), ${bundleDiscountPercent}% bundle discount: ${bundleDiscountedPricePence}p (${bundleDiscountedDisplay})`);
                 
                 const bundlePaymentUrl = `${baseUrl}/b2b-results-bundle?email=${encodeURIComponent(candidateEmail)}&partner=${session.partnerId}&country=${userCountryCode}&types=${bundleAssessmentTypes.join(',')}`;
                 
@@ -3184,18 +3177,27 @@ export function registerPartnerRoutes(app: Express) {
       const allPaid = completedSessions.every(s => s.resultsPaymentStatus === 'paid');
       const unpaidCount = completedSessions.filter(s => s.resultsPaymentStatus !== 'paid').length;
       
-      // Calculate pricing matching B2C: BASE_FEE + per-assessment prices
+      // Calculate pricing matching B2C: BASE_FEE + per-assessment prices, with PPP
+      const userCountry = (countryCode as string).toUpperCase();
+      const userCurrency = getCurrencyForCountry(userCountry);
       const unpaidSessions = completedSessions.filter(s => s.resultsPaymentStatus !== 'paid');
+      
+      // Single assessment pricing with PPP
+      const singleAssessmentPence = BASE_FEE + (ASSESSMENT_PRICES[normalizeAssessmentId(unpaidSessions[0]?.assessmentType || 'fit')] || 400);
+      const singlePppPence = getPPPAdjustedPriceInPence(singleAssessmentPence, userCountry);
+      const singleOriginalDisplay = formatPrice(singlePppPence, userCurrency, { countryCode: userCountry, skipPPPAdjustment: true });
+      
+      // Bundle pricing with PPP + 25% discount
       const assessmentsTotalPence = (unpaidCount > 0 ? unpaidSessions : completedSessions).reduce((sum, s) => {
         const normalizedType = normalizeAssessmentId(s.assessmentType);
         return sum + (ASSESSMENT_PRICES[normalizedType] || 400);
       }, 0);
-      const singleOriginal = BASE_FEE + (ASSESSMENT_PRICES[normalizeAssessmentId(unpaidSessions[0]?.assessmentType || 'fit')] || 400);
-      const singleDiscounted = singleOriginal;
-      
-      const bundleOriginal = BASE_FEE + assessmentsTotalPence;
+      const bundlePence = BASE_FEE + assessmentsTotalPence;
+      const bundlePppPence = getPPPAdjustedPriceInPence(bundlePence, userCountry);
       const bundleDiscountPercent = unpaidCount >= 2 ? 25 : 0;
-      const bundleDiscounted = Math.round(bundleOriginal * (1 - bundleDiscountPercent / 100));
+      const bundleDiscountedPence = Math.round(bundlePppPence * (1 - bundleDiscountPercent / 100));
+      const bundleOriginalDisplay = formatPrice(bundlePppPence, userCurrency, { countryCode: userCountry, skipPPPAdjustment: true });
+      const bundleDiscountedDisplay = formatPrice(bundleDiscountedPence, userCurrency, { countryCode: userCountry, skipPPPAdjustment: true });
       
       // Free unlock date (30 days from first completion)
       const firstCompletedAt = completedSessions
@@ -3213,6 +3215,8 @@ export function registerPartnerRoutes(app: Express) {
         email: invitation.email,
         inviteToken,
         partnerName,
+        countryCode: userCountry,
+        currencyCode: userCurrency.code,
         completedAssessments: completedSessions.map(s => ({
           sessionId: s.id,
           assessmentType: s.assessmentType,
@@ -3221,17 +3225,17 @@ export function registerPartnerRoutes(app: Express) {
         })),
         pricing: {
           single: {
-            originalPricePence: singleOriginal,
-            discountedPricePence: singleDiscounted,
-            originalDisplay: `£${(singleOriginal / 100).toFixed(2)}`,
-            discountedDisplay: `£${(singleDiscounted / 100).toFixed(2)}`,
+            originalPricePence: singlePppPence,
+            discountedPricePence: singlePppPence,
+            originalDisplay: singleOriginalDisplay,
+            discountedDisplay: singleOriginalDisplay,
             discountPercent: 0,
           },
           bundle: {
-            originalPricePence: bundleOriginal,
-            discountedPricePence: bundleDiscounted,
-            originalDisplay: `£${(bundleOriginal / 100).toFixed(2)}`,
-            discountedDisplay: `£${(bundleDiscounted / 100).toFixed(2)}`,
+            originalPricePence: bundlePppPence,
+            discountedPricePence: bundleDiscountedPence,
+            originalDisplay: bundleOriginalDisplay,
+            discountedDisplay: bundleDiscountedDisplay,
             discountPercent: bundleDiscountPercent,
           },
         },
@@ -3286,26 +3290,34 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(400).json({ error: "No unpaid assessments found" });
       }
       
-      // Calculate price matching B2C: BASE_FEE + per-assessment prices
+      // Calculate price matching B2C: BASE_FEE + per-assessment prices, with PPP
+      const userCountry = (countryCode as string).toUpperCase();
       const assessmentsTotalPence = unpaidSessions.reduce((sum, s) => {
         const normalizedType = normalizeAssessmentId(s.assessmentType);
         return sum + (ASSESSMENT_PRICES[normalizedType] || 400);
       }, 0);
-      let totalPrice: number;
+      let priceInPence: number;
       let description: string;
       
       if (isBundle && unpaidSessions.length > 1) {
         const discountPercent = 25;
         const fullPrice = BASE_FEE + assessmentsTotalPence;
-        totalPrice = Math.round(fullPrice * (1 - discountPercent / 100));
+        const pppAdjusted = getPPPAdjustedPriceInPence(fullPrice, userCountry);
+        priceInPence = Math.round(pppAdjusted * (1 - discountPercent / 100));
         description = `HumanMetrix - Unlock ${unpaidSessions.length} Assessment Results (${discountPercent}% Bundle Discount)`;
       } else {
         const singleAssessmentPrice = ASSESSMENT_PRICES[normalizeAssessmentId(unpaidSessions[0].assessmentType)] || 400;
-        totalPrice = BASE_FEE + singleAssessmentPrice;
+        const fullPrice = BASE_FEE + singleAssessmentPrice;
+        priceInPence = getPPPAdjustedPriceInPence(fullPrice, userCountry);
         description = `HumanMetrix - Unlock Assessment Results`;
       }
       
-      // Create Stripe checkout session
+      // Convert to local currency for payment
+      const currencyCode = COUNTRY_CURRENCY_MAP[userCountry] || 'GBP';
+      const { convertToStripeCurrencyAmount, getStripeCurrencyCode } = await import("@shared/currencies");
+      const stripeAmount = convertToStripeCurrencyAmount(priceInPence, currencyCode, undefined);
+      const stripeCurrency = getStripeCurrencyCode(userCountry);
+      
       const baseUrl = getBaseUrl(req);
       const sessionIds = isBundle ? unpaidSessions.map(s => s.id) : [unpaidSessions[0].id];
       
@@ -3313,11 +3325,11 @@ export function registerPartnerRoutes(app: Express) {
       const { primary, fallback } = getPaymentProviders('airwallex');
 
       const airwallexFn = async (): Promise<PaymentCheckoutResult> => {
-        const airwallexAmount = formatAmountForAirwallex(totalPrice);
+        const airwallexAmount = formatAmountForAirwallex(stripeAmount, stripeCurrency.toUpperCase());
         const merchantOrderId = `b2b_unlock_${inviteToken}_${Date.now()}`;
         const intent = await createPaymentIntent({
           amount: airwallexAmount,
-          currency: 'GBP',
+          currency: stripeCurrency.toUpperCase(),
           merchantOrderId,
           returnUrl: `${baseUrl}/b2b-payment-callback?success=true&provider=airwallex`,
           customerEmail: email,
@@ -3327,6 +3339,7 @@ export function registerPartnerRoutes(app: Express) {
             inviteToken,
             sessionIds: JSON.stringify(sessionIds),
             isBundle: String(isBundle),
+            country_code: userCountry,
           },
         });
         return {
@@ -3334,7 +3347,7 @@ export function registerPartnerRoutes(app: Express) {
           intentId: intent.id,
           clientSecret: intent.clientSecret,
           amount: airwallexAmount,
-          currency: 'GBP',
+          currency: stripeCurrency.toUpperCase(),
         };
       };
 
@@ -3344,9 +3357,9 @@ export function registerPartnerRoutes(app: Express) {
           adaptive_pricing: { enabled: false },
           line_items: [{
             price_data: {
-              currency: 'gbp',
+              currency: stripeCurrency,
               product_data: { name: description },
-              unit_amount: totalPrice,
+              unit_amount: stripeAmount,
             },
             quantity: 1,
           }],
@@ -3360,6 +3373,7 @@ export function registerPartnerRoutes(app: Express) {
             inviteToken,
             sessionIds: JSON.stringify(sessionIds),
             isBundle: String(isBundle),
+            country_code: userCountry,
           },
         });
         return { provider: 'stripe', url: stripeSession.url, sessionId: stripeSession.id };
@@ -4146,7 +4160,7 @@ export function registerPartnerRoutes(app: Express) {
       const { primary, fallback } = getPaymentProviders('airwallex');
 
       const airwallexFn = async (): Promise<PaymentCheckoutResult> => {
-        const airwallexAmount = formatAmountForAirwallex(stripeAmount);
+        const airwallexAmount = formatAmountForAirwallex(stripeAmount, stripeCurrency.toUpperCase());
         const merchantOrderId = `b2b_res_${sessionId.substring(0, 8)}_${Date.now()}`;
         const intent = await createPaymentIntent({
           amount: airwallexAmount,
@@ -5210,7 +5224,7 @@ export function registerPartnerRoutes(app: Express) {
       const { primary, fallback: fallbackProvider } = getPaymentProviders('airwallex');
 
       const airwallexFn = async (): Promise<PaymentCheckoutResult> => {
-        const airwallexAmount = formatAmountForAirwallex(stripeAmount);
+        const airwallexAmount = formatAmountForAirwallex(stripeAmount, currencyCode.toUpperCase());
         const emailHash = email.substring(0, 8).replace(/[^a-zA-Z0-9]/g, '');
         const merchantOrderId = `b2b_bnd_${emailHash}_${Date.now()}`;
         const intent = await createPaymentIntent({

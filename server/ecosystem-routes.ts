@@ -1957,7 +1957,7 @@ export function registerEcosystemRoutes(app: Express): void {
       const { primary: ecoPrimary, fallback: ecoFallback } = getPaymentProviders();
 
       const airwallexEcoFn = async (): Promise<PaymentCheckoutResult> => {
-        const airwallexAmount = formatAmountForAirwallex(adjustedPrice);
+        const airwallexAmount = formatAmountForAirwallex(adjustedPrice, stripeCurrency.toUpperCase());
         const merchantOrderId = `ecosystem_${projectId}_${Date.now()}`;
         const intent = await createPaymentIntent({
           amount: airwallexAmount,

@@ -1474,7 +1474,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { primary, fallback } = getPaymentProviders('airwallex');
       
       const airwallexResultsFn = async (): Promise<PaymentCheckoutResult> => {
-        const airwallexAmount = formatAmountForAirwallex(stripeAmount);
+        const airwallexAmount = formatAmountForAirwallex(stripeAmount, stripeCurrency.toUpperCase());
         const merchantOrderId = `results_${unpaidPurchase.id}_${Date.now()}`;
         const intent = await createPaymentIntent({
           amount: airwallexAmount,
@@ -2944,7 +2944,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
           const normalizedId = normalizeAssessmentId(assessmentId);
           totalAmount += convertToStripeCurrencyAmount(ASSESSMENT_PRICES[normalizedId], localCurrencyCode, userCountry);
         }
-        const airwallexAmount = formatAmountForAirwallex(totalAmount);
+        const airwallexAmount = formatAmountForAirwallex(totalAmount, stripeCurrency.toUpperCase());
         const merchantOrderId = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
         const intent = await createPaymentIntent({
           amount: airwallexAmount,
@@ -3219,7 +3219,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
           const normalizedId = normalizeAssessmentId(assessmentId);
           totalAmount += convertToStripeCurrencyAmount(ASSESSMENT_PRICES[normalizedId], localCurrencyCode, userCountry);
         }
-        const airwallexAmount = formatAmountForAirwallex(totalAmount);
+        const airwallexAmount = formatAmountForAirwallex(totalAmount, stripeCurrency.toUpperCase());
         const merchantOrderId = `checkout_${userId}_${Date.now()}`;
         const intent = await createPaymentIntent({
           amount: airwallexAmount,
@@ -3408,7 +3408,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       const isZeroDecimal = STRIPE_ZERO_DECIMAL.includes(localCurrencyCode.toUpperCase());
       const stripeAmount = isZeroDecimal ? Math.round(discountedLocalPrice) : Math.round(discountedLocalPrice * 100);
       
-      let totalPriceInPence = Math.round(discountedLocalPrice);
+      let totalLocalCurrencyAmount = Math.round(discountedLocalPrice);
       
       // Create a single line item for the total
       const discountDescription = isBulk && resultsToPurchase.length > 1 ? "25% bundle discount" : "";
@@ -3440,7 +3440,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       if (existingPurchase && existingPurchase.status === 'pending') {
         // Update existing pending purchase with current amount/count in case assessments changed
         await storage.updatePartnerResultPurchase(existingPurchase.id, {
-          amount: totalPriceInPence,
+          amount: totalLocalCurrencyAmount,
           currency: localCurrencyCode,
           assessmentCount: resultsToPurchase.length,
           purchasedAssessmentTypes: purchasedTypes,
@@ -3450,7 +3450,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         purchaseRecord = await storage.createPartnerResultPurchase({
           userId,
           partnerInvitationId,
-          amount: totalPriceInPence,
+          amount: totalLocalCurrencyAmount,
           currency: localCurrencyCode,
           assessmentCount: resultsToPurchase.length,
           purchasedAssessmentTypes: purchasedTypes,
@@ -3478,7 +3478,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       const { primary: prPrimary, fallback: prFallback } = getPaymentProviders('airwallex');
       
       const airwallexPrFn = async (): Promise<PaymentCheckoutResult> => {
-        const airwallexAmount = formatAmountForAirwallex(stripeAmount);
+        const airwallexAmount = formatAmountForAirwallex(stripeAmount, stripeCurrency.toUpperCase());
         const merchantOrderId = `pr_${purchaseRecord.id}_${Date.now()}`;
         console.log(`[Partner Results Checkout] Airwallex attempt: amount=${airwallexAmount}, currency=${stripeCurrency.toUpperCase()}, merchantOrderId=${merchantOrderId}`);
         const intent = await createPaymentIntent({
@@ -12076,7 +12076,7 @@ Return valid JSON with only the requested fields.`;
       }
       
       const airwallexPurchaseFn = async (): Promise<PaymentCheckoutResult> => {
-        const airwallexAmount = formatAmountForAirwallex(adjustedTotalPrice);
+        const airwallexAmount = formatAmountForAirwallex(adjustedTotalPrice, displayCurrency.toUpperCase());
         const merchantOrderId = `partner_pkg_${pkg.id}_${Date.now()}`;
         
         const intent = await createPaymentIntent({
@@ -19380,7 +19380,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
         });
         
         const paymentIntent = await createPaymentIntent({
-          amount: formatAmountForAirwallex(totalPrice),
+          amount: formatAmountForAirwallex(totalPrice, 'USD'),
           currency: 'usd',
           merchantOrderId: pkg.id,
           returnUrl: `${baseUrl}/admin/partners/${partner.id}?package_success=true&airwallex_intent=${pkg.id}`,
@@ -20402,7 +20402,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
       const airwallexInvFn = async (): Promise<PaymentCheckoutResult> => {
         const invCurrency = (invoice.currency || 'GBP').toUpperCase();
         const paymentIntent = await createPaymentIntent({
-          amount: formatAmountForAirwallex(invoice.totalAmount),
+          amount: formatAmountForAirwallex(invoice.totalAmount, invCurrency),
           currency: invCurrency,
           merchantOrderId: `invoice_${invoice.id}`,
           returnUrl: `${baseUrl}/admin/invoices?payment_success=true&invoice=${invoice.id}&provider=airwallex`,
@@ -20414,7 +20414,7 @@ Keep the total response under 300 words. Be specific and actionable. Use the can
           provider: 'airwallex',
           intentId: paymentIntent.id,
           clientSecret: paymentIntent.clientSecret,
-          amount: formatAmountForAirwallex(invoice.totalAmount),
+          amount: formatAmountForAirwallex(invoice.totalAmount, invCurrency),
           currency: invCurrency,
           returnUrl: `${baseUrl}/admin/invoices?payment_success=true&invoice=${invoice.id}&provider=airwallex`,
         };
