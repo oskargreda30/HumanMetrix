@@ -6,7 +6,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, populateUser } from "./auth";
 import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema, B2B_VOLUME_TIERS, CREDIT_EXPIRATION_MONTHS, getTrialQuotaForTier } from "@shared/schema";
-import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertToStripeCurrencyAmount, convertAndRoundToLocalCurrency, calculateStripeAmountFromTotalPence, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES, roundPriceUp, formatPrice, getCurrencyForCountry, calculateCandidatePricing } from "@shared/currencies";
+import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES, roundPriceUp, formatPrice, getCurrencyForCountry, calculateCandidatePricing } from "@shared/currencies";
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, broadcastMessages, SYSTEM_SETTING_KEYS, auditLogs, errorLogs, partnerInvoices, invitations, partnerCandidateInvitations, candidateNotes, emailLogs, sessions, appLogs, partnerAccounts, partnerTeamMembers, jobRoles, type PartnerAccount, type AssessmentSession } from "@shared/schema";
 import { eq, desc, sql, and, or, gte, isNotNull, inArray } from "drizzle-orm";
@@ -2858,60 +2858,48 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       const userCountry = countryCode || 'GB';
       const pricingTier = getPricingTier(userCountry);
       
-      // Get user's local currency for Stripe checkout
+      // Use canonical pricing function for ALL candidate pricing
       const stripeCurrency = getStripeCurrencyCode(userCountry);
       const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
       
-      // Create line items for Stripe using PPP-adjusted pricing (same logic for all countries)
-      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
-      
-      // Standard pricing: base fee + individual assessments with PPP adjustment
-      const baseFeeInLocalCurrency = convertToStripeCurrencyAmount(BASE_FEE, localCurrencyCode, userCountry);
-      
-      lineItems.push({
-        price_data: {
-          currency: stripeCurrency,
-          product_data: {
-            name: "Base Computation Fee",
-            description: "One-time platform access fee",
-          },
-          unit_amount: baseFeeInLocalCurrency,
-        },
-        quantity: 1,
-      });
-
-      // Add assessment line items
-      const assessmentNames: Record<string, string> = {
-        "fit": "FIT Assessment (15Q)",
-        "ai_readiness": "AI Readiness Assessment (21Q)",
-        "prompt_architecture": "Prompt Architecture Assessment (7 Levels)",
-        "aiq": "Algorithmic Integrity Quotient (AIQ) (8Q)",
-      };
-
+      // Validate assessment IDs first
       for (const assessmentId of assessmentIds) {
         const normalizedId = normalizeAssessmentId(assessmentId);
         if (!ASSESSMENT_PRICES[normalizedId]) {
           return res.status(400).json({ message: `Invalid assessment: ${assessmentId}` });
         }
-        
-        // Apply PPP pricing adjustment and convert to local currency
-        const adjustedPrice = convertToStripeCurrencyAmount(ASSESSMENT_PRICES[normalizedId], localCurrencyCode, userCountry);
-        
-        lineItems.push({
-          price_data: {
-            currency: stripeCurrency,
-            product_data: {
-              name: assessmentNames[normalizedId] || normalizedId,
-            },
-            unit_amount: adjustedPrice,
-          },
-          quantity: 1,
-        });
       }
+      
+      // Use canonical calculateCandidatePricing for consistent pricing (no bundle discount for B2C)
+      const guestItems = assessmentIds.map((id: string) => {
+        const normalizedId = normalizeAssessmentId(id);
+        return { type: normalizedId, priceInPence: ASSESSMENT_PRICES[normalizedId] || 0 };
+      });
+      const guestPricing = calculateCandidatePricing(userCountry, guestItems, BASE_FEE, {});
+      
+      // Create a single line item for Stripe using the canonical total
+      const assessmentNamesList = assessmentIds.map((id: string) => {
+        const names: Record<string, string> = {
+          "fit": "FIT", "ai_readiness": "AI Readiness",
+          "prompt_architecture": "Prompt Architecture", "aiq": "AIQ",
+        };
+        return names[normalizeAssessmentId(id)] || normalizeAssessmentId(id);
+      }).join(", ");
+      
+      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [{
+        price_data: {
+          currency: stripeCurrency,
+          product_data: {
+            name: `HumanMetrix Assessment: ${assessmentNamesList}`,
+            description: `Base computation fee + ${assessmentIds.length} assessment${assessmentIds.length > 1 ? 's' : ''}`,
+          },
+          unit_amount: guestPricing.stripeAmount,
+        },
+        quantity: 1,
+      }];
 
       const baseUrl = getRoutesBaseUrl(req);
       
-      // Airwallex primary, Stripe fallback for guest checkout
       const guestMeta = {
         customerEmail,
         customerName,
@@ -2924,16 +2912,10 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         localCurrency: localCurrencyCode,
       };
       
-      // Candidate-facing payments always default to Airwallex
       const { primary: guestPrimary, fallback: guestFallback } = getPaymentProviders('airwallex');
       
       const airwallexGuestFn = async (): Promise<PaymentCheckoutResult> => {
-        let totalAmount = baseFeeInLocalCurrency;
-        for (const assessmentId of assessmentIds) {
-          const normalizedId = normalizeAssessmentId(assessmentId);
-          totalAmount += convertToStripeCurrencyAmount(ASSESSMENT_PRICES[normalizedId], localCurrencyCode, userCountry);
-        }
-        const airwallexAmount = formatAmountForAirwallex(totalAmount, stripeCurrency.toUpperCase());
+        const airwallexAmount = formatAmountForAirwallex(guestPricing.stripeAmount, stripeCurrency.toUpperCase());
         const merchantOrderId = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
         const intent = await createPaymentIntent({
           amount: airwallexAmount,
@@ -3139,58 +3121,46 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       const userCountry = countryCode || 'GB';
       const pricingTier = getPricingTier(userCountry);
       
-      // Get user's local currency for Stripe checkout
+      // Use canonical pricing function for ALL candidate pricing
       const stripeCurrency = getStripeCurrencyCode(userCountry);
       const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
       
-      // Create line items for Stripe using PPP-adjusted pricing (same logic for all countries)
-      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
-      
-      // Standard pricing: base fee + individual assessments with PPP adjustment
-      const baseFeeInLocalCurrency = convertToStripeCurrencyAmount(BASE_FEE, localCurrencyCode, userCountry);
-      
-      lineItems.push({
-        price_data: {
-          currency: stripeCurrency,
-          product_data: {
-            name: "Base Computation Fee",
-            description: "One-time platform access fee",
-          },
-          unit_amount: baseFeeInLocalCurrency,
-        },
-        quantity: 1,
-      });
-
-      // Add assessment line items
-      const assessmentNames: Record<string, string> = {
-        "fit": "FIT Assessment (15Q)",
-        "ai_readiness": "AI Readiness Assessment (21Q)",
-        "prompt_architecture": "Prompt Architecture Assessment (7 Levels)",
-        "aiq": "Algorithmic Integrity Quotient (AIQ) (8Q)",
-      };
-
+      // Validate assessment IDs first
       for (const assessmentId of assessmentIds) {
         const normalizedId = normalizeAssessmentId(assessmentId);
         if (!ASSESSMENT_PRICES[normalizedId]) {
           return res.status(400).json({ message: `Invalid assessment: ${assessmentId}` });
         }
-        
-        // Apply PPP pricing adjustment and convert to local currency
-        const adjustedPrice = convertToStripeCurrencyAmount(ASSESSMENT_PRICES[normalizedId], localCurrencyCode, userCountry);
-        
-        lineItems.push({
-          price_data: {
-            currency: stripeCurrency,
-            product_data: {
-              name: assessmentNames[normalizedId] || normalizedId,
-            },
-            unit_amount: adjustedPrice,
-          },
-          quantity: 1,
-        });
       }
+      
+      // Use canonical calculateCandidatePricing for consistent pricing (no bundle discount for B2C)
+      const checkoutItems = assessmentIds.map((id: string) => {
+        const normalizedId = normalizeAssessmentId(id);
+        return { type: normalizedId, priceInPence: ASSESSMENT_PRICES[normalizedId] || 0 };
+      });
+      const checkoutPricingResult = calculateCandidatePricing(userCountry, checkoutItems, BASE_FEE, {});
+      
+      // Create a single line item for Stripe using the canonical total
+      const checkoutAssessmentNames = assessmentIds.map((id: string) => {
+        const names: Record<string, string> = {
+          "fit": "FIT", "ai_readiness": "AI Readiness",
+          "prompt_architecture": "Prompt Architecture", "aiq": "AIQ",
+        };
+        return names[normalizeAssessmentId(id)] || normalizeAssessmentId(id);
+      }).join(", ");
+      
+      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [{
+        price_data: {
+          currency: stripeCurrency,
+          product_data: {
+            name: `HumanMetrix Assessment: ${checkoutAssessmentNames}`,
+            description: `Base computation fee + ${assessmentIds.length} assessment${assessmentIds.length > 1 ? 's' : ''}`,
+          },
+          unit_amount: checkoutPricingResult.stripeAmount,
+        },
+        quantity: 1,
+      }];
 
-      // Candidate-facing payments always default to Airwallex
       const baseUrl = getRoutesBaseUrl(req);
       const checkoutMeta = {
         userId: userId.toString(),
@@ -3203,12 +3173,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       const { primary, fallback } = getPaymentProviders('airwallex');
       
       const airwallexCheckoutFn = async (): Promise<PaymentCheckoutResult> => {
-        let totalAmount = baseFeeInLocalCurrency;
-        for (const assessmentId of assessmentIds) {
-          const normalizedId = normalizeAssessmentId(assessmentId);
-          totalAmount += convertToStripeCurrencyAmount(ASSESSMENT_PRICES[normalizedId], localCurrencyCode, userCountry);
-        }
-        const airwallexAmount = formatAmountForAirwallex(totalAmount, stripeCurrency.toUpperCase());
+        const airwallexAmount = formatAmountForAirwallex(checkoutPricingResult.stripeAmount, stripeCurrency.toUpperCase());
         const merchantOrderId = `checkout_${userId}_${Date.now()}`;
         const intent = await createPaymentIntent({
           amount: airwallexAmount,
