@@ -1249,7 +1249,7 @@ export function calculateCandidatePricing(
 
   const subtotalLocal = effectiveBaseFeeLocal + assessmentsTotalLocal;
   const rawTotal = bundleDiscount > 0
-    ? Math.ceil(subtotalLocal * (1 - bundleDiscount / 100))
+    ? subtotalLocal * (1 - bundleDiscount / 100)
     : subtotalLocal;
   const totalLocal = roundPriceUp(rawTotal);
 

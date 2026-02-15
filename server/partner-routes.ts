@@ -3345,7 +3345,6 @@ export function registerPartnerRoutes(app: Express) {
       let totalLocal: number;
       let stripeAmount: number;
       let description: string;
-      let stripeCurrencyFromPricing: string;
       
       if (isBundle && unpaidSessions.length > 1) {
         const bundleItems = unpaidSessions.map(s => ({
@@ -3358,7 +3357,6 @@ export function registerPartnerRoutes(app: Express) {
         );
         totalLocal = checkoutBundlePricing.discountedTotal;
         stripeAmount = checkoutBundlePricing.stripeAmount;
-        stripeCurrencyFromPricing = checkoutBundlePricing.stripeCurrency;
         description = `HumanMetrix - Unlock ${unpaidSessions.length} Assessment Results (25% Bundle Discount)`;
       } else {
         const singleType = normalizeAssessmentId(unpaidSessions[0].assessmentType);
@@ -3370,7 +3368,6 @@ export function registerPartnerRoutes(app: Express) {
         );
         totalLocal = singlePricing.totalLocal;
         stripeAmount = singlePricing.stripeAmount;
-        stripeCurrencyFromPricing = singlePricing.stripeCurrency;
         description = `HumanMetrix - Unlock Assessment Results`;
       }
       
