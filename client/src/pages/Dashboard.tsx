@@ -1756,13 +1756,6 @@ export default function Dashboard() {
                 </div>
               )}
               
-              {lockedResultsDialog?.autoUnlockDate && (
-                <div className="text-sm bg-muted p-3 rounded-md">
-                  <Clock className="h-4 w-4 inline mr-2 text-muted-foreground" />
-                  <span className="text-muted-foreground">Or wait - auto-unlocks </span>
-                  <span className="font-medium">{format(new Date(lockedResultsDialog.autoUnlockDate), 'MMMM d, yyyy')}</span>
-                </div>
-              )}
             </div>
           ) : null}
           
@@ -1799,15 +1792,6 @@ export default function Dashboard() {
                   }
                 </>
               )}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setLockedResultsDialog(null);
-              }}
-              data-testid="button-wait-autounlock"
-            >
-              Wait for Auto-Unlock
             </Button>
           </div>
         </DialogContent>
