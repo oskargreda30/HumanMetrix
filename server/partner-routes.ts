@@ -3119,10 +3119,18 @@ export function registerPartnerRoutes(app: Express) {
         console.error(`[Invite Complete] Failed to send completion email:`, emailError);
       }
       
-      // Update invitation status to completed
+      // Update invitation status to completed and lock exchange rate for pricing consistency
+      const existingMetadata = (invitation.metadata as Record<string, any>) || {};
       await storage.updatePartnerCandidateInvitation(invitation.id, { 
         status: 'completed',
         completedAt: new Date(),
+        metadata: {
+          ...existingMetadata,
+          lockedExchangeRate: liveRate,
+          lockedCurrencyCode: localCurrencyCode,
+          lockedCountryCode: userCountryCode,
+          pricingLockedAt: new Date().toISOString(),
+        },
       });
       
       const dashboardUrl = userExists 
@@ -3204,8 +3212,13 @@ export function registerPartnerRoutes(app: Express) {
       const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry] || 'GBP';
       const unpaidSessions = completedSessions.filter(s => s.resultsPaymentStatus !== 'paid');
       
-      const exchangeRatesData = await getExchangeRates();
-      const liveRate = exchangeRatesData.rates?.[localCurrencyCode] ?? undefined;
+      // Use locked exchange rate from invitation metadata for pricing consistency
+      const unlockLockedRate = (invitation?.metadata as any)?.lockedExchangeRate;
+      const liveRate = unlockLockedRate ?? (await getExchangeRates()).rates?.[localCurrencyCode] ?? undefined;
+      
+      if (unlockLockedRate) {
+        console.log(`[Unlock Results] Using locked exchange rate ${unlockLockedRate} for ${localCurrencyCode}`);
+      }
       
       // Base fee rounded to local currency
       const basePppPence = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
@@ -3338,8 +3351,13 @@ export function registerPartnerRoutes(app: Express) {
       const { getStripeCurrencyCode } = await import("@shared/currencies");
       const stripeCurrency = getStripeCurrencyCode(userCountry);
       
-      const exchangeRatesData = await getExchangeRates();
-      const liveRate = exchangeRatesData.rates?.[currencyCode] ?? undefined;
+      // Use locked exchange rate from invitation metadata for pricing consistency
+      const unlockCheckoutLockedRate = (invitation?.metadata as any)?.lockedExchangeRate;
+      const liveRate = unlockCheckoutLockedRate ?? (await getExchangeRates()).rates?.[currencyCode] ?? undefined;
+      
+      if (unlockCheckoutLockedRate) {
+        console.log(`[Unlock Checkout] Using locked exchange rate ${unlockCheckoutLockedRate} for ${currencyCode}`);
+      }
       
       // Base fee rounded to local currency
       const basePppPence = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
@@ -4101,8 +4119,16 @@ export function registerPartnerRoutes(app: Express) {
       const userCurrency = getCurrencyForCountry(countryCode);
       const localCurrencyCode = COUNTRY_CURRENCY_MAP[countryCode] || 'GBP';
       
-      const exchangeRatesData = await getExchangeRates();
-      const liveRate = exchangeRatesData.rates?.[localCurrencyCode] ?? undefined;
+      // Use locked exchange rate from invitation metadata for pricing consistency
+      // This ensures the B2B results page shows the same price as the completion email
+      const invitationId = (session.metadata as any)?.invitationId;
+      const invitation = invitationId ? await storage.getPartnerCandidateInvitation(invitationId) : null;
+      const lockedRate = (invitation?.metadata as any)?.lockedExchangeRate;
+      const liveRate = lockedRate ?? (await getExchangeRates()).rates?.[localCurrencyCode] ?? undefined;
+      
+      if (lockedRate) {
+        console.log(`[B2B Results] Using locked exchange rate ${lockedRate} for ${localCurrencyCode} (locked at ${(invitation?.metadata as any)?.pricingLockedAt})`);
+      }
       
       // Base fee and individual assessment, each rounded independently
       const basePppPence = getPPPAdjustedPriceInPence(BASE_FEE, countryCode);
@@ -4194,8 +4220,15 @@ export function registerPartnerRoutes(app: Express) {
       const { getStripeCurrencyCode } = await import("@shared/currencies");
       const stripeCurrency = getStripeCurrencyCode(userCountry);
       
-      const exchangeRatesData = await getExchangeRates();
-      const liveRate = exchangeRatesData.rates?.[currencyCode] ?? undefined;
+      // Use locked exchange rate from invitation metadata for pricing consistency
+      const checkoutInvitationId = (session.metadata as any)?.invitationId;
+      const checkoutInvitation = checkoutInvitationId ? await storage.getPartnerCandidateInvitation(checkoutInvitationId) : null;
+      const checkoutLockedRate = (checkoutInvitation?.metadata as any)?.lockedExchangeRate;
+      const liveRate = checkoutLockedRate ?? (await getExchangeRates()).rates?.[currencyCode] ?? undefined;
+      
+      if (checkoutLockedRate) {
+        console.log(`[B2B Checkout] Using locked exchange rate ${checkoutLockedRate} for ${currencyCode}`);
+      }
       
       // Base fee rounded to local currency
       const basePppPence = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
