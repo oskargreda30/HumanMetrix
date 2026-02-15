@@ -4209,6 +4209,9 @@ export function registerPartnerRoutes(app: Express) {
       
       const stripeAmount = calculateStripeAmountFromRoundedTotal(totalLocal, currencyCode);
       
+      console.log(`[B2B Checkout Debug] Country: ${userCountry}, Currency: ${currencyCode}, StripeCurrency: ${stripeCurrency}`);
+      console.log(`[B2B Checkout Debug] BaseFee: ${baseFeeLocal}, Total: ${totalLocal}, StripeAmount: ${stripeAmount}, IsBundle: ${isBundle}`);
+      
       // Get base URL
       const baseUrl = getBaseUrl(req);
       
@@ -4295,9 +4298,11 @@ export function registerPartnerRoutes(app: Express) {
           checkoutUrl: result.url,
         });
       }
-    } catch (error) {
-      console.error("Error creating B2B checkout session:", error);
-      res.status(500).json({ error: "Failed to create checkout session" });
+    } catch (error: any) {
+      const errorMsg = error?.message || String(error);
+      console.error("Error creating B2B checkout session:", errorMsg, error?.stack || '');
+      console.error("[B2B Checkout Debug] Full error:", JSON.stringify(error, Object.getOwnPropertyNames(error || {}), 2));
+      res.status(500).json({ error: "Failed to create checkout session. Please try again or contact support.", details: errorMsg });
     }
   });
 
