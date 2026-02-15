@@ -1718,6 +1718,26 @@ export default function Dashboard() {
                             <span className="text-sm font-medium">{assessment.priceDisplay}</span>
                           </label>
                         ))}
+                        {selectedUnlockTypes.size >= 2 && pricingData.hasBulkDiscount && (() => {
+                          const selectedAssessments = pricingData.assessments.filter(a => selectedUnlockTypes.has(a.type));
+                          const selectedTotal = selectedAssessments.reduce((sum, a) => sum + (a.localPrice || 0), 0);
+                          const discountedTotal = Math.round(selectedTotal * 0.75);
+                          const currencySymbol = pricingData.bulkTotal?.priceDisplay?.replace(/[\d,.\s]/g, '') || '';
+                          return (
+                            <div className="mt-2 pt-2 border-t border-dashed" data-testid="individual-bundle-discount">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 text-xs">25% off</Badge>
+                                  <span className="text-sm text-muted-foreground">{selectedUnlockTypes.size} assessments</span>
+                                </div>
+                                <div className="text-right">
+                                  <span className="text-sm font-bold">{currencySymbol}{discountedTotal.toLocaleString()}</span>
+                                  <span className="text-xs text-muted-foreground line-through ml-1.5">{currencySymbol}{selectedTotal.toLocaleString()}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
                   </label>
