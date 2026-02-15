@@ -813,10 +813,52 @@ export default function Assessment() {
     startMutation.mutate();
   };
 
-  if (loadingAssessments || !assessment || questions.length === 0) {
+  if ((loadingAssessments || !assessment || questions.length === 0) && !showSeriesComplete) {
     return (
       <div className={`min-h-[100dvh] flex items-center justify-center ${bgMain}`}>
         <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
+      </div>
+    );
+  }
+
+  if (showSeriesComplete && seriesCompleteInfo) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
+        <Card className="relative max-w-lg w-full mx-4 p-8 space-y-6 bg-white/95 backdrop-blur-sm shadow-2xl border-0">
+          <div className="text-center space-y-4">
+            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-full flex items-center justify-center">
+              <Trophy className="h-10 w-10 text-cyan-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900" data-testid="text-series-complete-title">
+              All Assessments Complete!
+            </h1>
+            <p className="text-slate-600">
+              Congratulations! You've successfully completed all {seriesCompleteInfo.completedCount} assessments
+              {seriesCompleteInfo.partnerName !== 'your partner' ? ` with ${seriesCompleteInfo.partnerName}` : ''}.
+            </p>
+            <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+              <p className="text-sm text-slate-600">
+                Your results are now available on your dashboard. You can unlock them to view detailed insights and recommendations.
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-2 py-2">
+              <Loader2 className="h-4 w-4 animate-spin text-cyan-600" />
+              <span className="text-slate-500 text-sm">Redirecting to your dashboard...</span>
+            </div>
+            <Button
+              onClick={() => {
+                setLocation(`/dashboard?view=candidate&scrollToSeries=${seriesCompleteInfo.invitationId}`);
+              }}
+              className="w-full bg-gradient-to-r from-cyan-500 to-blue-600"
+              data-testid="button-go-to-dashboard"
+            >
+              Go to Dashboard
+            </Button>
+          </div>
+        </Card>
       </div>
     );
   }
@@ -1225,45 +1267,6 @@ export default function Assessment() {
         completedCount={4}
       />
 
-      {showSeriesComplete && seriesCompleteInfo && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-          <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10" />
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
-          <Card className="relative max-w-lg w-full mx-4 p-8 space-y-6 bg-white/95 backdrop-blur-sm shadow-2xl border-0">
-            <div className="text-center space-y-4">
-              <div className="mx-auto w-20 h-20 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-full flex items-center justify-center">
-                <Trophy className="h-10 w-10 text-cyan-600" />
-              </div>
-              <h1 className="text-2xl font-bold text-slate-900" data-testid="text-series-complete-title">
-                All Assessments Complete!
-              </h1>
-              <p className="text-slate-600">
-                Congratulations! You've successfully completed all {seriesCompleteInfo.completedCount} assessments
-                {seriesCompleteInfo.partnerName !== 'your partner' ? ` with ${seriesCompleteInfo.partnerName}` : ''}.
-              </p>
-              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                <p className="text-sm text-slate-600">
-                  Your results are now available on your dashboard. You can unlock them to view detailed insights and recommendations.
-                </p>
-              </div>
-              <div className="flex items-center justify-center gap-2 py-2">
-                <Loader2 className="h-4 w-4 animate-spin text-cyan-600" />
-                <span className="text-slate-500 text-sm">Redirecting to your dashboard...</span>
-              </div>
-              <Button
-                onClick={() => {
-                  setLocation(`/dashboard?view=candidate&scrollToSeries=${seriesCompleteInfo.invitationId}`);
-                }}
-                className="w-full bg-gradient-to-r from-cyan-500 to-blue-600"
-                data-testid="button-go-to-dashboard"
-              >
-                Go to Dashboard
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
     </div>
   );
 }
