@@ -786,32 +786,26 @@ export function convertAndRoundToLocalCurrency(
   return roundPriceUp(convertedPrice);
 }
 
-// Round price based on magnitude for cleaner display (standard rounding: 5+ rounds up)
-// - Under 100: round to nearest whole number
-// - 100 - 999: round to nearest 10
-// - 1,000 - 9,999: round to nearest 100
-// - 10,000 - 99,999: round to nearest 1,000
-// - 100,000 - 999,999: round to nearest 10,000
-// - 1,000,000+: round to nearest 100,000
+// Round price UP based on magnitude for cleaner display (always rounds up)
+// - Under 100: round up to nearest whole number
+// - 100 - 999: round up to nearest 10
+// - 1,000 - 9,999: round up to nearest 100
+// - 10,000 - 99,999: round up to nearest 1,000
+// - 100,000 - 999,999: round up to nearest 10,000
+// - 1,000,000+: round up to nearest 100,000
 export function roundPriceUp(price: number, _currency?: CurrencyConfig): number {
   if (price < 100) {
-    // Under 100: round to nearest whole number
-    return Math.round(price);
+    return Math.ceil(price);
   } else if (price < 1000) {
-    // Hundreds: round to nearest 10 (e.g. 165 → 170, 164 → 160)
-    return Math.round(price / 10) * 10;
+    return Math.ceil(price / 10) * 10;
   } else if (price < 10000) {
-    // Thousands: round to nearest 100
-    return Math.round(price / 100) * 100;
+    return Math.ceil(price / 100) * 100;
   } else if (price < 100000) {
-    // Ten thousands: round to nearest 1,000
-    return Math.round(price / 1000) * 1000;
+    return Math.ceil(price / 1000) * 1000;
   } else if (price < 1000000) {
-    // Hundred thousands: round to nearest 10,000
-    return Math.round(price / 10000) * 10000;
+    return Math.ceil(price / 10000) * 10000;
   } else {
-    // Millions+: round to nearest 100,000
-    return Math.round(price / 100000) * 100000;
+    return Math.ceil(price / 100000) * 100000;
   }
 }
 
@@ -1254,9 +1248,10 @@ export function calculateCandidatePricing(
   }
 
   const subtotalLocal = effectiveBaseFeeLocal + assessmentsTotalLocal;
-  const totalLocal = bundleDiscount > 0
-    ? Math.round(subtotalLocal * (1 - bundleDiscount / 100))
+  const rawTotal = bundleDiscount > 0
+    ? Math.ceil(subtotalLocal * (1 - bundleDiscount / 100))
     : subtotalLocal;
+  const totalLocal = roundPriceUp(rawTotal);
 
   const stripeAmount = calculateStripeAmountFromRoundedTotal(totalLocal, localCurrencyCode);
 

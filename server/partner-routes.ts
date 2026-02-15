@@ -1868,17 +1868,25 @@ export function registerPartnerRoutes(app: Express) {
                 const bundleCandidateName = bundleInvitation?.name || bundleUser?.name || bundleUser?.username || undefined;
                 
                 const normalizedBundleTypes = bundleAssessmentTypes.map(t => normalizeAssessmentId(t));
-                const seriesSessions = completedSessions.filter((s: any) => normalizedBundleTypes.includes(normalizeAssessmentId(s.assessmentType)));
-                const bundlePaidSessions = seriesSessions.filter((s: any) => s.resultsPaymentStatus === 'paid');
-                const bundleUnpaidSessions = seriesSessions.filter((s: any) => s.resultsPaymentStatus !== 'paid');
+                const mostRecentByType: Record<string, any> = {};
+                for (const s of completedSessions) {
+                  const nt = normalizeAssessmentId(s.assessmentType);
+                  if (!normalizedBundleTypes.includes(nt)) continue;
+                  if (!mostRecentByType[nt] || (s.completedAt && (!mostRecentByType[nt].completedAt || new Date(s.completedAt) > new Date(mostRecentByType[nt].completedAt)))) {
+                    mostRecentByType[nt] = s;
+                  }
+                }
+                const deduplicatedSessions = Object.values(mostRecentByType);
+                const bundlePaidTypes = deduplicatedSessions.filter((s: any) => s.resultsPaymentStatus === 'paid').map((s: any) => s.assessmentType);
+                const bundleUnpaidTypes = deduplicatedSessions.filter((s: any) => s.resultsPaymentStatus !== 'paid').map((s: any) => s.assessmentType);
                 
                 await sendB2BAllCompleteEmail({
                   email: candidateEmail,
                   candidateName: bundleCandidateName,
                   partnerCompanyName: partner.companyName || partner.name,
                   completedAssessments: bundleAssessmentTypes,
-                  paidAssessments: bundlePaidSessions.map(s => s.assessmentType),
-                  unpaidAssessments: bundleUnpaidSessions.map(s => s.assessmentType),
+                  paidAssessments: bundlePaidTypes,
+                  unpaidAssessments: bundleUnpaidTypes,
                   paymentUrl: bundlePaymentUrl,
                   bundlePrice: bundleDiscountedDisplay,
                   originalTotalPrice: bundleOriginalDisplay,
