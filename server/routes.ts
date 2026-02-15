@@ -3268,35 +3268,47 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       // Check if already purchased all
       const existingPurchase = await storage.getPartnerResultPurchaseByInvitation(userId, partnerInvitationId);
       if (existingPurchase?.status === 'completed' && !existingPurchase.purchasedAssessmentTypes) {
-        // Full purchase already completed
         return res.status(400).json({ message: "All results already purchased" });
       }
       
-      // Filter results to purchase (if specific types requested)
-      let resultsToPurchase = completedResults;
+      // Check B2C purchases - exclude assessment types already paid through personal purchases
+      const b2cCheckoutPurchases = await storage.getPurchasesByUser(userId);
+      const b2cCheckoutPaidTypes = new Set<string>();
+      for (const p of b2cCheckoutPurchases) {
+        if (p.resultsAccessPaid && p.status === 'completed') {
+          const items = await storage.getPurchaseItems(p.id);
+          for (const item of items) {
+            b2cCheckoutPaidTypes.add(normalizeAssessmentId(item.assessmentType));
+          }
+        }
+      }
+      
+      // Filter out B2C-paid and B2B-already-purchased results
+      let resultsToPurchase = completedResults.filter((r: any) => 
+        !b2cCheckoutPaidTypes.has(normalizeAssessmentId(r.assessmentType))
+      );
+      
+      if (existingPurchase?.status === 'completed' && existingPurchase.purchasedAssessmentTypes) {
+        resultsToPurchase = resultsToPurchase.filter((r: any) => 
+          !existingPurchase.purchasedAssessmentTypes!.includes(normalizeAssessmentId(r.assessmentType))
+        );
+      }
+      
+      if (resultsToPurchase.length === 0) {
+        return res.status(400).json({ message: "All results already purchased" });
+      }
+      
+      // Further filter if specific types requested
       let purchasedTypes: string[] | null = null;
       
       if (assessmentTypes && Array.isArray(assessmentTypes) && assessmentTypes.length > 0 && !isBulkPurchase) {
-        // Individual purchase - filter to specific types
         const normalizedRequestedTypes = assessmentTypes.map((t: string) => normalizeAssessmentId(t));
-        resultsToPurchase = completedResults.filter((r: any) => 
+        resultsToPurchase = resultsToPurchase.filter((r: any) => 
           normalizedRequestedTypes.includes(normalizeAssessmentId(r.assessmentType))
         );
         
         if (resultsToPurchase.length === 0) {
           return res.status(400).json({ message: "No matching assessments found for the selected types" });
-        }
-        
-        // Check if any of these specific types were already purchased
-        if (existingPurchase?.status === 'completed' && existingPurchase.purchasedAssessmentTypes) {
-          const alreadyPurchased = resultsToPurchase.filter((r: any) => 
-            existingPurchase.purchasedAssessmentTypes!.includes(normalizeAssessmentId(r.assessmentType))
-          );
-          if (alreadyPurchased.length > 0) {
-            return res.status(400).json({ 
-              message: `Some assessments already purchased: ${alreadyPurchased.map((r: any) => r.assessmentType).join(', ')}` 
-            });
-          }
         }
         
         purchasedTypes = resultsToPurchase.map((r: any) => normalizeAssessmentId(r.assessmentType));
@@ -3324,8 +3336,9 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
 
       // B2C candidates do NOT get bulk/bundle discounts (only B2B candidates do)
       
-      // Determine if base fee (computation fee) was already paid for this invitation
-      const baseFeeAlreadyPaid = existingPurchase?.status === 'completed';
+      // Determine if base fee (computation fee) was already paid
+      // Paid if: existing B2B purchase exists, or user has ANY completed B2C purchase with results access
+      const baseFeeAlreadyPaid = existingPurchase?.status === 'completed' || b2cCheckoutPaidTypes.size > 0;
       
       // Use exchange rate from request body if provided, otherwise fetch live rate
       const effectiveExchangeRate = lockedExchangeRate || (await getExchangeRates()).rates?.[localCurrencyCode] || undefined;
@@ -3636,21 +3649,41 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "No completed assessments found" });
       }
 
-      // Check for existing purchase to filter out already-unlocked assessments
+      // Check for existing B2B purchase to filter out already-unlocked assessments
       const existingPurchase = await storage.getPartnerResultPurchaseByInvitation(userId, invitationId);
       let purchasableResults = completedResults;
       
       if (existingPurchase?.status === 'completed') {
         if (!existingPurchase.purchasedAssessmentTypes) {
-          // Full purchase already completed - nothing left to buy
           return res.status(400).json({ message: "All results already purchased" });
         }
-        // Filter out already-purchased assessment types
         purchasableResults = completedResults.filter((r: any) => 
           !existingPurchase.purchasedAssessmentTypes!.includes(normalizeAssessmentId(r.assessmentType))
         );
         if (purchasableResults.length === 0) {
           return res.status(400).json({ message: "All results already purchased" });
+        }
+      }
+      
+      // Also check B2C purchases - if the user already paid for results access
+      // for the same assessment types through their personal purchases, exclude those
+      const b2cPurchases = await storage.getPurchasesByUser(userId);
+      const b2cPaidTypes = new Set<string>();
+      for (const purchase of b2cPurchases) {
+        if (purchase.resultsAccessPaid && purchase.status === 'completed') {
+          const items = await storage.getPurchaseItems(purchase.id);
+          for (const item of items) {
+            b2cPaidTypes.add(normalizeAssessmentId(item.assessmentType));
+          }
+        }
+      }
+      
+      if (b2cPaidTypes.size > 0) {
+        purchasableResults = purchasableResults.filter((r: any) => 
+          !b2cPaidTypes.has(normalizeAssessmentId(r.assessmentType))
+        );
+        if (purchasableResults.length === 0) {
+          return res.status(400).json({ message: "All results already purchased through previous payments" });
         }
       }
 
@@ -3675,8 +3708,9 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       const userCurrency = getCurrencyForCountry(userCountry);
       const pricingTier = getPricingTier(userCountry);
       
-      // Determine if base fee (computation fee) has already been paid for this invitation
-      const baseFeeAlreadyPaid = existingPurchase?.status === 'completed';
+      // Determine if base fee (computation fee) has already been paid
+      // Check both B2B partner purchases AND B2C self-purchases
+      const baseFeeAlreadyPaid = existingPurchase?.status === 'completed' || b2cPaidTypes.size > 0;
       
       // Fetch live exchange rate and lock it for this pricing session
       const exchangeRatesData = await getExchangeRates();
@@ -4018,6 +4052,18 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         purchasesByInvitation[purchase.partnerInvitationId] = purchase;
       }
       
+      // Check B2C purchases - assessment types already paid for through personal purchases
+      const b2cPurchases = await storage.getPurchasesByUser(userId);
+      const b2cPaidAssessmentTypes = new Set<string>();
+      for (const purchase of b2cPurchases) {
+        if (purchase.resultsAccessPaid && purchase.status === 'completed') {
+          const items = await storage.getPurchaseItems(purchase.id);
+          for (const item of items) {
+            b2cPaidAssessmentTypes.add(normalizeAssessmentId(item.assessmentType));
+          }
+        }
+      }
+      
       // Group results by partnerInvitationId (each invitation = one "series")
       const resultsByInvitation: Record<string, any[]> = {};
       for (const result of partnerResults) {
@@ -4091,21 +4137,25 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
           // Check if ALL assessments have B2B payment
           const allB2BPaid = completedResults.every((r: any) => isB2BSessionPaid(r.assessmentType));
           
-          // All results are unlocked if full purchase OR auto-unlocked after 30 days OR all B2B paid
-          const resultsUnlocked = isFullPurchase || isAutoUnlocked || allB2BPaid;
+          // Check if all completed results are unlocked via B2C payments
+          const allB2CPaid = completedResults.every((r: any) => 
+            b2cPaidAssessmentTypes.has(normalizeAssessmentId(r.assessmentType))
+          );
+          
+          // All results are unlocked if full purchase OR auto-unlocked after 30 days OR all B2B paid OR all B2C paid
+          const resultsUnlocked = isFullPurchase || isAutoUnlocked || allB2BPaid || allB2CPaid;
           
           // Helper to check if a specific assessment type is unlocked
           const isAssessmentUnlocked = (assessmentType: string) => {
-            if (isAutoUnlocked) return true; // Auto-unlock unlocks all
-            if (isFullPurchase) return true; // Full purchase unlocks all
+            if (isAutoUnlocked) return true;
+            if (isFullPurchase) return true;
             if (isPurchased && purchasedTypes) {
-              // Partial purchase - check if this specific type was purchased
               const normalizedType = normalizeAssessmentId(assessmentType);
-              console.log(`[Unlock Check] Type: ${assessmentType}, Normalized: ${normalizedType}, PurchasedTypes: ${JSON.stringify(purchasedTypes)}, Unlocked: ${purchasedTypes.includes(normalizedType)}`);
-              return purchasedTypes.includes(normalizedType);
+              if (purchasedTypes.includes(normalizedType)) return true;
             }
-            // Check B2B session payment status
             if (isB2BSessionPaid(assessmentType)) return true;
+            // Check if this assessment type was already paid for through B2C purchases
+            if (b2cPaidAssessmentTypes.has(normalizeAssessmentId(assessmentType))) return true;
             return false;
           };
           
