@@ -45,6 +45,8 @@ interface UnlockResultsData {
   bulkDiscountRate: number;
   freeAccessDate: string | null;
   allPaid: boolean;
+  invitationId?: string;
+  hasExistingAccount?: boolean;
 }
 
 const assessmentNames: Record<string, string> = {
@@ -208,6 +210,9 @@ export default function UnlockResults() {
   }
 
   if (data.allPaid) {
+    const scrollParam = data.invitationId ? `&scrollToSeries=${data.invitationId}` : '';
+    const dashboardUrl = `/dashboard?view=candidate${scrollParam}`;
+    
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
         <Card className="max-w-lg w-full">
@@ -217,10 +222,16 @@ export default function UnlockResults() {
             <p className="text-muted-foreground mb-6">
               You've already unlocked access to your assessment results.
             </p>
-            <Button onClick={() => setLocation('/login')} data-testid="button-go-to-login">
-              Sign In to View Results
+            <Button onClick={() => setLocation(data.hasExistingAccount ? dashboardUrl : '/login')} data-testid="button-go-to-dashboard">
+              {data.hasExistingAccount ? "View Results" : "Create Account"}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
+            <p className="text-xs text-muted-foreground mt-3">
+              {data.hasExistingAccount 
+                ? "You'll be taken to your test series"
+                : "We'll create an account and send you login details"
+              }
+            </p>
           </CardContent>
         </Card>
       </div>

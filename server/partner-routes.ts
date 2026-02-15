@@ -3244,6 +3244,29 @@ export function registerPartnerRoutes(app: Express) {
       const allPaid = completedSessions.every(s => s.resultsPaymentStatus === 'paid');
       const unpaidCount = completedSessions.filter(s => s.resultsPaymentStatus !== 'paid').length;
       
+      if (allPaid) {
+        // Auto-login the user if they have an account
+        const existingUser = await storage.getUserByEmail(invitation.email);
+        if (existingUser) {
+          (req as any).session.userId = existingUser.id;
+          await new Promise<void>((resolve) => {
+            (req as any).session.save((err: any) => {
+              if (err) console.error('[Unlock Results] Session save error (allPaid):', err);
+              resolve();
+            });
+          });
+        }
+        
+        return res.json({
+          email: invitation.email,
+          inviteToken,
+          partnerName,
+          allPaid: true,
+          invitationId: invitation.id,
+          hasExistingAccount: !!existingUser,
+        });
+      }
+      
       // Use canonical pricing function
       const userCountry = (countryCode as string).toUpperCase();
       const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry] || 'GBP';
@@ -4178,6 +4201,8 @@ export function registerPartnerRoutes(app: Express) {
         // Include delivery status so client knows if PDF email needs to be sent
         const resultsDeliveryStatus = (session as any).resultsDeliveryStatus || 'pending';
         
+        const invitationId = (session.metadata as any)?.invitationId || null;
+        
         return res.status(200).json({ 
           alreadyPaid: true,
           sessionId,
@@ -4187,6 +4212,7 @@ export function registerPartnerRoutes(app: Express) {
           hasExistingAccount,
           userId: existingUser?.id,
           resultsDeliveryStatus,
+          partnerInvitationId: invitationId,
         });
       }
       

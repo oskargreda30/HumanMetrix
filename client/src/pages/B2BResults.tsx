@@ -38,6 +38,7 @@ interface B2BResultsData {
   hasExistingAccount?: boolean;
   userId?: number;
   resultsDeliveryStatus?: string;
+  partnerInvitationId?: string;
 }
 
 const ASSESSMENT_NAMES: Record<string, string> = {
@@ -365,8 +366,8 @@ export default function B2BResults() {
               
               <p className="text-xs text-slate-500 mt-3">
                 {data.hasExistingAccount 
-                  ? "You'll be logged in and taken to your dashboard"
-                  : "We'll create an account and send you login details"
+                  ? "You'll be logged in and taken to your test series"
+                  : "We'll create an account and take you to your test series"
                 }
               </p>
             </div>
