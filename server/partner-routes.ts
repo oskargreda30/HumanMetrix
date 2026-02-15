@@ -1789,11 +1789,19 @@ export function registerPartnerRoutes(app: Express) {
             let bundleAssessmentTypes: string[] = [];
             const bundleDiscountPercent = 25; // Always 25% off for bundle pricing
             
-            // Count how many assessments are NOT yet paid for (locked results)
-            const lockedSessions = completedSessions.filter((s: any) => {
-              return (s as any).resultsPaymentStatus !== 'paid' && (s as any).resultsReleaseStatus !== 'released';
-            });
-            const lockedAssessmentTypes = [...new Set(lockedSessions.map(s => normalizeAssessmentId(s.assessmentType)))];
+            // Build set of types that have ANY paid/released session (across all invitations)
+            const emailPaidTypes = new Set<string>();
+            for (const s of completedSessions) {
+              if ((s as any).resultsPaymentStatus === 'paid' || (s as any).resultsReleaseStatus === 'released') {
+                emailPaidTypes.add(normalizeAssessmentId(s.assessmentType));
+              }
+            }
+            // Locked types = types that have NO paid session anywhere
+            const lockedAssessmentTypes = [...new Set(
+              completedSessions
+                .map(s => normalizeAssessmentId(s.assessmentType))
+                .filter(t => !emailPaidTypes.has(t))
+            )];
             
             // Only send bundle email if there are MORE than 1 unpaid assessment results
             if (lockedAssessmentTypes.length > 1) {
@@ -5137,9 +5145,17 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(404).json({ error: "No completed assessments found" });
       }
       
-      // Filter out already-paid/unlocked sessions - only show locked results
+      // Build a set of assessment types that have ANY paid session (across all invitations)
+      const paidTypes = new Set<string>();
+      for (const s of completedSessions) {
+        if ((s as any).resultsPaymentStatus === 'paid' || (s as any).resultsReleaseStatus === 'released') {
+          paidTypes.add(normalizeAssessmentId(s.assessmentType));
+        }
+      }
+      
+      // Filter out sessions whose assessment type is already paid/released
       const lockedSessions = completedSessions.filter((s: any) => {
-        return (s as any).resultsPaymentStatus !== 'paid' && (s as any).resultsReleaseStatus !== 'released';
+        return !paidTypes.has(normalizeAssessmentId(s.assessmentType));
       });
       
       if (lockedSessions.length === 0) {
@@ -5163,7 +5179,15 @@ export function registerPartnerRoutes(app: Express) {
         : lockedSessions;
       
       if (filteredSessions.length === 0) {
-        return res.status(404).json({ error: "No matching assessments found" });
+        const existingUser = await storage.getUserByEmail(email as string);
+        const unlockInvitationId = (completedSessions[0] as any)?.partnerInvitationId || (completedSessions[0] as any)?.metadata?.invitationId || null;
+        return res.status(200).json({ 
+          alreadyUnlocked: true,
+          email,
+          partnerName: partnerAccount.companyName || partnerAccount.name,
+          hasExistingAccount: !!existingUser,
+          invitationId: unlockInvitationId,
+        });
       }
       
       // Deduplicate sessions by assessment type (only include each type once)
@@ -5187,7 +5211,7 @@ export function registerPartnerRoutes(app: Express) {
       });
       
       // Calculate pricing: each test priced individually (with own base fee), then summed, then discounted
-      const bundleDiscountPercent = 25;
+      const bundleDiscountPercent = uniqueSessions.length >= 2 ? 25 : 0;
       const resultsBundlePricing = calculateBundlePricing(
         countryCode, bundleItems, BASE_FEE,
         { bundleDiscount: bundleDiscountPercent }
@@ -5262,9 +5286,17 @@ export function registerPartnerRoutes(app: Express) {
       // Get completed sessions for this email and partner
       const completedSessions = await storage.getCompletedB2BSessionsByEmail(email, partnerIdStr);
       
-      // Filter out already-paid/unlocked sessions - only process locked results
+      // Build a set of assessment types that have ANY paid/released session
+      const checkoutPaidTypes = new Set<string>();
+      for (const s of completedSessions) {
+        if ((s as any).resultsPaymentStatus === 'paid' || (s as any).resultsReleaseStatus === 'released') {
+          checkoutPaidTypes.add(normalizeAssessmentId(s.assessmentType));
+        }
+      }
+      
+      // Filter out sessions whose assessment type is already paid/released
       const lockedSessions = completedSessions.filter((s: any) => {
-        return (s as any).resultsPaymentStatus !== 'paid' && (s as any).resultsReleaseStatus !== 'released';
+        return !checkoutPaidTypes.has(normalizeAssessmentId(s.assessmentType));
       });
       
       if (lockedSessions.length === 0) {
@@ -5280,13 +5312,24 @@ export function registerPartnerRoutes(app: Express) {
         : lockedSessions;
       
       if (filteredSessions.length === 0) {
-        return res.status(404).json({ error: "No matching assessments found" });
+        return res.status(400).json({ error: "All requested assessments have already been unlocked" });
+      }
+      
+      // Deduplicate by type (one session per assessment type)
+      const checkoutSeenTypes = new Set<string>();
+      const dedupedSessions: typeof filteredSessions = [];
+      for (const session of filteredSessions) {
+        const nt = normalizeAssessmentId(session.assessmentType);
+        if (!checkoutSeenTypes.has(nt)) {
+          checkoutSeenTypes.add(nt);
+          dedupedSessions.push(session);
+        }
       }
       
       // Calculate bundle pricing using canonical function
       const sessionIds: string[] = [];
       const bundleItems: Array<{ type: string; priceInPence: number }> = [];
-      for (const session of filteredSessions) {
+      for (const session of dedupedSessions) {
         const normalizedType = normalizeAssessmentId(session.assessmentType);
         const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
         bundleItems.push({ type: normalizedType, priceInPence: assessmentPrice });
