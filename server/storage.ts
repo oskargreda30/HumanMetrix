@@ -792,7 +792,7 @@ export class DatabaseStorage implements IStorage {
     // 1. Get all active invitations for this user (newest first)
     const allInvitations = await this.getInvitationsByEmail(userEmail);
     const validInvitations = allInvitations.filter(inv => 
-      (inv.status === 'sent' || inv.status === 'accepted') &&
+      (inv.status === 'sent' || inv.status === 'accepted' || inv.status === 'completed' || inv.status === 'started') &&
       new Date(inv.expiresAt) > new Date()
     );
     
