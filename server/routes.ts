@@ -3272,6 +3272,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       }
       
       // Filter out assessments already paid via B2B session payments
+      // IMPORTANT: Only check sessions belonging to THIS invitation, not all sessions for this email+partner
       let resultsToPurchase = completedResults;
       const checkoutInvitationEmail = invitation.email;
       const checkoutB2bSessions = (checkoutInvitationEmail && invitation.partnerId)
@@ -3279,7 +3280,8 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         : [];
       const checkoutB2bPaidTypes = new Set<string>();
       for (const session of checkoutB2bSessions) {
-        if ((session as any).resultsPaymentStatus === 'paid') {
+        const sessionInvitationId = (session as any).metadata?.invitationId;
+        if (sessionInvitationId === partnerInvitationId && (session as any).resultsPaymentStatus === 'paid') {
           checkoutB2bPaidTypes.add(normalizeAssessmentId(session.assessmentType));
         }
       }
@@ -3670,13 +3672,15 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       }
       
       // Also filter out assessments already paid via B2B session payments
+      // IMPORTANT: Only check sessions belonging to THIS invitation, not all sessions for this email+partner
       const invitationEmail = invitation.email;
       const b2bSessions = (invitationEmail && invitation.partnerId) 
         ? await storage.getCompletedB2BSessionsByEmail(invitationEmail, invitation.partnerId)
         : [];
       const b2bPaidTypes = new Set<string>();
       for (const session of b2bSessions) {
-        if ((session as any).resultsPaymentStatus === 'paid') {
+        const sessionInvitationId = (session as any).metadata?.invitationId;
+        if (sessionInvitationId === invitationId && (session as any).resultsPaymentStatus === 'paid') {
           b2bPaidTypes.add(normalizeAssessmentId(session.assessmentType));
         }
       }
@@ -4080,7 +4084,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
           const partner = await storage.getPartnerAccount(invitation.partnerId);
           
           // Fetch B2B sessions for this partner/user combo to check individual payment status
-          // Sessions are linked via partner_id + external_email + assessment_type
+          // IMPORTANT: Only consider sessions belonging to THIS invitation to avoid cross-invitation contamination
           const b2bSessions: Record<string, any> = {};
           if (userEmail && invitation.partnerId) {
             const sessions = await storage.getCompletedB2BSessionsByEmail(
@@ -4088,8 +4092,9 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
               invitation.partnerId
             );
             for (const session of sessions) {
+              const sessionInvitationId = (session as any).metadata?.invitationId;
+              if (sessionInvitationId !== invitationId) continue;
               const normalizedType = normalizeAssessmentId(session.assessmentType);
-              // Store the most recent session for each assessment type
               if (!b2bSessions[normalizedType] || 
                   (session.completedAt && (!b2bSessions[normalizedType].completedAt || 
                    new Date(session.completedAt) > new Date(b2bSessions[normalizedType].completedAt)))) {
