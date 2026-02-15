@@ -3359,7 +3359,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return true;
       });
       const isUnlockAll = resultsToPurchase.length === allUnpaidCompleted.length;
-      const checkoutBundleDiscount = (isUnlockAll && resultsToPurchase.length >= 2) ? 25 : 0;
+      const checkoutBundleDiscount = resultsToPurchase.length >= 2 ? 25 : 0;
       
       const checkoutItems = resultsToPurchase.map((result: any) => ({
         type: normalizeAssessmentId(result.assessmentType),
