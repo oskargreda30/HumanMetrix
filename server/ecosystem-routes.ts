@@ -2062,12 +2062,37 @@ export function registerEcosystemRoutes(app: Express): void {
 
       if (completedSession) {
         // Mark project as paid
+        const paidAmount = completedSession.amount_total || ECOSYSTEM_BASE_PRICE_PENCE;
+        const paidCurrency = completedSession.currency || 'gbp';
         await storage.updateEcosystemProject(projectId, {
           isPaid: true,
-          paidAmount: completedSession.amount_total || ECOSYSTEM_BASE_PRICE_PENCE,
+          paidAmount,
           paidAt: new Date(),
           stripePaymentIntentId: completedSession.payment_intent as string,
         });
+
+        // Send payment receipt email
+        try {
+          const { sendPaymentReceiptWithPdf } = await import('./email');
+          const receiptDetails = {
+            email: user.email,
+            name: user.firstName || user.name || user.username || user.email?.split('@')[0] || 'Customer',
+            items: [{
+              description: 'Ecosystem Team Diagnostic Report',
+              quantity: 1,
+              amount: paidAmount,
+            }],
+            subtotal: paidAmount,
+            total: paidAmount,
+            currency: paidCurrency.toUpperCase(),
+            transactionId: completedSession.payment_intent as string,
+          };
+          
+          await sendPaymentReceiptWithPdf(receiptDetails);
+          console.log(`[Ecosystem] Payment receipt sent to ${user.email}`);
+        } catch (receiptError: any) {
+          console.error(`[Ecosystem] Failed to send payment receipt:`, receiptError.message);
+        }
 
         return res.json({ success: true, paid: true });
       }

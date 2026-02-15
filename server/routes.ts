@@ -1979,6 +1979,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
         }
+        
+        // Handle ecosystem project payment
+        if (metadata.type === 'ecosystem_project' && metadata.projectId) {
+          const projectId = metadata.projectId;
+          const project = await storage.getEcosystemProject(projectId);
+          
+          if (!project) {
+            console.log(`[Airwallex Webhook] Ecosystem project ${projectId} not found`);
+            return res.json({ received: true });
+          }
+          
+          if (project.isPaid) {
+            console.log(`[Airwallex Webhook] Ecosystem project ${projectId} already paid, skipping`);
+            return res.json({ received: true, alreadyProcessed: true });
+          }
+          
+          const ecoAmount = Math.round((paymentIntent.amount || 0) * 100);
+          const ecoCurrency = (paymentIntent.currency || 'gbp').toLowerCase();
+          
+          await storage.updateEcosystemProject(projectId, {
+            isPaid: true,
+            paidAmount: ecoAmount,
+            paidAt: new Date(),
+            stripePaymentIntentId: paymentIntent.id,
+          });
+          
+          console.log(`[Airwallex Webhook] ✓ Ecosystem project ${projectId} marked as paid`);
+          
+          // Send payment receipt
+          try {
+            const ecoUser = metadata.userId ? await storage.getUser(metadata.userId) : null;
+            const receiptEmail = ecoUser?.email;
+            if (receiptEmail) {
+              const receiptDetails: PdfReceiptEmailDetails = {
+                email: receiptEmail,
+                name: ecoUser?.firstName || ecoUser?.name || ecoUser?.username || receiptEmail.split('@')[0],
+                items: [{
+                  description: 'Ecosystem Team Diagnostic Report',
+                  quantity: 1,
+                  amount: ecoAmount,
+                }],
+                subtotal: ecoAmount,
+                total: ecoAmount,
+                currency: ecoCurrency.toUpperCase(),
+                transactionId: paymentIntent.id,
+                paymentMethod: 'Airwallex',
+              };
+              
+              const receiptResult = await sendPaymentReceiptWithPdf(receiptDetails);
+              if (receiptResult.success) {
+                console.log(`[Airwallex Webhook] ✓ Ecosystem receipt sent to ${receiptEmail} (Receipt: ${receiptResult.receiptNumber})`);
+              }
+            }
+          } catch (receiptError) {
+            console.error(`[Airwallex Webhook] Failed to send ecosystem receipt:`, receiptError);
+          }
+        }
       }
       
       res.json({ received: true });
@@ -3631,6 +3688,36 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
               autoLoginToken,
             });
             console.log(`[Partner Results] Sent results ready email to ${user.email}`);
+            
+            // Send payment receipt with PDF
+            try {
+              const purchasedTypeNames = purchasedTypes.map((t: string) => {
+                const names: Record<string, string> = { 'fit': 'FIT', 'ai_readiness': 'AI Readiness', 'prompt_architecture': 'Prompt Architecture', 'aiq': 'AIQ' };
+                return names[normalizeAssessmentId(t)] || t;
+              });
+              const receiptDescription = purchasedTypeNames.length === 1 
+                ? `${purchasedTypeNames[0]} Assessment Results`
+                : `${purchasedTypeNames.length} Assessment Results (${purchasedTypeNames.join(', ')})`;
+              
+              const receiptDetails: PdfReceiptEmailDetails = {
+                email: user.email,
+                name: user.firstName || user.name || user.username || user.email.split('@')[0],
+                items: [{
+                  description: receiptDescription,
+                  quantity: purchasedTypeNames.length,
+                  amount: purchase.amount || 0,
+                }],
+                subtotal: purchase.amount || 0,
+                total: purchase.amount || 0,
+                currency: purchase.currency || 'GBP',
+                transactionId: paymentIntentRef || undefined,
+              };
+              
+              await sendPaymentReceiptWithPdf(receiptDetails);
+              console.log(`[Partner Results] Payment receipt sent to ${user.email}`);
+            } catch (receiptError: any) {
+              console.error(`[Partner Results] Failed to send receipt:`, receiptError.message);
+            }
           }
         } catch (emailError) {
           console.error("Error sending partner results confirmation email:", emailError);
