@@ -2206,7 +2206,7 @@ export default function EmbedAssessment() {
             
             <Button
               className="w-full"
-              onClick={() => moveToNextAssessment()}
+              onClick={() => advanceToNextAssessment()}
               style={{ backgroundColor: primaryColor }}
               data-testid="button-continue-next-assessment"
             >
