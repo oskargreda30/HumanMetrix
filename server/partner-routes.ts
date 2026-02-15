@@ -1838,29 +1838,20 @@ export function registerPartnerRoutes(app: Express) {
             const isSeriesComplete = (isMultiAssessmentSeries && isLastInMultiAssessmentSeries) || seriesComplete;
             const effectiveSeriesTypes = seriesAssessmentTypes.length > 0 ? seriesAssessmentTypes : multiAssessmentTypes;
             
-            // Only send bundle email if there are MORE than 1 unpaid assessment results
-            if (lockedAssessmentTypes.length > 1) {
-              if (isSeriesComplete && effectiveSeriesTypes.length > 1) {
-                // Multi-assessment series completed - send bundle for locked series assessments only
-                bundleAssessmentTypes = effectiveSeriesTypes.filter(t => lockedAssessmentTypes.includes(normalizeAssessmentId(t)));
-                if (bundleAssessmentTypes.length > 1) {
-                  shouldSendBundleEmail = true;
-                  console.log(`[B2B Email] Series complete (${bundleAssessmentTypes.length} locked tests) for ${candidateEmail} - sending bundle offer with 25% off`);
-                } else {
-                  console.log(`[B2B Email] Series complete but only ${bundleAssessmentTypes.length} locked result(s) - skipping bundle email`);
-                }
-              } else if (allComplete && !isSeriesComplete) {
-                // All 4 assessments complete (non-multi-assessment flow) - send bundle for locked assessments only
-                bundleAssessmentTypes = lockedAssessmentTypes;
-                shouldSendBundleEmail = true;
-                console.log(`[B2B Email] All 4 assessments complete, ${bundleAssessmentTypes.length} locked for ${candidateEmail} - sending bundle offer with 25% off`);
-              }
-            } else {
-              console.log(`[B2B Email] Only ${lockedAssessmentTypes.length} locked result(s) for ${candidateEmail} - skipping bundle email (need >1)`);
+            // Determine bundle discount: only include bulk pricing section when 2+ locked
+            const showBundlePricing = lockedAssessmentTypes.length > 1;
+            if (isSeriesComplete && effectiveSeriesTypes.length > 1) {
+              bundleAssessmentTypes = effectiveSeriesTypes.filter(t => lockedAssessmentTypes.includes(normalizeAssessmentId(t)));
+              shouldSendBundleEmail = true;
+              console.log(`[B2B Email] Series complete for ${candidateEmail} - ${lockedAssessmentTypes.length} locked tests, showBundlePricing=${showBundlePricing}`);
+            } else if (allComplete && !isSeriesComplete) {
+              bundleAssessmentTypes = lockedAssessmentTypes;
+              shouldSendBundleEmail = true;
+              console.log(`[B2B Email] All 4 assessments complete for ${candidateEmail} - ${lockedAssessmentTypes.length} locked tests, showBundlePricing=${showBundlePricing}`);
             }
             
             if (shouldSendBundleEmail) {
-              // Notify partner that all assessments are complete (always runs, even if emails failed)
+              // Notify partner that all assessments are complete
               try {
                 const { notifyAssessmentCompleted } = await import('./partner-notifications');
                 const sessionMetadata = updatedSession?.metadata as any;
@@ -1871,36 +1862,16 @@ export function registerPartnerRoutes(app: Express) {
                   session.assessmentType,
                   true,
                   {
-                    assessmentCount: bundleAssessmentTypes.length,
+                    assessmentCount: effectiveSeriesTypes.length,
                     invitationId: sessionMetadata?.invitationId,
                   }
                 );
-                console.log(`[B2B Notification] Sent assessment_all_completed notification for ${candidateEmail} (${bundleAssessmentTypes.length} assessments)`);
+                console.log(`[B2B Notification] Sent assessment_all_completed notification for ${candidateEmail}`);
               } catch (notifyError) {
                 console.error('[B2B Notification] Failed to notify assessment completion:', notifyError);
               }
               
-              // Calculate bundle price based on the sum of individual PPP-adjusted discounted prices
-              // The bundle discount (25%) is applied on top of the individual discounted prices
               try {
-                // Calculate bundle pricing: sum individual test prices (each with own base fee), then apply discount
-                const bundleItems = bundleAssessmentTypes.map(type => ({
-                  type: normalizeAssessmentId(type),
-                  priceInPence: ASSESSMENT_PRICES[normalizeAssessmentId(type)] || 400,
-                }));
-                
-                const bundlePricing = calculateBundlePricing(
-                  userCountryCode, bundleItems, BASE_FEE,
-                  { exchangeRate: emailLiveRate, bundleDiscount: bundleDiscountPercent }
-                );
-                
-                const bundleOriginalDisplay = bundlePricing.originalDisplay;
-                const bundleDiscountedDisplay = bundlePricing.discountedDisplay;
-                
-                console.log(`[B2B Bundle Pricing] Assessments: ${bundleAssessmentTypes.join(', ')}, Original: ${bundlePricing.originalTotal} (${bundleOriginalDisplay}), ${bundleDiscountPercent}% discount: ${bundlePricing.discountedTotal} (${bundleDiscountedDisplay})`);
-                
-                const bundlePaymentUrl = `${baseUrl}/b2b-results-bundle?email=${encodeURIComponent(candidateEmail)}&partner=${session.partnerId}&country=${userCountryCode}&types=${bundleAssessmentTypes.join(',')}`;
-                
                 const bundleInvitationId = (updatedSession?.metadata as any)?.invitationId;
                 const bundleInvitation = bundleInvitationId ? await storage.getPartnerCandidateInvitation(bundleInvitationId) : null;
                 const bundleUser = await storage.getUserByEmail(candidateEmail);
@@ -1922,6 +1893,29 @@ export function registerPartnerRoutes(app: Express) {
                   .filter((s: any) => s.resultsPaymentStatus !== 'paid')
                   .map((s: any) => normalizeAssessmentId(s.assessmentType));
                 
+                // Calculate bundle pricing only if 2+ locked (for display), otherwise use placeholder values
+                let bundleDiscountedDisplay = '';
+                let bundleOriginalDisplay = '';
+                let bundlePaymentUrl = `${baseUrl}/dashboard`;
+                
+                if (showBundlePricing && bundleAssessmentTypes.length >= 2) {
+                  const bundleItems = bundleAssessmentTypes.map(type => ({
+                    type: normalizeAssessmentId(type),
+                    priceInPence: ASSESSMENT_PRICES[normalizeAssessmentId(type)] || 400,
+                  }));
+                  
+                  const bundlePricing = calculateBundlePricing(
+                    userCountryCode, bundleItems, BASE_FEE,
+                    { exchangeRate: emailLiveRate, bundleDiscount: bundleDiscountPercent }
+                  );
+                  
+                  bundleOriginalDisplay = bundlePricing.originalDisplay;
+                  bundleDiscountedDisplay = bundlePricing.discountedDisplay;
+                  bundlePaymentUrl = `${baseUrl}/b2b-results-bundle?email=${encodeURIComponent(candidateEmail)}&partner=${session.partnerId}&country=${userCountryCode}&types=${bundleAssessmentTypes.join(',')}`;
+                  
+                  console.log(`[B2B Bundle Pricing] Assessments: ${bundleAssessmentTypes.join(', ')}, Original: ${bundlePricing.originalTotal} (${bundleOriginalDisplay}), ${bundleDiscountPercent}% discount: ${bundlePricing.discountedTotal} (${bundleDiscountedDisplay})`);
+                }
+                
                 await sendB2BAllCompleteEmail({
                   email: candidateEmail,
                   candidateName: bundleCandidateName,
@@ -1932,12 +1926,12 @@ export function registerPartnerRoutes(app: Express) {
                   paymentUrl: bundlePaymentUrl,
                   bundlePrice: bundleDiscountedDisplay,
                   originalTotalPrice: bundleOriginalDisplay,
-                  discountPercentage: bundleDiscountPercent,
+                  discountPercentage: showBundlePricing ? bundleDiscountPercent : 0,
                   freeUnlockDate,
                 });
-                console.log(`[B2B Email] Sent bundle offer email to ${candidateEmail}`);
+                console.log(`[B2B Email] Sent all-complete email to ${candidateEmail} (bundle pricing: ${showBundlePricing})`);
               } catch (bundleEmailError) {
-                console.error('[B2B Email] Failed to send bundle offer email:', bundleEmailError);
+                console.error('[B2B Email] Failed to send all-complete email:', bundleEmailError);
               }
             }
           } catch (pricingError) {
