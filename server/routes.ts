@@ -3332,14 +3332,12 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         }
       }
 
-      // Calculate price using email-style approach: sum pence → PPP once → format once
+      // Calculate price matching the display: each assessment priced individually
+      // (assessment + BASE_FEE per test), matching the per-test email prices
       const userCountry = countryCode || 'GB';
       const stripeCurrency = getStripeCurrencyCode(userCountry);
       const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
       const userCurrency = getCurrencyForCountry(userCountry);
-
-      // Determine if base fee was already paid (either via B2B purchase or B2B session payment)
-      const baseFeeAlreadyPaid = existingPurchase?.status === 'completed' || checkoutB2bPaidTypes.size > 0;
       
       // Use exchange rate from request body if provided, otherwise fetch live rate
       const effectiveExchangeRate = lockedExchangeRate || (await getExchangeRates()).rates?.[localCurrencyCode] || undefined;
@@ -3352,12 +3350,14 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         type: normalizeAssessmentId(result.assessmentType),
         priceInPence: ASSESSMENT_PRICES[normalizeAssessmentId(result.assessmentType)] || 400,
       }));
-      const checkoutPricing = calculateCandidatePricing(
+      
+      // Use calculateBundlePricing: each assessment priced individually with its own BASE_FEE
+      const checkoutBundlePricing = calculateBundlePricing(
         userCountry, checkoutItems, BASE_FEE,
-        { exchangeRate: effectiveExchangeRate, baseFeeAlreadyPaid, bundleDiscount: checkoutBundleDiscount }
+        { exchangeRate: effectiveExchangeRate, bundleDiscount: checkoutBundleDiscount }
       );
       
-      let totalLocal = checkoutPricing.totalLocal;
+      let totalLocal = checkoutBundlePricing.discountedTotal;
       const stripeAmount = calculateStripeAmountFromRoundedTotal(totalLocal, localCurrencyCode);
       let totalLocalCurrencyAmount = totalLocal;
       
@@ -3703,89 +3703,64 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         }
       }
 
-      // Calculate pricing using the same logic as emails:
-      // Sum in pence → PPP-adjust the total → formatPrice once (single conversion)
+      // Calculate pricing matching the emails: each assessment priced individually
+      // with its own BASE_FEE (assessment_price + BASE_FEE per test), then sum for bundle
       const userCountry = (countryCode as string) || 'GB';
       const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
       const userCurrency = getCurrencyForCountry(userCountry);
       const pricingTier = getPricingTier(userCountry);
       
-      // Determine if base fee has already been paid (via B2B purchase or B2B session payment)
-      const baseFeeAlreadyPaid = existingPurchase?.status === 'completed' || b2bPaidTypes.size > 0;
-      
       // Fetch live exchange rate and lock it for this pricing session
       const exchangeRatesData = await getExchangeRates();
       const lockedExchangeRate = exchangeRatesData.rates?.[localCurrencyCode] ?? userCurrency.exchangeRate;
       
-      // B2C candidates do NOT get bulk/bundle discounts (only B2B candidates do)
-      
-      // Use canonical pricing function for consistent display
       const purchasableItems = purchasableResults.map(result => ({
         type: normalizeAssessmentId(result.assessmentType),
         priceInPence: ASSESSMENT_PRICES[normalizeAssessmentId(result.assessmentType)] || 400,
       }));
       
-      const individualPricing = calculateCandidatePricing(
-        userCountry, purchasableItems, BASE_FEE,
-        { exchangeRate: lockedExchangeRate, baseFeeAlreadyPaid }
-      );
-      
-      // Bake the base fee into per-assessment displayed prices (distribute evenly)
-      const effectiveBaseFeeLocal = baseFeeAlreadyPaid ? 0 : individualPricing.baseFee.localPrice;
-      const assessmentCount = individualPricing.assessments.length;
+      const assessmentCount = purchasableItems.length;
       if (assessmentCount === 0) {
         return res.status(400).json({ message: "No assessments available for pricing" });
       }
-      const baseFeePerAssessment = Math.floor(effectiveBaseFeeLocal / assessmentCount);
-      const baseFeeRemainder = effectiveBaseFeeLocal - (baseFeePerAssessment * assessmentCount);
       
-      const assessmentPrices = individualPricing.assessments.map((a, idx) => {
-        const feeShare = baseFeePerAssessment + (idx === 0 ? baseFeeRemainder : 0);
-        const allInPrice = a.localPrice + feeShare;
-        return {
-          type: a.assessmentType,
-          priceInPence: a.priceInPence,
-          priceDisplay: individualPricing.formatAmount(allInPrice),
-          localPrice: allInPrice,
-        };
-      });
-      
-      // Calculate bundle pricing (25% discount for B2B with 2+ tests)
+      // Use calculateBundlePricing which prices each assessment individually
+      // (each includes full BASE_FEE), matching the per-test email prices exactly
       const hasBulkDiscount = assessmentCount >= 2;
       const bulkDiscountRate = hasBulkDiscount ? 25 : 0;
       
-      let bulkTotal;
-      if (hasBulkDiscount) {
-        const bulkPricing = calculateCandidatePricing(
-          userCountry, purchasableItems, BASE_FEE,
-          { exchangeRate: lockedExchangeRate, baseFeeAlreadyPaid, bundleDiscount: bulkDiscountRate }
-        );
-        bulkTotal = {
-          priceInPence: bulkPricing.stripeAmount,
-          priceDisplay: bulkPricing.totalDisplay,
-          discountRate: bulkDiscountRate,
-        };
-      } else {
-        bulkTotal = {
-          priceInPence: individualPricing.stripeAmount,
-          priceDisplay: individualPricing.totalDisplay,
-          discountRate: 0,
-        };
-      }
+      const bundlePricing = calculateBundlePricing(
+        userCountry, purchasableItems, BASE_FEE,
+        { exchangeRate: lockedExchangeRate, bundleDiscount: bulkDiscountRate }
+      );
+      
+      // Individual assessment prices (each = assessment + BASE_FEE, matching emails)
+      const assessmentPrices = bundlePricing.individualPrices.map(p => ({
+        type: p.type,
+        priceInPence: ASSESSMENT_PRICES[p.type as keyof typeof ASSESSMENT_PRICES] || 400,
+        priceDisplay: p.display,
+        localPrice: p.localPrice,
+      }));
+      
+      const baseFeeDisplay = bundlePricing.formatAmount(0);
 
-      const baseFeeDisplay = individualPricing.formatAmount(individualPricing.baseFee.localPrice);
+      const originalStripeAmount = calculateStripeAmountFromRoundedTotal(bundlePricing.originalTotal, localCurrencyCode);
 
       res.json({
         baseFee: BASE_FEE,
         baseFeeDisplay,
-        baseFeeAlreadyPaid,
+        baseFeeAlreadyPaid: false,
         assessments: assessmentPrices,
         individualTotal: {
-          priceInPence: individualPricing.stripeAmount,
-          priceDisplay: individualPricing.totalDisplay,
+          priceInPence: originalStripeAmount,
+          priceDisplay: bundlePricing.originalDisplay,
           discountRate: 0,
         },
-        bulkTotal,
+        bulkTotal: {
+          priceInPence: bundlePricing.stripeAmount,
+          priceDisplay: bundlePricing.discountedDisplay,
+          discountRate: bulkDiscountRate,
+        },
         currency: localCurrencyCode,
         currencySymbol: userCurrency.symbol,
         pricingTier,
