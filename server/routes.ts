@@ -3362,29 +3362,15 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         }
       }
 
-      // Calculate price based on assessments to purchase
+      // Calculate price using email-style approach: sum pence → PPP once → format once
       const userCountry = countryCode || 'GB';
       const stripeCurrency = getStripeCurrencyCode(userCountry);
       const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
-      
-      // Fetch server-side exchange rate for consistency (dont trust client-provided rate)
-      // This ensures the checkout price matches what the pricing endpoint returned
-      const exchangeRatesData = await getExchangeRates();
       const userCurrency = getCurrencyForCountry(userCountry);
-      const serverLockedExchangeRate = exchangeRatesData.rates?.[localCurrencyCode] ?? userCurrency.exchangeRate;
-      
-      // Log if client rate differs significantly from server rate (potential stale pricing)
-      if (lockedExchangeRate && Math.abs(lockedExchangeRate - serverLockedExchangeRate) / serverLockedExchangeRate > 0.01) {
-        console.log(`[Partner Results Checkout] Exchange rate drift detected: client=${lockedExchangeRate}, server=${serverLockedExchangeRate}`);
-      }
 
-      // Calculate assessment prices with proper discounts
-      // Individual: Full price (no discount)
-      // Bulk (all assessments): 25% off the combined B2C price
       // Enforce: bulk discount only applies when purchasing all completed assessments
       const isBuyingAll = resultsToPurchase.length === completedResults.length;
       
-      // Server-side validation: if client claims bulk but not buying all, reject
       if (isBulkPurchase && !isBuyingAll) {
         return res.status(400).json({ 
           message: "Bulk purchase requires selecting all assessments. Please select all assessments or purchase individually." 
@@ -3392,47 +3378,37 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       }
       
       const isBulk = (isBulkPurchase || !purchasedTypes) && isBuyingAll;
-      // 25% bundle discount, no individual discount (full price)
       const discountRate = (isBulk && resultsToPurchase.length > 1) ? 0.25 : 0;
       
-      // Calculate prices matching B2C: BASE_FEE + per-assessment prices
-      let sumOfRoundedAssessmentPrices = 0;
+      // Determine if base fee (computation fee) was already paid for this invitation
+      const baseFeeAlreadyPaid = existingPurchase?.status === 'completed';
+      const effectiveBaseFee = baseFeeAlreadyPaid ? 0 : BASE_FEE;
       
+      // Sum assessment prices in pence
+      let totalAssessmentsPriceInPence = 0;
       for (const result of resultsToPurchase) {
         const normalizedType = normalizeAssessmentId(result.assessmentType);
         const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
-        
-        const pppPrice = getPPPAdjustedPriceInPence(assessmentPrice, userCountry);
-        const formattedPrice = formatPrice(pppPrice, userCurrency, { skipPPPAdjustment: true });
-        const roundedPrice = parseFloat(formattedPrice.replace(/[^\d.]/g, ''));
-        sumOfRoundedAssessmentPrices += roundedPrice;
+        totalAssessmentsPriceInPence += assessmentPrice;
       }
       
-      // Add BASE_FEE to match B2C pricing
-      const baseFeeAdjusted = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
-      const baseFeeFormatted = formatPrice(baseFeeAdjusted, userCurrency, { skipPPPAdjustment: true });
-      const baseFeeNumeric = parseFloat(baseFeeFormatted.replace(/[^\d.]/g, ''));
+      // Email-style total: sum in pence → PPP-adjust once → format once
+      const totalPenceBeforePPP = effectiveBaseFee + totalAssessmentsPriceInPence;
+      const totalPppAdjusted = getPPPAdjustedPriceInPence(totalPenceBeforePPP, userCountry);
       
-      const totalRoundedOriginal = sumOfRoundedAssessmentPrices + baseFeeNumeric;
-      const roundedSumOriginal = roundPriceUp(totalRoundedOriginal, userCurrency);
+      // Apply bulk discount if applicable
+      const finalPppAdjusted = discountRate > 0 ? Math.round(totalPppAdjusted * (1 - discountRate)) : totalPppAdjusted;
       
-      // For bulk (25% off): apply to total (base fee + assessments)
-      // For individual (full price): no discount
-      let discountedLocalPrice: number;
-      if (isBulk && resultsToPurchase.length > 1) {
-        discountedLocalPrice = roundPriceUp(roundedSumOriginal * 0.75, userCurrency);
-      } else {
-        discountedLocalPrice = roundedSumOriginal;
-      }
+      // Format to get the local currency amount (this is the authoritative price)
+      const totalDisplayStr = formatPrice(finalPppAdjusted, userCurrency, { skipPPPAdjustment: true });
+      const discountedLocalPrice = parseFloat(totalDisplayStr.replace(/[^\d.]/g, ''));
       
-      // Convert to Stripe amount using the correct zero-decimal currency list
-      // Stripe zero-decimal currencies: JPY, KRW, VND, CLP, PYG, GNF, KMF, MGA, RWF, UGX, VUV, XAF, XOF, XPF, BIF, DJF
-      // Note: THB, IDR, TWD, HUF are NOT zero-decimal in Stripe - they use 2 decimal places
+      // Convert to Stripe/Airwallex amount
       const STRIPE_ZERO_DECIMAL = ['JPY', 'KRW', 'VND', 'CLP', 'PYG', 'GNF', 'KMF', 'MGA', 'RWF', 'UGX', 'VUV', 'XAF', 'XOF', 'XPF', 'BIF', 'DJF'];
       const isZeroDecimal = STRIPE_ZERO_DECIMAL.includes(localCurrencyCode.toUpperCase());
       const stripeAmount = isZeroDecimal ? Math.round(discountedLocalPrice) : Math.round(discountedLocalPrice * 100);
       
-      let totalPriceInPence = Math.round(discountedLocalPrice); // Store local currency amount for records
+      let totalPriceInPence = Math.round(discountedLocalPrice);
       
       // Create a single line item for the total
       const discountDescription = isBulk && resultsToPurchase.length > 1 ? "25% bundle discount" : "";
@@ -3758,96 +3734,83 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         }
       }
 
-      // Calculate pricing using the same logic as emails (PPP-adjusted, then formatted)
+      // Calculate pricing using the same logic as emails:
+      // Sum in pence → PPP-adjust the total → formatPrice once (single conversion)
       const userCountry = (countryCode as string) || 'GB';
       const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
       const userCurrency = getCurrencyForCountry(userCountry);
       const pricingTier = getPricingTier(userCountry);
       
+      // Determine if base fee (computation fee) has already been paid for this invitation
+      const baseFeeAlreadyPaid = existingPurchase?.status === 'completed';
       
       // Fetch live exchange rate and lock it for this pricing session
       const exchangeRatesData = await getExchangeRates();
       const lockedExchangeRate = exchangeRatesData.rates?.[localCurrencyCode] ?? userCurrency.exchangeRate;
-      // Calculate pricing matching B2C: BASE_FEE + per-assessment prices
-      // Individual discount rate: 0% (full price)
-      const individualDiscountRate = 0;
-      // Bulk discount rate: 25% off
-      const bulkDiscountRate = 0.25;
       
+      // Bulk discount rate: 25% off (only when purchasing all and more than 1)
+      const bulkDiscountRate = 0.25;
+      const hasBulkDiscount = purchasableResults.length > 1;
+      
+      // Build per-assessment breakdown for display
       let totalAssessmentsPriceInPence = 0;
-      let sumOfRoundedOriginalPrices = 0; // Sum of individually-rounded prices for consistency
-      const assessmentPrices: { type: string; priceInPence: number; priceDisplay: string; originalPriceDisplay: string }[] = [];
+      const assessmentPrices: { type: string; priceInPence: number; priceDisplay: string }[] = [];
 
       for (const result of purchasableResults) {
         const normalizedType = normalizeAssessmentId(result.assessmentType);
         const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
-        
-        // Calculate original price with PPP adjustment
-        const pppPrice = getPPPAdjustedPriceInPence(assessmentPrice, userCountry);
-        const originalPriceDisplay = formatPrice(pppPrice, userCurrency, { skipPPPAdjustment: true });
-        
-        const originalPriceNumeric = parseFloat(originalPriceDisplay.replace(/[^\d.]/g, ''));
-        sumOfRoundedOriginalPrices += originalPriceNumeric;
-        
-        const roundedDiscountedPrice = roundPriceUp(originalPriceNumeric, userCurrency);
-        const priceDisplay = `${userCurrency.symbol}${roundedDiscountedPrice.toLocaleString()}`;
-        
         totalAssessmentsPriceInPence += assessmentPrice;
+        
+        // Per-assessment display price: PPP-adjust this single assessment, then format
+        const pppPrice = getPPPAdjustedPriceInPence(assessmentPrice, userCountry);
+        const priceDisplay = formatPrice(pppPrice, userCurrency, { skipPPPAdjustment: true });
+        
         assessmentPrices.push({ 
           type: normalizedType, 
           priceInPence: assessmentPrice,
           priceDisplay,
-          originalPriceDisplay
         });
       }
 
-      // Add BASE_FEE to match B2C pricing
+      // Computation fee (one-off) display price
       const baseFeeAdjusted = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
       const baseFeeDisplay = formatPrice(baseFeeAdjusted, userCurrency, { skipPPPAdjustment: true });
-      const baseFeeNumeric = parseFloat(baseFeeDisplay.replace(/[^\d.]/g, ''));
       
-      // Total = base fee + assessments
-      const totalB2CPriceInPence = BASE_FEE + totalAssessmentsPriceInPence;
-      const totalRoundedOriginal = sumOfRoundedOriginalPrices + baseFeeNumeric;
+      // --- TOTAL CALCULATION (email-style: sum pence → PPP once → format once) ---
+      // This is the authoritative price calculation matching the email's approach
+      const effectiveBaseFee = baseFeeAlreadyPaid ? 0 : BASE_FEE;
+      const totalPenceBeforePPP = effectiveBaseFee + totalAssessmentsPriceInPence;
+      const totalPppAdjusted = getPPPAdjustedPriceInPence(totalPenceBeforePPP, userCountry);
+      const individualTotalDisplay = formatPrice(totalPppAdjusted, userCurrency, { skipPPPAdjustment: true });
       
-      const roundedSumOriginal = roundPriceUp(totalRoundedOriginal, userCurrency);
-      const originalTotalDisplay = `${userCurrency.symbol}${roundedSumOriginal.toLocaleString()}`;
-      
-      // Individual total: full price (no discount)
-      const totalPppB2C = getPPPAdjustedPriceInPence(totalB2CPriceInPence, userCountry);
-      const individualTotalPpp = Math.round(totalPppB2C * (1 - individualDiscountRate));
-      const individualTotalDisplay = formatPrice(individualTotalPpp, userCurrency, { skipPPPAdjustment: true });
-      
-      // Bulk pricing: 25% off the total (base fee + assessments)
-      const hasBulkDiscount = purchasableResults.length > 1;
-      const bulkDiscountedLocalPrice = hasBulkDiscount 
-        ? roundPriceUp(roundedSumOriginal * (1 - bulkDiscountRate), userCurrency)
-        : parseFloat(individualTotalDisplay.replace(/[^\d.]/g, ''));
-      const bulkTotalDisplay = `${userCurrency.symbol}${bulkDiscountedLocalPrice.toLocaleString()}`;
+      // Bulk pricing: 25% off the total (only applies when purchasing all completed assessments and > 1)
+      const bulkTotalPence = Math.round(totalPppAdjusted * (1 - bulkDiscountRate));
+      const bulkTotalDisplay = hasBulkDiscount 
+        ? formatPrice(bulkTotalPence, userCurrency, { skipPPPAdjustment: true })
+        : individualTotalDisplay;
 
       res.json({
         baseFee: BASE_FEE,
         baseFeeDisplay,
+        baseFeeAlreadyPaid,
         assessments: assessmentPrices,
         individualTotal: {
-          priceInPence: Math.round(totalB2CPriceInPence * (1 - individualDiscountRate)),
+          priceInPence: totalPppAdjusted,
           priceDisplay: individualTotalDisplay,
-          originalPriceDisplay: originalTotalDisplay,
-          discountRate: individualDiscountRate,
+          discountRate: 0,
         },
         bulkTotal: {
-          priceInPence: Math.round(totalB2CPriceInPence * (1 - bulkDiscountRate)),
+          priceInPence: hasBulkDiscount ? bulkTotalPence : totalPppAdjusted,
           priceDisplay: bulkTotalDisplay,
-          originalPriceDisplay: originalTotalDisplay,
-          discountRate: hasBulkDiscount ? bulkDiscountRate : individualDiscountRate,
+          discountRate: hasBulkDiscount ? bulkDiscountRate : 0,
         },
         currency: localCurrencyCode,
         currencySymbol: userCurrency.symbol,
         pricingTier,
         assessmentCount: purchasableResults.length,
         hasBulkDiscount,
-        individualDiscountRate,
-        bulkDiscountRate: hasBulkDiscount ? bulkDiscountRate : individualDiscountRate,
+        individualDiscountRate: 0,
+        bulkDiscountRate: hasBulkDiscount ? bulkDiscountRate : 0,
         lockedExchangeRate,
       });
     } catch (error: any) {

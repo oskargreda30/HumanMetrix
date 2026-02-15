@@ -235,8 +235,6 @@ export default function Dashboard() {
   // Track purchase mode: 'bulk' or 'individual'
   const [purchaseMode, setPurchaseMode] = useState<'bulk' | 'individual'>('bulk');
   
-  // Track selected assessments for individual purchase
-  const [selectedAssessments, setSelectedAssessments] = useState<Set<string>>(new Set());
   
   // Result selection dialog state (for viewing multiple results)
   const [resultSelectionDialog, setResultSelectionDialog] = useState<{
@@ -260,15 +258,16 @@ export default function Dashboard() {
   const { data: pricingData, isLoading: pricingLoading } = useQuery<{
     baseFee: number;
     baseFeeDisplay: string;
-    assessments: { type: string; priceInPence: number; priceDisplay: string; originalPriceDisplay: string }[];
-    individualTotal: { priceInPence: number; priceDisplay: string; originalPriceDisplay: string; discountRate: number };
-    bulkTotal: { priceInPence: number; priceDisplay: string; originalPriceDisplay: string; discountRate: number };
+    baseFeeAlreadyPaid: boolean;
+    assessments: { type: string; priceInPence: number; priceDisplay: string }[];
+    individualTotal: { priceInPence: number; priceDisplay: string; discountRate: number };
+    bulkTotal: { priceInPence: number; priceDisplay: string; discountRate: number };
     currency: string;
     currencySymbol: string;
     hasBulkDiscount: boolean;
     individualDiscountRate: number;
     bulkDiscountRate: number;
-    lockedExchangeRate: number; // Exchange rate locked at pricing time for checkout consistency
+    lockedExchangeRate: number;
   }>({
     queryKey: ['/api/partner-results-pricing', lockedResultsDialog?.seriesId, countryCode],
     queryFn: async () => {
@@ -1630,150 +1629,92 @@ export default function Dashboard() {
             </div>
           ) : pricingData ? (
             <div className="space-y-4">
-              {/* Purchase Mode Selection */}
-              <RadioGroup 
-                value={purchaseMode} 
-                onValueChange={(v) => {
-                  setPurchaseMode(v as 'bulk' | 'individual');
-                  setSelectedAssessments(new Set());
-                }}
-                className="space-y-3"
-              >
-                {/* Bulk Purchase Option */}
-                {pricingData.hasBulkDiscount && (() => {
-                  const allOriginalDisplay = pricingData.bulkTotal?.originalPriceDisplay || pricingData.individualTotal?.originalPriceDisplay || '';
-                  const allDiscountedDisplay = pricingData.bulkTotal?.priceDisplay || '';
-                  return (
-                  <div 
-                    className={`border rounded-lg p-4 cursor-pointer transition-colors ${purchaseMode === 'bulk' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
-                    onClick={() => setPurchaseMode('bulk')}
-                  >
-                    <div className="flex items-start gap-3">
-                      <RadioGroupItem value="bulk" id="bulk" className="mt-1" />
-                      <div className="flex-1">
-                        <Label htmlFor="bulk" className="cursor-pointer font-medium flex items-center gap-2">
-                          Unlock All ({pricingData.assessments.length} assessments)
-                          <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                            25% off
-                          </Badge>
-                        </Label>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Best value - unlock all your results at once
-                        </p>
-                        <p className="text-lg font-semibold mt-2">
-                          {allDiscountedDisplay}
-                          <span className="text-sm text-muted-foreground line-through ml-2">
-                            {allOriginalDisplay}
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  );
-                })()}
+              {/* Price Breakdown */}
+              <div className="border rounded-lg p-4 space-y-1">
+                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide mb-2">Price Breakdown</h4>
                 
-                {/* Individual Purchase Option */}
-                <div 
-                  className={`border rounded-lg p-4 cursor-pointer transition-colors ${purchaseMode === 'individual' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
-                  onClick={() => setPurchaseMode('individual')}
-                >
-                  <div className="flex items-start gap-3">
-                    <RadioGroupItem value="individual" id="individual" className="mt-1" />
-                    <div className="flex-1">
-                      <Label htmlFor="individual" className="cursor-pointer font-medium flex items-center gap-2">
-                        {pricingData.hasBulkDiscount ? 'Select Individual Assessments' : 'Unlock Assessment'}
-                      </Label>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {pricingData.hasBulkDiscount ? 'Select specific assessments to unlock' : 'Unlock your assessment result'}
-                      </p>
-                    </div>
+                {/* Computation Fee (one-off) */}
+                <div className="flex items-center justify-between py-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">Computation Fee</span>
+                    <Badge variant="secondary" className="text-xs">
+                      {pricingData.baseFeeAlreadyPaid ? 'Paid' : 'One-off'}
+                    </Badge>
                   </div>
-                  
-                  {/* Individual Assessment Checkboxes */}
-                  {purchaseMode === 'individual' && (
-                    <div className="mt-4 space-y-2 pl-6">
-                      {pricingData.assessments.map((assessment) => (
-                        <div 
-                          key={assessment.type}
-                          className="flex items-center justify-between py-2 border-b last:border-0"
-                        >
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              id={assessment.type}
-                              checked={selectedAssessments.has(assessment.type)}
-                              onCheckedChange={(checked) => {
-                                const newSelected = new Set(selectedAssessments);
-                                if (checked) {
-                                  newSelected.add(assessment.type);
-                                } else {
-                                  newSelected.delete(assessment.type);
-                                }
-                                setSelectedAssessments(newSelected);
-                              }}
-                              data-testid={`checkbox-assessment-${assessment.type}`}
-                            />
-                            <Label htmlFor={assessment.type} className="cursor-pointer">
-                              {formatAssessmentName(assessment.type)}
-                            </Label>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">
-                              {assessment.priceDisplay}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {/* Individual Total - bulk discount only when ALL tests selected and more than one */}
-                      {selectedAssessments.size > 0 && (() => {
-                        const selected = pricingData.assessments.filter(a => selectedAssessments.has(a.type));
-                        // Bulk discount only applies when ALL assessments are selected AND more than 1
-                        const isAllSelected = selected.length === pricingData.assessments.length;
-                        const isBulkEligible = isAllSelected && selected.length > 1;
-                        
-                        const selectedTotal = selected.reduce((sum, a) => sum + parseFloat(a.priceDisplay.replace(/[^\d.]/g, '')), 0);
-                        const selectedOriginalDisplay = `${pricingData.currencySymbol}${Math.round(selectedTotal).toLocaleString()}`;
-                        const discountedTotal = isBulkEligible ? Math.round(selectedTotal * 0.75) : selectedTotal;
-                        const selectedDiscountedDisplay = `${pricingData.currencySymbol}${Math.round(discountedTotal).toLocaleString()}`;
-                        
-                        return (
-                          <div className="pt-3 mt-2 border-t">
-                            <div className="flex justify-between items-center font-medium">
-                              <span className="flex items-center gap-2">
-                                Total ({selectedAssessments.size} selected)
-                                {isBulkEligible && (
-                                  <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                                    25% off applied
-                                  </Badge>
-                                )}
-                              </span>
-                              <div className="text-right">
-                                {isBulkEligible ? (
-                                  <>
-                                    <span className="text-lg">{selectedDiscountedDisplay}</span>
-                                    <span className="text-sm text-muted-foreground line-through ml-2">
-                                      {selectedOriginalDisplay}
-                                    </span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <span className="text-lg">{selectedOriginalDisplay}</span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                            {isBulkEligible && (
-                              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                                Bulk discount applied for purchasing all assessments
-                              </p>
-                            )}
-                          </div>
-                        );
-                      })()}
+                  <span className={`text-sm font-medium ${pricingData.baseFeeAlreadyPaid ? 'text-muted-foreground line-through' : ''}`}>
+                    {pricingData.baseFeeDisplay}
+                  </span>
+                </div>
+                
+                {/* Per-assessment prices */}
+                {pricingData.assessments.map((assessment) => (
+                  <div 
+                    key={assessment.type}
+                    className="flex items-center justify-between py-2"
+                  >
+                    <span className="text-sm">
+                      {formatAssessmentName(assessment.type)}
+                    </span>
+                    <span className="text-sm font-medium">
+                      {assessment.priceDisplay}
+                    </span>
+                  </div>
+                ))}
+                
+                {/* Total line */}
+                <div className="pt-3 mt-2 border-t">
+                  <div className="flex justify-between items-center font-semibold">
+                    <span>Total</span>
+                    <span className="text-lg">
+                      {(purchaseMode === 'bulk' && pricingData.hasBulkDiscount) ? pricingData.bulkTotal.priceDisplay : pricingData.individualTotal.priceDisplay}
+                    </span>
+                  </div>
+                  {purchaseMode === 'bulk' && pricingData.hasBulkDiscount && (
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-xs text-green-600 dark:text-green-400">25% bundle discount applied</span>
+                      <span className="text-sm text-muted-foreground line-through">{pricingData.individualTotal.priceDisplay}</span>
                     </div>
                   )}
                 </div>
-              </RadioGroup>
+              </div>
+              
+              {/* Bulk vs Full Price option - only show if multiple assessments */}
+              {pricingData.hasBulkDiscount && (
+                <RadioGroup 
+                  value={purchaseMode} 
+                  onValueChange={(v) => setPurchaseMode(v as 'bulk' | 'individual')}
+                  className="space-y-2"
+                >
+                  <div 
+                    className={`border rounded-lg p-3 cursor-pointer transition-colors ${purchaseMode === 'bulk' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
+                    onClick={() => setPurchaseMode('bulk')}
+                  >
+                    <div className="flex items-center gap-3">
+                      <RadioGroupItem value="bulk" id="bulk" />
+                      <Label htmlFor="bulk" className="cursor-pointer font-medium flex items-center gap-2 flex-1">
+                        Unlock All ({pricingData.assessments.length} assessments)
+                        <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                          Save 25%
+                        </Badge>
+                      </Label>
+                      <span className="font-semibold">{pricingData.bulkTotal.priceDisplay}</span>
+                    </div>
+                  </div>
+                  
+                  <div 
+                    className={`border rounded-lg p-3 cursor-pointer transition-colors ${purchaseMode === 'individual' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
+                    onClick={() => setPurchaseMode('individual')}
+                  >
+                    <div className="flex items-center gap-3">
+                      <RadioGroupItem value="individual" id="individual" />
+                      <Label htmlFor="individual" className="cursor-pointer font-medium flex-1">
+                        Full Price (no discount)
+                      </Label>
+                      <span className="font-semibold">{pricingData.individualTotal.priceDisplay}</span>
+                    </div>
+                  </div>
+                </RadioGroup>
+              )}
               
               {/* Auto-unlock info */}
               {lockedResultsDialog?.autoUnlockDate && (
@@ -1790,26 +1731,15 @@ export default function Dashboard() {
             <Button
               onClick={() => {
                 if (lockedResultsDialog) {
-                  // Use bulk pricing if explicitly bulk OR if multiple assessments selected
-                  const useBulkPricing = purchaseMode === 'bulk' || selectedAssessments.size > 1;
-                  
-                  if (purchaseMode === 'bulk') {
-                    partnerResultsPurchaseMutation.mutate({
-                      partnerInvitationId: lockedResultsDialog.seriesId,
-                      isBulkPurchase: true,
-                      lockedExchangeRate: pricingData?.lockedExchangeRate,
-                    });
-                  } else {
-                    partnerResultsPurchaseMutation.mutate({
-                      partnerInvitationId: lockedResultsDialog.seriesId,
-                      isBulkPurchase: useBulkPricing,
-                      assessmentTypes: Array.from(selectedAssessments),
-                      lockedExchangeRate: pricingData?.lockedExchangeRate,
-                    });
-                  }
+                  const useBulk = purchaseMode === 'bulk' && pricingData?.hasBulkDiscount;
+                  partnerResultsPurchaseMutation.mutate({
+                    partnerInvitationId: lockedResultsDialog.seriesId,
+                    isBulkPurchase: !!useBulk,
+                    lockedExchangeRate: pricingData?.lockedExchangeRate,
+                  });
                 }
               }}
-              disabled={partnerResultsPurchaseMutation.isPending || pricingLoading || (purchaseMode === 'individual' && selectedAssessments.size === 0)}
+              disabled={partnerResultsPurchaseMutation.isPending || pricingLoading}
               data-testid="button-unlock-now"
             >
               {partnerResultsPurchaseMutation.isPending ? (
@@ -1820,28 +1750,11 @@ export default function Dashboard() {
               ) : (
                 <>
                   <CreditCard className="mr-2 h-4 w-4" />
-                  {purchaseMode === 'bulk' 
-                    ? `Unlock All - ${pricingData?.bulkTotal?.priceDisplay || ''}`
-                    : (() => {
-                        const selected = pricingData?.assessments.filter(a => selectedAssessments.has(a.type)) || [];
-                        const totalAssessments = pricingData?.assessments.length || 0;
-                        const isAllSelected = selected.length === totalAssessments;
-                        const isBulkEligible = isAllSelected && selected.length > 1;
-                        
-                        if (selectedAssessments.size === 0) return 'Select Assessments';
-                        if (isBulkEligible) {
-                          return `Unlock All - ${pricingData?.bulkTotal?.priceDisplay || ''}`;
-                        }
-                        if (selectedAssessments.size === 1) {
-                          const selectedType = Array.from(selectedAssessments)[0];
-                          const selectedAssessment = pricingData?.assessments.find(a => a.type === selectedType);
-                          return `Unlock ${formatAssessmentTypeDisplay(selectedType)} - ${selectedAssessment?.priceDisplay || ''}`;
-                        }
-                        const selectedTotal = selected.reduce((sum, a) => sum + parseFloat(a.priceDisplay.replace(/[^\d.]/g, '')), 0);
-                        const priceDisplay = `${pricingData?.currencySymbol || ''}${Math.round(selectedTotal).toLocaleString()}`;
-                        return `Unlock Selected (${selectedAssessments.size}) - ${priceDisplay}`;
-                      })()
-                  }
+                  {(() => {
+                    const useBulk = purchaseMode === 'bulk' && pricingData?.hasBulkDiscount;
+                    const priceDisplay = useBulk ? pricingData?.bulkTotal?.priceDisplay : pricingData?.individualTotal?.priceDisplay;
+                    return `Unlock Results - ${priceDisplay || ''}`;
+                  })()}
                 </>
               )}
             </Button>
@@ -1850,7 +1763,6 @@ export default function Dashboard() {
               onClick={() => {
                 setLockedResultsDialog(null);
                 setPurchaseMode('bulk');
-                setSelectedAssessments(new Set());
               }}
               data-testid="button-wait-autounlock"
             >
