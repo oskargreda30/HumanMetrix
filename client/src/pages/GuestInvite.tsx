@@ -131,7 +131,7 @@ export default function GuestInvite() {
           description: "Redirecting to your dashboard to start your assessments...",
         });
       }
-      window.location.href = `/dashboard?view=candidate&scrollToSeries=${invitation.id || ''}`;
+      window.location.href = invitation.id ? `/dashboard?view=candidate&scrollToSeries=${invitation.id}` : '/dashboard?view=candidate';
       return;
     }
     
@@ -141,7 +141,7 @@ export default function GuestInvite() {
         title: "Welcome back!",
         description: "Redirecting to your dashboard...",
       });
-      window.location.href = `/dashboard?view=candidate&scrollToSeries=${invitation.id || ''}`;
+      window.location.href = invitation.id ? `/dashboard?view=candidate&scrollToSeries=${invitation.id}` : '/dashboard?view=candidate';
       return;
     }
   }, [authLoading, loading, currentUser, invitation, toast]);
@@ -238,7 +238,7 @@ export default function GuestInvite() {
         });
         
         // Use full page navigation to ensure session cookie is properly recognized
-        window.location.href = data.redirectTo || `/dashboard?view=candidate&scrollToSeries=${invitation?.id || ''}`;
+        window.location.href = data.redirectTo || (invitation?.id ? `/dashboard?view=candidate&scrollToSeries=${invitation.id}` : '/dashboard?view=candidate');
       } catch (err: any) {
         toast({
           title: "Error",

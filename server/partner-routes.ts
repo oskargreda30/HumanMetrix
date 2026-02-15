@@ -3147,6 +3147,7 @@ export function registerPartnerRoutes(app: Express) {
         dashboardUrl,
         createAccountUrl: !userExists ? `${baseUrl}/login?email=${encodeURIComponent(invitation.email)}&redirect=/my-results` : null,
         paymentUrl,
+        invitationId: invitation.id,
       });
     } catch (error) {
       console.error("Error completing invitation:", error);
@@ -5135,11 +5136,13 @@ export function registerPartnerRoutes(app: Express) {
       
       if (lockedSessions.length === 0) {
         const existingUser = await storage.getUserByEmail(email as string);
+        const unlockInvitationId = (completedSessions[0] as any)?.partnerInvitationId || (completedSessions[0] as any)?.metadata?.invitationId || null;
         return res.status(200).json({ 
           alreadyUnlocked: true,
           email,
           partnerName: partnerAccount.companyName || partnerAccount.name,
           hasExistingAccount: !!existingUser,
+          invitationId: unlockInvitationId,
         });
       }
       
@@ -5205,6 +5208,8 @@ export function registerPartnerRoutes(app: Express) {
       const freeAccessDate = new Date(latestCompletion);
       freeAccessDate.setDate(freeAccessDate.getDate() + 30);
       
+      const invitationId = (uniqueSessions[0] as any)?.partnerInvitationId || (uniqueSessions[0] as any)?.metadata?.invitationId || null;
+      
       res.json({
         email,
         partnerId,
@@ -5220,6 +5225,7 @@ export function registerPartnerRoutes(app: Express) {
           bundleDiscountPercent,
         },
         freeAccessDate: freeAccessDate.toISOString(),
+        invitationId,
       });
     } catch (error) {
       console.error("Error fetching bundle results:", error);

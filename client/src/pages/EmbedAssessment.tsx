@@ -401,6 +401,7 @@ export default function EmbedAssessment() {
     dashboardUrl: string | null;
     createAccountUrl: string | null;
     paymentUrl: string;
+    invitationId?: string;
   } | null>(null);
   const [isLoadingCompletion, setIsLoadingCompletion] = useState(false);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
@@ -1494,6 +1495,7 @@ export default function EmbedAssessment() {
               dashboardUrl: data.dashboardUrl,
               createAccountUrl: data.createAccountUrl,
               paymentUrl: data.paymentUrl,
+              invitationId: data.invitationId,
             });
           }
         })
@@ -1994,7 +1996,7 @@ export default function EmbedAssessment() {
                     <Button
                       className="w-full"
                       style={{ backgroundColor: primaryColor }}
-                      onClick={() => { const target = window.top || window; target.location.href = invitationCompletionData.dashboardUrl || `/dashboard?view=candidate`; }}
+                      onClick={() => { const target = window.top || window; const fallbackUrl = invitationCompletionData.invitationId ? `/dashboard?view=candidate&scrollToSeries=${invitationCompletionData.invitationId}` : '/dashboard?view=candidate'; target.location.href = invitationCompletionData.dashboardUrl || fallbackUrl; }}
                       data-testid="button-go-to-dashboard"
                     >
                       Go to Dashboard
@@ -2027,7 +2029,7 @@ export default function EmbedAssessment() {
                           const data = await res.json();
                           if (data.success) {
                             const target = window.top || window;
-                            target.location.href = data.redirectTo || `/dashboard?view=candidate`;
+                            target.location.href = data.redirectTo || (invitationCompletionData?.invitationId ? `/dashboard?view=candidate&scrollToSeries=${invitationCompletionData.invitationId}` : '/dashboard?view=candidate');
                           } else {
                             const target = window.top || window;
                             target.location.href = `/login?email=${encodeURIComponent(invitationCompletionData.email)}`;

@@ -16,6 +16,7 @@ interface BundleResultsData {
   currencyCode: string;
   alreadyUnlocked?: boolean;
   hasExistingAccount?: boolean;
+  invitationId?: string;
   completedAssessments: Array<{
     type: string;
     displayName: string;
@@ -183,7 +184,7 @@ export default function B2BResultsBundle() {
             </p>
             <div className="pt-2">
               <Button 
-                onClick={() => setLocation(data.hasExistingAccount ? '/dashboard?view=candidate' : '/login')}
+                onClick={() => setLocation(data.hasExistingAccount ? (data.invitationId ? `/dashboard?view=candidate&scrollToSeries=${data.invitationId}` : '/dashboard?view=candidate') : '/login')}
                 data-testid="button-go-to-dashboard"
               >
                 {data.hasExistingAccount ? 'Go to Dashboard' : 'Sign In to View Results'}
