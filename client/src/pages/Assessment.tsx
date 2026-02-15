@@ -449,7 +449,7 @@ export default function Assessment() {
     if (!showSeriesComplete || !seriesCompleteInfo) return;
     seriesRedirectTimerRef.current = setTimeout(() => {
       setLocation(`/dashboard?view=candidate&scrollToSeries=${seriesCompleteInfo.invitationId}`);
-    }, 4000);
+    }, 8000);
     return () => {
       if (seriesRedirectTimerRef.current) clearTimeout(seriesRedirectTimerRef.current);
     };
