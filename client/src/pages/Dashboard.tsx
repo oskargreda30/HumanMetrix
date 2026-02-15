@@ -283,7 +283,6 @@ export default function Dashboard() {
   useEffect(() => {
     if (pricingData && pricingData.assessments.length === 1) {
       setPurchaseMode('individual');
-      setSelectedAssessments(new Set([pricingData.assessments[0].type]));
     }
   }, [pricingData]);
   
@@ -1609,7 +1608,6 @@ export default function Dashboard() {
         if (!open) {
           setLockedResultsDialog(null);
           setPurchaseMode('bulk');
-          setSelectedAssessments(new Set());
         }
       }}>
         <DialogContent className="max-w-md">
