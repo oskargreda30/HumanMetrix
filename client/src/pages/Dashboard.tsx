@@ -232,8 +232,7 @@ export default function Dashboard() {
   } | null>(null);
   const [selectedUnlockTypes, setSelectedUnlockTypes] = useState<Set<string>>(new Set());
   const [unlockOption, setUnlockOption] = useState<'all' | 'individual'>('all');
-  
-  
+  const [purchaseSuccessDialog, setPurchaseSuccessDialog] = useState<{ seriesId: string } | null>(null);
   
   
   // Result selection dialog state (for viewing multiple results)
@@ -496,11 +495,8 @@ export default function Dashboard() {
             : { sessionId };
           const res = await apiRequest("POST", "/api/confirm-partner-results-purchase", body);
           if (res.ok) {
-            toast({
-              title: "Results Unlocked!",
-              description: "You now have full access to your assessment results.",
-            });
             await refetchPartnerSeries();
+            setPurchaseSuccessDialog({ seriesId: seriesId || '' });
             if (seriesId) {
               setScrollToSeriesId(seriesId);
             }
@@ -1779,6 +1775,38 @@ export default function Dashboard() {
               data-testid="button-wait-autounlock"
             >
               Wait for Auto-Unlock
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!purchaseSuccessDialog} onOpenChange={(open) => {
+        if (!open) setPurchaseSuccessDialog(null);
+      }}>
+        <DialogContent className="max-w-sm text-center" data-testid="dialog-purchase-success">
+          <div className="flex flex-col items-center gap-4 py-4">
+            <div className="h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+              <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
+            </div>
+            <DialogHeader>
+              <DialogTitle className="text-xl">Results Unlocked</DialogTitle>
+              <DialogDescription className="text-base pt-2">
+                Your assessment results have been unlocked. You now have full access to view your scores and insights.
+              </DialogDescription>
+            </DialogHeader>
+            <Button
+              className="w-full mt-2"
+              onClick={() => {
+                const seriesId = purchaseSuccessDialog?.seriesId;
+                setPurchaseSuccessDialog(null);
+                if (seriesId) {
+                  setScrollToSeriesId(seriesId);
+                }
+              }}
+              data-testid="button-view-unlocked-results"
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              View My Results
             </Button>
           </div>
         </DialogContent>
