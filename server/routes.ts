@@ -3382,33 +3382,32 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       
       // Determine if base fee (computation fee) was already paid for this invitation
       const baseFeeAlreadyPaid = existingPurchase?.status === 'completed';
-      const effectiveBaseFee = baseFeeAlreadyPaid ? 0 : BASE_FEE;
       
-      // Sum assessment prices in pence
-      let totalAssessmentsPriceInPence = 0;
+      // Use exchange rate from request body if provided, otherwise fetch live rate
+      const effectiveExchangeRate = lockedExchangeRate || (await getExchangeRates()).rates?.[localCurrencyCode] || undefined;
+      
+      // Sum-of-rounded-items approach: each line item is PPP-adjusted and rounded independently,
+      // then summed for the total. This ensures the charged amount matches what was displayed.
+      const basePppPence = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
+      const baseFeeLocal = convertPenceToRoundedLocalCurrency(basePppPence, localCurrencyCode, effectiveExchangeRate);
+      const effectiveBaseFeeLocal = baseFeeAlreadyPaid ? 0 : baseFeeLocal;
+      
+      let assessmentsTotalLocal = 0;
       for (const result of resultsToPurchase) {
         const normalizedType = normalizeAssessmentId(result.assessmentType);
         const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
-        totalAssessmentsPriceInPence += assessmentPrice;
+        const pppPrice = getPPPAdjustedPriceInPence(assessmentPrice, userCountry);
+        assessmentsTotalLocal += convertPenceToRoundedLocalCurrency(pppPrice, localCurrencyCode, effectiveExchangeRate);
       }
       
-      // Email-style total: sum in pence → PPP-adjust once → format once
-      const totalPenceBeforePPP = effectiveBaseFee + totalAssessmentsPriceInPence;
-      const totalPppAdjusted = getPPPAdjustedPriceInPence(totalPenceBeforePPP, userCountry);
+      // Total = sum of individually-rounded items, then apply bulk discount if applicable
+      let totalLocal = effectiveBaseFeeLocal + assessmentsTotalLocal;
+      if (discountRate > 0) {
+        totalLocal = Math.round(totalLocal * (1 - discountRate));
+      }
       
-      // Apply bulk discount if applicable
-      const finalPppAdjusted = discountRate > 0 ? Math.round(totalPppAdjusted * (1 - discountRate)) : totalPppAdjusted;
-      
-      // Format to get the local currency amount (this is the authoritative price)
-      const totalDisplayStr = formatPrice(finalPppAdjusted, userCurrency, { skipPPPAdjustment: true });
-      const discountedLocalPrice = parseFloat(totalDisplayStr.replace(/[^\d.]/g, ''));
-      
-      // Convert to Stripe/Airwallex amount
-      const STRIPE_ZERO_DECIMAL = ['JPY', 'KRW', 'VND', 'CLP', 'PYG', 'GNF', 'KMF', 'MGA', 'RWF', 'UGX', 'VUV', 'XAF', 'XOF', 'XPF', 'BIF', 'DJF'];
-      const isZeroDecimal = STRIPE_ZERO_DECIMAL.includes(localCurrencyCode.toUpperCase());
-      const stripeAmount = isZeroDecimal ? Math.round(discountedLocalPrice) : Math.round(discountedLocalPrice * 100);
-      
-      let totalLocalCurrencyAmount = Math.round(discountedLocalPrice);
+      const stripeAmount = calculateStripeAmountFromRoundedTotal(totalLocal, localCurrencyCode);
+      let totalLocalCurrencyAmount = totalLocal;
       
       // Create a single line item for the total
       const discountDescription = isBulk && resultsToPurchase.length > 1 ? "25% bundle discount" : "";
@@ -3752,46 +3751,44 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       const bulkDiscountRate = 0.25;
       const hasBulkDiscount = purchasableResults.length > 1;
       
-      // Build per-assessment breakdown for display
-      let totalAssessmentsPriceInPence = 0;
-      const assessmentRawData: { type: string; priceInPence: number }[] = [];
-
+      // Build per-assessment breakdown with individually-rounded local prices
+      // Each line item is PPP-adjusted and rounded independently, then summed for the total.
+      // This ensures the displayed line items always add up to the displayed total.
+      const basePppPence = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
+      const baseFeeLocal = convertPenceToRoundedLocalCurrency(basePppPence, localCurrencyCode, lockedExchangeRate);
+      const baseFeeDisplay = formatPrice(basePppPence, userCurrency, { skipPPPAdjustment: true });
+      
+      const effectiveBaseFeeLocal = baseFeeAlreadyPaid ? 0 : baseFeeLocal;
+      
+      const assessmentPrices: { type: string; priceInPence: number; priceDisplay: string; localPrice: number }[] = [];
+      let assessmentsTotalLocal = 0;
+      
       for (const result of purchasableResults) {
         const normalizedType = normalizeAssessmentId(result.assessmentType);
         const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
-        totalAssessmentsPriceInPence += assessmentPrice;
-        assessmentRawData.push({ type: normalizedType, priceInPence: assessmentPrice });
-      }
-
-      // --- TOTAL CALCULATION (email-style: sum pence → PPP once → format once) ---
-      // This is the authoritative price calculation matching the email's approach
-      const effectiveBaseFee = baseFeeAlreadyPaid ? 0 : BASE_FEE;
-      const totalPenceBeforePPP = effectiveBaseFee + totalAssessmentsPriceInPence;
-      const totalPppAdjusted = getPPPAdjustedPriceInPence(totalPenceBeforePPP, userCountry);
-      const individualTotalDisplay = formatPrice(totalPppAdjusted, userCurrency, { skipPPPAdjustment: true });
-
-      // Compute base fee display price (always shown, even when already paid for "Paid" label)
-      const basePppPence = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
-      const baseFeeDisplay = formatPrice(basePppPence, userCurrency, { skipPPPAdjustment: true });
-      
-      // Compute per-assessment display prices independently
-      // Note: Due to roundPriceUp using different granularities at different magnitudes,
-      // independently-formatted line items may not sum exactly to the total.
-      // This is standard commercial rounding behavior — the total is the authoritative
-      // charged amount and always matches the email and checkout exactly.
-      const assessmentPrices: { type: string; priceInPence: number; priceDisplay: string }[] = [];
-      
-      for (const a of assessmentRawData) {
-        const pppPrice = getPPPAdjustedPriceInPence(a.priceInPence, userCountry);
+        const pppPrice = getPPPAdjustedPriceInPence(assessmentPrice, userCountry);
+        const localPrice = convertPenceToRoundedLocalCurrency(pppPrice, localCurrencyCode, lockedExchangeRate);
         const priceDisplay = formatPrice(pppPrice, userCurrency, { skipPPPAdjustment: true });
-        assessmentPrices.push({ type: a.type, priceInPence: a.priceInPence, priceDisplay });
+        assessmentPrices.push({ type: normalizedType, priceInPence: assessmentPrice, priceDisplay, localPrice });
+        assessmentsTotalLocal += localPrice;
       }
       
-      // Bulk pricing: 25% off the total (only applies when purchasing all completed assessments and > 1)
-      const bulkTotalPence = Math.round(totalPppAdjusted * (1 - bulkDiscountRate));
-      const bulkTotalDisplay = hasBulkDiscount 
-        ? formatPrice(bulkTotalPence, userCurrency, { skipPPPAdjustment: true })
-        : individualTotalDisplay;
+      // Total = sum of individually-rounded line items (matches what user sees)
+      const individualTotalLocal = effectiveBaseFeeLocal + assessmentsTotalLocal;
+      const individualTotalStripe = calculateStripeAmountFromRoundedTotal(individualTotalLocal, localCurrencyCode);
+      
+      // Format total using the currency formatter
+      const formatLocalAmount = (amount: number) => {
+        const integerPart = amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, userCurrency.thousandsSeparator);
+        return userCurrency.symbolPosition === 'before'
+          ? `${userCurrency.symbol}${integerPart}`
+          : `${integerPart}${userCurrency.symbol}`;
+      };
+      const individualTotalDisplay = formatLocalAmount(individualTotalLocal);
+      
+      // Bulk pricing: 25% off the sum-of-rounded total
+      const bulkTotalLocal = hasBulkDiscount ? Math.round(individualTotalLocal * (1 - bulkDiscountRate)) : individualTotalLocal;
+      const bulkTotalDisplay = hasBulkDiscount ? formatLocalAmount(bulkTotalLocal) : individualTotalDisplay;
 
       res.json({
         baseFee: BASE_FEE,
@@ -3799,12 +3796,12 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         baseFeeAlreadyPaid,
         assessments: assessmentPrices,
         individualTotal: {
-          priceInPence: totalPppAdjusted,
+          priceInPence: individualTotalStripe,
           priceDisplay: individualTotalDisplay,
           discountRate: 0,
         },
         bulkTotal: {
-          priceInPence: hasBulkDiscount ? bulkTotalPence : totalPppAdjusted,
+          priceInPence: hasBulkDiscount ? calculateStripeAmountFromRoundedTotal(bulkTotalLocal, localCurrencyCode) : individualTotalStripe,
           priceDisplay: bulkTotalDisplay,
           discountRate: hasBulkDiscount ? bulkDiscountRate : 0,
         },

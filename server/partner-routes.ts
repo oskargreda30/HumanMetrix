@@ -3050,20 +3050,37 @@ export function registerPartnerRoutes(app: Express) {
       const unpaidCount = completedTypes.length - paidCount;
       const assessmentCount = unpaidCount > 0 ? unpaidCount : completedTypes.length;
       
-      // Calculate PPP-adjusted pricing matching B2C: BASE_FEE + per-assessment prices
+      // Calculate pricing using sum-of-rounded-items approach (matches displayed breakdown)
+      const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountryCode.toUpperCase()] || 'GBP';
       const unpaidAssessmentTypes = completedSessions.filter(s => s.resultsPaymentStatus !== 'paid').map(s => s.assessmentType);
-      const assessmentsPricePence = (unpaidCount > 0 ? unpaidAssessmentTypes : completedTypes).reduce((sum, type) => {
+      const relevantTypes = unpaidCount > 0 ? unpaidAssessmentTypes : completedTypes;
+      
+      // Base fee rounded to local currency
+      const basePppPence = getPPPAdjustedPriceInPence(BASE_FEE, userCountryCode);
+      const baseFeeLocal = convertPenceToRoundedLocalCurrency(basePppPence, localCurrencyCode);
+      
+      // Sum individually-rounded assessment prices
+      let assessmentsTotalLocal = 0;
+      for (const type of relevantTypes) {
         const normalizedType = normalizeAssessmentId(type);
-        return sum + (ASSESSMENT_PRICES[normalizedType] || 400);
-      }, 0);
-      const totalPricePence = BASE_FEE + assessmentsPricePence;
-      const pppTotalPence = getPPPAdjustedPriceInPence(totalPricePence, userCountryCode);
+        const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
+        const pppPrice = getPPPAdjustedPriceInPence(assessmentPrice, userCountryCode);
+        assessmentsTotalLocal += convertPenceToRoundedLocalCurrency(pppPrice, localCurrencyCode);
+      }
+      const totalLocal = baseFeeLocal + assessmentsTotalLocal;
       
       const discountPercentage = assessmentCount >= 2 ? 25 : 0;
-      const pppDiscountedPence = Math.round(pppTotalPence * (1 - discountPercentage / 100));
+      const discountedLocal = Math.round(totalLocal * (1 - discountPercentage / 100));
       
-      const bundlePriceDisplay = formatPrice(pppDiscountedPence, userCurrency);
-      const originalPriceDisplay = formatPrice(pppTotalPence, userCurrency);
+      // Format amounts using currency symbol
+      const formatLocalAmount = (amount: number) => {
+        const integerPart = amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, userCurrency.thousandsSeparator);
+        return userCurrency.symbolPosition === 'before'
+          ? `${userCurrency.symbol}${integerPart}`
+          : `${integerPart}${userCurrency.symbol}`;
+      };
+      const bundlePriceDisplay = formatLocalAmount(discountedLocal);
+      const originalPriceDisplay = formatLocalAmount(totalLocal);
       
       console.log(`[Invite Complete] Country: ${userCountryCode}, Currency: ${userCurrency}, Original: ${originalPriceDisplay}, Bundle: ${bundlePriceDisplay}`);
       
@@ -3177,27 +3194,45 @@ export function registerPartnerRoutes(app: Express) {
       const allPaid = completedSessions.every(s => s.resultsPaymentStatus === 'paid');
       const unpaidCount = completedSessions.filter(s => s.resultsPaymentStatus !== 'paid').length;
       
-      // Calculate pricing matching B2C: BASE_FEE + per-assessment prices, with PPP
+      // Calculate pricing using sum-of-rounded-items approach
       const userCountry = (countryCode as string).toUpperCase();
       const userCurrency = getCurrencyForCountry(userCountry);
+      const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry] || 'GBP';
       const unpaidSessions = completedSessions.filter(s => s.resultsPaymentStatus !== 'paid');
       
-      // Single assessment pricing with PPP
-      const singleAssessmentPence = BASE_FEE + (ASSESSMENT_PRICES[normalizeAssessmentId(unpaidSessions[0]?.assessmentType || 'fit')] || 400);
-      const singlePppPence = getPPPAdjustedPriceInPence(singleAssessmentPence, userCountry);
-      const singleOriginalDisplay = formatPrice(singlePppPence, userCurrency, { countryCode: userCountry, skipPPPAdjustment: true });
+      // Base fee rounded to local currency
+      const basePppPence = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
+      const baseFeeLocal = convertPenceToRoundedLocalCurrency(basePppPence, localCurrencyCode);
       
-      // Bundle pricing with PPP + 25% discount
-      const assessmentsTotalPence = (unpaidCount > 0 ? unpaidSessions : completedSessions).reduce((sum, s) => {
+      // Single assessment pricing: base fee + one assessment, each rounded independently
+      const singleAssessmentPrice = ASSESSMENT_PRICES[normalizeAssessmentId(unpaidSessions[0]?.assessmentType || 'fit')] || 400;
+      const singlePppPence = getPPPAdjustedPriceInPence(singleAssessmentPrice, userCountry);
+      const singleAssessmentLocal = convertPenceToRoundedLocalCurrency(singlePppPence, localCurrencyCode);
+      const singleTotalLocal = baseFeeLocal + singleAssessmentLocal;
+      
+      // Bundle pricing: base fee + sum of each assessment rounded independently, then 25% discount
+      const relevantSessions = unpaidCount > 0 ? unpaidSessions : completedSessions;
+      let assessmentsTotalLocal = 0;
+      for (const s of relevantSessions) {
         const normalizedType = normalizeAssessmentId(s.assessmentType);
-        return sum + (ASSESSMENT_PRICES[normalizedType] || 400);
-      }, 0);
-      const bundlePence = BASE_FEE + assessmentsTotalPence;
-      const bundlePppPence = getPPPAdjustedPriceInPence(bundlePence, userCountry);
+        const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
+        const pppPrice = getPPPAdjustedPriceInPence(assessmentPrice, userCountry);
+        assessmentsTotalLocal += convertPenceToRoundedLocalCurrency(pppPrice, localCurrencyCode);
+      }
+      const bundleTotalLocal = baseFeeLocal + assessmentsTotalLocal;
       const bundleDiscountPercent = unpaidCount >= 2 ? 25 : 0;
-      const bundleDiscountedPence = Math.round(bundlePppPence * (1 - bundleDiscountPercent / 100));
-      const bundleOriginalDisplay = formatPrice(bundlePppPence, userCurrency, { countryCode: userCountry, skipPPPAdjustment: true });
-      const bundleDiscountedDisplay = formatPrice(bundleDiscountedPence, userCurrency, { countryCode: userCountry, skipPPPAdjustment: true });
+      const bundleDiscountedLocal = Math.round(bundleTotalLocal * (1 - bundleDiscountPercent / 100));
+      
+      // Format amounts using currency symbol
+      const formatLocalAmount = (amount: number) => {
+        const integerPart = amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, userCurrency.thousandsSeparator);
+        return userCurrency.symbolPosition === 'before'
+          ? `${userCurrency.symbol}${integerPart}`
+          : `${integerPart}${userCurrency.symbol}`;
+      };
+      const singleOriginalDisplay = formatLocalAmount(singleTotalLocal);
+      const bundleOriginalDisplay = formatLocalAmount(bundleTotalLocal);
+      const bundleDiscountedDisplay = formatLocalAmount(bundleDiscountedLocal);
       
       // Free unlock date (30 days from first completion)
       const firstCompletedAt = completedSessions
@@ -3225,15 +3260,15 @@ export function registerPartnerRoutes(app: Express) {
         })),
         pricing: {
           single: {
-            originalPricePence: singlePppPence,
-            discountedPricePence: singlePppPence,
+            originalPricePence: singleTotalLocal,
+            discountedPricePence: singleTotalLocal,
             originalDisplay: singleOriginalDisplay,
             discountedDisplay: singleOriginalDisplay,
             discountPercent: 0,
           },
           bundle: {
-            originalPricePence: bundlePppPence,
-            discountedPricePence: bundleDiscountedPence,
+            originalPricePence: bundleTotalLocal,
+            discountedPricePence: bundleDiscountedLocal,
             originalDisplay: bundleOriginalDisplay,
             discountedDisplay: bundleDiscountedDisplay,
             discountPercent: bundleDiscountPercent,
@@ -3290,33 +3325,40 @@ export function registerPartnerRoutes(app: Express) {
         return res.status(400).json({ error: "No unpaid assessments found" });
       }
       
-      // Calculate price matching B2C: BASE_FEE + per-assessment prices, with PPP
+      // Calculate price using sum-of-rounded-items: each component PPP-adjusted and rounded independently
       const userCountry = (countryCode as string).toUpperCase();
-      const assessmentsTotalPence = unpaidSessions.reduce((sum, s) => {
-        const normalizedType = normalizeAssessmentId(s.assessmentType);
-        return sum + (ASSESSMENT_PRICES[normalizedType] || 400);
-      }, 0);
-      let priceInPence: number;
+      const currencyCode = COUNTRY_CURRENCY_MAP[userCountry] || 'GBP';
+      const { getStripeCurrencyCode } = await import("@shared/currencies");
+      const stripeCurrency = getStripeCurrencyCode(userCountry);
+      
+      // Base fee rounded to local currency
+      const basePppPence = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
+      const baseFeeLocal = convertPenceToRoundedLocalCurrency(basePppPence, currencyCode);
+      
+      let totalLocal: number;
       let description: string;
       
       if (isBundle && unpaidSessions.length > 1) {
-        const discountPercent = 25;
-        const fullPrice = BASE_FEE + assessmentsTotalPence;
-        const pppAdjusted = getPPPAdjustedPriceInPence(fullPrice, userCountry);
-        priceInPence = Math.round(pppAdjusted * (1 - discountPercent / 100));
-        description = `HumanMetrix - Unlock ${unpaidSessions.length} Assessment Results (${discountPercent}% Bundle Discount)`;
+        // Sum individually-rounded assessment prices
+        let assessmentsTotalLocal = 0;
+        for (const s of unpaidSessions) {
+          const normalizedType = normalizeAssessmentId(s.assessmentType);
+          const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
+          const pppPrice = getPPPAdjustedPriceInPence(assessmentPrice, userCountry);
+          assessmentsTotalLocal += convertPenceToRoundedLocalCurrency(pppPrice, currencyCode);
+        }
+        const fullLocal = baseFeeLocal + assessmentsTotalLocal;
+        totalLocal = Math.round(fullLocal * 0.75);
+        description = `HumanMetrix - Unlock ${unpaidSessions.length} Assessment Results (25% Bundle Discount)`;
       } else {
         const singleAssessmentPrice = ASSESSMENT_PRICES[normalizeAssessmentId(unpaidSessions[0].assessmentType)] || 400;
-        const fullPrice = BASE_FEE + singleAssessmentPrice;
-        priceInPence = getPPPAdjustedPriceInPence(fullPrice, userCountry);
+        const pppPrice = getPPPAdjustedPriceInPence(singleAssessmentPrice, userCountry);
+        const assessmentLocal = convertPenceToRoundedLocalCurrency(pppPrice, currencyCode);
+        totalLocal = baseFeeLocal + assessmentLocal;
         description = `HumanMetrix - Unlock Assessment Results`;
       }
       
-      // Convert to local currency for payment
-      const currencyCode = COUNTRY_CURRENCY_MAP[userCountry] || 'GBP';
-      const { convertToStripeCurrencyAmount, getStripeCurrencyCode } = await import("@shared/currencies");
-      const stripeAmount = convertToStripeCurrencyAmount(priceInPence, currencyCode, undefined);
-      const stripeCurrency = getStripeCurrencyCode(userCountry);
+      const stripeAmount = calculateStripeAmountFromRoundedTotal(totalLocal, currencyCode);
       
       const baseUrl = getBaseUrl(req);
       const sessionIds = isBundle ? unpaidSessions.map(s => s.id) : [unpaidSessions[0].id];
@@ -4043,29 +4085,35 @@ export function registerPartnerRoutes(app: Express) {
         });
       }
       
-      // Calculate pricing: B2C base + assessment price, then PPP
-      // Individual assessments use B2C pricing (no discount)
-      // Only bundle purchases get 25% off
+      // Calculate pricing using sum-of-rounded-items approach
       const normalizedType = normalizeAssessmentId(session.assessmentType);
       const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
-      const b2cPriceInPence = BASE_FEE + assessmentPrice;
-      
-      // PPP adjustment
-      const pppAdjustedPricePence = getPPPAdjustedPriceInPence(b2cPriceInPence, countryCode);
-      
-      // Get currency config for display
       const userCurrency = getCurrencyForCountry(countryCode);
-      // Individual: B2C price (no discount)
-      const individualPriceDisplay = formatPrice(pppAdjustedPricePence, userCurrency, { countryCode, skipPPPAdjustment: true });
+      const localCurrencyCode = COUNTRY_CURRENCY_MAP[countryCode] || 'GBP';
       
-      // Calculate bundle pricing (all 4 assessments) — 25% discount for bundle only
-      const allAssessmentPrices = Object.values(ASSESSMENT_PRICES).reduce((sum, price) => sum + price, 0);
-      const bundleB2CPricePence = BASE_FEE + allAssessmentPrices;
-      const bundlePppAdjustedPence = getPPPAdjustedPriceInPence(bundleB2CPricePence, countryCode);
-      const bundleDiscountedPence = Math.round(bundlePppAdjustedPence * 0.75); // 25% discount for bundle
-      // Format PPP-adjusted bundle prices - skip double PPP adjustment
-      const bundleOriginalDisplay = formatPrice(bundlePppAdjustedPence, userCurrency, { countryCode, skipPPPAdjustment: true });
-      const bundleDiscountedDisplay = formatPrice(bundleDiscountedPence, userCurrency, { countryCode, skipPPPAdjustment: true });
+      // Base fee and individual assessment, each rounded independently
+      const basePppPence = getPPPAdjustedPriceInPence(BASE_FEE, countryCode);
+      const baseFeeLocal = convertPenceToRoundedLocalCurrency(basePppPence, localCurrencyCode);
+      const assessmentPppPence = getPPPAdjustedPriceInPence(assessmentPrice, countryCode);
+      const assessmentLocal = convertPenceToRoundedLocalCurrency(assessmentPppPence, localCurrencyCode);
+      const singleTotalLocal = baseFeeLocal + assessmentLocal;
+      
+      // Bundle pricing: base fee + sum of all assessment prices rounded independently, then 25% discount
+      let bundleAssessmentsTotalLocal = 0;
+      for (const price of Object.values(ASSESSMENT_PRICES)) {
+        const pppPrice = getPPPAdjustedPriceInPence(price, countryCode);
+        bundleAssessmentsTotalLocal += convertPenceToRoundedLocalCurrency(pppPrice, localCurrencyCode);
+      }
+      const bundleTotalLocal = baseFeeLocal + bundleAssessmentsTotalLocal;
+      const bundleDiscountedLocal = Math.round(bundleTotalLocal * 0.75);
+      
+      // Format amounts using currency symbol
+      const formatLocalAmount = (amount: number) => {
+        const integerPart = amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, userCurrency.thousandsSeparator);
+        return userCurrency.symbolPosition === 'before'
+          ? `${userCurrency.symbol}${integerPart}`
+          : `${integerPart}${userCurrency.symbol}`;
+      };
       
       // Calculate free release date
       const releaseDate = (session as any).resultsReleaseScheduledAt || (session as any).resultsUnlockAt;
@@ -4080,17 +4128,17 @@ export function registerPartnerRoutes(app: Express) {
         currencyCode: userCurrency.code,
         pricing: {
           single: {
-            originalPricePence: pppAdjustedPricePence,
-            discountedPricePence: pppAdjustedPricePence,
-            originalDisplay: individualPriceDisplay,
-            discountedDisplay: individualPriceDisplay,
+            originalPricePence: singleTotalLocal,
+            discountedPricePence: singleTotalLocal,
+            originalDisplay: formatLocalAmount(singleTotalLocal),
+            discountedDisplay: formatLocalAmount(singleTotalLocal),
             discountPercent: 0
           },
           bundle: {
-            originalPricePence: bundlePppAdjustedPence,
-            discountedPricePence: bundleDiscountedPence,
-            originalDisplay: bundleOriginalDisplay,
-            discountedDisplay: bundleDiscountedDisplay,
+            originalPricePence: bundleTotalLocal,
+            discountedPricePence: bundleDiscountedLocal,
+            originalDisplay: formatLocalAmount(bundleTotalLocal),
+            discountedDisplay: formatLocalAmount(bundleDiscountedLocal),
             discountPercent: 25
           }
         },
@@ -4125,33 +4173,41 @@ export function registerPartnerRoutes(app: Express) {
       // Get partner for payment provider preference
       const partner = session.partnerId ? await storage.getPartnerAccount(session.partnerId) : null;
       
-      // Calculate pricing
+      // Calculate pricing using sum-of-rounded-items approach
       const normalizedType = normalizeAssessmentId(session.assessmentType);
       const assessmentPrice = ASSESSMENT_PRICES[normalizedType] || 400;
-      let priceInPence: number;
+      const userCountry = countryCode.toUpperCase();
+      const currencyCode = COUNTRY_CURRENCY_MAP[userCountry] || 'GBP';
+      const { getStripeCurrencyCode } = await import("@shared/currencies");
+      const stripeCurrency = getStripeCurrencyCode(userCountry);
+      
+      // Base fee rounded to local currency
+      const basePppPence = getPPPAdjustedPriceInPence(BASE_FEE, userCountry);
+      const baseFeeLocal = convertPenceToRoundedLocalCurrency(basePppPence, currencyCode);
+      
+      let totalLocal: number;
       let discountPercent: number;
       let productName: string;
       
       if (isBundle) {
-        const allAssessmentPrices = Object.values(ASSESSMENT_PRICES).reduce((sum, price) => sum + price, 0);
-        const bundleB2CPricePence = BASE_FEE + allAssessmentPrices;
-        const bundlePppAdjustedPence = getPPPAdjustedPriceInPence(bundleB2CPricePence, countryCode.toUpperCase());
-        priceInPence = Math.round(bundlePppAdjustedPence * 0.75); // 25% discount for bundle only
+        let bundleAssessmentsTotalLocal = 0;
+        for (const price of Object.values(ASSESSMENT_PRICES)) {
+          const pppPrice = getPPPAdjustedPriceInPence(price, userCountry);
+          bundleAssessmentsTotalLocal += convertPenceToRoundedLocalCurrency(pppPrice, currencyCode);
+        }
+        const fullLocal = baseFeeLocal + bundleAssessmentsTotalLocal;
+        totalLocal = Math.round(fullLocal * 0.75);
         discountPercent = 25;
         productName = 'HumanMetrix Complete Assessment Bundle';
       } else {
-        const b2cPriceInPence = BASE_FEE + assessmentPrice;
-        const pppAdjustedPricePence = getPPPAdjustedPriceInPence(b2cPriceInPence, countryCode.toUpperCase());
-        priceInPence = pppAdjustedPricePence; // B2C price (no discount for individual)
+        const assessmentPppPence = getPPPAdjustedPriceInPence(assessmentPrice, userCountry);
+        const assessmentLocal = convertPenceToRoundedLocalCurrency(assessmentPppPence, currencyCode);
+        totalLocal = baseFeeLocal + assessmentLocal;
         discountPercent = 0;
         productName = `HumanMetrix ${session.assessmentType.toUpperCase()} Assessment Results`;
       }
       
-      // Get currency for Stripe
-      const currencyCode = COUNTRY_CURRENCY_MAP[countryCode.toUpperCase()] || 'GBP';
-      const { convertToStripeCurrencyAmount, getStripeCurrencyCode } = await import("@shared/currencies");
-      const stripeAmount = convertToStripeCurrencyAmount(priceInPence, currencyCode, undefined); // PPP already applied
-      const stripeCurrency = getStripeCurrencyCode(countryCode);
+      const stripeAmount = calculateStripeAmountFromRoundedTotal(totalLocal, currencyCode);
       
       // Get base URL
       const baseUrl = getBaseUrl(req);
