@@ -1283,3 +1283,71 @@ export function calculateCandidatePricing(
     totalDisplay: formatAmount(totalLocal),
   };
 }
+
+export interface BundlePricingResult {
+  individualPrices: Array<{ type: string; localPrice: number; display: string }>;
+  originalTotal: number;
+  originalDisplay: string;
+  discountedTotal: number;
+  discountedDisplay: string;
+  discountPercent: number;
+  stripeAmount: number;
+  stripeCurrency: string;
+  currencyCode: string;
+  formatAmount: (amount: number) => string;
+}
+
+export function calculateBundlePricing(
+  countryCode: string,
+  assessmentItems: Array<{ type: string; priceInPence: number }>,
+  baseFeeInPence: number,
+  options: { exchangeRate?: number; bundleDiscount?: number; isVPN?: boolean } = {}
+): BundlePricingResult {
+  const { exchangeRate, bundleDiscount = 25, isVPN = false } = options;
+
+  const individualPrices: Array<{ type: string; localPrice: number; display: string }> = [];
+  let originalTotal = 0;
+  let formatAmountFn: ((amount: number) => string) | null = null;
+  let stripeCurrencyCode = '';
+  let currencyCode = '';
+
+  for (const item of assessmentItems) {
+    const pricing = calculateCandidatePricing(
+      countryCode,
+      [{ type: item.type, priceInPence: item.priceInPence }],
+      baseFeeInPence,
+      { exchangeRate, isVPN }
+    );
+    individualPrices.push({
+      type: item.type,
+      localPrice: pricing.totalLocal,
+      display: pricing.totalDisplay,
+    });
+    originalTotal += pricing.totalLocal;
+    if (!formatAmountFn) {
+      formatAmountFn = pricing.formatAmount;
+      stripeCurrencyCode = pricing.stripeCurrency;
+      currencyCode = pricing.currencyCode;
+    }
+  }
+
+  const fmt = formatAmountFn || ((n: number) => String(n));
+  const discountedRaw = bundleDiscount > 0
+    ? originalTotal * (1 - bundleDiscount / 100)
+    : originalTotal;
+  const discountedTotal = roundPriceUp(discountedRaw);
+  const stripeAmount = calculateStripeAmountFromRoundedTotal(discountedTotal, currencyCode);
+
+  return {
+    individualPrices,
+    originalTotal,
+    originalDisplay: fmt(originalTotal),
+    discountedTotal,
+    discountedDisplay: fmt(discountedTotal),
+    discountPercent: bundleDiscount,
+    stripeAmount,
+    stripeCurrency: stripeCurrencyCode,
+    currencyCode,
+    formatAmount: fmt,
+  };
+}

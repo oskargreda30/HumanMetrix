@@ -6,7 +6,7 @@ import { isAuthenticated } from "./auth";
 import { sendPartnerQuotaWarning70, sendPartnerQuotaWarning90, sendPartnerAccessSuspendedEmail, sendPartnerAutoTopUpConfirmation, sendPartnerBulkInvitationEmail, sendB2BCongratulatoryEmail, sendB2BAllCompleteEmail } from "./email";
 import { ASSESSMENT_TYPES, normalizeAssessmentId, type PartnerAccount, B2C_RETAIL_PRICE_PER_ASSESSMENT, BASE_FEE, ASSESSMENT_PRICES, assessmentResults, assessmentSessions, promptArchitectureEvaluations } from "@shared/schema";
 import { db } from "./db";
-import { getQuestionLocale, getPPPAdjustedPriceInPence, getCurrencyForCountry, formatPrice, COUNTRY_CURRENCY_MAP, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, calculateCandidatePricing } from "@shared/currencies";
+import { getQuestionLocale, getPPPAdjustedPriceInPence, getCurrencyForCountry, formatPrice, COUNTRY_CURRENCY_MAP, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, calculateCandidatePricing, calculateBundlePricing, roundPriceUp } from "@shared/currencies";
 import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { generateTemporaryPassword } from "./passwordUtils";
 import bcrypt from "bcryptjs";
@@ -1840,25 +1840,21 @@ export function registerPartnerRoutes(app: Express) {
               // Calculate bundle price based on the sum of individual PPP-adjusted discounted prices
               // The bundle discount (25%) is applied on top of the individual discounted prices
               try {
-                // Calculate bundle pricing using canonical function (same formula as B2C, plus 25% discount)
+                // Calculate bundle pricing: sum individual test prices (each with own base fee), then apply discount
                 const bundleItems = bundleAssessmentTypes.map(type => ({
                   type: normalizeAssessmentId(type),
                   priceInPence: ASSESSMENT_PRICES[normalizeAssessmentId(type)] || 400,
                 }));
                 
-                const bundleOriginalPricing = calculateCandidatePricing(
-                  userCountryCode, bundleItems, BASE_FEE,
-                  { exchangeRate: emailLiveRate }
-                );
-                const bundleDiscountedPricing = calculateCandidatePricing(
+                const bundlePricing = calculateBundlePricing(
                   userCountryCode, bundleItems, BASE_FEE,
                   { exchangeRate: emailLiveRate, bundleDiscount: bundleDiscountPercent }
                 );
                 
-                const bundleOriginalDisplay = bundleOriginalPricing.totalDisplay;
-                const bundleDiscountedDisplay = bundleDiscountedPricing.totalDisplay;
+                const bundleOriginalDisplay = bundlePricing.originalDisplay;
+                const bundleDiscountedDisplay = bundlePricing.discountedDisplay;
                 
-                console.log(`[B2B Bundle Pricing] Assessments: ${bundleAssessmentTypes.join(', ')}, Original: ${bundleOriginalPricing.totalLocal} (${bundleOriginalDisplay}), ${bundleDiscountPercent}% discount: ${bundleDiscountedPricing.totalLocal} (${bundleDiscountedDisplay})`);
+                console.log(`[B2B Bundle Pricing] Assessments: ${bundleAssessmentTypes.join(', ')}, Original: ${bundlePricing.originalTotal} (${bundleOriginalDisplay}), ${bundleDiscountPercent}% discount: ${bundlePricing.discountedTotal} (${bundleDiscountedDisplay})`);
                 
                 const bundlePaymentUrl = `${baseUrl}/b2b-results-bundle?email=${encodeURIComponent(candidateEmail)}&partner=${session.partnerId}&country=${userCountryCode}&types=${bundleAssessmentTypes.join(',')}`;
                 
@@ -3079,17 +3075,13 @@ export function registerPartnerRoutes(app: Express) {
       
       const discountPercentage = assessmentCount >= 2 ? 25 : 0;
       
-      const originalPricing = calculateCandidatePricing(
-        userCountryCode, completionItems, BASE_FEE,
-        { exchangeRate: liveRate }
-      );
-      const discountedPricing = calculateCandidatePricing(
+      const completionBundlePricing = calculateBundlePricing(
         userCountryCode, completionItems, BASE_FEE,
         { exchangeRate: liveRate, bundleDiscount: discountPercentage }
       );
       
-      const bundlePriceDisplay = discountedPricing.totalDisplay;
-      const originalPriceDisplay = originalPricing.totalDisplay;
+      const bundlePriceDisplay = completionBundlePricing.discountedDisplay;
+      const originalPriceDisplay = completionBundlePricing.originalDisplay;
       
       console.log(`[Invite Complete] Country: ${userCountryCode}, Original: ${originalPriceDisplay}, Bundle: ${bundlePriceDisplay}`);
       
@@ -3240,11 +3232,7 @@ export function registerPartnerRoutes(app: Express) {
       }));
       const bundleDiscountPercent = unpaidCount >= 2 ? 25 : 0;
       
-      const bundleOriginalPricing = calculateCandidatePricing(
-        userCountry, bundleItems, BASE_FEE,
-        { exchangeRate: effectiveRate }
-      );
-      const bundleDiscountedPricing = calculateCandidatePricing(
+      const unlockBundlePricing = calculateBundlePricing(
         userCountry, bundleItems, BASE_FEE,
         { exchangeRate: effectiveRate, bundleDiscount: bundleDiscountPercent }
       );
@@ -3282,10 +3270,10 @@ export function registerPartnerRoutes(app: Express) {
             discountPercent: 0,
           },
           bundle: {
-            originalPricePence: bundleOriginalPricing.totalLocal,
-            discountedPricePence: bundleDiscountedPricing.totalLocal,
-            originalDisplay: bundleOriginalPricing.totalDisplay,
-            discountedDisplay: bundleDiscountedPricing.totalDisplay,
+            originalPricePence: unlockBundlePricing.originalTotal,
+            discountedPricePence: unlockBundlePricing.discountedTotal,
+            originalDisplay: unlockBundlePricing.originalDisplay,
+            discountedDisplay: unlockBundlePricing.discountedDisplay,
             discountPercent: bundleDiscountPercent,
           },
         },
@@ -3354,32 +3342,37 @@ export function registerPartnerRoutes(app: Express) {
         console.log(`[Unlock Checkout] Using locked exchange rate ${unlockCheckoutLockedRate} for ${currencyCode}`);
       }
       
-      let unlockPricing: ReturnType<typeof calculateCandidatePricing>;
+      let totalLocal: number;
+      let stripeAmount: number;
       let description: string;
+      let stripeCurrencyFromPricing: string;
       
       if (isBundle && unpaidSessions.length > 1) {
         const bundleItems = unpaidSessions.map(s => ({
           type: normalizeAssessmentId(s.assessmentType),
           priceInPence: ASSESSMENT_PRICES[normalizeAssessmentId(s.assessmentType)] || 400,
         }));
-        unlockPricing = calculateCandidatePricing(
+        const checkoutBundlePricing = calculateBundlePricing(
           userCountry, bundleItems, BASE_FEE,
           { exchangeRate: effectiveRate, bundleDiscount: 25 }
         );
+        totalLocal = checkoutBundlePricing.discountedTotal;
+        stripeAmount = checkoutBundlePricing.stripeAmount;
+        stripeCurrencyFromPricing = checkoutBundlePricing.stripeCurrency;
         description = `HumanMetrix - Unlock ${unpaidSessions.length} Assessment Results (25% Bundle Discount)`;
       } else {
         const singleType = normalizeAssessmentId(unpaidSessions[0].assessmentType);
-        unlockPricing = calculateCandidatePricing(
+        const singlePricing = calculateCandidatePricing(
           userCountry,
           [{ type: singleType, priceInPence: ASSESSMENT_PRICES[singleType] || 400 }],
           BASE_FEE,
           { exchangeRate: effectiveRate }
         );
+        totalLocal = singlePricing.totalLocal;
+        stripeAmount = singlePricing.stripeAmount;
+        stripeCurrencyFromPricing = singlePricing.stripeCurrency;
         description = `HumanMetrix - Unlock Assessment Results`;
       }
-      
-      const totalLocal = unlockPricing.totalLocal;
-      const stripeAmount = unlockPricing.stripeAmount;
       
       const baseUrl = getBaseUrl(req);
       const sessionIds = isBundle ? unpaidSessions.map(s => s.id) : [unpaidSessions[0].id];
@@ -4129,15 +4122,11 @@ export function registerPartnerRoutes(app: Express) {
         { exchangeRate: effectiveRate }
       );
       
-      // Bundle pricing: all 4 assessments with 25% discount
+      // Bundle pricing: all 4 assessments with 25% discount (each priced individually then summed)
       const allAssessmentItems = Object.entries(ASSESSMENT_PRICES).map(([type, price]) => ({
         type, priceInPence: price,
       }));
-      const bundleOriginalPricing = calculateCandidatePricing(
-        countryCode, allAssessmentItems, BASE_FEE,
-        { exchangeRate: effectiveRate }
-      );
-      const bundleDiscountedPricing = calculateCandidatePricing(
+      const resultsBundlePricing = calculateBundlePricing(
         countryCode, allAssessmentItems, BASE_FEE,
         { exchangeRate: effectiveRate, bundleDiscount: 25 }
       );
@@ -4162,10 +4151,10 @@ export function registerPartnerRoutes(app: Express) {
             discountPercent: 0
           },
           bundle: {
-            originalPricePence: bundleOriginalPricing.totalLocal,
-            discountedPricePence: bundleDiscountedPricing.totalLocal,
-            originalDisplay: bundleOriginalPricing.totalDisplay,
-            discountedDisplay: bundleDiscountedPricing.totalDisplay,
+            originalPricePence: resultsBundlePricing.originalTotal,
+            discountedPricePence: resultsBundlePricing.discountedTotal,
+            originalDisplay: resultsBundlePricing.originalDisplay,
+            discountedDisplay: resultsBundlePricing.discountedDisplay,
             discountPercent: 25
           }
         },
@@ -4218,30 +4207,32 @@ export function registerPartnerRoutes(app: Express) {
         console.log(`[B2B Checkout] Using locked exchange rate ${checkoutLockedRate} for ${currencyCode}`);
       }
       
-      let checkoutPricing: ReturnType<typeof calculateCandidatePricing>;
+      let totalLocal: number;
+      let stripeAmount: number;
       let productName: string;
       
       if (isBundle) {
         const allItems = Object.entries(ASSESSMENT_PRICES).map(([type, price]) => ({
           type, priceInPence: price,
         }));
-        checkoutPricing = calculateCandidatePricing(
+        const b2bCheckoutBundle = calculateBundlePricing(
           userCountry, allItems, BASE_FEE,
           { exchangeRate: effectiveRate, bundleDiscount: 25 }
         );
+        totalLocal = b2bCheckoutBundle.discountedTotal;
+        stripeAmount = b2bCheckoutBundle.stripeAmount;
         productName = 'HumanMetrix Complete Assessment Bundle';
       } else {
-        checkoutPricing = calculateCandidatePricing(
+        const singleCheckoutPricing = calculateCandidatePricing(
           userCountry,
           [{ type: normalizedType, priceInPence: assessmentPrice }],
           BASE_FEE,
           { exchangeRate: effectiveRate }
         );
+        totalLocal = singleCheckoutPricing.totalLocal;
+        stripeAmount = singleCheckoutPricing.stripeAmount;
         productName = `HumanMetrix ${session.assessmentType.toUpperCase()} Assessment Results`;
       }
-      
-      const totalLocal = checkoutPricing.totalLocal;
-      const stripeAmount = checkoutPricing.stripeAmount;
       
       console.log(`[B2B Checkout Debug] Country: ${userCountry}, Currency: ${currencyCode}, StripeCurrency: ${stripeCurrency}`);
       console.log(`[B2B Checkout Debug] Total: ${totalLocal}, StripeAmount: ${stripeAmount}, IsBundle: ${isBundle}`);
@@ -5187,28 +5178,25 @@ export function registerPartnerRoutes(app: Express) {
         };
       });
       
-      // Calculate pricing using canonical function (base fee counted ONCE)
-      const bundleOriginalPricing = calculateCandidatePricing(
-        countryCode, bundleItems, BASE_FEE, {}
-      );
+      // Calculate pricing: each test priced individually (with own base fee), then summed, then discounted
       const bundleDiscountPercent = 25;
-      const bundleDiscountedPricing = calculateCandidatePricing(
+      const resultsBundlePricing = calculateBundlePricing(
         countryCode, bundleItems, BASE_FEE,
         { bundleDiscount: bundleDiscountPercent }
       );
       
       const completedAssessments = uniqueSessions.map(session => {
         const normalizedType = normalizeAssessmentId(session.assessmentType);
-        const assessmentPricing = bundleOriginalPricing.assessments.find(a => a.assessmentType === normalizedType);
-        const localPrice = assessmentPricing?.localPrice || 0;
+        const individualPrice = resultsBundlePricing.individualPrices.find(p => p.type === normalizedType);
+        const localPrice = individualPrice?.localPrice || 0;
         return {
           type: normalizedType,
           displayName: formatAssessmentTypeName(session.assessmentType),
           completedAt: session.completedAt?.toISOString() || new Date().toISOString(),
           originalPrice: localPrice,
           discountedPrice: localPrice,
-          originalPriceDisplay: bundleOriginalPricing.formatAmount(localPrice),
-          discountedPriceDisplay: bundleOriginalPricing.formatAmount(localPrice),
+          originalPriceDisplay: resultsBundlePricing.formatAmount(localPrice),
+          discountedPriceDisplay: resultsBundlePricing.formatAmount(localPrice),
         };
       });
       
@@ -5228,10 +5216,10 @@ export function registerPartnerRoutes(app: Express) {
         currencyCode: COUNTRY_CURRENCY_MAP[countryCode.toUpperCase()] || 'GBP',
         completedAssessments,
         pricing: {
-          sumOfIndividualDiscounted: bundleOriginalPricing.totalLocal,
-          bundleDiscountedPrice: bundleDiscountedPricing.totalLocal,
-          sumOfIndividualDisplay: bundleOriginalPricing.totalDisplay,
-          bundleDiscountedDisplay: bundleDiscountedPricing.totalDisplay,
+          sumOfIndividualDiscounted: resultsBundlePricing.originalTotal,
+          bundleDiscountedPrice: resultsBundlePricing.discountedTotal,
+          sumOfIndividualDisplay: resultsBundlePricing.originalDisplay,
+          bundleDiscountedDisplay: resultsBundlePricing.discountedDisplay,
           bundleDiscountPercent,
         },
         freeAccessDate: freeAccessDate.toISOString(),
@@ -5300,12 +5288,12 @@ export function registerPartnerRoutes(app: Express) {
       const exchangeRatesData = await getExchangeRates();
       const liveRate = exchangeRatesData.rates?.[currencyCode] ?? undefined;
       
-      // Use canonical pricing function with 25% bundle discount
-      const bundleCheckoutPricing = calculateCandidatePricing(
+      // Calculate bundle pricing: each test priced individually then summed, then 25% discount
+      const bundleCheckoutPricing = calculateBundlePricing(
         countryCode || 'GB', bundleItems, BASE_FEE,
         { exchangeRate: liveRate, bundleDiscount: 25 }
       );
-      const localCurrencyTotal = bundleCheckoutPricing.totalLocal;
+      const localCurrencyTotal = bundleCheckoutPricing.discountedTotal;
       const stripeAmount = bundleCheckoutPricing.stripeAmount;
       
       console.log(`[Bundle Checkout] Local: ${localCurrencyTotal} ${currencyCode}, Stripe: ${stripeAmount}`);
