@@ -3271,30 +3271,48 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(400).json({ message: "All results already purchased" });
       }
       
-      // Filter results to purchase (if specific types requested)
+      // Filter out assessments already paid via B2B session payments
       let resultsToPurchase = completedResults;
+      const checkoutInvitationEmail = invitation.email;
+      const checkoutB2bSessions = (checkoutInvitationEmail && invitation.partnerId)
+        ? await storage.getCompletedB2BSessionsByEmail(checkoutInvitationEmail, invitation.partnerId)
+        : [];
+      const checkoutB2bPaidTypes = new Set<string>();
+      for (const session of checkoutB2bSessions) {
+        if ((session as any).resultsPaymentStatus === 'paid') {
+          checkoutB2bPaidTypes.add(normalizeAssessmentId(session.assessmentType));
+        }
+      }
+      if (checkoutB2bPaidTypes.size > 0) {
+        resultsToPurchase = resultsToPurchase.filter((r: any) => 
+          !checkoutB2bPaidTypes.has(normalizeAssessmentId(r.assessmentType))
+        );
+        if (resultsToPurchase.length === 0) {
+          return res.status(400).json({ message: "All results already unlocked" });
+        }
+      }
+      
+      // Filter out already-purchased types from existing partial purchases
+      if (existingPurchase?.status === 'completed' && existingPurchase.purchasedAssessmentTypes) {
+        resultsToPurchase = resultsToPurchase.filter((r: any) => 
+          !existingPurchase.purchasedAssessmentTypes!.includes(normalizeAssessmentId(r.assessmentType))
+        );
+        if (resultsToPurchase.length === 0) {
+          return res.status(400).json({ message: "All results already purchased" });
+        }
+      }
+      
+      // Further filter if specific types requested
       let purchasedTypes: string[] | null = null;
       
       if (assessmentTypes && Array.isArray(assessmentTypes) && assessmentTypes.length > 0 && !isBulkPurchase) {
         const normalizedRequestedTypes = assessmentTypes.map((t: string) => normalizeAssessmentId(t));
-        resultsToPurchase = completedResults.filter((r: any) => 
+        resultsToPurchase = resultsToPurchase.filter((r: any) => 
           normalizedRequestedTypes.includes(normalizeAssessmentId(r.assessmentType))
         );
         
         if (resultsToPurchase.length === 0) {
           return res.status(400).json({ message: "No matching assessments found for the selected types" });
-        }
-        
-        // Check if any of these specific types were already purchased
-        if (existingPurchase?.status === 'completed' && existingPurchase.purchasedAssessmentTypes) {
-          const alreadyPurchased = resultsToPurchase.filter((r: any) => 
-            existingPurchase.purchasedAssessmentTypes!.includes(normalizeAssessmentId(r.assessmentType))
-          );
-          if (alreadyPurchased.length > 0) {
-            return res.status(400).json({ 
-              message: `Some assessments already purchased: ${alreadyPurchased.map((r: any) => r.assessmentType).join(', ')}` 
-            });
-          }
         }
         
         purchasedTypes = resultsToPurchase.map((r: any) => normalizeAssessmentId(r.assessmentType));
@@ -3322,8 +3340,8 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
 
       // B2C candidates do NOT get bulk/bundle discounts (only B2B candidates do)
       
-      // Determine if base fee (computation fee) was already paid for this invitation
-      const baseFeeAlreadyPaid = existingPurchase?.status === 'completed';
+      // Determine if base fee was already paid (either via B2B purchase or B2B session payment)
+      const baseFeeAlreadyPaid = existingPurchase?.status === 'completed' || checkoutB2bPaidTypes.size > 0;
       
       // Use exchange rate from request body if provided, otherwise fetch live rate
       const effectiveExchangeRate = lockedExchangeRate || (await getExchangeRates()).rates?.[localCurrencyCode] || undefined;
@@ -3650,6 +3668,25 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         }
       }
       
+      // Also filter out assessments already paid via B2B session payments
+      const invitationEmail = invitation.email;
+      const b2bSessions = (invitationEmail && invitation.partnerId) 
+        ? await storage.getCompletedB2BSessionsByEmail(invitationEmail, invitation.partnerId)
+        : [];
+      const b2bPaidTypes = new Set<string>();
+      for (const session of b2bSessions) {
+        if ((session as any).resultsPaymentStatus === 'paid') {
+          b2bPaidTypes.add(normalizeAssessmentId(session.assessmentType));
+        }
+      }
+      if (b2bPaidTypes.size > 0) {
+        purchasableResults = purchasableResults.filter((r: any) => 
+          !b2bPaidTypes.has(normalizeAssessmentId(r.assessmentType))
+        );
+        if (purchasableResults.length === 0) {
+          return res.status(400).json({ message: "All results already unlocked" });
+        }
+      }
 
       // Check for auto-unlock (30 days after most recent completion)
       const mostRecentCompletion = completedResults
@@ -3672,8 +3709,8 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       const userCurrency = getCurrencyForCountry(userCountry);
       const pricingTier = getPricingTier(userCountry);
       
-      // Determine if base fee (computation fee) has already been paid
-      const baseFeeAlreadyPaid = existingPurchase?.status === 'completed';
+      // Determine if base fee has already been paid (via B2B purchase or B2B session payment)
+      const baseFeeAlreadyPaid = existingPurchase?.status === 'completed' || b2bPaidTypes.size > 0;
       
       // Fetch live exchange rate and lock it for this pricing session
       const exchangeRatesData = await getExchangeRates();

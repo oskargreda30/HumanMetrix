@@ -1677,16 +1677,6 @@ export default function Dashboard() {
                       </label>
                     ))}
                     
-                    {!pricingData.baseFeeAlreadyPaid && (
-                      <div className="flex items-center justify-between py-2 text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">Computation Fee</span>
-                          <Badge variant="secondary" className="text-xs">One-off</Badge>
-                        </div>
-                        <span className="text-sm">{pricingData.baseFeeDisplay}</span>
-                      </div>
-                    )}
-                    
                     <div className="pt-3 mt-2 border-t">
                       {selectedUnlockTypes.size === pricingData.assessments.length ? (
                         <div className="flex justify-between items-center font-semibold">
