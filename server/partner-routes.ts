@@ -3311,6 +3311,7 @@ export function registerPartnerRoutes(app: Express) {
       const partnerName = partner?.companyName || "Partner";
       
       // Get unpaid sessions for this invitation
+      const { selectedType } = req.body;
       const unpaidSessions = await db
         .select({ id: assessmentSessions.id, assessmentType: assessmentSessions.assessmentType })
         .from(assessmentSessions)
@@ -3318,10 +3319,7 @@ export function registerPartnerRoutes(app: Express) {
           and(
             sql`${assessmentSessions.metadata}->>'invitationToken' = ${inviteToken}`,
             eq(assessmentSessions.status, 'completed'),
-            or(
-              eq(assessmentSessions.resultsPaymentStatus, 'pending'),
-              isNull(assessmentSessions.resultsPaymentStatus)
-            )
+            sql`COALESCE(${assessmentSessions.resultsPaymentStatus}, 'unpaid') != 'paid'`
           )
         );
       
@@ -3360,7 +3358,11 @@ export function registerPartnerRoutes(app: Express) {
         stripeAmount = checkoutBundlePricing.stripeAmount;
         description = `HumanMetrix - Unlock ${unpaidSessions.length} Assessment Results (25% Bundle Discount)`;
       } else {
-        const singleType = normalizeAssessmentId(unpaidSessions[0].assessmentType);
+        // For single unlock, use selected type if provided, otherwise first unpaid
+        const targetSession = selectedType 
+          ? unpaidSessions.find(s => normalizeAssessmentId(s.assessmentType) === normalizeAssessmentId(selectedType)) || unpaidSessions[0]
+          : unpaidSessions[0];
+        const singleType = normalizeAssessmentId(targetSession.assessmentType);
         const singlePricing = calculateCandidatePricing(
           userCountry,
           [{ type: singleType, priceInPence: ASSESSMENT_PRICES[singleType] || 400 }],
@@ -3373,7 +3375,10 @@ export function registerPartnerRoutes(app: Express) {
       }
       
       const baseUrl = getBaseUrl(req);
-      const sessionIds = isBundle ? unpaidSessions.map(s => s.id) : [unpaidSessions[0].id];
+      const targetSingleSession = selectedType 
+        ? unpaidSessions.find(s => normalizeAssessmentId(s.assessmentType) === normalizeAssessmentId(selectedType)) || unpaidSessions[0]
+        : unpaidSessions[0];
+      const sessionIds = isBundle ? unpaidSessions.map(s => s.id) : [targetSingleSession.id];
       
       // Candidate-facing payments always use Airwallex as primary (partner preference only applies to partner's own payments)
       const { primary, fallback } = getPaymentProviders('airwallex');
