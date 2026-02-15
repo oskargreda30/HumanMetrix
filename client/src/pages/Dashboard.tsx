@@ -512,6 +512,7 @@ export default function Dashboard() {
         });
         window.history.replaceState({}, '', '/dashboard');
       } else if (scrollToSeriesParam) {
+        await refetchPartnerSeries();
         setScrollToSeriesId(scrollToSeriesParam);
         window.history.replaceState({}, '', '/dashboard');
       } else if (scrollToB2CParam) {
