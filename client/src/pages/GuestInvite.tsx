@@ -68,6 +68,7 @@ export default function GuestInvite() {
   const earlyRedirectRef = useRef(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const transitioningRef = useRef(false);
 
   const fetchInvitation = useCallback(async (silent = false) => {
     if (!token) return;
@@ -172,12 +173,15 @@ export default function GuestInvite() {
       
       setCurrentSessionId(data.sessionId);
     } catch (err: any) {
-      // Handle "already completed" error gracefully - this can happen due to race conditions
       if (err.message?.includes('already completed') || err.message?.includes('Assessment already completed')) {
         const updatedInvitation = await fetchInvitation(true);
         if (updatedInvitation?.allComplete) {
           setShowingResults(true);
         }
+        return;
+      }
+      
+      if (err.message?.includes('Duplicate request')) {
         return;
       }
       
@@ -192,8 +196,8 @@ export default function GuestInvite() {
   }, [token, toast, fetchInvitation]);
 
   useEffect(() => {
-    // Skip auto-start for admin invitations - they use the standard B2C flow via dashboard
     if (invitation?.isAdminInvite) return;
+    if (transitioningRef.current) return;
     if (invitation && !invitation.allComplete && !currentSessionId && !creatingSession) {
       startNextAssessment(invitation);
     } else if (invitation?.allComplete) {
@@ -264,13 +268,15 @@ export default function GuestInvite() {
       if ((messageType === 'humanmetrix:completed' || 
            messageType === 'humanmetrix:assessment_completed') &&
           messageSessionId === currentSessionId) {
+        transitioningRef.current = true;
         setCurrentSessionId(null);
-        const updatedInvitation = await fetchInvitation(true); // Silent mode to avoid loading flash
+        const updatedInvitation = await fetchInvitation(true);
         if (updatedInvitation && !updatedInvitation.allComplete) {
           await startNextAssessment(updatedInvitation);
         } else {
           setShowingResults(true);
         }
+        transitioningRef.current = false;
       }
     };
 
