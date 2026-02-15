@@ -3604,6 +3604,35 @@ export function registerPartnerRoutes(app: Express) {
       const partner = await storage.getPartnerAccount(invitation.partnerId);
       const partnerName = partner?.companyName || partner?.name || "Partner";
       
+      // Check if already processed (idempotency)
+      const existingSessions = await Promise.all(
+        sessionIds.map(id => storage.getAssessmentSession(id))
+      );
+      const allAlreadyPaid = existingSessions.every(s => (s as any)?.resultsPaymentStatus === 'paid');
+      if (allAlreadyPaid) {
+        console.log(`[Unlock Results] Already processed, all ${sessionIds.length} sessions already paid`);
+        const existingUser = await storage.getUserByEmail(email || '');
+        const hasExistingAccount = !!existingUser;
+        if (hasExistingAccount && existingUser) {
+          (req as any).session.userId = existingUser.id;
+          await new Promise<void>((resolve) => {
+            (req as any).session.save((err: any) => {
+              if (err) console.error('[Unlock Results] Session save error (already processed):', err);
+              resolve();
+            });
+          });
+        }
+        return res.json({
+          success: true,
+          message: "Results already unlocked",
+          alreadyProcessed: true,
+          email,
+          sessionId: sessionIds[0],
+          hasExistingAccount,
+          resultsUrl: `/b2b-results/${sessionIds[0]}`,
+        });
+      }
+      
       // Update all sessions to mark payment as complete
       const now = new Date();
       for (const sessionId of sessionIds) {
@@ -5555,6 +5584,35 @@ export function registerPartnerRoutes(app: Express) {
       // Get partner info
       const partner = await storage.getPartnerAccount(partnerId);
       const partnerName = partner?.companyName || partner?.name || "Partner";
+      
+      // Check if already processed (idempotency)
+      const existingBundleSessions = await Promise.all(
+        sessionIds.map(id => storage.getAssessmentSession(id))
+      );
+      const allBundleAlreadyPaid = existingBundleSessions.every(s => (s as any)?.resultsPaymentStatus === 'paid');
+      if (allBundleAlreadyPaid) {
+        console.log(`[Bundle Payment] Already processed, all ${sessionIds.length} sessions already paid for ${email}`);
+        const existingUser = await storage.getUserByEmail(email);
+        const hasExistingAccount = !!existingUser;
+        if (hasExistingAccount && existingUser) {
+          (req as any).session.userId = existingUser.id;
+          await new Promise<void>((resolve) => {
+            (req as any).session.save((err: any) => {
+              if (err) console.error('[Bundle Payment] Session save error (already processed):', err);
+              resolve();
+            });
+          });
+        }
+        return res.json({
+          success: true,
+          message: "Results already unlocked",
+          alreadyProcessed: true,
+          email,
+          sessionId: sessionIds[0],
+          hasExistingAccount,
+          resultsUrl: `/b2b-results/${sessionIds[0]}`,
+        });
+      }
       
       // Update all sessions to mark payment as complete
       const now = new Date();

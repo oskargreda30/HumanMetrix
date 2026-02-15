@@ -871,6 +871,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Missing user or assessment information" });
         }
 
+        // Check if already processed (idempotency) - look for existing purchase with same stripe session
+        const existingPurchases = await db.select().from(purchases)
+          .where(eq(purchases.stripeSessionId, sessionRef))
+          .limit(1);
+        if (existingPurchases.length > 0 && existingPurchases[0].status === 'completed') {
+          console.log(`[B2C Payment] Already processed payment for session ${sessionRef}, skipping`);
+          // Auto-login
+          (req as any).session.userId = userId;
+          await new Promise<void>((resolve) => {
+            (req as any).session.save((err: any) => {
+              if (err) console.error('[B2C Payment] Session save error (already processed):', err);
+              resolve();
+            });
+          });
+          return res.json({
+            success: true,
+            message: "Purchase already processed",
+            alreadyProcessed: true,
+            purchaseId: existingPurchases[0].id,
+          });
+        }
+
         // Create purchase record
         const purchase = await storage.createPurchase({
           userId: userId,
@@ -968,6 +990,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!customerEmail || !firstName || !lastName) {
         return res.status(400).json({ message: "Missing customer information" });
+      }
+
+      // Check if already processed (idempotency for guest checkout)
+      const existingGuestPurchases = await db.select().from(purchases)
+        .where(eq(purchases.stripeSessionId, sessionRef))
+        .limit(1);
+      if (existingGuestPurchases.length > 0 && existingGuestPurchases[0].status === 'completed') {
+        console.log(`[B2C Guest Payment] Already processed payment for session ${sessionRef}, skipping`);
+        const guestUser = await storage.getUserByEmail(customerEmail);
+        if (guestUser) {
+          (req as any).session.userId = guestUser.id;
+          await new Promise<void>((resolve) => {
+            (req as any).session.save((err: any) => {
+              if (err) console.error('[B2C Guest Payment] Session save error (already processed):', err);
+              resolve();
+            });
+          });
+        }
+        return res.json({
+          success: true,
+          message: "Purchase already processed",
+          alreadyProcessed: true,
+          purchaseId: existingGuestPurchases[0].id,
+        });
       }
 
       // Check if user already exists
@@ -3624,6 +3670,13 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       // Update purchase record
       const purchaseId = metadata?.purchaseId;
       if (purchaseId) {
+        // Check if already processed (idempotency)
+        const existingPurchase = await storage.getPartnerResultPurchase(purchaseId);
+        if (existingPurchase?.status === 'completed') {
+          console.log(`[Partner Results Purchase] Already processed purchase ${purchaseId}, skipping`);
+          return res.json({ success: true, message: "Results already unlocked", alreadyProcessed: true });
+        }
+        
         await storage.updatePartnerResultPurchase(purchaseId, {
           status: 'completed',
           stripePaymentIntentId: paymentIntentRef,
