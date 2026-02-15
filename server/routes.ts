@@ -6,7 +6,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, populateUser } from "./auth";
 import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema, B2B_VOLUME_TIERS, CREDIT_EXPIRATION_MONTHS, getTrialQuotaForTier } from "@shared/schema";
-import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES, roundPriceUp, formatPrice, getCurrencyForCountry, calculateCandidatePricing } from "@shared/currencies";
+import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES, roundPriceUp, formatPrice, getCurrencyForCountry, calculateCandidatePricing, calculateBundlePricing } from "@shared/currencies";
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, broadcastMessages, SYSTEM_SETTING_KEYS, auditLogs, errorLogs, partnerInvoices, invitations, partnerCandidateInvitations, candidateNotes, emailLogs, sessions, appLogs, partnerAccounts, partnerTeamMembers, jobRoles, type PartnerAccount, type AssessmentSession } from "@shared/schema";
 import { eq, desc, sql, and, or, gte, isNotNull, inArray } from "drizzle-orm";
