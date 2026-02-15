@@ -3357,17 +3357,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
       const userCurrency = getCurrencyForCountry(userCountry);
 
-      // Enforce: bulk discount only applies when purchasing all completed assessments
-      const isBuyingAll = resultsToPurchase.length === completedResults.length;
-      
-      if (isBulkPurchase && !isBuyingAll) {
-        return res.status(400).json({ 
-          message: "Bulk purchase requires selecting all assessments. Please select all assessments or purchase individually." 
-        });
-      }
-      
-      const isBulk = (isBulkPurchase || !purchasedTypes) && isBuyingAll;
-      const discountRate = (isBulk && resultsToPurchase.length > 1) ? 0.25 : 0;
+      // B2C candidates do NOT get bulk/bundle discounts (only B2B candidates do)
       
       // Determine if base fee (computation fee) was already paid for this invitation
       const baseFeeAlreadyPaid = existingPurchase?.status === 'completed';
@@ -3375,14 +3365,14 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       // Use exchange rate from request body if provided, otherwise fetch live rate
       const effectiveExchangeRate = lockedExchangeRate || (await getExchangeRates()).rates?.[localCurrencyCode] || undefined;
       
-      // Use canonical pricing function for consistent checkout pricing
+      // Use canonical pricing function for consistent checkout pricing (no bundle discount for B2C)
       const checkoutItems = resultsToPurchase.map((result: any) => ({
         type: normalizeAssessmentId(result.assessmentType),
         priceInPence: ASSESSMENT_PRICES[normalizeAssessmentId(result.assessmentType)] || 400,
       }));
       const checkoutPricing = calculateCandidatePricing(
         userCountry, checkoutItems, BASE_FEE,
-        { exchangeRate: effectiveExchangeRate, baseFeeAlreadyPaid, bundleDiscount: discountRate * 100 }
+        { exchangeRate: effectiveExchangeRate, baseFeeAlreadyPaid }
       );
       
       let totalLocal = checkoutPricing.totalLocal;
@@ -3390,7 +3380,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       let totalLocalCurrencyAmount = totalLocal;
       
       // Create a single line item for the total
-      const discountDescription = isBulk && resultsToPurchase.length > 1 ? "25% bundle discount" : "";
+      const discountDescription = "";
       const assessmentTypesList = resultsToPurchase.map((r: any) => {
         const normalizedType = normalizeAssessmentId(r.assessmentType);
         return {
@@ -3448,10 +3438,10 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         countryCode: userCountry,
         localCurrency: localCurrencyCode,
         purchasedAssessmentTypes: purchasedTypes ? purchasedTypes.join(',') : 'all',
-        isBulkPurchase: isBulk ? 'true' : 'false',
+        isBulkPurchase: 'false',
       };
       
-      console.log(`[Partner Results Checkout] Creating checkout: currency=${stripeCurrency}, localCurrency=${localCurrencyCode}, stripeAmount=${stripeAmount}, discountedLocalPrice=${discountedLocalPrice}, isBulk=${isBulk}, assessments=${assessmentTypesList}, purchaseId=${purchaseRecord.id}`);
+      console.log(`[Partner Results Checkout] Creating checkout: currency=${stripeCurrency}, localCurrency=${localCurrencyCode}, stripeAmount=${stripeAmount}, assessments=${assessmentTypesList}, purchaseId=${purchaseRecord.id}`);
       
       // Candidate-facing payments always default to Airwallex
       const { primary: prPrimary, fallback: prFallback } = getPaymentProviders('airwallex');
@@ -3727,9 +3717,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       const exchangeRatesData = await getExchangeRates();
       const lockedExchangeRate = exchangeRatesData.rates?.[localCurrencyCode] ?? userCurrency.exchangeRate;
       
-      // Bulk discount rate: 25% off (only when purchasing all and more than 1)
-      const bulkDiscountRate = 0.25;
-      const hasBulkDiscount = purchasableResults.length > 1;
+      // B2C candidates do NOT get bulk/bundle discounts (only B2B candidates do)
       
       // Use canonical pricing function for consistent display
       const purchasableItems = purchasableResults.map(result => ({
@@ -3749,20 +3737,6 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         priceDisplay: individualPricing.formatAmount(a.localPrice),
         localPrice: a.localPrice,
       }));
-      
-      const individualTotalLocal = individualPricing.totalLocal;
-      const individualTotalStripe = individualPricing.stripeAmount;
-      const individualTotalDisplay = individualPricing.totalDisplay;
-      
-      // Bulk pricing: 25% off if purchasing all and more than 1
-      const bulkPricing = hasBulkDiscount
-        ? calculateCandidatePricing(
-            userCountry, purchasableItems, BASE_FEE,
-            { exchangeRate: lockedExchangeRate, baseFeeAlreadyPaid, bundleDiscount: 25 }
-          )
-        : individualPricing;
-      const bulkTotalLocal = bulkPricing.totalLocal;
-      const bulkTotalDisplay = bulkPricing.totalDisplay;
 
       res.json({
         baseFee: BASE_FEE,
@@ -3770,22 +3744,22 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         baseFeeAlreadyPaid,
         assessments: assessmentPrices,
         individualTotal: {
-          priceInPence: individualTotalStripe,
-          priceDisplay: individualTotalDisplay,
+          priceInPence: individualPricing.stripeAmount,
+          priceDisplay: individualPricing.totalDisplay,
           discountRate: 0,
         },
         bulkTotal: {
-          priceInPence: bulkPricing.stripeAmount,
-          priceDisplay: bulkTotalDisplay,
-          discountRate: hasBulkDiscount ? bulkDiscountRate : 0,
+          priceInPence: individualPricing.stripeAmount,
+          priceDisplay: individualPricing.totalDisplay,
+          discountRate: 0,
         },
         currency: localCurrencyCode,
         currencySymbol: userCurrency.symbol,
         pricingTier,
         assessmentCount: purchasableResults.length,
-        hasBulkDiscount,
+        hasBulkDiscount: false,
         individualDiscountRate: 0,
-        bulkDiscountRate: hasBulkDiscount ? bulkDiscountRate : 0,
+        bulkDiscountRate: 0,
         lockedExchangeRate,
       });
     } catch (error: any) {

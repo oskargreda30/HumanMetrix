@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Dialog,
   DialogContent,
@@ -232,8 +231,7 @@ export default function Dashboard() {
     completedResults: { id: string; assessmentType: string }[];
   } | null>(null);
   
-  // Track purchase mode: 'bulk' or 'individual'
-  const [purchaseMode, setPurchaseMode] = useState<'bulk' | 'individual'>('bulk');
+  
   
   
   // Result selection dialog state (for viewing multiple results)
@@ -279,12 +277,7 @@ export default function Dashboard() {
     enabled: !!lockedResultsDialog?.seriesId,
   });
   
-  // Auto-select when there's only 1 assessment remaining
-  useEffect(() => {
-    if (pricingData && pricingData.assessments.length === 1) {
-      setPurchaseMode('individual');
-    }
-  }, [pricingData]);
+  
   
   const removeAssessmentMutation = useMutation({
     mutationFn: async (itemId: string) => {
@@ -359,16 +352,14 @@ export default function Dashboard() {
   const partnerResultsPurchaseMutation = useMutation({
     mutationFn: async (params: { 
       partnerInvitationId: string; 
-      isBulkPurchase?: boolean;
       assessmentTypes?: string[];
       lockedExchangeRate?: number;
     }) => {
       const res = await apiRequest("POST", "/api/create-partner-results-checkout", { 
         partnerInvitationId: params.partnerInvitationId,
-        countryCode: countryCode || 'GB', // Use detected country from geolocation
-        isBulkPurchase: params.isBulkPurchase,
+        countryCode: countryCode || 'GB',
         assessmentTypes: params.assessmentTypes,
-        lockedExchangeRate: params.lockedExchangeRate, // Pass locked rate to prevent price changes
+        lockedExchangeRate: params.lockedExchangeRate,
       });
       return res.json();
     },
@@ -1607,7 +1598,6 @@ export default function Dashboard() {
       <Dialog open={!!lockedResultsDialog} onOpenChange={(open) => {
         if (!open) {
           setLockedResultsDialog(null);
-          setPurchaseMode('bulk');
         }
       }}>
         <DialogContent className="max-w-md">
@@ -1664,55 +1654,11 @@ export default function Dashboard() {
                   <div className="flex justify-between items-center font-semibold">
                     <span>Total</span>
                     <span className="text-lg">
-                      {(purchaseMode === 'bulk' && pricingData.hasBulkDiscount) ? pricingData.bulkTotal.priceDisplay : pricingData.individualTotal.priceDisplay}
+                      {pricingData.individualTotal.priceDisplay}
                     </span>
                   </div>
-                  {purchaseMode === 'bulk' && pricingData.hasBulkDiscount && (
-                    <div className="flex justify-between items-center mt-1">
-                      <span className="text-xs text-green-600 dark:text-green-400">25% bundle discount applied</span>
-                      <span className="text-sm text-muted-foreground line-through">{pricingData.individualTotal.priceDisplay}</span>
-                    </div>
-                  )}
                 </div>
               </div>
-              
-              {/* Bulk vs Full Price option - only show if multiple assessments */}
-              {pricingData.hasBulkDiscount && (
-                <RadioGroup 
-                  value={purchaseMode} 
-                  onValueChange={(v) => setPurchaseMode(v as 'bulk' | 'individual')}
-                  className="space-y-2"
-                >
-                  <div 
-                    className={`border rounded-lg p-3 cursor-pointer transition-colors ${purchaseMode === 'bulk' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
-                    onClick={() => setPurchaseMode('bulk')}
-                  >
-                    <div className="flex items-center gap-3">
-                      <RadioGroupItem value="bulk" id="bulk" />
-                      <Label htmlFor="bulk" className="cursor-pointer font-medium flex items-center gap-2 flex-1">
-                        Unlock All ({pricingData.assessments.length} assessments)
-                        <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                          Save 25%
-                        </Badge>
-                      </Label>
-                      <span className="font-semibold">{pricingData.bulkTotal.priceDisplay}</span>
-                    </div>
-                  </div>
-                  
-                  <div 
-                    className={`border rounded-lg p-3 cursor-pointer transition-colors ${purchaseMode === 'individual' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}
-                    onClick={() => setPurchaseMode('individual')}
-                  >
-                    <div className="flex items-center gap-3">
-                      <RadioGroupItem value="individual" id="individual" />
-                      <Label htmlFor="individual" className="cursor-pointer font-medium flex-1">
-                        Full Price (no discount)
-                      </Label>
-                      <span className="font-semibold">{pricingData.individualTotal.priceDisplay}</span>
-                    </div>
-                  </div>
-                </RadioGroup>
-              )}
               
               {/* Auto-unlock info */}
               {lockedResultsDialog?.autoUnlockDate && (
@@ -1729,10 +1675,8 @@ export default function Dashboard() {
             <Button
               onClick={() => {
                 if (lockedResultsDialog) {
-                  const useBulk = purchaseMode === 'bulk' && pricingData?.hasBulkDiscount;
                   partnerResultsPurchaseMutation.mutate({
                     partnerInvitationId: lockedResultsDialog.seriesId,
-                    isBulkPurchase: !!useBulk,
                     lockedExchangeRate: pricingData?.lockedExchangeRate,
                   });
                 }
@@ -1748,11 +1692,7 @@ export default function Dashboard() {
               ) : (
                 <>
                   <CreditCard className="mr-2 h-4 w-4" />
-                  {(() => {
-                    const useBulk = purchaseMode === 'bulk' && pricingData?.hasBulkDiscount;
-                    const priceDisplay = useBulk ? pricingData?.bulkTotal?.priceDisplay : pricingData?.individualTotal?.priceDisplay;
-                    return `Unlock Results - ${priceDisplay || ''}`;
-                  })()}
+                  Unlock Results - {pricingData?.individualTotal?.priceDisplay || ''}
                 </>
               )}
             </Button>
@@ -1760,7 +1700,6 @@ export default function Dashboard() {
               variant="outline"
               onClick={() => {
                 setLockedResultsDialog(null);
-                setPurchaseMode('bulk');
               }}
               data-testid="button-wait-autounlock"
             >
