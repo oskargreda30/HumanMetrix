@@ -336,22 +336,8 @@ async function sendEmailFailureNotification(
     text: `Email Delivery Failure\n\nTimestamp: ${timestamp}\nOriginal Subject: ${originalMsg.subject}\nRecipient(s): ${recipientList}\n\nPrimary (${primaryProvider}): Failed - ${primaryError}\nBackup (${backupProvider}): ${backupError ? `Failed - ${backupError}` : 'Success'}`,
   };
   
-  // Try to send notification via whichever provider might work
-  // Use the backup provider first (it just worked if backupError is undefined)
-  if (!backupError) {
-    // Backup worked, use it for notification
-    if (backupProvider === 'sendgrid') {
-      await sendViaSendGrid(notificationMsg);
-    } else {
-      await sendViaGmail(notificationMsg);
-    }
-  } else {
-    // Both failed - try both for notification (best effort)
-    const result1 = await sendViaSendGrid(notificationMsg);
-    if (!result1.success) {
-      await sendViaGmail(notificationMsg);
-    }
-  }
+  // Always send admin failure notifications via Gmail to preserve SendGrid quota
+  await sendViaGmail(notificationMsg);
 }
 
 // Email logging context for tracking sent emails
@@ -4345,14 +4331,16 @@ export async function notifySuperAdmins(details: {
     
     for (const adminEmail of adminEmails) {
       try {
-        const result = await sendEmail({
+        const result = await sendViaGmail({
           from: { email: fromEmail, name: 'HumanMetrix System' },
           to: adminEmail,
           subject: details.emailSubject,
           html: details.emailHtml,
         });
         if (result.success) {
-          console.log(`[Email] Admin notification email sent to ${adminEmail}: ${details.emailSubject}`);
+          console.log(`[Email] Admin notification email sent to ${adminEmail} via Gmail (forced): ${details.emailSubject}`);
+        } else {
+          console.error(`[Email] Gmail failed for admin notification to ${adminEmail}: ${result.error}`);
         }
       } catch (sendError: any) {
         console.error(`[Email] Failed to send admin notification to ${adminEmail}:`, sendError.message);
@@ -4443,9 +4431,9 @@ export async function sendBillingFailureAdminNotification(details: BillingFailur
     `,
   };
   
-  const result = await sendEmail(msg);
+  const result = await sendViaGmail(msg);
   if (result.success) {
-    console.log(`[Email] Admin billing failure notification sent (ID: ${result.messageId})`);
+    console.log(`[Email] Admin billing failure notification sent via Gmail (forced) (ID: ${result.messageId})`);
     
     // Also create in-app notification
     try {
