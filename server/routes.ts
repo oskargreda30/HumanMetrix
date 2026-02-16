@@ -12213,8 +12213,13 @@ Return valid JSON with only the requested fields.`;
       if (promoDiscountPercent > 0) {
         adjustedTotalPrice = Math.round(totalPrice * (1 - promoDiscountPercent / 100));
       }
+      if (promoDiscountPercent > 0 && adjustedTotalPrice !== totalPrice) {
+        await storage.updatePartnerTestPackage(pkg.id, {
+          totalPrice: adjustedTotalPrice,
+          pricePerTest: Math.round(adjustedTotalPrice / packageSize),
+        } as any);
+      }
       if (adjustedTotalPrice === 0 && promoDiscountPercent > 0) {
-        // For zero-amount, grant access immediately
         await storage.updatePartnerTestPackage(pkg.id, {
           status: 'completed',
           totalPrice: 0,
