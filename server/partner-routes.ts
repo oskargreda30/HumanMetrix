@@ -5313,11 +5313,16 @@ export function registerPartnerRoutes(app: Express) {
         };
       });
       
+      // Use live exchange rate to match checkout pricing exactly
+      const displayCurrencyCode = COUNTRY_CURRENCY_MAP[countryCode.toUpperCase()] || 'GBP';
+      const displayExchangeRates = await getExchangeRates();
+      const displayLiveRate = displayExchangeRates.rates?.[displayCurrencyCode] ?? undefined;
+      
       // Calculate pricing: each test priced individually (with own base fee), then summed, then discounted
       const bundleDiscountPercent = uniqueSessions.length >= 2 ? 25 : 0;
       const resultsBundlePricing = calculateBundlePricing(
         countryCode, bundleItems, BASE_FEE,
-        { bundleDiscount: bundleDiscountPercent }
+        { exchangeRate: displayLiveRate, bundleDiscount: bundleDiscountPercent }
       );
       
       const completedAssessments = uniqueSessions.map(session => {
