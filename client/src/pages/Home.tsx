@@ -33,7 +33,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { SEO, FAQSchema, WebSiteSchema, SoftwareApplicationSchema } from "@/lib/seo";
+import { SEO, FAQSchema, WebSiteSchema, SoftwareApplicationSchema, SiteNavigationSchema } from "@/lib/seo";
 
 const features = [
   {
@@ -203,6 +203,7 @@ export default function Home() {
       />
       <WebSiteSchema />
       <SoftwareApplicationSchema />
+      <SiteNavigationSchema />
       <FAQSchema faqs={faqs.map(f => ({ question: f.question, answer: f.answer }))} />
       
       <ContactFormDialog 

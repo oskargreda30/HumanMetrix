@@ -364,6 +364,39 @@ export function ArticleSchema({
   );
 }
 
+export function SiteNavigationSchema() {
+  const navigationItems = [
+    { name: "Assessments", url: "/assessments", description: "AI-powered psychometric assessments for FIT, AI Readiness, Prompt Architecture & AIQ" },
+    { name: "For Employers", url: "/for-employers", description: "Enterprise recruitment testing and candidate assessment solutions" },
+    { name: "For Candidates", url: "/for-candidates", description: "Take AI assessments to demonstrate your skills and boost your career" },
+    { name: "Pricing", url: "/pricing", description: "Transparent pricing for individual assessments and enterprise packages" },
+    { name: "Ecosystem Index", url: "/ecosystem-index", description: "AI-powered team capability diagnostic tool for organisations" },
+    { name: "About", url: "/about", description: "Learn about HumanMetrix and our mission to transform talent assessment" },
+    { name: "Articles", url: "/articles", description: "Insights on AI assessments, psychometric testing, and recruitment best practices" },
+    { name: "Developers", url: "/developers", description: "API documentation and integration guides for embedding assessments" },
+  ];
+
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "itemListElement": navigationItems.map((item, index) => ({
+      "@type": "SiteNavigationElement",
+      "position": index + 1,
+      "name": item.name,
+      "description": item.description,
+      "url": `${BASE_URL}${item.url}`
+    }))
+  };
+
+  return (
+    <Helmet>
+      <script type="application/ld+json">
+        {JSON.stringify(schema)}
+      </script>
+    </Helmet>
+  );
+}
+
 export function LocalBusinessSchema() {
   const schema = {
     "@context": "https://schema.org",
