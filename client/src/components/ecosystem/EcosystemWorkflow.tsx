@@ -1064,11 +1064,11 @@ export function EcosystemWorkflow({
             ) : (
               <div className="flex items-center justify-between p-4 bg-muted/50 border border-border rounded-lg">
                 <div className="flex items-center gap-3">
-                  <RefreshCw className="h-5 w-5 text-muted-foreground" />
+                  <FileText className="h-5 w-5 text-muted-foreground" />
                   <div>
                     <p className="text-sm font-medium">Want to update your analysis?</p>
                     <p className="text-xs text-muted-foreground">
-                      Edit your data or regenerate with current data (20 credits).
+                      Edit your data and generate a new report.
                     </p>
                   </div>
                 </div>
@@ -1085,21 +1085,6 @@ export function EcosystemWorkflow({
                   >
                     <FileText className="mr-2 h-4 w-4" />
                     Edit Data
-                  </Button>
-                  <Button 
-                    onClick={() => setShowRegenConfirm(true)}
-                    variant="default"
-                    size="sm"
-                    disabled={generateAnalysis.isPending || isGenerating}
-                    data-testid="button-regenerate-header"
-                  >
-                    {(generateAnalysis.isPending || isGenerating) ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                    )}
-                    Regenerate
-                    <Badge variant="secondary" className="ml-2 text-xs">20 credits</Badge>
                   </Button>
                 </div>
               </div>
@@ -3231,25 +3216,7 @@ function TeamAnalysisResults({
             Edit Data
           </Button>
 
-          <Button 
-            variant="default" 
-            size="lg"
-            onClick={onRegenerate}
-            disabled={isRegenerating}
-            data-testid="button-regenerate-bottom"
-          >
-            {isRegenerating ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4 mr-2" />
-            )}
-            {isRegenerating ? 'Regenerating...' : 'Regenerate'}
-            <Badge variant="secondary" className="ml-2 text-xs">20 credits</Badge>
-          </Button>
         </div>
-        <p className="text-xs text-muted-foreground text-center mt-3">
-          Regenerating the analysis will consume 20 credits from your account balance.
-        </p>
       </div>
 
     </div>
