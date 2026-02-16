@@ -1795,9 +1795,15 @@ export function EcosystemWorkflow({
                 setTimeout(() => {
                   const reportSection = document.querySelector('[data-testid="section-team-diagnostic-report"]');
                   if (reportSection) {
-                    reportSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    const elementRect = reportSection.getBoundingClientRect();
+                    const absoluteElementTop = elementRect.top + window.scrollY;
+                    const headerOffset = 80;
+                    window.scrollTo({
+                      top: absoluteElementTop - headerOffset,
+                      behavior: 'smooth'
+                    });
                   }
-                }, 100);
+                }, 350);
               }}
             />
           )}
