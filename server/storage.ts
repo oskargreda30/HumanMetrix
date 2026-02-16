@@ -630,6 +630,7 @@ export interface IStorage {
   getPartnerAnalysisReport(id: string): Promise<PartnerAnalysisReport | undefined>;
   getPartnerAnalysisReports(partnerId: string, reportType?: string): Promise<PartnerAnalysisReport[]>;
   findExistingPartnerReport(partnerId: string, reportType: string, candidateIds: string[], roleId?: string): Promise<PartnerAnalysisReport | undefined>;
+  updatePartnerAnalysisReport(id: string, data: Partial<InsertPartnerAnalysisReport>): Promise<PartnerAnalysisReport | undefined>;
   deletePartnerAnalysisReport(id: string): Promise<void>;
 }
 
@@ -4622,6 +4623,14 @@ export class DatabaseStorage implements IStorage {
     }
     
     return undefined;
+  }
+
+  async updatePartnerAnalysisReport(id: string, data: Partial<InsertPartnerAnalysisReport>): Promise<PartnerAnalysisReport | undefined> {
+    const [updated] = await db.update(partnerAnalysisReports)
+      .set({ ...data, createdAt: new Date() })
+      .where(eq(partnerAnalysisReports.id, id))
+      .returning();
+    return updated;
   }
 
   async deletePartnerAnalysisReport(id: string): Promise<void> {

@@ -14687,7 +14687,7 @@ Format your response as JSON with this structure:
       }
 
       // Check for existing cached report BEFORE consuming credits (unless forceRefresh is requested)
-      let hasIncompleteCachedReport = false;
+      let existingReportId: string | undefined;
       if (!forceRefresh) {
         const existingReport = await storage.findExistingPartnerReport(
           partner.id,
@@ -14705,12 +14705,12 @@ Format your response as JSON with this structure:
               reportId: existingReport.id,
             });
           }
-          hasIncompleteCachedReport = true;
+          existingReportId = existingReport.id;
         }
       }
 
-      // Consume 1 credit unless regenerating an incomplete cached report
-      if (!hasIncompleteCachedReport) {
+      // Consume 1 credit unless regenerating an existing cached report (already paid for)
+      if (!existingReportId) {
         const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);
         
         if (quotaBalance.remaining < 1) {
@@ -14787,15 +14787,24 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
       const insights = completion.choices[0].message.content || '';
       
       let savedReportId: string | undefined;
+      const reportPayload = {
+        partnerId: partner.id,
+        reportType: 'profile_insights',
+        version: 1,
+        candidateIds: [candidateId],
+        title: `Profile Insights: ${candidateName}`,
+        resultData: { insights, candidateName, generatedAt: new Date().toISOString() },
+        creditsUsed: 1,
+        generatedByUserId: req.user.id,
+      };
       try {
-        const savedReport = await storage.createPartnerAnalysisReport({
-          partnerId: partner.id,
-          reportType: 'profile_insights',
-          candidateIds: [candidateId],
-          title: `Profile Insights: ${candidateName}`,
-          resultData: { insights, candidateName, generatedAt: new Date().toISOString() },
-        });
-        savedReportId = savedReport?.id;
+        if (existingReportId) {
+          const updated = await storage.updatePartnerAnalysisReport(existingReportId, reportPayload);
+          savedReportId = updated?.id;
+        } else {
+          const savedReport = await storage.createPartnerAnalysisReport(reportPayload);
+          savedReportId = savedReport?.id;
+        }
       } catch (saveError) {
         console.error("[Report Cache] Failed to save profile_insights report:", saveError);
       }
@@ -14940,7 +14949,7 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
       // Check for existing cached report (unless forceRefresh is requested)
       // Use correct report type based on candidate count
       const cachedReportType = candidateIds.length === 1 ? 'individual' : 'comparison';
-      let hasIncompleteCachedReport = false;
+      let existingReportId: string | undefined;
       
       if (!forceRefresh) {
         const existingReport = await storage.findExistingPartnerReport(
@@ -14959,13 +14968,13 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
               reportId: existingReport.id,
             });
           }
-          hasIncompleteCachedReport = true;
+          existingReportId = existingReport.id;
         }
       }
 
-      // Consume credits (1 per candidate) unless regenerating an incomplete cached report
+      // Consume credits (1 per candidate) unless regenerating an existing cached report
       const creditsRequired = candidateIds.length;
-      if (!hasIncompleteCachedReport) {
+      if (!existingReportId) {
         const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);
         
         if (quotaBalance.remaining < creditsRequired) {
@@ -15367,18 +15376,24 @@ Keep each section concise (2-3 sentences). Use professional but accessible langu
           : `Candidate Comparison: ${candidateDisplayNames.slice(0, 2).join(', ')} +${candidateDisplayNames.length - 2} more`;
 
       let savedReportId: string | undefined;
+      const reportPayload = {
+        partnerId: partner.id,
+        reportType: reportType,
+        version: 1,
+        candidateIds: candidateIds,
+        title: reportTitle,
+        resultData: resultData as any,
+        creditsUsed: candidateIds.length,
+        generatedByUserId: req.user.id,
+      };
       try {
-        const savedReport = await storage.createPartnerAnalysisReport({
-          partnerId: partner.id,
-          reportType: reportType,
-          version: 1,
-          candidateIds: candidateIds,
-          title: reportTitle,
-          resultData: resultData as any,
-          creditsUsed: candidateIds.length,
-          generatedByUserId: req.user.id,
-        });
-        savedReportId = savedReport?.id;
+        if (existingReportId) {
+          const updated = await storage.updatePartnerAnalysisReport(existingReportId, reportPayload);
+          savedReportId = updated?.id;
+        } else {
+          const savedReport = await storage.createPartnerAnalysisReport(reportPayload);
+          savedReportId = savedReport?.id;
+        }
       } catch (saveError) {
         console.error(`[Report Cache] Failed to save ${reportType} report:`, saveError);
       }
@@ -15692,7 +15707,7 @@ Keep each section concise (2-3 sentences). Use professional but accessible langu
       }
 
       // Check for existing cached report (unless forceRefresh is requested)
-      let hasExistingCachedReport = false;
+      let existingReportId: string | undefined;
       if (forceRefresh !== 'true') {
         const existingReport = await storage.findExistingPartnerReport(
           partner.id,
@@ -15716,12 +15731,12 @@ Keep each section concise (2-3 sentences). Use professional but accessible langu
               reportId: existingReport.id,
             });
           }
-          hasExistingCachedReport = true;
+          existingReportId = existingReport.id;
         }
       }
 
       // Consume 1 credit unless regenerating an existing cached report (already paid for)
-      if (!hasExistingCachedReport) {
+      if (!existingReportId) {
         const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);
         
         if (quotaBalance.remaining < 1) {
@@ -16379,19 +16394,25 @@ Based on skill alignment analysis, this candidate may show stronger fit for the 
         : candidateId;
 
       let savedReportId: string | undefined;
+      const reportPayload = {
+        partnerId: partner.id,
+        reportType: 'role_fit_single',
+        version: 1,
+        candidateIds: [candidateId as string],
+        roleId: jobRoleId as string,
+        title: `Role Fit: ${candidateDisplayName} for ${role.title}`,
+        resultData: resultData as any,
+        creditsUsed: 1,
+        generatedByUserId: req.user.id,
+      };
       try {
-        const savedReport = await storage.createPartnerAnalysisReport({
-          partnerId: partner.id,
-          reportType: 'role_fit_single',
-          version: 1,
-          candidateIds: [candidateId as string],
-          roleId: jobRoleId as string,
-          title: `Role Fit: ${candidateDisplayName} for ${role.title}`,
-          resultData: resultData as any,
-          creditsUsed: 1,
-          generatedByUserId: req.user.id,
-        });
-        savedReportId = savedReport?.id;
+        if (existingReportId) {
+          const updated = await storage.updatePartnerAnalysisReport(existingReportId, reportPayload);
+          savedReportId = updated?.id;
+        } else {
+          const savedReport = await storage.createPartnerAnalysisReport(reportPayload);
+          savedReportId = savedReport?.id;
+        }
       } catch (saveError) {
         console.error("[Report Cache] Failed to save role_fit_single report:", saveError);
       }
@@ -16520,7 +16541,7 @@ Based on skill alignment analysis, this candidate may show stronger fit for the 
       }
 
       // Check for existing cached report (unless forceRefresh is requested)
-      let hasExistingCachedReport = false;
+      let existingReportId: string | undefined;
       if (!forceRefresh) {
         const existingReport = await storage.findExistingPartnerReport(
           partner.id,
@@ -16542,13 +16563,13 @@ Based on skill alignment analysis, this candidate may show stronger fit for the 
               reportId: existingReport.id,
             });
           }
-          hasExistingCachedReport = true;
+          existingReportId = existingReport.id;
         }
       }
 
       // Consume credits (1 per candidate) unless regenerating an existing cached report
       const creditsRequired = candidateIds.length;
-      if (!hasExistingCachedReport) {
+      if (!existingReportId) {
         const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);
         
         if (quotaBalance.remaining < creditsRequired) {
@@ -17288,19 +17309,25 @@ Be thorough, professional, and reference specific data points from the assessmen
       };
       
       let savedReportId: string | undefined;
+      const reportPayload = {
+        partnerId: partner.id,
+        reportType: 'role_fit_multi',
+        version: 1,
+        candidateIds: candidateIds,
+        roleId: jobRoleId,
+        title: `Multi-Candidate Role Fit: ${candidateIds.length} candidates for ${role.title}`,
+        resultData: reportData as any,
+        creditsUsed: candidateIds.length,
+        generatedByUserId: req.user.id,
+      };
       try {
-        const savedReport = await storage.createPartnerAnalysisReport({
-          partnerId: partner.id,
-          reportType: 'role_fit_multi',
-          version: 1,
-          candidateIds: candidateIds,
-          roleId: jobRoleId,
-          title: `Multi-Candidate Role Fit: ${candidateIds.length} candidates for ${role.title}`,
-          resultData: reportData as any,
-          creditsUsed: candidateIds.length,
-          generatedByUserId: req.user.id,
-        });
-        savedReportId = savedReport?.id;
+        if (existingReportId) {
+          const updated = await storage.updatePartnerAnalysisReport(existingReportId, reportPayload);
+          savedReportId = updated?.id;
+        } else {
+          const savedReport = await storage.createPartnerAnalysisReport(reportPayload);
+          savedReportId = savedReport?.id;
+        }
       } catch (saveError) {
         console.error("[Report Cache] Failed to save role_fit_multi report:", saveError);
       }
