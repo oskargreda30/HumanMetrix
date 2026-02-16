@@ -1298,6 +1298,21 @@ export default function PartnerDashboard() {
     enabled: !!account?.hasPartnerAccount,
   });
 
+  const { data: creditHistory, isLoading: creditHistoryLoading } = useQuery<{
+    entries: Array<{
+      id: string;
+      entryType: string;
+      amount: number;
+      balanceAfter: number;
+      description: string;
+      createdAt: string;
+    }>;
+    currentBalance: number;
+  }>({
+    queryKey: ["/api/partner/me/credit-history"],
+    enabled: !!account?.hasPartnerAccount && activeTab === 'usage',
+  });
+
   // Credit package pricing with currency conversion
   interface PricingData {
     currency: string;
@@ -3166,6 +3181,62 @@ export default function PartnerDashboard() {
                       </CardContent>
                     </Card>
                   )}
+
+                  <Card data-testid="card-credit-history">
+                    <CardHeader>
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <Receipt className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg" data-testid="text-credit-history-title">Credit History</CardTitle>
+                          <CardDescription>Complete record of credit purchases and usage</CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {creditHistoryLoading ? (
+                        <div className="flex justify-center py-6">
+                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        </div>
+                      ) : creditHistory?.entries && creditHistory.entries.length > 0 ? (
+                        <div className="space-y-2">
+                          <div className="hidden md:grid grid-cols-12 gap-2 px-3 py-2 text-xs font-medium text-muted-foreground border-b" data-testid="credit-history-header">
+                            <div className="col-span-2">Date</div>
+                            <div className="col-span-1">Type</div>
+                            <div className="col-span-5">Description</div>
+                            <div className="col-span-2 text-right">Amount</div>
+                            <div className="col-span-2 text-right">Balance</div>
+                          </div>
+                          {creditHistory.entries.map((entry) => (
+                            <div key={entry.id} className="grid grid-cols-1 md:grid-cols-12 gap-1 md:gap-2 p-3 border rounded-lg items-center" data-testid={`credit-entry-${entry.id}`}>
+                              <div className="md:col-span-2 text-xs text-muted-foreground" data-testid={`text-credit-date-${entry.id}`}>
+                                {new Date(entry.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </div>
+                              <div className="md:col-span-1">
+                                <Badge variant={entry.entryType === 'credit' ? 'default' : 'secondary'} className="text-xs" data-testid={`badge-credit-type-${entry.id}`}>
+                                  {entry.entryType === 'credit' ? '+' : '-'}
+                                </Badge>
+                              </div>
+                              <div className="md:col-span-5 text-sm font-medium" data-testid={`text-credit-desc-${entry.id}`}>
+                                {entry.description}
+                              </div>
+                              <div className={`md:col-span-2 text-right text-sm font-semibold ${entry.entryType === 'credit' ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`} data-testid={`text-credit-amount-${entry.id}`}>
+                                {entry.entryType === 'credit' ? '+' : ''}{entry.amount}
+                              </div>
+                              <div className="md:col-span-2 text-right text-sm text-muted-foreground" data-testid={`text-credit-balance-${entry.id}`}>
+                                {entry.balanceAfter} credits
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 text-sm text-muted-foreground" data-testid="text-credit-history-empty">
+                          No credit transactions yet. Purchase credits from the Billing tab to get started.
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                 </>
               ) : (
                 <Card>

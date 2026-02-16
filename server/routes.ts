@@ -11151,6 +11151,38 @@ Return valid JSON with only the requested fields.`;
     }
   });
 
+  app.get("/api/partner/me/credit-history", isAuthenticated, async (req: any, res) => {
+    try {
+      const partnerData = await getPartnerForUser(req.user.id);
+      const matchingPartner = partnerData?.partner;
+      
+      if (!matchingPartner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+      if (!requirePartnerRole(partnerData, 'member')) {
+        return res.status(403).json({ message: "Member access required" });
+      }
+      
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
+      const entries = await storage.getQuotaLedger(matchingPartner.id, limit);
+      
+      res.json({
+        entries: entries.map(e => ({
+          id: e.id,
+          entryType: e.entryType,
+          amount: e.amount,
+          balanceAfter: e.balanceAfter,
+          description: e.description,
+          createdAt: e.createdAt,
+        })),
+        currentBalance: matchingPartner.testsPurchased - matchingPartner.testsConsumed,
+      });
+    } catch (error) {
+      console.error("Error fetching partner credit history:", error);
+      res.status(500).json({ message: "Failed to fetch credit history" });
+    }
+  });
+
   // Partner self-service: Get billing history (admin only)
   app.get("/api/partner/me/billing", isAuthenticated, async (req: any, res) => {
     try {
