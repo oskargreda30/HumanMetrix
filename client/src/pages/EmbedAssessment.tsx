@@ -1411,6 +1411,15 @@ export default function EmbedAssessment() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        
+        if (data?.error === "Session not in progress" && data?.status === "completed") {
+          console.log('[EmbedAssessment] Session already completed (submitted while phone was sleeping)');
+          stopSubmissionProgress();
+          setStatus("completed");
+          setIsSubmitting(false);
+          return;
+        }
+        
         setStatus("error");
         setErrorMessage(getHumanReadableError(data, "Failed to submit answers"));
         setIsSubmitting(false);
@@ -1452,8 +1461,25 @@ export default function EmbedAssessment() {
       setStatus("completed");
     } catch (err) {
       stopSubmissionProgress();
+      console.error('[EmbedAssessment] Submit network error:', err);
+      
+      try {
+        const verifyRes = await fetch(`/api/embed/session/${sessionId}`);
+        if (verifyRes.ok) {
+          const sessionData = await verifyRes.json();
+          if (sessionData.status === 'completed') {
+            console.log('[EmbedAssessment] Session verified as completed despite network error');
+            setStatus("completed");
+            setIsSubmitting(false);
+            return;
+          }
+        }
+      } catch (verifyErr) {
+        console.error('[EmbedAssessment] Could not verify session status:', verifyErr);
+      }
+      
       setStatus("error");
-      setErrorMessage("Failed to submit assessment");
+      setErrorMessage("Failed to submit assessment. Your answers may have been saved — please check your email or try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -1532,13 +1558,49 @@ export default function EmbedAssessment() {
   }
 
   if (status === "error") {
+    const handleCheckStatus = async () => {
+      if (!sessionId) return;
+      setIsSubmitting(true);
+      try {
+        const verifyRes = await fetch(`/api/embed/session/${sessionId}`);
+        if (verifyRes.ok) {
+          const sessionData = await verifyRes.json();
+          if (sessionData.status === 'completed') {
+            setStatus("completed");
+            return;
+          }
+        }
+        setErrorMessage("Assessment has not been submitted yet. Please try submitting again.");
+      } catch {
+        setErrorMessage("Unable to check status. Please check your internet connection.");
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+    
     return (
       <div className={`min-h-[100dvh] flex items-center justify-center ${bgMain}`} data-testid="embed-error">
         <Card className={`max-w-md ${bgCard} border-red-500/30`}>
           <CardContent className="pt-6 text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <h2 className={`text-xl font-semibold ${textPrimary} mb-2`}>Error</h2>
-            <p className={textSecondary}>{errorMessage}</p>
+            <p className={`${textSecondary} mb-4`}>{errorMessage}</p>
+            <Button
+              onClick={handleCheckStatus}
+              disabled={isSubmitting}
+              variant="outline"
+              className="w-full"
+              data-testid="button-check-status"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Checking...
+                </>
+              ) : (
+                "Check Submission Status"
+              )}
+            </Button>
           </CardContent>
         </Card>
       </div>

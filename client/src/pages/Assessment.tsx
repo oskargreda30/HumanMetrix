@@ -351,13 +351,43 @@ export default function Assessment() {
       const scrollParam = assessment?.partnerInvitationId ? `&scrollToSeries=${assessment.partnerInvitationId}` : '';
       setLocation(`/dashboard?view=candidate&refresh=${Date.now()}${scrollParam}`);
     },
-    onError: (error: any) => {
-      setIsSubmitting(false); // Reset submitting state on error
-      setEvaluationProgress(0); // Reset progress on error
-      setIsEvaluating(false);
+    onError: async (error: any) => {
       console.error("[Assessment] Submission error:", error);
       
-      // Determine appropriate error message based on error type
+      if (resultId && (error instanceof TypeError || error?.message?.includes('fetch') || error?.message?.includes('network') || error?.message?.includes('Failed to fetch'))) {
+        try {
+          const verifyRes = await fetch(`/api/assessments/${resultId}/status`, { credentials: 'include' });
+          if (verifyRes.ok) {
+            const resultData = await verifyRes.json();
+            if (resultData.status === 'completed') {
+              console.log('[Assessment] Verified as completed despite network error');
+              setIsSubmitting(false);
+              setEvaluationProgress(0);
+              setIsEvaluating(false);
+              await queryClient.invalidateQueries({ queryKey: ["/api/results"] });
+              await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
+              await queryClient.invalidateQueries({ queryKey: ["/api/purchases-with-results"] });
+              await queryClient.refetchQueries({ queryKey: ["/api/available-assessments"] });
+              await queryClient.refetchQueries({ queryKey: ["/api/purchases-with-results"] });
+              toast({
+                title: "Success",
+                description: "Assessment submitted successfully!",
+                duration: 3000,
+              });
+              const scrollParam = assessment?.partnerInvitationId ? `&scrollToSeries=${assessment.partnerInvitationId}` : '';
+              setLocation(`/dashboard?view=candidate&refresh=${Date.now()}${scrollParam}`);
+              return;
+            }
+          }
+        } catch (verifyErr) {
+          console.error('[Assessment] Could not verify result status:', verifyErr);
+        }
+      }
+      
+      setIsSubmitting(false);
+      setEvaluationProgress(0);
+      setIsEvaluating(false);
+      
       let message = "Failed to submit assessment. Please try again.";
       let title = "Submission Error";
       
@@ -378,7 +408,7 @@ export default function Assessment() {
         title,
         description: message,
         variant: "destructive",
-        duration: 6000, // Show error for longer
+        duration: 6000,
       });
     },
   });
