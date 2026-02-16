@@ -6247,33 +6247,6 @@ export function registerGuestAssessmentRoutes(app: Express) {
       if (isEmailMismatch && existingUser) {
         await linkPartnerResultsToUser(existingUser.id, invitation);
         
-        const { sendB2BResultsReadyEmail } = await import('./email');
-        const displayName = existingUser.firstName || existingUser.name || existingUser.username || invitation.email.split('@')[0];
-        const invitationId = invitation.id;
-        const guestRedirectUrl = invitationId 
-          ? `/dashboard?view=candidate&scrollToSeries=${invitationId}` 
-          : "/dashboard?view=candidate";
-        
-        try {
-          let autoLoginToken: string | undefined;
-          try {
-            autoLoginToken = crypto.randomUUID();
-            const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-            await storage.setAutoLoginToken(existingUser.id, autoLoginToken, autoLoginExpiry);
-          } catch (tokenErr) {
-            console.error("[GuestInvite] Failed to generate auto-login token:", tokenErr);
-          }
-          await sendB2BResultsReadyEmail({
-            email: invitation.email,
-            candidateName: displayName,
-            partnerName: invitation.partnerName || 'your employer',
-            dashboardUrl: `${req.protocol}://${req.get('host')}${guestRedirectUrl}`,
-            autoLoginToken,
-          });
-        } catch (emailErr) {
-          console.error(`[GuestInvite] Failed to send results-ready email to ${invitation.email}:`, emailErr);
-        }
-        
         console.log(`[GuestInvite] SECURITY: Email mismatch - logged in as ${alreadyLoggedInUser!.email}, invitation for ${invitation.email}. Results linked to invitation account. Session NOT changed.`);
         
         return res.json({ 
@@ -6297,34 +6270,12 @@ export function registerGuestAssessmentRoutes(app: Express) {
         
         await linkPartnerResultsToUser(existingUser.id, invitation);
         
-        const { sendB2BResultsReadyEmail } = await import('./email');
-        const displayName = existingUser.firstName || existingUser.name || existingUser.username || invitation.email.split('@')[0];
-        
         const invitationId = invitation.id;
         let guestRedirectUrl = invitationId 
           ? `/dashboard?view=candidate&scrollToSeries=${invitationId}` 
           : "/dashboard?view=candidate";
         
-        try {
-          let autoLoginToken: string | undefined;
-          try {
-            autoLoginToken = crypto.randomUUID();
-            const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-            await storage.setAutoLoginToken(existingUser.id, autoLoginToken, autoLoginExpiry);
-          } catch (tokenErr) {
-            console.error("[GuestInvite] Failed to generate auto-login token:", tokenErr);
-          }
-          await sendB2BResultsReadyEmail({
-            email: invitation.email,
-            candidateName: displayName,
-            partnerName: invitation.partnerName || 'your employer',
-            dashboardUrl: `${req.protocol}://${req.get('host')}${guestRedirectUrl}`,
-            autoLoginToken,
-          });
-        } catch (emailErr) {
-          console.error(`[GuestInvite] Failed to send results-ready email to ${invitation.email}:`, emailErr);
-        }
-        console.log(`[GuestInvite] Existing user ${existingUser.id} logged in, results-ready email sent to ${invitation.email}`);
+        console.log(`[GuestInvite] Existing user ${existingUser.id} logged in, results linked for ${invitation.email}`);
         
         return res.json({ 
           success: true, 
@@ -6366,7 +6317,7 @@ export function registerGuestAssessmentRoutes(app: Express) {
           invitation.email!,
           firstName,
           temporaryPassword,
-          "You've completed your assessments and can now access your results anytime.",
+          "Your account has been created. Log in to your dashboard to view and unlock your assessment results.",
           'post_payment',
           autoLoginToken
         ).then(() => {
