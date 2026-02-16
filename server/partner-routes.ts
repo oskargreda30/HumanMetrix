@@ -5450,10 +5450,11 @@ export function registerPartnerRoutes(app: Express) {
       const exchangeRatesData = await getExchangeRates();
       const liveRate = exchangeRatesData.rates?.[currencyCode] ?? undefined;
       
-      // Calculate bundle pricing: each test priced individually then summed, then 25% discount
+      // Calculate bundle pricing: 25% discount only when 2+ assessments
+      const bundleDiscountRate = dedupedSessions.length >= 2 ? 25 : 0;
       const bundleCheckoutPricing = calculateBundlePricing(
         countryCode || 'GB', bundleItems, BASE_FEE,
-        { exchangeRate: liveRate, bundleDiscount: 25 }
+        { exchangeRate: liveRate, bundleDiscount: bundleDiscountRate }
       );
       const localCurrencyTotal = bundleCheckoutPricing.discountedTotal;
       const stripeAmount = bundleCheckoutPricing.stripeAmount;
