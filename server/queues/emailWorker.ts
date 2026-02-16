@@ -3,6 +3,9 @@ import sgMail from '@sendgrid/mail';
 import nodemailer from 'nodemailer';
 import type { Invitation } from '@shared/schema';
 
+let sendGridInitialized = false;
+let fromEmail = '';
+
 function formatAssessmentName(type: string): string {
   const names: Record<string, string> = {
     'fit': 'FIT Assessment',

@@ -110,8 +110,7 @@ describe('cn - Class Name Utility', () => {
 
     it('should merge conflicting display classes', () => {
       const result = cn('block', 'inline-block');
-      expect(result).toContain('inline-block');
-      expect(result).not.toContain('block');
+      expect(result).toBe('inline-block');
     });
 
     it('should handle complex conflict scenarios with multiple class types', () => {
@@ -357,7 +356,7 @@ describe('HUMANMETRIX_LOGO_BASE64 - PDF Asset Constant', () => {
 
   describe('Data URI format', () => {
     it('should start with "data:image/png;base64,"', () => {
-      expect(HUMANMETRIX_LOGO_BASE64).toStartWith('data:image/png;base64,');
+      expect(HUMANMETRIX_LOGO_BASE64.startsWith('data:image/png;base64,')).toBe(true);
     });
 
     it('should have valid base64 prefix', () => {
