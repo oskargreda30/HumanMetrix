@@ -14947,7 +14947,34 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
               reportId: existingReport.id,
             });
           }
-          hasIncompleteCachedReport = false;
+          hasIncompleteCachedReport = true;
+        }
+      }
+
+      // Consume credits (1 per candidate) unless regenerating an incomplete cached report
+      const creditsRequired = candidateIds.length;
+      if (!hasIncompleteCachedReport) {
+        const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);
+        
+        if (quotaBalance.remaining < creditsRequired) {
+          const partnerAccount = await storage.getPartnerAccount(partner.id);
+          if (!partnerAccount?.stripeCustomerId) {
+            return res.status(402).json({ 
+              message: `Insufficient credits. You need ${creditsRequired} credit${creditsRequired > 1 ? 's' : ''} to analyze ${creditsRequired} candidate${creditsRequired > 1 ? 's' : ''}, but only have ${quotaBalance.remaining} available.`,
+              creditsRequired,
+              creditsRemaining: quotaBalance.remaining
+            });
+          }
+        }
+
+        for (let i = 0; i < creditsRequired; i++) {
+          await storage.consumePartnerTest(
+            partner.id,
+            null,
+            candidateIds.length === 1 
+              ? "Individual candidate analysis report"
+              : `Candidate comparison report (${i + 1}/${creditsRequired})`
+          );
         }
       }
 
