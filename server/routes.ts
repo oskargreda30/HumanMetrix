@@ -14938,7 +14938,7 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         );
         if (existingReport) {
           const resultData = existingReport.resultData as any;
-          if (resultData && resultData.aiInsights && resultData.scoringVersion >= 2) {
+          if (resultData && resultData.aiInsights) {
             return res.json({
               ...resultData,
               cached: true,
@@ -15353,135 +15353,6 @@ Keep each section concise (2-3 sentences). Use professional but accessible langu
     } catch (error) {
       console.error("Error comparing partner candidates:", error);
       res.status(500).json({ message: "Failed to compare candidates" });
-    }
-  });
-
-  // Partner: Generate AI insights for candidate comparison (kept for backwards compatibility)
-  app.post("/api/partner/me/compare-insights", isAuthenticated, async (req: any, res) => {
-    try {
-      const partnerData = await getPartnerForUser(req.user.id);
-      const partner = partnerData?.partner;
-      if (!partner) {
-        return res.status(404).json({ message: "No partner account found" });
-      }
-
-      const { comparisonData, candidateNames, forceRefresh } = req.body;
-
-      if (!comparisonData || !candidateNames || candidateNames.length < 2) {
-        return res.status(400).json({ message: "Comparison data and at least 2 candidate names are required" });
-      }
-
-      const candidateIds = candidateNames.map((n: any) => n.id || n.email || n.name);
-
-      // Check for cached insights (delete old if forceRefresh)
-      if (!forceRefresh) {
-        const existingReport = await storage.findExistingPartnerReport(
-          partner.id,
-          'compare_insights',
-          candidateIds
-        );
-
-        if (existingReport) {
-          return res.json({
-            insights: existingReport.resultData?.insights || '',
-            cached: true,
-            cachedAt: existingReport.createdAt,
-            generatedAt: existingReport.createdAt,
-            reportId: existingReport.id,
-          });
-        }
-      }
-
-      const creditResult = await storage.consumePartnerTest(
-        partner.id,
-        null,
-        "Compare Insights generation"
-      );
-      
-      if (!creditResult.success && !creditResult.isOverage) {
-        return res.status(402).json({ 
-          message: "Insufficient credits. Please purchase more credits to use AI features.",
-          creditsRequired: 1,
-          creditsRemaining: creditResult.remaining
-        });
-      }
-
-      // Build summaries for each candidate
-      const candidateSummaries = candidateNames.map((candidate: any, idx: number) => {
-        const fitData = comparisonData.fitAssessments?.[idx];
-        const aiData = comparisonData.aiReadinessAssessments?.[idx];
-        const promptData = comparisonData.promptArchitectureAssessments?.[idx];
-        const aiqData = comparisonData.aiqAssessments?.[idx];
-        
-        return `
-${candidate.name}:
-- FIT Assessment: ${fitData ? 'Completed (Avg: ' + Math.round(Object.values(fitData.scores as Record<string, number>).reduce((a, b) => a + b, 0) / Object.keys(fitData.scores).length) + '%)' : 'Not completed'}
-- AI Readiness: ${aiData ? 'Completed (Avg: ' + Math.round(Object.values(aiData.scores as Record<string, number>).reduce((a, b) => a + b, 0) / Object.keys(aiData.scores).length) + '%)' : 'Not completed'}
-- Prompt Architecture: ${promptData ? promptData.totalScore + '%' : 'Not completed'}
-- AIQ: ${aiqData ? aiqData.totalScore + '%' : 'Not completed'}`;
-      }).join('\n');
-
-      const prompt = `You are an expert HR analyst comparing multiple job candidates. Generate a concise comparative analysis.
-
-CANDIDATES BEING COMPARED:
-${candidateSummaries}
-
-Average Scores Summary:
-${candidateNames.map((c: any, i: number) => c.name + ': ' + (comparisonData.averageScores?.[i] || 'N/A') + '%').join(', ')}
-
-Provide a brief comparative analysis (under 200 words) covering:
-1. **Key Differentiators**: What sets each candidate apart
-2. **Complementary Strengths**: Where candidates excel differently
-3. **Hiring Consideration**: Brief recommendation based on the data
-
-Use the candidates' actual names. Be specific and actionable.`;
-
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: "You are an expert HR analyst specializing in candidate comparisons. Provide concise, professional insights." },
-          { role: "user", content: prompt }
-        ],
-        max_tokens: 400,
-        temperature: 0.7,
-      });
-
-      const insights = completion.choices[0].message.content || '';
-
-      let savedReportId: string | undefined;
-      try {
-        const savedReport = await storage.createPartnerAnalysisReport({
-          partnerId: partner.id,
-          reportType: 'compare_insights',
-          candidateIds,
-          title: 'Comparison Insights: ' + candidateNames.map((c: any) => c.name).join(' vs '),
-          resultData: { insights, candidateCount: candidateNames.length, generatedAt: new Date().toISOString() },
-          creditsUsed: 1,
-          generatedByUserId: req.user.id,
-        });
-        savedReportId = savedReport?.id;
-      } catch (saveError) {
-        console.error("[Report Cache] Failed to save compare_insights report:", saveError);
-      }
-
-      logAiCost({
-        operationType: 'compare_insights',
-        model: "gpt-4o",
-        usage: extractUsage(completion),
-        userId: req.user.id,
-        partnerId: partner.id,
-        metadata: { candidateCount: candidateNames.length },
-      }).catch(console.error);
-
-      res.json({
-        insights,
-        cached: false,
-        generatedAt: new Date().toISOString(),
-        reportId: savedReportId,
-      });
-    } catch (error) {
-      console.error("Error generating comparison insights:", error);
-      res.status(500).json({ message: "Failed to generate insights" });
     }
   });
 

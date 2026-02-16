@@ -122,7 +122,7 @@ export interface SharedCompareTabConfig {
   candidatesEndpoint: string;
   rolesEndpoint: string;
   compareEndpoint: string;
-  insightsEndpoint?: string;
+  showInsights?: boolean;
   contextType: 'admin' | 'partner';
 }
 
@@ -2698,7 +2698,7 @@ export function SharedCompareTab({ config, staticData }: SharedCompareTabProps) 
               </div>
               {/* End of Report Container */}
 
-              {config.insightsEndpoint && (
+              {config.showInsights && (
               <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent" data-testid="card-ai-insights">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
