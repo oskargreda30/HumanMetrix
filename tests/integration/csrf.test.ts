@@ -369,8 +369,8 @@ describe('CSRF Middleware', () => {
       freshMiddleware(req as Request, res as Response, next as NextFunction);
 
       expect(res.cookieData[0].options.httpOnly).toBe(false);
-      expect(res.cookieData[0].options.secure).toBe(false);
-      expect(res.cookieData[0].options.sameSite).toBe('lax');
+      expect(res.cookieData[0].options.secure).toBe(true);
+      expect(res.cookieData[0].options.sameSite).toBe('none');
     });
 
     it('should set secure cookie in production', async () => {

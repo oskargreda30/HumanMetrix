@@ -1,0 +1,547 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for shared/questions/fit-default.ts</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">shared/questions</a> fit-default.ts</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>0/154</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>0/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>0/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>0/154</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line low'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a>
+<a name='L122'></a><a href='#L122'>122</a>
+<a name='L123'></a><a href='#L123'>123</a>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a>
+<a name='L128'></a><a href='#L128'>128</a>
+<a name='L129'></a><a href='#L129'>129</a>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a>
+<a name='L133'></a><a href='#L133'>133</a>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a>
+<a name='L148'></a><a href='#L148'>148</a>
+<a name='L149'></a><a href='#L149'>149</a>
+<a name='L150'></a><a href='#L150'>150</a>
+<a name='L151'></a><a href='#L151'>151</a>
+<a name='L152'></a><a href='#L152'>152</a>
+<a name='L153'></a><a href='#L153'>153</a>
+<a name='L154'></a><a href='#L154'>154</a>
+<a name='L155'></a><a href='#L155'>155</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import type { FITQuestion } from './types';<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export const FIT_QUESTIONS_DEFAULT: FITQuestion[] = [</span>
+<span class="cstat-no" title="statement not covered" >  {</span>
+<span class="cstat-no" title="statement not covered" >    id: "1",</span>
+<span class="cstat-no" title="statement not covered" >    text: "You are hosting a dinner party. A key ingredient is missing, and the stores are about to close.",</span>
+<span class="cstat-no" title="statement not covered" >    options: [</span>
+<span class="cstat-no" title="statement not covered" >      { value: "A", text: "Quickly change the recipe to use only what's on hand and start cooking immediately, focusing on saving time." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "B", text: "Call a foodie friend to find the most interesting, surprising thing you could use to replace the missing ingredient." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "C", text: "Take a few minutes to quickly look up advanced techniques for making the dish work with fewer ingredients, viewing it as a new skill challenge." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "D", text: "Send a quick text to guests to see if one is passing a store and can grab the item, offering to pay them back." },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >  },</span>
+<span class="cstat-no" title="statement not covered" >  {</span>
+<span class="cstat-no" title="statement not covered" >    id: "2",</span>
+<span class="cstat-no" title="statement not covered" >    text: "A friend tells you they failed their driving test for the third time and are deeply upset.",</span>
+<span class="cstat-no" title="statement not covered" >    options: [</span>
+<span class="cstat-no" title="statement not covered" >      { value: "A", text: "Proactively schedule structured driving practice sessions and take responsibility for coaching their weakest areas until measurable improvement occurs." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "B", text: "Remind them that failure is normal and encourage them to take a short break before getting back to their routine." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "C", text: "Focus entirely on validating their frustration and offer to listen as long as they need, avoiding judgment or practical advice." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "D", text: "Suggest setting up practice sessions with several different, patient friends to get varied feedback and make the process more fun." },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >  },</span>
+<span class="cstat-no" title="statement not covered" >  {</span>
+<span class="cstat-no" title="statement not covered" >    id: "3",</span>
+<span class="cstat-no" title="statement not covered" >    text: "You are trying to repair a small, complicated piece of antique furniture, and the original instructions are in an unfamiliar language.",</span>
+<span class="cstat-no" title="statement not covered" >    options: [</span>
+<span class="cstat-no" title="statement not covered" >      { value: "A", text: "Focus time on translating the original documents and researching the specific construction methods used during that time period." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "B", text: "Accept that it will take longer, and start working on the simpler parts first, slowly tackling the hardest piece last." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "C", text: "Find a highly specialized artisan in the field and offer them a fair price just to explain the key technique needed for the fix." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "D", text: "Enrol in a weekend class on that specific period of furniture restoration, seeing it as a long-term investment." },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >  },</span>
+<span class="cstat-no" title="statement not covered" >  {</span>
+<span class="cstat-no" title="statement not covered" >    id: "4",</span>
+<span class="cstat-no" title="statement not covered" >    text: "You plan a vacation with three friends, but two of them suddenly refuse to pay the agreed-upon deposit, threatening the whole trip.",</span>
+<span class="cstat-no" title="statement not covered" >    options: [</span>
+<span class="cstat-no" title="statement not covered" >      { value: "A", text: "Personally secure the required deposit through a short-term arrangement to prevent the trip from collapsing, then address the commitment issue privately." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "B", text: "Analyse the detailed cancellation rules and timeline for the trip to understand exactly what options are available if the friends drop out completely." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "C", text: "Politely tell the travel agent that the trip might need to be delayed or cancelled, focusing on protecting your own financial stability first." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "D", text: "Work with the travel agent to restructure the booking so it proceeds only with the confirmed participants, adapting the plan to the new social reality." },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >  },</span>
+<span class="cstat-no" title="statement not covered" >  {</span>
+<span class="cstat-no" title="statement not covered" >    id: "5",</span>
+<span class="cstat-no" title="statement not covered" >    text: "You see an older person on the pavement struggling to carry several heavy grocery bags.",</span>
+<span class="cstat-no" title="statement not covered" >    options: [</span>
+<span class="cstat-no" title="statement not covered" >      { value: "A", text: "Step in and ask which bags are heaviest so you can take on the most physically demanding ones." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "B", text: "Offer to help carry the bags and walk with them, ensuring they feel supported until they reach their destination." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "C", text: "Take the initiative to carry all the bags yourself, offering to help them all the way home." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "D", text: "Ask a nearby passerby to help as well, dividing the load among several people to make it easier." },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >  },</span>
+<span class="cstat-no" title="statement not covered" >  {</span>
+<span class="cstat-no" title="statement not covered" >    id: "6",</span>
+<span class="cstat-no" title="statement not covered" >    text: "You have been running a personal blog/creative project for years, and a long-time reader posts a detailed, hateful critique of your recent work.",</span>
+<span class="cstat-no" title="statement not covered" >    options: [</span>
+<span class="cstat-no" title="statement not covered" >      { value: "A", text: "Write and publish a point-by-point factual response that defends your creative choices and corrects any misinterpretations in the critique." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "B", text: "Take the negative critique as a challenge and immediately start seeking mentorship or courses to improve the specific flaws mentioned." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "C", text: "Reach out privately to several other readers to find out if the critique has merit and coordinate a group response to the public comment." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "D", text: "Delete the hateful comment and decide to continue working on your project exactly as before, focusing on the joy of creating." },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >  },</span>
+<span class="cstat-no" title="statement not covered" >  {</span>
+<span class="cstat-no" title="statement not covered" >    id: "7",</span>
+<span class="cstat-no" title="statement not covered" >    text: "A close friend asks you to co-sign a lease or loan for a business idea you believe is fundamentally flawed and risky.",</span>
+<span class="cstat-no" title="statement not covered" >    options: [</span>
+<span class="cstat-no" title="statement not covered" >      { value: "A", text: "Research the legal requirements of co-signing and the friend's financial history to gather objective data on the exact risks involved." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "B", text: "Politely refuse the request, citing your own current financial stress and the need to protect your future stability." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "C", text: "Agree to help the friend, but only on the condition that they complete a business course and secure a mentor before you sign." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "D", text: "Tell the friend you cannot co-sign, but immediately offer them a smaller, non-repayable loan to help with initial start-up costs." },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >  },</span>
+<span class="cstat-no" title="statement not covered" >  {</span>
+<span class="cstat-no" title="statement not covered" >    id: "8",</span>
+<span class="cstat-no" title="statement not covered" >    text: "You discover your local volunteer group's election process is accidentally confusing, leading to only wealthy, older members being elected.",</span>
+<span class="cstat-no" title="statement not covered" >    options: [</span>
+<span class="cstat-no" title="statement not covered" >      { value: "A", text: "Immediately draft and circulate a new, simpler election form and host a pop-up station to help every member register correctly." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "B", text: "Spend time analysing the old form and historical voter data to pinpoint exactly which sections created the subtle barrier to entry." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "C", text: "Offer dedicated time to reach out to younger, less wealthy members and ensure they are personally guided through the registration process." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "D", text: "Propose a rule change that mandates training for all potential candidates, ensuring everyone starts with the same knowledge base." },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >  },</span>
+<span class="cstat-no" title="statement not covered" >  {</span>
+<span class="cstat-no" title="statement not covered" >    id: "9",</span>
+<span class="cstat-no" title="statement not covered" >    text: "You are at a live concert when a person nearby begins talking loudly and disrupting the experience for those around you.",</span>
+<span class="cstat-no" title="statement not covered" >    options: [</span>
+<span class="cstat-no" title="statement not covered" >      { value: "A", text: "Stay focused on the performance, adjusting your position if needed, waiting for the situation to resolve itself." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "B", text: "Lean over and politely mention that you're finding it hard to hear, expressing understanding that they might not realise the impact." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "C", text: "Quietly get the attention of a nearby usher and let them handle the situation professionally." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "D", text: "Clearly but firmly ask the person to lower their voice so everyone nearby can enjoy the show." },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >  },</span>
+<span class="cstat-no" title="statement not covered" >  {</span>
+<span class="cstat-no" title="statement not covered" >    id: "10",</span>
+<span class="cstat-no" title="statement not covered" >    text: "During heavy rain, you discover water leaking through your ceiling, indicating roof damage that needs urgent attention.",</span>
+<span class="cstat-no" title="statement not covered" >    options: [</span>
+<span class="cstat-no" title="statement not covered" >      { value: "A", text: "Immediately place containers to catch water, move valuables, and start calling emergency roofers to assess the damage." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "B", text: "Document the damage with photos and research what temporary measures prevent mould while waiting for professional help." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "C", text: "Use this as motivation to learn basic home maintenance skills, starting with understanding how roof repairs work for future preparedness." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "D", text: "Stay calm, then reach out to trusted neighbours or family members who may know reliable emergency repair services." },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >  },</span>
+<span class="cstat-no" title="statement not covered" >  {</span>
+<span class="cstat-no" title="statement not covered" >    id: "11",</span>
+<span class="cstat-no" title="statement not covered" >    text: "Your close-knit group of friends have developed an inside joke or ritual that consistently leaves one specific member feeling excluded.",</span>
+<span class="cstat-no" title="statement not covered" >    options: [</span>
+<span class="cstat-no" title="statement not covered" >      { value: "A", text: "Immediately confront the main instigator privately, demanding that they stop the joke/ritual for the sake of the group dynamic." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "B", text: "Observe the group interactions closely for a week, logging exactly when the exclusion happens to determine its root cause." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "C", text: "Stop participating in the joke/ritual yourself and ensure the excluded friend is included in other, separate activities you plan." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "D", text: "Initiate a casual conversation with the entire group, suggesting a completely new, shared activity or joke that everyone can enjoy equally." },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >  },</span>
+<span class="cstat-no" title="statement not covered" >  {</span>
+<span class="cstat-no" title="statement not covered" >    id: "12",</span>
+<span class="cstat-no" title="statement not covered" >    text: "You need to organize a huge, complex family reunion in a few weeks, and you have no clear plan or starting budget.",</span>
+<span class="cstat-no" title="statement not covered" >    options: [</span>
+<span class="cstat-no" title="statement not covered" >      { value: "A", text: "Spend the first day breaking the event into 100 small, dependent tasks (invites, menu, travel) to create a concrete, manageable checklist." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "B", text: "Communicate clearly to the main family contact that the time frame is impossible and propose a revised, achievable schedule for next year." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "C", text: "Find an event planner or experienced family member who has successfully done this before and ask for their advice on how to structure the starting phase." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "D", text: "Identify two capable family members and delegate the non-critical initial tasks (like creating the guest list) while defining the core budget." },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >  },</span>
+<span class="cstat-no" title="statement not covered" >  {</span>
+<span class="cstat-no" title="statement not covered" >    id: "13",</span>
+<span class="cstat-no" title="statement not covered" >    text: "You are stuck on a difficult personal challenge and need a solution quickly.",</span>
+<span class="cstat-no" title="statement not covered" >    options: [</span>
+<span class="cstat-no" title="statement not covered" >      { value: "A", text: "Secure an appropriate external solution to resolve the problem quickly, prioritizing a successful outcome over personally mastering the underlying skill." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "B", text: "Spend focused time reading technical guides and forums related to the problem until discovering a unique solution." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "C", text: "Accept the difficulty for now and deal with the minor inconvenience until a simpler solution or external aid appears later." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "D", text: "Enrol in a targeted course to learn the skill needed, ensuring this kind of problem can be solved for good." },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >  },</span>
+<span class="cstat-no" title="statement not covered" >  {</span>
+<span class="cstat-no" title="statement not covered" >    id: "14",</span>
+<span class="cstat-no" title="statement not covered" >    text: "You receive harsh, unfair criticism online from a public figure about a personal creative project.",</span>
+<span class="cstat-no" title="statement not covered" >    options: [</span>
+<span class="cstat-no" title="statement not covered" >      { value: "A", text: "Write a calm, factual response that addresses only the verifiable points, completely avoiding emotional defence." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "B", text: "Send a kind, professional message stating that while respecting their platform, the harsh tone prevents constructive discussion." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "C", text: "Seek coaching on public relations and crisis communication to learn how to deal with aggressive public figures effectively." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "D", text: "Talk to trusted peers and ask them to act as a buffer for future comments or to take over the public-facing response." },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >  },</span>
+<span class="cstat-no" title="statement not covered" >  {</span>
+<span class="cstat-no" title="statement not covered" >    id: "15",</span>
+<span class="cstat-no" title="statement not covered" >    text: "You are tasked with defining a new household budget but there are multiple strong, conflicting opinions from family members.",</span>
+<span class="cstat-no" title="statement not covered" >    options: [</span>
+<span class="cstat-no" title="statement not covered" >      { value: "A", text: "Implement a budget you deem most effective, then proactively track data to show everyone that your method is superior." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "B", text: "Talk to all family members, focusing on the reasons behind their opinions to synthesize a completely new, hybrid solution." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "C", text: "Focus on designing a routine that equally minimizes the workload and maximizes the personal time for the two most critical people involved." },</span>
+<span class="cstat-no" title="statement not covered" >      { value: "D", text: "Facilitate a structured discussion that helps all family members align on shared priorities and agree on a budget together." },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >  },</span>
+<span class="cstat-no" title="statement not covered" >];</span>
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2026-02-16T04:29:36.852Z
+            </div>
+        <script src="../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../sorter.js"></script>
+        <script src="../../block-navigation.js"></script>
+    </body>
+</html>
+    

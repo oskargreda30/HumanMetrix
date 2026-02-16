@@ -1,0 +1,538 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for shared/questions/ai-readiness-default.ts</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">shared/questions</a> ai-readiness-default.ts</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>0/151</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>0/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>0/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>0/151</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line low'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a>
+<a name='L122'></a><a href='#L122'>122</a>
+<a name='L123'></a><a href='#L123'>123</a>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a>
+<a name='L128'></a><a href='#L128'>128</a>
+<a name='L129'></a><a href='#L129'>129</a>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a>
+<a name='L133'></a><a href='#L133'>133</a>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a>
+<a name='L148'></a><a href='#L148'>148</a>
+<a name='L149'></a><a href='#L149'>149</a>
+<a name='L150'></a><a href='#L150'>150</a>
+<a name='L151'></a><a href='#L151'>151</a>
+<a name='L152'></a><a href='#L152'>152</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import type { AIReadinessQuestion } from './types';<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export const AI_READINESS_QUESTIONS_DEFAULT: AIReadinessQuestion[] = [</span>
+<span class="cstat-no" title="statement not covered" >  { id: "1", text: "You need to integrate an AI-generated data set with an existing, structured database.", options: [</span>
+<span class="cstat-no" title="statement not covered" >    { value: "A", text: "Write a structured, iterative prompt to force the AI to format the output with perfect data compatibility." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "B", text: "Immediately review the database schema and architecture for potential data incompatibility issues." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "C", text: "Analyze the AI-generated data for potential biases or ethical violations before merging it." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "D", text: "Document the new data's structure and communicate with the team on how to access and use it effectively." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "E", text: "Challenge the necessity of merging the data, using AI to explore alternative analytical approaches." },</span>
+<span class="cstat-no" title="statement not covered" >  ]},</span>
+<span class="cstat-no" title="statement not covered" >  { id: "2", text: "A complex technical manual is poorly written and full of errors, but you must learn the system quickly.", options: [</span>
+<span class="cstat-no" title="statement not covered" >    { value: "A", text: "Break down the system's function into logical sub-components and devise a focused learning plan for each." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "B", text: "Search online communities for practical demonstrations and user-generated tutorials to bypass the manual." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "C", text: "Engage a technical expert or vendor directly to clarify the most critical functional aspects." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "D", text: "Systematically test the system's features against the manual to pinpoint and document all factual errors." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "E", text: "Use an AI to summarize the manual, extract key technical terms, and explain the core concepts simply." },</span>
+<span class="cstat-no" title="statement not covered" >  ]},</span>
+<span class="cstat-no" title="statement not covered" >  { id: "3", text: "A key business metric is declining, and the initial data analysis is inconclusive about the cause.", options: [</span>
+<span class="cstat-no" title="statement not covered" >    { value: "A", text: "Use domain knowledge to create a set of hypotheses about the decline, then seek data to confirm or deny them." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "B", text: "Implement a new data collection process to capture high-resolution, real-time data related to the decline." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "C", text: "Challenge the team to creatively explore solutions that violate current market assumptions." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "D", text: "Facilitate a collaborative session using AI journey mapping tools to pinpoint potential failure points." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "E", text: "Deconstruct the declining metric into its fundamental mathematical components to isolate the variable causing the drop." },</span>
+<span class="cstat-no" title="statement not covered" >  ]},</span>
+<span class="cstat-no" title="statement not covered" >  { id: "4", text: "A new security protocol is introduced that requires all data to be encrypted during transfer.", options: [</span>
+<span class="cstat-no" title="statement not covered" >    { value: "A", text: "Research the specific encryption standard and document its technical implementation requirements." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "B", text: "Immediately train the team on the proper procedures for using the new encryption tools." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "C", text: "Analyze the security risks associated with not using encryption to justify the process change to skeptical colleagues." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "D", text: "Update all data storage and transfer workflows to reflect the new policy, focusing on consistent compliance." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "E", text: "Use an AI to generate a detailed compliance checklist for the entire team to follow." },</span>
+<span class="cstat-no" title="statement not covered" >  ]},</span>
+<span class="cstat-no" title="statement not covered" >  { id: "5", text: "You are designing a new feature, and you propose a highly unusual technical solution that is outside the company's norm.", options: [</span>
+<span class="cstat-no" title="statement not covered" >    { value: "A", text: "Develop a detailed justification based on performance metrics and efficiency gains compared to standard solutions." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "B", text: "Clearly document the solution's architecture and underlying technical logic for review." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "C", text: "Facilitate a transparent discussion with the team, explaining the rationale and seeking buy-in." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "D", text: "Create a minimalist, innovative prototype of the feature to demonstrate its viability and effectiveness." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "E", text: "Research and share case studies of other leading companies successfully using the unusual technology." },</span>
+<span class="cstat-no" title="statement not covered" >  ]},</span>
+<span class="cstat-no" title="statement not covered" >  { id: "6", text: "A colleague suggests using a public domain AI model, but you are concerned about its licensing terms.", options: [</span>
+<span class="cstat-no" title="statement not covered" >    { value: "A", text: "Research the model's specific open-source license and its implications for commercial use." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "B", text: "Prompt the AI with a hypothetical scenario to test its ethical guardrails and behavior." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "C", text: "Collaborate with the legal team to draft internal usage guidelines for the model." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "D", text: "Challenge the colleague to find a completely proprietary and licensed solution instead." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "E", text: "Study the model's limitations based on its training data to understand potential factual or domain errors." },</span>
+<span class="cstat-no" title="statement not covered" >  ]},</span>
+<span class="cstat-no" title="statement not covered" >  { id: "7", text: "A manager asks for a report on industry trends, but the deadline is extremely tight.", options: [</span>
+<span class="cstat-no" title="statement not covered" >    { value: "A", text: "Use an AI tool to rapidly generate a preliminary draft, focusing your time on refining and validating its content." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "B", text: "Leverage deep domain knowledge to filter external data sources, focusing only on the most relevant, high-impact trends." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "C", text: "Negotiate an extended deadline, clearly explaining the need for data validation and quality control." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "D", text: "Use AI to identify the 3-4 most impactful findings, then restructure the report around these key insights." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "E", text: "Search for innovative, quick-turnaround data visualization tools to present the findings with maximum clarity." },</span>
+<span class="cstat-no" title="statement not covered" >  ]},</span>
+<span class="cstat-no" title="statement not covered" >  { id: "8", text: "A routine process is repetitive and prone to human error, but automation requires a skill you don't possess.", options: [</span>
+<span class="cstat-no" title="statement not covered" >    { value: "A", text: "Break the process down into its logical steps, documenting the precise sequence required for automation." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "B", text: "Search for an AI-powered no-code platform that allows you to automate the task without requiring programming skills." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "C", text: "Proactively learn the necessary programming language by taking an introductory online course." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "D", text: "Focus your analysis on quantifying the financial losses caused by the human errors to justify investment in automation." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "E", text: "Collaborate with an engineer to translate your process documentation into functional, automated code." },</span>
+<span class="cstat-no" title="statement not covered" >  ]},</span>
+<span class="cstat-no" title="statement not covered" >  { id: "9", text: "You receive a large dataset that seems relevant to a project but contains many missing values and inconsistencies.", options: [</span>
+<span class="cstat-no" title="statement not covered" >    { value: "A", text: "Use statistical methods to impute missing values and assess the overall quality of the data." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "B", text: "Consult with data owners or experts to understand the cause of the inconsistencies." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "C", text: "Research advanced data cleaning and validation techniques to apply to the dataset." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "D", text: "Redefine the project's problem statement to work around the inconsistencies, focusing on a subset of reliable data." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "E", text: "Use an AI to analyze the data and suggest the most appropriate cleaning and imputation strategies." },</span>
+<span class="cstat-no" title="statement not covered" >  ]},</span>
+<span class="cstat-no" title="statement not covered" >  { id: "10", text: "An AI model is suggesting a financially sound decision, but it contradicts long-standing company values.", options: [</span>
+<span class="cstat-no" title="statement not covered" >    { value: "A", text: "Use your domain expertise to articulate the exact conflict between the AI's logic and the company's value system." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "B", text: "Prompt the AI to identify potential negative PR or long-term reputation risks associated with the decision." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "C", text: "Facilitate a creative stakeholder workshop to explore ethical implications and brainstorm values-aligned alternatives." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "D", text: "Propose an innovative, hybrid decision that captures some of the financial gain while adhering to company values." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "E", text: "Research the company's compliance history and ethical guidelines related to the decision area." },</span>
+<span class="cstat-no" title="statement not covered" >  ]},</span>
+<span class="cstat-no" title="statement not covered" >  { id: "11", text: "A team member is struggling to understand the technical constraints of a new project they are leading.", options: [</span>
+<span class="cstat-no" title="statement not covered" >    { value: "A", text: "Facilitate a knowledge-sharing session using AI-generated visuals to explain the technical architecture simply." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "B", text: "Research best practices for project scoping and risk identification to help them define the constraints." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "C", text: "Use an AI-generated overview to clearly explain the project's technical components and constraints." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "D", text: "Encourage them to break the project into smaller milestones to manage and adapt to constraints gradually." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "E", text: "Review the project plan and use your domain knowledge to pre-emptively identify and flag major technical risks." },</span>
+<span class="cstat-no" title="statement not covered" >  ]},</span>
+<span class="cstat-no" title="statement not covered" >  { id: "12", text: "You need to design an experiment but have limited resources for data collection.", options: [</span>
+<span class="cstat-no" title="statement not covered" >    { value: "A", text: "Use creative experimental design techniques (e.g., fractional factorial designs) to maximize insights from minimal data." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "B", text: "Analyze resource allocation trade-offs to determine where experimental constraints can be optimized." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "C", text: "Research existing public data sources that might serve as a proxy or baseline for your experiment." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "D", text: "Collaborate with other teams to pool resources or leverage their existing data collection infrastructure." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "E", text: "Use an AI to design the statistical model and recommend the minimum sample size needed." },</span>
+<span class="cstat-no" title="statement not covered" >  ]},</span>
+<span class="cstat-no" title="statement not covered" >  { id: "13", text: "A technical system update is happening next month, and you need to prepare the team.", options: [</span>
+<span class="cstat-no" title="statement not covered" >    { value: "A", text: "Research the new system's technical documentation to understand all functional and operational changes." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "B", text: "Collaborate with subject matter experts to design a structured training curriculum with manageable learning modules." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "C", text: "Create a document outlining the ROI or strategic necessity of the system update for the team." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "D", text: "Facilitate a Q&amp;A session with developers, using AI to generate clarifying questions about technical ambiguities." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "E", text: "Propose an innovative use case for the new system's features that was not previously considered." },</span>
+<span class="cstat-no" title="statement not covered" >  ]},</span>
+<span class="cstat-no" title="statement not covered" >  { id: "14", text: "You want to teach a colleague how to use a complex analytics tool, but they lack the foundational data knowledge.", options: [</span>
+<span class="cstat-no" title="statement not covered" >    { value: "A", text: "Break down the tool's usage into a step-by-step process, focusing only on the most critical features first." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "B", text: "Collaborate with the colleague to work through a real-world project, offering hands-on support." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "C", text: "Use an AI to generate practice data sets and exercises tailored to their specific learning needs." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "D", text: "Dedicate time to research foundational data concepts and create simple analogies for them." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "E", text: "Challenge the colleague to solve a simplified version of a problem using the tool to encourage creative learning." },</span>
+<span class="cstat-no" title="statement not covered" >  ]},</span>
+<span class="cstat-no" title="statement not covered" >  { id: "15", text: "You discover an AI model is being trained on outdated, non-compliant industry data.", options: [</span>
+<span class="cstat-no" title="statement not covered" >    { value: "A", text: "Immediately report the non-compliance and recommend quarantining the model until the data is remediated." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "B", text: "Research the specific regulatory requirements the model's data is violating." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "C", text: "Use an AI to analyze the dataset and identify all instances of non-compliant data points for removal." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "D", text: "Use your domain knowledge to explain the operational and legal risks of using the outdated data to leadership." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "E", text: "Facilitate a cross-functional discussion to redesign the data pipeline to ensure future compliance." },</span>
+<span class="cstat-no" title="statement not covered" >  ]},</span>
+<span class="cstat-no" title="statement not covered" >  { id: "16", text: "A project requires a creative solution, but the team's initial ideas are blocked by existing internal policy.", options: [</span>
+<span class="cstat-no" title="statement not covered" >    { value: "A", text: "Analyze the policy's purpose and logic to determine if the creative idea can be legally adapted or exempted." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "B", text: "Challenge the policy itself, proposing an innovative change that would allow the creative idea to proceed." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "C", text: "Collaborate with legal or management to negotiate a temporary waiver or exception for the project." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "D", text: "Use an AI to generate alternative, compliance-friendly ideas based on the core creative concept." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "E", text: "Redefine the problem to generate entirely new ideas that inherently operate outside the scope of the limiting policy." },</span>
+<span class="cstat-no" title="statement not covered" >  ]},</span>
+<span class="cstat-no" title="statement not covered" >  { id: "17", text: "You are asked to review a technical specification for a new product, and the deadline is tomorrow.", options: [</span>
+<span class="cstat-no" title="statement not covered" >    { value: "A", text: "Focus the review on whether the specification supports the product's strategic intent and positioning." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "B", text: "Analyze the technical requirements for potential architectural flaws, performance bottlenecks, or scalability issues." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "C", text: "Use an AI to perform an automated code or specification review to catch obvious errors." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "D", text: "Proactively communicate any concerns and potential risks discovered during the hurried review to the relevant stakeholders." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "E", text: "Research industry standards for similar products to benchmark the technical specifications' quality and completeness." },</span>
+<span class="cstat-no" title="statement not covered" >  ]},</span>
+<span class="cstat-no" title="statement not covered" >  { id: "18", text: "The team is using a new data visualization tool, but colleagues are struggling to understand the generated charts.", options: [</span>
+<span class="cstat-no" title="statement not covered" >    { value: "A", text: "Research the fundamental principles of visual design and data storytelling to create clearer charts." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "B", text: "Propose an innovative new chart type or visualization approach that simplifies the complex data." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "C", text: "Facilitate a collaborative session to gather feedback on which charts are confusing and why." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "D", text: "Use an AI to generate alternative text descriptions for the charts to explain the findings simply." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "E", text: "Create a standardized style guide for all charts, ensuring consistency and ease of interpretation." },</span>
+<span class="cstat-no" title="statement not covered" >  ]},</span>
+<span class="cstat-no" title="statement not covered" >  { id: "19", text: "You need to automate a task, but the process has many exceptions and edge cases.", options: [</span>
+<span class="cstat-no" title="statement not covered" >    { value: "A", text: "Use critical thinking to map all exceptions and create a decision tree that handles each one logically." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "B", text: "Analyze the data to determine the frequency of each exception, focusing on automating the most common ones first." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "C", text: "Use an AI to generate the complex conditional logic required to handle the edge cases in the code." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "D", text: "Collaborate with process owners to redefine the process and eliminate unnecessary exceptions." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "E", text: "Research advanced programming techniques for managing complex conditional logic efficiently." },</span>
+<span class="cstat-no" title="statement not covered" >  ]},</span>
+<span class="cstat-no" title="statement not covered" >  { id: "20", text: "A colleague proposes a solution based on an obsolete technology.", options: [</span>
+<span class="cstat-no" title="statement not covered" >    { value: "A", text: "Use your domain knowledge to explain the contemporary risks (e.g., security, maintenance) associated with the obsolete technology." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "B", text: "Analyze the project's data requirements to show how the obsolete technology cannot meet modern throughput needs." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "C", text: "Propose a modern, innovative alternative that fulfills the same goals without the technical debt." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "D", text: "Research the lifecycle and End-of-Life date of the obsolete technology to provide factual backing for your objection." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "E", text: "Facilitate a discussion to respectfully challenge the proposal and collaboratively find a forward-looking technical solution." },</span>
+<span class="cstat-no" title="statement not covered" >  ]},</span>
+<span class="cstat-no" title="statement not covered" >  { id: "21", text: "You need to write a proposal but are unsure how to frame the strategic impact for senior leadership.", options: [</span>
+<span class="cstat-no" title="statement not covered" >    { value: "A", text: "Use an AI to analyze the company's annual reports and suggest language aligned with strategic priorities." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "B", text: "Focus the proposal on core data metrics that demonstrate clear and measurable ROI." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "C", text: "Leverage your domain expertise to position the proposal as a solution to a critical, long-standing industry problem." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "D", text: "Research successful proposals in the company archive to adopt proven framing and structure." },</span>
+<span class="cstat-no" title="statement not covered" >    { value: "E", text: "Collaborate with a senior leader or mentor to refine the proposal's strategic narrative." },</span>
+<span class="cstat-no" title="statement not covered" >  ]},</span>
+<span class="cstat-no" title="statement not covered" >];</span>
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2026-02-16T04:29:36.852Z
+            </div>
+        <script src="../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../sorter.js"></script>
+        <script src="../../block-navigation.js"></script>
+    </body>
+</html>
+    

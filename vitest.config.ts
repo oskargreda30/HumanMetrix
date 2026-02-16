@@ -13,12 +13,21 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
+      include: [
+        'shared/**/*.ts',
+        'server/**/*.ts',
+        'client/src/lib/**/*.ts',
+      ],
       exclude: [
         'node_modules',
         'tests',
-        'client',
         'attached_assets',
         '**/*.d.ts',
+        'server/vite.ts',
+        'server/db.ts',
+        'server/index.ts',
+        'server/routes.ts',
+        'server/storage.ts',
       ],
     },
   },
