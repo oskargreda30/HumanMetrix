@@ -15382,6 +15382,20 @@ Keep each section concise (2-3 sentences). Use professional but accessible langu
         }
       }
 
+      const creditResult = await storage.consumePartnerTest(
+        partner.id,
+        null,
+        "Compare Insights generation"
+      );
+      
+      if (!creditResult.success && !creditResult.isOverage) {
+        return res.status(402).json({ 
+          message: "Insufficient credits. Please purchase more credits to use AI features.",
+          creditsRequired: 1,
+          creditsRemaining: creditResult.remaining
+        });
+      }
+
       // Build summaries for each candidate
       const candidateSummaries = candidateNames.map((candidate: any, idx: number) => {
         const fitData = comparisonData.fitAssessments?.[idx];
@@ -15431,6 +15445,8 @@ Use the candidates' actual names. Be specific and actionable.`;
         candidateIds,
         title: 'Comparison Insights: ' + candidateNames.map((c: any) => c.name).join(' vs '),
         resultData: { insights, candidateCount: candidateNames.length, generatedAt: new Date().toISOString() },
+        creditsUsed: 1,
+        generatedByUserId: req.user.id,
       });
 
       logAiCost({
