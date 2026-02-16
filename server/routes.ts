@@ -14687,6 +14687,7 @@ Format your response as JSON with this structure:
       }
 
       // Check for existing cached report BEFORE consuming credits (unless forceRefresh is requested)
+      let hasIncompleteCachedReport = false;
       if (!forceRefresh) {
         const existingReport = await storage.findExistingPartnerReport(
           partner.id,
@@ -14694,29 +14695,40 @@ Format your response as JSON with this structure:
           [candidateId]
         );
         if (existingReport) {
-          return res.json({
-            insights: existingReport.resultData?.insights || '',
-            cached: true,
-            cachedAt: existingReport.createdAt,
-            generatedAt: existingReport.createdAt,
-            reportId: existingReport.id,
-          });
+          const resultData = existingReport.resultData as any;
+          if (resultData?.insights) {
+            return res.json({
+              insights: resultData.insights,
+              cached: true,
+              cachedAt: existingReport.createdAt,
+              generatedAt: existingReport.createdAt,
+              reportId: existingReport.id,
+            });
+          }
+          hasIncompleteCachedReport = true;
         }
       }
 
-      // No cached report found - NOW check and consume 1 credit for AI feature usage
-      const creditResult = await storage.consumePartnerTest(
-        partner.id,
-        null,
-        "AI Profile Insights generation"
-      );
-      
-      if (!creditResult.success && !creditResult.isOverage) {
-        return res.status(402).json({ 
-          message: "Insufficient credits. Please purchase more credits to use AI features.",
-          creditsRequired: 1,
-          creditsRemaining: creditResult.remaining
-        });
+      // Consume 1 credit unless regenerating an incomplete cached report
+      if (!hasIncompleteCachedReport) {
+        const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);
+        
+        if (quotaBalance.remaining < 1) {
+          const partnerAccount = await storage.getPartnerAccount(partner.id);
+          if (!partnerAccount?.stripeCustomerId) {
+            return res.status(402).json({ 
+              message: "Insufficient credits. Please purchase more credits to use AI features.",
+              creditsRequired: 1,
+              creditsRemaining: quotaBalance.remaining
+            });
+          }
+        }
+
+        await storage.consumePartnerTest(
+          partner.id,
+          null,
+          "AI Profile Insights generation"
+        );
       }
 
       // Use invitation/session data for candidate name (B2B sessions only)
@@ -15679,9 +15691,8 @@ Keep each section concise (2-3 sentences). Use professional but accessible langu
         return res.status(404).json({ message: "Job role not found" });
       }
 
-      let hadInvalidatedOldReport = false;
-
       // Check for existing cached report (unless forceRefresh is requested)
+      let hasExistingCachedReport = false;
       if (forceRefresh !== 'true') {
         const existingReport = await storage.findExistingPartnerReport(
           partner.id,
@@ -15705,45 +15716,30 @@ Keep each section concise (2-3 sentences). Use professional but accessible langu
               reportId: existingReport.id,
             });
           }
-          if (hasOldCriticality || !hasFinalRecommendation || !hasCurrentScoring) {
-            hadInvalidatedOldReport = true;
+          hasExistingCachedReport = true;
+        }
+      }
+
+      // Consume 1 credit unless regenerating an existing cached report (already paid for)
+      if (!hasExistingCachedReport) {
+        const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);
+        
+        if (quotaBalance.remaining < 1) {
+          const partnerAccount = await storage.getPartnerAccount(partner.id);
+          if (!partnerAccount?.stripeCustomerId) {
+            return res.status(402).json({ 
+              message: "Insufficient credits. Please purchase more credits to analyze candidates.",
+              creditsRequired: 1,
+              creditsRemaining: quotaBalance.remaining
+            });
           }
         }
-      }
 
-      // Check if we have an incomplete cached report (exists but lacks AI insights)
-      // In this case, skip credit consumption since the original report already charged
-      // Also skip credit consumption if we just invalidated an old cached report (already paid for)
-      let hasIncompleteCachedReport = false;
-      if (forceRefresh !== 'true') {
-        const existingReport = await storage.findExistingPartnerReport(
-          partner.id,
-          'role_fit_single',
-          [candidateId as string],
-          jobRoleId as string
-        );
-        if (existingReport) {
-          const resultData = existingReport.resultData as any;
-          hasIncompleteCachedReport = !resultData?.promptRoleFitAnalysis && !resultData?.aiqRoleFitAnalysis;
-        }
-      }
-
-      // All validations passed - consume 1 credit unless regenerating incomplete cached report
-      let creditResult: any = { success: true, remaining: 0, isOverage: false };
-      if (!hasIncompleteCachedReport && !hadInvalidatedOldReport) {
-        creditResult = await storage.consumePartnerTest(
+        await storage.consumePartnerTest(
           partner.id,
           null,
           "Single candidate role fit analysis"
         );
-        
-        if (!creditResult.success && !creditResult.isOverage) {
-          return res.status(402).json({ 
-            message: "Insufficient credits. Please purchase more credits to analyze candidates.",
-            creditsRequired: 1,
-            creditsRemaining: creditResult.remaining
-          });
-        }
       }
 
       // Collect all assessment results for this candidate
@@ -16524,6 +16520,7 @@ Based on skill alignment analysis, this candidate may show stronger fit for the 
       }
 
       // Check for existing cached report (unless forceRefresh is requested)
+      let hasExistingCachedReport = false;
       if (!forceRefresh) {
         const existingReport = await storage.findExistingPartnerReport(
           partner.id,
@@ -16533,43 +16530,45 @@ Based on skill alignment analysis, this candidate may show stronger fit for the 
         );
         if (existingReport) {
           const cachedData = existingReport.resultData as any;
-          if (cachedData?.roleSnapshot) {
-            cachedData.roleSnapshot.requiredSkillScores = role.requiredSkillScores;
+          if (cachedData?.candidates && cachedData.candidates.length > 0) {
+            if (cachedData?.roleSnapshot) {
+              cachedData.roleSnapshot.requiredSkillScores = role.requiredSkillScores;
+            }
+            return res.json({
+              ...cachedData,
+              cached: true,
+              cachedAt: existingReport.createdAt,
+              generatedAt: existingReport.createdAt,
+              reportId: existingReport.id,
+            });
           }
-          return res.json({
-            ...cachedData,
-            cached: true,
-            cachedAt: existingReport.createdAt,
-            generatedAt: existingReport.createdAt,
-            reportId: existingReport.id,
-          });
+          hasExistingCachedReport = true;
         }
       }
 
-      // All validations passed - NOW pre-check credits before consuming
+      // Consume credits (1 per candidate) unless regenerating an existing cached report
       const creditsRequired = candidateIds.length;
-      const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);
-      
-      if (quotaBalance.remaining < creditsRequired) {
-        // Check if partner has overage enabled (has card on file)
-        const partnerAccount = await storage.getPartnerAccount(partner.id);
-        if (!partnerAccount?.stripeCustomerId) {
-          return res.status(402).json({ 
-            message: `Insufficient credits. You need ${creditsRequired} credits to compare ${creditsRequired} candidates, but only have ${quotaBalance.remaining} available.`,
-            creditsRequired,
-            creditsRemaining: quotaBalance.remaining
-          });
+      if (!hasExistingCachedReport) {
+        const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);
+        
+        if (quotaBalance.remaining < creditsRequired) {
+          const partnerAccount = await storage.getPartnerAccount(partner.id);
+          if (!partnerAccount?.stripeCustomerId) {
+            return res.status(402).json({ 
+              message: `Insufficient credits. You need ${creditsRequired} credits to compare ${creditsRequired} candidates, but only have ${quotaBalance.remaining} available.`,
+              creditsRequired,
+              creditsRemaining: quotaBalance.remaining
+            });
+          }
         }
-        // If partner has card on file, allow overage - credits will be consumed below
-      }
 
-      // Consume credits atomically (1 per candidate)
-      for (let i = 0; i < creditsRequired; i++) {
-        await storage.consumePartnerTest(
-          partner.id,
-          null,
-          `Multi-candidate role fit analysis (${i + 1}/${creditsRequired})`
-        );
+        for (let i = 0; i < creditsRequired; i++) {
+          await storage.consumePartnerTest(
+            partner.id,
+            null,
+            `Multi-candidate role fit analysis (${i + 1}/${creditsRequired})`
+          );
+        }
       }
 
       // Helper functions
