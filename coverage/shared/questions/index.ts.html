@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/42</span>
+                <span class='fraction'>42/42</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/1</span>
+                <span class='fraction'>15/15</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/1</span>
+                <span class='fraction'>4/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/42</span>
+                <span class='fraction'>42/42</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -105,90 +105,90 @@
 <a name='L40'></a><a href='#L40'>40</a>
 <a name='L41'></a><a href='#L41'>41</a>
 <a name='L42'></a><a href='#L42'>42</a>
-<a name='L43'></a><a href='#L43'>43</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import type { QuestionLocale, FITQuestion, AIReadinessQuestion, AIQQuestion } from './types';<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
-<span class="cstat-no" title="statement not covered" >import { FIT_QUESTIONS_DEFAULT } from './fit-default';</span>
-<span class="cstat-no" title="statement not covered" >import { FIT_QUESTIONS_SEA } from './fit-sea';</span>
-<span class="cstat-no" title="statement not covered" >import { AI_READINESS_QUESTIONS_DEFAULT } from './ai-readiness-default';</span>
-<span class="cstat-no" title="statement not covered" >import { AI_READINESS_QUESTIONS_SEA } from './ai-readiness-sea';</span>
-<span class="cstat-no" title="statement not covered" >import { AIQ_QUESTIONS_DEFAULT } from './aiq-default';</span>
-<span class="cstat-no" title="statement not covered" >import { AIQ_QUESTIONS_SEA } from './aiq-sea';</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >export * from './types';</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >export function getFITQuestions(locale: QuestionLocale): FITQuestion[] {</span>
-<span class="cstat-no" title="statement not covered" >  return locale === 'sea' ? FIT_QUESTIONS_SEA : FIT_QUESTIONS_DEFAULT;</span>
-<span class="cstat-no" title="statement not covered" >}</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >export function getAIReadinessQuestions(locale: QuestionLocale): AIReadinessQuestion[] {</span>
-<span class="cstat-no" title="statement not covered" >  return locale === 'sea' ? AI_READINESS_QUESTIONS_SEA : AI_READINESS_QUESTIONS_DEFAULT;</span>
-<span class="cstat-no" title="statement not covered" >}</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >export function getAIQQuestions(locale: QuestionLocale): AIQQuestion[] {</span>
-<span class="cstat-no" title="statement not covered" >  return locale === 'sea' ? AIQ_QUESTIONS_SEA : AIQ_QUESTIONS_DEFAULT;</span>
-<span class="cstat-no" title="statement not covered" >}</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >export function getQuestionsForAssessment(</span>
-<span class="cstat-no" title="statement not covered" >  assessmentType: string,</span>
-<span class="cstat-no" title="statement not covered" >  locale: QuestionLocale</span>
-<span class="cstat-no" title="statement not covered" >): FITQuestion[] | AIReadinessQuestion[] | AIQQuestion[] | null {</span>
-<span class="cstat-no" title="statement not covered" >  switch (assessmentType.toLowerCase()) {</span>
-<span class="cstat-no" title="statement not covered" >    case 'fit':</span>
-<span class="cstat-no" title="statement not covered" >      return getFITQuestions(locale);</span>
-<span class="cstat-no" title="statement not covered" >    case 'ai-readiness':</span>
-<span class="cstat-no" title="statement not covered" >    case 'aireadiness':</span>
-<span class="cstat-no" title="statement not covered" >      return getAIReadinessQuestions(locale);</span>
-<span class="cstat-no" title="statement not covered" >    case 'aiq':</span>
-<span class="cstat-no" title="statement not covered" >      return getAIQQuestions(locale);</span>
-<span class="cstat-no" title="statement not covered" >    default:</span>
-<span class="cstat-no" title="statement not covered" >      return null;</span>
-<span class="cstat-no" title="statement not covered" >  }</span>
-<span class="cstat-no" title="statement not covered" >}</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >export { FIT_QUESTIONS_DEFAULT, FIT_QUESTIONS_SEA };</span>
-<span class="cstat-no" title="statement not covered" >export { AI_READINESS_QUESTIONS_DEFAULT, AI_READINESS_QUESTIONS_SEA };</span>
-<span class="cstat-no" title="statement not covered" >export { AIQ_QUESTIONS_DEFAULT, AIQ_QUESTIONS_SEA };</span>
+<a name='L43'></a><a href='#L43'>43</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import type { QuestionLocale, FITQuestion, AIReadinessQuestion, AIQQuestion } from './types';
+import { FIT_QUESTIONS_DEFAULT } from './fit-default';
+import { FIT_QUESTIONS_SEA } from './fit-sea';
+import { AI_READINESS_QUESTIONS_DEFAULT } from './ai-readiness-default';
+import { AI_READINESS_QUESTIONS_SEA } from './ai-readiness-sea';
+import { AIQ_QUESTIONS_DEFAULT } from './aiq-default';
+import { AIQ_QUESTIONS_SEA } from './aiq-sea';
+&nbsp;
+export * from './types';
+&nbsp;
+export function getFITQuestions(locale: QuestionLocale): FITQuestion[] {
+  return locale === 'sea' ? FIT_QUESTIONS_SEA : FIT_QUESTIONS_DEFAULT;
+}
+&nbsp;
+export function getAIReadinessQuestions(locale: QuestionLocale): AIReadinessQuestion[] {
+  return locale === 'sea' ? AI_READINESS_QUESTIONS_SEA : AI_READINESS_QUESTIONS_DEFAULT;
+}
+&nbsp;
+export function getAIQQuestions(locale: QuestionLocale): AIQQuestion[] {
+  return locale === 'sea' ? AIQ_QUESTIONS_SEA : AIQ_QUESTIONS_DEFAULT;
+}
+&nbsp;
+export function getQuestionsForAssessment(
+  assessmentType: string,
+  locale: QuestionLocale
+): FITQuestion[] | AIReadinessQuestion[] | AIQQuestion[] | null {
+  switch (assessmentType.toLowerCase()) {
+    case 'fit':
+      return getFITQuestions(locale);
+    case 'ai-readiness':
+    case 'aireadiness':
+      return getAIReadinessQuestions(locale);
+    case 'aiq':
+      return getAIQQuestions(locale);
+    default:
+      return null;
+  }
+}
+&nbsp;
+export { FIT_QUESTIONS_DEFAULT, FIT_QUESTIONS_SEA };
+export { AI_READINESS_QUESTIONS_DEFAULT, AI_READINESS_QUESTIONS_SEA };
+export { AIQ_QUESTIONS_DEFAULT, AIQ_QUESTIONS_SEA };
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -196,7 +196,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-02-16T11:00:28.082Z
+                at 2026-02-16T11:09:26.507Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

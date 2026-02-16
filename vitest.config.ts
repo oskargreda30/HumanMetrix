@@ -2,10 +2,29 @@ import { defineConfig } from 'vitest/config';
 import path from 'path';
 
 export default defineConfig({
+  plugins: [
+    {
+      name: 'mock-image-imports',
+      enforce: 'pre',
+      resolveId(source) {
+        if (/\.(png|jpg|jpeg|gif|svg|webp)(\?.*)?$/.test(source)) {
+          return { id: '\0mock-image', moduleSideEffects: false };
+        }
+      },
+      load(id) {
+        if (id === '\0mock-image') {
+          return 'export default "mocked-image"';
+        }
+      },
+    },
+  ],
+  esbuild: {
+    jsx: 'automatic',
+  },
   test: {
     globals: true,
     environment: 'node',
-    include: ['tests/**/*.test.ts'],
+    include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
     exclude: ['node_modules', 'dist'],
     testTimeout: 10000,
     hookTimeout: 10000,
@@ -35,6 +54,7 @@ export default defineConfig({
     alias: {
       '@shared': path.resolve(__dirname, './shared'),
       '@': path.resolve(__dirname, './client/src'),
+      '@assets': path.resolve(__dirname, './attached_assets'),
     },
   },
 });

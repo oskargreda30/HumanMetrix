@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/46</span>
+                <span class='fraction'>46/46</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/1</span>
+                <span class='fraction'>14/14</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/1</span>
+                <span class='fraction'>1/1</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/46</span>
+                <span class='fraction'>46/46</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -109,98 +109,98 @@
 <a name='L44'></a><a href='#L44'>44</a>
 <a name='L45'></a><a href='#L45'>45</a>
 <a name='L46'></a><a href='#L46'>46</a>
-<a name='L47'></a><a href='#L47'>47</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >interface AirwallexCheckoutParams {<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
-<span class="cstat-no" title="statement not covered" >  intentId: string;</span>
-<span class="cstat-no" title="statement not covered" >  clientSecret: string;</span>
-<span class="cstat-no" title="statement not covered" >  currency: string;</span>
-<span class="cstat-no" title="statement not covered" >  countryCode?: string;</span>
-<span class="cstat-no" title="statement not covered" >  airwallexEnv: string;</span>
-<span class="cstat-no" title="statement not covered" >  successUrl: string;</span>
-<span class="cstat-no" title="statement not covered" >  failUrl: string;</span>
-<span class="cstat-no" title="statement not covered" >}</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >export async function redirectToAirwallexCheckout(params: AirwallexCheckoutParams): Promise&lt;void&gt; {</span>
-<span class="cstat-no" title="statement not covered" >  const { init } = await import('@airwallex/components-sdk');</span>
-<span class="cstat-no" title="statement not covered" >  const sdkEnv = params.airwallexEnv === 'demo' ? 'demo' : 'prod';</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  let result;</span>
-<span class="cstat-no" title="statement not covered" >  try {</span>
-<span class="cstat-no" title="statement not covered" >    result = await init({</span>
-<span class="cstat-no" title="statement not covered" >      env: sdkEnv,</span>
-<span class="cstat-no" title="statement not covered" >      enabledElements: ['payments'],</span>
-<span class="cstat-no" title="statement not covered" >    });</span>
-<span class="cstat-no" title="statement not covered" >  } catch (initErr: any) {</span>
-<span class="cstat-no" title="statement not covered" >    console.error('[Airwallex] SDK init failed:', initErr);</span>
-<span class="cstat-no" title="statement not covered" >    throw new Error(`Airwallex SDK initialization failed: ${initErr.message || 'Unknown error'}`);</span>
-<span class="cstat-no" title="statement not covered" >  }</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  if (!result?.payments) {</span>
-<span class="cstat-no" title="statement not covered" >    throw new Error('Failed to initialize Airwallex payments module');</span>
-<span class="cstat-no" title="statement not covered" >  }</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  const checkoutOptions = {</span>
-<span class="cstat-no" title="statement not covered" >    mode: 'payment' as const,</span>
-<span class="cstat-no" title="statement not covered" >    intent_id: params.intentId,</span>
-<span class="cstat-no" title="statement not covered" >    client_secret: params.clientSecret,</span>
-<span class="cstat-no" title="statement not covered" >    currency: params.currency || 'GBP',</span>
-<span class="cstat-no" title="statement not covered" >    country_code: params.countryCode || undefined,</span>
-<span class="cstat-no" title="statement not covered" >    successUrl: params.successUrl,</span>
-<span class="cstat-no" title="statement not covered" >    failUrl: params.failUrl,</span>
-<span class="cstat-no" title="statement not covered" >  };</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  try {</span>
-<span class="cstat-no" title="statement not covered" >    result.payments.redirectToCheckout(checkoutOptions);</span>
-<span class="cstat-no" title="statement not covered" >  } catch (redirectErr: any) {</span>
-<span class="cstat-no" title="statement not covered" >    console.error('[Airwallex] redirectToCheckout failed:', redirectErr);</span>
-<span class="cstat-no" title="statement not covered" >    throw new Error(`Airwallex checkout redirect failed: ${redirectErr.message || 'Unknown error'}`);</span>
-<span class="cstat-no" title="statement not covered" >  }</span>
-<span class="cstat-no" title="statement not covered" >}</span>
+<a name='L47'></a><a href='#L47'>47</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">19x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">15x</span>
+<span class="cline-any cline-yes">15x</span>
+<span class="cline-any cline-yes">15x</span>
+<span class="cline-any cline-yes">15x</span>
+<span class="cline-any cline-yes">15x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">interface AirwallexCheckoutParams {
+  intentId: string;
+  clientSecret: string;
+  currency: string;
+  countryCode?: string;
+  airwallexEnv: string;
+  successUrl: string;
+  failUrl: string;
+}
+&nbsp;
+export async function redirectToAirwallexCheckout(params: AirwallexCheckoutParams): Promise&lt;void&gt; {
+  const { init } = await import('@airwallex/components-sdk');
+  const sdkEnv = params.airwallexEnv === 'demo' ? 'demo' : 'prod';
+&nbsp;
+  let result;
+  try {
+    result = await init({
+      env: sdkEnv,
+      enabledElements: ['payments'],
+    });
+  } catch (initErr: any) {
+    console.error('[Airwallex] SDK init failed:', initErr);
+    throw new Error(`Airwallex SDK initialization failed: ${initErr.message || 'Unknown error'}`);
+  }
+&nbsp;
+  if (!result?.payments) {
+    throw new Error('Failed to initialize Airwallex payments module');
+  }
+&nbsp;
+  const checkoutOptions = {
+    mode: 'payment' as const,
+    intent_id: params.intentId,
+    client_secret: params.clientSecret,
+    currency: params.currency || 'GBP',
+    country_code: params.countryCode || undefined,
+    successUrl: params.successUrl,
+    failUrl: params.failUrl,
+  };
+&nbsp;
+  try {
+    result.payments.redirectToCheckout(checkoutOptions);
+  } catch (redirectErr: any) {
+    console.error('[Airwallex] redirectToCheckout failed:', redirectErr);
+    throw new Error(`Airwallex checkout redirect failed: ${redirectErr.message || 'Unknown error'}`);
+  }
+}
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -208,7 +208,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-02-16T11:00:28.082Z
+                at 2026-02-16T11:09:26.507Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
