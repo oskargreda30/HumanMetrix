@@ -202,6 +202,12 @@ export function SharedCompareTab({ config, staticData }: SharedCompareTabProps) 
     }
   }, [comparisonError, isRerunning]);
 
+  useEffect(() => {
+    if (comparison && (comparison as any).cached === false) {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/account"] });
+    }
+  }, [comparison]);
+
   const handleRunComparison = () => {
     if (selectedCandidates.length >= 2) {
       setLoadingTransitionComplete(false);

@@ -208,6 +208,12 @@ export function SharedSingleCandidateRoleFit({ config, staticData }: SharedSingl
     }
   }, [alignmentError, isRerunning]);
 
+  useEffect(() => {
+    if (alignment && (alignment as any).cached === false) {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/account"] });
+    }
+  }, [alignment]);
+
   // Reset analysis state when selection changes
   const handleCandidateChange = (value: string) => {
     setSelectedCandidate(value);
@@ -236,6 +242,7 @@ export function SharedSingleCandidateRoleFit({ config, staticData }: SharedSingl
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [config.rolesEndpoint] });
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/account"] });
       toast({ title: "Required scores generated successfully" });
     },
     onError: (error: Error) => {

@@ -254,6 +254,7 @@ export function BulkInvitationsTab({ partnerId, billingType, hasCardOnFile, test
       queryClient.invalidateQueries({ queryKey: ['/api/partner/me/invitations/imports'] });
       queryClient.invalidateQueries({ queryKey: ['/api/partner/me/quota'] });
       queryClient.invalidateQueries({ queryKey: ['/api/partner/me/candidates'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/account"] });
       setCandidates([{ id: crypto.randomUUID(), externalUserId: '', email: '', name: '' }]);
       setCsvData(null);
       setValidationErrors([]);

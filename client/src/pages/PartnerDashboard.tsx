@@ -1647,6 +1647,7 @@ export default function PartnerDashboard() {
         setPromoCode("");
         setValidatedPromo(null);
         queryClient.invalidateQueries({ queryKey: ["/api/partner/me"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/partner/account"] });
         queryClient.invalidateQueries({ queryKey: ["/api/partner/test-packages"] });
         queryClient.invalidateQueries({ queryKey: ["/api/partner/credits"] });
         return;

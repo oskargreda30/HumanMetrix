@@ -412,6 +412,7 @@ export default function PartnerMultiCandidateRoleFitTab({ staticData }: PartnerM
     onSuccess: (data: MultiCandidateComparison) => {
       forceRefreshRef.current = false;
       queryClient.setQueryData(['multi-candidate-comparison', selectedRole, selectedCandidates.join(',')], data);
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/account"] });
       if (isRerunning) {
         setIsRerunning(false);
         toast({ title: "Analysis regenerated", description: "Fresh AI comparison has been generated successfully." });
@@ -498,6 +499,7 @@ export default function PartnerMultiCandidateRoleFitTab({ staticData }: PartnerM
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/partner/me/roles'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/account"] });
       toast({ title: "Required scores generated successfully" });
     },
     onError: (error: Error) => {

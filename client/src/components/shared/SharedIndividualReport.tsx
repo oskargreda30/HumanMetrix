@@ -113,6 +113,12 @@ export function SharedIndividualReport({ config, staticData }: SharedIndividualR
     }
   }, [reportError, isRerunning]);
 
+  useEffect(() => {
+    if (candidateReport && candidateReport.cached === false) {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/account"] });
+    }
+  }, [candidateReport]);
+
   const handleCandidateChange = (value: string) => {
     setSelectedCandidate(value);
     setReportTriggered(false);

@@ -725,8 +725,8 @@ export function EcosystemWorkflow({
             throw new Error(data.error || "Failed to consume credits");
           }
           
-          // Invalidate partner data to refresh credit count
           queryClient.invalidateQueries({ queryKey: ['/api/partner/me'] });
+          queryClient.invalidateQueries({ queryKey: ["/api/partner/account"] });
           
           // Refresh project to get isPaid = true
           await refetchProject();
@@ -772,6 +772,7 @@ export function EcosystemWorkflow({
         await generateAnalysis.mutateAsync({ projectId, isRegeneration: true });
         await refetchProject();
         queryClient.invalidateQueries({ queryKey: ['/api/partner/me'] });
+        queryClient.invalidateQueries({ queryKey: ["/api/partner/account"] });
         setAnalysisLoadingComplete(true);
       } catch (error: any) {
         setShowAnalysisLoading(false);
@@ -808,8 +809,8 @@ export function EcosystemWorkflow({
       const data = await response.json();
       
       if (data.success) {
-        // Invalidate partner data to refresh credit count
         queryClient.invalidateQueries({ queryKey: ['/api/partner/me'] });
+        queryClient.invalidateQueries({ queryKey: ["/api/partner/account"] });
         toast({
           title: "Credits consumed",
           description: `${data.creditsConsumed || ECOSYSTEM_CREDITS_REQUIRED} credits used. You can now generate your Team Diagnostic Report.`,
