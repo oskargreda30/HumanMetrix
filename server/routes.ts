@@ -14774,14 +14774,19 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
 
       const insights = completion.choices[0].message.content || '';
       
-      // Save the generated insights to cache for future retrieval
-      const savedReport = await storage.createPartnerAnalysisReport({
-        partnerId: partner.id,
-        reportType: 'profile_insights',
-        candidateIds: [candidateId],
-        title: `Profile Insights: ${candidateName}`,
-        resultData: { insights, candidateName, generatedAt: new Date().toISOString() },
-      });
+      let savedReportId: string | undefined;
+      try {
+        const savedReport = await storage.createPartnerAnalysisReport({
+          partnerId: partner.id,
+          reportType: 'profile_insights',
+          candidateIds: [candidateId],
+          title: `Profile Insights: ${candidateName}`,
+          resultData: { insights, candidateName, generatedAt: new Date().toISOString() },
+        });
+        savedReportId = savedReport?.id;
+      } catch (saveError) {
+        console.error("[Report Cache] Failed to save profile_insights report:", saveError);
+      }
       
       logAiCost({
         operationType: AI_USAGE_OPERATION_TYPES.PROFILE_INSIGHTS_PARTNER,
@@ -14796,7 +14801,7 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
         insights,
         cached: false,
         generatedAt: new Date().toISOString(),
-        reportId: savedReport?.id,
+        reportId: savedReportId,
       });
     } catch (error) {
       console.error("Error generating profile insights:", error);
@@ -15322,23 +15327,28 @@ Keep each section concise (2-3 sentences). Use professional but accessible langu
           ? `Candidate Comparison: ${candidateDisplayNames.join(', ')}`
           : `Candidate Comparison: ${candidateDisplayNames.slice(0, 2).join(', ')} +${candidateDisplayNames.length - 2} more`;
 
-      // Save the report for future access
-      const savedReport = await storage.createPartnerAnalysisReport({
-        partnerId: partner.id,
-        reportType: reportType,
-        version: 1,
-        candidateIds: candidateIds,
-        title: reportTitle,
-        resultData: resultData as any,
-        creditsUsed: candidateIds.length,
-        generatedByUserId: req.user.id,
-      });
+      let savedReportId: string | undefined;
+      try {
+        const savedReport = await storage.createPartnerAnalysisReport({
+          partnerId: partner.id,
+          reportType: reportType,
+          version: 1,
+          candidateIds: candidateIds,
+          title: reportTitle,
+          resultData: resultData as any,
+          creditsUsed: candidateIds.length,
+          generatedByUserId: req.user.id,
+        });
+        savedReportId = savedReport?.id;
+      } catch (saveError) {
+        console.error(`[Report Cache] Failed to save ${reportType} report:`, saveError);
+      }
 
       res.json({
         ...resultData,
         cached: false,
         generatedAt: new Date().toISOString(),
-        reportId: savedReport.id,
+        reportId: savedReportId,
       });
     } catch (error) {
       console.error("Error comparing partner candidates:", error);
@@ -15438,16 +15448,21 @@ Use the candidates' actual names. Be specific and actionable.`;
 
       const insights = completion.choices[0].message.content || '';
 
-      // Save to cache
-      const savedReport = await storage.createPartnerAnalysisReport({
-        partnerId: partner.id,
-        reportType: 'compare_insights',
-        candidateIds,
-        title: 'Comparison Insights: ' + candidateNames.map((c: any) => c.name).join(' vs '),
-        resultData: { insights, candidateCount: candidateNames.length, generatedAt: new Date().toISOString() },
-        creditsUsed: 1,
-        generatedByUserId: req.user.id,
-      });
+      let savedReportId: string | undefined;
+      try {
+        const savedReport = await storage.createPartnerAnalysisReport({
+          partnerId: partner.id,
+          reportType: 'compare_insights',
+          candidateIds,
+          title: 'Comparison Insights: ' + candidateNames.map((c: any) => c.name).join(' vs '),
+          resultData: { insights, candidateCount: candidateNames.length, generatedAt: new Date().toISOString() },
+          creditsUsed: 1,
+          generatedByUserId: req.user.id,
+        });
+        savedReportId = savedReport?.id;
+      } catch (saveError) {
+        console.error("[Report Cache] Failed to save compare_insights report:", saveError);
+      }
 
       logAiCost({
         operationType: 'compare_insights',
@@ -15462,7 +15477,7 @@ Use the candidates' actual names. Be specific and actionable.`;
         insights,
         cached: false,
         generatedAt: new Date().toISOString(),
-        reportId: savedReport?.id,
+        reportId: savedReportId,
       });
     } catch (error) {
       console.error("Error generating comparison insights:", error);
@@ -16469,24 +16484,29 @@ Based on skill alignment analysis, this candidate may show stronger fit for the 
         ? candidateSessions[0].externalEmail || candidateSessions[0].externalUserId || candidateId
         : candidateId;
 
-      // Save the report for future access
-      const savedReport = await storage.createPartnerAnalysisReport({
-        partnerId: partner.id,
-        reportType: 'role_fit_single',
-        version: 1,
-        candidateIds: [candidateId as string],
-        roleId: jobRoleId as string,
-        title: `Role Fit: ${candidateDisplayName} for ${role.title}`,
-        resultData: resultData as any,
-        creditsUsed: 1,
-        generatedByUserId: req.user.id,
-      });
+      let savedReportId: string | undefined;
+      try {
+        const savedReport = await storage.createPartnerAnalysisReport({
+          partnerId: partner.id,
+          reportType: 'role_fit_single',
+          version: 1,
+          candidateIds: [candidateId as string],
+          roleId: jobRoleId as string,
+          title: `Role Fit: ${candidateDisplayName} for ${role.title}`,
+          resultData: resultData as any,
+          creditsUsed: 1,
+          generatedByUserId: req.user.id,
+        });
+        savedReportId = savedReport?.id;
+      } catch (saveError) {
+        console.error("[Report Cache] Failed to save role_fit_single report:", saveError);
+      }
 
       res.json({
         ...resultData,
         cached: false,
         generatedAt: new Date().toISOString(),
-        reportId: savedReport.id,
+        reportId: savedReportId,
       });
     } catch (error) {
       console.error("Error fetching partner role alignment:", error);
@@ -16540,203 +16560,6 @@ Based on skill alignment analysis, this candidate may show stronger fit for the 
     } catch (error) {
       console.error("Error triggering partner role alignment:", error);
       res.status(500).json({ message: "Failed to analyze role alignment" });
-    }
-  });
-
-  // Partner: Analyze Prompt Architecture Role Fit
-  app.post("/api/partner/me/analyze-prompt-role-fit", isAuthenticated, async (req: any, res) => {
-    try {
-      const partnerData = await getPartnerForUser(req.user.id);
-      const partner = partnerData?.partner;
-      if (!partner) {
-        return res.status(404).json({ message: "No partner account found" });
-      }
-      
-      const { candidateId, jobRoleId } = req.body;
-      
-      if (!candidateId || !jobRoleId) {
-        return res.status(400).json({ message: "Candidate ID and job role ID are required" });
-      }
-
-      // Verify the candidate belongs to this partner (mirrors profile-insights pattern)
-      // SOURCE 1: Partner-invited candidates
-      const invitations = await storage.getPartnerCandidateInvitations(partner.id);
-      const candidateInvitation = invitations.find(inv => 
-        inv.email === candidateId || inv.externalUserId === candidateId || inv.userId === candidateId
-      );
-      
-      // SOURCE 2: B2B Widget/API sessions (includes manually imported candidates)
-      const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
-      const candidateSession = allSessions.find(s => 
-        s.externalEmail === candidateId || s.externalUserId === candidateId || 
-        s.id === candidateId || s.userId === candidateId
-      );
-      
-      if (!candidateInvitation && !candidateSession) {
-        return res.status(403).json({ message: "Candidate not found in your organization" });
-      }
-
-      // Get role data
-      const role = await storage.getJobRole(jobRoleId);
-      if (!role) {
-        return res.status(404).json({ message: "Job role not found" });
-      }
-
-      // Get Prompt Architecture data from partner's B2B sessions only
-      const promptResult = candidateSessions.find(s => s.assessmentType === 'prompt_architecture' && s.status === 'completed');
-      
-      const candidateName = candidateInvitation?.name || candidateSession?.externalEmail?.split('@')[0] || candidateId;
-
-      let promptScore = 'No data available';
-      let promptLevels = '';
-      
-      if (promptResult) {
-        promptScore = `${promptResult.totalScore || 0}%`;
-        const levels = (promptResult as any).levels || [];
-        if (levels.length > 0) {
-          promptLevels = levels.map((l: any) => 
-            `Level ${l.level}: ${l.passed ? 'Passed' : 'Failed'}${l.scores ? ` (Clarity: ${l.scores.clarity}%, Structure: ${l.scores.structure}%, Context: ${l.scores.contextRelevance}%, Creativity: ${l.scores.creativity}%, Iterative: ${l.scores.iterativeImprovement}%)` : ''}`
-          ).join('\n');
-        }
-      }
-
-      // Generate AI analysis
-      const prompt = `You are an expert HR analyst evaluating how a candidate's prompt engineering skills align with a specific job role.
-
-CANDIDATE: ${candidateName}
-JOB ROLE: ${role.name}
-${role.description ? `ROLE DESCRIPTION: ${role.description}` : ''}
-
-PROMPT ARCHITECTURE ASSESSMENT RESULTS:
-- Overall Score: ${promptScore}
-${promptLevels ? `- Level Details:\n${promptLevels}` : '- No detailed level data available'}
-
-In 1-2 short paragraphs (max 120 words total), address ONLY:
-1. How and why this specific role requires prompt engineering / AI interaction skills
-2. Whether the candidate's score and skill profile meet those requirements, and key risks if they don't
-
-Be direct and specific to the role. No general background on prompt engineering.`;
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 400,
-        temperature: 0.7,
-      });
-
-      const analysis = response.choices[0]?.message?.content || 'Unable to generate analysis.';
-      
-      logAiCost({
-        operationType: AI_USAGE_OPERATION_TYPES.PROMPT_ROLE_FIT,
-        model: "gpt-4o",
-        usage: extractUsage(response),
-        userId: candidateId,
-        partnerId: partner.id,
-        metadata: { roleTitle: role.name },
-      }).catch(console.error);
-
-      res.json({ analysis });
-    } catch (error: any) {
-      console.error("Error analyzing partner prompt role fit:", error);
-      res.status(500).json({ message: "Failed to analyze prompt role fit: " + error.message });
-    }
-  });
-
-  // Partner: Analyze AIQ Role Fit
-  app.post("/api/partner/me/analyze-aiq-role-fit", isAuthenticated, async (req: any, res) => {
-    try {
-      const partnerData = await getPartnerForUser(req.user.id);
-      const partner = partnerData?.partner;
-      if (!partner) {
-        return res.status(404).json({ message: "No partner account found" });
-      }
-      
-      const { candidateId, jobRoleId } = req.body;
-      
-      if (!candidateId || !jobRoleId) {
-        return res.status(400).json({ message: "Candidate ID and job role ID are required" });
-      }
-
-      // Verify the candidate belongs to this partner (mirrors profile-insights pattern)
-      // SOURCE 1: Partner-invited candidates
-      const invitations = await storage.getPartnerCandidateInvitations(partner.id);
-      const candidateInvitation = invitations.find(inv => 
-        inv.email === candidateId || inv.externalUserId === candidateId || inv.userId === candidateId
-      );
-      
-      // SOURCE 2: B2B Widget/API sessions (includes manually imported candidates)
-      const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
-      const candidateSession = allSessions.find(s => 
-        s.externalEmail === candidateId || s.externalUserId === candidateId || 
-        s.id === candidateId || s.userId === candidateId
-      );
-      
-      if (!candidateInvitation && !candidateSession) {
-        return res.status(403).json({ message: "Candidate not found in your organization" });
-      }
-
-      // Get role data
-      const role = await storage.getJobRole(jobRoleId);
-      if (!role) {
-        return res.status(404).json({ message: "Job role not found" });
-      }
-
-      // Get AIQ assessment data from partner's B2B sessions only
-      const aiqResult = candidateSessions.find(s => s.assessmentType === 'aiq' && s.status === 'completed');
-      
-      const candidateName = candidateInvitation?.name || candidateSession?.externalEmail?.split('@')[0] || candidateId;
-
-      let aiqScore = 'No data available';
-      let aiqBand = '';
-      
-      if (aiqResult) {
-        aiqScore = `${aiqResult.totalScore || 0}%`;
-        // Determine band based on score
-        const score = aiqResult.totalScore || 0;
-        if (score >= 80) aiqBand = 'Exemplary (80-100%): Strong ethical foundation with nuanced understanding of AI implications';
-        else if (score >= 60) aiqBand = 'Strong (60-79%): Solid grasp of AI ethics with some areas for deeper exploration';
-        else if (score >= 40) aiqBand = 'Developing (40-59%): Foundational understanding with room for growth';
-        else if (score >= 20) aiqBand = 'Gaps Identified (20-39%): Requires focused development on AI ethical principles';
-        else aiqBand = 'Critical Concerns (0-19%): Fundamental misalignment with ethical AI principles';
-      }
-
-      // Generate AI analysis
-      const prompt = `You are an expert HR analyst evaluating how a candidate's ethical AI stance (AIQ - Algorithmic Integrity Quotient) aligns with a specific job role.
-
-CANDIDATE: ${candidateName}
-JOB ROLE: ${role.name}
-${role.description ? `ROLE DESCRIPTION: ${role.description}` : ''}
-
-AIQ ASSESSMENT RESULTS:
-- Overall Score: ${aiqScore}
-${aiqBand ? `- Performance Band: ${aiqBand}` : ''}
-
-In 1-2 short paragraphs (max 120 words total), address ONLY:
-1. How and why this specific role requires ethical AI understanding and responsible AI practices
-2. Whether the candidate's AIQ score meets those requirements, and key risks from any ethical blind spots
-
-Be direct and specific to the role. No general background on AI ethics.`;
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 400,
-        temperature: 0.7,
-      });
-
-      const analysis = response.choices[0]?.message?.content || 'Unable to generate analysis.';
-      
-      logAiCost({
-        operationType: AI_USAGE_OPERATION_TYPES.AIQ_ROLE_FIT,
-        model: "gpt-4o",
-        usage: extractUsage(response),
-        userId: candidateId,
-        partnerId: partner.id,
-        metadata: { roleTitle: role.name },
-      }).catch(console.error);
-
-      res.json({ analysis });
-    } catch (error: any) {
-      console.error("Error analyzing partner AIQ role fit:", error);
-      res.status(500).json({ message: "Failed to analyze AIQ role fit: " + error.message });
     }
   });
 
@@ -17567,169 +17390,35 @@ Be thorough, professional, and reference specific data points from the assessmen
         scoringVersion: 2,
       };
       
-      const savedReport = await storage.createPartnerAnalysisReport({
-        partnerId: partner.id,
-        reportType: 'role_fit_multi',
-        version: 1,
-        candidateIds: candidateIds,
-        roleId: jobRoleId,
-        title: `Multi-Candidate Role Fit: ${candidateIds.length} candidates for ${role.title}`,
-        resultData: reportData as any,
-        creditsUsed: candidateIds.length,
-        generatedByUserId: req.user.id,
-      });
+      let savedReportId: string | undefined;
+      try {
+        const savedReport = await storage.createPartnerAnalysisReport({
+          partnerId: partner.id,
+          reportType: 'role_fit_multi',
+          version: 1,
+          candidateIds: candidateIds,
+          roleId: jobRoleId,
+          title: `Multi-Candidate Role Fit: ${candidateIds.length} candidates for ${role.title}`,
+          resultData: reportData as any,
+          creditsUsed: candidateIds.length,
+          generatedByUserId: req.user.id,
+        });
+        savedReportId = savedReport?.id;
+      } catch (saveError) {
+        console.error("[Report Cache] Failed to save role_fit_multi report:", saveError);
+      }
 
       res.json({
         ...comparison,
         aiInsights,
         cached: false,
         generatedAt: new Date().toISOString(),
-        reportId: savedReport.id,
+        reportId: savedReportId,
         scoringVersion: 2,
       });
     } catch (error) {
       console.error("Error creating partner multi-candidate comparison:", error);
       res.status(500).json({ message: "Failed to create comparison" });
-    }
-  });
-
-  // Partner: Generate AI insights for multi-candidate role fit comparison (kept for backwards compatibility)
-  app.post("/api/partner/me/multi-candidate-insights", isAuthenticated, async (req: any, res) => {
-    try {
-      const partnerData = await getPartnerForUser(req.user.id);
-      const partner = partnerData?.partner;
-      if (!partner) {
-        return res.status(404).json({ message: "No partner account found" });
-      }
-
-      const { comparisonData, forceRefresh } = req.body;
-
-      if (!comparisonData || !comparisonData.roleSnapshot || !comparisonData.candidateEntries) {
-        return res.status(400).json({ message: "Comparison data with role snapshot and candidate entries is required" });
-      }
-
-      const { roleSnapshot, candidateEntries, summaryInsights } = comparisonData;
-      const candidateIds = candidateEntries.map((c: any) => c.userId);
-
-      // Check for existing cached insights (delete old if forceRefresh)
-      if (!forceRefresh) {
-        const existingReport = await storage.findExistingPartnerReport(
-          partner.id,
-          'multi_candidate_insights',
-          candidateIds,
-          roleSnapshot.roleId
-        );
-
-        if (existingReport) {
-          return res.json({
-            insights: existingReport.resultData?.insights || '',
-            cached: true,
-            cachedAt: existingReport.createdAt,
-            generatedAt: existingReport.createdAt,
-            reportId: existingReport.id,
-          });
-        }
-      }
-
-      // Consume 1 credit for AI feature usage
-      const creditResult = await storage.consumePartnerTest(
-        partner.id,
-        null,
-        "Multi-candidate AI insights generation"
-      );
-
-      if (!creditResult.success && !creditResult.isOverage) {
-        return res.status(402).json({
-          message: "Insufficient credits. Please purchase more credits to use AI features.",
-          creditsRequired: 1,
-          creditsRemaining: creditResult.remaining
-        });
-      }
-
-      // Build comprehensive prompt for OpenAI
-      const candidateSummaries = candidateEntries.map((entry: any) => {
-        const strengths = entry.strengths?.slice(0, 3).join(', ') || 'N/A';
-        const gaps = entry.gaps?.slice(0, 3).join(', ') || 'N/A';
-        const riskFlags = entry.riskFlags?.length > 0 ? entry.riskFlags.join(', ') : 'None';
-        
-        return `
-- ${entry.userName} (${entry.email}):
-  Overall Fit: ${entry.overallFit !== null ? entry.overallFit + '%' : 'Insufficient data'}
-  Tier: ${entry.fitTier}
-  Top Strengths: ${strengths}
-  Development Areas: ${gaps}
-  Risk Flags: ${riskFlags}`;
-      }).join('\n');
-
-      const recommendationText = summaryInsights?.recommendation 
-        ? '\nCurrent Recommendation: ' + summaryInsights.recommendation.recommendedCandidate + ' with ' + summaryInsights.recommendation.fitScore + '% fit'
-        : '';
-
-      const prompt = `You are an expert HR analyst specializing in multi-candidate role fit comparisons. Generate strategic insights for comparing multiple candidates against a specific role.
-
-ROLE: ${roleSnapshot.roleName}
-${roleSnapshot.roleDescription ? 'Description: ' + roleSnapshot.roleDescription : ''}
-
-CANDIDATES BEING COMPARED:
-${candidateSummaries}
-${recommendationText}
-
-Based on this multi-candidate comparison, provide:
-
-**STRATEGIC OVERVIEW**
-A 2-3 sentence high-level summary of the candidate pool quality for this role.
-
-**COMPARATIVE ANALYSIS**
-Key differentiators between the top candidates (2-3 points).
-
-**HIRING RECOMMENDATION**
-Your primary recommendation with brief justification, plus an alternative consideration.
-
-**TEAM DYNAMICS CONSIDERATION**
-Brief insight on how each top candidate might impact team dynamics differently.
-
-Keep the total response under 300 words. Be specific and actionable. Use the candidates' actual names.`;
-
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: "You are an expert HR analyst specializing in multi-candidate comparisons and strategic hiring decisions. Provide concise, professional, and actionable insights." },
-          { role: "user", content: prompt }
-        ],
-        max_tokens: 600,
-        temperature: 0.7,
-      });
-
-      const insights = completion.choices[0].message.content || '';
-
-      // Save insights to cache
-      const savedReport = await storage.createPartnerAnalysisReport({
-        partnerId: partner.id,
-        reportType: 'multi_candidate_insights',
-        candidateIds,
-        jobRoleId: roleSnapshot.roleId,
-        title: 'Multi-Candidate Insights: ' + roleSnapshot.roleName,
-        resultData: { insights, roleName: roleSnapshot.roleName, candidateCount: candidateEntries.length, generatedAt: new Date().toISOString() },
-      });
-
-      logAiCost({
-        operationType: 'multi_candidate_insights',
-        model: "gpt-4o",
-        usage: extractUsage(completion),
-        userId: req.user.id,
-        partnerId: partner.id,
-        metadata: { roleName: roleSnapshot.roleName, candidateCount: candidateEntries.length },
-      }).catch(console.error);
-
-      res.json({
-        insights,
-        cached: false,
-        generatedAt: new Date().toISOString(),
-        reportId: savedReport?.id,
-      });
-    } catch (error) {
-      console.error("Error generating multi-candidate insights:", error);
-      res.status(500).json({ message: "Failed to generate insights" });
     }
   });
 
