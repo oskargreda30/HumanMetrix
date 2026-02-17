@@ -348,10 +348,33 @@ interface EmailLogContext {
   metadata?: Record<string, any>;
 }
 
+const MICROSOFT_DOMAINS = new Set([
+  'hotmail.com', 'hotmail.co.uk', 'hotmail.fr', 'hotmail.de', 'hotmail.it',
+  'hotmail.es', 'hotmail.co.jp', 'hotmail.com.au', 'hotmail.com.br',
+  'outlook.com', 'outlook.co.uk', 'outlook.fr', 'outlook.de', 'outlook.it',
+  'outlook.es', 'outlook.com.au', 'outlook.com.br', 'outlook.jp',
+  'live.com', 'live.co.uk', 'live.fr', 'live.de', 'live.it',
+  'msn.com', 'passport.com',
+]);
+
+function isMicrosoftRecipient(to: string | string[]): boolean {
+  const emails = Array.isArray(to) ? to : [to];
+  return emails.some(email => {
+    const domain = email.toLowerCase().split('@')[1];
+    return domain && MICROSOFT_DOMAINS.has(domain);
+  });
+}
+
 // Unified email sending with automatic failover and optional logging
 async function sendEmail(msg: EmailMessage, logContext?: EmailLogContext): Promise<{ success: boolean; messageId?: string }> {
-  const primaryProvider = currentEmailProvider;
-  const backupProvider: 'gmail' | 'sendgrid' = primaryProvider === 'sendgrid' ? 'gmail' : 'sendgrid';
+  let primaryProvider: 'gmail' | 'sendgrid' = currentEmailProvider;
+  let backupProvider: 'gmail' | 'sendgrid' = primaryProvider === 'sendgrid' ? 'gmail' : 'sendgrid';
+  
+  if (isMicrosoftRecipient(msg.to) && primaryProvider === 'sendgrid') {
+    primaryProvider = 'gmail';
+    backupProvider = 'sendgrid';
+    console.log(`[Email] Microsoft domain detected - routing via Gmail to avoid SendGrid IP blocks`);
+  }
   
   // Try primary provider
   console.log(`[Email] Sending via ${primaryProvider} (primary)...`);
