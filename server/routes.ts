@@ -329,6 +329,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { registerBugReportRoutes } = await import("./bug-report-routes");
   registerBugReportRoutes(app);
 
+  // Register Sales Funnel routes
+  const { registerSalesFunnelRoutes } = await import("./sales-funnel-routes");
+  registerSalesFunnelRoutes(app);
+
   // Initialize Stripe discount codes (runs in background)
   initializeStripeCoupons().catch(err => {
     console.error('[Stripe] Failed to initialize coupons:', err.message);
@@ -18436,6 +18440,25 @@ Be thorough, professional, and reference specific data points from the assessmen
       } catch (emailError) {
         console.error("Error sending partner welcome email:", emailError);
         // Don't fail partner creation, just log the error
+      }
+      
+      // Auto-add partner to sales funnel as "Trial" stage
+      try {
+        const { salesFunnelContacts } = await import("@shared/schema");
+        const { db: funnelDb } = await import("./db");
+        await funnelDb.insert(salesFunnelContacts).values({
+          name,
+          email,
+          company: companyName || name,
+          phone: phone || null,
+          stage: "trial",
+          notes: `Auto-added on partner signup. Billing: ${selectedBillingType}.`,
+          linkedUserId: partnerUser.id,
+          sortOrder: 0,
+        });
+        console.log(`[Sales Funnel] Auto-added partner ${email} to Trial stage`);
+      } catch (funnelError) {
+        console.error("[Sales Funnel] Error auto-adding partner:", funnelError);
       }
       
       res.status(201).json(partner);

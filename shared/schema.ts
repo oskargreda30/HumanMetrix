@@ -2490,3 +2490,61 @@ export const insertBugReportSchema = createInsertSchema(bugReports).omit({
 
 export type InsertBugReport = z.infer<typeof insertBugReportSchema>;
 export type BugReport = typeof bugReports.$inferSelect;
+
+export const SALES_FUNNEL_STAGES = {
+  LEAD: "lead",
+  CONTACTED: "contacted",
+  DEMO_SCHEDULED: "demo_scheduled",
+  TRIAL: "trial",
+  NEGOTIATION: "negotiation",
+  CLOSED_WON: "closed_won",
+  CLOSED_LOST: "closed_lost",
+} as const;
+
+export type SalesFunnelStage = typeof SALES_FUNNEL_STAGES[keyof typeof SALES_FUNNEL_STAGES];
+
+export const SALES_FUNNEL_STAGE_ORDER: SalesFunnelStage[] = [
+  "lead",
+  "contacted",
+  "demo_scheduled",
+  "trial",
+  "negotiation",
+  "closed_won",
+  "closed_lost",
+];
+
+export const SALES_FUNNEL_STAGE_LABELS: Record<SalesFunnelStage, string> = {
+  lead: "Lead",
+  contacted: "Contacted",
+  demo_scheduled: "Demo Scheduled",
+  trial: "Trial",
+  negotiation: "Negotiation",
+  closed_won: "Closed Won",
+  closed_lost: "Closed Lost",
+};
+
+export const salesFunnelContacts = pgTable("sales_funnel_contacts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  email: varchar("email"),
+  company: varchar("company"),
+  phone: varchar("phone"),
+  stage: varchar("stage").notNull().default("lead"),
+  notes: text("notes"),
+  linkedUserId: varchar("linked_user_id"),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_sales_funnel_stage").on(table.stage),
+  index("idx_sales_funnel_linked_user").on(table.linkedUserId),
+]);
+
+export const insertSalesFunnelContactSchema = createInsertSchema(salesFunnelContacts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertSalesFunnelContact = z.infer<typeof insertSalesFunnelContactSchema>;
+export type SalesFunnelContact = typeof salesFunnelContacts.$inferSelect;

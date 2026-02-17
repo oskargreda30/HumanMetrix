@@ -37,6 +37,7 @@ import SecurityTab from "@/components/admin/SecurityTab";
 import RevenueDashboardTab from "@/components/admin/RevenueDashboardTab";
 import ProfitAnalyticsTab from "@/components/admin/ProfitAnalyticsTab";
 import BugReportsTab from "@/components/admin/BugReportsTab";
+import SalesFunnelTab from "@/components/admin/SalesFunnelTab";
 import dashboardBg from "@assets/image_1763608498774.png";
 
 export default function AdminDashboard() {
@@ -238,6 +239,11 @@ export default function AdminDashboard() {
                 </TabsTrigger>
               )}
               {isSuperAdmin && (
+                <TabsTrigger value="sales-funnel" data-testid="tab-sales-funnel" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  Sales Funnel
+                </TabsTrigger>
+              )}
+              {isSuperAdmin && (
                 <TabsTrigger value="widget-test" data-testid="tab-widget-test" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
                   Widget Test
                 </TabsTrigger>
@@ -358,6 +364,12 @@ export default function AdminDashboard() {
                     <AssessmentFunnelTab />
                   </TabsContent>
                 </Tabs>
+              </TabsContent>
+            )}
+
+            {isSuperAdmin && (
+              <TabsContent value="sales-funnel" className="space-y-4">
+                <SalesFunnelTab />
               </TabsContent>
             )}
 
