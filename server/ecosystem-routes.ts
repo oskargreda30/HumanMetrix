@@ -260,9 +260,31 @@ const contextualGapAnalysisResponseSchema = z.object({
 // Helper to analyze mission statement with OpenAI
 async function analyzeMissionWithAI(
   missionStatement: string,
-  companyEthos?: string
+  companyEthos?: string,
+  teamContext?: {
+    industry?: string;
+    teamFunction?: string;
+    teamStage?: string;
+    teamSize?: number;
+    workMode?: string;
+    hiringPlans?: string;
+    currentChallenges?: string;
+  }
 ): Promise<EcosystemMissionAnalysis> {
-  const systemPrompt = `You are an organizational psychologist and talent strategy expert. Your task is to analyze a company's mission statement and ethos to determine which behavioral capabilities (from the FIT framework) are most critical for their success.
+  const hasTeamContext = teamContext && (teamContext.industry || teamContext.teamFunction || teamContext.teamStage);
+  const teamContextBlock = hasTeamContext ? `
+Additionally, you have the following organizational context to inform your analysis:
+- Industry: ${teamContext!.industry || "Not specified"}
+- Team Function: ${teamContext!.teamFunction || "Not specified"}
+- Team Stage: ${teamContext!.teamStage || "Not specified"}
+- Team Size: ${teamContext!.teamSize || "Not specified"}
+- Work Mode: ${teamContext!.workMode || "Not specified"}
+- Hiring Plans: ${teamContext!.hiringPlans || "Not specified"}
+${teamContext!.currentChallenges ? `- Current Challenges: ${teamContext!.currentChallenges}` : ""}
+
+Use this organizational context alongside the mission statement to make informed priority assessments. For example, an early-stage startup in tech would naturally require higher High Agency and Resilience, while a healthcare organization would prioritize Empathy & Ethics more strongly.` : "";
+
+  const systemPrompt = `You are an organizational psychologist and talent strategy expert. Your task is to analyze a company's mission statement, ethos, and organizational context to determine which behavioral capabilities (from the FIT framework) are most critical for their success.
 
 The FIT framework capabilities are:
 - HA (High Agency): Taking initiative, ownership, driving outcomes proactively
@@ -271,13 +293,21 @@ The FIT framework capabilities are:
 - EE (Empathy & Ethics): Understanding others, making principled decisions
 - GM (Growth Mindset): Believing abilities can develop, embracing challenges
 - IA (Interpersonal Agility): Building relationships, navigating social dynamics
+${teamContextBlock}
 
 Analyze the mission and return a JSON response with:
 1. A brief summary of the organization's focus and culture
 2. Each capability ranked by priority (critical, high, medium, low) with reasoning
 3. Key themes identified from the mission/ethos
 
-Be specific and tie your reasoning directly to the mission content.`;
+CRITICAL RULES:
+- You MUST differentiate priorities. NEVER return all 6 capabilities at the same priority level.
+- At minimum, you must have at least 1 capability rated "critical" or "high", and at least 1 rated "low" or at a different level from the others.
+- Even when the mission statement is brief, use the organizational context (industry, team function, team stage) to make informed priority distinctions.
+- For example, a tech startup naturally requires higher HA and IC, while a customer-facing team needs stronger EE and IA.
+- Write all reasoning in an objective, third-person analytical tone. Never use first-person language like "I", "my", "I believe".
+
+Be specific and tie your reasoning directly to the mission content and organizational context.`;
 
   const userPrompt = `Analyze this organization:
 
@@ -294,9 +324,9 @@ Return your analysis as JSON with this exact structure:
       "code": "HA",
       "name": "High Agency",
       "priority": "critical|high|medium|low",
-      "reasoning": "Specific reasoning tied to mission content"
+      "reasoning": "Specific reasoning tied to mission content and organizational context"
     },
-    // ... repeat for all 6 capabilities
+    // ... repeat for all 6 capabilities (MUST have varied priorities - never all the same)
   ],
   "keyThemes": ["theme1", "theme2", "theme3"]
 }`;
@@ -1205,8 +1235,16 @@ export function registerEcosystemRoutes(app: Express): void {
 
       const data = missionAnalysisSchema.parse(req.body);
       
-      // Analyze with AI
-      const missionAnalysis = await analyzeMissionWithAI(data.missionStatement, data.companyEthos);
+      // Analyze with AI - include team context for smarter priority differentiation
+      const missionAnalysis = await analyzeMissionWithAI(data.missionStatement, data.companyEthos, {
+        industry: project.industry || undefined,
+        teamFunction: project.teamFunction || undefined,
+        teamStage: project.teamStage || undefined,
+        teamSize: project.teamSize || undefined,
+        workMode: project.workMode || undefined,
+        hiringPlans: project.hiringPlans || undefined,
+        currentChallenges: project.currentChallenges || undefined,
+      });
 
       // Update project
       const updated = await storage.updateEcosystemProject(req.params.id, {
@@ -1671,7 +1709,15 @@ export function registerEcosystemRoutes(app: Express): void {
       let missionAnalysis = project.missionAnalysis as EcosystemMissionAnalysis | null;
       if (!missionAnalysis && project.missionStatement) {
         console.log("[Ecosystem] Running deferred mission analysis for project:", req.params.id);
-        missionAnalysis = await analyzeMissionWithAI(project.missionStatement, project.companyEthos || "");
+        missionAnalysis = await analyzeMissionWithAI(project.missionStatement, project.companyEthos || "", {
+          industry: project.industry || undefined,
+          teamFunction: project.teamFunction || undefined,
+          teamStage: project.teamStage || undefined,
+          teamSize: project.teamSize || undefined,
+          workMode: project.workMode || undefined,
+          hiringPlans: project.hiringPlans || undefined,
+          currentChallenges: project.currentChallenges || undefined,
+        });
         await storage.updateEcosystemProject(req.params.id, {
           missionAnalysis,
         });

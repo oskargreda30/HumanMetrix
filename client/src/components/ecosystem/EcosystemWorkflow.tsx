@@ -1129,10 +1129,18 @@ export function EcosystemWorkflow({
                   id="mission"
                   value={missionStatement}
                   onChange={(e) => setMissionStatement(e.target.value)}
-                  placeholder="Enter your company's mission statement..."
+                  placeholder="e.g., We empower small businesses with AI-driven analytics to make smarter decisions, fostering innovation and sustainable growth across emerging markets..."
                   className="min-h-[120px]"
                   data-testid="textarea-mission"
                 />
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    A detailed mission statement helps the AI differentiate which capabilities matter most for your team. Include your goals, values, and what makes your organization unique.
+                  </p>
+                  {missionStatement.trim().length > 0 && missionStatement.trim().length < 50 && (
+                    <span className="text-xs text-amber-500 whitespace-nowrap ml-2">Brief — add more detail for better results</span>
+                  )}
+                </div>
               </div>
             
               <div className="space-y-2">
