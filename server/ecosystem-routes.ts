@@ -384,7 +384,7 @@ The FIT framework capabilities are:
 - IA (Interpersonal Agility): Building relationships, navigating social dynamics
 
 Your analysis should:
-1. Be written in a consultative, advisory tone - like a trusted partner giving strategic advice
+1. Be written in an objective, third-person analytical tone - never use first-person language like "I", "my", "I recommend", or "I observe". Instead use phrasing like "The analysis reveals", "The data indicates", "It is recommended that"
 2. Connect insights to business outcomes and team performance
 3. Be specific and actionable, not generic
 4. Consider the team's stage, industry, and specific challenges
@@ -449,7 +449,7 @@ ${riskAlerts.map(r => `${r.type}: ${r.title} - ${r.description}`).join("\n") || 
 
 Provide your analysis as JSON with this exact structure:
 {
-  "executiveSummary": "A compelling 3-4 paragraph strategic summary written in first person consultant voice. Start with the team's key strengths, then transition to the most critical gaps and risks, and end with the strategic path forward. Be specific and tie insights to business outcomes.",
+  "executiveSummary": "A compelling 3-4 paragraph strategic summary written in an objective, third-person analytical tone (never use 'I', 'we', or first-person language). Start with the team's key strengths, then transition to the most critical gaps and risks, and end with the strategic path forward. Be specific and tie insights to business outcomes.",
   
   "strategicInsights": [
     {
@@ -530,7 +530,7 @@ Generate 3-5 strategic insights, 1-3 ideal hire profiles based on hiring plans, 
     console.error("[Ecosystem] AI strategic analysis error:", error);
     // Return fallback basic analysis
     return {
-      executiveSummary: `Based on my analysis of your ${teamContext.teamFunction} team, I've identified several key patterns that will inform your hiring strategy. Your team shows varying levels of capability coverage across the FIT dimensions, with some areas requiring immediate attention. Given your ${teamContext.teamStage} stage and plans for ${teamContext.hiringPlans} hires, I recommend prioritizing candidates who can address your most critical capability gaps while complementing your existing team strengths.`,
+      executiveSummary: `Analysis of the ${teamContext.teamFunction} team reveals several key patterns that will inform the hiring strategy. The team shows varying levels of capability coverage across the FIT dimensions, with some areas requiring immediate attention. Given the ${teamContext.teamStage} stage and plans for ${teamContext.hiringPlans} hires, the recommended approach is to prioritize candidates who can address the most critical capability gaps while complementing existing team strengths.`,
       strategicInsights: gapAnalysis.filter(g => g.gapSeverity !== "healthy").map((g, i) => ({
         category: g.gapSeverity === "critical" ? "gap" : "risk",
         title: `${g.capability} Gap Requires Attention`,
@@ -630,7 +630,8 @@ For contextualInsights, generate exactly 4-5 deep, analytical insights across th
 - "strategic_risk": Longer-term risks if current gaps persist, including competitive disadvantage, burnout patterns, or organizational blind spots
 Each insight must connect multiple data points and provide actionable analysis, not just restate scores.
 
-IMPORTANT: Generate realistic, varied score targets. Do NOT use round numbers like 70, 75, 80. Use specific numbers like 73, 82, 67 based on your contextual analysis.`;
+IMPORTANT: Generate realistic, varied score targets. Do NOT use round numbers like 70, 75, 80. Use specific numbers like 73, 82, 67 based on your contextual analysis.
+IMPORTANT: Write all analysis in an objective, third-person analytical tone. Never use first-person language like "I", "my", "I recommend". Use phrasing like "The analysis reveals", "The data indicates", "It is recommended that".`;
 
   const userPrompt = `Analyze capability gaps for this team:
 
