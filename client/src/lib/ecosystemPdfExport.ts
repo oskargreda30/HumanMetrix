@@ -603,9 +603,9 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
     const strengthToScore: Record<string, number> = { strong: 85, adequate: 65, weak: 40, critical: 20 };
     const priorityToTarget: Record<string, number> = { critical: 90, high: 80, medium: 65, low: 50 };
 
-    const GAP_BAR_HEIGHT = 7;
-    const GAP_BADGE_SIZE = 7;
-    const GAP_ITEM_PAD = 5;
+    const GAP_BAR_HEIGHT = 4;
+    const GAP_BADGE_SIZE = 6;
+    const GAP_ITEM_PAD = 3;
 
     for (const item of analysis.capabilityGapMatrix) {
       const currentScore = item.currentScore ?? strengthToScore[item.teamStrength] ?? 50;
@@ -616,11 +616,11 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
       const analysisText = item.gapAnalysis || '';
 
       applySmallText(pdf);
-      pdf.setFontSize(7);
+      pdf.setFontSize(6.5);
       const analysisLines = analysisText ? wrapText(pdf, analysisText, CONTENT_WIDTH - 20) : [];
-      const contentH = GAP_ITEM_PAD + 10 + GAP_BAR_HEIGHT + 5 + (analysisLines.length > 0 ? analysisLines.length * 3.4 + 3 : 0) + GAP_ITEM_PAD;
+      const contentH = GAP_ITEM_PAD + 8 + GAP_BAR_HEIGHT + 4 + (analysisLines.length > 0 ? analysisLines.length * 3 + 2 : 0) + GAP_ITEM_PAD;
 
-      y = ensureSpace(pdf, y, contentH + 4);
+      y = ensureSpace(pdf, y, contentH + 3);
 
       pdf.setFillColor(248, 250, 252);
       pdf.roundedRect(MARGIN_LEFT + 2, y - 1, CONTENT_WIDTH - 4, contentH, 2, 2, 'F');
@@ -629,41 +629,41 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
 
       const badgeCenterY = y + GAP_BADGE_SIZE / 2;
       drawCapabilityBadge(pdf, item.code, MARGIN_LEFT + 7, badgeCenterY + GAP_BADGE_SIZE / 2 - 1, GAP_BADGE_SIZE);
-      pdf.setFontSize(9);
+      pdf.setFontSize(8);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(...COLORS.text);
-      pdf.text(item.capability || CAP_NAMES[item.code] || item.code, MARGIN_LEFT + 17, y + 3);
+      pdf.text(item.capability || CAP_NAMES[item.code] || item.code, MARGIN_LEFT + 16, y + 3);
 
-      pdf.setFontSize(8);
+      pdf.setFontSize(7);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(...gapColor);
       const gapText = gap > 0 ? `+${gap} gap` : 'On target';
       pdf.text(gapText, PAGE_WIDTH - MARGIN_RIGHT - 6, y + 3, { align: 'right' });
 
-      y += 10;
+      y += 8;
       drawHorizontalBar(pdf, MARGIN_LEFT + 7, y, CONTENT_WIDTH - 18, currentScore, targetScore, barColor, GAP_BAR_HEIGHT);
-      y += GAP_BAR_HEIGHT + 2;
+      y += GAP_BAR_HEIGHT + 1;
 
-      pdf.setFontSize(6.5);
+      pdf.setFontSize(6);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(...COLORS.textMuted);
       pdf.text(`Current: ${currentScore}%`, MARGIN_LEFT + 7, y + 1);
       const targetLabelX = MARGIN_LEFT + 7 + (CONTENT_WIDTH - 18) * (targetScore / 100) - 8;
       const clampedTargetX = Math.min(Math.max(MARGIN_LEFT + 42, targetLabelX), PAGE_WIDTH - MARGIN_RIGHT - 22);
       pdf.text(`Target: ${targetScore}%`, clampedTargetX, y + 1);
-      y += 5;
+      y += 4;
 
       if (analysisLines.length > 0) {
-        pdf.setFontSize(7);
+        pdf.setFontSize(6.5);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(...COLORS.textSecondary);
         for (const line of analysisLines) {
           pdf.text(line, MARGIN_LEFT + 7, y);
-          y += 3.4;
+          y += 3;
         }
       }
 
-      y += GAP_ITEM_PAD + 2;
+      y += GAP_ITEM_PAD + 1;
     }
   }
 
