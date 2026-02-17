@@ -538,7 +538,7 @@ export default function EcosystemSampleReport() {
               Compare your team's current capability levels against what's needed for mission success. 
               The gap score shows how much additional capacity would strengthen each area.
             </p>
-            <div className="space-y-4">
+            <div className="space-y-2">
               {sampleAnalysis.capabilityGapMatrix.map((item, i) => {
                 const capInfo = FIT_CAPABILITIES.find(c => c.code === item.code);
                 const gap = Math.max(0, item.targetScore - item.currentScore);
@@ -547,21 +547,21 @@ export default function EcosystemSampleReport() {
                                  "text-green-600 dark:text-green-400";
                 
                 return (
-                  <div key={i} className="bg-muted/30 rounded-lg p-4 border">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className={`h-7 w-7 rounded ${capInfo?.color || "bg-gray-500"} flex items-center justify-center`}>
-                          <span className="text-white text-xs font-bold">{item.code}</span>
+                  <div key={i} className="bg-muted/30 rounded-lg p-3 border">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <div className={`h-6 w-6 rounded ${capInfo?.color || "bg-gray-500"} flex items-center justify-center`}>
+                          <span className="text-white text-[10px] font-bold">{item.code}</span>
                         </div>
-                        <span className="font-medium">{item.capability}</span>
+                        <span className="text-sm font-medium">{item.capability}</span>
                       </div>
-                      <div className={`text-sm font-semibold ${gapColor}`}>
+                      <div className={`text-xs font-semibold ${gapColor}`}>
                         {gap > 0 ? `+${gap} gap` : "On target"}
                       </div>
                     </div>
                     
                     {/* Horizontal bar chart */}
-                    <div className="relative h-6 bg-muted rounded-full overflow-hidden mb-2">
+                    <div className="relative h-4 bg-muted rounded-full overflow-hidden mb-1">
                       {/* Target marker line */}
                       <div 
                         className="absolute top-0 bottom-0 w-0.5 bg-foreground/60 z-10"
@@ -580,20 +580,20 @@ export default function EcosystemSampleReport() {
                     </div>
                     
                     {/* Legend */}
-                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                      <div className="flex items-center gap-4">
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1">
+                      <div className="flex items-center gap-3">
                         <span className="flex items-center gap-1">
-                          <div className={`h-2 w-4 rounded ${capInfo?.color || "bg-primary"}`} style={{ opacity: 0.8 }} />
+                          <div className={`h-1.5 w-3 rounded ${capInfo?.color || "bg-primary"}`} style={{ opacity: 0.8 }} />
                           Current: {item.currentScore}
                         </span>
                         <span className="flex items-center gap-1">
-                          <div className="h-2 w-4 rounded border-2 border-dashed border-foreground/40" />
+                          <div className="h-1.5 w-3 rounded border border-dashed border-foreground/40" />
                           Target: {item.targetScore}
                         </span>
                       </div>
                     </div>
                     
-                    <p className="text-sm text-muted-foreground">{item.gapAnalysis}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{item.gapAnalysis}</p>
                   </div>
                 );
               })}
