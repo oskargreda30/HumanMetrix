@@ -708,10 +708,10 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
     y += 6;
   }
 
-  // ====== DEEP CONTEXTUAL INSIGHTS ======
+  // ====== CONTEXTUAL INSIGHTS ======
   if (analysis.contextualInsights?.length > 0) {
     y = newPage(pdf);
-    y = addSectionHeader(pdf, 'DEEP CONTEXTUAL INSIGHTS', y);
+    y = addSectionHeader(pdf, 'CONTEXTUAL INSIGHTS', y);
     y = addDescriptionBox(pdf,
       'Forward-looking analysis connecting your team\'s current capability profile with organizational context, future needs, and strategic considerations.',
       y

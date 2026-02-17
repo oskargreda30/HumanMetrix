@@ -2869,12 +2869,12 @@ function TeamAnalysisResults({
         </div>
       </div>
 
-      {/* SECTION 8: Deep Contextual Insights - AI Analysis */}
+      {/* SECTION 8: Contextual Insights - AI Analysis */}
       {analysis.contextualInsights && analysis.contextualInsights.length > 0 && (
         <div data-testid="section-contextual-insights">
           <h4 className="font-semibold mb-4 flex items-center gap-2">
             <Lightbulb className="h-4 w-4 text-amber-500" />
-            Deep Contextual Insights
+            Contextual Insights
           </h4>
           <div className="space-y-4">
             {analysis.contextualInsights.map((insight: any, i: number) => {

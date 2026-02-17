@@ -654,11 +654,11 @@ export default function EcosystemSampleReport() {
             </div>
           </div>
 
-          {/* SECTION 8: Deep Contextual Insights */}
+          {/* SECTION 8: Contextual Insights */}
           <div>
             <h4 className="font-semibold mb-4 flex items-center gap-2">
               <Lightbulb className="h-4 w-4 text-amber-500" />
-              Deep Contextual Insights
+              Contextual Insights
             </h4>
             <div className="space-y-4">
               {sampleAnalysis.contextualInsights.map((insight, i) => {
