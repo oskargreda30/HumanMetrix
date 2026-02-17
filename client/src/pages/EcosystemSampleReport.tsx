@@ -446,7 +446,7 @@ export default function EcosystemSampleReport() {
                   </div>
                   <div>
                     <p className="font-medium">Capability Strength</p>
-                    <p className="text-muted-foreground text-xs mt-1">
+                    <p className="text-muted-foreground text-xs mt-2">
                       The average of your team's FIT scores across all 6 capabilities. Higher individual scores mean a stronger foundation.
                     </p>
                   </div>
@@ -457,7 +457,7 @@ export default function EcosystemSampleReport() {
                   </div>
                   <div>
                     <p className="font-medium">Capability Coverage</p>
-                    <p className="text-muted-foreground text-xs mt-1">
+                    <p className="text-muted-foreground text-xs mt-2">
                       Measures whether you have at least one team member meeting the target threshold for each capability. 
                       A team with 100% coverage has someone strong in every area; gaps here indicate blind spots.
                     </p>
@@ -469,7 +469,7 @@ export default function EcosystemSampleReport() {
                   </div>
                   <div>
                     <p className="font-medium">Risk & Gap Penalties</p>
-                    <p className="text-muted-foreground text-xs mt-1">
+                    <p className="text-muted-foreground text-xs mt-2">
                       Deductions for critical gaps, warnings, and risk factors. Critical gaps (where the team is 15+ points below target) 
                       have the heaviest penalty (-8 points each). Warnings (-4 points) and minor risks (-2 points) also reduce the score.
                     </p>
