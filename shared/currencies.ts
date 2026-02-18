@@ -1311,12 +1311,13 @@ export function calculateBundlePricing(
   let stripeCurrencyCode = '';
   let currencyCode = '';
 
+  let baseFeeAlreadyPaid = false;
   for (const item of assessmentItems) {
     const pricing = calculateCandidatePricing(
       countryCode,
       [{ type: item.type, priceInPence: item.priceInPence }],
       baseFeeInPence,
-      { exchangeRate, isVPN }
+      { exchangeRate, isVPN, baseFeeAlreadyPaid }
     );
     individualPrices.push({
       type: item.type,
@@ -1329,6 +1330,7 @@ export function calculateBundlePricing(
       stripeCurrencyCode = pricing.stripeCurrency;
       currencyCode = pricing.currencyCode;
     }
+    baseFeeAlreadyPaid = true;
   }
 
   const fmt = formatAmountFn || ((n: number) => String(n));
