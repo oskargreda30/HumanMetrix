@@ -1834,8 +1834,8 @@ export function registerPartnerRoutes(app: Express) {
               }
             }
             
-            // Use either frontend flag OR server-side check for series completion
-            const isSeriesComplete = (isMultiAssessmentSeries && isLastInMultiAssessmentSeries) || seriesComplete;
+            // Only use server-side check for series completion (frontend flag can be incorrect)
+            const isSeriesComplete = seriesComplete;
             const effectiveSeriesTypes = seriesAssessmentTypes.length > 0 ? seriesAssessmentTypes : multiAssessmentTypes;
             
             // Determine bundle discount: only include bulk pricing section when 2+ locked
