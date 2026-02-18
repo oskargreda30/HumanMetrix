@@ -1311,12 +1311,22 @@ export function calculateBundlePricing(
   let stripeCurrencyCode = '';
   let currencyCode = '';
 
-  let baseFeeAlreadyPaid = false;
-  for (const item of assessmentItems) {
+  const pricingCountry = (isVPN ? 'GB' : countryCode).toUpperCase();
+  const tier = getPricingTier(pricingCountry);
+  const isTier1 = tier === 'tier1';
+  const itemCount = assessmentItems.length;
+  const splitBaseFee = isTier1 && itemCount > 1
+    ? Math.round(baseFeeInPence / itemCount)
+    : baseFeeInPence;
+
+  for (let i = 0; i < assessmentItems.length; i++) {
+    const item = assessmentItems[i];
+    const itemBaseFee = isTier1 && itemCount > 1 ? splitBaseFee : baseFeeInPence;
+    const baseFeeAlreadyPaid = isTier1 ? false : (i > 0);
     const pricing = calculateCandidatePricing(
       countryCode,
       [{ type: item.type, priceInPence: item.priceInPence }],
-      baseFeeInPence,
+      itemBaseFee,
       { exchangeRate, isVPN, baseFeeAlreadyPaid }
     );
     individualPrices.push({
@@ -1330,7 +1340,6 @@ export function calculateBundlePricing(
       stripeCurrencyCode = pricing.stripeCurrency;
       currencyCode = pricing.currencyCode;
     }
-    baseFeeAlreadyPaid = true;
   }
 
   const fmt = formatAmountFn || ((n: number) => String(n));
