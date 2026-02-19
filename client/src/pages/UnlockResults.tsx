@@ -251,8 +251,8 @@ export default function UnlockResults() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 p-4 py-8">
-      <div className="max-w-md mx-auto">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 p-4 py-8 overflow-y-auto">
+      <div className="max-w-md mx-auto pb-8">
         <Card>
           <CardHeader className="text-center pb-4">
             <div className="flex items-center justify-center gap-2 mb-2">
