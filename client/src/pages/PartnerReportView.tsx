@@ -373,7 +373,7 @@ export default function PartnerReportView() {
   const cleanTitle = (reportData.title || 'Report Details').replace(/for\s+undefined/gi, '').replace(/\s{2,}/g, ' ').trim();
 
   return (
-    <div className="min-h-screen bg-white text-foreground pt-16 md:pt-8">
+    <div className="min-h-screen bg-white text-foreground pt-16 md:pt-8 overflow-y-auto">
       <div className="max-w-5xl mx-auto p-4 md:p-8">
         <ReportHeader
           title={cleanTitle}

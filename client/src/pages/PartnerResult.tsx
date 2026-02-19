@@ -369,7 +369,7 @@ export default function PartnerResult() {
   const aiqBand = isAIQ ? getAIQBandInterpretation(data.overallScore || 0) : null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-y-auto">
       <div className="container mx-auto px-4 pt-4 md:pt-8 pb-8 max-w-5xl">
         <div className="mb-6 print:hidden">
           <Link href="/partner">

@@ -350,7 +350,7 @@ export default function B2BPdfEmail() {
   }
 
   return (
-    <div className={`min-h-screen ${isPdfRender ? 'bg-white' : 'bg-slate-50 dark:bg-slate-900'}`}>
+    <div className={`min-h-screen ${isPdfRender ? 'bg-white' : 'bg-slate-50 dark:bg-slate-900 overflow-y-auto'}`}>
       {!isPdfRender && (
         <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-cyan-500 to-blue-600 text-white p-4 shadow-lg">
           <div className="max-w-4xl mx-auto flex items-center justify-center gap-3">

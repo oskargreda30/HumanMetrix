@@ -81,7 +81,7 @@ export default function AutoLogin() {
   }, [token, setLocation, safeRedirect]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0a1628] via-[#0f2035] to-[#0a1628]">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0a1628] via-[#0f2035] to-[#0a1628] overflow-y-auto">
       <div className="text-center" data-testid="auto-login-container">
         {error ? (
           <div className="space-y-4">

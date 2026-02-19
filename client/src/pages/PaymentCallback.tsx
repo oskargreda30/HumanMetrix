@@ -101,7 +101,7 @@ export default function PaymentCallback() {
   }, [setLocation]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-background to-muted/20 overflow-y-auto">
       <Card className="max-w-md w-full p-8 space-y-6">
         <div className="text-center space-y-4">
           {status === "processing" && (
