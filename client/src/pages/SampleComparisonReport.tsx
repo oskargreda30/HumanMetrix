@@ -46,6 +46,7 @@ const DEMO_CANDIDATES = [
       "Collaboration & Communication": 78,
       "Responsible AI & Ethical Awareness": 90,
       "Creativity & Innovation": 76,
+      "Domain Expertise": 84,
     },
     strengths: ["Strategic thinking", "Innovation mindset", "Team leadership"],
     areas: ["Technical depth", "Risk tolerance"],
@@ -75,6 +76,7 @@ const DEMO_CANDIDATES = [
       "Collaboration & Communication": 70,
       "Responsible AI & Ethical Awareness": 72,
       "Creativity & Innovation": 68,
+      "Domain Expertise": 79,
     },
     strengths: ["Technical expertise", "Problem solving", "Resilience under pressure"],
     areas: ["Communication", "Strategic vision"],
@@ -104,6 +106,7 @@ const DEMO_CANDIDATES = [
       "Collaboration & Communication": 74,
       "Responsible AI & Ethical Awareness": 85,
       "Creativity & Innovation": 70,
+      "Domain Expertise": 73,
     },
     strengths: ["Collaboration & Communication", "Ethical judgment", "Stakeholder management"],
     areas: ["Technical skills", "Initiative"],
@@ -118,7 +121,7 @@ const SKILL_ACRONYMS: Record<string, string> = {
   "Empathy & Ethics": "EE",
   "Growth Mindset": "GM",
   "Interpersonal Agility": "IA",
-  // AI Readiness Skills (8 official skills)
+  // AI Readiness Skills (9 official skills)
   "AI Literacy & Prompt Engineering": "AL&PE",
   "Technical Fundamentals": "TF",
   "Data Fluency": "DF",
@@ -127,6 +130,7 @@ const SKILL_ACRONYMS: Record<string, string> = {
   "Collaboration & Communication": "CC",
   "Responsible AI & Ethical Awareness": "RAI",
   "Creativity & Innovation": "CI",
+  "Domain Expertise": "DE",
 };
 
 const CANDIDATE_COLORS = [
@@ -181,7 +185,7 @@ const COMBINED_RADAR_DATA = [
   { skill: "EE", fullName: "Empathy & Ethics", candidate0: 84, candidate1: 75, candidate2: 82 },
   { skill: "GM", fullName: "Growth Mindset", candidate0: 86, candidate1: 74, candidate2: 70 },
   { skill: "IA", fullName: "Interpersonal Agility", candidate0: 80, candidate1: 76, candidate2: 78 },
-  // AI Readiness Skills (8 official skills)
+  // AI Readiness Skills (9 official skills)
   { skill: "AL&PE", fullName: "AI Literacy & Prompt Engineering", candidate0: 82, candidate1: 78, candidate2: 70 },
   { skill: "TF", fullName: "Technical Fundamentals", candidate0: 75, candidate1: 82, candidate2: 65 },
   { skill: "DF", fullName: "Data Fluency", candidate0: 80, candidate1: 74, candidate2: 68 },
@@ -190,6 +194,7 @@ const COMBINED_RADAR_DATA = [
   { skill: "CC", fullName: "Collaboration & Communication", candidate0: 78, candidate1: 70, candidate2: 74 },
   { skill: "RAI", fullName: "Responsible AI & Ethical Awareness", candidate0: 90, candidate1: 72, candidate2: 85 },
   { skill: "CI", fullName: "Creativity & Innovation", candidate0: 76, candidate1: 68, candidate2: 70 },
+  { skill: "DE", fullName: "Domain Expertise", candidate0: 84, candidate1: 79, candidate2: 73 },
 ];
 
 export default function SampleComparisonReport() {
