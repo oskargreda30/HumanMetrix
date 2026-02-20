@@ -1,4 +1,3 @@
-import { useState, useCallback } from "react";
 import { Link } from "wouter";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -10,14 +9,13 @@ import { Progress } from "@/components/ui/progress";
 import SkillsLegend from "@/components/SkillsLegend";
 import {
   ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
   Legend,
   Tooltip,
-  Cell,
 } from "recharts";
 
 const DEMO_CANDIDATES = [
@@ -198,16 +196,6 @@ const COMBINED_RADAR_DATA = [
 ];
 
 export default function SampleComparisonReport() {
-  const [hoveredSkill, setHoveredSkill] = useState<string | null>(null);
-  const handleMouseMove = useCallback((state: any) => {
-    if (state && state.activeLabel) {
-      setHoveredSkill(state.activeLabel);
-    }
-  }, []);
-  const handleMouseLeave = useCallback(() => {
-    setHoveredSkill(null);
-  }, []);
-
   const fitRadarData = Object.keys(DEMO_CANDIDATES[0].fitScores).map(skill => ({
     skill: SKILL_ACRONYMS[skill] || skill,
     fullName: skill,
@@ -496,39 +484,31 @@ export default function SampleComparisonReport() {
                 <CardTitle className="text-lg">FIT Assessment Comparison</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[340px]">
+                <div className="h-[380px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart layout="vertical" data={fitRadarData} margin={{ top: 5, right: 55, left: 10, bottom: 5 }} barCategoryGap="30%" barGap={2} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                      <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
-                      <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                    <RadarChart data={fitRadarData} cx="50%" cy="50%" outerRadius="70%">
+                      <PolarGrid stroke="hsl(var(--border))" />
+                      <PolarAngleAxis dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} />
+                      <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10 }} axisLine={false} />
                       {DEMO_CANDIDATES.map((candidate, index) => (
-                        <Bar
+                        <Radar
                           key={candidate.id}
                           name={candidate.name}
                           dataKey={candidate.name}
-                          radius={[0, 4, 4, 0]}
-                          barSize={12}
-                        >
-                          {fitRadarData.map((entry: any, i: number) => (
-                            <Cell
-                              key={`cell-${i}`}
-                              fill={CANDIDATE_COLORS[index].fill}
-                              fillOpacity={!hoveredSkill || hoveredSkill === entry.skill ? 1 : 0.2}
-                              style={{ transition: 'fill-opacity 0.2s ease' }}
-                            />
-                          ))}
-                        </Bar>
+                          stroke={CANDIDATE_COLORS[index].stroke}
+                          fill={CANDIDATE_COLORS[index].fill}
+                          fillOpacity={0.15}
+                          strokeWidth={2}
+                        />
                       ))}
                       <Legend
                         formatter={(value: string, entry: any, index: number) => (
                           <span style={{ color: CANDIDATE_COLORS[index % CANDIDATE_COLORS.length]?.fill || '#4A7FA8' }}>{value}</span>
                         )}
                       />
-                      <Tooltip cursor={false} />
-                    </BarChart>
+                      <Tooltip />
+                    </RadarChart>
                   </ResponsiveContainer>
-                  <p className="text-xs text-muted-foreground text-center mt-1">Hover over a skill to highlight comparison</p>
                 </div>
               </CardContent>
             </Card>
@@ -538,39 +518,31 @@ export default function SampleComparisonReport() {
                 <CardTitle className="text-lg">AI Readiness Comparison</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[440px]">
+                <div className="h-[400px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart layout="vertical" data={aiRadarData} margin={{ top: 5, right: 55, left: 10, bottom: 5 }} barCategoryGap="30%" barGap={2} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                      <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
-                      <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                    <RadarChart data={aiRadarData} cx="50%" cy="50%" outerRadius="65%">
+                      <PolarGrid stroke="hsl(var(--border))" />
+                      <PolarAngleAxis dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 10, fontWeight: 500 }} />
+                      <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10 }} axisLine={false} />
                       {DEMO_CANDIDATES.map((candidate, index) => (
-                        <Bar
+                        <Radar
                           key={candidate.id}
                           name={candidate.name}
                           dataKey={candidate.name}
-                          radius={[0, 4, 4, 0]}
-                          barSize={12}
-                        >
-                          {aiRadarData.map((entry: any, i: number) => (
-                            <Cell
-                              key={`cell-${i}`}
-                              fill={CANDIDATE_COLORS[index].fill}
-                              fillOpacity={!hoveredSkill || hoveredSkill === entry.skill ? 1 : 0.2}
-                              style={{ transition: 'fill-opacity 0.2s ease' }}
-                            />
-                          ))}
-                        </Bar>
+                          stroke={CANDIDATE_COLORS[index].stroke}
+                          fill={CANDIDATE_COLORS[index].fill}
+                          fillOpacity={0.15}
+                          strokeWidth={2}
+                        />
                       ))}
                       <Legend
                         formatter={(value: string, entry: any, index: number) => (
                           <span style={{ color: CANDIDATE_COLORS[index % CANDIDATE_COLORS.length]?.fill || '#4A7FA8' }}>{value}</span>
                         )}
                       />
-                      <Tooltip cursor={false} />
-                    </BarChart>
+                      <Tooltip />
+                    </RadarChart>
                   </ResponsiveContainer>
-                  <p className="text-xs text-muted-foreground text-center mt-1">Hover over a skill to highlight comparison</p>
                 </div>
               </CardContent>
             </Card>
@@ -746,39 +718,31 @@ export default function SampleComparisonReport() {
             </CardHeader>
             <CardContent>
               <h3 className="font-semibold mb-4">All Skills Combined</h3>
-              <div className="h-[700px]">
+              <div className="h-[500px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart layout="vertical" data={COMBINED_RADAR_DATA} margin={{ top: 5, right: 55, left: 10, bottom: 5 }} barCategoryGap="30%" barGap={2} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                    <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
-                    <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                  <RadarChart data={COMBINED_RADAR_DATA} cx="50%" cy="50%" outerRadius="65%">
+                    <PolarGrid stroke="hsl(var(--border))" />
+                    <PolarAngleAxis dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 9, fontWeight: 500 }} />
+                    <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10 }} axisLine={false} />
                     {DEMO_CANDIDATES.map((candidate, index) => (
-                      <Bar
+                      <Radar
                         key={candidate.id}
                         name={candidate.name}
                         dataKey={`candidate${index}`}
-                        radius={[0, 4, 4, 0]}
-                        barSize={12}
-                      >
-                        {COMBINED_RADAR_DATA.map((entry: any, i: number) => (
-                          <Cell
-                            key={`cell-${i}`}
-                            fill={CANDIDATE_COLORS[index].fill}
-                            fillOpacity={!hoveredSkill || hoveredSkill === entry.skill ? 1 : 0.2}
-                            style={{ transition: 'fill-opacity 0.2s ease' }}
-                          />
-                        ))}
-                      </Bar>
+                        stroke={CANDIDATE_COLORS[index].stroke}
+                        fill={CANDIDATE_COLORS[index].fill}
+                        fillOpacity={0.15}
+                        strokeWidth={2}
+                      />
                     ))}
                     <Legend
                       formatter={(value: string, entry: any, index: number) => (
                         <span style={{ color: CANDIDATE_COLORS[index % CANDIDATE_COLORS.length]?.fill || '#4A7FA8' }}>{value}</span>
                       )}
                     />
-                    <Tooltip cursor={false} />
-                  </BarChart>
+                    <Tooltip />
+                  </RadarChart>
                 </ResponsiveContainer>
-                <p className="text-xs text-muted-foreground text-center mt-1">Hover over a skill to highlight comparison</p>
               </div>
             </CardContent>
           </Card>
