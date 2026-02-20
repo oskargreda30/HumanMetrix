@@ -151,9 +151,9 @@ export default function SampleRoleFitReport() {
                   <div>
                     <span className="font-medium text-sm">Role Alignment Tiers</span>
                     <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1 mt-1">
-                      <Badge className="bg-green-500 text-white text-[10px] px-1 py-0">75%+</Badge> <span>High alignment,</span>
-                      <Badge className="bg-amber-500 text-white text-[10px] px-1 py-0">50-74%</Badge> <span>Moderate,</span>
-                      <Badge className="bg-red-500 text-white text-[10px] px-1 py-0">&lt;50%</Badge> <span>Development needed</span>
+                      <Badge variant="secondary" className="text-[10px] px-1 py-0">75%+</Badge> <span>High alignment,</span>
+                      <Badge variant="secondary" className="text-[10px] px-1 py-0">50-74%</Badge> <span>Moderate,</span>
+                      <Badge variant="secondary" className="text-[10px] px-1 py-0">&lt;50%</Badge> <span>Development needed</span>
                     </div>
                   </div>
                 </div>
