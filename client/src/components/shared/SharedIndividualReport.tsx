@@ -949,18 +949,11 @@ export function SharedIndividualReport({ config, staticData }: SharedIndividualR
                             <IconComponent className="h-4 w-4" />
                             {section.key}
                           </h4>
-                          {lines.length > 1 ? (
-                            <ul className="space-y-1.5">
-                              {lines.map((line: string, i: number) => (
-                                <li key={i} className="text-sm text-muted-foreground leading-relaxed flex items-start gap-2">
-                                  <span className={`mt-1.5 h-1.5 w-1.5 rounded-full flex-shrink-0 ${section.color.split(' ').map((c: string) => c.replace('text-', 'bg-')).join(' ')}`} />
-                                  {line}
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-sm text-muted-foreground leading-relaxed">{section.content}</p>
-                          )}
+                          <div className="space-y-1.5">
+                            {lines.map((line: string, i: number) => (
+                              <p key={i} className="text-sm text-muted-foreground leading-relaxed">{line}</p>
+                            ))}
+                          </div>
                         </div>
                       );
                     });
