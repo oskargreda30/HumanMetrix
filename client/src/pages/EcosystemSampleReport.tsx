@@ -182,10 +182,10 @@ export default function EcosystemSampleReport() {
     <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="mb-8">
-          <Link href="/ecosystem-index">
+          <Link href="/#sample-reports">
             <Button variant="ghost" className="mb-4" data-testid="button-back-to-ecosystem">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Ecosystem Index
+              Back to Sample Reports
             </Button>
           </Link>
           <div className="flex items-center gap-2 mb-2">
