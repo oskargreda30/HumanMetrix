@@ -36,6 +36,7 @@ import {
 } from "recharts";
 import html2canvas from "html2canvas";
 import { exportMultiCandidateComparisonPDF } from "@/lib/pdfExport";
+import { generateDynamicNextSteps } from "@/lib/multiCandidateNextSteps";
 import SkillsLegend from "@/components/SkillsLegend";
 import { MultiCandidateCriticalSkillsAnalysis, type CriticalSkillMultiData } from "@/components/shared/MultiCandidateCriticalSkillsAnalysis";
 import { EnquiryModal } from "@/components/EnquiryModal";
@@ -524,6 +525,7 @@ export default function MultiCandidateRoleFitTab() {
         criticalSkillNames: multiCriticalSkills.map(s => s.skillName),
         aiInsights: comparison.aiInsights || null,
         recommendation: comparison.summaryInsights?.recommendation || null,
+        nextSteps: generateDynamicNextSteps(comparison),
       });
       
       toast({
@@ -1371,48 +1373,30 @@ export default function MultiCandidateRoleFitTab() {
             );
           })()}
 
-          {/* Recommended Next Steps - Matching Individual Tab Style */}
+          {/* Recommended Next Steps - Data-Driven */}
           <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-primary" />
                 Recommended Next Steps
               </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Tailored action items based on assessment data for the {comparison.roleSnapshot.roleName} role
+              </p>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-3">
-                <li className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-medium">
-                    1
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    Conduct final-round interviews with {comparison.summaryInsights.recommendation?.recommendedCandidate || 'the top candidate'} focusing on team dynamics and cultural alignment
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-medium">
-                    2
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    Perform reference checks emphasizing leadership and collaboration competencies
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-medium">
-                    3
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    Prepare competitive offer package based on candidate expectations
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-medium">
-                    4
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    Design 90-day onboarding plan targeting identified development areas
-                  </span>
-                </li>
+              <ul className="space-y-4">
+                {generateDynamicNextSteps(comparison).map((step, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-medium mt-0.5">
+                      {i + 1}
+                    </span>
+                    <div>
+                      <div className="text-sm font-medium text-foreground">{step.title}</div>
+                      <div className="text-sm text-muted-foreground mt-0.5">{step.detail}</div>
+                    </div>
+                  </li>
+                ))}
               </ul>
 
               {/* Complete Candidate Ranking */}

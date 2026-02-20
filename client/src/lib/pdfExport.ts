@@ -3737,23 +3737,14 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
   yPos = addSectionHeader(pdf, 'RECOMMENDED NEXT STEPS', yPos, pageWidth);
   yPos += 3;
 
-  const completedScores: number[] = [];
-  if (data.fitAssessment) {
-    const fitVals = Object.values(data.fitAssessment.scores);
-    if (fitVals.length > 0) completedScores.push(fitVals.reduce((a, b) => a + b, 0) / fitVals.length);
-  }
-  if (data.aiReadinessAssessment) {
-    const aiVals = Object.values(data.aiReadinessAssessment.scores);
-    if (aiVals.length > 0) completedScores.push(aiVals.reduce((a, b) => a + b, 0) / aiVals.length);
-  }
-  if (data.promptArchitectureAssessment) {
-    completedScores.push(data.promptArchitectureAssessment.totalScore);
-  }
-  if (data.aiqAssessment) {
-    completedScores.push(data.aiqAssessment.totalScore);
-  }
-  const avgScore = completedScores.length > 0
-    ? Math.round(completedScores.reduce((a, b) => a + b, 0) / completedScores.length)
+  const allIndividualScores: number[] = [
+    ...(data.fitAssessment ? Object.values(data.fitAssessment.scores) : []),
+    ...(data.aiReadinessAssessment ? Object.values(data.aiReadinessAssessment.scores) : []),
+    ...(data.promptArchitectureAssessment ? [data.promptArchitectureAssessment.totalScore] : []),
+    ...(data.aiqAssessment ? [data.aiqAssessment.totalScore] : []),
+  ];
+  const avgScore = allIndividualScores.length > 0
+    ? Math.round(allIndividualScores.reduce((a, b) => a + b, 0) / allIndividualScores.length)
     : 0;
 
   let nextSteps: string[];
@@ -4091,6 +4082,7 @@ interface MultiCandidateComparisonData {
     reasons: string[];
     criticalSkillAdvantages: string[];
   } | null;
+  nextSteps?: Array<{ title: string; detail: string }>;
 }
 
 export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComparisonData) {
@@ -5707,18 +5699,21 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   pdf.setFont('helvetica', 'normal');
 
   const recommendedName = data.recommendation?.recommendedCandidate || data.summaryInsights.topPerformer?.userName || 'the top candidate';
-  const multiNextSteps = [
-    `Conduct final-round interviews with ${recommendedName} focusing on team dynamics and cultural alignment`,
-    'Perform reference checks emphasizing leadership and collaboration competencies',
-    'Prepare competitive offer package based on candidate expectations',
-    'Design 90-day onboarding plan targeting identified development areas',
-  ];
+  const multiNextSteps: Array<{ title: string; detail: string }> = data.nextSteps && data.nextSteps.length > 0
+    ? data.nextSteps
+    : [
+        { title: `Conduct Final-Round Interviews with ${recommendedName}`, detail: 'Focus on team dynamics and cultural alignment to validate assessment findings.' },
+        { title: 'Perform Reference Checks', detail: 'Emphasize leadership and collaboration competencies with previous managers and colleagues.' },
+        { title: 'Prepare Competitive Offer Package', detail: 'Based on candidate expectations and market benchmarks for the role.' },
+        { title: 'Design 90-Day Onboarding Plan', detail: 'Target identified development areas with clear milestones and mentor assignments.' },
+      ];
 
   multiNextSteps.forEach((step, index) => {
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
-    const stepLines = pdf.splitTextToSize(step, pageWidth - 60);
-    const stepHeight = (stepLines.length * 4) + 5;
+    const titleLines = pdf.splitTextToSize(step.title, pageWidth - 60);
+    const detailLines = pdf.splitTextToSize(step.detail, pageWidth - 60);
+    const stepHeight = (titleLines.length * 4) + (detailLines.length * 4) + 5;
     yPos = ensurePageSpace(pdf, yPos, stepHeight, pageHeight, pageWidth);
 
     pdf.setFillColor(219, 234, 254);
@@ -5729,12 +5724,20 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     pdf.text(`${index + 1}`, 25, yPos + 1, { align: 'center' });
 
     pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(55, 65, 81);
-    stepLines.forEach((line: string, idx: number) => {
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    titleLines.forEach((line: string, idx: number) => {
       pdf.text(line, 32, yPos + (idx * 4));
     });
-    yPos += stepHeight;
+    yPos += titleLines.length * 4;
+
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
+    detailLines.forEach((line: string, idx: number) => {
+      pdf.text(line, 32, yPos + (idx * 4));
+    });
+    yPos += (detailLines.length * 4) + 5;
   });
 
   yPos += 8;
