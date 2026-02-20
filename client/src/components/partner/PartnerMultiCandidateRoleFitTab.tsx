@@ -1147,6 +1147,136 @@ export default function PartnerMultiCandidateRoleFitTab({ staticData }: PartnerM
             );
           })()}
 
+          {/* Skill Gap Heatmap */}
+          {(() => {
+            const roleSnap = effectiveComparison!.roleSnapshot;
+            const reqSkills = roleSnap.requiredSkillScores;
+            const skillCriticality = (reqSkills?.skillCriticality || {}) as Record<string, string>;
+            const allHeatmapSkills: Array<{ skillName: string; requiredScore: number; criticality: string }> = [];
+
+            if (reqSkills?.fitSkills) {
+              Object.entries(reqSkills.fitSkills).forEach(([name, req]) => {
+                if (typeof req === 'number') {
+                  allHeatmapSkills.push({ skillName: name, requiredScore: req, criticality: skillCriticality[name] || 'standard' });
+                }
+              });
+            }
+            if (reqSkills?.aiReadinessSkills) {
+              Object.entries(reqSkills.aiReadinessSkills).forEach(([name, req]) => {
+                if (typeof req === 'number') {
+                  allHeatmapSkills.push({ skillName: name, requiredScore: req, criticality: skillCriticality[name] || 'standard' });
+                }
+              });
+            }
+            allHeatmapSkills.sort((a, b) => b.requiredScore - a.requiredScore);
+
+            if (allHeatmapSkills.length === 0) return null;
+
+            const sortedCandidates = [...effectiveComparison!.candidateEntries]
+              .filter((c: CandidateEntry) => c.overallFit != null)
+              .sort((a: CandidateEntry, b: CandidateEntry) => (b.overallFit ?? 0) - (a.overallFit ?? 0));
+
+            return (
+              <Card data-testid="card-skill-gap-heatmap" data-report-section="skill-gap-heatmap">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                    <Target className="h-4 w-4 md:h-5 md:w-5" />
+                    Skill Gap Heatmap
+                  </CardTitle>
+                  <p className="text-xs md:text-sm text-muted-foreground">
+                    Visual overview of candidate scores across all required skills for <span className="font-medium">{roleSnap.roleName}</span>. Green indicates the candidate meets or exceeds the requirement, yellow is close but below, and red signals a significant gap.
+                  </p>
+                </CardHeader>
+                <CardContent className="p-2 md:p-6">
+                  <div className="overflow-x-auto -mx-2 md:mx-0">
+                    <table className="w-full border-collapse text-xs md:text-sm" data-testid="table-skill-gap-heatmap">
+                      <thead>
+                        <tr className="bg-blue-500 text-white">
+                          <th className="text-left p-2 md:p-3 font-medium min-w-[140px] md:min-w-[200px] rounded-tl-md" data-testid="th-heatmap-skill">Skill</th>
+                          <th className="text-center p-2 md:p-3 font-medium min-w-[40px] md:min-w-[50px]" data-testid="th-heatmap-req">Req</th>
+                          {sortedCandidates.map((c: CandidateEntry, i: number) => (
+                            <th key={c.userId} data-testid={`th-heatmap-candidate-${c.userId}`} className={`text-center p-2 md:p-3 font-medium min-w-[60px] md:min-w-[80px] ${i === sortedCandidates.length - 1 ? 'rounded-tr-md' : ''}`}>
+                              {(c.userName || '').split(' ')[0]}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {allHeatmapSkills.map((skill, si) => {
+                          const isCritical = skill.criticality === 'critical';
+                          return (
+                            <tr key={skill.skillName} className={si % 2 === 0 ? 'bg-muted/20' : ''} data-testid={`row-heatmap-skill-${si}`}>
+                              <td className={`p-2 md:p-3 ${isCritical ? 'font-semibold' : ''} border-b border-border/50`} data-testid={`td-heatmap-skillname-${si}`}>
+                                <div className="flex items-center gap-1.5">
+                                  <span>{skill.skillName}</span>
+                                  {isCritical && (
+                                    <span className="inline-block w-2 h-2 rounded-full bg-red-500 shrink-0" title="Critical skill" />
+                                  )}
+                                </div>
+                              </td>
+                              <td className="p-2 md:p-3 text-center text-muted-foreground border-b border-border/50">
+                                {skill.requiredScore}+
+                              </td>
+                              {sortedCandidates.map((candidate: CandidateEntry) => {
+                                const skillData = candidate.skillScores?.find((s: any) => s.skillName === skill.skillName);
+                                const score = skillData?.score;
+                                const hasScore = score !== undefined && score !== null;
+                                const meetsReq = hasScore && score >= skill.requiredScore;
+                                const isClose = hasScore && !meetsReq && score >= 60;
+
+                                let cellBg = '';
+                                let cellText = '';
+                                if (!hasScore) {
+                                  cellBg = 'bg-muted/50';
+                                  cellText = 'text-muted-foreground';
+                                } else if (meetsReq) {
+                                  cellBg = 'bg-green-100 dark:bg-green-900/30';
+                                  cellText = 'text-green-700 dark:text-green-400';
+                                } else if (isClose) {
+                                  cellBg = 'bg-yellow-100 dark:bg-yellow-900/30';
+                                  cellText = 'text-yellow-700 dark:text-yellow-400';
+                                } else {
+                                  cellBg = 'bg-red-100 dark:bg-red-900/30';
+                                  cellText = 'text-red-700 dark:text-red-400';
+                                }
+
+                                return (
+                                  <td key={candidate.userId} className="p-1 md:p-2 text-center border-b border-border/50" data-testid={`td-heatmap-score-${si}-${candidate.userId}`}>
+                                    <span className={`inline-block px-2 py-0.5 rounded font-semibold ${cellBg} ${cellText}`}>
+                                      {hasScore ? score : '—'}
+                                    </span>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-4 mt-4 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <span className="inline-block w-3 h-3 rounded-sm bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800" />
+                      <span>Meets required</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="inline-block w-3 h-3 rounded-sm bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800" />
+                      <span>Close (60+)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="inline-block w-3 h-3 rounded-sm bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800" />
+                      <span>Below threshold</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="inline-block w-2 h-2 rounded-full bg-red-500" />
+                      <span>Critical skill</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
+
           {/* Prompt Architecture Comparison Section */}
           {(() => {
             const paRoleSkills = effectiveComparison!.roleSnapshot.requiredSkillScores || {};

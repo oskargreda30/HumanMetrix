@@ -884,7 +884,7 @@ export default function SampleComparisonReport() {
                 Skill Gap Heatmap
               </CardTitle>
               <CardDescription className="text-xs md:text-sm">
-                Visual overview of candidate scores across all required skills for <span className="font-medium">AI Product Manager</span>. Green indicates the candidate meets or exceeds the requirement, yellow is close but below, and red signals a significant gap.
+                Visual overview of candidate scores across all required skills for <span className="font-medium">Product Manager</span>. Green indicates the candidate meets or exceeds the requirement, yellow is close but below, and red signals a significant gap.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-2 md:p-6">
