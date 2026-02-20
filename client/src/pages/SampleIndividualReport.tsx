@@ -195,7 +195,7 @@ export default function SampleIndividualReport() {
             </Link>
           </div>
 
-          <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b pb-3 md:pb-4 mb-4 md:mb-8 -mx-3 px-3 md:-mx-6 md:px-6">
+          <div className="pb-3 md:pb-4 mb-4 md:mb-8 border-b">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 md:gap-4">
               <div>
                 <Badge variant="secondary" className="mb-1 md:mb-2 text-[10px] md:text-xs" data-testid="badge-sample-report">Sample Report</Badge>
