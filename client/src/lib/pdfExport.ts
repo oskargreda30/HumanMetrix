@@ -3761,24 +3761,21 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
   let nextSteps: string[];
   if (avgScore >= 80) {
     nextSteps = [
-      'Consider for advanced or leadership-track positions that leverage their exceptional assessment profile.',
-      'Explore opportunities for the candidate to mentor or lead AI adoption initiatives within your organisation.',
-      'Proceed to final-stage interviews focusing on cultural fit and strategic alignment.',
-      'Discuss compensation and role expectations aligned with their high-calibre assessment results.',
+      'Proceed to final-stage interviews focusing on cultural fit and strategic alignment. Their exceptional assessment profile suggests strong readiness for advanced or leadership-track positions.',
+      'Explore opportunities for the candidate to mentor or lead AI adoption initiatives within your organisation. High performers can accelerate team capability when given cross-functional project ownership.',
+      'Consider for accelerated onboarding or leadership development programs. Discuss compensation and role expectations aligned with their high-calibre assessment results.',
     ];
   } else if (avgScore >= 60) {
     nextSteps = [
-      'Schedule a competency-based interview to explore areas of moderate performance in more depth.',
-      'Consider targeted upskilling programmes to bridge identified skill gaps before onboarding.',
-      'Evaluate the candidate for roles that align with their strongest assessed competencies.',
-      'Request references that can validate the skills demonstrated in the assessment.',
+      'Schedule a competency-based interview to explore areas of moderate performance in more depth. This will help validate whether identified gaps reflect skill limitations or situational factors.',
+      'Consider targeted upskilling programmes to bridge identified skill gaps before or during onboarding. Pairing with experienced team members can accelerate knowledge transfer and integration.',
+      'Evaluate the candidate for roles that align with their strongest assessed competencies. Request references that can validate the skills demonstrated in the assessment.',
     ];
   } else {
     nextSteps = [
-      'Recommend structured development programmes to address foundational skill gaps identified in the assessment.',
-      'Consider the candidate for entry-level or developmental roles with clear progression pathways.',
-      'Provide feedback on assessment results and discuss potential for growth with the candidate.',
-      'Re-assess after a defined development period to measure improvement.',
+      'Recommend structured development programmes to address foundational skill gaps identified in the assessment. A clear learning pathway with milestones will help track progress effectively.',
+      'Consider the candidate for entry-level or developmental roles with clear progression pathways. Providing regular feedback on performance will support their growth trajectory.',
+      'Re-assess after a defined development period to measure improvement. This ensures investment in upskilling delivers measurable returns and the candidate is progressing as expected.',
     ];
   }
 
@@ -6505,25 +6502,17 @@ export async function generateIndividualReportPDF(data: LegacyIndividualReportDa
   const nextSteps: string[] = [];
   
   if (avgScore >= 80) {
-    nextSteps.push('Schedule a final interview to validate exceptional assessment results with practical scenarios.');
-    nextSteps.push('Consider for accelerated onboarding or leadership development programs.');
-    nextSteps.push('Evaluate for cross-functional project opportunities that leverage diverse strengths.');
+    nextSteps.push('Proceed to final-stage interviews focusing on cultural fit and strategic alignment. Their exceptional assessment profile suggests strong readiness for advanced or leadership-track positions.');
+    nextSteps.push('Explore opportunities for the candidate to mentor or lead AI adoption initiatives within your organisation. High performers can accelerate team capability when given cross-functional project ownership.');
+    nextSteps.push('Consider for accelerated onboarding or leadership development programs. Discuss compensation and role expectations aligned with their high-calibre assessment results.');
   } else if (avgScore >= 60) {
-    nextSteps.push('Conduct a structured interview focusing on identified development areas.');
-    nextSteps.push('Discuss tailored training and mentorship opportunities during onboarding.');
-    nextSteps.push('Consider pairing with experienced team members for knowledge transfer.');
+    nextSteps.push('Schedule a competency-based interview to explore areas of moderate performance in more depth. This will help validate whether identified gaps reflect skill limitations or situational factors.');
+    nextSteps.push('Consider targeted upskilling programmes to bridge identified skill gaps before or during onboarding. Pairing with experienced team members can accelerate knowledge transfer and integration.');
+    nextSteps.push('Evaluate the candidate for roles that align with their strongest assessed competencies. Request references that can validate the skills demonstrated in the assessment.');
   } else {
-    nextSteps.push('Assess alignment with entry-level or developmental role requirements.');
-    nextSteps.push('Explore structured upskilling programs to address skill gaps.');
-    nextSteps.push('Consider role modifications that play to existing strengths while building capabilities.');
-  }
-  
-  // Add assessment-specific next steps
-  if (data.promptData && data.promptData.totalScore >= 75) {
-    nextSteps.push('Leverage strong prompt engineering skills for AI integration initiatives.');
-  }
-  if (data.aiqData && data.aiqData.totalScore >= 80) {
-    nextSteps.push('Consider for roles involving AI governance or ethical AI implementation.');
+    nextSteps.push('Recommend structured development programmes to address foundational skill gaps identified in the assessment. A clear learning pathway with milestones will help track progress effectively.');
+    nextSteps.push('Consider the candidate for entry-level or developmental roles with clear progression pathways. Providing regular feedback on performance will support their growth trajectory.');
+    nextSteps.push('Re-assess after a defined development period to measure improvement. This ensures investment in upskilling delivers measurable returns and the candidate is progressing as expected.');
   }
   
   nextSteps.forEach(step => {
