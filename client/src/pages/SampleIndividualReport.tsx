@@ -294,9 +294,7 @@ export default function SampleIndividualReport() {
                     <div key={skill} className="space-y-2" data-testid={`fit-skill-${skill.toLowerCase().replace(/\s+/g, '-')}`}>
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-medium" data-testid={`text-fit-skill-name-${skill.toLowerCase().replace(/\s+/g, '-')}`}>{skill}</span>
-                        <Badge variant={score >= 80 ? "default" : score >= 60 ? "secondary" : "outline"} data-testid={`badge-fit-score-${skill.toLowerCase().replace(/\s+/g, '-')}`}>
-                          {score}%
-                        </Badge>
+                        <span className="text-muted-foreground font-medium" data-testid={`text-fit-score-${skill.toLowerCase().replace(/\s+/g, '-')}`}>{score}%</span>
                       </div>
                       <Progress value={score} className="h-2" data-testid={`progress-fit-${skill.toLowerCase().replace(/\s+/g, '-')}`} />
                     </div>
@@ -383,9 +381,7 @@ export default function SampleIndividualReport() {
                     <div key={skill} className="space-y-1" data-testid={`ai-skill-${skill.toLowerCase().replace(/\s+/g, '-')}`}>
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-medium text-xs" data-testid={`text-ai-skill-name-${skill.toLowerCase().replace(/\s+/g, '-')}`}>{skill}</span>
-                        <Badge variant={score >= 80 ? "default" : score >= 60 ? "secondary" : "outline"} data-testid={`badge-ai-score-${skill.toLowerCase().replace(/\s+/g, '-')}`}>
-                          {score}%
-                        </Badge>
+                        <span className="text-muted-foreground font-medium" data-testid={`text-ai-score-${skill.toLowerCase().replace(/\s+/g, '-')}`}>{score}%</span>
                       </div>
                       <Progress value={score} className="h-2" data-testid={`progress-ai-${skill.toLowerCase().replace(/\s+/g, '-')}`} />
                     </div>
