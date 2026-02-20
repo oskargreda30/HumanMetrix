@@ -11,11 +11,11 @@ import { getAIQBandInterpretation } from "@/data/aiq-questions";
 import SkillsLegend from "@/components/SkillsLegend";
 import {
   ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
   Tooltip,
 } from "recharts";
 
@@ -43,6 +43,7 @@ const MOCK_AI_READINESS_SCORES = {
   "Collaboration & Communication": 77,
   "Responsible AI & Ethical Awareness": 91,
   "Creativity & Innovation": 74,
+  "Domain Expertise": 80,
 };
 
 const MOCK_PROMPT_SCORES = {
@@ -149,21 +150,11 @@ export default function SampleIndividualReport() {
     fullMark: 100,
   }));
 
-  const fitBarData = Object.entries(MOCK_FIT_SCORES).map(([skill, score]) => ({
-    skill: skill.length > 15 ? skill.substring(0, 12) + '...' : skill,
-    score,
-  }));
-
   const aiRadarData = Object.entries(MOCK_AI_READINESS_SCORES).map(([skill, score]) => ({
     skill: getSkillAcronym(skill),
     fullName: skill,
     score,
     fullMark: 100,
-  }));
-
-  const aiBarData = Object.entries(MOCK_AI_READINESS_SCORES).map(([skill, score]) => ({
-    skill: skill.length > 15 ? skill.substring(0, 12) + '...' : skill,
-    score,
   }));
 
   const fitAnalysis = generateMockAnalysis("fit", MOCK_FIT_SCORES);
@@ -282,16 +273,16 @@ export default function SampleIndividualReport() {
 
             <div className="grid md:grid-cols-2 gap-6 mb-6">
               <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4 text-center" data-testid="heading-fit-bar-chart">Skills Overview</h3>
-                <div data-testid="chart-fit-bar-chart">
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart layout="vertical" data={fitRadarData} barCategoryGap="28%" margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                    <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
-                    <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
-                    <Tooltip />
-                    <Bar dataKey="score" fill="#5B8DB8" radius={[0, 4, 4, 0]} barSize={18} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
-                  </BarChart>
+                <h3 className="text-lg font-semibold mb-4 text-center" data-testid="heading-fit-radar-chart">Skills Overview</h3>
+                <div data-testid="chart-fit-radar">
+                <ResponsiveContainer width="100%" height={300}>
+                  <RadarChart data={fitRadarData} cx="50%" cy="50%" outerRadius="75%">
+                    <PolarGrid stroke="hsl(var(--border))" />
+                    <PolarAngleAxis dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} />
+                    <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10 }} axisLine={false} />
+                    <Tooltip formatter={(value: number) => [`${value}`, 'Score']} />
+                    <Radar dataKey="score" stroke="#5B8DB8" fill="#5B8DB8" fillOpacity={0.3} strokeWidth={2} />
+                  </RadarChart>
                 </ResponsiveContainer>
                 </div>
               </Card>
@@ -371,16 +362,16 @@ export default function SampleIndividualReport() {
 
             <div className="grid md:grid-cols-2 gap-6 mb-6">
               <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4 text-center" data-testid="heading-ai-bar-chart">Skills Overview</h3>
-                <div data-testid="chart-ai-bar-chart">
-                <ResponsiveContainer width="100%" height={380}>
-                  <BarChart layout="vertical" data={aiRadarData} barCategoryGap="28%" margin={{ top: 5, right: 55, left: 10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                    <YAxis type="category" dataKey="skill" width={120} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
-                    <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
-                    <Tooltip />
-                    <Bar dataKey="score" fill="#6E8FA8" radius={[0, 4, 4, 0]} barSize={18} label={{ position: 'right', fontSize: 12, fontWeight: 600 }} />
-                  </BarChart>
+                <h3 className="text-lg font-semibold mb-4 text-center" data-testid="heading-ai-radar-chart">Skills Overview</h3>
+                <div data-testid="chart-ai-radar">
+                <ResponsiveContainer width="100%" height={340}>
+                  <RadarChart data={aiRadarData} cx="50%" cy="50%" outerRadius="70%">
+                    <PolarGrid stroke="hsl(var(--border))" />
+                    <PolarAngleAxis dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 10, fontWeight: 500 }} />
+                    <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10 }} axisLine={false} />
+                    <Tooltip formatter={(value: number) => [`${value}`, 'Score']} />
+                    <Radar dataKey="score" stroke="#6E8FA8" fill="#6E8FA8" fillOpacity={0.3} strokeWidth={2} />
+                  </RadarChart>
                 </ResponsiveContainer>
                 </div>
               </Card>
