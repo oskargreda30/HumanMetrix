@@ -1,4 +1,4 @@
-import { FileText, Users, Target, UsersRound, Download, Eye, User } from "lucide-react";
+import { FileText, Users, Target, UsersRound, Download, Eye, User, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +50,15 @@ const reports = [
     comingSoon: false,
     category: "employer" as const,
   },
+  {
+    icon: Network,
+    title: "Ecosystem Index Report",
+    description: "AI-powered team capability diagnostic with gap analysis, ideal candidate profiles, and deep dive insights",
+    link: "/ecosystem/sample-report",
+    testId: "ecosystem",
+    comingSoon: false,
+    category: "employer" as const,
+  },
 ];
 
 export default function SampleReportsSection() {
@@ -67,7 +76,7 @@ export default function SampleReportsSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {reports.map((report, index) => (
             <Card 
               key={index} 
