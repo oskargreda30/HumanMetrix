@@ -1,4 +1,4 @@
-import { FileText, Users, Target, UsersRound, Download, Eye } from "lucide-react";
+import { FileText, Users, Target, UsersRound, Download, Eye, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,15 @@ const reports = [
     testId: "individual",
     comingSoon: false,
     category: "individual" as const,
+  },
+  {
+    icon: User,
+    title: "Individual Candidate Report",
+    description: "Detailed single-candidate assessment report with AI-powered profile insights, trait analysis, and enterprise hiring recommendations",
+    link: "/sample-report/b2b-individual",
+    testId: "b2b-individual",
+    comingSoon: false,
+    category: "employer" as const,
   },
   {
     icon: Users,
@@ -58,7 +67,7 @@ export default function SampleReportsSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6">
           {reports.map((report, index) => (
             <Card 
               key={index} 
