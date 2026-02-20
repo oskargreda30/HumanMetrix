@@ -14504,7 +14504,7 @@ Return valid JSON with only the requested fields.`;
       
       // SOURCE 1: B2B Widget/API sessions (assessment_sessions table)
       const sessions = await storage.getSessionsByPartner(partner.id, 10000);
-      const completedSessions = sessions.filter(s => s.status === 'completed' && !s.isTestSession);
+      const completedSessions = sessions.filter(s => s.status === 'completed' && !s.isTestSession && !s.archivedAt);
       
       for (const session of completedSessions) {
         const email = session.externalEmail || session.externalUserId || session.id;
@@ -14879,7 +14879,7 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
       
       // SOURCE 1: B2B Widget/API sessions
       const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
-      const completedSessions = allSessions.filter(s => s.status === 'completed' && !s.isTestSession);
+      const completedSessions = allSessions.filter(s => s.status === 'completed' && !s.isTestSession && !s.archivedAt);
       
       // Build a map of candidate results with result IDs for evaluation fetching
       type ResultWithId = {
