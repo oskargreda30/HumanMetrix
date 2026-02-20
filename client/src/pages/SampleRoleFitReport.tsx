@@ -280,19 +280,54 @@ export default function SampleRoleFitReport() {
                   
                   <div className="p-3 bg-muted rounded-lg">
                     <h4 className="font-medium text-sm mb-2">Recommended Next Steps</h4>
-                    <ul className="space-y-1 text-sm text-muted-foreground">
-                      <li className="flex items-start gap-2">
-                        <span className="text-primary mt-1">1.</span>
-                        <span>Schedule behavioral interview focusing on stakeholder management</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-primary mt-1">2.</span>
-                        <span>Include cross-functional collaboration exercise</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-primary mt-1">3.</span>
-                        <span>Validate AI product experience through portfolio review</span>
-                      </li>
+                    <ul className="space-y-3 text-sm text-muted-foreground">
+                      {(() => {
+                        const allSkills = [...SKILL_ALIGNMENTS, ...AI_SKILL_ALIGNMENTS];
+                        const gaps = allSkills.filter(s => s.gap < 0);
+                        const strengths = allSkills.filter(s => s.gap > 0).sort((a, b) => b.gap - a.gap);
+                        const steps: Array<{ title: string; detail: string }> = [];
+
+                        if (gaps.length > 0) {
+                          const gapNames = gaps.map(g => g.skillName).join(', ');
+                          steps.push({
+                            title: `Probe ${gaps[0].skillName} Gap in Interview with ${DEMO_CANDIDATE.name}`,
+                            detail: `${DEMO_CANDIDATE.name} scores ${Math.abs(gaps[0].gap)} points below the required level in ${gapNames}. Design behavioral interview questions targeting stakeholder management scenarios to determine whether this reflects a genuine capability limitation or situational assessment factors.`
+                          });
+                        }
+
+                        if (strengths.length > 0) {
+                          const strengthNames = strengths.slice(0, 3).map(s => `${s.skillName} (+${s.gap} pts)`).join(', ');
+                          steps.push({
+                            title: `Leverage ${DEMO_CANDIDATE.name}'s Key Strengths During Onboarding`,
+                            detail: `${DEMO_CANDIDATE.name} exceeds requirements in: ${strengthNames}. Consider assigning early responsibilities or projects that capitalize on these strengths to accelerate impact and build confidence in the ${DEMO_ROLE.name} role.`
+                          });
+                        }
+
+                        if (gaps.length > 0) {
+                          const devAreas = gaps.map(g => `${g.skillName} (${Math.abs(g.gap)} pts below threshold)`).join(', ');
+                          steps.push({
+                            title: `Design a Targeted Development Plan for ${DEMO_CANDIDATE.name}`,
+                            detail: `If proceeding with ${DEMO_CANDIDATE.name}, prepare a structured onboarding plan that addresses: ${devAreas}. Pair them with mentors strong in these areas and set 30/60/90-day milestones to track improvement.`
+                          });
+                        }
+
+                        steps.push({
+                          title: 'Conduct Reference Checks Aligned to Role Requirements',
+                          detail: `Focus reference conversations on the specific competencies required for ${DEMO_ROLE.name}. ${gaps.length > 0 ? `Pay special attention to references that can speak to ${DEMO_CANDIDATE.name}'s abilities in ${gaps[0].skillName}.` : `Validate ${DEMO_CANDIDATE.name}'s assessment strengths through concrete examples from past roles.`}`
+                        });
+
+                        return steps.map((step, i) => (
+                          <li key={i} className="flex items-start gap-3">
+                            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-medium mt-0.5">
+                              {i + 1}
+                            </span>
+                            <div>
+                              <div className="text-sm font-medium text-foreground">{step.title}</div>
+                              <div className="text-sm text-muted-foreground mt-0.5">{step.detail}</div>
+                            </div>
+                          </li>
+                        ));
+                      })()}
                     </ul>
                   </div>
                 </div>
