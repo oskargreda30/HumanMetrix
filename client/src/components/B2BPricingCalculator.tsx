@@ -4,7 +4,6 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { getPricingTier } from "@shared/currencies";
 import { Calculator } from "lucide-react";
 
 interface VolumeTier {
@@ -22,19 +21,6 @@ const VOLUME_TIERS: VolumeTier[] = [
   { name: "Pro", minVolume: 10000, maxVolume: 10000, pricePerTestPence: 79 },
 ];
 
-const B2B_COUNTRY_MULTIPLIERS: Record<string, number> = {
-  tier1: 4,
-  tier2: 2,
-  tier3: 1,
-  sea_launch: 1,
-};
-
-function getB2BMultiplier(countryCode: string | null): number {
-  if (!countryCode) return 4;
-  const tier = getPricingTier(countryCode);
-  return B2B_COUNTRY_MULTIPLIERS[tier] || 4;
-}
-
 function getCurrentTier(volume: number): VolumeTier {
   for (const tier of VOLUME_TIERS) {
     if (volume >= tier.minVolume && volume <= tier.maxVolume) {
@@ -44,19 +30,13 @@ function getCurrentTier(volume: number): VolumeTier {
   return VOLUME_TIERS[VOLUME_TIERS.length - 1];
 }
 
-function calculateTotalPriceInPence(volume: number, multiplier: number): number {
-  const tier = getCurrentTier(volume);
-  return volume * tier.pricePerTestPence * multiplier;
-}
-
 export default function B2BPricingCalculator() {
   const [volume, setVolume] = useState(100);
-  const { countryCode, formatLocalPrice } = useCurrency();
+  const { formatLocalPrice } = useCurrency();
 
-  const multiplier = useMemo(() => getB2BMultiplier(countryCode), [countryCode]);
   const currentTier = useMemo(() => getCurrentTier(volume), [volume]);
-  const totalPriceInPence = useMemo(() => calculateTotalPriceInPence(volume, multiplier), [volume, multiplier]);
-  const pricePerTestInPence = useMemo(() => currentTier.pricePerTestPence * multiplier, [currentTier, multiplier]);
+  const totalPriceInPence = useMemo(() => volume * currentTier.pricePerTestPence, [volume, currentTier]);
+  const pricePerTestInPence = useMemo(() => currentTier.pricePerTestPence, [currentTier]);
 
   const formattedTotalLow = useMemo(
     () => formatLocalPrice(Math.round(totalPriceInPence * 0.95)),
@@ -152,8 +132,7 @@ export default function B2BPricingCalculator() {
           <div className="grid gap-2">
             {VOLUME_TIERS.map((tier) => {
               const isActive = tier.name === currentTier.name;
-              const tierPriceInPence = tier.pricePerTestPence * multiplier;
-              const formattedTierPrice = formatLocalPrice(tierPriceInPence);
+              const formattedTierPrice = formatLocalPrice(tier.pricePerTestPence);
               return (
                 <div
                   key={tier.name}
