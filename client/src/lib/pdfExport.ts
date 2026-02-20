@@ -1911,15 +1911,7 @@ export async function exportComparisonPDF(data: ComparisonData) {
   
   yPos += 10;
   
-  // ADDITIONAL SERVICES ON REQUEST section (same page)
-  yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);
-  yPos += 3;
-  
-  pdf.setFontSize(10);
-  pdf.setTextColor(107, 114, 128);
-  pdf.text('HumanMetrix offers additional analysis services to support your hiring decision:', 20, yPos);
-  yPos += 10;
-  
+  // ADDITIONAL SERVICES ON REQUEST section - keep all 5 items + contact box together on one page
   const comparisonAdditionalServices = [
     {
       name: 'Suggested Interview Questions',
@@ -1943,13 +1935,25 @@ export async function exportComparisonPDF(data: ComparisonData) {
     }
   ];
   
-  const isLastService = (i: number) => i === comparisonAdditionalServices.length - 1;
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'normal');
+  let compServicesTotal = 16 + 3 + 10 + 4;
+  comparisonAdditionalServices.forEach(service => {
+    const lines = pdf.splitTextToSize(service.description, pageWidth - 55);
+    compServicesTotal += 8 + (lines.length * 5) + 4;
+  });
+  compServicesTotal += 6 + 22;
+  yPos = ensurePageSpace(pdf, yPos, compServicesTotal, pageHeight, pageWidth);
+  
+  yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);
+  yPos += 3;
+  
+  pdf.setFontSize(10);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('HumanMetrix offers additional analysis services to support your hiring decision:', 20, yPos);
+  yPos += 10;
+  
   comparisonAdditionalServices.forEach((service, index) => {
-    // For the last item, request enough space for itself + contact box (28mm) to keep them together
-    const spaceNeeded = isLastService(index) ? 46 : 18;
-    yPos = ensurePageSpace(pdf, yPos, spaceNeeded, pageHeight, pageWidth);
-    
-    // Service number badge
     pdf.setFillColor(59, 130, 246);
     pdf.roundedRect(20, yPos - 2, 6, 6, 1, 1, 'F');
     pdf.setFontSize(8);
@@ -1957,13 +1961,11 @@ export async function exportComparisonPDF(data: ComparisonData) {
     pdf.setFont('helvetica', 'bold');
     pdf.text(`${index + 1}`, 23, yPos + 2, { align: 'center' });
     
-    // Service name
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
     pdf.text(service.name, 30, yPos + 2);
     
-    // Service description
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
@@ -1976,9 +1978,6 @@ export async function exportComparisonPDF(data: ComparisonData) {
   });
   
   yPos += 6;
-  
-  // Contact info box - ensure it stays on same page as extra offerings
-  yPos = ensurePageSpace(pdf, yPos, 22, pageHeight, pageWidth);
   pdf.setFillColor(239, 246, 255);
   pdf.setDrawColor(59, 130, 246);
   pdf.roundedRect(20, yPos, pageWidth - 40, 16, 2, 2, 'FD');
@@ -3000,15 +2999,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   yPos += PDF_SPACING.large;
   
-  // Additional Services section on same page
-  yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);
-  yPos += 2;
-  
-  applySmallText(pdf);
-  pdf.setTextColor(107, 114, 128);
-  pdf.text('HumanMetrix offers additional analysis services to support your hiring decision:', 20, yPos);
-  yPos += 8;
-  
+  // Additional Services section - keep all 5 items + contact box together on one page
   const additionalServices = [
     {
       name: 'Suggested Interview Questions',
@@ -3032,13 +3023,25 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     }
   ];
   
+  applySmallText(pdf);
+  pdf.setFont('helvetica', 'normal');
+  let roleFitServicesTotal = 16 + 2 + 8 + 4;
+  additionalServices.forEach(service => {
+    const lines = pdf.splitTextToSize(service.description, pageWidth - 55);
+    roleFitServicesTotal += 5 + (lines.length * 3) + 3;
+  });
+  roleFitServicesTotal += 5 + 18;
+  yPos = ensurePageSpace(pdf, yPos, roleFitServicesTotal, pageHeight, pageWidth);
+  
+  yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);
+  yPos += 2;
+  
+  applySmallText(pdf);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('HumanMetrix offers additional analysis services to support your hiring decision:', 20, yPos);
+  yPos += 8;
+  
   additionalServices.forEach((service, index) => {
-    // For the last item, request enough space for itself + contact box to keep them together
-    const isLast = index === additionalServices.length - 1;
-    const spaceNeeded = isLast ? 36 : 10;
-    yPos = ensurePageSpace(pdf, yPos, spaceNeeded, pageHeight, pageWidth);
-    
-    // Service number badge
     pdf.setFillColor(59, 130, 246);
     pdf.roundedRect(20, yPos - 2, 5, 5, 1, 1, 'F');
     pdf.setFontSize(7);
@@ -3046,13 +3049,11 @@ export async function exportRoleFitPDF(data: RoleFitData) {
     pdf.setFont('helvetica', 'bold');
     pdf.text(`${index + 1}`, 22.5, yPos + 1.5, { align: 'center' });
     
-    // Service name
     applyBodyText(pdf);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
     pdf.text(service.name, 28, yPos + 1);
     
-    // Service description
     applySmallText(pdf);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
@@ -3065,9 +3066,6 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   });
   
   yPos += 5;
-  
-  // Contact info box - ensure it stays on same page as extra offerings
-  yPos = ensurePageSpace(pdf, yPos, 18, pageHeight, pageWidth);
   pdf.setFillColor(239, 246, 255); // Light blue
   pdf.setDrawColor(59, 130, 246);
   pdf.roundedRect(20, yPos, pageWidth - 40, 12, 2, 2, 'FD');
@@ -3801,17 +3799,8 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
 
   yPos += 10;
 
-  // ADDITIONAL SERVICES ON REQUEST
-  yPos = ensurePageSpace(pdf, yPos, 90, pageHeight, pageWidth);
-  yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);
-  yPos += 3;
-
-  pdf.setFontSize(10);
-  pdf.setTextColor(107, 114, 128);
-  pdf.text('HumanMetrix offers additional analysis services to support your hiring decision:', 20, yPos);
-  yPos += 10;
-
-  const additionalServices = [
+  // ADDITIONAL SERVICES ON REQUEST - keep all 5 items + contact box together on one page
+  const b2cAdditionalServices = [
     {
       name: 'Suggested Interview Questions',
       description: 'Customized interview questions based on assessment results and identified skill gaps'
@@ -3834,12 +3823,25 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
     }
   ];
 
-  additionalServices.forEach((service, index) => {
-    // For the last item, request enough space for itself + contact box to keep them together
-    const isLast = index === additionalServices.length - 1;
-    const spaceNeeded = isLast ? 46 : 18;
-    yPos = ensurePageSpace(pdf, yPos, spaceNeeded, pageHeight, pageWidth);
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'normal');
+  let b2cServicesTotal = 16 + 3 + 10 + 4;
+  b2cAdditionalServices.forEach(service => {
+    const lines = pdf.splitTextToSize(service.description, pageWidth - 55);
+    b2cServicesTotal += 8 + (lines.length * 5) + 4;
+  });
+  b2cServicesTotal += 6 + 22;
+  yPos = ensurePageSpace(pdf, yPos, b2cServicesTotal, pageHeight, pageWidth);
 
+  yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);
+  yPos += 3;
+
+  pdf.setFontSize(10);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text('HumanMetrix offers additional analysis services to support your hiring decision:', 20, yPos);
+  yPos += 10;
+
+  b2cAdditionalServices.forEach((service, index) => {
     pdf.setFillColor(59, 130, 246);
     pdf.roundedRect(20, yPos - 2, 6, 6, 1, 1, 'F');
     pdf.setFontSize(8);
@@ -3864,9 +3866,6 @@ export async function exportIndividualReportPDF(data: IndividualReportData) {
   });
 
   yPos += 6;
-
-  // Contact info box - ensure it stays on same page as extra offerings
-  yPos = ensurePageSpace(pdf, yPos, 40, pageHeight, pageWidth);
   pdf.setFillColor(239, 246, 255);
   pdf.setDrawColor(59, 130, 246);
   pdf.roundedRect(20, yPos, pageWidth - 40, 16, 2, 2, 'FD');
@@ -5740,7 +5739,24 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
 
   yPos += 8;
 
-  yPos = ensurePageSpace(pdf, yPos, 80, pageHeight, pageWidth);
+  // ADDITIONAL SERVICES ON REQUEST - keep all 5 items + contact box together on one page
+  const multiAdditionalServices = [
+    { name: 'Suggested Interview Questions', description: 'AI-generated questions based on candidates\' assessment results and identified skill gaps' },
+    { name: 'Team Composition Fit', description: 'Analysis of how candidates would complement your existing team dynamics' },
+    { name: 'Time to Productivity Estimate', description: 'Projected onboarding timeline based on skill readiness and learning agility' },
+    { name: 'Hiring Risk Analysis', description: 'Comprehensive risk assessment highlighting potential challenges and mitigations' },
+    { name: 'Development Investment Cost', description: 'Estimated training and development investment to close identified skill gaps' },
+  ];
+
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  let multiServicesTotal = 16 + 3 + 8 + 4;
+  multiAdditionalServices.forEach(service => {
+    const lines = pdf.splitTextToSize(service.description, pageWidth - 58);
+    multiServicesTotal += 7 + (lines.length * 4) + 4;
+  });
+  multiServicesTotal += 6 + 20;
+  yPos = ensurePageSpace(pdf, yPos, multiServicesTotal, pageHeight, pageWidth);
   if (yPos < 40) {
     yPos = 32;
   }
@@ -5752,23 +5768,11 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
   pdf.text('Contact our team to unlock these premium insights for your hiring decisions:', 22, yPos);
   yPos += 8;
 
-  const additionalServices = [
-    { name: 'Suggested Interview Questions', description: 'AI-generated questions based on candidates\' assessment results and identified skill gaps' },
-    { name: 'Team Composition Fit', description: 'Analysis of how candidates would complement your existing team dynamics' },
-    { name: 'Time to Productivity Estimate', description: 'Projected onboarding timeline based on skill readiness and learning agility' },
-    { name: 'Hiring Risk Analysis', description: 'Comprehensive risk assessment highlighting potential challenges and mitigations' },
-    { name: 'Development Investment Cost', description: 'Estimated training and development investment to close identified skill gaps' },
-  ];
-
-  additionalServices.forEach((service, index) => {
+  multiAdditionalServices.forEach((service, index) => {
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
     const descLines = pdf.splitTextToSize(service.description, pageWidth - 58);
     const serviceHeight = 7 + (descLines.length * 4) + 4;
-    // For the last item, request enough space for itself + contact box to keep them together
-    const isLast = index === additionalServices.length - 1;
-    const spaceNeeded = isLast ? serviceHeight + 26 : serviceHeight;
-    yPos = ensurePageSpace(pdf, yPos, spaceNeeded, pageHeight, pageWidth);
 
     pdf.setFillColor(59, 130, 246);
     pdf.roundedRect(22, yPos - 2, 6, 6, 1, 1, 'F');
@@ -5794,8 +5798,6 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
 
   yPos += 6;
 
-  // Contact info box - ensure it stays on same page as extra offerings
-  yPos = ensurePageSpace(pdf, yPos, 20, pageHeight, pageWidth);
   pdf.setFillColor(239, 246, 255);
   pdf.setDrawColor(59, 130, 246);
   pdf.roundedRect(20, yPos, pageWidth - 40, 14, 2, 2, 'FD');
