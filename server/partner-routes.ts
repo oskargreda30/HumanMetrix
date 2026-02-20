@@ -606,6 +606,7 @@ export function registerPartnerRoutes(app: Express) {
         const partnerId = partner.id;
         
         const organisationId = req.query.organisationId as string | undefined;
+        const showArchived = req.query.showArchived === 'true';
         
         // Get all non-expired sessions for this partner
         const sessions = await storage.getPipelineSessions(partnerId, organisationId);
@@ -615,7 +616,7 @@ export function registerPartnerRoutes(app: Express) {
         stageOrder.forEach((s, i) => { stageRank[s] = i; });
         
         // First, derive stage for each session and group by candidate email
-        const candidateMap: Record<string, { sessions: any[]; stage: string; email: string; userId: string | null }> = {};
+        const candidateMap: Record<string, { sessions: any[]; stage: string; email: string; userId: string | null; isArchived: boolean }> = {};
         
         for (const session of sessions) {
           let stage = session.pipelineStage || "new";
@@ -633,7 +634,11 @@ export function registerPartnerRoutes(app: Express) {
               stage: stage,
               email: email,
               userId: session.externalUserId,
+              isArchived: !!session.archivedAt,
             };
+          }
+          if (session.archivedAt) {
+            candidateMap[email].isArchived = true;
           }
           
           candidateMap[email].sessions.push({
@@ -663,6 +668,7 @@ export function registerPartnerRoutes(app: Express) {
         }
         
         for (const candidate of Object.values(candidateMap)) {
+          if (!showArchived && candidate.isArchived) continue;
           const stage = candidate.stage;
           if (pipeline[stage]) {
             const candidateName = candidate.sessions
@@ -680,6 +686,7 @@ export function registerPartnerRoutes(app: Express) {
                 const d = s.completedAt || s.createdAt;
                 return d > latest ? d : latest;
               }, candidate.sessions[0]?.createdAt || ''),
+              isArchived: candidate.isArchived,
             });
           }
         }
@@ -915,6 +922,59 @@ export function registerPartnerRoutes(app: Express) {
       } catch (error) {
         console.error("Error bulk updating pipeline:", error);
         res.status(500).json({ error: "Failed to bulk update pipeline" });
+      }
+    }
+  );
+
+  app.post(
+    "/api/partner/pipeline/archive",
+    isAuthenticated,
+    async (req: any, res: Response) => {
+      try {
+        const user = await storage.getUser(req.user.id);
+        if (!user) {
+          return res.status(403).json({ error: "Partner access required" });
+        }
+
+        let partner = null;
+        const hasPartnerAccess = user.role === 'super_admin' || user.role === 'organization_admin' || user.role === 'partner_admin';
+        if (hasPartnerAccess) {
+          if (user.organizationId) {
+            partner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+          }
+          if (!partner && user.email) {
+            partner = await storage.getPartnerAccountByEmail(user.email);
+          }
+        }
+        if (!partner) {
+          const teamMembership = await storage.getPartnerTeamMemberByUserId(req.user.id);
+          if (teamMembership) {
+            partner = await storage.getPartnerAccount(teamMembership.partnerId);
+          }
+        }
+        if (!partner) {
+          return res.status(403).json({ error: "Partner access required" });
+        }
+
+        const { candidateEmail, archive } = req.body;
+        if (!candidateEmail || typeof archive !== 'boolean') {
+          return res.status(400).json({ error: "candidateEmail and archive (boolean) are required" });
+        }
+
+        const now = archive ? new Date() : null;
+        await db.update(assessmentSessions)
+          .set({ archivedAt: now })
+          .where(
+            and(
+              eq(assessmentSessions.partnerId, partner.id),
+              sql`LOWER(COALESCE(${assessmentSessions.externalEmail}, ${assessmentSessions.externalUserId}, ${assessmentSessions.id})) = LOWER(${candidateEmail})`
+            )
+          );
+
+        res.json({ success: true, archived: archive });
+      } catch (error) {
+        console.error("Error archiving candidate:", error);
+        res.status(500).json({ error: "Failed to archive candidate" });
       }
     }
   );

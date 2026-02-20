@@ -943,6 +943,7 @@ export const assessmentSessions = pgTable("assessment_sessions", {
   pausedTimeRemainingMs: integer("paused_time_remaining_ms"), // Remaining time in milliseconds when paused
   pauseGraceExpiresAt: timestamp("pause_grace_expires_at"), // When the 30-min grace period expires
   resumeCount: integer("resume_count").default(0), // Number of times assessment has been resumed
+  archivedAt: timestamp("archived_at"), // When the candidate was archived (null = active)
 }, (table) => [
   index("idx_assessment_sessions_partner").on(table.partnerId),
   index("idx_assessment_sessions_status").on(table.status),

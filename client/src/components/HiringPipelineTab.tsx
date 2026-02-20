@@ -41,6 +41,8 @@ import {
   XCircle,
   Eye,
   Loader2,
+  Archive,
+  ArchiveRestore,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -67,6 +69,7 @@ interface PipelineCandidate {
   sessionCount: number;
   completedCount: number;
   latestActivity: string;
+  isArchived?: boolean;
 }
 
 interface PipelineData {
@@ -112,6 +115,7 @@ export function HiringPipelineTab() {
   const [draggedCandidate, setDraggedCandidate] = useState<PipelineCandidate | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [expandedStages, setExpandedStages] = useState<Set<string>>(new Set(["new", "reviewing", "shortlisted"]));
+  const [showArchived, setShowArchived] = useState(false);
   
   const toggleStage = useCallback((stageId: string) => {
     setExpandedStages(prev => {
@@ -126,7 +130,25 @@ export function HiringPipelineTab() {
   }, []);
 
   const { data: pipelineData, isLoading } = useQuery<PipelineData>({
-    queryKey: ["/api/partner/pipeline"],
+    queryKey: ["/api/partner/pipeline", { showArchived }],
+    queryFn: async () => {
+      const res = await fetch(`/api/partner/pipeline?showArchived=${showArchived}`, { credentials: 'include' });
+      if (!res.ok) throw new Error("Failed to fetch pipeline");
+      return res.json();
+    },
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: async ({ candidateEmail, archive }: { candidateEmail: string; archive: boolean }) => {
+      await apiRequest("POST", "/api/partner/pipeline/archive", { candidateEmail, archive });
+    },
+    onSuccess: (_, { archive }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/pipeline"] });
+      toast({ title: archive ? "Candidate archived" : "Candidate unarchived", description: archive ? "Candidate has been moved to the archive" : "Candidate has been restored to the pipeline" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update archive status", variant: "destructive" });
+    },
   });
 
   const updateStageMutation = useMutation({
@@ -151,9 +173,10 @@ export function HiringPipelineTab() {
       e.stopPropagation();
     }
     
-    await queryClient.cancelQueries({ queryKey: ["/api/partner/pipeline"] });
+    const currentQueryKey = ["/api/partner/pipeline", { showArchived }];
+    await queryClient.cancelQueries({ queryKey: currentQueryKey });
     
-    const previousData = queryClient.getQueryData<PipelineData>(["/api/partner/pipeline"]);
+    const previousData = queryClient.getQueryData<PipelineData>(currentQueryKey);
     if (previousData) {
       const newPipeline = { ...previousData.pipeline };
       
@@ -172,7 +195,7 @@ export function HiringPipelineTab() {
         count: newPipeline[stage.id]?.length || 0
       }));
       
-      queryClient.setQueryData<PipelineData>(["/api/partner/pipeline"], {
+      queryClient.setQueryData<PipelineData>(currentQueryKey, {
         ...previousData,
         pipeline: newPipeline,
         stages: newStages,
@@ -190,14 +213,14 @@ export function HiringPipelineTab() {
       toast({ title: "Success", description: `Moved to ${targetStage.replace('_', ' ')}` });
     } catch (error) {
       if (previousData) {
-        queryClient.setQueryData(["/api/partner/pipeline"], previousData);
+        queryClient.setQueryData(currentQueryKey, previousData);
       }
       toast({ title: "Error", description: "Failed to move candidate", variant: "destructive" });
       console.error("Move failed:", error);
     } finally {
       queryClient.invalidateQueries({ queryKey: ["/api/partner/pipeline"] });
     }
-  }, [toast]);
+  }, [toast, showArchived]);
 
   const handleDragStart = (e: React.DragEvent, candidate: PipelineCandidate) => {
     setDraggedCandidate(candidate);
@@ -279,9 +302,9 @@ export function HiringPipelineTab() {
     return (
       <Card
         key={candidate.candidateEmail}
-        className="cursor-pointer hover-elevate"
-        draggable
-        onDragStart={(e) => handleDragStart(e, candidate)}
+        className={`cursor-pointer hover-elevate ${candidate.isArchived ? 'opacity-70' : ''}`}
+        draggable={!candidate.isArchived}
+        onDragStart={(e) => !candidate.isArchived && handleDragStart(e, candidate)}
         onClick={() => openDetailsDialog(candidate)}
         data-testid={`pipeline-card-${isMobile ? 'mobile-' : ''}${candidate.candidateEmail.replace(/[^a-zA-Z0-9]/g, '_')}`}
       >
@@ -291,6 +314,12 @@ export function HiringPipelineTab() {
               <div className="flex items-start gap-1 mb-1">
                 <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0 cursor-grab mt-0.5" />
                 <div className="min-w-0">
+                  {candidate.isArchived && (
+                    <Badge variant="secondary" className="text-[9px] px-1 py-0 mb-0.5">
+                      <Archive className="h-2.5 w-2.5 mr-0.5" />
+                      Archived
+                    </Badge>
+                  )}
                   {candidate.candidateName && (
                     <span className={`font-medium block ${isMobile ? 'text-sm truncate' : 'text-xs truncate'}`} data-testid={`text-candidate-name-${candidate.candidateEmail.replace(/[^a-zA-Z0-9]/g, '_')}`}>
                       {candidate.candidateName}
@@ -372,6 +401,25 @@ export function HiringPipelineTab() {
                     Move to {targetStage.label}
                   </DropdownMenuItem>
                 ))}
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    archiveMutation.mutate({ candidateEmail: candidate.candidateEmail, archive: !candidate.isArchived });
+                  }}
+                  data-testid={`menu-item-archive-${candidate.candidateEmail.replace(/[^a-zA-Z0-9]/g, '_')}`}
+                >
+                  {candidate.isArchived ? (
+                    <>
+                      <ArchiveRestore className="h-4 w-4 mr-2" />
+                      Unarchive
+                    </>
+                  ) : (
+                    <>
+                      <Archive className="h-4 w-4 mr-2" />
+                      Archive
+                    </>
+                  )}
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -389,15 +437,27 @@ export function HiringPipelineTab() {
             Track candidates through your hiring process with drag-and-drop
           </p>
         </div>
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
-          <Input
-            placeholder="Search candidates..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/50"
-            data-testid="input-pipeline-search"
-          />
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative max-w-md flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
+            <Input
+              placeholder="Search candidates..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/50"
+              data-testid="input-pipeline-search"
+            />
+          </div>
+          <Button
+            variant={showArchived ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowArchived(!showArchived)}
+            className={showArchived ? "" : "border-white/20 text-white hover:bg-white/10"}
+            data-testid="button-toggle-archived"
+          >
+            <Archive className="h-4 w-4 mr-1.5" />
+            {showArchived ? "Showing Archived" : "Show Archived"}
+          </Button>
         </div>
       </div>
 
@@ -613,6 +673,23 @@ export function HiringPipelineTab() {
             </div>
           )}
           <DialogFooter className="flex-col sm:flex-row gap-2">
+            {selectedCandidate && (
+              <Button
+                variant={selectedCandidate.isArchived ? "outline" : "secondary"}
+                onClick={() => {
+                  archiveMutation.mutate({ candidateEmail: selectedCandidate.candidateEmail, archive: !selectedCandidate.isArchived });
+                  setDetailsDialogOpen(false);
+                }}
+                disabled={archiveMutation.isPending}
+                data-testid="button-details-archive"
+              >
+                {selectedCandidate.isArchived ? (
+                  <><ArchiveRestore className="h-4 w-4 mr-1.5" />Unarchive</>
+                ) : (
+                  <><Archive className="h-4 w-4 mr-1.5" />Archive</>
+                )}
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setDetailsDialogOpen(false)} data-testid="button-close-details">
               Close
             </Button>
