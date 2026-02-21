@@ -73,6 +73,7 @@ const EcosystemStart = lazy(() => import("@/pages/EcosystemStart"));
 const GuestInvite = lazy(() => import("@/pages/GuestInvite"));
 const B2COnboarding = lazy(() => import("@/pages/B2COnboarding"));
 const UnlockResults = lazy(() => import("@/pages/UnlockResults"));
+const SendCV = lazy(() => import("@/pages/SendCV"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 function PageLoader() {
@@ -119,6 +120,7 @@ function Router() {
         <Route path="/articles/future-of-ai-assessments-2026-roadmap" component={ArticleFutureRoadmap} />
         <Route path="/articles/why-ai-literacy-matters-recruitment" component={ArticleAILiteracy} />
         <Route path="/articles/prompt-engineering-skills-workplace" component={ArticlePromptEngineering} />
+        <Route path="/careers/send-cv" component={SendCV} />
         <Route path="/articles/white-paper-fit-test" component={WhitePaperFIT} />
         <Route path="/articles/white-paper-ai-readiness-test" component={WhitePaperAIReadiness} />
         <Route path="/login" component={Login} />

@@ -73,6 +73,9 @@ export function csrfProtection() {
       
       // File uploads (uses session auth)
       "/api/uploads/request-url",
+      
+      // Public CV submission form
+      "/api/send-cv",
     ];
     
     // Special handling for assessment abandon - uses sendBeacon which can't set headers

@@ -366,7 +366,7 @@ function isMicrosoftRecipient(to: string | string[]): boolean {
 }
 
 // Unified email sending with automatic failover and optional logging
-async function sendEmail(msg: EmailMessage, logContext?: EmailLogContext): Promise<{ success: boolean; messageId?: string }> {
+export async function sendEmail(msg: EmailMessage, logContext?: EmailLogContext): Promise<{ success: boolean; messageId?: string }> {
   let primaryProvider: 'gmail' | 'sendgrid' = currentEmailProvider;
   let backupProvider: 'gmail' | 'sendgrid' = primaryProvider === 'sendgrid' ? 'gmail' : 'sendgrid';
   

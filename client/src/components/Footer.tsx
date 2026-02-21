@@ -336,14 +336,14 @@ export default function Footer() {
               <p className="text-xs md:text-sm text-blue-100/60 leading-relaxed mb-3">
                 We're always on the lookout for talented, driven individuals. If you share our passion for innovation, send us your CV — we believe in creating roles for the right people.
               </p>
-              <a
-                href="mailto:hello@humanmetrix.co.uk?subject=Career Opportunity"
+              <Link
+                href="/careers/send-cv"
                 className="inline-flex items-center gap-2 text-xs md:text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
-                data-testid="link-careers-email"
+                data-testid="link-careers-send-cv"
               >
                 <Mail className="h-4 w-4 md:h-4 md:w-4 flex-shrink-0" />
                 <span>Send your CV</span>
-              </a>
+              </Link>
               
               {/* Follow section - shown under careers on mobile */}
               <div className="mt-5 md:hidden">
