@@ -188,7 +188,7 @@ export default function SendCV() {
                   type="file"
                   accept={ACCEPTED_EXTENSIONS}
                   className="hidden"
-                  onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+                  onChange={(e) => { if (e.target.files?.[0]) handleFile(e.target.files[0]); e.target.value = ''; }}
                   data-testid="input-cv-file"
                 />
 
