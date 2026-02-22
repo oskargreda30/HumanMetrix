@@ -38,6 +38,7 @@ import RevenueDashboardTab from "@/components/admin/RevenueDashboardTab";
 import ProfitAnalyticsTab from "@/components/admin/ProfitAnalyticsTab";
 import BugReportsTab from "@/components/admin/BugReportsTab";
 import SalesFunnelTab from "@/components/admin/SalesFunnelTab";
+import LeadsGenerationTab from "@/components/admin/LeadsGenerationTab";
 import dashboardBg from "@assets/image_1763608498774.png";
 
 export default function AdminDashboard() {
@@ -49,6 +50,7 @@ export default function AdminDashboard() {
   const [analysisSubTab, setAnalysisSubTab] = useState("individual");
   const [billingSubTab, setBillingSubTab] = useState("overview");
   const [logsSubTab, setLogsSubTab] = useState("app");
+  const [salesSubTab, setSalesSubTab] = useState("funnel");
   const [bugBadgeDismissed, setBugBadgeDismissed] = useState(false);
   
   const { data: orgInfo } = useQuery<{ isSuperAdmin: boolean; organization: any }>({
@@ -239,8 +241,8 @@ export default function AdminDashboard() {
                 </TabsTrigger>
               )}
               {isSuperAdmin && (
-                <TabsTrigger value="sales-funnel" data-testid="tab-sales-funnel" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                  Sales Funnel
+                <TabsTrigger value="sales" data-testid="tab-sales" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  Sales
                 </TabsTrigger>
               )}
               {isSuperAdmin && (
@@ -368,8 +370,23 @@ export default function AdminDashboard() {
             )}
 
             {isSuperAdmin && (
-              <TabsContent value="sales-funnel" className="space-y-4">
-                <SalesFunnelTab />
+              <TabsContent value="sales" className="space-y-4">
+                <Tabs value={salesSubTab} onValueChange={setSalesSubTab}>
+                  <TabsList className="bg-white/5 border border-white/10">
+                    <TabsTrigger value="funnel" data-testid="subtab-sales-funnel" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+                      Sales Funnel
+                    </TabsTrigger>
+                    <TabsTrigger value="leads" data-testid="subtab-leads-generation" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+                      Leads Generation
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="funnel" className="mt-4">
+                    <SalesFunnelTab />
+                  </TabsContent>
+                  <TabsContent value="leads" className="mt-4">
+                    <LeadsGenerationTab />
+                  </TabsContent>
+                </Tabs>
               </TabsContent>
             )}
 

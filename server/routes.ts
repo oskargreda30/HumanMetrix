@@ -337,6 +337,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { registerCVRoutes } = await import("./cv-routes");
   registerCVRoutes(app);
 
+  // Register Leads Generation routes
+  const { registerLeadsGenerationRoutes } = await import("./leads-generation-routes");
+  registerLeadsGenerationRoutes(app);
+
   // Initialize Stripe discount codes (runs in background)
   initializeStripeCoupons().catch(err => {
     console.error('[Stripe] Failed to initialize coupons:', err.message);

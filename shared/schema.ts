@@ -2549,3 +2549,40 @@ export const insertSalesFunnelContactSchema = createInsertSchema(salesFunnelCont
 
 export type InsertSalesFunnelContact = z.infer<typeof insertSalesFunnelContactSchema>;
 export type SalesFunnelContact = typeof salesFunnelContacts.$inferSelect;
+
+export const LEAD_STATUS_ORDER = ["new", "researching", "contacted", "qualified", "converted", "dead"] as const;
+export type LeadStatus = typeof LEAD_STATUS_ORDER[number];
+export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
+  new: "New",
+  researching: "Researching",
+  contacted: "Contacted",
+  qualified: "Qualified",
+  converted: "Converted",
+  dead: "Dead",
+};
+
+export const generatedLeads = pgTable("generated_leads", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  company: varchar("company"),
+  domain: varchar("domain"),
+  email: varchar("email"),
+  phone: varchar("phone"),
+  linkedinUrl: varchar("linkedin_url"),
+  status: varchar("status").notNull().default("new"),
+  notes: text("notes"),
+  sourceQueries: text("source_queries"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_generated_leads_status").on(table.status),
+]);
+
+export const insertGeneratedLeadSchema = createInsertSchema(generatedLeads).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertGeneratedLead = z.infer<typeof insertGeneratedLeadSchema>;
+export type GeneratedLead = typeof generatedLeads.$inferSelect;
