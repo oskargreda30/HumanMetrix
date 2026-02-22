@@ -331,7 +331,7 @@ export default function LeadsGenerationTab() {
               Generate Search Queries
             </Button>
             {generatedDorks.length > 0 && (
-              <Button variant="outline" onClick={handleSaveAsLead} data-testid="button-save-as-lead">
+              <Button variant="outline" onClick={handleSaveAsLead} data-testid="button-save-as-lead" className="text-white border-white/20">
                 <Plus className="h-4 w-4 mr-2" />
                 Save as Lead
               </Button>
@@ -366,10 +366,10 @@ export default function LeadsGenerationTab() {
         </CardContent>
       </Card>
 
-      <Card className="bg-slate-900/50">
+      <Card className="border-cyan-500/30 bg-slate-900/50">
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
+            <CardTitle className="flex items-center gap-2 text-cyan-400 text-lg">
               <Target className="h-5 w-5" />
               Leads ({filteredLeads.length})
             </CardTitle>
@@ -399,6 +399,7 @@ export default function LeadsGenerationTab() {
                 onClick={downloadCsv}
                 disabled={filteredLeads.length === 0}
                 data-testid="button-download-csv"
+                className="text-white border-white/20"
               >
                 <Download className="h-4 w-4 mr-2" />
                 CSV
@@ -430,7 +431,7 @@ export default function LeadsGenerationTab() {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium text-sm">{lead.name}</span>
+                      <span className="font-medium text-sm text-white">{lead.name}</span>
                       <Badge className={`text-xs ${STATUS_COLORS[lead.status as LeadStatus] || ""}`}>
                         {LEAD_STATUS_LABELS[lead.status as LeadStatus] || lead.status}
                       </Badge>
@@ -493,7 +494,7 @@ export default function LeadsGenerationTab() {
                       onClick={() => openEdit(lead)}
                       data-testid={`button-edit-lead-${lead.id}`}
                     >
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-4 w-4 text-white/70" />
                     </Button>
                     <Button
                       size="icon"
