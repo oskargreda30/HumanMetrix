@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { width: 340px; font-family: Arial, sans-serif; padding: 15px; }
+    h3 { margin-top: 0; font-size: 16px; color: #333; }
+    input { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+    button { width: 100%; padding: 10px; background: #0078D7; color: white; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 15px; font-weight: bold; box-sizing: border-box; }
+    button:hover { background: #005a9e; }
+    .success-btn { background: #28a745; margin-bottom: 0; }
+    .success-btn:hover { background: #218838; }
+    .danger-btn { background: #dc3545; margin-bottom: 0; }
+    .danger-btn:hover { background: #c82333; }
+    .scrape-btn { background: #6c757d; margin-bottom: 10px; }
+    .scrape-btn:hover { background: #5a6268; }
+    hr { border: 0; border-top: 1px solid #eee; margin: 15px 0; }
+    .button-group { display: flex; gap: 10px; }
+  </style>
+</head>
+<body>
+
+  <h3>🕵️ Step 1: Get Lead Info</h3>
+  <button id="scrapeProfile" class="scrape-btn">Scrape Active LinkedIn Tab</button>
+  <input type="text" id="leadName" placeholder="Lead Name (e.g., Jane Doe)">
+  <input type="text" id="companyName" placeholder="Company Name (e.g., Acme Corp)">
+  <input type="text" id="companyDomain" placeholder="Domain (e.g., acme.com)">
+  <button id="runDorks">Open Google Dork Tabs</button>
+
+  <hr>
+
+  <h3>💾 Step 2: Save Found Data</h3>
+  <input type="text" id="saveEmail" placeholder="Found Email">
+  <input type="text" id="saveNumber" placeholder="Found Phone Number">
+  <button id="addToList">Add Lead to List</button>
+  
+  <div class="button-group">
+    <button id="downloadCsv" class="success-btn">Download CSV (<span id="count">0</span>)</button>
+    <button id="clearLeads" class="danger-btn">Clear</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

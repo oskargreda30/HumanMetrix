@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "OSINT Lead Dorker",
+  "version": "1.2",
+  "description": "Generates Google Dorks, extracts profile data, and saves leads.",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "tabs",
+    "downloads",
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "*://*.linkedin.com/*"
+  ]
+}
