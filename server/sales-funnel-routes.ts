@@ -98,4 +98,109 @@ export function registerSalesFunnelRoutes(app: Express) {
       res.status(500).json({ error: error.message });
     }
   });
+
+  app.post("/api/admin/apollo/search", isAuthenticated, async (req: Request, res: Response) => {
+    if (!isSuperAdmin(req)) return res.status(403).json({ error: "Forbidden" });
+    try {
+      const apiKey = process.env.APOLLO_API_KEY;
+      if (!apiKey) {
+        return res.status(400).json({ message: "Apollo API key not configured. Add APOLLO_API_KEY to your secrets." });
+      }
+
+      const {
+        person_titles = [],
+        person_locations = [],
+        person_seniorities = [],
+        organization_industry,
+        per_page = 25,
+        page = 1,
+      } = req.body;
+
+      const params = new URLSearchParams();
+      person_titles.forEach((t: string) => params.append("person_titles[]", t));
+      person_locations.forEach((l: string) => params.append("person_locations[]", l));
+      person_seniorities.forEach((s: string) => params.append("person_seniority[]", s));
+      if (organization_industry) {
+        params.append("q_organization_keyword_tags[]", organization_industry);
+      }
+      params.append("per_page", String(per_page));
+      params.append("page", String(page));
+
+      const response = await fetch(`https://api.apollo.io/api/v1/mixed_people/api_search?${params.toString()}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache",
+          "x-api-key": apiKey,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[Apollo] API error ${response.status}:`, errorText);
+        return res.status(response.status).json({ message: `Apollo API error: ${response.status}` });
+      }
+
+      const data = await response.json();
+
+      const people = (data.people || []).map((p: any) => ({
+        id: p.id,
+        first_name: p.first_name || "",
+        last_name: p.last_name || "",
+        title: p.title || "",
+        headline: p.headline || "",
+        email: p.email || null,
+        phone_numbers: p.phone_numbers || [],
+        city: p.city || "",
+        state: p.state || "",
+        country: p.country || "",
+        linkedin_url: p.linkedin_url || "",
+        organization: p.organization ? {
+          name: p.organization.name || "",
+          website_url: p.organization.website_url || "",
+          industry: p.organization.industry || "",
+          estimated_num_employees: p.organization.estimated_num_employees || 0,
+        } : null,
+      }));
+
+      res.json({
+        people,
+        total_entries: data.pagination?.total_entries || data.total_entries || 0,
+        page: data.pagination?.page || page,
+        per_page: data.pagination?.per_page || per_page,
+      });
+    } catch (error: any) {
+      console.error("[Apollo] Search error:", error.message);
+      res.status(500).json({ message: "Failed to search Apollo. Please try again." });
+    }
+  });
+
+  app.post("/api/admin/apollo/save-to-funnel", isAuthenticated, async (req: Request, res: Response) => {
+    if (!isSuperAdmin(req)) return res.status(403).json({ error: "Forbidden" });
+    try {
+      const { name, email, phone, company, title, city, country, linkedin_url, source } = req.body;
+      if (!name) return res.status(400).json({ error: "Name is required" });
+
+      const notes = [
+        title ? `Title: ${title}` : "",
+        city || country ? `Location: ${[city, country].filter(Boolean).join(", ")}` : "",
+        linkedin_url ? `LinkedIn: ${linkedin_url}` : "",
+        source ? `Source: ${source}` : "",
+      ].filter(Boolean).join("\n");
+
+      const [contact] = await db.insert(salesFunnelContacts).values({
+        name,
+        email: email || null,
+        company: company || null,
+        phone: phone || null,
+        stage: "lead",
+        notes: notes || null,
+        sortOrder: 0,
+      }).returning();
+
+      res.json(contact);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
 }
