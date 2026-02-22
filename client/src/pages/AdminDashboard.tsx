@@ -38,7 +38,6 @@ import RevenueDashboardTab from "@/components/admin/RevenueDashboardTab";
 import ProfitAnalyticsTab from "@/components/admin/ProfitAnalyticsTab";
 import BugReportsTab from "@/components/admin/BugReportsTab";
 import SalesFunnelTab from "@/components/admin/SalesFunnelTab";
-import ApolloScraperTab from "@/components/admin/ApolloScraperTab";
 import dashboardBg from "@assets/image_1763608498774.png";
 
 export default function AdminDashboard() {
@@ -51,7 +50,6 @@ export default function AdminDashboard() {
   const [billingSubTab, setBillingSubTab] = useState("overview");
   const [logsSubTab, setLogsSubTab] = useState("app");
   const [bugBadgeDismissed, setBugBadgeDismissed] = useState(false);
-  const [salesSubTab, setSalesSubTab] = useState("funnel");
   
   const { data: orgInfo } = useQuery<{ isSuperAdmin: boolean; organization: any }>({
     queryKey: ["/api/admin/my-organization"],
@@ -241,8 +239,8 @@ export default function AdminDashboard() {
                 </TabsTrigger>
               )}
               {isSuperAdmin && (
-                <TabsTrigger value="sales" data-testid="tab-sales" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                  Sales
+                <TabsTrigger value="sales-funnel" data-testid="tab-sales-funnel" className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  Sales Funnel
                 </TabsTrigger>
               )}
               {isSuperAdmin && (
@@ -370,19 +368,8 @@ export default function AdminDashboard() {
             )}
 
             {isSuperAdmin && (
-              <TabsContent value="sales" className="space-y-4">
-                <Tabs value={salesSubTab} onValueChange={setSalesSubTab}>
-                  <TabsList>
-                    <TabsTrigger value="funnel" data-testid="tab-sales-funnel">Funnel</TabsTrigger>
-                    <TabsTrigger value="scraper" data-testid="tab-sales-scraper">Scraper</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="funnel" className="mt-4">
-                    <SalesFunnelTab />
-                  </TabsContent>
-                  <TabsContent value="scraper" className="mt-4">
-                    <ApolloScraperTab />
-                  </TabsContent>
-                </Tabs>
+              <TabsContent value="sales-funnel" className="space-y-4">
+                <SalesFunnelTab />
               </TabsContent>
             )}
 
