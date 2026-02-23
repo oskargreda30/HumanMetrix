@@ -189,9 +189,12 @@ export default function ForCandidates() {
                 For Job Seekers
               </span>
             </div>
-            <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-4 md:mb-6">
+            <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-3 md:mb-4">
               Your Next Role Demands More Than a Resume
             </h1>
+            <p className="text-sm md:text-lg text-primary/80 font-medium italic mb-4 md:mb-6">
+              The most predictive tool in assessing human-AI performance
+            </p>
             <p className="text-sm md:text-base lg:text-xl text-muted-foreground leading-relaxed mb-6 md:mb-8">
               Stand out from the crowd with verified, AI-powered assessments. Showcase your behavioral skills, 
               AI literacy, and ethical reasoning to employers who are hiring for the future.
