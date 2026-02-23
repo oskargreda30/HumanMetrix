@@ -178,8 +178,18 @@ export default function HeroSection({ variant = 'b2c', showCandidatesLink = fals
                 `transition-all duration-700 delay-150 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
               )}
             >
-              The Most Predictive Tool in Assessing Human-AI Performance
+              {isB2B ? 'Hire for the AI Era' : 'Your Next Role Demands More Than a Resume.'}
             </h1>
+
+            {/* Subtitle */}
+            <p
+              className={getAnimationClass(
+                'text-sm md:text-lg text-cyan-300/80 font-medium',
+                `transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
+              )}
+            >
+              The Most Predictive Tool in Assessing Human-AI Performance
+            </p>
             
             {/* Subheadline */}
             <p 
