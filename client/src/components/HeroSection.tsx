@@ -178,7 +178,7 @@ export default function HeroSection({ variant = 'b2c', showCandidatesLink = fals
                 `transition-all duration-700 delay-150 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`
               )}
             >
-              {isB2B ? 'Hire for the AI Era' : 'Your Next Role Demands More Than a Resume.'}
+              {isB2B ? 'Hire for the AI Era' : 'The Most Predictive Tool in Assessing Human-AI Performance'}
             </h1>
             
             {/* Subheadline */}
