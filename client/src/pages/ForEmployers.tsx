@@ -258,9 +258,12 @@ export default function ForEmployers() {
                 For Employers
               </span>
             </div>
-            <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-4 md:mb-6">
+            <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-2 md:mb-3">
               Hire for the AI Era
             </h1>
+            <p className="text-sm md:text-lg text-cyan-300/80 font-medium mb-4 md:mb-6">
+              The Most Predictive Tool in Assessing Human-AI Performance
+            </p>
             <p className="text-sm md:text-base lg:text-xl text-muted-foreground leading-relaxed mb-6 md:mb-8">
               Make better hiring decisions with objective, AI-powered assessments that measure both 
               behavioral competencies and AI literacy. Find candidates who will thrive in your organization.
