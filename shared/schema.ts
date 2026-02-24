@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, jsonb, integer, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, jsonb, integer, boolean, index, serial } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -2586,3 +2586,50 @@ export const insertGeneratedLeadSchema = createInsertSchema(generatedLeads).omit
 
 export type InsertGeneratedLead = z.infer<typeof insertGeneratedLeadSchema>;
 export type GeneratedLead = typeof generatedLeads.$inferSelect;
+
+export const SOCIAL_PLATFORMS = ["linkedin", "instagram"] as const;
+export type SocialPlatform = typeof SOCIAL_PLATFORMS[number];
+
+export const SOCIAL_POST_STATUSES = ["draft", "pending_approval", "approved", "rejected", "posted", "failed"] as const;
+export type SocialPostStatus = typeof SOCIAL_POST_STATUSES[number];
+
+export const SOCIAL_POST_STATUS_LABELS: Record<SocialPostStatus, string> = {
+  draft: "Draft",
+  pending_approval: "Pending Approval",
+  approved: "Approved",
+  rejected: "Rejected",
+  posted: "Posted",
+  failed: "Failed",
+};
+
+export const socialPosts = pgTable("social_posts", {
+  id: serial("id").primaryKey(),
+  platform: varchar("platform").notNull(),
+  content: text("content").notNull(),
+  hashtags: text("hashtags"),
+  imagePrompt: text("image_prompt"),
+  imageUrl: text("image_url"),
+  status: varchar("status").notNull().default("draft"),
+  scheduledFor: timestamp("scheduled_for"),
+  postedAt: timestamp("posted_at"),
+  externalPostId: varchar("external_post_id"),
+  approvedBy: varchar("approved_by"),
+  rejectedReason: text("rejected_reason"),
+  aiGenerated: boolean("ai_generated").default(true),
+  topicCategory: varchar("topic_category"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_social_posts_status").on(table.status),
+  index("idx_social_posts_platform").on(table.platform),
+  index("idx_social_posts_scheduled").on(table.scheduledFor),
+]);
+
+export const insertSocialPostSchema = createInsertSchema(socialPosts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertSocialPost = z.infer<typeof insertSocialPostSchema>;
+export type SocialPost = typeof socialPosts.$inferSelect;

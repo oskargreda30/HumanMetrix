@@ -60,3 +60,8 @@ The architecture emphasizes modularity with clear separation of frontend and bac
 - **SendGrid**: Secondary transactional email provider, used for failover.
 - **Replit Auth**: User authentication and management.
 - **Xero (via xero-node)**: Accounting software integration.
+- **LinkedIn API**: Social media posting for automated content publishing.
+- **Instagram Graph API (via Meta)**: Social media posting for automated content publishing.
+
+## Recent Changes
+- **2026-02-24**: Added automated Social Poster tool to Super Admin dashboard (Sales > Social Poster subtab). AI generates daily content for LinkedIn and Instagram, admin reviews/edits/approves, then publishes via platform APIs. Schema: `socialPosts` table. Routes: `server/social-poster-routes.ts`. UI: `client/src/components/admin/SocialPosterTab.tsx`.

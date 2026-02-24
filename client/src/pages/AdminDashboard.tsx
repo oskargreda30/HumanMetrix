@@ -39,6 +39,7 @@ import ProfitAnalyticsTab from "@/components/admin/ProfitAnalyticsTab";
 import BugReportsTab from "@/components/admin/BugReportsTab";
 import SalesFunnelTab from "@/components/admin/SalesFunnelTab";
 import LeadsGenerationTab from "@/components/admin/LeadsGenerationTab";
+import SocialPosterTab from "@/components/admin/SocialPosterTab";
 import dashboardBg from "@assets/image_1763608498774.png";
 
 export default function AdminDashboard() {
@@ -379,12 +380,18 @@ export default function AdminDashboard() {
                     <TabsTrigger value="leads" data-testid="subtab-leads-generation" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
                       Leads Generation
                     </TabsTrigger>
+                    <TabsTrigger value="social" data-testid="subtab-social-poster" className="data-[state=active]:bg-white/15 data-[state=active]:text-white text-white/70">
+                      Social Poster
+                    </TabsTrigger>
                   </TabsList>
                   <TabsContent value="funnel" className="mt-4">
                     <SalesFunnelTab />
                   </TabsContent>
                   <TabsContent value="leads" className="mt-4">
                     <LeadsGenerationTab />
+                  </TabsContent>
+                  <TabsContent value="social" className="mt-4">
+                    <SocialPosterTab />
                   </TabsContent>
                 </Tabs>
               </TabsContent>
