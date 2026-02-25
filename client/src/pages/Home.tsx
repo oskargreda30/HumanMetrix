@@ -133,11 +133,6 @@ const statistics = [
     description: "Our verified assessments provide objective data you can trust",
   },
   {
-    value: "3x",
-    label: "faster time-to-hire",
-    description: "Streamline candidate screening with instant, standardized results",
-  },
-  {
     value: "40%",
     label: "reduction in bad hires",
     description: "Predict job performance with AI-powered behavioral analysis",
