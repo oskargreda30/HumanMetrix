@@ -2820,37 +2820,38 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   // ========== PROMPT ENGINEERING ROLE FIT ANALYSIS ==========
   if (data.alignment.promptRoleFitAnalysis) {
-    yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
+    const rfPromptDescText = 'AI-generated insights on candidate\'s prompt engineering capabilities for the target role';
+    applySmallText(pdf);
+    const rfPromptDescLines = pdf.splitTextToSize(rfPromptDescText, pageWidth - 48);
+    const rfPromptDescBoxH = Math.max(10, rfPromptDescLines.length * 4 + 4);
+    const promptAnalysisParagraphs = data.alignment.promptRoleFitAnalysis.split(/\n\n+/).filter((p: string) => p.trim());
+    pdf.setFontSize(9);
+    const promptParaLinesList = promptAnalysisParagraphs.map((p: string) => pdf.splitTextToSize(p.trim(), pageWidth - 50));
+    const promptParasH = promptParaLinesList.reduce((sum: number, lines: string[]) => sum + lines.length * 4 + 4, 0);
+    const promptTotalH = PDF_SPACING.large + 16 + 2 + rfPromptDescBoxH + 3 + promptParasH + PDF_SPACING.medium;
+    yPos = ensurePageSpace(pdf, yPos, promptTotalH, pageHeight, pageWidth);
     yPos += PDF_SPACING.large;
     
     yPos = addSectionHeader(pdf, 'PROMPT ENGINEERING ROLE FIT ANALYSIS', yPos, pageWidth);
     yPos += 2;
     
-    const rfPromptDescText = 'AI-generated insights on candidate\'s prompt engineering capabilities for the target role';
-    applySmallText(pdf);
-    const rfPromptDescLines = pdf.splitTextToSize(rfPromptDescText, pageWidth - 48);
-    const rfPromptDescBoxH = Math.max(10, rfPromptDescLines.length * 4 + 4);
     pdf.setFillColor(240, 249, 255);
     pdf.setDrawColor(240, 249, 255);
     pdf.roundedRect(20, yPos - 2, pageWidth - 40, rfPromptDescBoxH, 2, 2, 'F');
+    applySmallText(pdf);
     pdf.setTextColor(71, 85, 105);
     pdf.text(rfPromptDescLines, 24, yPos + 4);
     yPos += rfPromptDescBoxH + 3;
     
-    // Split analysis into paragraphs
-    const promptAnalysisParagraphs = data.alignment.promptRoleFitAnalysis.split(/\n\n+/).filter(p => p.trim());
-    
-    promptAnalysisParagraphs.forEach((paragraph) => {
+    promptParaLinesList.forEach((paragraphLines: string[]) => {
       pdf.setFontSize(9);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(55, 65, 81);
-      
-      const paragraphLines = pdf.splitTextToSize(paragraph.trim(), pageWidth - 50);
-      paragraphLines.forEach((line: string, idx: number) => {
-        yPos = ensurePageSpace(pdf, yPos, 10, pageHeight, pageWidth);
-        pdf.text(line, 25, yPos + (idx * 4));
+      paragraphLines.forEach((line: string) => {
+        pdf.text(line, 25, yPos);
+        yPos += 4;
       });
-      yPos += (paragraphLines.length * 4) + 4;
+      yPos += 4;
     });
     
     yPos += PDF_SPACING.medium;
@@ -2858,37 +2859,38 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   
   // ========== AIQ (ETHICAL AI) ROLE FIT ANALYSIS ==========
   if (data.alignment.aiqRoleFitAnalysis) {
-    yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);
+    const rfAiqDescText = 'AI-generated insights on candidate\'s ethical AI judgment for the target role';
+    applySmallText(pdf);
+    const rfAiqDescLines = pdf.splitTextToSize(rfAiqDescText, pageWidth - 48);
+    const rfAiqDescBoxH = Math.max(10, rfAiqDescLines.length * 4 + 4);
+    const aiqAnalysisParagraphs = data.alignment.aiqRoleFitAnalysis.split(/\n\n+/).filter((p: string) => p.trim());
+    pdf.setFontSize(9);
+    const aiqParaLinesList = aiqAnalysisParagraphs.map((p: string) => pdf.splitTextToSize(p.trim(), pageWidth - 50));
+    const aiqParasH = aiqParaLinesList.reduce((sum: number, lines: string[]) => sum + lines.length * 4 + 4, 0);
+    const aiqTotalH = PDF_SPACING.large + 16 + 2 + rfAiqDescBoxH + 3 + aiqParasH + PDF_SPACING.medium;
+    yPos = ensurePageSpace(pdf, yPos, aiqTotalH, pageHeight, pageWidth);
     yPos += PDF_SPACING.large;
     
     yPos = addSectionHeader(pdf, 'AIQ (ETHICAL AI) ROLE FIT ANALYSIS', yPos, pageWidth);
     yPos += 2;
     
-    const rfAiqDescText = 'AI-generated insights on candidate\'s ethical AI judgment for the target role';
-    applySmallText(pdf);
-    const rfAiqDescLines = pdf.splitTextToSize(rfAiqDescText, pageWidth - 48);
-    const rfAiqDescBoxH = Math.max(10, rfAiqDescLines.length * 4 + 4);
     pdf.setFillColor(240, 249, 255);
     pdf.setDrawColor(240, 249, 255);
     pdf.roundedRect(20, yPos - 2, pageWidth - 40, rfAiqDescBoxH, 2, 2, 'F');
+    applySmallText(pdf);
     pdf.setTextColor(71, 85, 105);
     pdf.text(rfAiqDescLines, 24, yPos + 4);
     yPos += rfAiqDescBoxH + 3;
     
-    // Split analysis into paragraphs
-    const aiqAnalysisParagraphs = data.alignment.aiqRoleFitAnalysis.split(/\n\n+/).filter(p => p.trim());
-    
-    aiqAnalysisParagraphs.forEach((paragraph) => {
+    aiqParaLinesList.forEach((paragraphLines: string[]) => {
       pdf.setFontSize(9);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(55, 65, 81);
-      
-      const paragraphLines = pdf.splitTextToSize(paragraph.trim(), pageWidth - 50);
-      paragraphLines.forEach((line: string, idx: number) => {
-        yPos = ensurePageSpace(pdf, yPos, 10, pageHeight, pageWidth);
-        pdf.text(line, 25, yPos + (idx * 4));
+      paragraphLines.forEach((line: string) => {
+        pdf.text(line, 25, yPos);
+        yPos += 4;
       });
-      yPos += (paragraphLines.length * 4) + 4;
+      yPos += 4;
     });
     
     yPos += PDF_SPACING.medium;
