@@ -30,12 +30,12 @@ const COLORS = {
 };
 
 const CAP_COLORS: Record<string, [number, number, number]> = {
-  HA: [30, 64, 175],
-  IC: [59, 130, 246],
-  RA: [100, 116, 180],
-  EE: [120, 100, 160],
-  GM: [80, 140, 200],
-  IA: [50, 100, 150],
+  HA: [30, 64, 175],    // blue-800
+  IC: [59, 130, 246],   // blue-500
+  RA: [16, 185, 129],   // emerald-500
+  EE: [168, 85, 247],   // purple-500
+  GM: [249, 115, 22],   // orange-500
+  IA: [6, 182, 212],    // cyan-500
 };
 
 const CAP_NAMES: Record<string, string> = {

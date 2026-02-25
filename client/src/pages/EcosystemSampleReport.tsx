@@ -32,71 +32,71 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 const CALENDLY_URL = "https://calendly.com/hello-humanmetrix/30min";
 
 const FIT_CAPABILITIES = [
-  { code: "F", name: "Foresight", color: "bg-blue-500", description: "Strategic thinking and future planning" },
-  { code: "I", name: "Influence", color: "bg-purple-500", description: "Communication and persuasion" },
-  { code: "T", name: "Trust", color: "bg-green-500", description: "Reliability and integrity" },
-  { code: "IN", name: "Innovation", color: "bg-orange-500", description: "Creativity and problem-solving" },
-  { code: "AG", name: "Agility", color: "bg-cyan-500", description: "Adaptability and flexibility" },
-  { code: "RE", name: "Resilience", color: "bg-red-500", description: "Stress management and recovery" },
+  { code: "HA", name: "High Agency", color: "bg-blue-800", description: "Taking initiative and driving outcomes with autonomy" },
+  { code: "IC", name: "Intellectual Curiosity", color: "bg-blue-500", description: "Love of learning, exploration, and generating new ideas" },
+  { code: "RA", name: "Resilience", color: "bg-emerald-500", description: "Recovering from setbacks and managing stress effectively" },
+  { code: "EE", name: "Empathy & Ethics", color: "bg-purple-500", description: "Understanding others with integrity and moral clarity" },
+  { code: "GM", name: "Growth Mindset", color: "bg-orange-500", description: "Embracing challenges and continuous development" },
+  { code: "IA", name: "Interpersonal Agility", color: "bg-cyan-500", description: "Adapting communication and building relationships" },
 ];
 
 const sampleAnalysis = {
   missionAlignmentScore: 72,
   overallHealthScore: 68,
-  executiveSummary: `TechFlow Solutions Team demonstrates strong foundational capabilities in Trust (78%) and Influence (74%), creating a solid base for client relationships and team cohesion. However, the team faces significant gaps in Innovation (52%) and Foresight (58%), which may limit their ability to anticipate market shifts and develop breakthrough solutions.
+  executiveSummary: `TechFlow Solutions Team demonstrates strong foundational capabilities in Empathy & Ethics (78%) and Interpersonal Agility (74%), creating a solid base for client relationships and team cohesion. However, the team faces significant gaps in Intellectual Curiosity (52%) and High Agency (58%), which may limit their ability to drive proactive thinking and take ownership of strategic initiatives.
 
-The team's current composition is well-suited for executing established processes and maintaining client satisfaction, but lacks the creative problem-solving capacity needed to differentiate in a competitive SaaS market. The moderate Agility score (65%) suggests some capacity for adaptation, but this should be strengthened to support rapid product iteration.
+The team's current composition is well-suited for executing established processes and maintaining client satisfaction, but lacks the exploratory problem-solving capacity needed to differentiate in a competitive SaaS market. The moderate Growth Mindset score (65%) suggests some capacity for adaptation, but this should be strengthened to support rapid product iteration.
 
-Key recommendation: Your next hire should prioritize Innovation and Foresight capabilities to complement the team's existing strengths and address the strategic gaps that could limit growth.`,
+Key recommendation: Your next hire should prioritize Intellectual Curiosity and High Agency to complement the team's existing strengths and address the strategic gaps that could limit growth.`,
   capabilityGapMatrix: [
-    { code: "F", name: "Foresight", capability: "Foresight", currentScore: 58, targetScore: 85, priority: "critical", gapAnalysis: "Critical gap in strategic planning capability. Team struggles to anticipate market changes and plan long-term initiatives." },
-    { code: "IN", name: "Innovation", capability: "Innovation", currentScore: 52, targetScore: 85, priority: "critical", gapAnalysis: "Significant innovation deficit limiting product differentiation and creative problem-solving capacity." },
-    { code: "AG", name: "Agility", capability: "Agility", currentScore: 65, targetScore: 75, priority: "high", gapAnalysis: "Moderate agility gap affecting team's ability to pivot quickly in response to market feedback." },
-    { code: "RE", name: "Resilience", capability: "Resilience", currentScore: 70, targetScore: 75, priority: "medium", gapAnalysis: "Minor resilience gap. Team handles stress reasonably well but could improve recovery from setbacks." },
-    { code: "I", name: "Influence", capability: "Influence", currentScore: 74, targetScore: 75, priority: "low", gapAnalysis: "Near target. Strong communication and stakeholder management skills across the team." },
-    { code: "T", name: "Trust", capability: "Trust", currentScore: 78, targetScore: 75, priority: "low", gapAnalysis: "Exceeds target. Team demonstrates high reliability and integrity in all interactions." },
+    { code: "HA", name: "High Agency", capability: "High Agency", currentScore: 58, targetScore: 85, priority: "critical", gapAnalysis: "Critical gap in initiative and ownership. Team waits for direction rather than proactively identifying and pursuing opportunities." },
+    { code: "IC", name: "Intellectual Curiosity", capability: "Intellectual Curiosity", currentScore: 52, targetScore: 85, priority: "critical", gapAnalysis: "Significant deficit in exploratory thinking and creative problem-solving. Team struggles to generate novel approaches to product challenges." },
+    { code: "GM", name: "Growth Mindset", capability: "Growth Mindset", currentScore: 65, targetScore: 75, priority: "high", gapAnalysis: "Moderate gap affecting the team's willingness to embrace challenges and iterate quickly in response to feedback." },
+    { code: "RA", name: "Resilience", capability: "Resilience", currentScore: 70, targetScore: 75, priority: "medium", gapAnalysis: "Minor resilience gap. Team handles stress reasonably well but could improve recovery from setbacks and project delays." },
+    { code: "IA", name: "Interpersonal Agility", capability: "Interpersonal Agility", currentScore: 74, targetScore: 75, priority: "low", gapAnalysis: "Near target. Strong communication and relationship-building skills across the team." },
+    { code: "EE", name: "Empathy & Ethics", capability: "Empathy & Ethics", currentScore: 78, targetScore: 75, priority: "low", gapAnalysis: "Exceeds target. Team demonstrates high integrity and genuine concern for colleagues and clients." },
   ],
   contextualInsights: [
     {
-      title: "Execution-Heavy Culture Masks Innovation Deficit",
+      title: "Execution-Heavy Culture Masks Curiosity Deficit",
       category: "team_dynamics",
-      analysis: "Your team's high Trust and Influence scores indicate a well-coordinated execution engine, but the significant Innovation gap (58% vs 85% target) suggests the team has optimized for delivery at the expense of creative problem-solving. The delayed 'product roadmap planning' tasks confirm this pattern — the team excels at building what's defined but struggles to define what should be built next."
+      analysis: "Your team's high Empathy & Ethics and Interpersonal Agility scores indicate a well-coordinated execution engine, but the significant Intellectual Curiosity gap (52% vs 85% target) suggests the team has optimised for delivery at the expense of exploratory thinking. The delayed 'product roadmap planning' tasks confirm this pattern — the team excels at building what's defined but struggles to define what should be built next."
     },
     {
-      title: "Scaling Will Demand Strategic Foresight Capability",
+      title: "Scaling Will Demand High Agency and Intellectual Curiosity",
       category: "future_needs",
-      analysis: "As your company moves from product-market fit to scaling, the Foresight gap (52% vs 82% target) becomes increasingly critical. Industry benchmarks show that teams entering growth phases without strong strategic planning capability experience 40% longer decision cycles. Your current challenges around feature prioritization will compound as the product portfolio expands and market dynamics shift."
+      analysis: "As your company moves from product-market fit to scaling, the High Agency gap (58% vs 85% target) becomes increasingly critical. Teams entering growth phases without strong proactive ownership culture experience significantly longer decision cycles. Your current challenges around feature prioritisation will compound as the product portfolio expands and market dynamics shift."
     },
     {
       title: "Right Hire Could Unlock Team's Strategic Potential",
       category: "post_hire_outlook",
-      analysis: "Adding a strategic product thinker with strong Innovation (82-90%) and Foresight (78-85%) scores would fundamentally shift team dynamics. The current overloaded tech lead would be freed from strategic planning, allowing them to focus on technical excellence. The new hire would also model creative problem-solving behaviors, gradually elevating the team's overall Innovation capability through collaboration."
+      analysis: "Adding a proactive thinker with strong Intellectual Curiosity (82-90%) and High Agency (78-85%) scores would fundamentally shift team dynamics. The current overloaded tech lead would be freed from strategic decisions, allowing focus on technical excellence. The new hire would also model exploratory problem-solving behaviours, gradually elevating the team's overall capability through collaboration."
     },
     {
-      title: "Single-Point-of-Failure Risk in Creative Problem-Solving",
+      title: "Single-Point-of-Failure Risk in Proactive Problem-Solving",
       category: "strategic_risk",
-      analysis: "Your mention of an 'overloaded tech lead' combined with low team-wide Innovation scores reveals a critical succession risk. If this individual departs, the team would lack any meaningful creative and strategic capability. Additionally, the persistent conflict around feature prioritization suggests decision fatigue that, left unaddressed, could lead to team burnout and talent attrition within 12-18 months."
+      analysis: "Your mention of an 'overloaded tech lead' combined with low team-wide High Agency scores reveals a critical succession risk. If this individual departs, the team would lack meaningful initiative and strategic drive. The persistent conflict around feature prioritisation suggests decision fatigue that, left unaddressed, could lead to team burnout and talent attrition within 12-18 months."
     },
   ],
   idealCandidateProfile: {
-    summary: "Your ideal next hire is a strategic product thinker who can bridge the gap between technical execution and market vision. They should excel at identifying emerging opportunities and translating them into actionable initiatives.",
+    summary: "Your ideal next hire is a proactive strategic thinker who can bridge the gap between technical execution and market vision. They should excel at identifying emerging opportunities with intellectual curiosity and driving them forward with high personal agency.",
     fitTargets: {
-      F: { min: 78, ideal: 85, reasoning: "Critical for addressing Foresight gap and driving strategic planning" },
-      I: { min: 65, ideal: 72, reasoning: "Sufficient to collaborate effectively with existing team" },
-      T: { min: 62, ideal: 70, reasoning: "Baseline reliability needed for team integration" },
-      IN: { min: 82, ideal: 90, reasoning: "Primary capability gap - prioritize strongly" },
-      AG: { min: 72, ideal: 80, reasoning: "Important for adapting to changing priorities" },
-      RE: { min: 68, ideal: 75, reasoning: "Moderate resilience for handling startup pressures" },
+      HA: { min: 78, ideal: 85, reasoning: "Critical for addressing High Agency gap and driving strategic ownership" },
+      IA: { min: 65, ideal: 72, reasoning: "Sufficient to collaborate effectively with existing team" },
+      EE: { min: 62, ideal: 70, reasoning: "Baseline integrity and empathy needed for team integration" },
+      IC: { min: 82, ideal: 90, reasoning: "Primary capability gap — prioritise strongly" },
+      GM: { min: 72, ideal: 80, reasoning: "Important for embracing change and iterating quickly on ideas" },
+      RA: { min: 68, ideal: 75, reasoning: "Moderate resilience for handling startup pressures" },
     },
     keyTraits: [
-      "Strong strategic thinking and market awareness",
-      "Experience driving product innovation in SaaS environments", 
-      "Ability to challenge status quo constructively",
+      "Strong intellectual curiosity and self-directed learning",
+      "Proactive ownership of outcomes without needing direction",
+      "Ability to challenge the status quo constructively",
       "Comfortable with ambiguity and rapid iteration",
     ],
     interviewFocusAreas: [
-      "Ask about times they identified market opportunities others missed",
-      "Explore how they balance innovation with practical constraints",
+      "Ask about times they identified opportunities others missed and acted on them",
+      "Explore how they balance exploration with practical delivery constraints",
       "Assess their approach to building consensus for new ideas",
     ],
   },
@@ -104,39 +104,39 @@ Key recommendation: Your next hire should prioritize Innovation and Foresight ca
     {
       roleTitle: "Product Strategist",
       priority: 1,
-      rationale: "Addresses critical Innovation and Foresight gaps while complementing existing team strengths in Trust and Influence.",
+      rationale: "Addresses critical Intellectual Curiosity and High Agency gaps while complementing existing team strengths in Empathy & Ethics and Interpersonal Agility.",
       fitTargets: {
-        F: { min: 80, ideal: 88 },
-        I: { min: 68, ideal: 75 },
-        T: { min: 60, ideal: 68 },
-        IN: { min: 85, ideal: 92 },
-        AG: { min: 75, ideal: 82 },
-        RE: { min: 65, ideal: 72 },
+        HA: { min: 80, ideal: 88 },
+        IA: { min: 68, ideal: 75 },
+        EE: { min: 60, ideal: 68 },
+        IC: { min: 85, ideal: 92 },
+        GM: { min: 75, ideal: 82 },
+        RA: { min: 65, ideal: 72 },
       },
-      keyBehaviors: ["Market analysis", "Product vision", "Strategic planning", "Stakeholder management"],
-      redFlags: ["Risk-averse mindset", "Preference for established processes only", "Limited cross-functional experience"],
+      keyBehaviors: ["Market analysis", "Proactive opportunity identification", "Strategic planning", "Stakeholder alignment"],
+      redFlags: ["Waits for direction before acting", "Resistant to exploring new approaches", "Limited cross-functional experience"],
     },
     {
       roleTitle: "Innovation Lead",
       priority: 2,
-      rationale: "Specialized focus on creative problem-solving and R&D to drive product differentiation and explore new opportunities.",
+      rationale: "Specialised focus on intellectual exploration and creative problem-solving to drive product differentiation and identify new opportunities.",
       fitTargets: {
-        F: { min: 72, ideal: 80 },
-        I: { min: 62, ideal: 70 },
-        T: { min: 58, ideal: 65 },
-        IN: { min: 88, ideal: 95 },
-        AG: { min: 80, ideal: 88 },
-        RE: { min: 68, ideal: 75 },
+        HA: { min: 72, ideal: 80 },
+        IA: { min: 62, ideal: 70 },
+        EE: { min: 58, ideal: 65 },
+        IC: { min: 88, ideal: 95 },
+        GM: { min: 80, ideal: 88 },
+        RA: { min: 68, ideal: 75 },
       },
-      keyBehaviors: ["Design thinking", "Rapid prototyping", "Technical creativity", "Experimentation mindset"],
-      redFlags: ["Inability to ship products", "Poor collaboration skills", "Unrealistic timelines"],
+      keyBehaviors: ["Design thinking", "Rapid prototyping", "Intellectual exploration", "Experimentation mindset"],
+      redFlags: ["Inability to ship products", "Poor collaboration skills", "Fixed mindset around failure"],
     },
   ],
   riskAlerts: [
-    { title: "Innovation capability below mission requirements", severity: "critical" },
-    { title: "Foresight gap limiting strategic planning", severity: "critical" },
+    { title: "Intellectual Curiosity below mission requirements", severity: "critical" },
+    { title: "High Agency gap limiting strategic ownership and initiative", severity: "critical" },
     { title: "Single point of failure on tech lead for creative decisions", severity: "warning" },
-    { title: "Agility slightly below target for rapid iteration", severity: "warning" },
+    { title: "Growth Mindset slightly below target for rapid iteration", severity: "warning" },
   ],
 };
 
@@ -152,22 +152,22 @@ const sampleProject = {
 };
 
 const sampleMissionAnalysis = {
-  summary: "Your mission requires strong Innovation and Foresight to 'revolutionize' operations and stay ahead of competitors with AI-powered solutions. Trust is essential for small business customers who need reliable automation.",
+  summary: "Your mission requires strong Intellectual Curiosity and High Agency to 'revolutionize' operations and stay ahead of competitors with AI-powered solutions. Empathy & Ethics is essential for small business customers who need reliable, trustworthy automation.",
   capabilityPriorities: [
-    { code: "IN", name: "Innovation", priority: "critical" as const, reasoning: "Essential for developing breakthrough AI-powered features that differentiate your product" },
-    { code: "F", name: "Foresight", priority: "critical" as const, reasoning: "Needed to anticipate market trends and plan strategic product evolution" },
-    { code: "AG", name: "Agility", priority: "high" as const, reasoning: "Important for rapid iteration and responding to small business needs" },
-    { code: "T", name: "Trust", priority: "high" as const, reasoning: "Critical for small business customers who rely on your automation for operations" },
-    { code: "I", name: "Influence", priority: "medium" as const, reasoning: "Helpful for internal alignment and customer communication" },
-    { code: "RE", name: "Resilience", priority: "medium" as const, reasoning: "Supports team sustainability during growth phase" },
+    { code: "IC", name: "Intellectual Curiosity", priority: "critical" as const, reasoning: "Essential for developing breakthrough AI-powered features that differentiate your product" },
+    { code: "HA", name: "High Agency", priority: "critical" as const, reasoning: "Needed to proactively identify market opportunities and drive strategic product evolution" },
+    { code: "GM", name: "Growth Mindset", priority: "high" as const, reasoning: "Important for rapid iteration and responding to small business needs" },
+    { code: "EE", name: "Empathy & Ethics", priority: "high" as const, reasoning: "Critical for small business customers who rely on your automation for operations" },
+    { code: "IA", name: "Interpersonal Agility", priority: "medium" as const, reasoning: "Helpful for internal alignment and customer communication" },
+    { code: "RA", name: "Resilience", priority: "medium" as const, reasoning: "Supports team sustainability during growth phase" },
   ],
 };
 
 const sampleTeamMembers = [
-  { id: 1, name: "Sarah Chen", role: "Product Manager", fitScores: { F: 62, I: 78, T: 80, IN: 55, AG: 68, RE: 72 } },
-  { id: 2, name: "Marcus Johnson", role: "Tech Lead", fitScores: { F: 58, I: 72, T: 82, IN: 60, AG: 70, RE: 75 } },
-  { id: 3, name: "Elena Rodriguez", role: "UX Designer", fitScores: { F: 52, I: 74, T: 75, IN: 48, AG: 62, RE: 68 } },
-  { id: 4, name: "David Park", role: "Backend Engineer", fitScores: { F: 60, I: 72, T: 78, IN: 45, AG: 60, RE: 65 } },
+  { id: 1, name: "Sarah Chen", role: "Product Manager", fitScores: { HA: 62, IA: 78, EE: 80, IC: 55, GM: 68, RA: 72 } },
+  { id: 2, name: "Marcus Johnson", role: "Tech Lead", fitScores: { HA: 58, IA: 72, EE: 82, IC: 60, GM: 70, RA: 75 } },
+  { id: 3, name: "Elena Rodriguez", role: "UX Designer", fitScores: { HA: 52, IA: 74, EE: 75, IC: 48, GM: 62, RA: 68 } },
+  { id: 4, name: "David Park", role: "Backend Engineer", fitScores: { HA: 60, IA: 72, EE: 78, IC: 45, GM: 60, RA: 65 } },
 ];
 
 const cumulativeScores = FIT_CAPABILITIES.map(cap => {
