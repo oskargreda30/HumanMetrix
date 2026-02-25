@@ -652,8 +652,8 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(...COLORS.textMuted);
       pdf.text(`Current: ${currentScore}%`, MARGIN_LEFT + 7, y + 1);
-      const targetLabelX = MARGIN_LEFT + 7 + (CONTENT_WIDTH - 18) * (targetScore / 100) - 8;
-      const clampedTargetX = Math.min(Math.max(MARGIN_LEFT + 42, targetLabelX), PAGE_WIDTH - MARGIN_RIGHT - 22);
+      const targetLabelX = MARGIN_LEFT + 7 + (CONTENT_WIDTH - 18) * (targetScore / 100) - 16;
+      const clampedTargetX = Math.min(Math.max(MARGIN_LEFT + 42, targetLabelX), PAGE_WIDTH - MARGIN_RIGHT - 28);
       pdf.text(`Target: ${targetScore}%`, clampedTargetX, y + 1);
       y += 6;
 
