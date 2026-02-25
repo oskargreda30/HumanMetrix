@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import SkillsLegend from "@/components/SkillsLegend";
 import { exportComparisonPDF } from "@/lib/pdfExport";
 import { useToast } from "@/hooks/use-toast";
+import html2canvas from "html2canvas";
 import {
   ResponsiveContainer,
   RadarChart,
@@ -205,6 +206,32 @@ export default function SampleComparisonReport() {
   const handleExportPDF = async () => {
     setIsExporting(true);
     try {
+      toast({
+        title: "Generating PDF...",
+        description: "Capturing charts and preparing your report...",
+      });
+
+      await document.fonts.ready;
+
+      const captureOpts = { backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false, imageTimeout: 5000 };
+
+      const captureElement = async (id: string): Promise<string | null> => {
+        try {
+          const el = document.getElementById(id);
+          if (!el) return null;
+          const canvas = await html2canvas(el, captureOpts);
+          return canvas.toDataURL('image/jpeg', 0.85);
+        } catch (err) {
+          console.error(`Error capturing ${id}:`, err);
+          return null;
+        }
+      };
+
+      const [fitCombinedImage, aiCombinedImage] = await Promise.all([
+        captureElement('pdf-sample-fit-chart'),
+        captureElement('pdf-sample-ai-chart'),
+      ]);
+
       const candidates = DEMO_CANDIDATES.map(c => {
         const parts = c.name.split(" ");
         return {
@@ -241,6 +268,9 @@ export default function SampleComparisonReport() {
         }),
       }));
 
+      const fitChartImages: (string | null)[] = fitCombinedImage ? [fitCombinedImage] : [];
+      const aiChartImages: (string | null)[] = aiCombinedImage ? [aiCombinedImage] : [];
+
       await exportComparisonPDF({
         candidates,
         fitAssessments,
@@ -249,10 +279,10 @@ export default function SampleComparisonReport() {
         aiqAssessments: [null, null, null],
         skillComparison,
         averageScores: DEMO_CANDIDATES.map(c => c.overallScore),
-        fitChartImages: [null, null, null],
-        aiChartImages: [null, null, null],
-        fitCombinedChartImage: null,
-        aiCombinedChartImage: null,
+        fitChartImages: fitChartImages.length > 0 ? fitChartImages : undefined,
+        aiChartImages: aiChartImages.length > 0 ? aiChartImages : undefined,
+        fitCombinedChartImage: fitCombinedImage,
+        aiCombinedChartImage: aiCombinedImage,
         overallSkillsChartImage: null,
         selectedRole: "Product Manager",
         roleData: null,
@@ -263,7 +293,7 @@ export default function SampleComparisonReport() {
         description: "Your comparison report has been downloaded.",
       });
     } catch (error) {
-      console.error("Error exporting PDF:", error);
+      console.error("Error exporting PDF:", error instanceof Error ? error.message : String(error), error);
       toast({
         title: "Export failed",
         description: "There was an error generating the PDF. Please try again.",
@@ -577,7 +607,7 @@ export default function SampleComparisonReport() {
                 <CardTitle className="text-lg">FIT Assessment Comparison</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[380px]">
+                <div id="pdf-sample-fit-chart" className="h-[380px] bg-white overflow-visible">
                   <ResponsiveContainer width="100%" height="100%">
                     <RadarChart data={fitRadarData} cx="50%" cy="50%" outerRadius="70%">
                       <PolarGrid stroke="hsl(var(--border))" />
@@ -611,7 +641,7 @@ export default function SampleComparisonReport() {
                 <CardTitle className="text-lg">AI Readiness Comparison</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[400px]">
+                <div id="pdf-sample-ai-chart" className="h-[400px] bg-white overflow-visible">
                   <ResponsiveContainer width="100%" height="100%">
                     <RadarChart data={aiRadarData} cx="50%" cy="50%" outerRadius="65%">
                       <PolarGrid stroke="hsl(var(--border))" />
