@@ -530,7 +530,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   const compMeasurements: { lines: string[]; lineH: number }[] = [];
   for (const comp of healthComponents) {
     const descLines = pdf.splitTextToSize(comp.desc, CONTENT_WIDTH - 24);
-    const itemH = 4.5 + descLines.length * 3.5 + 6;
+    const itemH = 6 + descLines.length * 4 + 10;
     compMeasurements.push({ lines: descLines, lineH: itemH });
     totalCompH += itemH;
   }
@@ -559,12 +559,12 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
     pdf.setTextColor(...COLORS.textSecondary);
     pdf.text(comp.title, MARGIN_LEFT + 16, y + 2);
     applySmallText(pdf);
-    y += 4.5;
+    y += 6;
     for (const line of measurement.lines) {
       pdf.text(line, MARGIN_LEFT + 16, y);
-      y += 3.5;
+      y += 4;
     }
-    y += 6;
+    y += 10;
   }
   y += 4;
 
@@ -576,7 +576,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
     { range: 'Below 50%', desc: 'Needs Attention \u2014 Significant gaps requiring action', color: [190, 200, 215] as [number, number, number] },
   ];
 
-  const scoreBoxH = scoreMeanings.length * 4.5 + 10;
+  const scoreBoxH = scoreMeanings.length * 6.5 + 12;
   y = ensureSpace(pdf, y, scoreBoxH);
   const scoreBoxStartY = y - 2;
   pdf.setFillColor(...COLORS.descBox);
@@ -585,18 +585,18 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   pdf.setFontSize(7);
   pdf.setTextColor(...COLORS.textMuted);
   pdf.text('WHAT THE SCORE MEANS', MARGIN_LEFT + 6, y + 2);
-  y += 7;
+  y += 9;
 
   for (const sm of scoreMeanings) {
     pdf.setFillColor(...sm.color);
-    pdf.roundedRect(MARGIN_LEFT + 6, y - 1.5, 10, 3, 1, 1, 'F');
+    pdf.roundedRect(MARGIN_LEFT + 6, y - 2, 10, 4, 1, 1, 'F');
     pdf.setFontSize(7.5);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(...COLORS.textSecondary);
     pdf.text(sm.range, MARGIN_LEFT + 19, y + 0.5);
     pdf.setFont('helvetica', 'normal');
     pdf.text(sm.desc, MARGIN_LEFT + 38, y + 0.5);
-    y += 4.5;
+    y += 6.5;
   }
   y += 6;
 
