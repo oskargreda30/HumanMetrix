@@ -1,12 +1,15 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowUp, Users, TrendingUp, TrendingDown, Award, Target, FileText, CheckCircle2, AlertCircle, Trophy, BarChart3, Sparkles, ChevronUp, ChevronDown, Star, MessageSquare, Rocket, Mail, Building2 } from "lucide-react";
+import { ArrowLeft, ArrowUp, Users, TrendingUp, TrendingDown, Award, Target, FileText, CheckCircle2, AlertCircle, Trophy, BarChart3, Sparkles, ChevronUp, ChevronDown, Star, MessageSquare, Rocket, Mail, Building2, Download, Loader2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import SkillsLegend from "@/components/SkillsLegend";
+import { exportComparisonPDF } from "@/lib/pdfExport";
+import { useToast } from "@/hooks/use-toast";
 import {
   ResponsiveContainer,
   RadarChart,
@@ -196,6 +199,81 @@ const COMBINED_RADAR_DATA = [
 ];
 
 export default function SampleComparisonReport() {
+  const { toast } = useToast();
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      const candidates = DEMO_CANDIDATES.map(c => {
+        const parts = c.name.split(" ");
+        return {
+          user: {
+            firstName: parts[0],
+            lastName: parts.slice(1).join(" "),
+            email: c.email,
+            createdAt: new Date("2026-01-15"),
+          },
+          results: [],
+        };
+      });
+
+      const fitAssessments = DEMO_CANDIDATES.map(c => ({
+        scores: c.fitScores as Record<string, number>,
+        completedAt: new Date("2026-01-15"),
+      }));
+
+      const aiReadinessAssessments = DEMO_CANDIDATES.map(c => ({
+        scores: c.aiReadinessScores as Record<string, number>,
+        completedAt: new Date("2026-01-15"),
+      }));
+
+      const allSkills = [
+        ...Object.keys(DEMO_CANDIDATES[0].fitScores),
+        ...Object.keys(DEMO_CANDIDATES[0].aiReadinessScores),
+      ];
+      const skillComparison = allSkills.map(skillName => ({
+        skillName,
+        scores: DEMO_CANDIDATES.map(c => {
+          const fitVal = (c.fitScores as Record<string, number>)[skillName];
+          const aiVal = (c.aiReadinessScores as Record<string, number>)[skillName];
+          return fitVal ?? aiVal ?? null;
+        }),
+      }));
+
+      await exportComparisonPDF({
+        candidates,
+        fitAssessments,
+        aiReadinessAssessments,
+        promptArchitectureAssessments: [null, null, null],
+        aiqAssessments: [null, null, null],
+        skillComparison,
+        averageScores: DEMO_CANDIDATES.map(c => c.overallScore),
+        fitChartImages: [null, null, null],
+        aiChartImages: [null, null, null],
+        fitCombinedChartImage: null,
+        aiCombinedChartImage: null,
+        overallSkillsChartImage: null,
+        selectedRole: "Product Manager",
+        roleData: null,
+      });
+
+      toast({
+        title: "PDF exported successfully",
+        description: "Your comparison report has been downloaded.",
+      });
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast({
+        title: "Export failed",
+        description: "There was an error generating the PDF. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const fitRadarData = Object.keys(DEMO_CANDIDATES[0].fitScores).map(skill => ({
     skill: SKILL_ACRONYMS[skill] || skill,
     fullName: skill,
@@ -240,6 +318,21 @@ export default function SampleComparisonReport() {
                   Side-by-side analysis of 3 candidates for Product Manager role
                 </p>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportPDF}
+                disabled={isExporting}
+                data-testid="button-export-pdf"
+                className="self-start md:self-auto"
+              >
+                {isExporting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="mr-2 h-4 w-4" />
+                )}
+                {isExporting ? "Generating..." : "Download Report"}
+              </Button>
             </div>
           </div>
 
