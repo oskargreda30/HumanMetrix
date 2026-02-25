@@ -82,6 +82,38 @@ const COHORT_BENCHMARKS: AssessmentBenchmark[] = [
   { assessmentType: "Artificial Intelligence Quotient (AIQ)", skillsCompared: "1 composite score", avgPercentile: 89, position: "above" },
 ];
 
+const DEMO_PROMPT_ROLE_FIT_ANALYSIS = `Sarah Chen's Prompt Architecture assessment reveals a candidate in the top 10% of our platform cohort, with a composite score that significantly exceeds the threshold for AI-augmented product management roles.
+
+Her responses demonstrate sophisticated prompt construction techniques — she consistently applies chain-of-thought reasoning, uses role-assignment framing, and iterates on ambiguous outputs with precision. In particular, her ability to constrain AI output format while preserving contextual flexibility shows advanced prompt engineering intuition.
+
+For the Product Manager (AI) role, this capability directly translates to faster prototyping of AI-assisted features, more accurate requirements communication with engineering teams, and higher-quality AI-generated research synthesis. We assess her prompt engineering capability as a durable competitive advantage rather than a surface-level skill.`;
+
+const DEMO_AIQ_ROLE_FIT_ANALYSIS = `Sarah Chen's Artificial Intelligence Quotient (AIQ) score places her in the top 11% of assessed candidates, reflecting a mature and nuanced understanding of AI ethics, limitations, and organizational governance.
+
+Her responses demonstrate a balanced appreciation for AI's transformational potential alongside an informed awareness of its failure modes — including hallucination risks, data bias, and over-reliance patterns. She correctly identifies scenarios where human oversight is non-negotiable and articulates structured frameworks for AI deployment decisions.
+
+In the context of the Product Manager (AI) role, this ethical grounding is particularly valuable: she will be positioned to make high-stakes decisions about which AI capabilities to expose to end users and how to communicate uncertainty. Her AIQ profile suggests she will serve as a responsible steward of AI adoption within the product organization.`;
+
+const DEMO_NEXT_STEPS = [
+  "Proceed to final-stage behavioral interview focused on stakeholder influence and cross-functional leadership scenarios",
+  "Assign a technical take-home task that requires designing an AI-assisted product feature end-to-end, including prompt design and output evaluation",
+  "Conduct a structured reference check with at least one prior engineering partner to validate Human-AI Collaboration scores",
+  "If selected, design a 90-day onboarding plan with targeted coaching on Data Fluency and Technical Fundamentals to close the identified gaps",
+  "Share this report with the hiring panel and use the Critical Skills Analysis section as the interview question framework",
+];
+
+const DEMO_FINAL_RECOMMENDATION = `COHORT CONTEXT:
+Sarah Chen ranks in the 84th percentile across all assessed candidates on the HumanMetrix platform. She performs above average in every assessment category — placing in the top 31% on FIT behavioral skills, top 27% on AI Readiness, top 10% on Prompt Architecture, and top 11% on AIQ. This is a consistently high-performing profile across all four dimensions.
+
+HIRING RECOMMENDATION:
+Sarah Chen is recommended for progression to the final interview stage for the Product Manager (AI) role. Her overall fit score of 84% reflects strong alignment with the behavioral and technical requirements of the position. The two identified development areas (Data Fluency and Technical Fundamentals) are addressable through structured onboarding and do not represent blockers to role success.
+
+CRITICAL SKILLS ANALYSIS:
+Sarah exceeds requirements in the highest-criticality skills: High Agency, Growth Mindset, and AI Literacy & Prompt Engineering — the three competencies most predictive of success in AI-adjacent product leadership. Her 5-point gap in Data Fluency is the only meaningful risk factor, and her strong AI Literacy score (88/80) suggests she has the self-awareness and technical vocabulary to close this gap rapidly with targeted support.
+
+ALTERNATIVE ROLE INSIGHT:
+Given her exceptional prompt engineering results, Sarah would also be well-positioned for a Technical Product Manager role or an AI Product Strategy function should the primary role not progress. Her cohort benchmarks remain strong across all role variants evaluated in this report.`;
+
 export default function SampleRoleFitReport() {
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
@@ -134,8 +166,10 @@ export default function SampleRoleFitReport() {
             prompt_architecture: { percentile: 90, totalCandidates: 500, avgScore: 84 },
             aiq: { percentile: 89, totalCandidates: 500, avgScore: 84 },
           },
-          finalRecommendation:
-            "Sarah Chen is a strong fit for the Product Manager role, demonstrating exceptional AI readiness and behavioral alignment across critical competencies. Recommend proceeding to final interview stage.",
+          promptRoleFitAnalysis: DEMO_PROMPT_ROLE_FIT_ANALYSIS,
+          aiqRoleFitAnalysis: DEMO_AIQ_ROLE_FIT_ANALYSIS,
+          nextSteps: DEMO_NEXT_STEPS,
+          finalRecommendation: DEMO_FINAL_RECOMMENDATION,
         },
       });
 
