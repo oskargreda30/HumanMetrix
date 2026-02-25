@@ -1,13 +1,16 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowUp, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, Brain, MessageSquare, Users, FileText, BarChart3, Trophy, Star, Mail, Building2 } from "lucide-react";
+import { ArrowLeft, ArrowUp, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, Brain, MessageSquare, Users, FileText, BarChart3, Trophy, Star, Mail, Building2, Download, Loader2 } from "lucide-react";
 import SkillsLegend from "@/components/SkillsLegend";
 import { CriticalSkillsAnalysis } from "@/components/shared/CriticalSkillsAnalysis";
 import { CohortBenchmarking, type AssessmentBenchmark } from "@/components/shared/CohortBenchmarking";
+import { exportRoleFitPDF } from "@/lib/pdfExport";
+import { useToast } from "@/hooks/use-toast";
 
 const DEMO_CANDIDATE = {
   name: "Sarah Chen",
@@ -80,6 +83,78 @@ const COHORT_BENCHMARKS: AssessmentBenchmark[] = [
 ];
 
 export default function SampleRoleFitReport() {
+  const { toast } = useToast();
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      const criticalSkillNames = [...SKILL_ALIGNMENTS, ...AI_SKILL_ALIGNMENTS]
+        .filter(s => s.criticality === "critical")
+        .map(s => s.skillName);
+
+      const strengths = [...SKILL_ALIGNMENTS, ...AI_SKILL_ALIGNMENTS]
+        .filter(s => s.alignment === "exceeds")
+        .map(s => `${s.skillName} (${s.candidateScore}/${s.requiredScore})`);
+
+      const gaps = [...SKILL_ALIGNMENTS, ...AI_SKILL_ALIGNMENTS]
+        .filter(s => s.alignment === "gap")
+        .map(s => `${s.skillName} (${s.candidateScore}/${s.requiredScore})`);
+
+      await exportRoleFitPDF({
+        candidate: {
+          user: {
+            firstName: "Sarah",
+            lastName: "Chen",
+            email: DEMO_CANDIDATE.email,
+          },
+          results: [],
+        },
+        role: {
+          name: DEMO_ROLE.name,
+          description: DEMO_ROLE.description,
+        },
+        criticalSkillNames,
+        alignment: {
+          overallFit: overallFitScore,
+          fitSkillAlignments: SKILL_ALIGNMENTS,
+          aiReadinessSkillAlignments: AI_SKILL_ALIGNMENTS,
+          strengths,
+          gaps,
+          interviewQuestions: INTERVIEW_QUESTIONS,
+          roleFlexibility: ROLE_FLEXIBILITY.map((r, i) => ({
+            roleId: String(i),
+            roleName: r.roleName,
+            fitScore: r.fitScore,
+            coverageLabel: r.coverageLabel as "High" | "Medium" | "Limited",
+          })),
+          cohortBenchmarks: {
+            fit: { percentile: 69, totalCandidates: 500, skillCount: 6, avgScore: 82 },
+            ai_readiness: { percentile: 73, totalCandidates: 500, skillCount: 8, avgScore: 81 },
+            prompt_architecture: { percentile: 90, totalCandidates: 500, avgScore: 84 },
+            aiq: { percentile: 89, totalCandidates: 500, avgScore: 84 },
+          },
+          finalRecommendation:
+            "Sarah Chen is a strong fit for the Product Manager role, demonstrating exceptional AI readiness and behavioral alignment across critical competencies. Recommend proceeding to final interview stage.",
+        },
+      });
+
+      toast({
+        title: "PDF exported successfully",
+        description: "Your role fit analysis has been downloaded.",
+      });
+    } catch (error) {
+      console.error("Error exporting PDF:", error instanceof Error ? error.message : String(error), error);
+      toast({
+        title: "Export failed",
+        description: "There was an error generating the PDF. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const getAlignmentIcon = (alignment: string) => {
     if (alignment === "exceeds") return <CheckCircle2 className="h-4 w-4 text-green-500" />;
     if (alignment === "meets") return <CheckCircle2 className="h-4 w-4 text-blue-500" />;
@@ -130,6 +205,20 @@ export default function SampleRoleFitReport() {
                   {DEMO_CANDIDATE.name} for {DEMO_ROLE.name} position
                 </p>
               </div>
+              <Button
+                size="sm"
+                onClick={handleExportPDF}
+                disabled={isExporting}
+                data-testid="button-export-pdf"
+                className="self-start md:self-auto"
+              >
+                {isExporting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                {isExporting ? "Generating..." : "Export PDF"}
+              </Button>
             </div>
           </div>
 
