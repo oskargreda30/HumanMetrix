@@ -609,7 +609,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
 
     const GAP_BAR_HEIGHT = 7;
     const GAP_BADGE_SIZE = 6;
-    const GAP_ITEM_PAD = 5;
+    const GAP_ITEM_PAD = 3;
 
     for (const item of analysis.capabilityGapMatrix) {
       const currentScore = item.currentScore ?? strengthToScore[item.teamStrength] ?? 50;
