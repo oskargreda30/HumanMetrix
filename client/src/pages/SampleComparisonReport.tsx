@@ -375,7 +375,7 @@ export default function SampleComparisonReport() {
                 ) : (
                   <Download className="mr-2 h-4 w-4" />
                 )}
-                {isExporting ? "Generating..." : "Download Report"}
+                {isExporting ? "Generating..." : "Export PDF"}
               </Button>
             </div>
           </div>
