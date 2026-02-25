@@ -164,7 +164,7 @@ function drawCapabilityBadge(pdf: jsPDF, code: string, x: number, y: number, siz
   const color = CAP_COLORS[code] || COLORS.textMuted;
   pdf.setFillColor(...color);
   pdf.roundedRect(x, y - size + 1, size, size, 1, 1, 'F');
-  pdf.setFontSize(5);
+  pdf.setFontSize(6);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(...COLORS.white);
   pdf.text(code, x + size / 2, y - size / 2 + 2.5, { align: 'center' });
@@ -291,31 +291,37 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   const badgeX1 = PAGE_WIDTH / 2 - badgeWidth - 5;
   const badgeX2 = PAGE_WIDTH / 2 + 5;
 
-  pdf.setFillColor(...COLORS.blueLight);
-  pdf.roundedRect(badgeX1, y, badgeWidth, 20, 3, 3, 'F');
-  pdf.setFontSize(8);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(...COLORS.textMuted);
-  pdf.text('Mission Alignment', badgeX1 + badgeWidth / 2, y + 7, { align: 'center' });
-  pdf.setFontSize(14);
-  pdf.setFont('helvetica', 'bold');
   const missionColor = missionScore >= 70 ? COLORS.blueDark : missionScore >= 50 ? COLORS.slate : COLORS.warmDark;
-  pdf.setTextColor(...missionColor);
-  pdf.text(`${missionScore}%`, badgeX1 + badgeWidth / 2, y + 16, { align: 'center' });
-
   pdf.setFillColor(...COLORS.blueLight);
-  pdf.roundedRect(badgeX2, y, badgeWidth, 20, 3, 3, 'F');
+  pdf.setDrawColor(...missionColor);
+  pdf.setLineWidth(0.8);
+  pdf.roundedRect(badgeX1, y, badgeWidth, 24, 3, 3, 'FD');
+  pdf.setLineWidth(0.2);
   pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(...COLORS.textMuted);
-  pdf.text('Health Score', badgeX2 + badgeWidth / 2, y + 7, { align: 'center' });
-  pdf.setFontSize(14);
+  pdf.text('Mission Alignment', badgeX1 + badgeWidth / 2, y + 8, { align: 'center' });
+  pdf.setFontSize(15);
   pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(...missionColor);
+  pdf.text(`${missionScore}%`, badgeX1 + badgeWidth / 2, y + 19, { align: 'center' });
+
   const healthColor = healthScore >= 70 ? COLORS.blueDark : healthScore >= 50 ? COLORS.slate : COLORS.warmDark;
+  pdf.setFillColor(...COLORS.blueLight);
+  pdf.setDrawColor(...healthColor);
+  pdf.setLineWidth(0.8);
+  pdf.roundedRect(badgeX2, y, badgeWidth, 24, 3, 3, 'FD');
+  pdf.setLineWidth(0.2);
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(...COLORS.textMuted);
+  pdf.text('Health Score', badgeX2 + badgeWidth / 2, y + 8, { align: 'center' });
+  pdf.setFontSize(15);
+  pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(...healthColor);
-  pdf.text(`${healthScore}%`, badgeX2 + badgeWidth / 2, y + 16, { align: 'center' });
+  pdf.text(`${healthScore}%`, badgeX2 + badgeWidth / 2, y + 19, { align: 'center' });
   pdf.setTextColor(0, 0, 0);
-  y += 28;
+  y += 32;
 
   // ====== YOUR CONTEXT ======
   y = addSectionHeader(pdf, 'YOUR CONTEXT', y);
@@ -541,7 +547,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
     const measurement = compMeasurements[ci];
     pdf.setFillColor(...comp.color);
     pdf.circle(MARGIN_LEFT + 10, y + 1, 3, 'F');
-    pdf.setFontSize(5);
+    pdf.setFontSize(6);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(255, 255, 255);
     pdf.text(comp.pct, MARGIN_LEFT + 10, y + 2.5, { align: 'center' });
@@ -603,9 +609,9 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
     const strengthToScore: Record<string, number> = { strong: 85, adequate: 65, weak: 40, critical: 20 };
     const priorityToTarget: Record<string, number> = { critical: 90, high: 80, medium: 65, low: 50 };
 
-    const GAP_BAR_HEIGHT = 4;
+    const GAP_BAR_HEIGHT = 7;
     const GAP_BADGE_SIZE = 6;
-    const GAP_ITEM_PAD = 3;
+    const GAP_ITEM_PAD = 5;
 
     for (const item of analysis.capabilityGapMatrix) {
       const currentScore = item.currentScore ?? strengthToScore[item.teamStrength] ?? 50;
@@ -616,9 +622,9 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
       const analysisText = item.gapAnalysis || '';
 
       applySmallText(pdf);
-      pdf.setFontSize(6.5);
+      pdf.setFontSize(7.5);
       const analysisLines = analysisText ? wrapText(pdf, analysisText, CONTENT_WIDTH - 20) : [];
-      const contentH = GAP_ITEM_PAD + 8 + GAP_BAR_HEIGHT + 4 + (analysisLines.length > 0 ? analysisLines.length * 3 + 2 : 0) + GAP_ITEM_PAD;
+      const contentH = GAP_ITEM_PAD + 8 + GAP_BAR_HEIGHT + 6 + (analysisLines.length > 0 ? analysisLines.length * 3.5 + 2 : 0) + GAP_ITEM_PAD;
 
       y = ensureSpace(pdf, y, contentH + 3);
 
@@ -644,22 +650,22 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
       drawHorizontalBar(pdf, MARGIN_LEFT + 7, y, CONTENT_WIDTH - 18, currentScore, targetScore, barColor, GAP_BAR_HEIGHT);
       y += GAP_BAR_HEIGHT + 1;
 
-      pdf.setFontSize(6);
+      pdf.setFontSize(7);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(...COLORS.textMuted);
       pdf.text(`Current: ${currentScore}%`, MARGIN_LEFT + 7, y + 1);
       const targetLabelX = MARGIN_LEFT + 7 + (CONTENT_WIDTH - 18) * (targetScore / 100) - 8;
       const clampedTargetX = Math.min(Math.max(MARGIN_LEFT + 42, targetLabelX), PAGE_WIDTH - MARGIN_RIGHT - 22);
       pdf.text(`Target: ${targetScore}%`, clampedTargetX, y + 1);
-      y += 4;
+      y += 6;
 
       if (analysisLines.length > 0) {
-        pdf.setFontSize(6.5);
+        pdf.setFontSize(7.5);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(...COLORS.textSecondary);
         for (const line of analysisLines) {
           pdf.text(line, MARGIN_LEFT + 7, y);
-          y += 3;
+          y += 3.5;
         }
       }
 
@@ -768,7 +774,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
         pdf.text(line, MARGIN_LEFT + 6, iy);
         iy += 4.2;
       }
-      y += blockH + 6;
+      y += blockH + 10;
     }
     y += 4;
   }
@@ -902,7 +908,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
           applySmallText(pdf);
           for (const behavior of profile.keyBehaviors) {
             pdf.setTextColor(...COLORS.blueDark);
-            pdf.setFontSize(6);
+            pdf.setFontSize(7);
             pdf.text('\u2022', MARGIN_LEFT + 8, by);
             applySmallText(pdf);
             const bLines = wrapText(pdf, behavior, colW2 - 10);
@@ -926,7 +932,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
           applySmallText(pdf);
           for (const flag of profile.redFlags) {
             pdf.setTextColor(...COLORS.warmDark);
-            pdf.setFontSize(6);
+            pdf.setFontSize(7);
             pdf.text('\u2022', rfX + 2, ry);
             applySmallText(pdf);
             const fLines = wrapText(pdf, flag, colW2 - 10);
@@ -977,7 +983,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
       pdf.setTextColor(...COLORS.text);
       pdf.text(alert.title, MARGIN_LEFT + 12, y + 2);
 
-      pdf.setFontSize(6);
+      pdf.setFontSize(7);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(...severityColor);
       pdf.text((alert.severity || '').toUpperCase(), PAGE_WIDTH - MARGIN_RIGHT - 8, y + 2, { align: 'right' });
@@ -1007,7 +1013,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   // ====== ADDITIONAL SERVICES ======
   y = newPage(pdf);
   y = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', y);
-  y += 3;
+  y += 6;
 
   pdf.setFontSize(8);
   pdf.setTextColor(...COLORS.textMuted);
@@ -1050,7 +1056,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
       pdf.text(descLines[di], MARGIN_LEFT + 12, y + 7 + di * 4);
     }
 
-    y += serviceHeight;
+    y += serviceHeight + 3;
   }
 
   y += 6;
