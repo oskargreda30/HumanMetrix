@@ -2161,20 +2161,7 @@ export async function exportRoleFitPDF(data: RoleFitData) {
   pdf.setTextColor(0, 0, 0);
   yPos = 85 + finalCardHeight + 8;
   
-  // Calculate how much space the strengths and gaps sections need
-  const estimatedStrengthsHeight = Math.ceil(data.alignment.strengths.length / 2) * 16 + 12;
-  const estimatedGapsHeight = Math.ceil(data.alignment.gaps.length / 2) * 16 + 12;
-  const totalNeededHeight = estimatedStrengthsHeight + estimatedGapsHeight + 20;
-  
-  // Check if both sections will fit on current page, if not start new page
-  if (yPos + totalNeededHeight > pageHeight - 20) {
-    pdf.addPage();
-    addBackgroundPattern(pdf, pageWidth, pageHeight);
-    addHeader(pdf, pageWidth);
-    yPos = 35;
-  } else {
-    yPos += 5;
-  }
+  yPos += 5;
   
   // ========== KEY STRENGTHS (text descriptions) ==========
   yPos = addSectionHeader(pdf, 'KEY STRENGTHS', yPos, pageWidth);
