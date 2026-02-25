@@ -627,7 +627,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
       applySmallText(pdf);
       pdf.setFontSize(7.5);
       const analysisLines = analysisText ? wrapText(pdf, analysisText, CONTENT_WIDTH - 20) : [];
-      const contentH = GAP_ITEM_PAD + 8 + GAP_BAR_HEIGHT + 6 + (analysisLines.length > 0 ? analysisLines.length * 3.5 + 2 : 0) + GAP_ITEM_PAD;
+      const contentH = GAP_ITEM_PAD + 8 + GAP_BAR_HEIGHT + 10 + (analysisLines.length > 0 ? analysisLines.length * 3.5 + 2 : 0) + GAP_ITEM_PAD;
 
       y = ensureSpace(pdf, y, contentH + 3);
 
@@ -651,7 +651,7 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
 
       y += 8;
       drawHorizontalBar(pdf, MARGIN_LEFT + 7, y, CONTENT_WIDTH - 18, currentScore, targetScore, barColor, GAP_BAR_HEIGHT);
-      y += GAP_BAR_HEIGHT + 1;
+      y += GAP_BAR_HEIGHT + 4;
 
       pdf.setFontSize(7);
       pdf.setFont('helvetica', 'normal');
