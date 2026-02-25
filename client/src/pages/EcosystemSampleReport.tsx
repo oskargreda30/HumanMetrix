@@ -1,8 +1,6 @@
-import { useState } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { exportResultsPDF } from "@/lib/pdfScreenCapture";
 import { 
   ArrowLeft, 
   Target, 
@@ -15,8 +13,6 @@ import {
   Lightbulb,
   AlertTriangle,
   FileText,
-  Download,
-  Loader2,
   HelpCircle,
   Calendar,
   MessageSquare,
@@ -182,44 +178,16 @@ const cumulativeScores = FIT_CAPABILITIES.map(cap => {
 });
 
 export default function EcosystemSampleReport() {
-  const [downloading, setDownloading] = useState(false);
-
-  const handleDownloadPDF = async () => {
-    setDownloading(true);
-    try {
-      await exportResultsPDF({
-        elementId: "sample-report-ecosystem",
-        filename: "humanmetrix-ecosystem-index-sample.pdf",
-      });
-    } catch (e) {
-      console.error("PDF generation failed", e);
-    } finally {
-      setDownloading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background">
-      <div id="sample-report-ecosystem" className="max-w-5xl mx-auto px-4 py-8">
+      <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="mb-8">
-          <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-            <Link href="/#sample-reports">
-              <Button variant="ghost" data-testid="button-back-to-ecosystem">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Sample Reports
-              </Button>
-            </Link>
-            <Button
-              onClick={handleDownloadPDF}
-              disabled={downloading}
-              size="sm"
-              className="gap-2"
-              data-testid="button-download-pdf-ecosystem"
-            >
-              {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              {downloading ? "Generating..." : "Download PDF"}
+          <Link href="/#sample-reports">
+            <Button variant="ghost" className="mb-4" data-testid="button-back-to-ecosystem">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Sample Reports
             </Button>
-          </div>
+          </Link>
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
               Sample Report
