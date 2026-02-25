@@ -462,24 +462,25 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
         return (order[a.priority] ?? 3) - (order[b.priority] ?? 3);
       });
 
-      applySmallText(pdf);
-      let totalSectionH = 10;
-      for (const cap of sorted) {
-        const reasoningLines = cap.reasoning ? wrapText(pdf, cap.reasoning, CONTENT_WIDTH - 18) : [];
-        totalSectionH += 6 + (reasoningLines.length > 0 ? reasoningLines.length * 3.8 + 2 : 0) + 4;
-      }
-
-      if (y + totalSectionH > PAGE_HEIGHT - MARGIN_BOTTOM) {
-        y = newPage(pdf);
-      }
-
+      y = ensureSpace(pdf, y, 18);
       applyLabelText(pdf);
       pdf.setFontSize(7);
       pdf.setTextColor(...COLORS.textMuted);
       pdf.text('WHY THESE CAPABILITIES MATTER FOR YOUR MISSION', MARGIN_LEFT + 4, y);
       y += 6;
 
+      const priorityColors: Record<string, [number, number, number]> = {
+        critical: COLORS.warmDark,
+        high: COLORS.blueDark,
+        medium: COLORS.blueMid,
+        low: COLORS.textMuted,
+      };
+
       for (const cap of sorted) {
+        const reasoningLines = cap.reasoning ? wrapText(pdf, cap.reasoning, CONTENT_WIDTH - 18) : [];
+        const itemH = 8 + (reasoningLines.length > 0 ? reasoningLines.length * 3.8 + 2 : 0) + 4;
+        y = ensureSpace(pdf, y, itemH);
+
         drawCapabilityBadge(pdf, cap.code, MARGIN_LEFT + 4, y + 5);
         pdf.setFontSize(9);
         pdf.setFont('helvetica', 'bold');
@@ -488,12 +489,6 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
         pdf.text(capNameText, MARGIN_LEFT + 14, y + 2);
         const capNameWidth = pdf.getTextWidth(capNameText);
 
-        const priorityColors: Record<string, [number, number, number]> = {
-          critical: COLORS.warmDark,
-          high: COLORS.blueDark,
-          medium: COLORS.blueMid,
-          low: COLORS.textMuted,
-        };
         pdf.setFontSize(7);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(...(priorityColors[cap.priority] || COLORS.textMuted));
