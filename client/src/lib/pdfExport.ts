@@ -5711,8 +5711,8 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
     pdf.text(`${index + 1}`, 25, yPos + 1, { align: 'center' });
 
     pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(17, 24, 39);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(55, 65, 81);
     titleLines.forEach((line: string, idx: number) => {
       pdf.text(line, 32, yPos + (idx * 4));
     });
