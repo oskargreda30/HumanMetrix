@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { SharedIndividualReport } from "@/components/shared/SharedIndividualReport";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { exportResultsPDF } from "@/lib/pdfScreenCapture";
 
 const MOCK_CANDIDATE_REPORT = {
   fitAssessments: [
@@ -85,17 +87,43 @@ This candidate presents a strong overall profile with an impressive balance of t
 };
 
 export default function SampleB2BIndividualReport() {
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadPDF = async () => {
+    setDownloading(true);
+    try {
+      await exportResultsPDF({
+        elementId: "sample-report-b2b-individual",
+        filename: "humanmetrix-individual-candidate-sample.pdf",
+      });
+    } catch (e) {
+      console.error("PDF generation failed", e);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white dark:bg-background">
       <Navigation />
-      <div className="max-w-6xl mx-auto px-4 py-6 md:py-8 pt-16 md:pt-8">
-        <div className="mb-6">
+      <div id="sample-report-b2b-individual" className="max-w-6xl mx-auto px-4 py-6 md:py-8 pt-16 md:pt-8">
+        <div className="mb-6 flex items-center justify-between gap-3 flex-wrap">
           <Link href="/#sample-reports">
             <Button variant="ghost" size="sm" data-testid="button-back-to-samples-b2b-individual">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Sample Reports
             </Button>
           </Link>
+          <Button
+            onClick={handleDownloadPDF}
+            disabled={downloading}
+            size="sm"
+            className="gap-2"
+            data-testid="button-download-pdf-b2b-individual"
+          >
+            {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            {downloading ? "Generating..." : "Download PDF"}
+          </Button>
         </div>
         <SharedIndividualReport
           config={{

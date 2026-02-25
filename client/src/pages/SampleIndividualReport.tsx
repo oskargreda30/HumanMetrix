@@ -1,223 +1,171 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowUp, TrendingUp, AlertTriangle, User, Calendar, FileText, Target, MessageSquare, Users, Rocket, Star, Mail } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { ArrowLeft, ArrowUp, Download, Loader2, FileText, TrendingUp, Brain, Shield, Zap, Star, Target, Users, MessageSquare, Rocket, Send } from "lucide-react";
+import SkillsLegend from "@/components/SkillsLegend";
 import { getSkillAcronym } from "@/lib/assessmentSkills";
 import { getAIQBandInterpretation } from "@/data/aiq-questions";
-import SkillsLegend from "@/components/SkillsLegend";
+import { exportResultsPDF } from "@/lib/pdfScreenCapture";
 import {
-  ResponsiveContainer,
   RadarChart,
   Radar,
-  PolarGrid,
   PolarAngleAxis,
+  PolarGrid,
   PolarRadiusAxis,
-  Tooltip,
+  ResponsiveContainer,
 } from "recharts";
+import dashboardBg from "@assets/image_1763608498774.png";
 
-const DEMO_CANDIDATE = {
-  name: "Demo Candidate 1",
-  email: "demo.candidate1@example.com",
-  completedDate: "January 15, 2026",
+const MOCK_FIT_SCORES: Record<string, number> = {
+  "High Agency": 85,
+  "Intellectual Curiosity": 88,
+  "Resilience": 72,
+  "Empathy & Ethics": 84,
+  "Growth Mindset": 86,
+  "Interpersonal Agility": 79,
 };
 
-const MOCK_FIT_SCORES = {
-  "High Agency": 78,
-  "Intellectual Curiosity": 85,
-  "Resilience": 68,
-  "Empathy & Ethics": 88,
-  "Growth Mindset": 81,
-  "Interpersonal Agility": 76,
-};
-
-const MOCK_AI_READINESS_SCORES = {
+const MOCK_AI_READINESS_SCORES: Record<string, number> = {
   "AI Literacy & Prompt Engineering": 82,
-  "Technical Fundamentals": 68,
-  "Data Fluency": 75,
-  "Critical Thinking & Problem-Solving": 79,
-  "Adaptability & Continuous Learning": 85,
-  "Collaboration & Communication": 77,
-  "Responsible AI & Ethical Awareness": 91,
-  "Creativity & Innovation": 74,
-  "Domain Expertise": 80,
+  "Technical Fundamentals": 75,
+  "Data Fluency": 80,
+  "Critical Thinking & Problem-Solving": 85,
+  "Adaptability & Continuous Learning": 88,
+  "Collaboration & Communication": 78,
+  "Responsible AI & Ethical Awareness": 90,
+  "Creativity & Innovation": 76,
+  "Domain Expertise": 84,
 };
 
-const MOCK_PROMPT_SCORES = {
-  clarity: 78,
-  structure: 82,
-  contextRelevance: 75,
-  creativity: 71,
-  iterativeImprovement: 80,
-};
-const MOCK_PROMPT_TOTAL = 77;
+const MOCK_PROMPT_TOTAL = 75;
+const MOCK_PROMPT_PERCENTILE = 72;
 
-const MOCK_AIQ_SCORE = 74;
-
-function generateMockAnalysis(assessmentType: string, scores: Record<string, number>, totalScore?: number) {
-  const sortedSkills = Object.entries(scores).sort((a, b) => (b[1] as number) - (a[1] as number));
-  const strengths = sortedSkills.filter(([_, score]) => (score as number) >= 70);
-  const improvements = sortedSkills.filter(([_, score]) => (score as number) < 70);
-  
-  const analysis = {
-    strengths: [] as string[],
-    improvements: [] as string[],
-    overall: "",
-  };
-
-  switch (assessmentType) {
-    case "fit":
-      analysis.overall = "This FIT assessment evaluates core behavioral competencies essential for workplace success and team collaboration.";
-      
-      if (strengths.length > 0) {
-        strengths.forEach(([skill, score]) => {
-          if (skill === "High Agency") {
-            analysis.strengths.push(`Demonstrates strong **High Agency** (${score}/100): Takes initiative, drives outcomes independently, and shows proactive problem-solving abilities.`);
-          } else if (skill === "Intellectual Curiosity") {
-            analysis.strengths.push(`Exhibits excellent **Intellectual Curiosity** (${score}/100): Shows eagerness to learn, asks thoughtful questions, and seeks to understand complex concepts.`);
-          } else if (skill === "Resilience") {
-            analysis.strengths.push(`Shows robust **Resilience** (${score}/100): Bounces back from setbacks, maintains composure under pressure, and adapts to changing circumstances.`);
-          } else if (skill === "Empathy & Ethics") {
-            analysis.strengths.push(`Displays strong **Empathy & Ethics** (${score}/100): Considers others' perspectives, makes ethical decisions, and demonstrates social awareness.`);
-          } else if (skill === "Growth Mindset") {
-            analysis.strengths.push(`Possesses a strong **Growth Mindset** (${score}/100): Views challenges as opportunities, embraces feedback, and believes in continuous improvement.`);
-          } else if (skill === "Interpersonal Agility") {
-            analysis.strengths.push(`Excels in **Interpersonal Agility** (${score}/100): Builds relationships effectively, adapts communication style, and collaborates seamlessly across diverse teams.`);
-          }
-        });
-      }
-      
-      if (improvements.length > 0) {
-        improvements.forEach(([skill, score]) => {
-          if (skill === "Resilience") {
-            analysis.improvements.push(`**Resilience** (${score}/100): Focus on stress management techniques, reframing setbacks as learning opportunities, and maintaining motivation through challenges.`);
-          } else if (skill === "High Agency") {
-            analysis.improvements.push(`**High Agency** (${score}/100): Develop greater initiative-taking behaviors, practice leading projects independently, and strengthen decision-making confidence.`);
-          } else if (skill === "Intellectual Curiosity") {
-            analysis.improvements.push(`**Intellectual Curiosity** (${score}/100): Cultivate deeper questioning habits, explore cross-disciplinary knowledge, and engage more actively with complex problems.`);
-          } else if (skill === "Empathy & Ethics") {
-            analysis.improvements.push(`**Empathy & Ethics** (${score}/100): Practice active listening, consider multiple perspectives in decision-making, and strengthen ethical reasoning in ambiguous situations.`);
-          } else if (skill === "Growth Mindset") {
-            analysis.improvements.push(`**Growth Mindset** (${score}/100): Embrace challenges as learning opportunities, seek constructive feedback, and develop persistence through difficulties.`);
-          } else if (skill === "Interpersonal Agility") {
-            analysis.improvements.push(`**Interpersonal Agility** (${score}/100): Expand comfort with diverse communication styles, practice adaptability in team dynamics, and build broader relationship networks.`);
-          }
-        });
-      }
-      break;
-
-    case "ai_readiness":
-      analysis.overall = "This AI Readiness assessment measures capabilities critical for effective collaboration with AI systems and thriving in AI-augmented environments.";
-      
-      strengths.forEach(([skill, score]) => {
-        analysis.strengths.push(`Strong **${skill}** (${score}/100): Shows proficiency in this important AI readiness dimension.`);
-      });
-      
-      improvements.forEach(([skill, score]) => {
-        analysis.improvements.push(`**${skill}** (${score}/100): This area would benefit from targeted development and practical experience.`);
-      });
-      break;
-
-    case "prompt_architecture":
-      analysis.overall = `This Prompt Architecture assessment evaluates prompt design skills across progressive difficulty levels. Overall score: **${totalScore}/100**. Prompts are evaluated on five equal dimensions (20% each): Clarity, Structure, Context Relevance, Creativity, and Iterative Improvement.`;
-      analysis.strengths.push(`**Solid prompt engineering foundation**: Can create effective prompts with good structure and clarity for most use cases.`);
-      analysis.strengths.push(`**Good contextual awareness**: Demonstrates understanding of how to provide relevant context to AI systems.`);
-      analysis.improvements.push(`**Advanced techniques**: Explore iterative refinement strategies and more sophisticated prompt patterns.`);
-      break;
-
-    case "aiq":
-      const aiqScore = totalScore || 0;
-      const bandInterpretation = getAIQBandInterpretation(aiqScore);
-      
-      analysis.overall = `This Algorithmic Integrity Quotient (AIQ) assessment evaluates ethical reasoning in AI scenarios using graded scoring. Score: **${aiqScore}/100** - **${bandInterpretation.title}** (${bandInterpretation.range}). ${bandInterpretation.description}`;
-      analysis.strengths.push(`**Strong ethical foundation**: Shows sound judgment balancing ethical imperatives with operational realities.`);
-      analysis.strengths.push(`**Practical ethics awareness**: Understands core principles of responsible AI deployment.`);
-      analysis.improvements.push(`**Advanced ethical reasoning**: Consider exploring more complex ethical frameworks and edge cases in AI decision-making.`);
-      break;
-  }
-  
-  return analysis;
-}
+const MOCK_AIQ_SCORE = 78;
 
 export default function SampleIndividualReport() {
-  const fitRadarData = Object.entries(MOCK_FIT_SCORES).map(([skill, score]) => ({
-    skill: getSkillAcronym(skill),
-    fullName: skill,
-    score,
-    fullMark: 100,
-  }));
+  const [downloading, setDownloading] = useState(false);
 
-  const aiRadarData = Object.entries(MOCK_AI_READINESS_SCORES).map(([skill, score]) => ({
-    skill: getSkillAcronym(skill),
-    fullName: skill,
-    score,
-    fullMark: 100,
-  }));
-
-  const fitAnalysis = generateMockAnalysis("fit", MOCK_FIT_SCORES);
-  const aiAnalysis = generateMockAnalysis("ai_readiness", MOCK_AI_READINESS_SCORES);
-  const promptAnalysis = generateMockAnalysis("prompt_architecture", MOCK_PROMPT_SCORES, MOCK_PROMPT_TOTAL);
-  const aiqAnalysis = generateMockAnalysis("aiq", {}, MOCK_AIQ_SCORE);
-
-  const aiqBand = getAIQBandInterpretation(MOCK_AIQ_SCORE);
-  const getAIQBarColor = (score: number) => {
-    if (score >= 80) return 'bg-green-600';
-    if (score >= 60) return 'bg-blue-600';
-    if (score >= 40) return 'bg-amber-500';
-    if (score >= 20) return 'bg-orange-500';
-    return 'bg-red-500';
+  const handleDownloadPDF = async () => {
+    setDownloading(true);
+    try {
+      await exportResultsPDF({
+        elementId: "sample-report-individual",
+        filename: "humanmetrix-individual-report-sample.pdf",
+      });
+    } catch (e) {
+      console.error("PDF generation failed", e);
+    } finally {
+      setDownloading(false);
+    }
   };
 
+  const fitSorted = Object.entries(MOCK_FIT_SCORES).sort(([, a], [, b]) => b - a);
+  const aiSorted = Object.entries(MOCK_AI_READINESS_SCORES).sort(([, a], [, b]) => b - a);
+  const fitAvg = Math.round(Object.values(MOCK_FIT_SCORES).reduce((s, v) => s + v, 0) / Object.values(MOCK_FIT_SCORES).length);
+  const aiAvg = Math.round(Object.values(MOCK_AI_READINESS_SCORES).reduce((s, v) => s + v, 0) / Object.values(MOCK_AI_READINESS_SCORES).length);
+
+  const allSkillScores = [...Object.entries(MOCK_FIT_SCORES), ...Object.entries(MOCK_AI_READINESS_SCORES)];
+  const topSkill = allSkillScores.reduce((best, [name, score]) => score > best.score ? { name, score } : best, { name: "N/A", score: 0 });
+  const assessmentScores = [fitAvg, aiAvg, MOCK_PROMPT_TOTAL, MOCK_AIQ_SCORE];
+  const overallAvg = Math.round(assessmentScores.reduce((s, v) => s + v, 0) / assessmentScores.length);
+
+  const aiqBand = getAIQBandInterpretation(MOCK_AIQ_SCORE);
+  const skillCount = Object.keys(MOCK_FIT_SCORES).length + Object.keys(MOCK_AI_READINESS_SCORES).length;
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col relative">
+      <div className="fixed inset-0 z-0">
+        <div
+          className="absolute inset-0 opacity-50"
+          style={{
+            backgroundImage: `url(${dashboardBg})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(13, 29, 51, 0.85), rgba(13, 29, 51, 0.75), rgba(13, 29, 51, 0.85))",
+          }}
+        />
+      </div>
+
       <Navigation />
-      
-      <main className="flex-grow py-4 md:py-16">
-        <div className="mx-auto max-w-5xl px-3 md:px-6 lg:px-8">
-          <div className="mb-4 md:mb-6">
+
+      <main className="flex-grow py-16 relative z-10">
+        <div id="sample-report-individual" className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8">
+          <div className="mb-8">
             <Link href="/#sample-reports">
-              <Button variant="ghost" size="sm" className="text-xs md:text-sm" data-testid="button-back-to-samples">
-                <ArrowLeft className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
+              <Button variant="ghost" className="mb-4 text-white hover:text-white hover:bg-white/10" data-testid="button-back-to-samples">
+                <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Sample Reports
               </Button>
             </Link>
-          </div>
 
-          <div className="pb-3 md:pb-4 mb-4 md:mb-8 border-b">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 md:gap-4">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
-                <Badge variant="secondary" className="mb-1 md:mb-2 text-[10px] md:text-xs" data-testid="badge-sample-report">Sample Report</Badge>
-                <h1 className="text-lg md:text-3xl font-bold" data-testid="text-sample-report-title">
-                  Individual Candidate Report
+                <Badge variant="secondary" className="mb-2" data-testid="badge-sample-report">Sample Report</Badge>
+                <h1 className="text-2xl md:text-3xl font-bold text-white" data-testid="text-sample-report-title">
+                  My Assessment Results
                 </h1>
-                <div className="flex items-center gap-2 md:gap-4 text-xs md:text-base text-muted-foreground mt-1 md:mt-2 flex-wrap">
-                  <div className="flex items-center gap-1">
-                    <User className="h-3 w-3 md:h-4 md:w-4" />
-                    <span data-testid="text-candidate-name">{DEMO_CANDIDATE.name}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3 md:h-4 md:w-4" />
-                    <span data-testid="text-completed-date">{DEMO_CANDIDATE.completedDate}</span>
-                  </div>
-                </div>
+                <p className="text-white/80 mt-1">
+                  Comprehensive report for Demo Candidate &mdash; January 15, 2026
+                </p>
               </div>
+              <Button
+                onClick={handleDownloadPDF}
+                disabled={downloading}
+                size="lg"
+                className="gap-2"
+                data-testid="button-download-pdf"
+              >
+                {downloading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                {downloading ? "Generating..." : "Download PDF"}
+              </Button>
             </div>
           </div>
+
+          {/* Key Metrics */}
+          <Card className="p-4 md:p-6 mb-8" data-testid="card-key-metrics">
+            <h2 className="text-base md:text-lg font-semibold mb-4">Key Metrics</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+              <div className="text-center p-3 md:p-4 bg-muted/30 rounded-lg">
+                <div className="text-2xl md:text-3xl font-bold text-primary mb-1">4</div>
+                <div className="text-xs text-muted-foreground">Assessments Completed</div>
+              </div>
+              <div className="text-center p-3 md:p-4 bg-muted/30 rounded-lg">
+                <div className="text-2xl md:text-3xl font-bold text-primary mb-1">{skillCount}</div>
+                <div className="text-xs text-muted-foreground">Skills Assessed</div>
+              </div>
+              <div className="text-center p-3 md:p-4 bg-muted/30 rounded-lg">
+                <div className="text-sm font-bold text-primary mb-1 px-1 leading-tight">{topSkill.name}</div>
+                <div className="text-xs text-muted-foreground">Top Skill ({topSkill.score})</div>
+              </div>
+            </div>
+          </Card>
 
           {/* How to Read This Report */}
           <Card className="mb-8" data-testid="section-how-to-read">
             <div className="p-6">
               <div className="flex items-center gap-2 mb-2">
                 <FileText className="h-5 w-5 text-primary" />
-                <h3 className="text-lg font-bold" data-testid="heading-how-to-read">How to Read This Report</h3>
+                <h3 className="text-lg font-bold">How to Read This Report</h3>
               </div>
-              <p className="text-sm text-muted-foreground mb-4" data-testid="text-guide-intro">
+              <p className="text-sm text-muted-foreground mb-4">
                 A step-by-step guide to understanding your assessment results and how to use them for career growth
               </p>
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <div className="flex gap-3">
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
                   <div>
@@ -256,469 +204,317 @@ export default function SampleIndividualReport() {
                     </p>
                   </div>
                 </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">5</div>
+                  <div>
+                    <p className="font-medium text-sm">Radar Chart Visualization</p>
+                    <p className="text-xs text-muted-foreground">
+                      The radar chart provides a visual overview of your skills profile, making it easy to identify patterns across dimensions.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">6</div>
+                  <div>
+                    <p className="font-medium text-sm">Individual Skill Scores</p>
+                    <p className="text-xs text-muted-foreground">
+                      Review detailed scores for each skill to understand your specific competencies and target areas for improvement.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </Card>
 
-          <section className="mb-6 md:mb-12" data-testid="section-fit-assessment">
-            <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
-              <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <FileText className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+          {/* FIT Assessment */}
+          <Card className="p-6 mb-6" data-testid="card-fit-results">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-500/10">
+                  <TrendingUp className="h-5 w-5 text-blue-500" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold">FIT Assessment</h2>
+                  <p className="text-sm text-muted-foreground">Behavioural Skills (15 Questions)</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-lg md:text-2xl font-bold" data-testid="heading-fit-assessment">FIT Assessment</h2>
-                <p className="text-muted-foreground text-xs md:text-sm" data-testid="text-fit-subtitle">Behavioral competencies for workplace success</p>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-blue-500">{fitAvg}/100</div>
+                <div className="text-xs text-muted-foreground">FIT Score</div>
               </div>
             </div>
-
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4 text-center" data-testid="heading-fit-radar-chart">Skills Overview</h3>
-                <div data-testid="chart-fit-radar">
-                <ResponsiveContainer width="100%" height={300}>
-                  <RadarChart data={fitRadarData} cx="50%" cy="50%" outerRadius="75%">
+            <p className="text-sm text-muted-foreground mb-4">
+              Strong behavioural competencies including adaptability, curiosity, and interpersonal skills.
+            </p>
+            <div className="grid md:grid-cols-2 gap-4 mb-6 p-4 bg-blue-500/5 rounded-lg border border-blue-500/20">
+              <div>
+                <div className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-2">What It Measures</div>
+                <p className="text-sm text-muted-foreground">Six core behavioural skills: High Agency, Intellectual Curiosity, Resilience, Empathy & Ethics, Growth Mindset, and Interpersonal Agility.</p>
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-2">Workplace Impact</div>
+                <p className="text-sm text-muted-foreground">Predicts adaptability, initiative, collaboration quality, and resilience under pressure. High scorers drive innovation and navigate ambiguity effectively.</p>
+              </div>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="h-72 flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={fitSorted.map(([skill, score]) => ({ skill: getSkillAcronym(skill), score, fullMark: 100 }))}>
                     <PolarGrid stroke="hsl(var(--border))" />
-                    <PolarAngleAxis dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} />
-                    <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10 }} axisLine={false} />
-                    <Tooltip formatter={(value: number) => [`${value}`, 'Score']} />
-                    <Radar dataKey="score" stroke="#5B8DB8" fill="#5B8DB8" fillOpacity={0.3} strokeWidth={2} />
+                    <PolarAngleAxis dataKey="skill" tick={{ fill: "hsl(var(--foreground))", fontSize: 11, fontWeight: 500 }} />
+                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
+                    <Radar name="FIT Score" dataKey="score" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.25} strokeWidth={2} />
                   </RadarChart>
                 </ResponsiveContainer>
-                </div>
-              </Card>
-
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4 text-center" data-testid="heading-fit-breakdown">Skills Breakdown</h3>
-                <div className="space-y-4" data-testid="container-fit-skills">
-                  {Object.entries(MOCK_FIT_SCORES).map(([skill, score]) => (
-                    <div key={skill} className="space-y-2" data-testid={`fit-skill-${skill.toLowerCase().replace(/\s+/g, '-')}`}>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium" data-testid={`text-fit-skill-name-${skill.toLowerCase().replace(/\s+/g, '-')}`}>{skill}</span>
-                        <span className="text-muted-foreground font-medium" data-testid={`text-fit-score-${skill.toLowerCase().replace(/\s+/g, '-')}`}>{score}%</span>
+              </div>
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-muted-foreground mb-3">Individual Skill Scores</div>
+                {fitSorted.map(([skill, score], index) => (
+                  <div key={skill} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0" data-testid={`row-fit-skill-${index}`}>
+                    <span className="text-sm">{skill}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${score}%` }} />
                       </div>
-                      <Progress value={score} className="h-2" data-testid={`progress-fit-${skill.toLowerCase().replace(/\s+/g, '-')}`} />
+                      <span className="text-sm font-medium w-8 text-right">{score}</span>
                     </div>
-                  ))}
-                </div>
-              </Card>
-            </div>
-
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4" data-testid="heading-fit-analysis">Analysis</h3>
-              <div className="mb-4 p-4 bg-muted/50 rounded-lg" data-testid="text-fit-overview">
-                <p className="text-foreground leading-relaxed">{fitAnalysis.overall}</p>
-              </div>
-              
-              {fitAnalysis.strengths.length > 0 && (
-                <div className="mb-4" data-testid="container-fit-strengths">
-                  <div className="flex items-center gap-2 mb-3">
-                    <TrendingUp className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold" data-testid="heading-fit-strengths">Key Strengths</h4>
-                  </div>
-                  <div className="space-y-2">
-                    {fitAnalysis.strengths.map((strength, index) => (
-                      <div key={index} className="p-3 bg-primary/5 rounded-lg border-l-4 border-primary" data-testid={`fit-strength-${index}`}>
-                        <p className="text-sm text-foreground leading-relaxed"
-                           dangerouslySetInnerHTML={{ __html: strength.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {fitAnalysis.improvements.length > 0 && (
-                <div data-testid="container-fit-improvements">
-                  <div className="flex items-center gap-2 mb-3">
-                    <AlertTriangle className="h-4 w-4 text-amber-500" />
-                    <h4 className="font-semibold" data-testid="heading-fit-improvements">Areas for Development</h4>
-                  </div>
-                  <div className="space-y-2">
-                    {fitAnalysis.improvements.map((improvement, index) => (
-                      <div key={index} className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border-l-4 border-amber-500" data-testid={`fit-improvement-${index}`}>
-                        <p className="text-sm text-foreground leading-relaxed"
-                           dangerouslySetInnerHTML={{ __html: improvement.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </Card>
-          </section>
-
-          <section className="mb-12" data-testid="section-ai-readiness">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-lg bg-cyan-500/10 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-cyan-500" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold" data-testid="heading-ai-readiness-assessment">AI Readiness Assessment</h2>
-                <p className="text-muted-foreground text-sm" data-testid="text-ai-subtitle">Capabilities for AI-augmented work</p>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4 text-center" data-testid="heading-ai-radar-chart">Skills Overview</h3>
-                <div data-testid="chart-ai-radar">
-                <ResponsiveContainer width="100%" height={340}>
-                  <RadarChart data={aiRadarData} cx="50%" cy="50%" outerRadius="70%">
-                    <PolarGrid stroke="hsl(var(--border))" />
-                    <PolarAngleAxis dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 10, fontWeight: 500 }} />
-                    <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10 }} axisLine={false} />
-                    <Tooltip formatter={(value: number) => [`${value}`, 'Score']} />
-                    <Radar dataKey="score" stroke="#6E8FA8" fill="#6E8FA8" fillOpacity={0.3} strokeWidth={2} />
-                  </RadarChart>
-                </ResponsiveContainer>
-                </div>
-              </Card>
-
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4 text-center" data-testid="heading-ai-breakdown">Skills Breakdown</h3>
-                <div className="space-y-3" data-testid="container-ai-skills">
-                  {Object.entries(MOCK_AI_READINESS_SCORES).map(([skill, score]) => (
-                    <div key={skill} className="space-y-1" data-testid={`ai-skill-${skill.toLowerCase().replace(/\s+/g, '-')}`}>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-xs" data-testid={`text-ai-skill-name-${skill.toLowerCase().replace(/\s+/g, '-')}`}>{skill}</span>
-                        <span className="text-muted-foreground font-medium" data-testid={`text-ai-score-${skill.toLowerCase().replace(/\s+/g, '-')}`}>{score}%</span>
-                      </div>
-                      <Progress value={score} className="h-2" data-testid={`progress-ai-${skill.toLowerCase().replace(/\s+/g, '-')}`} />
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            </div>
-
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4" data-testid="heading-ai-analysis">Analysis</h3>
-              <div className="mb-4 p-4 bg-muted/50 rounded-lg" data-testid="text-ai-overview">
-                <p className="text-foreground leading-relaxed">{aiAnalysis.overall}</p>
-              </div>
-              
-              {aiAnalysis.strengths.length > 0 && (
-                <div className="mb-4" data-testid="container-ai-strengths">
-                  <div className="flex items-center gap-2 mb-3">
-                    <TrendingUp className="h-4 w-4 text-cyan-500" />
-                    <h4 className="font-semibold" data-testid="heading-ai-strengths">Key Strengths</h4>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-2">
-                    {aiAnalysis.strengths.slice(0, 4).map((strength, index) => (
-                      <div key={index} className="p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg border-l-4 border-cyan-500" data-testid={`ai-strength-${index}`}>
-                        <p className="text-sm text-foreground leading-relaxed"
-                           dangerouslySetInnerHTML={{ __html: strength.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {aiAnalysis.improvements.length > 0 && (
-                <div data-testid="container-ai-improvements">
-                  <div className="flex items-center gap-2 mb-3">
-                    <AlertTriangle className="h-4 w-4 text-amber-500" />
-                    <h4 className="font-semibold" data-testid="heading-ai-improvements">Areas for Development</h4>
-                  </div>
-                  <div className="space-y-2">
-                    {aiAnalysis.improvements.map((improvement, index) => (
-                      <div key={index} className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border-l-4 border-amber-500" data-testid={`ai-improvement-${index}`}>
-                        <p className="text-sm text-foreground leading-relaxed"
-                           dangerouslySetInnerHTML={{ __html: improvement.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </Card>
-          </section>
-
-          <section className="mb-12" data-testid="section-prompt-architecture">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-violet-500" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold" data-testid="heading-prompt-architecture-assessment">Prompt Architecture Assessment</h2>
-                <p className="text-muted-foreground text-sm" data-testid="text-prompt-subtitle">AI prompt design and engineering skills</p>
-              </div>
-            </div>
-
-            <Card className="p-8 mb-6">
-              <div className="text-center">
-                <h3 className="text-lg font-medium text-muted-foreground mb-2" data-testid="label-prompt-score">Overall Score</h3>
-                <div className="text-6xl font-bold text-violet-500 mb-2" data-testid="text-prompt-score">{MOCK_PROMPT_TOTAL}</div>
-                <p className="text-muted-foreground">out of 100</p>
-              </div>
-            </Card>
-
-            <Card className="p-6 mb-6">
-              <h3 className="text-lg font-semibold mb-4" data-testid="heading-prompt-dimensions">Dimension Scores</h3>
-              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 md:gap-4" data-testid="container-prompt-dimensions">
-                {[
-                  { name: "Clarity", score: MOCK_PROMPT_SCORES.clarity },
-                  { name: "Structure", score: MOCK_PROMPT_SCORES.structure },
-                  { name: "Context", score: MOCK_PROMPT_SCORES.contextRelevance },
-                  { name: "Creativity", score: MOCK_PROMPT_SCORES.creativity },
-                  { name: "Iteration", score: MOCK_PROMPT_SCORES.iterativeImprovement },
-                ].map((dim) => (
-                  <div key={dim.name} className="text-center p-2 md:p-4 bg-violet-50 dark:bg-violet-900/20 rounded-lg" data-testid={`dimension-${dim.name.toLowerCase()}`}>
-                    <div className="text-lg md:text-2xl font-bold text-violet-600 dark:text-violet-400" data-testid={`score-${dim.name.toLowerCase()}`}>{dim.score}%</div>
-                    <div className="text-xs md:text-sm text-muted-foreground">{dim.name}</div>
                   </div>
                 ))}
               </div>
-            </Card>
+            </div>
+          </Card>
 
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4" data-testid="heading-prompt-analysis">Analysis</h3>
-              <div className="mb-4 p-4 bg-muted/50 rounded-lg" data-testid="text-prompt-overview">
-                <p className="text-foreground leading-relaxed"
-                   dangerouslySetInnerHTML={{ __html: promptAnalysis.overall.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                />
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-4">
-                <div data-testid="container-prompt-strengths">
-                  <div className="flex items-center gap-2 mb-3">
-                    <TrendingUp className="h-4 w-4 text-violet-500" />
-                    <h4 className="font-semibold" data-testid="heading-prompt-strengths">Strengths</h4>
-                  </div>
-                  <div className="space-y-2">
-                    {promptAnalysis.strengths.map((strength, index) => (
-                      <div key={index} className="p-3 bg-violet-50 dark:bg-violet-900/20 rounded-lg border-l-4 border-violet-500" data-testid={`prompt-strength-${index}`}>
-                        <p className="text-sm text-foreground leading-relaxed"
-                           dangerouslySetInnerHTML={{ __html: strength.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                        />
-                      </div>
-                    ))}
-                  </div>
+          {/* AI Readiness Assessment */}
+          <Card className="p-6 mb-6" data-testid="card-ai-readiness-results">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-500/10">
+                  <Brain className="h-5 w-5 text-purple-500" />
                 </div>
-                <div data-testid="container-prompt-improvements">
-                  <div className="flex items-center gap-2 mb-3">
-                    <AlertTriangle className="h-4 w-4 text-amber-500" />
-                    <h4 className="font-semibold" data-testid="heading-prompt-improvements">Development Areas</h4>
-                  </div>
-                  <div className="space-y-2">
-                    {promptAnalysis.improvements.slice(0, 2).map((improvement, index) => (
-                      <div key={index} className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border-l-4 border-amber-500" data-testid={`prompt-improvement-${index}`}>
-                        <p className="text-sm text-foreground leading-relaxed"
-                           dangerouslySetInnerHTML={{ __html: improvement.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                        />
-                      </div>
-                    ))}
-                  </div>
+                <div>
+                  <h2 className="text-xl font-semibold">AI Readiness Assessment</h2>
+                  <p className="text-sm text-muted-foreground">Technical AI Skills (21 Questions)</p>
                 </div>
               </div>
-            </Card>
-          </section>
-
-          <section className="mb-12" data-testid="section-aiq">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-emerald-500" />
+              <div className="text-right">
+                <div className="text-2xl font-bold text-purple-500">{aiAvg}/100</div>
+                <div className="text-xs text-muted-foreground">AI Readiness Score</div>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Strong AI literacy with ability to leverage AI tools for productivity multiplication.
+            </p>
+            <div className="grid md:grid-cols-2 gap-4 mb-6 p-4 bg-purple-500/5 rounded-lg border border-purple-500/20">
+              <div>
+                <div className="text-sm font-semibold text-purple-600 dark:text-purple-400 mb-2">What It Measures</div>
+                <p className="text-sm text-muted-foreground">Nine AI-specific competencies: AI Literacy & Prompt Engineering, Technical Fundamentals, Data Fluency, Critical Thinking & Problem-Solving, Adaptability & Continuous Learning, Collaboration & Communication, Responsible AI & Ethical Awareness, Creativity & Innovation, and Domain Expertise.</p>
               </div>
               <div>
-                <h2 className="text-2xl font-bold" data-testid="heading-aiq-assessment">Algorithmic Integrity Quotient (AIQ)</h2>
-                <p className="text-muted-foreground text-sm" data-testid="text-aiq-subtitle">Ethical reasoning in AI scenarios</p>
+                <div className="text-sm font-semibold text-purple-600 dark:text-purple-400 mb-2">Workplace Impact</div>
+                <p className="text-sm text-muted-foreground">Determines ability to leverage AI tools for productivity gains, make sound AI-assisted decisions, and integrate AI responsibly into workflows. High scorers multiply their output through effective AI collaboration.</p>
               </div>
             </div>
-
-            <Card className="p-8 mb-6">
-              <div className="text-center mb-6">
-                <h3 className="text-lg font-medium text-muted-foreground mb-2" data-testid="label-aiq-score">Overall Score</h3>
-                <div className="text-6xl font-bold text-emerald-500 mb-2" data-testid="text-aiq-score">{MOCK_AIQ_SCORE}</div>
-                <p className="text-muted-foreground">out of 100</p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="h-80 flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="65%" data={aiSorted.map(([skill, score]) => ({ skill: getSkillAcronym(skill), score, fullMark: 100 }))}>
+                    <PolarGrid stroke="hsl(var(--border))" />
+                    <PolarAngleAxis dataKey="skill" tick={{ fill: "hsl(var(--foreground))", fontSize: 10, fontWeight: 500 }} />
+                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
+                    <Radar name="AI Readiness" dataKey="score" stroke="#a855f7" fill="#a855f7" fillOpacity={0.25} strokeWidth={2} />
+                  </RadarChart>
+                </ResponsiveContainer>
               </div>
-
-              <div className="space-y-6" data-testid="container-aiq-progress">
-                <div className="flex justify-between text-xs text-muted-foreground" data-testid="container-aiq-scale">
-                  <span data-testid="aiq-scale-0">0</span>
-                  <span data-testid="aiq-scale-20">20</span>
-                  <span data-testid="aiq-scale-40">40</span>
-                  <span data-testid="aiq-scale-60">60</span>
-                  <span data-testid="aiq-scale-80">80</span>
-                  <span data-testid="aiq-scale-100">100</span>
-                </div>
-                
-                <div className="relative">
-                  <Progress 
-                    value={MOCK_AIQ_SCORE} 
-                    className="h-8"
-                    indicatorClassName={getAIQBarColor(MOCK_AIQ_SCORE)}
-                    data-testid="progress-aiq-score"
-                  />
-                  
-                  {[20, 40, 60, 80].map((mark) => (
-                    <div 
-                      key={mark}
-                      className="absolute top-0 bottom-0 w-0.5 bg-muted-foreground/30 pointer-events-none" 
-                      style={{ left: `${mark}%` }}
-                    />
-                  ))}
-                  
-                  <div 
-                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 bg-emerald-600 text-white px-3 py-1 rounded text-sm font-bold whitespace-nowrap pointer-events-none"
-                    style={{ left: `${Math.min(Math.max(MOCK_AIQ_SCORE, 8), 92)}%` }}
-                    data-testid="badge-aiq-score-indicator"
-                  >
-                    {MOCK_AIQ_SCORE}%
-                  </div>
-                </div>
-                
-                <div className="text-center space-y-2">
-                  <Badge className="text-sm px-4 py-1 bg-emerald-600" data-testid="badge-aiq-band">
-                    {aiqBand.title}
-                  </Badge>
-                  <p className="text-muted-foreground text-sm max-w-2xl mx-auto" data-testid="text-aiq-band-description">
-                    {aiqBand.description}
-                  </p>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4" data-testid="heading-aiq-analysis">Analysis</h3>
-              <div className="mb-4 p-4 bg-muted/50 rounded-lg" data-testid="text-aiq-overview">
-                <p className="text-foreground leading-relaxed"
-                   dangerouslySetInnerHTML={{ __html: aiqAnalysis.overall.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                />
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-4">
-                <div data-testid="container-aiq-strengths">
-                  <div className="flex items-center gap-2 mb-3">
-                    <TrendingUp className="h-4 w-4 text-emerald-500" />
-                    <h4 className="font-semibold" data-testid="heading-aiq-strengths">Strengths</h4>
-                  </div>
-                  <div className="space-y-2">
-                    {aiqAnalysis.strengths.map((strength, index) => (
-                      <div key={index} className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border-l-4 border-emerald-500" data-testid={`aiq-strength-${index}`}>
-                        <p className="text-sm text-foreground leading-relaxed"
-                           dangerouslySetInnerHTML={{ __html: strength.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                        />
+              <div className="space-y-1">
+                <div className="text-sm font-medium text-muted-foreground mb-3">Individual Skill Scores</div>
+                {aiSorted.map(([skill, score], index) => (
+                  <div key={skill} className="flex items-center justify-between py-1.5 border-b border-border/50 last:border-0" data-testid={`row-ai-skill-${index}`}>
+                    <span className="text-sm truncate mr-2">{skill}</span>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
+                        <div className="h-full bg-purple-500 rounded-full transition-all" style={{ width: `${score}%` }} />
                       </div>
-                    ))}
+                      <span className="text-sm font-medium w-8 text-right">{score}</span>
+                    </div>
                   </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+
+          {/* Prompt Architecture Assessment */}
+          <Card className="p-6 mb-6" data-testid="card-prompt-arch-results">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-500/10">
+                  <Zap className="h-5 w-5 text-amber-500" />
                 </div>
-                <div data-testid="container-aiq-improvements">
-                  <div className="flex items-center gap-2 mb-3">
-                    <AlertTriangle className="h-4 w-4 text-amber-500" />
-                    <h4 className="font-semibold" data-testid="heading-aiq-improvements">Development Areas</h4>
-                  </div>
-                  <div className="space-y-2">
-                    {aiqAnalysis.improvements.map((improvement, index) => (
-                      <div key={index} className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border-l-4 border-amber-500" data-testid={`aiq-improvement-${index}`}>
-                        <p className="text-sm text-foreground leading-relaxed"
-                           dangerouslySetInnerHTML={{ __html: improvement.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
-                        />
-                      </div>
-                    ))}
-                  </div>
+                <div>
+                  <h2 className="text-xl font-semibold">Prompt Architecture Assessment</h2>
+                  <p className="text-sm text-muted-foreground">AI Prompt Engineering (7 Levels)</p>
                 </div>
               </div>
-            </Card>
-          </section>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-amber-500">{MOCK_PROMPT_TOTAL}/100</div>
+                <div className="text-xs text-muted-foreground">Overall Score</div>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Strong prompt engineering skills; capable of designing effective AI interactions.
+            </p>
+            <div className="grid md:grid-cols-2 gap-4 mb-6 p-4 bg-amber-500/5 rounded-lg border border-amber-500/20">
+              <div>
+                <div className="text-sm font-semibold text-amber-600 dark:text-amber-400 mb-2">What It Measures</div>
+                <p className="text-sm text-muted-foreground">Prompt engineering expertise across five equal dimensions (20% each): Clarity, Structure, Context Relevance, Creativity, and Iterative Improvement. Progressive difficulty levels test real-world prompting skills.</p>
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-amber-600 dark:text-amber-400 mb-2">Workplace Impact</div>
+                <p className="text-sm text-muted-foreground">Directly correlates with AI productivity. Skilled prompt engineers extract 3-5x more value from AI tools, solve complex problems faster, and produce higher-quality AI-assisted outputs.</p>
+              </div>
+            </div>
+            <div className="grid md:grid-cols-3 gap-4 mb-4">
+              <div className="flex flex-col items-center justify-center p-4 bg-muted/30 rounded-lg">
+                <div className="text-2xl md:text-4xl font-bold text-amber-500 mb-1" data-testid="text-prompt-score">{MOCK_PROMPT_TOTAL}</div>
+                <div className="text-sm text-muted-foreground">Total Score</div>
+              </div>
+              <div className="flex flex-col items-center justify-center p-4 bg-muted/30 rounded-lg">
+                <div className="text-2xl md:text-4xl font-bold text-amber-500 mb-1" data-testid="text-prompt-percentile">{MOCK_PROMPT_PERCENTILE}%</div>
+                <div className="text-sm text-muted-foreground">Percentile</div>
+              </div>
+              <div className="flex flex-col items-center justify-center p-4 bg-muted/30 rounded-lg">
+                <Badge variant="default" className="mb-2">Competent</Badge>
+                <div className="text-sm text-muted-foreground">Performance</div>
+              </div>
+            </div>
+            <div className="text-xs text-muted-foreground text-center border-t pt-3">
+              <span className="font-medium">Assessed Dimensions:</span> Clarity (20%) &bull; Structure (20%) &bull; Context Relevance (20%) &bull; Creativity (20%) &bull; Iterative Improvement (20%)
+            </div>
+          </Card>
+
+          {/* AIQ Assessment */}
+          <Card className="p-6 mb-6" data-testid="card-aiq-results">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-green-500/10">
+                  <Shield className="h-5 w-5 text-green-500" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold">Algorithmic Integrity Quotient (AIQ)</h2>
+                  <p className="text-sm text-muted-foreground">AI Ethics & Responsible AI (8 Questions)</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-green-500">{MOCK_AIQ_SCORE}%</div>
+                <div className="text-xs text-muted-foreground">{aiqBand.title}</div>
+              </div>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4 mb-6 p-4 bg-green-500/5 rounded-lg border border-green-500/20">
+              <div>
+                <div className="text-sm font-semibold text-green-600 dark:text-green-400 mb-2">What It Measures</div>
+                <p className="text-sm text-muted-foreground">AI ethics, bias detection, fairness, transparency, and responsible deployment using graded scoring (0-100%). Options weighted by ethical alignment: Best (100%), Acceptable (65-75%), Suboptimal (30-50%), Poor (0-25%).</p>
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-green-600 dark:text-green-400 mb-2">Workplace Impact</div>
+                <p className="text-sm text-muted-foreground">Graded scoring captures nuanced ethical judgment. Identifies candidates who balance ethical imperatives with operational realities, making them valuable for AI governance and deployment oversight roles.</p>
+              </div>
+            </div>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="flex flex-col items-center justify-center p-6 bg-muted/30 rounded-lg">
+                <div className="text-3xl md:text-5xl font-bold text-green-500 mb-2" data-testid="text-aiq-score">{MOCK_AIQ_SCORE}%</div>
+                <div className="text-lg font-medium mb-1">{aiqBand.title}</div>
+                <div className="text-sm text-muted-foreground text-center">Band: {aiqBand.range}</div>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground mb-2">Score Interpretation</div>
+                  <p className="text-sm leading-relaxed">{aiqBand.description}</p>
+                </div>
+              </div>
+            </div>
+          </Card>
 
           {/* Skills Legend */}
-          <section className="mb-8">
-            <SkillsLegend compact data-testid="section-skills-legend" />
-          </section>
+          <SkillsLegend className="mb-8" compact data-testid="section-skills-legend" />
 
-          {/* Additional Services Section */}
-          <section className="mb-8" data-testid="section-additional-services">
-            <Card>
-              <div className="p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Star className="h-5 w-5 text-primary" />
-                  <h3 className="text-xl font-bold" data-testid="heading-career-services">Career Development Services</h3>
+          {/* Bottom actions */}
+          <div className="flex justify-end gap-3 mb-8" data-testid="container-bottom-actions">
+            <Button variant="outline" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} data-testid="button-back-to-top">
+              <ArrowUp className="mr-2 h-4 w-4" />
+              Back to Top
+            </Button>
+            <Button onClick={handleDownloadPDF} disabled={downloading} data-testid="button-export-pdf-bottom">
+              {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              {downloading ? "Generating..." : "Download PDF"}
+            </Button>
+          </div>
+
+          {/* Career Development Services */}
+          <Card className="mb-8" data-testid="section-additional-services">
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Star className="h-5 w-5 text-primary" />
+                <h3 className="text-xl font-bold">Career Development Services</h3>
+              </div>
+              <p className="text-muted-foreground mb-6">
+                HumanMetrix offers additional analysis services to support your career journey:
+              </p>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">Career Fit Analysis</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Discover which roles and industries best match your skills, traits, and working style</p>
                 </div>
-                <p className="text-muted-foreground mb-6" data-testid="text-services-intro">
-                  HumanMetrix offers additional analysis services to support your career journey:
-                </p>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-career-fit">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Target className="h-4 w-4 text-primary" />
-                      <h4 className="font-semibold" data-testid="heading-service-career-fit">Career Fit Analysis</h4>
-                    </div>
-                    <p className="text-sm text-muted-foreground" data-testid="text-service-career-fit">
-                      Discover which roles and industries best match your skills, traits, and working style
-                    </p>
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageSquare className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">Interview Preparation Guide</h4>
                   </div>
-                  <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-interview-prep">
-                    <div className="flex items-center gap-2 mb-2">
-                      <MessageSquare className="h-4 w-4 text-primary" />
-                      <h4 className="font-semibold" data-testid="heading-service-interview-prep">Interview Preparation Guide</h4>
-                    </div>
-                    <p className="text-sm text-muted-foreground" data-testid="text-service-interview-prep">
-                      Customized questions you're likely to face based on your profile, with strategies to highlight your strengths
-                    </p>
-                  </div>
-                  <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-work-style">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Users className="h-4 w-4 text-primary" />
-                      <h4 className="font-semibold" data-testid="heading-service-work-style">Work Style Compatibility</h4>
-                    </div>
-                    <p className="text-sm text-muted-foreground" data-testid="text-service-work-style">
-                      Understand how you collaborate and what team environments help you thrive
-                    </p>
-                  </div>
-                  <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-career-roadmap">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Rocket className="h-4 w-4 text-primary" />
-                      <h4 className="font-semibold" data-testid="heading-service-career-roadmap">Career Acceleration Roadmap</h4>
-                    </div>
-                    <p className="text-sm text-muted-foreground" data-testid="text-service-career-roadmap">
-                      Personalized development plan with skills to prioritize for faster career progression
-                    </p>
-                  </div>
-                  <div className="p-4 bg-muted/30 rounded-lg" data-testid="card-service-strengths-growth">
-                    <div className="flex items-center gap-2 mb-2">
-                      <TrendingUp className="h-4 w-4 text-primary" />
-                      <h4 className="font-semibold" data-testid="heading-service-strengths-growth">Strengths & Growth Areas</h4>
-                    </div>
-                    <p className="text-sm text-muted-foreground" data-testid="text-service-strengths-growth">
-                      Comprehensive self-awareness report highlighting your competitive advantages and areas for development
-                    </p>
-                  </div>
+                  <p className="text-sm text-muted-foreground">Customized questions you're likely to face based on your profile, with strategies to highlight your strengths</p>
                 </div>
-                <div className="mt-6 p-4 bg-primary/5 rounded-lg flex items-center gap-3" data-testid="container-contact-email">
-                  <Mail className="h-5 w-5 text-primary" />
-                  <p className="text-sm" data-testid="text-contact-email">
-                    Contact us at <a href="mailto:hello@humanmetrix.co.uk" className="font-semibold text-primary underline" data-testid="link-contact-email">hello@humanmetrix.co.uk</a> for more information about these services.
-                  </p>
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">Work Style Compatibility</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Understand how you collaborate and what team environments help you thrive</p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Rocket className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">Career Acceleration Roadmap</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Personalized development plan with skills to prioritize for faster career progression</p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                    <h4 className="font-semibold">Strengths & Growth Areas</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Comprehensive self-awareness report highlighting your competitive advantages and areas for development</p>
                 </div>
               </div>
-            </Card>
-          </section>
-
-          <div className="text-center py-6 md:py-8 border-t" data-testid="container-footer-cta">
-            <p className="text-xs md:text-base text-muted-foreground mb-3 md:mb-4" data-testid="text-sample-report-description">
-              This is a sample report showing what your complete assessment results will look like.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-2 md:gap-4 justify-center flex-wrap">
-              <Button size="default" variant="secondary" className="text-xs md:text-sm" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} data-testid="button-back-to-top">
-                <ArrowUp className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
-                Back to Top
-              </Button>
-              <Link href="/#sample-reports">
-                <Button size="default" className="text-xs md:text-sm" data-testid="button-back-to-samples">
-                  Back to Sample Reports
+              <div className="mt-6 p-4 bg-primary/5 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <MessageSquare className="h-5 w-5 text-primary flex-shrink-0" />
+                  <p className="text-sm">Interested in any of these services? Get in touch and we'll help you take the next step.</p>
+                </div>
+                <Button asChild data-testid="button-contact-enquiry">
+                  <a href={`mailto:hello@humanmetrix.co.uk?subject=${encodeURIComponent("Career Development Services Enquiry")}&body=${encodeURIComponent("Hi HumanMetrix,\n\nI've completed my assessments and I'm interested in learning more about your career development services.\n\nPlease let me know what options are available.\n\nThank you")}`}>
+                    <Send className="mr-2 h-4 w-4" />
+                    Send Enquiry
+                  </a>
                 </Button>
-              </Link>
-              <Link href="/assessments">
-                <Button size="default" variant="outline" className="text-xs md:text-sm" data-testid="button-start-assessments">
-                  Start Your Assessment
-                </Button>
-              </Link>
+              </div>
             </div>
-          </div>
+          </Card>
         </div>
       </main>
-      
-      <Footer />
+
+      <div className="relative z-10">
+        <Footer />
+      </div>
     </div>
   );
 }

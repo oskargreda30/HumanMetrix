@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download, Loader2 } from "lucide-react";
 import PartnerMultiCandidateRoleFitTab from "@/components/partner/PartnerMultiCandidateRoleFitTab";
+import { exportResultsPDF } from "@/lib/pdfScreenCapture";
 
 const DEMO_COMPARISON = {
   id: "sample-multi-rolefit-001",
@@ -271,35 +273,59 @@ const DEMO_COMPARISON = {
 };
 
 export default function SampleMultiCandidateRoleFitReport() {
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadPDF = async () => {
+    setDownloading(true);
+    try {
+      await exportResultsPDF({
+        elementId: "sample-report-multi-rolefit",
+        filename: "humanmetrix-multi-candidate-role-fit-sample.pdf",
+      });
+    } catch (e) {
+      console.error("PDF generation failed", e);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navigation />
       
       <main className="flex-1">
-        <div className="container mx-auto px-3 md:px-4 py-4 md:py-8 max-w-6xl">
+        <div id="sample-report-multi-rolefit" className="container mx-auto px-3 md:px-4 py-4 md:py-8 max-w-6xl">
           <div className="mb-4 md:mb-6">
-            <Link href="/#sample-reports">
-              <Button variant="ghost" size="sm" className="mb-2 md:mb-4 text-xs md:text-sm" data-testid="button-back">
-                <ArrowLeft className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
-                Back to Sample Reports
+            <div className="flex items-center justify-between gap-3 flex-wrap mb-2 md:mb-4">
+              <Link href="/#sample-reports">
+                <Button variant="ghost" size="sm" className="text-xs md:text-sm" data-testid="button-back">
+                  <ArrowLeft className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
+                  Back to Sample Reports
+                </Button>
+              </Link>
+              <Button
+                onClick={handleDownloadPDF}
+                disabled={downloading}
+                size="sm"
+                className="gap-2 text-xs md:text-sm"
+                data-testid="button-download-pdf"
+              >
+                {downloading ? <Loader2 className="h-3 w-3 md:h-4 md:w-4 animate-spin" /> : <Download className="h-3 w-3 md:h-4 md:w-4" />}
+                {downloading ? "Generating..." : "Download PDF"}
               </Button>
-            </Link>
-            
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-4">
-              <div>
-                <div className="flex items-center gap-2 mb-1 md:mb-2">
-                  <Badge variant="outline" className="text-primary border-primary text-[10px] md:text-xs" data-testid="badge-sample">
-                    Sample Report
-                  </Badge>
-                </div>
-                <h1 className="text-lg md:text-3xl font-bold" data-testid="text-page-title">
-                  Multi-Candidate Role Fit Comparison
-                </h1>
-                <p className="text-xs md:text-base text-muted-foreground mt-1" data-testid="text-page-subtitle">
-                  3 candidates compared against Senior AI Engineer role
-                </p>
-              </div>
             </div>
+            
+            <div className="flex items-center gap-2 mb-1 md:mb-2">
+              <Badge variant="outline" className="text-primary border-primary text-[10px] md:text-xs" data-testid="badge-sample">
+                Sample Report
+              </Badge>
+            </div>
+            <h1 className="text-lg md:text-3xl font-bold" data-testid="text-page-title">
+              Multi-Candidate Role Fit Comparison
+            </h1>
+            <p className="text-xs md:text-base text-muted-foreground mt-1" data-testid="text-page-subtitle">
+              3 candidates compared against Senior AI Engineer role
+            </p>
           </div>
 
           <PartnerMultiCandidateRoleFitTab
