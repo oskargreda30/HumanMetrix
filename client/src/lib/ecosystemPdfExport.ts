@@ -630,9 +630,9 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
     const strengthToScore: Record<string, number> = { strong: 85, adequate: 65, weak: 40, critical: 20 };
     const priorityToTarget: Record<string, number> = { critical: 90, high: 80, medium: 65, low: 50 };
 
-    const GAP_BAR_HEIGHT = 7;
+    const GAP_BAR_HEIGHT = 5;
     const GAP_BADGE_SIZE = 6;
-    const GAP_ITEM_PAD = 3;
+    const GAP_ITEM_PAD = 2;
 
     for (const item of analysis.capabilityGapMatrix) {
       const currentScore = item.currentScore ?? strengthToScore[item.teamStrength] ?? 50;
@@ -643,11 +643,11 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
       const analysisText = item.gapAnalysis || '';
 
       applySmallText(pdf);
-      pdf.setFontSize(7.5);
+      pdf.setFontSize(7);
       const analysisLines = analysisText ? wrapText(pdf, analysisText, CONTENT_WIDTH - 20) : [];
-      const contentH = GAP_ITEM_PAD + 8 + GAP_BAR_HEIGHT + 10 + (analysisLines.length > 0 ? analysisLines.length * 3.5 + 2 : 0) + GAP_ITEM_PAD;
+      const contentH = GAP_ITEM_PAD + 7 + GAP_BAR_HEIGHT + 8 + (analysisLines.length > 0 ? analysisLines.length * 3.0 + 2 : 0) + GAP_ITEM_PAD;
 
-      y = ensureSpace(pdf, y, contentH + 3);
+      y = ensureSpace(pdf, y, contentH + 1);
 
       pdf.setFillColor(248, 250, 252);
       pdf.roundedRect(MARGIN_LEFT + 2, y - 1, CONTENT_WIDTH - 4, contentH, 2, 2, 'F');
@@ -667,9 +667,9 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
       const gapText = gap > 0 ? `+${gap} gap` : 'On target';
       pdf.text(gapText, PAGE_WIDTH - MARGIN_RIGHT - 6, y + 3, { align: 'right' });
 
-      y += 8;
+      y += 7;
       drawHorizontalBar(pdf, MARGIN_LEFT + 7, y, CONTENT_WIDTH - 18, currentScore, targetScore, barColor, GAP_BAR_HEIGHT);
-      y += GAP_BAR_HEIGHT + 4;
+      y += GAP_BAR_HEIGHT + 3;
 
       pdf.setFontSize(7);
       pdf.setFont('helvetica', 'normal');
@@ -678,19 +678,19 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
       const targetLabelX = MARGIN_LEFT + 7 + (CONTENT_WIDTH - 18) * (targetScore / 100) - 16;
       const clampedTargetX = Math.min(Math.max(MARGIN_LEFT + 42, targetLabelX), PAGE_WIDTH - MARGIN_RIGHT - 28);
       pdf.text(`Target: ${targetScore}%`, clampedTargetX, y + 1);
-      y += 6;
+      y += 5;
 
       if (analysisLines.length > 0) {
-        pdf.setFontSize(7.5);
+        pdf.setFontSize(7);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(...COLORS.textSecondary);
         for (const line of analysisLines) {
           pdf.text(line, MARGIN_LEFT + 7, y);
-          y += 3.5;
+          y += 3.0;
         }
       }
 
-      y += GAP_ITEM_PAD + 1;
+      y += GAP_ITEM_PAD;
     }
   }
 
@@ -979,20 +979,21 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
 
   // ====== RISK ALERTS ======
   if (analysis.riskAlerts?.length > 0) {
-    y = ensureSpace(pdf, y, 40);
-    y = addSectionHeader(pdf, 'RISK ALERTS', y);
-
-    for (const alert of analysis.riskAlerts) {
-      const alertBg = alert.severity === 'critical' ? [245, 235, 240] as [number, number, number] : alert.severity === 'warning' ? COLORS.bgSection : COLORS.blueLight;
-      const severityColor = alert.severity === 'critical' ? COLORS.warmDark : alert.severity === 'warning' ? COLORS.slate : COLORS.blueMid;
-
-      // Measure content first
-      applySmallText(pdf);
+    // Pre-measure all alerts to ensure the entire section lands on one page
+    applySmallText(pdf);
+    const alertMeasurements = analysis.riskAlerts.map((alert: any) => {
       const descLines = alert.description ? wrapText(pdf, alert.description, CONTENT_WIDTH - 16) : [];
       const recLines = alert.recommendation ? wrapText(pdf, alert.recommendation, CONTENT_WIDTH - 16) : [];
       const blockH = 10 + descLines.length * 3.8 + (recLines.length > 0 ? recLines.length * 3.8 + 4 : 0);
+      return { alert, descLines, recLines, blockH };
+    });
+    const totalRiskH = 16 + alertMeasurements.reduce((sum: number, m: any) => sum + m.blockH + 10, 0);
+    y = ensureSpace(pdf, y, totalRiskH);
+    y = addSectionHeader(pdf, 'RISK ALERTS', y);
 
-      y = ensureSpace(pdf, y, blockH + 4);
+    for (const { alert, descLines, recLines, blockH } of alertMeasurements) {
+      const alertBg = alert.severity === 'critical' ? [245, 235, 240] as [number, number, number] : alert.severity === 'warning' ? COLORS.bgSection : COLORS.blueLight;
+      const severityColor = alert.severity === 'critical' ? COLORS.warmDark : alert.severity === 'warning' ? COLORS.slate : COLORS.blueMid;
 
       pdf.setFillColor(...alertBg);
       pdf.roundedRect(MARGIN_LEFT + 2, y - 2, CONTENT_WIDTH - 4, blockH, 2, 2, 'F');
