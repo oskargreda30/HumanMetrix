@@ -127,11 +127,11 @@ export default function SampleRoleFitReport() {
 
       const strengths = [...SKILL_ALIGNMENTS, ...AI_SKILL_ALIGNMENTS]
         .filter(s => s.alignment === "exceeds")
-        .map(s => `${s.skillName} (${s.candidateScore}/${s.requiredScore})`);
+        .map(s => s.skillName);
 
       const gaps = [...SKILL_ALIGNMENTS, ...AI_SKILL_ALIGNMENTS]
         .filter(s => s.alignment === "gap")
-        .map(s => `${s.skillName} (${s.candidateScore}/${s.requiredScore})`);
+        .map(s => s.skillName);
 
       await exportRoleFitPDF({
         candidate: {
