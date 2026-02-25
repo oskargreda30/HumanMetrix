@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
-  ArrowLeft, 
+  ArrowLeft,
+  ArrowUp,
   Target, 
   Heart, 
   Brain, 
@@ -21,7 +23,10 @@ import {
   DollarSign,
   ShieldAlert,
   CheckCircle,
+  Download,
+  Loader2,
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 
 const CALENDLY_URL = "https://calendly.com/hello-humanmetrix/30min";
@@ -178,6 +183,30 @@ const cumulativeScores = FIT_CAPABILITIES.map(cap => {
 });
 
 export default function EcosystemSampleReport() {
+  const [isExporting, setIsExporting] = useState(false);
+  const { toast } = useToast();
+
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      const { generateEcosystemPdf } = await import('@/lib/ecosystemPdfExport');
+      await generateEcosystemPdf({
+        companyName: "TechFlow Solutions",
+        project: sampleProject,
+        analysis: sampleAnalysis,
+        missionAnalysis: sampleMissionAnalysis,
+        teamMembers: sampleTeamMembers,
+        cumulativeScores: cumulativeScores,
+      });
+      toast({ title: "PDF exported", description: "Your Team Diagnostic Report has been downloaded." });
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toast({ title: "Export failed", description: "Could not generate PDF. Please try again.", variant: "destructive" });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 py-8">
@@ -194,12 +223,30 @@ export default function EcosystemSampleReport() {
             </Badge>
           </div>
           
-          <h1 className="text-2xl md:text-3xl font-bold mb-2" data-testid="text-sample-report-title">
-            Team Diagnostic Report: TechFlow Solutions Team
-          </h1>
-          <p className="text-muted-foreground">
-            This is an example report showing what insights you'll receive after completing the Ecosystem Index diagnostic.
-          </p>
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold mb-2" data-testid="text-sample-report-title">
+                Team Diagnostic Report: TechFlow Solutions Team
+              </h1>
+              <p className="text-muted-foreground">
+                This is an example report showing what insights you'll receive after completing the Ecosystem Index diagnostic.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              onClick={handleExportPDF}
+              disabled={isExporting}
+              data-testid="button-export-pdf"
+              className="self-start"
+            >
+              {isExporting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="mr-2 h-4 w-4" />
+              )}
+              {isExporting ? "Generating..." : "Export PDF"}
+            </Button>
+          </div>
         </div>
 
         {/* Report Content - Matching Dashboard Layout */}
@@ -880,18 +927,35 @@ export default function EcosystemSampleReport() {
               Start your team diagnostic now or schedule a consultation with our experts to discuss 
               your specific needs and how we can help optimize your team.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
+              <Button size="default" variant="secondary" className="text-xs md:text-sm" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} data-testid="button-back-to-top">
+                <ArrowUp className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
+                Back to Top
+              </Button>
+              <Link href="/#sample-reports">
+                <Button size="default" className="text-xs md:text-sm" data-testid="button-back-to-samples">
+                  Back to Sample Reports
+                </Button>
+              </Link>
               <Link href="/ecosystem-index">
-                <Button size="lg" data-testid="button-start-diagnostic-cta">
+                <Button size="default" variant="outline" className="text-xs md:text-sm" data-testid="button-start-diagnostic-cta">
                   Get Started
                 </Button>
               </Link>
               <a href={CALENDLY_URL} target="_blank" rel="noopener noreferrer">
-                <Button size="lg" variant="outline" data-testid="button-schedule-consultation">
-                  <Calendar className="mr-2 h-4 w-4" />
+                <Button size="default" variant="outline" className="text-xs md:text-sm" data-testid="button-schedule-consultation">
+                  <Calendar className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
                   Schedule Consultation
                 </Button>
               </a>
+              <Button size="default" className="text-xs md:text-sm" onClick={handleExportPDF} disabled={isExporting} data-testid="button-export-pdf-bottom">
+                {isExporting ? (
+                  <Loader2 className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4 animate-spin" />
+                ) : (
+                  <Download className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
+                )}
+                {isExporting ? "Generating..." : "Export PDF"}
+              </Button>
             </div>
           </div>
         </div>
