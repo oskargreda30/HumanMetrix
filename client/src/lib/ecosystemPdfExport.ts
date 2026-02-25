@@ -373,6 +373,20 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   }
   y += 4;
 
+  // ====== STRATEGIC ASSESSMENT ======
+  if (analysis.executiveSummary) {
+    y = newPage(pdf);
+    y = addSectionHeader(pdf, 'STRATEGIC ASSESSMENT', y);
+    y = addDescriptionBox(pdf, 'AI-generated executive summary analyzing your team\'s strengths, gaps, and strategic recommendations based on all available assessment data.', y);
+    applyBodyText(pdf);
+    const paragraphs = analysis.executiveSummary.split('\n\n');
+    for (const para of paragraphs) {
+      y = drawWrappedText(pdf, para.trim(), MARGIN_LEFT + 4, y, CONTENT_WIDTH - 8);
+      y += 3;
+    }
+    y += 4;
+  }
+
   // ====== CANDIDATES ASSESSED ======
   const assessedMembers = teamMembers.filter((m: any) => m.fitScores && Object.keys(m.fitScores).length > 0);
   if (assessedMembers.length > 0) {
@@ -407,20 +421,6 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
       pdf.text(member.role || 'Team Member', cx + 10, y + 3.5);
 
       if (col === cols - 1 || i === assessedMembers.length - 1) y += 12;
-    }
-    y += 4;
-  }
-
-  // ====== STRATEGIC ASSESSMENT ======
-  if (analysis.executiveSummary) {
-    y = newPage(pdf);
-    y = addSectionHeader(pdf, 'STRATEGIC ASSESSMENT', y);
-    y = addDescriptionBox(pdf, 'AI-generated executive summary analyzing your team\'s strengths, gaps, and strategic recommendations based on all available assessment data.', y);
-    applyBodyText(pdf);
-    const paragraphs = analysis.executiveSummary.split('\n\n');
-    for (const para of paragraphs) {
-      y = drawWrappedText(pdf, para.trim(), MARGIN_LEFT + 4, y, CONTENT_WIDTH - 8);
-      y += 3;
     }
     y += 4;
   }
