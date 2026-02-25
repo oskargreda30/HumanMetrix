@@ -506,7 +506,7 @@ function ensurePageSpace(pdf: jsPDF, yPos: number, requiredHeight: number, pageH
     pdf.addPage();
     addBackgroundPattern(pdf, pageWidth, pageHeight);
     addHeader(pdf, pageWidth);
-    return 42; // Start content below header with breathing room
+    return 34; // Start content just below the page header
   }
   return yPos;
 }
