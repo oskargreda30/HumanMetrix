@@ -233,6 +233,7 @@ export default function EcosystemSampleReport() {
               </p>
             </div>
             <Button
+              variant="outline"
               size="sm"
               onClick={handleExportPDF}
               disabled={isExporting}
@@ -948,7 +949,7 @@ export default function EcosystemSampleReport() {
                   Schedule Consultation
                 </Button>
               </a>
-              <Button size="default" className="text-xs md:text-sm" onClick={handleExportPDF} disabled={isExporting} data-testid="button-export-pdf-bottom">
+              <Button variant="outline" size="lg" onClick={handleExportPDF} disabled={isExporting} data-testid="button-export-pdf-bottom">
                 {isExporting ? (
                   <Loader2 className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4 animate-spin" />
                 ) : (
