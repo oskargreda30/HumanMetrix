@@ -476,30 +476,53 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
         low: COLORS.textMuted,
       };
 
-      for (const cap of sorted) {
-        const reasoningLines = cap.reasoning ? wrapText(pdf, cap.reasoning, CONTENT_WIDTH - 18) : [];
-        const itemH = 8 + (reasoningLines.length > 0 ? reasoningLines.length * 3.8 + 2 : 0) + 4;
-        y = ensureSpace(pdf, y, itemH);
+      const CAP_COLS = 2;
+      const CAP_COL_GAP = 4;
+      const capColW = (CONTENT_WIDTH - CAP_COL_GAP) / 2;
+      const capTextW = capColW - 10;
 
-        drawCapabilityBadge(pdf, cap.code, MARGIN_LEFT + 4, y + 5);
-        pdf.setFontSize(9);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(...COLORS.textSecondary);
-        const capNameText = cap.name || CAP_NAMES[cap.code] || cap.code;
-        pdf.text(capNameText, MARGIN_LEFT + 14, y + 2);
-        const capNameWidth = pdf.getTextWidth(capNameText);
+      for (let i = 0; i < sorted.length; i += CAP_COLS) {
+        const pair = sorted.slice(i, i + CAP_COLS);
 
-        pdf.setFontSize(7);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(...(priorityColors[cap.priority] || COLORS.textMuted));
-        pdf.text(`${cap.priority} priority`, MARGIN_LEFT + 14 + capNameWidth + 4, y + 2);
+        const pairHeights = pair.map((cap: any) => {
+          const lines = cap.reasoning ? wrapText(pdf, cap.reasoning, capTextW) : [];
+          return 15 + (lines.length > 0 ? lines.length * 3.8 + 2 : 0) + 4;
+        });
+        const rowH = Math.max(...pairHeights);
+        y = ensureSpace(pdf, y, rowH + 3);
 
-        if (cap.reasoning) {
-          applySmallText(pdf);
-          y += 6;
-          y = drawWrappedText(pdf, cap.reasoning, MARGIN_LEFT + 14, y, CONTENT_WIDTH - 18, 3.8);
-        }
-        y += 4;
+        pair.forEach((cap: any, col: number) => {
+          const boxX = MARGIN_LEFT + col * (capColW + CAP_COL_GAP);
+          const reasoningLines = cap.reasoning ? wrapText(pdf, cap.reasoning, capTextW) : [];
+
+          pdf.setFillColor(248, 250, 252);
+          pdf.roundedRect(boxX, y - 1, capColW, rowH, 2, 2, 'F');
+
+          drawCapabilityBadge(pdf, cap.code, boxX + 4, y + 7, 7);
+
+          pdf.setFontSize(9);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setTextColor(...COLORS.textSecondary);
+          const capNameText = cap.name || CAP_NAMES[cap.code] || cap.code;
+          pdf.text(capNameText, boxX + 14, y + 4);
+
+          pdf.setFontSize(7);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setTextColor(...(priorityColors[cap.priority] || COLORS.textMuted));
+          pdf.text(`${cap.priority} priority`, boxX + 14, y + 9);
+
+          if (reasoningLines.length > 0) {
+            applySmallText(pdf);
+            pdf.setTextColor(...COLORS.textMuted);
+            let ty = y + 16;
+            for (const line of reasoningLines) {
+              pdf.text(line, boxX + 4, ty);
+              ty += 3.8;
+            }
+          }
+        });
+
+        y += rowH + 3;
       }
     }
   }
