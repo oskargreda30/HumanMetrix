@@ -20,6 +20,12 @@ import {
   PolarRadiusAxis,
   Legend,
   Tooltip,
+  BarChart,
+  Bar,
+  Cell,
+  CartesianGrid,
+  XAxis,
+  YAxis,
 } from "recharts";
 
 const DEMO_CANDIDATES = [
@@ -227,9 +233,15 @@ export default function SampleComparisonReport() {
         }
       };
 
-      const [fitCombinedImage, aiCombinedImage] = await Promise.all([
-        captureElement('pdf-sample-fit-chart'),
-        captureElement('pdf-sample-ai-chart'),
+      const [fitCombinedImage, aiCombinedImage, fit0, fit1, fit2, ai0, ai1, ai2] = await Promise.all([
+        captureElement('pdf-sample-fit-overlapping'),
+        captureElement('pdf-sample-ai-overlapping'),
+        captureElement('pdf-comparison-fit-0'),
+        captureElement('pdf-comparison-fit-1'),
+        captureElement('pdf-comparison-fit-2'),
+        captureElement('pdf-comparison-ai-0'),
+        captureElement('pdf-comparison-ai-1'),
+        captureElement('pdf-comparison-ai-2'),
       ]);
 
       const candidates = DEMO_CANDIDATES.map(c => {
@@ -268,8 +280,10 @@ export default function SampleComparisonReport() {
         }),
       }));
 
-      const fitChartImages: (string | null)[] = fitCombinedImage ? [fitCombinedImage] : [];
-      const aiChartImages: (string | null)[] = aiCombinedImage ? [aiCombinedImage] : [];
+      const fitChartImages: (string | null)[] = [fit0, fit1, fit2];
+      const aiChartImages: (string | null)[] = [ai0, ai1, ai2];
+      const hasFitImages = fitChartImages.some(img => img !== null);
+      const hasAiImages = aiChartImages.some(img => img !== null);
 
       await exportComparisonPDF({
         candidates,
@@ -279,8 +293,8 @@ export default function SampleComparisonReport() {
         aiqAssessments: [null, null, null],
         skillComparison,
         averageScores: DEMO_CANDIDATES.map(c => c.overallScore),
-        fitChartImages: fitChartImages.length > 0 ? fitChartImages : undefined,
-        aiChartImages: aiChartImages.length > 0 ? aiChartImages : undefined,
+        fitChartImages: hasFitImages ? fitChartImages : undefined,
+        aiChartImages: hasAiImages ? aiChartImages : undefined,
         fitCombinedChartImage: fitCombinedImage,
         aiCombinedChartImage: aiCombinedImage,
         overallSkillsChartImage: null,
@@ -600,76 +614,181 @@ export default function SampleComparisonReport() {
             </CardContent>
           </Card>
 
-          {/* Skills Charts */}
-          <div className="grid gap-6 lg:grid-cols-2 mb-6">
-            <Card data-testid="section-fit-comparison">
-              <CardHeader>
-                <CardTitle className="text-lg">FIT Assessment Comparison</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div id="pdf-sample-fit-chart" className="h-[380px] bg-white overflow-visible">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={fitRadarData} cx="50%" cy="50%" outerRadius="70%">
-                      <PolarGrid stroke="hsl(var(--border))" />
-                      <PolarAngleAxis dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} />
-                      <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10 }} axisLine={false} />
-                      {DEMO_CANDIDATES.map((candidate, index) => (
-                        <Radar
-                          key={candidate.id}
-                          name={candidate.name}
-                          dataKey={candidate.name}
-                          stroke={CANDIDATE_COLORS[index].stroke}
-                          fill={CANDIDATE_COLORS[index].fill}
-                          fillOpacity={0.15}
-                          strokeWidth={2}
+          {/* FIT Assessment Comparison */}
+          <Card className="mb-6" data-testid="section-fit-comparison">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <BarChart3 className="h-5 w-5" />
+                FIT Assessment Comparison
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">Behavioral assessment measuring core competencies: agency, curiosity, resilience, empathy, and collaboration.</p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-8">
+                <div>
+                  <h3 className="font-semibold mb-4">Combined Comparison</h3>
+                  <div id="pdf-sample-fit-overlapping" className="bg-white p-4 rounded-lg overflow-visible">
+                    <ResponsiveContainer width="100%" height={400}>
+                      <RadarChart data={fitRadarData} cx="50%" cy="50%" outerRadius="75%">
+                        <PolarGrid stroke="hsl(var(--border))" />
+                        <PolarAngleAxis dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} />
+                        <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} axisLine={false} />
+                        <Tooltip />
+                        {DEMO_CANDIDATES.map((candidate, index) => (
+                          <Radar
+                            key={candidate.id}
+                            name={candidate.name}
+                            dataKey={candidate.name}
+                            stroke={CANDIDATE_COLORS[index].stroke}
+                            fill={CANDIDATE_COLORS[index].fill}
+                            fillOpacity={0.15}
+                            strokeWidth={2}
+                          />
+                        ))}
+                        <Legend
+                          formatter={(value: string, entry: any, index: number) => (
+                            <span style={{ color: CANDIDATE_COLORS[index % CANDIDATE_COLORS.length]?.fill || '#4A7FA8' }}>{value}</span>
+                          )}
                         />
-                      ))}
-                      <Legend
-                        formatter={(value: string, entry: any, index: number) => (
-                          <span style={{ color: CANDIDATE_COLORS[index % CANDIDATE_COLORS.length]?.fill || '#4A7FA8' }}>{value}</span>
-                        )}
-                      />
-                      <Tooltip />
-                    </RadarChart>
-                  </ResponsiveContainer>
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
 
-            <Card data-testid="section-ai-comparison">
-              <CardHeader>
-                <CardTitle className="text-lg">AI Readiness Comparison</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div id="pdf-sample-ai-chart" className="h-[400px] bg-white overflow-visible">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={aiRadarData} cx="50%" cy="50%" outerRadius="65%">
-                      <PolarGrid stroke="hsl(var(--border))" />
-                      <PolarAngleAxis dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 10, fontWeight: 500 }} />
-                      <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10 }} axisLine={false} />
-                      {DEMO_CANDIDATES.map((candidate, index) => (
-                        <Radar
-                          key={candidate.id}
-                          name={candidate.name}
-                          dataKey={candidate.name}
-                          stroke={CANDIDATE_COLORS[index].stroke}
-                          fill={CANDIDATE_COLORS[index].fill}
-                          fillOpacity={0.15}
-                          strokeWidth={2}
-                        />
-                      ))}
-                      <Legend
-                        formatter={(value: string, entry: any, index: number) => (
-                          <span style={{ color: CANDIDATE_COLORS[index % CANDIDATE_COLORS.length]?.fill || '#4A7FA8' }}>{value}</span>
-                        )}
-                      />
-                      <Tooltip />
-                    </RadarChart>
-                  </ResponsiveContainer>
+                <div>
+                  <h3 className="font-semibold mb-4">Individual Assessments</h3>
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {DEMO_CANDIDATES.map((candidate, index) => {
+                      const barData = Object.entries(candidate.fitScores)
+                        .map(([skill, score]) => ({
+                          skill: SKILL_ACRONYMS[skill] || skill,
+                          fullName: skill,
+                          score,
+                        }))
+                        .sort((a, b) => b.score - a.score);
+                      return (
+                        <div key={candidate.id} className="space-y-4">
+                          <div className="text-center">
+                            <p className="font-medium" style={{ color: CANDIDATE_COLORS[index].stroke }}>{candidate.name}</p>
+                            <p className="text-xs text-muted-foreground mt-1">Completed {candidate.completedDate}</p>
+                          </div>
+                          <div id={`pdf-comparison-fit-${index}`} className="bg-white p-4 rounded-lg overflow-visible">
+                            <ResponsiveContainer width="100%" height={barData.length * 40 + 40}>
+                              <BarChart data={barData} layout="vertical" margin={{ top: 5, right: 40, left: 5, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
+                                <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
+                                <YAxis type="category" dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} width={40} />
+                                <Tooltip
+                                  formatter={(value: any) => [`${value}%`, 'Score']}
+                                  labelFormatter={(label: string) => {
+                                    const item = barData.find(d => d.skill === label);
+                                    return item ? item.fullName : label;
+                                  }}
+                                />
+                                <Bar dataKey="score" radius={[0, 4, 4, 0]}>
+                                  {barData.map((entry, i) => (
+                                    <Cell key={i} fill={`hsl(210, 60%, ${65 - (entry.score / 100) * 25}%)`} />
+                                  ))}
+                                </Bar>
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* AI Readiness Comparison */}
+          <Card className="mb-6" data-testid="section-ai-comparison">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <BarChart3 className="h-5 w-5" />
+                AI Readiness Comparison
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">Technical AI capabilities assessment (9 skills).</p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-8">
+                <div>
+                  <h3 className="font-semibold mb-4">Combined Comparison</h3>
+                  <div id="pdf-sample-ai-overlapping" className="bg-white p-4 rounded-lg overflow-visible">
+                    <ResponsiveContainer width="100%" height={500}>
+                      <RadarChart data={aiRadarData} cx="50%" cy="50%" outerRadius="75%">
+                        <PolarGrid stroke="hsl(var(--border))" />
+                        <PolarAngleAxis dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 10, fontWeight: 500 }} />
+                        <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} axisLine={false} />
+                        <Tooltip />
+                        {DEMO_CANDIDATES.map((candidate, index) => (
+                          <Radar
+                            key={candidate.id}
+                            name={candidate.name}
+                            dataKey={candidate.name}
+                            stroke={CANDIDATE_COLORS[index].stroke}
+                            fill={CANDIDATE_COLORS[index].fill}
+                            fillOpacity={0.15}
+                            strokeWidth={2}
+                          />
+                        ))}
+                        <Legend
+                          formatter={(value: string, entry: any, index: number) => (
+                            <span style={{ color: CANDIDATE_COLORS[index % CANDIDATE_COLORS.length]?.fill || '#4A7FA8' }}>{value}</span>
+                          )}
+                        />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold mb-4">Individual Assessments</h3>
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {DEMO_CANDIDATES.map((candidate, index) => {
+                      const barData = Object.entries(candidate.aiReadinessScores)
+                        .map(([skill, score]) => ({
+                          skill: SKILL_ACRONYMS[skill] || skill,
+                          fullName: skill,
+                          score,
+                        }))
+                        .sort((a, b) => b.score - a.score);
+                      return (
+                        <div key={candidate.id} className="space-y-4">
+                          <div className="text-center">
+                            <p className="font-medium" style={{ color: CANDIDATE_COLORS[index].stroke }}>{candidate.name}</p>
+                            <p className="text-xs text-muted-foreground mt-1">Completed {candidate.completedDate}</p>
+                          </div>
+                          <div id={`pdf-comparison-ai-${index}`} className="bg-white p-4 rounded-lg overflow-visible">
+                            <ResponsiveContainer width="100%" height={barData.length * 40 + 40}>
+                              <BarChart data={barData} layout="vertical" margin={{ top: 5, right: 40, left: 5, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
+                                <XAxis type="number" domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
+                                <YAxis type="category" dataKey="skill" tick={{ fill: 'hsl(var(--foreground))', fontSize: 11, fontWeight: 500 }} width={55} />
+                                <Tooltip
+                                  formatter={(value: any) => [`${value}%`, 'Score']}
+                                  labelFormatter={(label: string) => {
+                                    const item = barData.find(d => d.skill === label);
+                                    return item ? item.fullName : label;
+                                  }}
+                                />
+                                <Bar dataKey="score" radius={[0, 4, 4, 0]}>
+                                  {barData.map((entry, i) => (
+                                    <Cell key={i} fill={`hsl(270, 50%, ${65 - (entry.score / 100) * 25}%)`} />
+                                  ))}
+                                </Bar>
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Prompt Architecture Comparison */}
           <Card className="mb-6" data-testid="section-prompt-architecture">
