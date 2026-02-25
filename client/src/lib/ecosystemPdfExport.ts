@@ -376,6 +376,9 @@ export async function generateEcosystemPdf(data: EcosystemPdfData): Promise<void
   // ====== CANDIDATES ASSESSED ======
   const assessedMembers = teamMembers.filter((m: any) => m.fitScores && Object.keys(m.fitScores).length > 0);
   if (assessedMembers.length > 0) {
+    const candidateRows = Math.ceil(assessedMembers.length / 3);
+    const candidateSectionH = 16 + 12 + candidateRows * 12 + 4;
+    y = ensureSpace(pdf, y, candidateSectionH);
     y = addSectionHeader(pdf, `CANDIDATES ASSESSED (${assessedMembers.length})`, y);
     y = addDescriptionBox(pdf, `This analysis is based on FIT assessment scores from ${assessedMembers.length} team member${assessedMembers.length !== 1 ? 's' : ''}.`, y);
 
