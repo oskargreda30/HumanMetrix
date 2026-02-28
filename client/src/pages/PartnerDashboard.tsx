@@ -1185,6 +1185,7 @@ export default function PartnerDashboard() {
 
   // Billing change request state
   const [showBillingChangeDialog, setShowBillingChangeDialog] = useState(false);
+  const [showSubscriptionInfoDialog, setShowSubscriptionInfoDialog] = useState(false);
   const [selectedBillingType, setSelectedBillingType] = useState<string | null>(null);
   const [billingChangeReason, setBillingChangeReason] = useState("");
   const [isSubmittingBillingChange, setIsSubmittingBillingChange] = useState(false);
@@ -3604,9 +3605,21 @@ export default function PartnerDashboard() {
                             {/* Note for PAYG/Enterprise users about subscription discounts */}
                             {(account?.partner?.billingType === 'payg' || account?.partner?.billingType === 'enterprise') && (
                               <div className="mt-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800" data-testid="subscription-discount-banner">
-                                <p className="text-sm text-blue-700 dark:text-blue-300">
-                                  <span className="font-medium">Subscription users get volume discounts</span> ranging from 2% to 15% off on credit packages. Upgrade to a subscription plan to unlock these savings.
-                                </p>
+                                <div className="flex items-start justify-between gap-3">
+                                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                                    <span className="font-medium">Subscription users get volume discounts</span> ranging from 2% to 15% off on credit packages. Upgrade to a subscription plan to unlock these savings.
+                                  </p>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="shrink-0 gap-1.5 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300"
+                                    onClick={() => setShowSubscriptionInfoDialog(true)}
+                                    data-testid="button-subscription-how-it-works"
+                                  >
+                                    <HelpCircle className="h-3.5 w-3.5" />
+                                    How it works
+                                  </Button>
+                                </div>
                               </div>
                             )}
                           </>
@@ -6319,6 +6332,86 @@ export default function PartnerDashboard() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Subscription How It Works Dialog */}
+      <Dialog open={showSubscriptionInfoDialog} onOpenChange={setShowSubscriptionInfoDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <HelpCircle className="h-5 w-5 text-blue-600" />
+              How the Subscription Plan Works
+            </DialogTitle>
+            <DialogDescription>
+              Switch to a subscription and unlock automatic volume discounts on every credit purchase.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5 py-2">
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold">What is a Subscription Plan?</h4>
+              <p className="text-sm text-muted-foreground">
+                Instead of paying a flat rate per credit package, subscription partners are billed monthly and automatically receive discounts on all credit top-ups based on volume — the more credits you buy at once, the bigger the saving.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold">Volume Discount Tiers</h4>
+              <div className="rounded-lg border overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-muted/50 border-b">
+                      <th className="text-left px-3 py-2 font-medium text-muted-foreground">Package Size</th>
+                      <th className="text-right px-3 py-2 font-medium text-muted-foreground">Discount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { size: "10 credits", discount: "2% off" },
+                      { size: "25 credits", discount: "4% off" },
+                      { size: "50 credits", discount: "6% off" },
+                      { size: "100 credits", discount: "8% off" },
+                      { size: "250 credits", discount: "10% off" },
+                      { size: "500 credits", discount: "15% off" },
+                    ].map((tier, i) => (
+                      <tr key={tier.size} className={i < 5 ? "border-b" : ""}>
+                        <td className="px-3 py-2">{tier.size}</td>
+                        <td className="px-3 py-2 text-right">
+                          <Badge variant="secondary" className="text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/40">
+                            {tier.discount}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold">How billing works</h4>
+              <ul className="text-sm text-muted-foreground space-y-1.5">
+                <li className="flex gap-2"><CheckCircle className="h-4 w-4 text-green-500 shrink-0 mt-0.5" /><span>Credits are topped up on demand — buy when you need them.</span></li>
+                <li className="flex gap-2"><CheckCircle className="h-4 w-4 text-green-500 shrink-0 mt-0.5" /><span>Discounts apply automatically at checkout — no codes required.</span></li>
+                <li className="flex gap-2"><CheckCircle className="h-4 w-4 text-green-500 shrink-0 mt-0.5" /><span>Payment is charged to your saved card on file.</span></li>
+                <li className="flex gap-2"><CheckCircle className="h-4 w-4 text-green-500 shrink-0 mt-0.5" /><span>No lock-in — you can request a change at any time.</span></li>
+              </ul>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowSubscriptionInfoDialog(false)}>
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                setShowSubscriptionInfoDialog(false);
+                setSelectedBillingType('subscription');
+                setShowBillingChangeDialog(true);
+              }}
+              data-testid="button-request-subscription-from-info"
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              Request a Subscription Plan
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
