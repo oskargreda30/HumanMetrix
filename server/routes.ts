@@ -551,6 +551,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // B2C discount code validation - no auth required so users can preview before paying
+  const B2C_DISCOUNT_CODES: Record<string, number> = {
+    'FREE': 100,
+    '20OFFPRICE': 20,
+    'DISCOUNT': 99,
+  };
+
+  app.post("/api/validate-discount", async (req, res) => {
+    try {
+      const { code } = req.body;
+      if (!code || typeof code !== 'string') {
+        return res.status(400).json({ valid: false, message: "Code is required" });
+      }
+      const normalized = code.trim().toUpperCase();
+      const discountPercent = B2C_DISCOUNT_CODES[normalized];
+      if (discountPercent !== undefined) {
+        return res.json({ valid: true, discountPercent, message: `${discountPercent}% discount applied` });
+      }
+      return res.json({ valid: false, message: "Invalid promo code" });
+    } catch (error) {
+      res.status(500).json({ valid: false, message: "Failed to validate code" });
+    }
+  });
+
   // Exchange rates endpoint - provides live exchange rates for the frontend
   app.get("/api/exchange-rates", async (req, res) => {
     try {
@@ -1442,15 +1466,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let discountDescription = '';
       const normalizedCode = discountCode ? discountCode.trim().toUpperCase() : '';
       
+      const b2cDiscountPercent = B2C_DISCOUNT_CODES[normalizedCode] ?? 0;
+      if (b2cDiscountPercent > 0) {
+        const discountAmount = Math.round(priceInPence * b2cDiscountPercent / 100);
+        finalPriceInPence = priceInPence - discountAmount;
+        discountApplied = true;
+        discountDescription = ` (${b2cDiscountPercent}% discount applied)`;
+      }
+
+      // Legacy explicit handling kept for safety
       // Check if discount code is "FREE" (case-insensitive) - 100% off
-      if (normalizedCode === "FREE") {
+      if (normalizedCode === "FREE" && !discountApplied) {
         finalPriceInPence = 0;
         discountApplied = true;
         discountDescription = ' (100% discount - FREE)';
       }
       
       // 20OFFPRICE - 20% off
-      if (normalizedCode === "20OFFPRICE") {
+      if (normalizedCode === "20OFFPRICE" && !discountApplied) {
         const discountAmount = Math.round(priceInPence * 0.20);
         finalPriceInPence = priceInPence - discountAmount;
         discountApplied = true;

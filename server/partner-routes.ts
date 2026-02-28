@@ -3421,7 +3421,7 @@ export function registerPartnerRoutes(app: Express) {
   // Create checkout for unlock results
   app.post("/api/unlock-results/checkout", async (req: Request, res: Response) => {
     try {
-      const { email, inviteToken, countryCode = 'GB', isBundle = false, selectedTypes: selectedTypesParam } = req.body;
+      const { email, inviteToken, countryCode = 'GB', isBundle = false, selectedTypes: selectedTypesParam, discountCode } = req.body;
       
       if (!email || !inviteToken) {
         return res.status(400).json({ error: "Missing required parameters" });
@@ -3519,6 +3519,27 @@ export function registerPartnerRoutes(app: Express) {
         description = `HumanMetrix - Unlock Assessment Results`;
       }
       
+      // Apply B2C discount code if provided
+      const unlockDiscountCodes: Record<string, number> = { 'FREE': 100, '20OFFPRICE': 20, 'DISCOUNT': 99 };
+      const normalizedDiscountCode = discountCode ? String(discountCode).trim().toUpperCase() : '';
+      const unlockDiscountPercent = unlockDiscountCodes[normalizedDiscountCode] ?? 0;
+      if (unlockDiscountPercent > 0) {
+        totalLocal = Math.round(totalLocal * (1 - unlockDiscountPercent / 100));
+        stripeAmount = Math.round(stripeAmount * (1 - unlockDiscountPercent / 100));
+        description += ` (${unlockDiscountPercent}% discount)`;
+        console.log(`[Unlock Checkout] Applying ${unlockDiscountPercent}% discount code "${normalizedDiscountCode}"`);
+      }
+
+      // Handle zero-amount after discount - grant access immediately
+      if (stripeAmount === 0 || totalLocal === 0) {
+        for (const session of sessionsToUnlock) {
+          await db.update(assessmentSessions)
+            .set({ resultsPaymentStatus: 'paid' })
+            .where(eq(assessmentSessions.id, session.id));
+        }
+        return res.json({ free: true, success: true, message: "Results unlocked successfully" });
+      }
+
       const baseUrl = getBaseUrl(req);
       const sessionIds = sessionsToUnlock.map(s => s.id);
       

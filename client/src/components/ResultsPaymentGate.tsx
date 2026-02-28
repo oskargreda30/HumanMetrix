@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Lock, CheckCircle2, Loader2, ArrowLeft } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Lock, CheckCircle2, Loader2, ArrowLeft, Tag, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId } from "@shared/schema";
@@ -12,6 +14,11 @@ export function ResultsPaymentGate() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { countryCode, getAdjustedPriceInPence, getLocalPriceNumber, formatLocalCurrency, isVPN } = useCurrency();
+
+  // Promo code state
+  const [promoInput, setPromoInput] = useState("");
+  const [appliedPromo, setAppliedPromo] = useState<{ code: string; discountPercent: number } | null>(null);
+  const [isValidatingPromo, setIsValidatingPromo] = useState(false);
   
   // Get purchaseId from URL params
   const urlParams = new URLSearchParams(window.location.search);
@@ -61,17 +68,47 @@ export function ResultsPaymentGate() {
   
   // Total is sum of individually-rounded local prices
   const totalLocal = platformFeeLocal + assessmentsTotalLocal;
-  const formattedPrice = formatLocalCurrency(totalLocal);
-  
+  const discountedTotal = appliedPromo
+    ? Math.round(totalLocal * (1 - appliedPromo.discountPercent / 100))
+    : totalLocal;
+  const formattedPrice = formatLocalCurrency(discountedTotal);
+  const formattedOriginalPrice = formatLocalCurrency(totalLocal);
+
   // Check if user was invited
   const wasInvited = invitationData?.wasInvited === true;
+
+  const handleApplyPromo = async () => {
+    const code = promoInput.trim();
+    if (!code) return;
+    setIsValidatingPromo(true);
+    try {
+      const res = await fetch("/api/validate-discount", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setAppliedPromo({ code: code.toUpperCase(), discountPercent: data.discountPercent });
+        setPromoInput("");
+        toast({ title: "Promo code applied", description: data.message });
+      } else {
+        toast({ title: "Invalid code", description: data.message, variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Could not validate code. Please try again.", variant: "destructive" });
+    } finally {
+      setIsValidatingPromo(false);
+    }
+  };
 
   const unlockMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/unlock-results", {
-        purchaseId: currentPurchase?.id, // Pass the specific purchase ID
-        countryCode, // Pass for PPP pricing
-        isVPN, // Pass VPN status for consistent pricing with frontend display
+        purchaseId: currentPurchase?.id,
+        countryCode,
+        isVPN,
+        discountCode: appliedPromo?.code,
       });
       
       if (!response.ok) {
@@ -82,6 +119,11 @@ export function ResultsPaymentGate() {
       return await response.json();
     },
     onSuccess: async (data: any) => {
+      if (data.free) {
+        toast({ title: "Results unlocked!", description: "Your promo code granted free access." });
+        setTimeout(() => setLocation("/my-results"), 1500);
+        return;
+      }
       if (data.provider === 'airwallex' && data.intentId && data.clientSecret) {
         try {
           const { redirectToAirwallexCheckout } = await import('@/lib/airwallexCheckout');
@@ -197,7 +239,6 @@ export function ResultsPaymentGate() {
             const adjustedPence = getAdjustedPriceInPence(originalPrice);
             const localPrice = getLocalPriceNumber(adjustedPence);
             const displayName = type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-            
             return (
               <div key={index} className="flex justify-between items-center text-sm" data-testid={`price-item-${type}`}>
                 <span>{displayName} Assessment</span>
@@ -211,15 +252,67 @@ export function ResultsPaymentGate() {
             <span>Computation Fee</span>
             <span>{formatLocalCurrency(platformFeeLocal)}</span>
           </div>
+
+          {/* Applied promo discount row */}
+          {appliedPromo && (
+            <div className="flex justify-between items-center text-sm text-green-600 dark:text-green-400" data-testid="price-discount">
+              <span className="flex items-center gap-1.5">
+                <Tag className="h-3.5 w-3.5" />
+                Promo code ({appliedPromo.code}) — {appliedPromo.discountPercent}% off
+              </span>
+              <span>−{formatLocalCurrency(totalLocal - discountedTotal)}</span>
+            </div>
+          )}
           
-          {/* Divider */}
+          {/* Divider + Total */}
           <div className="border-t pt-3 mt-3">
             <div className="flex justify-between items-center font-semibold" data-testid="price-total">
               <span>Total</span>
-              <span className="text-lg">{formattedPrice}</span>
+              <div className="flex items-center gap-2">
+                {appliedPromo && (
+                  <span className="text-sm text-muted-foreground line-through">{formattedOriginalPrice}</span>
+                )}
+                <span className="text-lg">{formattedPrice}</span>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Promo Code Input */}
+        {!appliedPromo ? (
+          <div className="flex gap-2" data-testid="promo-code-section">
+            <Input
+              placeholder="Promo code"
+              value={promoInput}
+              onChange={e => setPromoInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleApplyPromo()}
+              className="flex-1"
+              data-testid="input-promo-code"
+            />
+            <Button
+              variant="outline"
+              onClick={handleApplyPromo}
+              disabled={isValidatingPromo || !promoInput.trim()}
+              data-testid="button-apply-promo"
+            >
+              {isValidatingPromo ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 px-3 py-2" data-testid="promo-applied-badge">
+            <span className="text-sm text-green-700 dark:text-green-300 flex items-center gap-1.5">
+              <Tag className="h-3.5 w-3.5" />
+              <strong>{appliedPromo.code}</strong> — {appliedPromo.discountPercent}% discount applied
+            </span>
+            <button
+              onClick={() => setAppliedPromo(null)}
+              className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"
+              data-testid="button-remove-promo"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
 
         <div className="space-y-4">
           <Button

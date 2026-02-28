@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, CheckCircle, Lock, CreditCard, ArrowRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2, CheckCircle, Lock, CreditCard, ArrowRight, Tag, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface AssessmentPrice {
@@ -65,6 +66,9 @@ export default function UnlockResults() {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [unlockOption, setUnlockOption] = useState<'all' | 'individual'>('all');
   const [selectedUnlockTypes, setSelectedUnlockTypes] = useState<Set<string>>(new Set());
+  const [promoInput, setPromoInput] = useState("");
+  const [appliedPromo, setAppliedPromo] = useState<{ code: string; discountPercent: number } | null>(null);
+  const [isValidatingPromo, setIsValidatingPromo] = useState(false);
   const { toast } = useToast();
 
   const params = new URLSearchParams(window.location.search);
@@ -84,6 +88,31 @@ export default function UnlockResults() {
     },
     enabled: !!email && !!inviteToken,
   });
+
+  const handleApplyPromo = async () => {
+    const code = promoInput.trim();
+    if (!code) return;
+    setIsValidatingPromo(true);
+    try {
+      const res = await fetch("/api/validate-discount", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      const result = await res.json();
+      if (result.valid) {
+        setAppliedPromo({ code: code.toUpperCase(), discountPercent: result.discountPercent });
+        setPromoInput("");
+        toast({ title: "Promo code applied", description: result.message });
+      } else {
+        toast({ title: "Invalid code", description: result.message, variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Could not validate code. Please try again.", variant: "destructive" });
+    } finally {
+      setIsValidatingPromo(false);
+    }
+  };
 
   const handleCheckout = async () => {
     if (!inviteToken || !email) return;
@@ -114,6 +143,7 @@ export default function UnlockResults() {
           countryCode, 
           isBundle,
           selectedTypes: isSelectAll ? undefined : selectedList,
+          discountCode: appliedPromo?.code,
         }),
       });
       
@@ -121,6 +151,12 @@ export default function UnlockResults() {
       
       if (!res.ok) {
         throw new Error(result.error || 'Failed to create checkout');
+      }
+
+      if (result.free) {
+        toast({ title: "Results unlocked!", description: "Your promo code granted free access." });
+        setTimeout(() => setLocation('/dashboard?view=candidate'), 1500);
+        return;
       }
       
       if (result.provider === 'airwallex' && result.intentId && result.clientSecret) {
@@ -406,9 +442,47 @@ export default function UnlockResults() {
               </div>
             )}
 
+            {/* Promo Code */}
+            <div className="mt-4">
+              {!appliedPromo ? (
+                <div className="flex gap-2" data-testid="promo-code-section">
+                  <Input
+                    placeholder="Promo code"
+                    value={promoInput}
+                    onChange={e => setPromoInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleApplyPromo()}
+                    className="flex-1"
+                    data-testid="input-promo-code"
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={handleApplyPromo}
+                    disabled={isValidatingPromo || !promoInput.trim()}
+                    data-testid="button-apply-promo"
+                  >
+                    {isValidatingPromo ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 px-3 py-2" data-testid="promo-applied-badge">
+                  <span className="text-sm text-green-700 dark:text-green-300 flex items-center gap-1.5">
+                    <Tag className="h-3.5 w-3.5" />
+                    <strong>{appliedPromo.code}</strong> — {appliedPromo.discountPercent}% discount applied
+                  </span>
+                  <button
+                    onClick={() => setAppliedPromo(null)}
+                    className="text-green-600 dark:text-green-400 hover:text-green-800"
+                    data-testid="button-remove-promo"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Checkout button */}
             <Button
-              className="w-full"
+              className="w-full mt-4"
               size="lg"
               onClick={handleCheckout}
               disabled={isCheckingOut || (unlockOption === 'individual' && selectedUnlockTypes.size === 0)}
