@@ -2338,11 +2338,18 @@ export default function EmbedAssessment() {
               ) : (
                 <p>You are about to begin an assessment with {questions.length} questions.</p>
               )}
-              <ul className={`list-disc list-inside text-sm space-y-1 ${textMuted}`}>
-                <li>Answer each question honestly and thoughtfully</li>
-                <li>There are no right or wrong answers</li>
-                <li>Your progress will be saved automatically</li>
-                <li>{isCurrentPromptArchitecture ? "You have 3 minutes per question (7 levels)" : "You have 20 minutes to complete " + (isMultiAssessment ? "each assessment" : "the assessment")}</li>
+              <ul className={`text-sm space-y-2 ${textMuted}`}>
+                {[
+                  "Answer each question honestly and thoughtfully",
+                  "There are no right or wrong answers",
+                  "Your progress will be saved automatically",
+                  isCurrentPromptArchitecture ? "You have 3 minutes per question (7 levels)" : "You have 20 minutes to complete " + (isMultiAssessment ? "each assessment" : "the assessment")
+                ].map((tip, index) => (
+                  <li key={index} className="flex items-start gap-2">
+                    <span className="mt-1.5 flex-shrink-0 w-1.5 h-1.5 rounded-full bg-current opacity-60" />
+                    <span>{tip}</span>
+                  </li>
+                ))}
               </ul>
             </div>
 

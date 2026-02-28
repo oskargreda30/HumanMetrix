@@ -995,9 +995,12 @@ export default function Assessment() {
           <CardContent className="space-y-6">
             <div className={`${textSecondary} space-y-3`}>
               <p>{instructions.description}</p>
-              <ul className={`list-disc list-inside text-sm space-y-1 ${textMuted}`}>
+              <ul className={`text-sm space-y-2 ${textMuted}`}>
                 {instructions.tips.map((tip, index) => (
-                  <li key={index}>{tip}</li>
+                  <li key={index} className="flex items-start gap-2">
+                    <span className="mt-1.5 flex-shrink-0 w-1.5 h-1.5 rounded-full bg-current opacity-60" />
+                    <span>{tip}</span>
+                  </li>
                 ))}
               </ul>
             </div>
