@@ -2338,7 +2338,7 @@ export default function EmbedAssessment() {
               ) : (
                 <p>You are about to begin an assessment with {questions.length} questions.</p>
               )}
-              <ul className={`text-sm space-y-2 ${textMuted}`}>
+              <ul className={`text-sm space-y-2 pl-4 ${textMuted}`}>
                 {[
                   "Answer each question honestly and thoughtfully",
                   "There are no right or wrong answers",
