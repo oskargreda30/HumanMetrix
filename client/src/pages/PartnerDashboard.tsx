@@ -689,7 +689,7 @@ function PrepaidCardManagementInner({ partnerId, currency = 'GBP', billingType =
             </div>
             <div className="p-3 bg-muted/50 rounded-lg">
               <p className="text-xs text-muted-foreground">
-                Your card details are securely processed by Stripe. We never store your full card number. 
+                Your card details are encrypted and securely stored for automated billing. We never store your full card number.
                 {isSubscription && ' Your card will be authorized to verify it can be charged.'}
               </p>
             </div>
@@ -6530,7 +6530,7 @@ export default function PartnerDashboard() {
                     )}
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Shield className="h-3 w-3" />
-                      <span>Your card details are securely processed by Stripe</span>
+                      <span>Your card is securely stored for automated monthly billing</span>
                     </div>
                   </div>
                 </Elements>
