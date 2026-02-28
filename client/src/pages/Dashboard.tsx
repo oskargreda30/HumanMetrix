@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, CheckCircle2, Clock, FileText, Brain, Sparkles, Code, Scale, Timer, Key, X, Eye, EyeOff, Plus, Lock, Unlock, CreditCard, PlayCircle, Bell, Trash2, Mail, Settings } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, FileText, Brain, Sparkles, Code, Scale, Timer, Key, X, Eye, EyeOff, Plus, Lock, Unlock, CreditCard, PlayCircle, Bell, Trash2, Mail, Settings, LayoutDashboard, Shield, Building2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -658,6 +658,34 @@ export default function Dashboard() {
             
             {/* Account action buttons */}
             <div className="flex flex-wrap gap-2">
+              {/* Switch dashboard buttons for admins/partners viewing B2C */}
+              {user?.role === 'super_admin' && (
+                <Link href="/admin/dashboard">
+                  <Button variant="outline" size="sm" className="gap-2 text-white border-white/50 hover:bg-white/10" data-testid="button-go-to-admin-dashboard">
+                    <Shield className="h-4 w-4" />
+                    <span className="hidden sm:inline">Admin Dashboard</span>
+                    <span className="sm:hidden">Admin</span>
+                  </Button>
+                </Link>
+              )}
+              {user?.role === 'partner_admin' && (
+                <Link href="/partner">
+                  <Button variant="outline" size="sm" className="gap-2 text-white border-white/50 hover:bg-white/10" data-testid="button-go-to-partner-dashboard">
+                    <Building2 className="h-4 w-4" />
+                    <span className="hidden sm:inline">Partner Dashboard</span>
+                    <span className="sm:hidden">Partner</span>
+                  </Button>
+                </Link>
+              )}
+              {user?.role === 'organization_admin' && (
+                <Link href="/admin/dashboard">
+                  <Button variant="outline" size="sm" className="gap-2 text-white border-white/50 hover:bg-white/10" data-testid="button-go-to-org-dashboard">
+                    <LayoutDashboard className="h-4 w-4" />
+                    <span className="hidden sm:inline">Admin Dashboard</span>
+                    <span className="sm:hidden">Admin</span>
+                  </Button>
+                </Link>
+              )}
               {/* Change Password */}
               <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
                 <DialogTrigger asChild>
