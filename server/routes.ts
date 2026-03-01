@@ -11553,6 +11553,94 @@ Return valid JSON with only the requested fields.`;
     }
   });
 
+  // Partner: Create Airwallex Payment Consent (stored card for recurring/auto-billing)
+  app.post("/api/partner/me/airwallex-consent/create", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(401).json({ message: "Not authenticated" });
+
+      const partner = await storage.getPartnerByUserId(userId);
+      if (!partner) return res.status(403).json({ message: "Partner account not found" });
+
+      const { createCustomer: awCreateCustomer, createPaymentConsent, isAirwallexConfigured, airwallexEnv } = await import('./airwallex');
+
+      if (!isAirwallexConfigured()) {
+        return res.status(503).json({ message: "Airwallex not configured" });
+      }
+
+      let customerId = partner.airwallexCustomerId;
+
+      // Create Airwallex customer if not already existing
+      if (!customerId) {
+        const customer = await awCreateCustomer({
+          email: partner.email,
+          firstName: partner.name?.split(' ')[0] || partner.name,
+          lastName: partner.name?.split(' ').slice(1).join(' ') || undefined,
+          businessName: partner.companyName || undefined,
+          metadata: { partner_id: partner.id },
+        });
+        customerId = customer.id;
+        await storage.updatePartnerAccount(partner.id, { airwallexCustomerId: customerId });
+      }
+
+      const consent = await createPaymentConsent({
+        customerId,
+        currency: partner.currency || 'GBP',
+      });
+
+      console.log(`[Partner] Airwallex consent created for partner ${partner.id}: ${consent.id}`);
+
+      return res.json({
+        consentId: consent.id,
+        clientSecret: consent.clientSecret,
+        customerId,
+        env: airwallexEnv,
+      });
+    } catch (error: any) {
+      console.error("Error creating Airwallex payment consent:", error);
+      return res.status(500).json({ message: error.message || "Failed to create payment consent" });
+    }
+  });
+
+  // Partner: Confirm Airwallex Payment Consent (after client-side card collection)
+  app.post("/api/partner/me/airwallex-consent/confirm", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(401).json({ message: "Not authenticated" });
+
+      const partner = await storage.getPartnerByUserId(userId);
+      if (!partner) return res.status(403).json({ message: "Partner account not found" });
+
+      const { consentId, cardLast4, cardBrand } = req.body;
+
+      if (!consentId) {
+        return res.status(400).json({ message: "consentId is required" });
+      }
+
+      const customerId = partner.airwallexCustomerId;
+      if (!customerId) {
+        return res.status(400).json({ message: "No Airwallex customer ID on record" });
+      }
+
+      await storage.updatePartnerAirwallexConsent(partner.id, {
+        airwallexConsentId: consentId,
+        airwallexCustomerId: customerId,
+        cardLast4: cardLast4 || undefined,
+        cardBrand: cardBrand || undefined,
+        cardOnFile: true,
+      });
+
+      console.log(`[Partner] Airwallex consent confirmed for partner ${partner.id}: ${consentId}`);
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error confirming Airwallex payment consent:", error);
+      return res.status(500).json({ message: error.message || "Failed to confirm payment consent" });
+    }
+  });
+
   // Super Admin: Get all pending billing change requests
   app.get("/api/admin/billing-change-requests", isAuthenticated, async (req: any, res) => {
     try {
@@ -25684,11 +25772,78 @@ async function processAutoBillPartner(partner: PartnerAccount) {
   
   console.log(`[Billing Scheduler] Partner ${partner.id} (${partner.companyName}): Charging ${currencySymbol}${(amountPence / 100).toFixed(2)} for ${usage} tests (${prevMonthKey})`);
   
+  // ── Airwallex path (primary): Merchant-Initiated Transaction via Payment Consent ──
+  if (partner.airwallexConsentId && partner.airwallexCustomerId) {
+    const { createPaymentIntentWithConsent, isAirwallexConfigured } = await import('./airwallex');
+    if (isAirwallexConfigured()) {
+      try {
+        const airwallexAmount = formatAmountForAirwallex(amountPence, partnerCurrency.toUpperCase());
+        const awResult = await createPaymentIntentWithConsent({
+          consentId: partner.airwallexConsentId,
+          customerId: partner.airwallexCustomerId,
+          amount: airwallexAmount,
+          currency: partnerCurrency,
+          description: `HumanMetrix API Usage - ${usage} assessments (${prevMonthKey})`,
+          metadata: {
+            partner_id: partner.id,
+            usage_count: usage.toString(),
+            usage_record_id: usageRecord.id,
+            billing_period: prevMonthKey,
+          },
+        });
+
+        if (awResult.status === 'SUCCEEDED' || awResult.status === 'succeeded') {
+          console.log(`[Billing Scheduler] Partner ${partner.id}: Airwallex payment successful - ${awResult.id}`);
+          await storage.updateMonthlyUsageBillingStatus(usageRecord.id, 'billed', awResult.id);
+          await handleBillingSuccess(partner);
+
+          try {
+            const receiptDetails: PdfReceiptEmailDetails = {
+              email: partner.email,
+              name: partner.name,
+              companyName: partner.companyName || partner.name,
+              items: [{
+                description: `API Usage - ${usage} Assessments (${prevMonthKey})`,
+                quantity: usage,
+                unitPrice: partner.pricePerAssessment || Math.round(amountPence / usage),
+                amount: amountPence,
+              }],
+              subtotal: amountPence,
+              total: amountPence,
+              currency: partnerCurrency,
+              transactionId: awResult.id,
+              paymentMethod: 'Airwallex',
+              billingAddress: partner.billingAddressLine1 ? {
+                line1: partner.billingAddressLine1,
+                line2: partner.billingAddressLine2 || undefined,
+                city: partner.billingCity || undefined,
+                postcode: partner.billingPostcode || undefined,
+                country: partner.billingCountry || undefined,
+              } : undefined,
+            };
+            const { sendPaymentReceiptWithPdf: sendReceipt } = await import('./email');
+            const receiptResult = await sendReceipt(receiptDetails);
+            if (receiptResult.success) {
+              console.log(`[Billing Scheduler] Partner ${partner.id}: PDF receipt sent via Airwallex (Receipt: ${receiptResult.receiptNumber})`);
+            }
+          } catch (receiptError) {
+            console.error(`[Billing Scheduler] Partner ${partner.id}: Failed to send Airwallex receipt email:`, receiptError);
+          }
+          return; // Done — skip Stripe path
+        } else {
+          console.error(`[Billing Scheduler] Partner ${partner.id}: Airwallex payment status=${awResult.status}, falling through to Stripe`);
+        }
+      } catch (awError: any) {
+        console.error(`[Billing Scheduler] Partner ${partner.id}: Airwallex error - ${awError.message}, falling through to Stripe`);
+      }
+    }
+  }
+
+  // ── Stripe path (fallback): Off-session payment via saved Stripe payment method ──
   // PAYG auto-billing requires off-session charging (saved payment method).
-  // Only Stripe supports off-session merchant-initiated transactions.
   // For Airwallex-primary partners without Stripe payment methods, we cannot auto-charge.
   if (!partner.stripeCustomerId || !partner.stripePaymentMethodId) {
-    console.error(`[Billing Scheduler] Partner ${partner.id} (${partner.companyName}): No saved Stripe payment method for off-session billing`);
+    console.error(`[Billing Scheduler] Partner ${partner.id} (${partner.companyName}): No saved payment method (Airwallex or Stripe) for off-session billing`);
     await handleBillingFailure(partner, usageRecord.id, amountPence, 'no_payment_method');
     return;
   }

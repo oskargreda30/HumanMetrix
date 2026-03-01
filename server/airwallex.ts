@@ -302,6 +302,153 @@ export async function getCustomer(customerId: string): Promise<any> {
   return response.json();
 }
 
+// ─── Payment Consent (stored card for merchant-initiated / recurring charges) ───
+
+interface CreatePaymentConsentParams {
+  customerId: string;
+  currency: string;
+}
+
+export interface PaymentConsentResult {
+  id: string;
+  clientSecret: string;
+}
+
+export async function createPaymentConsent(params: CreatePaymentConsentParams): Promise<PaymentConsentResult> {
+  const token = await getAuthToken();
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+
+  const body = {
+    request_id: requestId,
+    customer_id: params.customerId,
+    currency: params.currency.toUpperCase(),
+    next_action: { type: 'create' },
+    merchant_trigger_reason: 'scheduled',
+  };
+
+  console.log(`[Airwallex] Creating payment consent for customer: ${params.customerId}`);
+
+  const response = await fetch(`${AIRWALLEX_BASE_URL}/api/v1/pa/payment_consents/create`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`[Airwallex] createPaymentConsent failed: ${response.status} ${errorText}`);
+    throw new Error(`Airwallex createPaymentConsent failed: ${response.status} ${errorText}`);
+  }
+
+  const consent = await response.json();
+
+  console.log(`[Airwallex] Payment consent created: ${consent.id}`);
+
+  return {
+    id: consent.id || '',
+    clientSecret: consent.client_secret || '',
+  };
+}
+
+interface CreatePaymentIntentWithConsentParams {
+  consentId: string;
+  customerId: string;
+  amount: number;
+  currency: string;
+  description: string;
+  metadata?: Record<string, string>;
+}
+
+export interface PaymentIntentWithConsentResult {
+  id: string;
+  status: string;
+}
+
+export async function createPaymentIntentWithConsent(params: CreatePaymentIntentWithConsentParams): Promise<PaymentIntentWithConsentResult> {
+  const token = await getAuthToken();
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+
+  const body: any = {
+    request_id: requestId,
+    amount: params.amount,
+    currency: params.currency.toUpperCase(),
+    merchant_order_id: `bill_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`,
+    descriptor: 'HumanMetrix Assessment',
+    customer_id: params.customerId,
+    payment_method_options: {
+      card: {
+        payment_consent_id: params.consentId,
+      },
+    },
+    // Merchant-initiated transaction — no customer interaction required
+    merchant_trigger_reason: 'scheduled',
+  };
+
+  if (params.description) body.description = params.description;
+  if (params.metadata) body.metadata = params.metadata;
+
+  console.log(`[Airwallex] Creating MIT payment intent: amount=${params.amount}, currency=${params.currency}, consent=${params.consentId}`);
+
+  const createResponse = await fetch(`${AIRWALLEX_BASE_URL}/api/v1/pa/payment_intents/create`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!createResponse.ok) {
+    const errorText = await createResponse.text();
+    console.error(`[Airwallex] createPaymentIntentWithConsent (create) failed: ${createResponse.status} ${errorText}`);
+    throw new Error(`Airwallex createPaymentIntentWithConsent failed: ${createResponse.status} ${errorText}`);
+  }
+
+  const intent = await createResponse.json();
+  const intentId = intent.id;
+
+  console.log(`[Airwallex] MIT intent created: ${intentId}, confirming...`);
+
+  // Server-side confirm — no customer action needed for a stored consent
+  const confirmRequestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+  const confirmResponse = await fetch(`${AIRWALLEX_BASE_URL}/api/v1/pa/payment_intents/${intentId}/confirm`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      request_id: confirmRequestId,
+      payment_method_options: {
+        card: {
+          payment_consent_id: params.consentId,
+        },
+      },
+      merchant_trigger_reason: 'scheduled',
+      return_url: 'https://humanmetrix.com',
+    }),
+  });
+
+  if (!confirmResponse.ok) {
+    const errorText = await confirmResponse.text();
+    console.error(`[Airwallex] createPaymentIntentWithConsent (confirm) failed: ${confirmResponse.status} ${errorText}`);
+    throw new Error(`Airwallex confirmPaymentIntentWithConsent failed: ${confirmResponse.status} ${errorText}`);
+  }
+
+  const confirmed = await confirmResponse.json();
+  console.log(`[Airwallex] MIT intent confirmed: ${intentId}, status=${confirmed.status}`);
+
+  return {
+    id: intentId,
+    status: confirmed.status || '',
+  };
+}
+
+// ─── Payment Link ─────────────────────────────────────────────────────────────
+
 interface CreatePaymentLinkParams {
   amount: number;
   currency: string;

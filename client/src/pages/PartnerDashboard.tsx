@@ -1186,6 +1186,17 @@ export default function PartnerDashboard() {
   // Billing change request state
   const [showBillingChangeDialog, setShowBillingChangeDialog] = useState(false);
   const [showSubscriptionInfoDialog, setShowSubscriptionInfoDialog] = useState(false);
+  // Airwallex consent state for subscription billing
+  const [awConsentId, setAwConsentId] = useState<string | null>(null);
+  const [awClientSecret, setAwClientSecret] = useState<string | null>(null);
+  const [awConsentEnv, setAwConsentEnv] = useState<string>('prod');
+  const [isLoadingConsent, setIsLoadingConsent] = useState(false);
+  const [isConfirmingConsent, setIsConfirmingConsent] = useState(false);
+  const [awCardReady, setAwCardReady] = useState(false);
+  const [awCardError, setAwCardError] = useState<string | null>(null);
+  const awCardMountRef = useRef<HTMLDivElement>(null);
+  const awCardElementRef = useRef<any>(null);
+  const awSdkRef = useRef<any>(null);
   const [selectedBillingType, setSelectedBillingType] = useState<string | null>(null);
   const [billingChangeReason, setBillingChangeReason] = useState("");
   const [isSubmittingBillingChange, setIsSubmittingBillingChange] = useState(false);
@@ -1386,6 +1397,80 @@ export default function PartnerDashboard() {
     queryKey: ["/api/partner/me/billing-change-request"],
     enabled: !!account?.hasPartnerAccount,
   });
+
+  // Initialise Airwallex card element when subscription billing dialog opens
+  useEffect(() => {
+    if (!showBillingChangeDialog || selectedBillingType !== 'subscription') return;
+    if (awCardElementRef.current) return; // Already mounted
+
+    let destroyed = false;
+
+    const initAirwallexConsent = async () => {
+      setIsLoadingConsent(true);
+      setAwCardReady(false);
+      setAwCardError(null);
+
+      try {
+        // Fetch consent from server
+        const res = await fetch('/api/partner/me/airwallex-consent/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || 'Failed to initialise card entry');
+        }
+
+        const { consentId, clientSecret, env } = await res.json();
+        if (destroyed) return;
+
+        setAwConsentId(consentId);
+        setAwClientSecret(clientSecret);
+        setAwConsentEnv(env || 'prod');
+
+        // Initialise Airwallex SDK
+        const { init } = await import('@airwallex/components-sdk');
+        const sdk = await init({ env: env === 'demo' ? 'demo' : 'prod', enabledElements: ['payments'] });
+        if (destroyed) return;
+        awSdkRef.current = sdk;
+
+        // Create and mount card element
+        if (awCardMountRef.current && sdk?.createElement) {
+          const cardEl = sdk.createElement('card', {
+            intent_id: undefined,
+            client_secret: clientSecret,
+          });
+          awCardElementRef.current = cardEl;
+
+          cardEl.on('ready', () => { if (!destroyed) setAwCardReady(true); });
+          cardEl.on('change', (e: any) => {
+            if (destroyed) return;
+            if (e?.error) setAwCardError(e.error.message || 'Card error');
+            else setAwCardError(null);
+          });
+
+          cardEl.mount(awCardMountRef.current);
+        }
+      } catch (err: any) {
+        if (!destroyed) setAwCardError(err.message || 'Failed to load card entry');
+      } finally {
+        if (!destroyed) setIsLoadingConsent(false);
+      }
+    };
+
+    initAirwallexConsent();
+
+    return () => {
+      destroyed = true;
+      if (awCardElementRef.current?.unmount) {
+        try { awCardElementRef.current.unmount(); } catch (_) {}
+      }
+      awCardElementRef.current = null;
+      awSdkRef.current = null;
+    };
+  }, [showBillingChangeDialog, selectedBillingType]);
 
   const { data: settings, isLoading: settingsLoading } = useQuery<PartnerSettings>({
     queryKey: ["/api/partner/me/settings"],
@@ -1701,6 +1786,44 @@ export default function PartnerDashboard() {
     if (!selectedBillingType) return;
     setIsSubmittingBillingChange(true);
     try {
+      // If subscription and we have an Airwallex consent ready, confirm it first
+      if (selectedBillingType === 'subscription' && awConsentId && awClientSecret && awSdkRef.current && awCardElementRef.current) {
+        setIsConfirmingConsent(true);
+        try {
+          const confirmResult = await awSdkRef.current.confirmPaymentConsent({
+            id: awConsentId,
+            client_secret: awClientSecret,
+            element: awCardElementRef.current,
+          });
+
+          if (confirmResult?.error) {
+            throw new Error(confirmResult.error.message || 'Card verification failed');
+          }
+
+          // Extract card details from confirmation result if available
+          const cardLast4 = confirmResult?.payment_consent?.payment_method?.card?.last4 || undefined;
+          const cardBrand = confirmResult?.payment_consent?.payment_method?.card?.brand || undefined;
+
+          // Persist the consent on the server
+          await apiRequest("POST", "/api/partner/me/airwallex-consent/confirm", {
+            consentId: awConsentId,
+            cardLast4,
+            cardBrand,
+          });
+        } catch (consentError: any) {
+          toast({
+            title: "Card verification failed",
+            description: consentError.message || "Could not verify your card. Please try again.",
+            variant: "destructive",
+          });
+          setIsConfirmingConsent(false);
+          setIsSubmittingBillingChange(false);
+          return;
+        } finally {
+          setIsConfirmingConsent(false);
+        }
+      }
+
       const response = await apiRequest("POST", "/api/partner/me/billing-change-request", {
         requestedBillingType: selectedBillingType,
         reason: billingChangeReason || undefined,
@@ -6423,6 +6546,17 @@ export default function PartnerDashboard() {
           setBillingChangeReason("");
           setCardError(null);
           setCardComplete(false);
+          // Reset Airwallex consent state
+          setAwConsentId(null);
+          setAwClientSecret(null);
+          setAwCardReady(false);
+          setAwCardError(null);
+          setIsLoadingConsent(false);
+          if (awCardElementRef.current?.unmount) {
+            try { awCardElementRef.current.unmount(); } catch (_) {}
+          }
+          awCardElementRef.current = null;
+          awSdkRef.current = null;
         }
       }}>
         <DialogContent>
@@ -6491,7 +6625,7 @@ export default function PartnerDashboard() {
               </p>
             </div>
 
-            {/* Card Details Section - Only shown when requesting Auto-Bill */}
+            {/* Card Details Section - Only shown when requesting Subscription */}
             {selectedBillingType === 'subscription' && (
               <div className="space-y-3 p-4 rounded-lg border border-primary/20 bg-primary/5">
                 <div className="flex items-center gap-2">
@@ -6501,39 +6635,44 @@ export default function PartnerDashboard() {
                 <p className="text-xs text-muted-foreground">
                   Auto-billing requires a card on file. Your card will only be charged based on actual usage at the end of each billing cycle.
                 </p>
-                <Elements stripe={stripePromise}>
+                {isLoadingConsent ? (
+                  <div className="flex items-center gap-2 py-4 justify-center text-muted-foreground text-sm">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Setting up secure card entry...
+                  </div>
+                ) : (
                   <div className="space-y-3">
-                    <div className="p-3 rounded-md border bg-background">
-                      <CardElement 
-                        options={{
-                          style: {
-                            base: {
-                              fontSize: '14px',
-                              color: '#424770',
-                              '::placeholder': {
-                                color: '#aab7c4',
-                              },
-                            },
-                            invalid: {
-                              color: '#9e2146',
-                            },
-                          },
-                        }}
-                        onChange={(event) => {
-                          setCardComplete(event.complete);
-                          setCardError(event.error ? event.error.message : null);
-                        }}
-                      />
-                    </div>
-                    {cardError && (
-                      <p className="text-xs text-destructive">{cardError}</p>
+                    {/* Airwallex card element mount point */}
+                    <div
+                      ref={awCardMountRef}
+                      className="p-3 rounded-md border bg-background min-h-[44px]"
+                      data-testid="airwallex-card-element"
+                    />
+                    {awCardError && (
+                      <p className="text-xs text-destructive">{awCardError}</p>
                     )}
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Shield className="h-3 w-3" />
                       <span>Your card is securely stored for automated monthly billing</span>
                     </div>
                   </div>
+                )}
+                {/* Stripe card fallback — kept for reference, currently replaced by Airwallex above */}
+                {/* 
+                <Elements stripe={stripePromise}>
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-md border bg-background">
+                      <CardElement 
+                        options={{...}}
+                        onChange={(event) => {
+                          setCardComplete(event.complete);
+                          setCardError(event.error ? event.error.message : null);
+                        }}
+                      />
+                    </div>
+                  </div>
                 </Elements>
+                */}
               </div>
             )}
           </div>
@@ -6543,11 +6682,17 @@ export default function PartnerDashboard() {
             </Button>
             <Button 
               onClick={handleSubmitBillingChange}
-              disabled={isSubmittingBillingChange || !selectedBillingType || (selectedBillingType === 'subscription' && !cardComplete)}
+              disabled={
+                isSubmittingBillingChange ||
+                isConfirmingConsent ||
+                !selectedBillingType ||
+                (selectedBillingType === 'subscription' && isLoadingConsent) ||
+                (selectedBillingType === 'subscription' && !awCardReady && !cardComplete)
+              }
               data-testid="button-submit-billing-change"
             >
-              {isSubmittingBillingChange && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Submit Request
+              {(isSubmittingBillingChange || isConfirmingConsent) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isConfirmingConsent ? 'Verifying card...' : 'Submit Request'}
             </Button>
           </DialogFooter>
         </DialogContent>

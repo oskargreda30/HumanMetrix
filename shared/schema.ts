@@ -685,6 +685,7 @@ export const partnerAccounts = pgTable("partner_accounts", {
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
   airwallexCustomerId: varchar("airwallex_customer_id"), // Airwallex customer ID for partners using Airwallex
+  airwallexConsentId: varchar("airwallex_consent_id"), // Airwallex Payment Consent ID for merchant-initiated auto-billing
   billingEmail: varchar("billing_email"),
   organizationId: varchar("organization_id").references(() => organizations.id), // Link to organisation for admin dashboard access
   monthlyQuota: integer("monthly_quota").default(1000),

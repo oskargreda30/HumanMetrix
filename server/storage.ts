@@ -382,6 +382,7 @@ export interface IStorage {
   
   // Partner card management
   updatePartnerCardInfo(partnerId: string, cardInfo: { stripePaymentMethodId: string; cardLast4: string; cardBrand: string; cardOnFile: boolean }): Promise<void>;
+  updatePartnerAirwallexConsent(partnerId: string, data: { airwallexConsentId: string; airwallexCustomerId: string; cardLast4?: string; cardBrand?: string; cardOnFile: boolean }): Promise<void>;
   removePartnerCard(partnerId: string): Promise<void>;
   
   // Partner invoice operations
@@ -2588,6 +2589,17 @@ export class DatabaseStorage implements IStorage {
       cardLast4: cardInfo.cardLast4,
       cardBrand: cardInfo.cardBrand,
       cardOnFile: cardInfo.cardOnFile,
+      updatedAt: new Date(),
+    }).where(eq(partnerAccounts.id, partnerId));
+  }
+
+  async updatePartnerAirwallexConsent(partnerId: string, data: { airwallexConsentId: string; airwallexCustomerId: string; cardLast4?: string; cardBrand?: string; cardOnFile: boolean }): Promise<void> {
+    await db.update(partnerAccounts).set({
+      airwallexConsentId: data.airwallexConsentId,
+      airwallexCustomerId: data.airwallexCustomerId,
+      cardLast4: data.cardLast4 || null,
+      cardBrand: data.cardBrand || null,
+      cardOnFile: data.cardOnFile,
       updatedAt: new Date(),
     }).where(eq(partnerAccounts.id, partnerId));
   }
