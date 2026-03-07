@@ -141,6 +141,7 @@ export default function BugReportsTab() {
 
   const { data: bugs = [], isLoading } = useQuery<BugReport[]>({
     queryKey: ["/api/admin/bug-reports"],
+    refetchOnMount: 'always',
   });
 
   const updateMutation = useMutation({

@@ -172,6 +172,7 @@ export default function AdminDashboard() {
               setActiveTab(val);
               if (val === 'bug-reports') {
                 setBugBadgeDismissed(true);
+                queryClient.invalidateQueries({ queryKey: ["/api/admin/bug-reports"] });
               }
             }} className="space-y-6">
             <TabsList className="inline-flex flex-wrap gap-1 h-auto p-1 bg-white/10 border border-white/20 w-auto">
