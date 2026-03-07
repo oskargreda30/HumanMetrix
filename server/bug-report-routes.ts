@@ -237,6 +237,8 @@ export function registerBugReportRoutes(app: Express) {
         .from(bugReports)
         .where(eq(bugReports.status, "new"));
 
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+      res.setHeader('Pragma', 'no-cache');
       res.json({ count: result?.count || 0 });
     } catch (error: any) {
       console.error("[Bug Report] Error fetching new count:", error);
@@ -257,6 +259,8 @@ export function registerBugReportRoutes(app: Express) {
         .from(bugReports)
         .orderBy(desc(bugReports.createdAt));
 
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+      res.setHeader('Pragma', 'no-cache');
       res.json(reports);
     } catch (error: any) {
       console.error("[Bug Report] Error fetching reports:", error);

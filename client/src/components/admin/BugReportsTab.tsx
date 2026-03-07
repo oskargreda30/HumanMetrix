@@ -21,6 +21,7 @@ import {
   ChevronRight,
   ChevronLeft,
   GripVertical,
+  RefreshCw,
 } from "lucide-react";
 import type { BugReport, BugStatus } from "@shared/schema";
 import { BUG_STATUS_ORDER, BUG_STATUS_LABELS } from "@shared/schema";
@@ -139,9 +140,12 @@ export default function BugReportsTab() {
   const draggedBugId = useRef<string | null>(null);
   const { toast } = useToast();
 
-  const { data: bugs = [], isLoading } = useQuery<BugReport[]>({
+  const { data: bugs = [], isLoading, isFetching, dataUpdatedAt, refetch } = useQuery<BugReport[]>({
     queryKey: ["/api/admin/bug-reports"],
     refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 60000,
+    staleTime: 0,
   });
 
   const updateMutation = useMutation({
@@ -277,6 +281,24 @@ export default function BugReportsTab() {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="text-xs text-white/40">
+          {dataUpdatedAt > 0 && (
+            <span>Last updated: {new Date(dataUpdatedAt).toLocaleTimeString()}</span>
+          )}
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="border-white/20 text-white/70 hover:text-white"
+          data-testid="button-refresh-bug-reports"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+          {isFetching ? 'Refreshing...' : 'Refresh'}
+        </Button>
+      </div>
       <div className="grid grid-cols-3 gap-4">
         <Card className="p-4 bg-white/5 border-white/10">
           <div className="flex items-center gap-3">
