@@ -1362,178 +1362,200 @@ export default function Dashboard() {
           {purchasesWithCompletedResults.length > 0 && (
             <section className="mb-12" style={{ order: (availableAssessments && availableAssessments.length > 0) ? (showPartnerFirst ? 2 : 1) : (showPartnerFirst ? 1 : 0) }}>
               <h2 className="text-xl md:text-2xl font-semibold mb-4 text-white">Your Results</h2>
-              <div className="space-y-6">
-                {[...purchasesWithCompletedResults].reverse().map((purchase: any, index: number) => {
-                  // For progress: show consumed (completed + abandoned) / total
-                  const consumedCount = (purchase.completedCount || 0) + (purchase.abandonedCount || 0);
-                  const progressPercentage = Math.round((consumedCount / purchase.totalCount) * 100);
-                  const isAllConsumed = consumedCount >= purchase.totalCount;
-                  // Series is "complete" if all slots consumed AND at least one valid result
-                  const hasValidResults = purchase.completedCount > 0;
-                  
-                  return (
-                    <Card key={purchase.id} className="p-6 hover-elevate transition-all">
-                      <div className="flex flex-col md:flex-row items-start gap-6">
-                        {/* Progress Circle */}
-                        <div className="flex-shrink-0">
-                          <div 
-                            className="relative w-20 h-20" 
-                            role="img" 
-                            aria-label={`${consumedCount} of ${purchase.totalCount} assessments used, ${progressPercentage}% complete${isAllConsumed ? ', all assessments finished' : ''}`}
-                          >
-                            <svg className="w-20 h-20 transform -rotate-90" aria-hidden="true">
-                              <circle
-                                cx="40"
-                                cy="40"
-                                r="36"
-                                stroke="currentColor"
-                                strokeWidth="6"
-                                fill="none"
-                                className="text-muted/20"
-                              />
-                              <circle
-                                cx="40"
-                                cy="40"
-                                r="36"
-                                stroke="currentColor"
-                                strokeWidth="6"
-                                fill="none"
-                                strokeDasharray={`${2 * Math.PI * 36}`}
-                                strokeDashoffset={`${2 * Math.PI * 36 * (1 - progressPercentage / 100)}`}
-                                className={purchase.hasOnlyAbandonedResults ? "text-orange-500" : (isAllConsumed && hasValidResults ? "text-green-500" : "text-blue-500")}
-                                strokeLinecap="round"
-                              />
-                            </svg>
-                            <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
-                              <span className="text-lg font-bold">{progressPercentage}%</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start gap-2 mb-2">
-                            {purchase.hasOnlyAbandonedResults ? (
-                              <Clock className="h-5 w-5 text-orange-500 flex-shrink-0 mt-0.5" />
-                            ) : isAllConsumed && hasValidResults ? (
-                              <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                            ) : (
-                              <Clock className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                            )}
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <h3 className="text-lg font-semibold">
-                                  Testing Series #{index + 1}
-                                </h3>
-                                {purchase.hasOnlyAbandonedResults ? (
-                                  <Badge className="bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20">
-                                    Incomplete
-                                  </Badge>
-                                ) : isAllConsumed && hasValidResults && (
-                                  <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">
-                                    All Complete
-                                  </Badge>
-                                )}
+              <div className="space-y-3">
+                {(() => {
+                  const sortedChron = [...purchasesWithCompletedResults]
+                    .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+                  const displayOrder = [...sortedChron].reverse();
+                  return displayOrder.map((purchase: any) => {
+                    const seriesNumber = sortedChron.indexOf(purchase) + 1;
+                    // For progress: show consumed (completed + abandoned) / total
+                    const consumedCount = (purchase.completedCount || 0) + (purchase.abandonedCount || 0);
+                    const progressPercentage = Math.round((consumedCount / purchase.totalCount) * 100);
+                    const isAllConsumed = consumedCount >= purchase.totalCount;
+                    // Series is "complete" if all slots consumed AND at least one valid result
+                    const hasValidResults = purchase.completedCount > 0;
+                    const handleBrowseMore = () => {
+                      const el = document.getElementById('b2c-testing-series');
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      else window.location.href = '/assessments?view=candidate';
+                    };
+                    
+                    return (
+                      <Card key={purchase.id} className="p-3 md:p-4 hover-elevate transition-all">
+                        <div className="flex flex-col md:flex-row items-start gap-3 md:gap-4">
+                          {/* Progress Circle */}
+                          <div className="flex-shrink-0">
+                            <div 
+                              className="relative w-14 h-14" 
+                              role="img" 
+                              aria-label={`${consumedCount} of ${purchase.totalCount} assessments used, ${progressPercentage}% complete${isAllConsumed ? ', all assessments finished' : ''}`}
+                            >
+                              <svg className="w-14 h-14 transform -rotate-90" aria-hidden="true">
+                                <circle
+                                  cx="28"
+                                  cy="28"
+                                  r="24"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                  fill="none"
+                                  className="text-muted/20"
+                                />
+                                <circle
+                                  cx="28"
+                                  cy="28"
+                                  r="24"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                  fill="none"
+                                  strokeDasharray={`${2 * Math.PI * 24}`}
+                                  strokeDashoffset={`${2 * Math.PI * 24 * (1 - progressPercentage / 100)}`}
+                                  className={purchase.hasOnlyAbandonedResults ? "text-orange-500" : (isAllConsumed && hasValidResults ? "text-green-500" : "text-blue-500")}
+                                  strokeLinecap="round"
+                                />
+                              </svg>
+                              <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                                <span className="text-xs font-bold">{progressPercentage}%</span>
                               </div>
                             </div>
                           </div>
 
-                          <p className="text-sm text-muted-foreground mb-3">
-                            <span className="font-medium">{purchase.completedCount} of {purchase.totalCount}</span> assessments completed
-                            {purchase.abandonedCount > 0 && (
-                              <span className="text-orange-600 dark:text-orange-400 ml-1">({purchase.abandonedCount} incomplete)</span>
-                            )}
-                            {purchase.completedAt && (
-                              <span className="ml-2">• {format(new Date(purchase.completedAt), 'MMM d, yyyy')}</span>
-                            )}
-                          </p>
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start gap-2 mb-1.5">
+                              {purchase.hasOnlyAbandonedResults ? (
+                                <Clock className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" />
+                              ) : isAllConsumed && hasValidResults ? (
+                                <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                              ) : (
+                                <Clock className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                              )}
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h3 className="text-base font-semibold">
+                                    Testing Series #{seriesNumber}
+                                  </h3>
+                                  {purchase.hasOnlyAbandonedResults ? (
+                                    <Badge className="bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20">
+                                      Incomplete
+                                    </Badge>
+                                  ) : isAllConsumed && hasValidResults && (
+                                    <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">
+                                      All Complete
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
 
-                          {/* Completed and Abandoned Assessments with Icons */}
-                          <div className="flex flex-wrap gap-2 mb-4">
-                            {(purchase.results || [])
-                              .filter((r: any) => r.status === 'completed')
-                              .map((result: any) => {
-                                const metadata = getAssessmentMetadata(result.assessmentType);
-                                const ResultIcon = metadata.icon;
-                                return (
-                                  <Badge key={result.id} variant="outline" className="gap-1.5 py-1">
-                                    <ResultIcon className="h-3 w-3" />
-                                    {formatAssessmentName(result.assessmentType)}
+                            <p className="text-sm text-muted-foreground mb-1">
+                              <span className="font-medium">{purchase.completedCount} of {purchase.totalCount}</span> assessments completed
+                              {purchase.abandonedCount > 0 && (
+                                <span className="text-orange-600 dark:text-orange-400 ml-1">({purchase.abandonedCount} incomplete)</span>
+                              )}
+                              {purchase.completedAt && (
+                                <span className="ml-2">• {format(new Date(purchase.completedAt), 'MMM d, yyyy')}</span>
+                              )}
+                            </p>
+
+                            {/* Completed and Abandoned Assessments with Icons */}
+                            <div className="flex flex-wrap gap-1.5 mb-1">
+                              {(purchase.results || [])
+                                .filter((r: any) => r.status === 'completed')
+                                .map((result: any) => {
+                                  const metadata = getAssessmentMetadata(result.assessmentType);
+                                  const ResultIcon = metadata.icon;
+                                  return (
+                                    <Badge key={result.id} variant="outline" className="gap-1.5 py-0.5 text-xs">
+                                      <ResultIcon className="h-3 w-3" />
+                                      {formatAssessmentName(result.assessmentType)}
+                                    </Badge>
+                                  );
+                                })}
+                              {/* Show abandoned assessments with Incomplete badge */}
+                              {(purchase.results || [])
+                                .filter((r: any) => r.status === 'abandoned')
+                                .map((result: any) => {
+                                  const metadata = getAssessmentMetadata(result.assessmentType);
+                                  const ResultIcon = metadata.icon;
+                                  return (
+                                    <Badge 
+                                      key={result.id} 
+                                      variant="outline" 
+                                      className="gap-1.5 py-0.5 text-xs border-orange-500/50 text-orange-600 dark:text-orange-400"
+                                      data-testid={`badge-incomplete-${result.assessmentType}`}
+                                    >
+                                      <ResultIcon className="h-3 w-3" />
+                                      {formatAssessmentName(result.assessmentType)}
+                                      <span className="text-[10px] uppercase tracking-wide">(Incomplete)</span>
+                                    </Badge>
+                                  );
+                                })}
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex flex-col gap-1.5 md:w-40">
+                            {/* Series with only abandoned tests - no results to unlock */}
+                            {purchase.hasOnlyAbandonedResults && (
+                              <div className="text-center py-1">
+                                <p className="text-sm text-muted-foreground font-medium" data-testid={`text-incomplete-${purchase.id}`}>
+                                  Test Incomplete
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  No results available
+                                </p>
+                              </div>
+                            )}
+                            {/* All consumed with valid results AND paid - can view */}
+                            {!purchase.hasOnlyAbandonedResults && isAllConsumed && hasValidResults && purchase.resultsAccessPaid && (
+                              <>
+                                <Link href={`/my-results?purchaseId=${purchase.id}`}>
+                                  <Button className="gap-2 w-full" data-testid={`button-view-results-${purchase.id}`}>
+                                    <FileText className="h-4 w-4" />
+                                    View Results
+                                  </Button>
+                                </Link>
+                                <div className="text-center">
+                                  <Badge variant="secondary" className="text-xs">
+                                    ✓ Unlocked
                                   </Badge>
-                                );
-                              })}
-                            {/* Show abandoned assessments with Incomplete badge */}
-                            {(purchase.results || [])
-                              .filter((r: any) => r.status === 'abandoned')
-                              .map((result: any) => {
-                                const metadata = getAssessmentMetadata(result.assessmentType);
-                                const ResultIcon = metadata.icon;
-                                return (
-                                  <Badge 
-                                    key={result.id} 
-                                    variant="outline" 
-                                    className="gap-1.5 py-1 border-orange-500/50 text-orange-600 dark:text-orange-400"
-                                    data-testid={`badge-incomplete-${result.assessmentType}`}
-                                  >
-                                    <ResultIcon className="h-3 w-3" />
-                                    {formatAssessmentName(result.assessmentType)}
-                                    <span className="text-[10px] uppercase tracking-wide">(Incomplete)</span>
+                                </div>
+                              </>
+                            )}
+                            {/* All consumed with valid results BUT not paid - can unlock */}
+                            {!purchase.hasOnlyAbandonedResults && isAllConsumed && hasValidResults && !purchase.resultsAccessPaid && (
+                              <>
+                                <Link href={`/my-results?purchaseId=${purchase.id}`}>
+                                  <Button variant="default" className="gap-2 w-full" data-testid={`button-unlock-results-${purchase.id}`}>
+                                    <FileText className="h-4 w-4" />
+                                    Unlock Results
+                                  </Button>
+                                </Link>
+                                <div className="text-center">
+                                  <Badge variant="outline" className="text-xs border-orange-500 text-orange-600 dark:text-orange-400">
+                                    Payment Required
                                   </Badge>
-                                );
-                              })}
+                                </div>
+                              </>
+                            )}
+                            {/* Browse More Tests */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="w-full text-xs gap-1.5 mt-1"
+                              onClick={handleBrowseMore}
+                              data-testid={`button-browse-more-${purchase.id}`}
+                            >
+                              <Plus className="h-3 w-3" />
+                              Browse More Tests
+                            </Button>
                           </div>
                         </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex flex-col gap-2 md:w-48">
-                          {/* Series with only abandoned tests - no results to unlock */}
-                          {purchase.hasOnlyAbandonedResults && (
-                            <div className="text-center py-2">
-                              <p className="text-sm text-muted-foreground font-medium" data-testid={`text-incomplete-${purchase.id}`}>
-                                Test Incomplete
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                No results available
-                              </p>
-                            </div>
-                          )}
-                          {/* All consumed with valid results AND paid - can view */}
-                          {!purchase.hasOnlyAbandonedResults && isAllConsumed && hasValidResults && purchase.resultsAccessPaid && (
-                            <>
-                              <Link href={`/my-results?purchaseId=${purchase.id}`}>
-                                <Button className="gap-2 w-full" data-testid={`button-view-results-${purchase.id}`}>
-                                  <FileText className="h-4 w-4" />
-                                  View Results
-                                </Button>
-                              </Link>
-                              <div className="text-center">
-                                <Badge variant="secondary" className="text-xs">
-                                  ✓ Unlocked
-                                </Badge>
-                              </div>
-                            </>
-                          )}
-                          {/* All consumed with valid results BUT not paid - can unlock */}
-                          {!purchase.hasOnlyAbandonedResults && isAllConsumed && hasValidResults && !purchase.resultsAccessPaid && (
-                            <>
-                              <Link href={`/my-results?purchaseId=${purchase.id}`}>
-                                <Button variant="default" className="gap-2 w-full" data-testid={`button-unlock-results-${purchase.id}`}>
-                                  <FileText className="h-4 w-4" />
-                                  Unlock Results
-                                </Button>
-                              </Link>
-                              <div className="text-center">
-                                <Badge variant="outline" className="text-xs border-orange-500 text-orange-600 dark:text-orange-400">
-                                  Payment Required
-                                </Badge>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })}
+                      </Card>
+                    );
+                  });
+                })()}
               </div>
             </section>
           )}
