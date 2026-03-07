@@ -9,7 +9,8 @@ import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, BookOpen, ArrowRight } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { isValidEmail } from "@/lib/validation";
 import { SEO } from "@/lib/seo";
 
@@ -21,6 +22,7 @@ export default function Login() {
   const [loginPassword, setLoginPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showAccountDialog, setShowAccountDialog] = useState(false);
 
   // Get query parameters from URL
   const urlParams = new URLSearchParams(window.location.search);
@@ -235,7 +237,7 @@ export default function Login() {
               <Button
                 variant="outline"
                 className="w-full border-blue-400 text-blue-100"
-                onClick={() => setLocation("/onboarding")}
+                onClick={() => setShowAccountDialog(true)}
                 data-testid="button-create-account"
               >
                 Create Account
@@ -245,6 +247,41 @@ export default function Login() {
         </div>
       </main>
       <Footer />
+
+      {/* Choose Assessments First dialog */}
+      <Dialog open={showAccountDialog} onOpenChange={setShowAccountDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex justify-center mb-3">
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                <BookOpen className="h-7 w-7 text-primary" />
+              </div>
+            </div>
+            <DialogTitle className="text-center text-xl">Start with Your Assessments</DialogTitle>
+            <DialogDescription className="text-center text-sm leading-relaxed">
+              Your HumanMetrix account is created automatically when you begin your first assessment — no need to sign up separately. Browse the available assessments and get started straight away.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col gap-2 sm:flex-col">
+            <Button
+              className="w-full gap-2"
+              onClick={() => setLocation('/assessments?view=candidate')}
+              data-testid="button-browse-assessments-dialog"
+            >
+              Browse Assessments
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full"
+              onClick={() => setShowAccountDialog(false)}
+              data-testid="button-back-to-login-dialog"
+            >
+              Back to Login
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
