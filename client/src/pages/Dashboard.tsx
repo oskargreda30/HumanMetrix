@@ -1376,9 +1376,7 @@ export default function Dashboard() {
                     // Series is "complete" if all slots consumed AND at least one valid result
                     const hasValidResults = purchase.completedCount > 0;
                     const handleBrowseMore = () => {
-                      const el = document.getElementById('b2c-testing-series');
-                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      else window.location.href = '/assessments?view=candidate';
+                      window.location.href = '/assessments?view=candidate';
                     };
                     
                     return (
@@ -1548,7 +1546,7 @@ export default function Dashboard() {
                               data-testid={`button-browse-more-${purchase.id}`}
                             >
                               <Plus className="h-3 w-3" />
-                              Browse More Tests
+                              Take More Tests
                             </Button>
                           </div>
                         </div>
