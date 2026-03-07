@@ -544,8 +544,10 @@ export function EcosystemWorkflow({
       formData.append("pdf", pdfFile);
       formData.append("projectId", projectId);
 
+      const csrfToken = document.cookie.split(";").map(c => c.trim()).find(c => c.startsWith("csrf_token="))?.split("=")[1] ?? "";
       const response = await fetch("/api/ecosystem/parse-fit-pdf", {
         method: "POST",
+        headers: { "x-csrf-token": csrfToken },
         body: formData,
         credentials: "include",
       });

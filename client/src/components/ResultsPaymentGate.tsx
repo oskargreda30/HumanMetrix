@@ -82,11 +82,7 @@ export function ResultsPaymentGate() {
     if (!code) return;
     setIsValidatingPromo(true);
     try {
-      const res = await fetch("/api/validate-discount", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code }),
-      });
+      const res = await apiRequest("POST", "/api/validate-discount", { code });
       const data = await res.json();
       if (data.valid) {
         setAppliedPromo({ code: code.toUpperCase(), discountPercent: data.discountPercent });

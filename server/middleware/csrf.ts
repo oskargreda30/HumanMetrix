@@ -50,6 +50,9 @@ export function csrfProtection() {
       "/api/create-free-invitation",
       
       // Payment/checkout flows (public)
+      "/api/validate-discount",
+      "/api/check-email-exists",
+      "/api/process-payment-success",
       "/api/process-results-payment",
       "/api/unlock-results/checkout",
       "/api/unlock-results/process-payment",

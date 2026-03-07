@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { CheckCircle2, Info, Clock, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { isValidEmail, isValidName } from "@/lib/validation";
 import { SEO } from "@/lib/seo";
 
@@ -149,24 +149,9 @@ export default function Purchase() {
     try {
       // Logged-in users: create free purchase (payment-deferred model)
       if (user) {
-        const response = await fetch("/api/create-free-purchase", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            assessmentIds: Array.from(selectedAssessments),
-          }),
-          credentials: "include",
+        const response = await apiRequest("POST", "/api/create-free-purchase", {
+          assessmentIds: Array.from(selectedAssessments),
         });
-
-        if (!response.ok) {
-          const error = await response.json();
-          if (response.status === 401) {
-            throw new Error("Your session has expired. Please log in again.");
-          }
-          throw new Error(error.message || "Failed to add assessments");
-        }
 
         const data = await response.json();
         

@@ -79,12 +79,7 @@ export default function CandidatesTab() {
 
   const addNoteMutation = useMutation({
     mutationFn: async ({ userId, note }: { userId: string; note: string }) => {
-      const res = await fetch('/api/admin/candidates/notes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, note }),
-      });
-      if (!res.ok) throw new Error('Failed to add note');
+      const res = await apiRequest('POST', '/api/admin/candidates/notes', { userId, note });
       return res.json();
     },
     onSuccess: () => {

@@ -255,9 +255,10 @@ export default function MultiCandidateRoleFitTab() {
   const compareMutation = useMutation({
     mutationFn: async () => {
       // Use fetch directly to handle error responses with custom data
+      const csrfToken = document.cookie.split(";").map(c => c.trim()).find(c => c.startsWith("csrf_token="))?.split("=")[1] ?? "";
       const res = await fetch('/api/admin/multi-candidate-comparison', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrfToken },
         body: JSON.stringify({
           jobRoleId: selectedRole,
           candidateIds: selectedCandidates,

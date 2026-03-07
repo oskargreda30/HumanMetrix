@@ -28,12 +28,7 @@ export default function AdminInvitations() {
 
   const createInvitation = useMutation({
     mutationFn: async (data: { candidateEmail: string; candidateName: string; assessmentTypes: string[]; message?: string }) => {
-      const response = await fetch('/api/admin/invitations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error('Failed to create invitation');
+      const response = await apiRequest('POST', '/api/admin/invitations', data);
       return response.json();
     },
     onSuccess: () => {
