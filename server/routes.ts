@@ -1517,7 +1517,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       // Apply discount ratio if applicable
-      let totalLocal = b2cCheckoutPricing.totalLocal;
+      let totalLocal = b2cCheckoutPricing.subtotalLocal;
       if (discountApplied) {
         const discountRatio = finalPriceInPence / priceInPence;
         totalLocal = Math.round(totalLocal * discountRatio);
