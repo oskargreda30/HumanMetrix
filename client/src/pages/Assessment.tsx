@@ -1204,21 +1204,23 @@ export default function Assessment() {
               )}
               
               {currentQuestion === questions.length - 1 ? (
-                <Button
-                  onClick={handleSubmit}
-                  disabled={!answers[currentQ.id] || submitMutation.isPending}
-                  className="bg-green-600"
-                  data-testid="button-submit-assessment"
-                >
-                  {submitMutation.isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {isPromptArchitecture ? "Analysing..." : "Submitting..."}
-                    </>
-                  ) : (
-                    "Submit Assessment"
-                  )}
-                </Button>
+                !(submitMutation.isPending && isPromptArchitecture) && (
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={!answers[currentQ.id] || submitMutation.isPending}
+                    className="bg-green-600"
+                    data-testid="button-submit-assessment"
+                  >
+                    {submitMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      "Submit Assessment"
+                    )}
+                  </Button>
+                )
               ) : (
                 <Button 
                   onClick={handleNext} 

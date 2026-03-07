@@ -2849,7 +2849,7 @@ export default function EmbedAssessment() {
           )}
 
           {isLastQuestion ? (
-            <>
+            !(isSubmitting && isCurrentPromptArchitecture) && (
               <Button
                 onClick={handleSubmit}
                 disabled={!hasAnswered || isSubmitting}
@@ -2859,13 +2859,13 @@ export default function EmbedAssessment() {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {isCurrentPromptArchitecture ? "Analysing..." : "Submitting..."}
+                    Submitting...
                   </>
                 ) : (
                   "Submit Assessment"
                 )}
               </Button>
-            </>
+            )
           ) : (
             <Button
               onClick={handleNext}
