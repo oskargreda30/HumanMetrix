@@ -257,12 +257,12 @@ export default function Login() {
                 <BookOpen className="h-7 w-7 text-primary" />
               </div>
             </div>
-            <DialogTitle className="text-center text-xl">Start with Your Assessments</DialogTitle>
+            <DialogTitle className="sr-only">Start with Your Assessments</DialogTitle>
             <DialogDescription className="text-center text-sm leading-relaxed">
               Your HumanMetrix account is created automatically when you begin your first assessment — no need to sign up separately. Browse the available assessments and get started straight away.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex-col gap-2 sm:flex-col">
+          <DialogFooter className="sm:flex-col">
             <Button
               className="w-full gap-2"
               onClick={() => setLocation('/assessments?view=candidate')}
@@ -270,14 +270,6 @@ export default function Login() {
             >
               Browse Assessments
               <ArrowRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              className="w-full"
-              onClick={() => setShowAccountDialog(false)}
-              data-testid="button-back-to-login-dialog"
-            >
-              Back to Login
             </Button>
           </DialogFooter>
         </DialogContent>
