@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Lock, CheckCircle2, Loader2, ArrowLeft, Tag, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId } from "@shared/schema";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
@@ -117,6 +117,7 @@ export function ResultsPaymentGate() {
     onSuccess: async (data: any) => {
       if (data.free) {
         toast({ title: "Results unlocked!", description: "Your promo code granted free access." });
+        queryClient.invalidateQueries({ queryKey: ["/api/purchases"] });
         setTimeout(() => setLocation("/my-results"), 1500);
         return;
       }
