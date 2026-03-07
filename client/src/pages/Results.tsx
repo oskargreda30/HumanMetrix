@@ -6,7 +6,7 @@ import Footer from "@/components/Footer";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, TrendingUp, AlertTriangle, Download, FileText, Target, MessageSquare, Users, Rocket, Star, Mail } from "lucide-react";
+import { Loader2, ArrowLeft, ArrowUp, TrendingUp, AlertTriangle, Download, FileText, Target, MessageSquare, Users, Rocket, Star, Mail } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { exportResultsPDF } from "@/lib/pdfScreenCapture";
 import { useToast } from "@/hooks/use-toast";
@@ -712,6 +712,26 @@ export default function Results() {
               </div>
             </div>
           </Card>
+
+          {/* Back to Top and Download buttons */}
+          <div className="flex justify-end gap-3 mt-8 mb-4" data-testid="container-bottom-actions">
+            <Button
+              variant="outline"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              data-testid="button-back-to-top"
+            >
+              <ArrowUp className="mr-2 h-4 w-4" />
+              Back to Top
+            </Button>
+            <Button
+              size="icon"
+              onClick={handleDownloadPDF}
+              data-testid="button-download-pdf-bottom"
+              title="Download PDF"
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+          </div>
 
         </div>
       </main>
