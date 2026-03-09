@@ -135,7 +135,7 @@ const faqs = [
   },
   {
     question: "Do employers recognize HumanMetrix assessments?",
-    answer: "Yes! Many UK employers use HumanMetrix to assess candidates. Having your results ready shows initiative and gives employers verified, objective data about your skills.",
+    answer: "Yes! Many employers use HumanMetrix to assess candidates. Having your results ready shows initiative and gives employers verified, objective data about your skills.",
   },
 ];
 
@@ -148,7 +148,7 @@ export default function ForCandidates() {
       <SEO 
         title="For Candidates - AI-Powered Career Assessments"
         canonical="/for-candidates" 
-        description="HumanMetrix for job seekers: AI-powered psychometric assessments to showcase your skills. Get FIT, AI Readiness, Prompt Architecture & AIQ results for your CV. Stand out to UK employers."
+        description="HumanMetrix for job seekers: AI-powered psychometric assessments to showcase your skills. Get FIT, AI Readiness, Prompt Architecture & AIQ results for your CV. Stand out to employers."
         keywords="career assessment, job seeker tests, CV skills, psychometric tests candidates, AI skills assessment, career development, professional assessment, job application tools"
       />
       <SoftwareApplicationSchema />

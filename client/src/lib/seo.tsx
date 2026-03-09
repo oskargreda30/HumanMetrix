@@ -17,10 +17,10 @@ interface SEOProps {
 }
 
 const defaultSEO = {
-  title: 'HumanMetrix - AI Assessment Platform for Recruitment | Human Metrix UK',
-  description: 'HumanMetrix - UK AI-powered psychometric testing platform. Pre-employment assessments for FIT, AI Readiness & AIQ. Trusted by employers.',
+  title: 'HumanMetrix - AI Assessment Platform for Recruitment',
+  description: 'HumanMetrix - AI-powered psychometric testing platform. Pre-employment assessments for FIT, AI Readiness & AIQ. Trusted by employers.',
   ogImage: `${BASE_URL}/og-image.png`,
-  keywords: 'HumanMetrix, Human Metrix, psychometric tests UK, pre-employment testing, candidate assessment, AI assessment platform, recruitment testing, behavioural assessment',
+  keywords: 'HumanMetrix, Human Metrix, psychometric tests, pre-employment testing, candidate assessment, AI assessment platform, recruitment testing, behavioural assessment',
 };
 
 export function SEO({ 
@@ -82,10 +82,10 @@ export function OrganizationSchema() {
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "HumanMetrix",
-    "alternateName": ["Human Metrix", "HumanMetrix UK", "Human Metrics"],
+    "alternateName": ["Human Metrix", "Human Metrics"],
     "url": BASE_URL,
     "logo": `${BASE_URL}/favicon.png`,
-    "description": "HumanMetrix (Human Metrix) is the UK's leading AI-powered psychometric testing and candidate assessment platform. We measure human metrics for recruitment and career development.",
+    "description": "HumanMetrix (Human Metrix) is a leading AI-powered psychometric testing and candidate assessment platform. We measure human metrics for recruitment and career development.",
     "sameAs": [
       "https://www.linkedin.com/company/humanmetrix"
     ],
@@ -194,9 +194,9 @@ export function WebSiteSchema() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "HumanMetrix",
-    "alternateName": ["Human Metrix", "HumanMetrix UK"],
+    "alternateName": ["Human Metrix"],
     "url": BASE_URL,
-    "description": "UK's leading AI-powered psychometric testing and candidate assessment platform",
+    "description": "A leading AI-powered psychometric testing and candidate assessment platform",
     "publisher": {
       "@type": "Organization",
       "name": "HumanMetrix",

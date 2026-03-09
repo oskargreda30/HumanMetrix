@@ -193,8 +193,8 @@ export default function Home() {
     <div className="min-h-screen flex flex-col">
       <SEO 
         canonical="/" 
-        description="HumanMetrix (Human Metrix) is the UK's leading AI-powered pre-employment testing platform. Hire smarter with FIT, AI Readiness, Prompt Architecture & AIQ assessments. Enterprise candidate analytics trusted by recruiters."
-        keywords="HumanMetrix, Human Metrix, human metrics, pre-employment testing, candidate assessment, AI hiring tools, recruitment testing UK, psychometric testing employers, HR assessment platform, talent acquisition"
+        description="HumanMetrix (Human Metrix) is a leading AI-powered pre-employment testing platform. Hire smarter with FIT, AI Readiness, Prompt Architecture & AIQ assessments. Enterprise candidate analytics trusted by recruiters."
+        keywords="HumanMetrix, Human Metrix, human metrics, pre-employment testing, candidate assessment, AI hiring tools, recruitment testing, psychometric testing employers, HR assessment platform, talent acquisition"
       />
       <WebSiteSchema />
       <SoftwareApplicationSchema />

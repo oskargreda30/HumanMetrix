@@ -165,7 +165,7 @@ export default function Team() {
         title="Our Team - Meet the HumanMetrix Leadership"
         description="Meet the team behind HumanMetrix - experts in AI, HR, technology, and business development building the future of talent assessment."
         canonical="/team"
-        keywords="HumanMetrix team, leadership team, AI assessment experts, HR technology founders, startup team UK"
+        keywords="HumanMetrix team, leadership team, AI assessment experts, HR technology founders, startup team"
       />
 
       {/* Background image with light grey overlay */}

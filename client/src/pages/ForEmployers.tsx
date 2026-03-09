@@ -213,10 +213,10 @@ export default function ForEmployers() {
   return (
     <div className="min-h-screen flex flex-col relative">
       <SEO 
-        title="For Employers - Pre-Employment Testing UK"
-        description="HumanMetrix for employers: AI-powered candidate assessments, compare human metrics analytics & make data-driven hiring decisions. Pre-employment psychometric testing trusted by UK recruiters."
+        title="For Employers - Pre-Employment Testing"
+        description="HumanMetrix for employers: AI-powered candidate assessments, compare human metrics analytics & make data-driven hiring decisions. Pre-employment psychometric testing trusted by recruiters."
         canonical="/for-employers"
-        keywords="pre-employment testing, candidate assessment, recruitment testing UK, AI hiring tools, psychometric testing employers, HR assessment platform, talent acquisition, hiring analytics"
+        keywords="pre-employment testing, candidate assessment, recruitment testing, AI hiring tools, psychometric testing employers, HR assessment platform, talent acquisition, hiring analytics"
       />
       <FAQSchema faqs={faqs.map(f => ({ question: f.question, answer: f.answer }))} />
       {/* Background image with light grey overlay */}

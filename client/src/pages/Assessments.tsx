@@ -122,10 +122,10 @@ export default function Assessments() {
   return (
     <div className="min-h-screen flex flex-col bg-[#0a1628]">
       <SEO 
-        title="Psychometric Tests & AI Assessments UK"
-        description="HumanMetrix psychometric tests: FIT, AI Readiness, Prompt Architecture & AIQ. Pre-employment assessments with CV-ready results. Online psychometric testing UK trusted."
+        title="Psychometric Tests & AI Assessments"
+        description="HumanMetrix psychometric tests: FIT, AI Readiness, Prompt Architecture & AIQ. Pre-employment assessments with CV-ready results. Online psychometric testing platform."
         canonical="/assessments"
-        keywords="psychometric tests UK, AI assessments, pre-employment testing, online psychometric tests, FIT assessment, AI readiness test, prompt engineering test, AIQ assessment, candidate testing"
+        keywords="psychometric tests, AI assessments, pre-employment testing, online psychometric tests, FIT assessment, AI readiness test, prompt engineering test, AIQ assessment, candidate testing"
       />
       {assessments.map((a) => (
         <ProductSchema 

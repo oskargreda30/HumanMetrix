@@ -19,8 +19,8 @@ export default function ArticleRecruitmentTesting() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <SEO 
-        title="Role of Psychometric Testing in Recruitment UK | HumanMetrix Insights"
-        description="Why UK employers use psychometric testing in recruitment. Learn about pre-employment assessment types & data-driven hiring."
+        title="Role of Psychometric Testing in Recruitment | HumanMetrix Insights"
+        description="Why employers use psychometric testing in recruitment. Learn about pre-employment assessment types & data-driven hiring."
         canonical="/articles/role-of-psychometric-testing-in-recruitment"
       />
       <Navigation />
@@ -41,7 +41,7 @@ export default function ArticleRecruitmentTesting() {
             </div>
             
             <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4 leading-tight">
-              The Essential Role of Psychometric Testing in Recruitment: A UK Perspective
+              The Essential Role of Psychometric Testing in Recruitment
             </h1>
             
             <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
@@ -58,11 +58,11 @@ export default function ArticleRecruitmentTesting() {
 
           <div className="prose prose-slate prose-base max-w-none">
             <p className="lead text-base md:text-lg text-slate-600 mb-6">
-              The modern talent acquisition landscape is moving beyond traditional CV screening and unstructured interviews to make more informed, data-driven decisions. A key component of this strategic shift is the widespread and sophisticated adoption of psychometric testing in recruitment. This robust methodology helps UK companies predict future job performance, assess crucial elements of cultural fit, and identify high-potential candidates efficiently and objectively.
+              The modern talent acquisition landscape is moving beyond traditional CV screening and unstructured interviews to make more informed, data-driven decisions. A key component of this strategic shift is the widespread and sophisticated adoption of psychometric testing in recruitment. This robust methodology helps companies predict future job performance, assess crucial elements of cultural fit, and identify high-potential candidates efficiently and objectively.
             </p>
 
             <h2 className="text-2xl font-bold text-slate-900 mt-10 mb-4">
-              Why UK Employers Rely on Objective Talent Assessment
+              Why Employers Rely on Objective Talent Assessment
             </h2>
             
             <p className="text-slate-700 mb-6">
@@ -93,7 +93,7 @@ export default function ArticleRecruitmentTesting() {
             </ul>
 
             <h3 className="text-xl font-semibold text-slate-900 mt-8 mb-4">
-              The Core Types of Assessments in the UK Market
+              The Core Types of Assessments in the Modern Market
             </h3>
             
             <p className="text-slate-700 mb-6">
@@ -189,7 +189,7 @@ export default function ArticleRecruitmentTesting() {
                 <CardContent className="p-6">
                   <h4 className="font-semibold text-slate-900 mb-2">For Employers</h4>
                   <p className="text-slate-600 text-sm mb-3">
-                    Learn about data-driven solutions for UK businesses utilizing psychometrics.
+                    Learn about data-driven solutions for businesses utilizing psychometrics.
                   </p>
                   <Link href="/for-employers" className="text-cyan-600 hover:text-cyan-700 text-sm inline-flex items-center">
                     View employer solutions <ExternalLink className="w-3 h-3 ml-1" />
@@ -201,7 +201,7 @@ export default function ArticleRecruitmentTesting() {
             <Card className="mb-8 border-slate-200">
               <CardContent className="p-6">
                 <p className="text-slate-600 text-sm">
-                  <strong>External Resource:</strong> The British Psychological Society (BPS) provides crucial ethical guidelines for test use in the UK workplace, which all reputable firms should follow.{" "}
+                  <strong>External Resource:</strong> The British Psychological Society (BPS) provides crucial ethical guidelines for test use in the workplace, which all reputable firms should follow.{" "}
                   <a 
                     href="https://www.bps.org.uk/psychologists/standards-and-guidelines" 
                     target="_blank" 

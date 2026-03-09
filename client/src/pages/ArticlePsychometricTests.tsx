@@ -11,8 +11,8 @@ export default function ArticlePsychometricTests() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <SEO 
-        title="How to Pass Psychometric Tests for Job Interviews UK | HumanMetrix Guide"
-        description="HumanMetrix guide: how to prepare for UK psychometric tests, what to expect & strategies to pass pre-employment assessments."
+        title="How to Pass Psychometric Tests for Job Interviews | HumanMetrix Guide"
+        description="HumanMetrix guide: how to prepare for psychometric tests, what to expect & strategies to pass pre-employment assessments."
         canonical="/articles/how-to-pass-psychometric-tests-job-interviews"
       />
       <Navigation />
@@ -33,7 +33,7 @@ export default function ArticlePsychometricTests() {
             </div>
             
             <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4 leading-tight">
-              How to Approach Psychometric Tests for Job Interviews: Your Ultimate UK Guide
+              How to Approach Psychometric Tests for Job Interviews: Your Ultimate Guide
             </h1>
             
             <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
@@ -50,7 +50,7 @@ export default function ArticlePsychometricTests() {
 
           <div className="prose prose-slate prose-base max-w-none">
             <p className="lead text-base md:text-lg text-slate-600 mb-6">
-              Navigating the modern job application process in the UK often means encountering formal psychometric testing. If you're currently researching how to approach psychometric tests for job interviews, you've discovered a critical stage in modern talent acquisition. These assessments are now a standard component of many UK employers' selection process, designed to measure your cognitive abilities, behavioral style, and personality traits far beyond the limitations of a standard CV.
+              Navigating the modern job application process today often means encountering formal psychometric testing. If you're currently researching how to approach psychometric tests for job interviews, you've discovered a critical stage in modern talent acquisition. These assessments are now a standard component of many employers' selection process, designed to measure your cognitive abilities, behavioral style, and personality traits far beyond the limitations of a standard CV.
             </p>
 
             <h2 className="text-2xl font-bold text-slate-900 mt-10 mb-4">
@@ -134,7 +134,7 @@ export default function ArticlePsychometricTests() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-cyan-500 font-bold">•</span>
-                <span><strong>Leverage Practice Resources:</strong> Look for related resources like "free numerical reasoning tests UK" or "verbal reasoning practice questions" to find diverse practice materials.</span>
+                <span><strong>Leverage Practice Resources:</strong> Look for related resources like "free numerical reasoning tests" or "verbal reasoning practice questions" to find diverse practice materials.</span>
               </li>
             </ul>
 
@@ -213,7 +213,7 @@ export default function ArticlePsychometricTests() {
             </p>
             
             <p className="text-slate-700 mb-8">
-              Don't let these assessments be a barrier to your career progression; let them be your stepping stone to a successful career in the UK job market.
+              Don't let these assessments be a barrier to your career progression; let them be your stepping stone to a successful career in the modern job market.
             </p>
 
             <Card className="bg-gradient-to-r from-cyan-500 to-blue-600 border-0">

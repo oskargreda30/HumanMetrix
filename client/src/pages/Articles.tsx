@@ -46,8 +46,8 @@ const articles = [
   },
   {
     id: "how-to-pass-psychometric-tests-job-interviews",
-    title: "How to Approach Psychometric Tests for Job Interviews: Your Ultimate UK Guide",
-    description: "Struggling with job application psychometric tests? Learn exactly how to prepare, what to expect, and the best strategies to approach psychometric tests for job interviews in the UK.",
+    title: "How to Approach Psychometric Tests for Job Interviews: Your Ultimate Guide",
+    description: "Struggling with job application psychometric tests? Learn exactly how to prepare, what to expect, and the best strategies to approach psychometric tests for job interviews.",
     category: "Career Advice",
     readTime: "8 min read",
     date: "November 2025",
@@ -55,8 +55,8 @@ const articles = [
   },
   {
     id: "role-of-psychometric-testing-in-recruitment",
-    title: "The Essential Role of Psychometric Testing in Recruitment: A UK Perspective",
-    description: "Explore the pivotal role of psychometric testing in modern recruitment. Learn why UK employers use these assessments, the types of tests involved, and how they shape the future of hiring.",
+    title: "The Essential Role of Psychometric Testing in Recruitment",
+    description: "Explore the pivotal role of psychometric testing in modern recruitment. Learn why employers use these assessments, the types of tests involved, and how they shape the future of hiring.",
     category: "Industry Insights",
     readTime: "7 min read",
     date: "November 2025",
@@ -83,10 +83,10 @@ export default function Articles() {
   return (
     <div className="min-h-screen flex flex-col relative">
       <SEO 
-        title="Psychometric Testing Articles & Career Insights UK"
-        description="HumanMetrix articles on psychometric tests UK, pre-employment testing & career development. Expert guides on passing assessments and recruitment insights."
+        title="Psychometric Testing Articles & Career Insights"
+        description="HumanMetrix articles on psychometric tests, pre-employment testing & career development. Expert guides on passing assessments and recruitment insights."
         canonical="/articles"
-        keywords="psychometric testing articles, career advice UK, job interview tips, pre-employment testing guide, recruitment insights, AI skills articles, career development"
+        keywords="psychometric testing articles, career advice, job interview tips, pre-employment testing guide, recruitment insights, AI skills articles, career development"
       />
       
       {/* Background image with light grey overlay */}
