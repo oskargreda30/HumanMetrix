@@ -178,11 +178,8 @@ async function initializeStripeCoupons() {
       // Check if promotion code already exists by listing all promo codes
       let codeExists = false;
       try {
-        const existingPromoCodes = await stripe.promotionCodes.list({ limit: 100 });
-        codeExists = existingPromoCodes.data.some(
-          (pc: any) => pc.code === couponData.code && pc.coupon && 
-          (typeof pc.coupon === 'string' ? pc.coupon === couponData.id : pc.coupon.id === couponData.id)
-        );
+        const existingPromoCodes = await stripe.promotionCodes.list({ limit: 100, code: couponData.code });
+        codeExists = existingPromoCodes.data.length > 0;
       } catch (e) {
         console.log(`[Stripe] Could not list promotion codes`);
       }
@@ -25156,7 +25153,7 @@ async function runGoldenSetEvaluation(isCalibrating = false): Promise<{
       };
       
       const expectedScores = prompt.expectedScores as any;
-      const driftPercentage = Math.round(calculateDrift(expectedScores, averagedEvaluation) * 10) / 10; // One decimal place
+      const driftPercentage = Math.round(calculateDrift(expectedScores, averagedEvaluation)); // Integer required by DB column
       const passed = driftPercentage <= DRIFT_THRESHOLD;
       
       // Store result in database (with averaged scores)

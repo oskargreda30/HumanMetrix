@@ -65,8 +65,8 @@ async function logEmailToDb(params: EmailLogParams): Promise<void> {
 // Email provider types
 export type EmailProvider = 'sendgrid' | 'gmail';
 
-// SendGrid is always the primary provider, Gmail is the fallback
-const currentEmailProvider: EmailProvider = 'sendgrid';
+// Gmail is the primary provider (SendGrid key is currently unauthorized)
+const currentEmailProvider: EmailProvider = 'gmail';
 
 // Get the production base URL - prioritize custom domain over Replit domains
 function getBaseUrl(): string {
@@ -179,19 +179,20 @@ function getTransporter() {
 export async function initializeEmailSystem() {
   console.log('Initializing email systems...');
   
-  // Initialize SendGrid as primary provider
+  // Initialize both providers (order of init doesn't affect routing)
   const sendgridSuccess = await initSendGrid();
   if (sendgridSuccess) {
-    console.log('✅ SendGrid ready (primary)');
+    console.log(`✅ SendGrid ready (${currentEmailProvider === 'sendgrid' ? 'primary' : 'fallback'})`);
   }
   
-  // Initialize Gmail as fallback provider
   const gmailSuccess = initGmail();
   if (gmailSuccess) {
-    console.log('✅ Gmail ready (fallback)');
+    console.log(`✅ Gmail ready (${currentEmailProvider === 'gmail' ? 'primary' : 'fallback'})`);
   }
-  
-  console.log('📧 Email provider: SendGrid (primary) with Gmail fallback');
+
+  const primary = currentEmailProvider === 'sendgrid' ? 'SendGrid' : 'Gmail';
+  const fallback = currentEmailProvider === 'sendgrid' ? 'Gmail' : 'SendGrid';
+  console.log(`📧 Email provider: ${primary} (primary) with ${fallback} fallback`);
 }
 
 // Unified email sending function that routes to the correct provider
