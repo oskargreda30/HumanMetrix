@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,102 @@ interface LinkInfo {
 }
 
 type Step = "details" | "otp" | "redirecting";
+
+function OtpBoxes({ value, onChange, onComplete, disabled }: {
+  value: string;
+  onChange: (v: string) => void;
+  onComplete: () => void;
+  disabled: boolean;
+}) {
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const digits = value.padEnd(6, "").split("").slice(0, 6);
+
+  useEffect(() => {
+    inputRefs.current[0]?.focus();
+  }, []);
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      const newDigits = [...digits];
+      if (newDigits[index]) {
+        newDigits[index] = "";
+        onChange(newDigits.join("").trimEnd());
+      } else if (index > 0) {
+        newDigits[index - 1] = "";
+        onChange(newDigits.join("").trimEnd());
+        inputRefs.current[index - 1]?.focus();
+      }
+    } else if (e.key === "ArrowLeft" && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    } else if (e.key === "ArrowRight" && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    if (!raw) return;
+
+    // Handle paste of multiple digits
+    if (raw.length > 1) {
+      const pasted = raw.slice(0, 6);
+      onChange(pasted);
+      const nextIndex = Math.min(pasted.length, 5);
+      inputRefs.current[nextIndex]?.focus();
+      if (pasted.length === 6) onComplete();
+      return;
+    }
+
+    const newDigits = [...digits];
+    newDigits[index] = raw[0];
+    const newValue = newDigits.join("").trimEnd();
+    onChange(newValue);
+
+    if (index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+    if (newDigits.filter(Boolean).length === 6) {
+      onComplete();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!pasted) return;
+    onChange(pasted);
+    const nextIndex = Math.min(pasted.length, 5);
+    inputRefs.current[nextIndex]?.focus();
+    if (pasted.length === 6) onComplete();
+  };
+
+  return (
+    <div className="flex gap-2 justify-center">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <input
+          key={i}
+          ref={el => { inputRefs.current[i] = el; }}
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={6}
+          disabled={disabled}
+          value={digits[i] || ""}
+          data-testid={`input-otp-digit-${i}`}
+          onChange={e => handleChange(i, e)}
+          onKeyDown={e => handleKeyDown(i, e)}
+          onPaste={handlePaste}
+          onFocus={e => e.target.select()}
+          className={`w-12 h-14 text-center text-xl font-mono font-bold rounded-md border bg-slate-900/50 text-white outline-none transition-colors
+            ${digits[i] ? "border-cyan-500 text-cyan-400" : "border-slate-700"}
+            focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20
+            disabled:opacity-50 disabled:cursor-not-allowed`}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function PublicAssessmentLink() {
   const { token } = useParams<{ token: string }>();
@@ -59,6 +155,7 @@ export default function PublicAssessmentLink() {
     },
     onSuccess: () => {
       setStep("otp");
+      setOtp("");
       toast({ title: "Code sent", description: `Check your inbox at ${email}` });
     },
     onError: (err: any) => {
@@ -67,11 +164,11 @@ export default function PublicAssessmentLink() {
   });
 
   const verifyOtpMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (otpValue: string) => {
       const res = await fetch(`/api/public/join/${token}/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), name: name.trim(), otp: otp.trim() }),
+        body: JSON.stringify({ email: email.trim(), name: name.trim(), otp: otpValue.trim() }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -84,6 +181,7 @@ export default function PublicAssessmentLink() {
       setTimeout(() => setLocation(`/guest/invite/${data.inviteToken}`), 800);
     },
     onError: (err: any) => {
+      setOtp("");
       toast({ title: "Incorrect code", description: err.message, variant: "destructive" });
     },
   });
@@ -96,12 +194,12 @@ export default function PublicAssessmentLink() {
     sendOtpMutation.mutate();
   };
 
-  const handleVerifyOtp = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otp.trim().length !== 6) return toast({ title: "Enter the 6-digit code", variant: "destructive" });
-    verifyOtpMutation.mutate();
+  const handleVerifyOtp = () => {
+    if (otp.length !== 6) return;
+    verifyOtpMutation.mutate(otp);
   };
 
+  const isOtpComplete = otp.length === 6;
   const primaryColor = "#0891b2";
   const companyName = linkInfo?.partnerName || "HumanMetrix";
 
@@ -241,25 +339,22 @@ export default function PublicAssessmentLink() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleVerifyOtp} className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="otp" className="text-slate-300">Verification code</Label>
-                  <Input
-                    id="otp"
-                    data-testid="input-otp-code"
-                    placeholder="000000"
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <Label className="text-slate-300">Verification code</Label>
+                  <OtpBoxes
                     value={otp}
-                    onChange={e => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    className="bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-500 text-center text-2xl tracking-[0.5em] font-mono"
-                    maxLength={6}
-                    required
+                    onChange={setOtp}
+                    onComplete={handleVerifyOtp}
+                    disabled={verifyOtpMutation.isPending}
                   />
                 </div>
                 <Button
-                  type="submit"
+                  type="button"
                   data-testid="button-verify-otp"
-                  disabled={verifyOtpMutation.isPending || otp.length !== 6}
-                  style={{ backgroundColor: primaryColor }}
+                  disabled={verifyOtpMutation.isPending || !isOtpComplete}
+                  onClick={handleVerifyOtp}
+                  style={isOtpComplete ? { backgroundColor: primaryColor } : undefined}
                   className="w-full mt-4 hover:opacity-90"
                   size="lg"
                 >
@@ -274,7 +369,7 @@ export default function PublicAssessmentLink() {
                   variant="ghost"
                   data-testid="button-resend-otp"
                   disabled={sendOtpMutation.isPending}
-                  onClick={() => sendOtpMutation.mutate()}
+                  onClick={() => { setOtp(""); sendOtpMutation.mutate(); }}
                   className="w-full text-slate-400 hover:text-slate-300"
                 >
                   {sendOtpMutation.isPending ? "Sending..." : "Resend code"}
@@ -288,7 +383,7 @@ export default function PublicAssessmentLink() {
                 >
                   Change email address
                 </Button>
-              </form>
+              </div>
             </CardContent>
           </Card>
         )}
