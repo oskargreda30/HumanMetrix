@@ -1,13 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Mail, User, ArrowRight, CheckCircle2, XCircle, ShieldCheck } from "lucide-react";
+import { Loader2, Mail, User, ArrowRight, CheckCircle2, XCircle, ShieldCheck, ClipboardList, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useDarkBody } from "@/hooks/use-dark-body";
+import logoSymbol from "@assets/Gemini_Generated_Image_misel3misel3mise-removebg-preview_1762775600899.png";
 
 const ASSESSMENT_ICONS: Record<string, string> = {
   fit: "FIT",
@@ -119,20 +120,28 @@ export default function PublicAssessmentLink() {
 
   if (linkLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
+      <div className="fixed inset-0 flex items-center justify-center bg-slate-900 z-50">
+        <div className="text-center">
+          <div className="w-20 h-20 mx-auto mb-4 loader-pulse">
+            <img src="/favicon.png" alt="HumanMetrix" className="w-full h-full object-contain" />
+          </div>
+          <p className="font-semibold text-lg">
+            <span className="text-white">Human</span>
+            <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Metrix</span>
+          </p>
+        </div>
       </div>
     );
   }
 
   if (linkError || !linkInfo) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-        <Card className="bg-slate-900 border-slate-700 max-w-md w-full text-center">
-          <CardContent className="p-8 space-y-4">
-            <XCircle className="h-12 w-12 text-red-400 mx-auto" />
-            <h2 className="text-xl font-semibold text-white">Link unavailable</h2>
-            <p className="text-slate-400 text-sm">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-slate-900 p-4">
+        <Card className="max-w-md w-full bg-slate-800 border-slate-700">
+          <CardContent className="pt-6 text-center">
+            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-white mb-2">Link Unavailable</h2>
+            <p className="text-slate-400">
               {(linkError as any)?.message || "This assessment link is no longer active or doesn't exist."}
             </p>
           </CardContent>
@@ -144,23 +153,43 @@ export default function PublicAssessmentLink() {
   const colorClass = ASSESSMENT_COLORS[linkInfo.assessmentType] || "from-cyan-500 to-blue-600";
   const abbr = ASSESSMENT_ICONS[linkInfo.assessmentType] || "HM";
 
+  if (step === "redirecting") {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-slate-900 z-50">
+        <div className="text-center">
+          <div className="w-20 h-20 mx-auto mb-4 loader-pulse">
+            <img src="/favicon.png" alt="HumanMetrix" className="w-full h-full object-contain" />
+          </div>
+          <p className="font-semibold text-lg">
+            <span className="text-white">Human</span>
+            <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Metrix</span>
+          </p>
+          <p className="text-slate-400 text-sm mt-2">Starting your assessment...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-3">
-          <div className={`inline-flex h-16 w-16 rounded-2xl bg-gradient-to-br ${colorClass} items-center justify-center mx-auto`}>
+    <div className="min-h-[100dvh] bg-slate-900 pt-3 md:pt-8 pb-12 px-4">
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center mb-8">
+          <div className={`inline-flex h-16 w-16 rounded-2xl bg-gradient-to-br ${colorClass} items-center justify-center mx-auto mb-4`}>
             <span className="text-white font-bold text-lg">{abbr}</span>
           </div>
-          <div>
-            <p className="text-slate-400 text-sm">{linkInfo.partnerName}</p>
-            <h1 className="text-2xl font-bold text-white mt-1">{linkInfo.assessmentDisplayName}</h1>
-          </div>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2 text-cyan-500">
+            {linkInfo.partnerName}
+          </h1>
+          <p className="text-slate-400">{linkInfo.assessmentDisplayName}</p>
         </div>
 
         {step === "details" && (
-          <Card className="bg-slate-900 border-slate-700">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-white text-lg">Let's get started</CardTitle>
+          <Card className="bg-slate-800 border-slate-700 mb-6">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <ClipboardList className="w-5 h-5 text-cyan-500" />
+                Let's get started
+              </CardTitle>
               <CardDescription className="text-slate-400">
                 Enter your details — we'll send a quick verification code to your email.
               </CardDescription>
@@ -177,7 +206,7 @@ export default function PublicAssessmentLink() {
                       placeholder="Your full name"
                       value={name}
                       onChange={e => setName(e.target.value)}
-                      className="pl-9 bg-slate-800 border-slate-600 text-white placeholder:text-slate-500 focus:border-cyan-500"
+                      className="pl-9 bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-500 focus:border-cyan-500"
                       required
                     />
                   </div>
@@ -193,7 +222,7 @@ export default function PublicAssessmentLink() {
                       placeholder="your@email.com"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
-                      className="pl-9 bg-slate-800 border-slate-600 text-white placeholder:text-slate-500 focus:border-cyan-500"
+                      className="pl-9 bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-500 focus:border-cyan-500"
                       required
                     />
                   </div>
@@ -216,10 +245,10 @@ export default function PublicAssessmentLink() {
         )}
 
         {step === "otp" && (
-          <Card className="bg-slate-900 border-slate-700">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-white text-lg flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-cyan-400" />
+          <Card className="bg-slate-800 border-slate-700 mb-6">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-cyan-500" />
                 Verify your email
               </CardTitle>
               <CardDescription className="text-slate-400">
@@ -236,7 +265,7 @@ export default function PublicAssessmentLink() {
                     placeholder="000000"
                     value={otp}
                     onChange={e => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500 focus:border-cyan-500 text-center text-2xl tracking-[0.5em] font-mono"
+                    className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-500 focus:border-cyan-500 text-center text-2xl tracking-[0.5em] font-mono"
                     maxLength={6}
                     required
                   />
@@ -277,22 +306,14 @@ export default function PublicAssessmentLink() {
           </Card>
         )}
 
-        {step === "redirecting" && (
-          <Card className="bg-slate-900 border-slate-700 text-center">
-            <CardContent className="p-8 space-y-4">
-              <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto" />
-              <div>
-                <h2 className="text-xl font-semibold text-white">Verified!</h2>
-                <p className="text-slate-400 text-sm mt-1">Starting your assessment...</p>
-              </div>
-              <Loader2 className="h-5 w-5 animate-spin text-cyan-400 mx-auto" />
-            </CardContent>
-          </Card>
-        )}
-
-        <p className="text-center text-slate-600 text-xs">
-          Powered by <span className="text-slate-500 font-medium">HumanMetrix</span>
-        </p>
+        <div className="flex flex-col items-center justify-center gap-1 text-sm text-slate-500" data-testid="footer-branding">
+          <div className="flex items-center gap-2">
+            <span>Powered by</span>
+            <img src={logoSymbol} alt="HumanMetrix Logo" className="h-8 w-8" />
+            <span className="text-cyan-500">HumanMetrix</span>
+          </div>
+          <span>AI Assessment Platform</span>
+        </div>
       </div>
     </div>
   );
