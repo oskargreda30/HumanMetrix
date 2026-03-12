@@ -6015,6 +6015,30 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
     }
   });
 
+  // Admin: Get all partner shareable assessment links
+  app.get("/api/admin/assessment-links", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      if (user?.role !== 'super_admin' && user?.role !== 'organization_admin') {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      const partners = await storage.getAllPartnerAccounts();
+      const baseUrl = getBaseUrl(req);
+      const result: any[] = [];
+      for (const partner of partners) {
+        const links = await storage.getOrCreatePartnerAssessmentLinks(partner.id);
+        for (const link of links) {
+          result.push({ ...link, url: `${baseUrl}/join/${link.token}`, partnerName: partner.companyName, partnerId: partner.id });
+        }
+      }
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching admin assessment links:", error);
+      res.status(500).json({ message: "Failed to fetch assessment links" });
+    }
+  });
+
   // Admin: Mark invitation as bounced (for testing and manual override)
   app.patch("/api/admin/invitations/:id/bounce", isAuthenticated, async (req: any, res) => {
     try {
