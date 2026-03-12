@@ -125,6 +125,7 @@ export default function PublicAssessmentLink() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
+  const verifyingRef = useRef(false);
 
   const { data: linkInfo, isLoading: linkLoading, error: linkError } = useQuery<LinkInfo>({
     queryKey: ["/api/public/join", token],
@@ -156,6 +157,7 @@ export default function PublicAssessmentLink() {
     onSuccess: () => {
       setStep("otp");
       setOtp("");
+      verifyingRef.current = false;
       toast({ title: "Code sent", description: `Check your inbox at ${email}` });
     },
     onError: (err: any) => {
@@ -181,6 +183,7 @@ export default function PublicAssessmentLink() {
       setTimeout(() => setLocation(`/guest/invite/${data.inviteToken}`), 800);
     },
     onError: (err: any) => {
+      verifyingRef.current = false;
       setOtp("");
       toast({ title: "Incorrect code", description: err.message, variant: "destructive" });
     },
@@ -197,6 +200,8 @@ export default function PublicAssessmentLink() {
   const handleVerifyOtp = (otpValue?: string) => {
     const value = otpValue ?? otp;
     if (value.length !== 6) return;
+    if (verifyingRef.current) return;
+    verifyingRef.current = true;
     verifyOtpMutation.mutate(value);
   };
 
@@ -370,7 +375,7 @@ export default function PublicAssessmentLink() {
                   variant="ghost"
                   data-testid="button-resend-otp"
                   disabled={sendOtpMutation.isPending}
-                  onClick={() => { setOtp(""); sendOtpMutation.mutate(); }}
+                  onClick={() => { setOtp(""); verifyingRef.current = false; sendOtpMutation.mutate(); }}
                   className="w-full text-slate-400 hover:text-slate-300"
                 >
                   {sendOtpMutation.isPending ? "Sending..." : "Resend code"}
