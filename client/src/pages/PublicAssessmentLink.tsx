@@ -1,28 +1,14 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Mail, User, ArrowRight, CheckCircle2, XCircle, ShieldCheck, ClipboardList, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, ClipboardList, Mail, User, ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useDarkBody } from "@/hooks/use-dark-body";
 import logoSymbol from "@assets/Gemini_Generated_Image_misel3misel3mise-removebg-preview_1762775600899.png";
-
-const ASSESSMENT_ICONS: Record<string, string> = {
-  fit: "FIT",
-  ai_readiness: "AIR",
-  prompt_architecture: "PA",
-  aiq: "AIQ",
-};
-
-const ASSESSMENT_COLORS: Record<string, string> = {
-  fit: "from-cyan-500 to-blue-600",
-  ai_readiness: "from-violet-500 to-purple-600",
-  prompt_architecture: "from-emerald-500 to-teal-600",
-  aiq: "from-orange-500 to-red-600",
-};
+import { useDarkBody } from "@/hooks/use-dark-body";
 
 interface LinkInfo {
   assessmentType: string;
@@ -93,11 +79,9 @@ export default function PublicAssessmentLink() {
       }
       return res.json();
     },
-    onSuccess: (data: { inviteToken: string; resumed: boolean }) => {
+    onSuccess: (data: { inviteToken: string }) => {
       setStep("redirecting");
-      setTimeout(() => {
-        setLocation(`/guest/invite/${data.inviteToken}`);
-      }, 800);
+      setTimeout(() => setLocation(`/guest/invite/${data.inviteToken}`), 800);
     },
     onError: (err: any) => {
       toast({ title: "Incorrect code", description: err.message, variant: "destructive" });
@@ -117,6 +101,9 @@ export default function PublicAssessmentLink() {
     if (otp.trim().length !== 6) return toast({ title: "Enter the 6-digit code", variant: "destructive" });
     verifyOtpMutation.mutate();
   };
+
+  const primaryColor = "#0891b2";
+  const companyName = linkInfo?.partnerName || "HumanMetrix";
 
   if (linkLoading) {
     return (
@@ -140,7 +127,7 @@ export default function PublicAssessmentLink() {
         <Card className="max-w-md w-full bg-slate-800 border-slate-700">
           <CardContent className="pt-6 text-center">
             <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-white mb-2">Link Unavailable</h2>
+            <h2 className="text-xl font-semibold text-white mb-2">Unable to Access Link</h2>
             <p className="text-slate-400">
               {(linkError as any)?.message || "This assessment link is no longer active or doesn't exist."}
             </p>
@@ -149,9 +136,6 @@ export default function PublicAssessmentLink() {
       </div>
     );
   }
-
-  const colorClass = ASSESSMENT_COLORS[linkInfo.assessmentType] || "from-cyan-500 to-blue-600";
-  const abbr = ASSESSMENT_ICONS[linkInfo.assessmentType] || "HM";
 
   if (step === "redirecting") {
     return (
@@ -164,7 +148,6 @@ export default function PublicAssessmentLink() {
             <span className="text-white">Human</span>
             <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Metrix</span>
           </p>
-          <p className="text-slate-400 text-sm mt-2">Starting your assessment...</p>
         </div>
       </div>
     );
@@ -174,11 +157,11 @@ export default function PublicAssessmentLink() {
     <div className="min-h-[100dvh] bg-slate-900 pt-3 md:pt-8 pb-12 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
-          <div className={`inline-flex h-16 w-16 rounded-2xl bg-gradient-to-br ${colorClass} items-center justify-center mx-auto mb-4`}>
-            <span className="text-white font-bold text-lg">{abbr}</span>
-          </div>
-          <h1 className="text-2xl md:text-3xl font-bold mb-2 text-cyan-500">
-            {linkInfo.partnerName}
+          <h1
+            className="text-2xl md:text-3xl font-bold mb-2"
+            style={{ color: primaryColor }}
+          >
+            {companyName}
           </h1>
           <p className="text-slate-400">{linkInfo.assessmentDisplayName}</p>
         </div>
@@ -187,7 +170,7 @@ export default function PublicAssessmentLink() {
           <Card className="bg-slate-800 border-slate-700 mb-6">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
-                <ClipboardList className="w-5 h-5 text-cyan-500" />
+                <ClipboardList className="w-5 h-5" style={{ color: primaryColor }} />
                 Let's get started
               </CardTitle>
               <CardDescription className="text-slate-400">
@@ -206,7 +189,7 @@ export default function PublicAssessmentLink() {
                       placeholder="Your full name"
                       value={name}
                       onChange={e => setName(e.target.value)}
-                      className="pl-9 bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-500 focus:border-cyan-500"
+                      className="pl-9 bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-500"
                       required
                     />
                   </div>
@@ -222,7 +205,7 @@ export default function PublicAssessmentLink() {
                       placeholder="your@email.com"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
-                      className="pl-9 bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-500 focus:border-cyan-500"
+                      className="pl-9 bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-500"
                       required
                     />
                   </div>
@@ -231,12 +214,14 @@ export default function PublicAssessmentLink() {
                   type="submit"
                   data-testid="button-send-otp"
                   disabled={sendOtpMutation.isPending}
-                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-medium"
+                  style={{ backgroundColor: primaryColor }}
+                  className="w-full mt-4 hover:opacity-90"
+                  size="lg"
                 >
                   {sendOtpMutation.isPending ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending code...</>
+                    <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Sending code...</>
                   ) : (
-                    <><ArrowRight className="mr-2 h-4 w-4" /> Continue</>
+                    <><ArrowRight className="mr-2 h-5 w-5" /> Continue</>
                   )}
                 </Button>
               </form>
@@ -248,7 +233,7 @@ export default function PublicAssessmentLink() {
           <Card className="bg-slate-800 border-slate-700 mb-6">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-cyan-500" />
+                <ShieldCheck className="w-5 h-5" style={{ color: primaryColor }} />
                 Verify your email
               </CardTitle>
               <CardDescription className="text-slate-400">
@@ -265,7 +250,7 @@ export default function PublicAssessmentLink() {
                     placeholder="000000"
                     value={otp}
                     onChange={e => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-500 focus:border-cyan-500 text-center text-2xl tracking-[0.5em] font-mono"
+                    className="bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-500 text-center text-2xl tracking-[0.5em] font-mono"
                     maxLength={6}
                     required
                   />
@@ -274,12 +259,14 @@ export default function PublicAssessmentLink() {
                   type="submit"
                   data-testid="button-verify-otp"
                   disabled={verifyOtpMutation.isPending || otp.length !== 6}
-                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-medium"
+                  style={{ backgroundColor: primaryColor }}
+                  className="w-full mt-4 hover:opacity-90"
+                  size="lg"
                 >
                   {verifyOtpMutation.isPending ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...</>
+                    <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Verifying...</>
                   ) : (
-                    <><CheckCircle2 className="mr-2 h-4 w-4" /> Verify & start</>
+                    <><CheckCircle2 className="mr-2 h-5 w-5" /> Verify & start</>
                   )}
                 </Button>
                 <Button
