@@ -4732,7 +4732,7 @@ export class DatabaseStorage implements IStorage {
     const existingTypes = new Set(existing.map(l => l.assessmentType));
     const toCreate = types.filter(t => !existingTypes.has(t)).map(t => ({
       assessmentType: t,
-      token: 'adm_' + require('crypto').randomBytes(24).toString('hex'),
+      token: 'adm_' + crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, ''),
     }));
     if (toCreate.length > 0) {
       const created = await db.insert(adminAssessmentLinks).values(toCreate).returning();
