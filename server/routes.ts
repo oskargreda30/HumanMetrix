@@ -6023,7 +6023,9 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       if (user?.role !== 'super_admin' && user?.role !== 'organization_admin') {
         return res.status(403).json({ message: "Forbidden" });
       }
-      const baseUrl = getBaseUrl(req);
+      const protocol = (req.headers["x-forwarded-proto"] || req.protocol) as string;
+      const host = (req.headers["x-forwarded-host"] || req.headers.host) as string;
+      const baseUrl = `${protocol}://${host}`;
       const links = await storage.getOrCreateAdminAssessmentLinks();
       res.json(links.map(l => ({ ...l, url: `${baseUrl}/join/${l.token}` })));
     } catch (error) {
