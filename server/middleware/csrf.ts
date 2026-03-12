@@ -47,6 +47,7 @@ export function csrfProtection() {
       // Invitation flows (public/guest)
       "/api/invite/",
       "/api/guest/invite/",
+      "/api/public/join/",
       "/api/create-free-invitation",
       
       // Payment/checkout flows (public)
