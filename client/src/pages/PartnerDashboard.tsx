@@ -1497,6 +1497,28 @@ export default function PartnerDashboard() {
     enabled: !!account?.hasPartnerAccount,
   });
 
+  const { data: assessmentLinks, isLoading: linksLoading } = useQuery<Array<{
+    id: string; partnerId: string; assessmentType: string; token: string;
+    isActive: boolean; clickCount: number; completionCount: number; url: string;
+  }>>({
+    queryKey: ["/api/partner/me/assessment-links"],
+    enabled: !!account?.hasPartnerAccount,
+  });
+
+  const toggleLinkMutation = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+      return apiRequest("PATCH", `/api/partner/me/assessment-links/${id}/toggle`, { isActive });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/partner/me/assessment-links"] }),
+  });
+
+  const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
+  const copyLink = (url: string, id: string) => {
+    navigator.clipboard.writeText(url);
+    setCopiedLinkId(id);
+    setTimeout(() => setCopiedLinkId(null), 2000);
+  };
+
   const { data: resultsData, isLoading: resultsLoading } = useQuery<ResultsData>({
     queryKey: ["/api/partner/me/results"],
     enabled: !!account?.hasPartnerAccount,
@@ -2792,8 +2814,87 @@ export default function PartnerDashboard() {
             <TabsContent value="invitations" className="space-y-4" data-testid="panel-invitations">
               <div className="text-center py-4 md:py-6">
                 <h2 className="text-xl md:text-2xl font-semibold mb-1 md:mb-2 text-white">Candidate Invitations</h2>
-                <p className="text-white/90 text-sm md:text-base">Send assessment invitations and track their status.</p>
+                <p className="text-white/90 text-sm md:text-base">Invite candidates by email or share a link — no invite needed.</p>
               </div>
+
+              {/* Shareable Links Section */}
+              <Card className="bg-white/10 border-white/20 text-white">
+                <CardHeader className="pb-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <CardTitle className="text-white text-base flex items-center gap-2">
+                        <Link2 className="h-4 w-4 text-cyan-400" />
+                        Shareable Assessment Links
+                      </CardTitle>
+                      <CardDescription className="text-white/60 text-sm mt-0.5">
+                        Share these links directly — candidates verify their email and start immediately.
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {linksLoading ? (
+                    <div className="flex justify-center py-4">
+                      <Loader2 className="h-5 w-5 animate-spin text-white/60" />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {(assessmentLinks || []).map((link) => {
+                        const names: Record<string, string> = {
+                          fit: "FIT Assessment",
+                          ai_readiness: "AI Readiness",
+                          prompt_architecture: "Prompt Architecture",
+                          aiq: "AIQ Assessment",
+                        };
+                        const colors: Record<string, string> = {
+                          fit: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+                          ai_readiness: "bg-violet-500/20 text-violet-300 border-violet-500/30",
+                          prompt_architecture: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+                          aiq: "bg-orange-500/20 text-orange-300 border-orange-500/30",
+                        };
+                        const isCopied = copiedLinkId === link.id;
+                        return (
+                          <div
+                            key={link.id}
+                            data-testid={`card-share-link-${link.assessmentType}`}
+                            className={`rounded-lg border p-3 flex flex-col gap-2 ${link.isActive ? "bg-white/5 border-white/10" : "bg-white/[0.02] border-white/5 opacity-60"}`}
+                          >
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <span className={`text-xs font-medium px-2 py-0.5 rounded border ${colors[link.assessmentType] || "bg-white/10 text-white/70 border-white/10"}`}>
+                                {names[link.assessmentType] || link.assessmentType}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-white/40 text-xs">{link.clickCount} visits · {link.completionCount} completed</span>
+                                <Switch
+                                  data-testid={`toggle-link-${link.assessmentType}`}
+                                  checked={link.isActive}
+                                  onCheckedChange={(checked) => toggleLinkMutation.mutate({ id: link.id, isActive: checked })}
+                                  className="scale-75"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <code className="flex-1 text-xs text-white/50 bg-white/5 rounded px-2 py-1.5 truncate font-mono">
+                                {link.url}
+                              </code>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                data-testid={`button-copy-link-${link.assessmentType}`}
+                                onClick={() => copyLink(link.url, link.id)}
+                                className="shrink-0 text-white/60 hover:text-white"
+                                disabled={!link.isActive}
+                              >
+                                {isCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
               {partner?.id && partner?.billingType ? (
                 <BulkInvitationsTab 
                   partnerId={partner.id} 

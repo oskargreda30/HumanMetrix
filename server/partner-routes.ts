@@ -6552,3 +6552,193 @@ export function registerGuestAssessmentRoutes(app: Express) {
     }
   });
 }
+
+// ─── Shareable Assessment Links ───────────────────────────────────────────────
+
+export function registerShareableLinkRoutes(app: Express) {
+
+  // Partner dashboard: get (or auto-create) all assessment links
+  app.get("/api/partner/me/assessment-links", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const user = await storage.getUser(userId);
+      if (!user?.organizationId) return res.status(403).json({ error: "No partner organization" });
+      const partner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      if (!partner) return res.status(403).json({ error: "Partner account not found" });
+
+      const links = await storage.getOrCreatePartnerAssessmentLinks(partner.id);
+      const baseUrl = getBaseUrl(req);
+      const result = links.map(l => ({
+        ...l,
+        url: `${baseUrl}/join/${l.token}`,
+      }));
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching assessment links:", error);
+      res.status(500).json({ error: "Failed to fetch assessment links" });
+    }
+  });
+
+  // Partner dashboard: toggle a link active/inactive
+  app.patch("/api/partner/me/assessment-links/:id/toggle", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const user = await storage.getUser(userId);
+      if (!user?.organizationId) return res.status(403).json({ error: "No partner organization" });
+      const partner = await storage.getPartnerAccountByOrganizationId(user.organizationId);
+      if (!partner) return res.status(403).json({ error: "Partner account not found" });
+
+      const { id } = req.params;
+      const { isActive } = req.body;
+      await storage.toggleAssessmentLink(id, !!isActive);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error toggling assessment link:", error);
+      res.status(500).json({ error: "Failed to update link" });
+    }
+  });
+
+  // Public: get link info (no auth needed)
+  app.get("/api/public/join/:token", async (req: Request, res: Response) => {
+    try {
+      const { token } = req.params;
+      const link = await storage.getPartnerAssessmentLinkByToken(token);
+      if (!link) return res.status(404).json({ error: "Link not found" });
+      if (!link.isActive) return res.status(410).json({ error: "This link has been deactivated" });
+
+      const partner = await storage.getPartnerAccount(link.partnerId);
+      if (!partner) return res.status(404).json({ error: "Partner not found" });
+
+      const displayNames: Record<string, string> = {
+        fit: 'FIT Assessment',
+        ai_readiness: 'AI Readiness Assessment',
+        prompt_architecture: 'Prompt Architecture Assessment',
+        aiq: 'AIQ Assessment',
+      };
+
+      res.json({
+        assessmentType: link.assessmentType,
+        assessmentDisplayName: displayNames[link.assessmentType] || link.assessmentType,
+        partnerName: partner.companyName,
+        linkId: link.id,
+      });
+    } catch (error) {
+      console.error("Error fetching public join link:", error);
+      res.status(500).json({ error: "Failed to load link" });
+    }
+  });
+
+  // Public: send OTP to candidate email
+  app.post("/api/public/join/:token/send-otp", async (req: Request, res: Response) => {
+    try {
+      const { token } = req.params;
+      const { email, name } = req.body;
+
+      if (!email || !name) return res.status(400).json({ error: "Name and email are required" });
+      const emailLower = email.toLowerCase().trim();
+      const nameTrimmed = name.trim();
+
+      const link = await storage.getPartnerAssessmentLinkByToken(token);
+      if (!link) return res.status(404).json({ error: "Link not found" });
+      if (!link.isActive) return res.status(410).json({ error: "This link has been deactivated" });
+
+      // Increment click count on first OTP send
+      await storage.incrementAssessmentLinkClick(token);
+
+      // Generate 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      await storage.createAssessmentLinkOtp({ linkToken: token, email: emailLower, name: nameTrimmed, otp, expiresAt });
+
+      const partner = await storage.getPartnerAccount(link.partnerId);
+      const partnerName = partner?.companyName || 'HumanMetrix';
+
+      const { sendEmail } = await import("./email");
+      await sendEmail({
+        to: emailLower,
+        subject: `Your verification code for ${partnerName} Assessment`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
+            <h2 style="color: #1e293b;">Verify your email</h2>
+            <p>Hi ${nameTrimmed},</p>
+            <p>You're about to take the <strong>${link.assessmentType.replace(/_/g, ' ').toUpperCase()}</strong> assessment for <strong>${partnerName}</strong>.</p>
+            <p>Your verification code is:</p>
+            <div style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #0ea5e9; padding: 16px; background: #f0f9ff; border-radius: 8px; text-align: center; margin: 16px 0;">
+              ${otp}
+            </div>
+            <p style="color: #64748b; font-size: 14px;">This code expires in 10 minutes. Do not share it with anyone.</p>
+          </div>
+        `,
+        text: `Your verification code is: ${otp}\n\nThis code expires in 10 minutes.`,
+      });
+
+      res.json({ success: true, message: "Verification code sent" });
+    } catch (error) {
+      console.error("Error sending OTP:", error);
+      res.status(500).json({ error: "Failed to send verification code" });
+    }
+  });
+
+  // Public: verify OTP and create invitation, return inviteToken
+  app.post("/api/public/join/:token/verify-otp", async (req: Request, res: Response) => {
+    try {
+      const { token } = req.params;
+      const { email, name, otp } = req.body;
+
+      if (!email || !otp) return res.status(400).json({ error: "Email and code are required" });
+      const emailLower = email.toLowerCase().trim();
+
+      const link = await storage.getPartnerAssessmentLinkByToken(token);
+      if (!link) return res.status(404).json({ error: "Link not found" });
+      if (!link.isActive) return res.status(410).json({ error: "This link has been deactivated" });
+
+      const otpRecord = await storage.getLatestAssessmentLinkOtp(token, emailLower);
+      if (!otpRecord) return res.status(400).json({ error: "No verification code found. Please request a new one." });
+      if (otpRecord.verified) return res.status(400).json({ error: "This code has already been used. Please request a new one." });
+      if (new Date() > otpRecord.expiresAt) return res.status(400).json({ error: "Verification code has expired. Please request a new one." });
+      if (otpRecord.otp !== otp.trim()) return res.status(400).json({ error: "Incorrect verification code. Please try again." });
+
+      await storage.markAssessmentLinkOtpVerified(otpRecord.id);
+
+      // Check if this email already has an invitation from this link (allow resume)
+      const existingInvitations = await storage.getPartnerCandidateInvitationsByEmail(emailLower);
+      const existing = existingInvitations.find(
+        inv => inv.partnerId === link.partnerId &&
+               inv.assessmentTypes?.includes(link.assessmentType) &&
+               inv.status !== 'completed'
+      );
+
+      if (existing) {
+        return res.json({ inviteToken: existing.inviteToken, resumed: true });
+      }
+
+      // Create a new invitation on the fly
+      const inviteToken = crypto.randomBytes(32).toString('hex');
+      const baseUrl = getBaseUrl(req);
+      const inviteUrl = `${baseUrl}/guest/invite/${inviteToken}`;
+      const externalUserId = `link_${link.id}_${Date.now()}`;
+
+      const [invitation] = await storage.createPartnerCandidateInvitationsBulk([{
+        partnerId: link.partnerId,
+        externalUserId,
+        email: emailLower,
+        name: otpRecord.name || name?.trim() || emailLower,
+        assessmentTypes: [link.assessmentType],
+        inviteToken,
+        inviteUrl,
+        status: 'opened',
+        openedAt: new Date(),
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        tokensUsed: 0,
+      }]);
+
+      res.json({ inviteToken: invitation.inviteToken, resumed: false });
+    } catch (error) {
+      console.error("Error verifying OTP:", error);
+      res.status(500).json({ error: "Failed to verify code" });
+    }
+  });
+}

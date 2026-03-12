@@ -2634,3 +2634,47 @@ export const insertSocialPostSchema = createInsertSchema(socialPosts).omit({
 
 export type InsertSocialPost = z.infer<typeof insertSocialPostSchema>;
 export type SocialPost = typeof socialPosts.$inferSelect;
+
+// ─── Partner Shareable Assessment Links ───────────────────────────────────────
+
+export const partnerAssessmentLinks = pgTable("partner_assessment_links", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  assessmentType: varchar("assessment_type").notNull(), // 'fit', 'ai_readiness', 'prompt_architecture', 'aiq'
+  token: varchar("token").notNull().unique(),
+  isActive: boolean("is_active").notNull().default(true),
+  clickCount: integer("click_count").notNull().default(0),
+  completionCount: integer("completion_count").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_assessment_links_partner").on(table.partnerId),
+  index("idx_assessment_links_token").on(table.token),
+  index("idx_assessment_links_partner_type").on(table.partnerId, table.assessmentType),
+]);
+
+export const insertPartnerAssessmentLinkSchema = createInsertSchema(partnerAssessmentLinks).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertPartnerAssessmentLink = z.infer<typeof insertPartnerAssessmentLinkSchema>;
+export type PartnerAssessmentLink = typeof partnerAssessmentLinks.$inferSelect;
+
+// ─── OTP records for shareable link email verification ───────────────────────
+
+export const assessmentLinkOtps = pgTable("assessment_link_otps", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  linkToken: varchar("link_token").notNull(),
+  email: varchar("email").notNull(),
+  name: varchar("name").notNull(),
+  otp: varchar("otp").notNull(),
+  verified: boolean("verified").notNull().default(false),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_link_otps_token").on(table.linkToken),
+  index("idx_link_otps_email").on(table.email),
+]);
+
+export type AssessmentLinkOtp = typeof assessmentLinkOtps.$inferSelect;

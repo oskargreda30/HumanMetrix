@@ -149,6 +149,11 @@ import {
   autoTopUpRetries,
   type AutoTopUpRetry,
   type InsertAutoTopUpRetry,
+  partnerAssessmentLinks,
+  type PartnerAssessmentLink,
+  type InsertPartnerAssessmentLink,
+  assessmentLinkOtps,
+  type AssessmentLinkOtp,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, inArray, gte, lte, count, countDistinct, isNull, isNotNull } from "drizzle-orm";
@@ -633,6 +638,18 @@ export interface IStorage {
   findExistingPartnerReport(partnerId: string, reportType: string, candidateIds: string[], roleId?: string): Promise<PartnerAnalysisReport | undefined>;
   updatePartnerAnalysisReport(id: string, data: Partial<InsertPartnerAnalysisReport>): Promise<PartnerAnalysisReport | undefined>;
   deletePartnerAnalysisReport(id: string): Promise<void>;
+
+  // Partner shareable assessment links
+  getOrCreatePartnerAssessmentLinks(partnerId: string): Promise<PartnerAssessmentLink[]>;
+  getPartnerAssessmentLinkByToken(token: string): Promise<PartnerAssessmentLink | undefined>;
+  incrementAssessmentLinkClick(token: string): Promise<void>;
+  incrementAssessmentLinkCompletion(token: string): Promise<void>;
+  toggleAssessmentLink(id: string, isActive: boolean): Promise<void>;
+
+  // OTP for shareable link email verification
+  createAssessmentLinkOtp(data: { linkToken: string; email: string; name: string; otp: string; expiresAt: Date }): Promise<AssessmentLinkOtp>;
+  getLatestAssessmentLinkOtp(linkToken: string, email: string): Promise<AssessmentLinkOtp | undefined>;
+  markAssessmentLinkOtpVerified(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4647,6 +4664,79 @@ export class DatabaseStorage implements IStorage {
 
   async deletePartnerAnalysisReport(id: string): Promise<void> {
     await db.delete(partnerAnalysisReports).where(eq(partnerAnalysisReports.id, id));
+  }
+
+  // ─── Partner Shareable Assessment Links ───────────────────────────────────
+
+  async getOrCreatePartnerAssessmentLinks(partnerId: string): Promise<PartnerAssessmentLink[]> {
+    const assessmentTypes = ['fit', 'ai_readiness', 'prompt_architecture', 'aiq'];
+    const existing = await db.select().from(partnerAssessmentLinks)
+      .where(eq(partnerAssessmentLinks.partnerId, partnerId));
+
+    const existingTypes = new Set(existing.map(l => l.assessmentType));
+    const toCreate = assessmentTypes
+      .filter(t => !existingTypes.has(t))
+      .map(t => ({
+        partnerId,
+        assessmentType: t,
+        token: `pal_${crypto.randomUUID().replace(/-/g, '')}`,
+        isActive: true,
+        clickCount: 0,
+        completionCount: 0,
+      }));
+
+    if (toCreate.length > 0) {
+      const created = await db.insert(partnerAssessmentLinks).values(toCreate).returning();
+      return [...existing, ...created].sort((a, b) => assessmentTypes.indexOf(a.assessmentType) - assessmentTypes.indexOf(b.assessmentType));
+    }
+
+    return existing.sort((a, b) => assessmentTypes.indexOf(a.assessmentType) - assessmentTypes.indexOf(b.assessmentType));
+  }
+
+  async getPartnerAssessmentLinkByToken(token: string): Promise<PartnerAssessmentLink | undefined> {
+    const [result] = await db.select().from(partnerAssessmentLinks)
+      .where(eq(partnerAssessmentLinks.token, token));
+    return result;
+  }
+
+  async incrementAssessmentLinkClick(token: string): Promise<void> {
+    await db.update(partnerAssessmentLinks)
+      .set({ clickCount: sql`${partnerAssessmentLinks.clickCount} + 1`, updatedAt: new Date() })
+      .where(eq(partnerAssessmentLinks.token, token));
+  }
+
+  async incrementAssessmentLinkCompletion(token: string): Promise<void> {
+    await db.update(partnerAssessmentLinks)
+      .set({ completionCount: sql`${partnerAssessmentLinks.completionCount} + 1`, updatedAt: new Date() })
+      .where(eq(partnerAssessmentLinks.token, token));
+  }
+
+  async toggleAssessmentLink(id: string, isActive: boolean): Promise<void> {
+    await db.update(partnerAssessmentLinks)
+      .set({ isActive, updatedAt: new Date() })
+      .where(eq(partnerAssessmentLinks.id, id));
+  }
+
+  // ─── OTP for shareable link email verification ────────────────────────────
+
+  async createAssessmentLinkOtp(data: { linkToken: string; email: string; name: string; otp: string; expiresAt: Date }): Promise<AssessmentLinkOtp> {
+    const [created] = await db.insert(assessmentLinkOtps).values(data).returning();
+    return created;
+  }
+
+  async getLatestAssessmentLinkOtp(linkToken: string, email: string): Promise<AssessmentLinkOtp | undefined> {
+    const [result] = await db.select().from(assessmentLinkOtps)
+      .where(and(
+        eq(assessmentLinkOtps.linkToken, linkToken),
+        eq(assessmentLinkOtps.email, email.toLowerCase())
+      ))
+      .orderBy(desc(assessmentLinkOtps.createdAt))
+      .limit(1);
+    return result;
+  }
+
+  async markAssessmentLinkOtpVerified(id: string): Promise<void> {
+    await db.update(assessmentLinkOtps).set({ verified: true }).where(eq(assessmentLinkOtps.id, id));
   }
 }
 

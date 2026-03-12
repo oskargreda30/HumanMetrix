@@ -71,6 +71,7 @@ const SampleB2BIndividualReport = lazy(() => import("@/pages/SampleB2BIndividual
 const EcosystemSampleReport = lazy(() => import("@/pages/EcosystemSampleReport"));
 const EcosystemStart = lazy(() => import("@/pages/EcosystemStart"));
 const GuestInvite = lazy(() => import("@/pages/GuestInvite"));
+const PublicAssessmentLink = lazy(() => import("@/pages/PublicAssessmentLink"));
 const B2COnboarding = lazy(() => import("@/pages/B2COnboarding"));
 const UnlockResults = lazy(() => import("@/pages/UnlockResults"));
 const SendCV = lazy(() => import("@/pages/SendCV"));
@@ -221,6 +222,7 @@ function Router() {
         </Route>
         <Route path="/partner/accept-invite/:token" component={AcceptPartnerInvite} />
         <Route path="/invite/:token" component={GuestInvite} />
+        <Route path="/join/:token" component={PublicAssessmentLink} />
         <Route path="/unlock-results" component={UnlockResults} />
         <Route path="/onboarding" component={B2COnboarding} />
         
