@@ -150,6 +150,8 @@ import {
   type AutoTopUpRetry,
   type InsertAutoTopUpRetry,
   partnerAssessmentLinks,
+  adminAssessmentLinks,
+  type AdminAssessmentLink,
   type PartnerAssessmentLink,
   type InsertPartnerAssessmentLink,
   assessmentLinkOtps,
@@ -642,6 +644,11 @@ export interface IStorage {
   // Partner shareable assessment links
   getOrCreatePartnerAssessmentLinks(partnerId: string): Promise<PartnerAssessmentLink[]>;
   getPartnerAssessmentLinkByToken(token: string): Promise<PartnerAssessmentLink | undefined>;
+  getOrCreateAdminAssessmentLinks(): Promise<AdminAssessmentLink[]>;
+  getAdminAssessmentLinkByToken(token: string): Promise<AdminAssessmentLink | undefined>;
+  toggleAdminAssessmentLink(id: string, isActive: boolean): Promise<void>;
+  incrementAdminAssessmentLinkClick(token: string): Promise<void>;
+  incrementAdminAssessmentLinkCompletion(token: string): Promise<void>;
   incrementAssessmentLinkClick(token: string): Promise<void>;
   incrementAssessmentLinkCompletion(token: string): Promise<void>;
   toggleAssessmentLink(id: string, isActive: boolean): Promise<void>;
@@ -4715,6 +4722,47 @@ export class DatabaseStorage implements IStorage {
     await db.update(partnerAssessmentLinks)
       .set({ isActive, updatedAt: new Date() })
       .where(eq(partnerAssessmentLinks.id, id));
+  }
+
+  // ─── Admin-level shareable links (no partner FK) ─────────────────────────
+
+  async getOrCreateAdminAssessmentLinks(): Promise<AdminAssessmentLink[]> {
+    const types = ['fit', 'ai_readiness', 'prompt_architecture', 'aiq'];
+    const existing = await db.select().from(adminAssessmentLinks);
+    const existingTypes = new Set(existing.map(l => l.assessmentType));
+    const toCreate = types.filter(t => !existingTypes.has(t)).map(t => ({
+      assessmentType: t,
+      token: 'adm_' + require('crypto').randomBytes(24).toString('hex'),
+    }));
+    if (toCreate.length > 0) {
+      const created = await db.insert(adminAssessmentLinks).values(toCreate).returning();
+      return [...existing, ...created];
+    }
+    return existing;
+  }
+
+  async getAdminAssessmentLinkByToken(token: string): Promise<AdminAssessmentLink | undefined> {
+    const [result] = await db.select().from(adminAssessmentLinks)
+      .where(eq(adminAssessmentLinks.token, token));
+    return result;
+  }
+
+  async toggleAdminAssessmentLink(id: string, isActive: boolean): Promise<void> {
+    await db.update(adminAssessmentLinks)
+      .set({ isActive, updatedAt: new Date() })
+      .where(eq(adminAssessmentLinks.id, id));
+  }
+
+  async incrementAdminAssessmentLinkClick(token: string): Promise<void> {
+    await db.update(adminAssessmentLinks)
+      .set({ clickCount: sql`${adminAssessmentLinks.clickCount} + 1`, updatedAt: new Date() })
+      .where(eq(adminAssessmentLinks.token, token));
+  }
+
+  async incrementAdminAssessmentLinkCompletion(token: string): Promise<void> {
+    await db.update(adminAssessmentLinks)
+      .set({ completionCount: sql`${adminAssessmentLinks.completionCount} + 1`, updatedAt: new Date() })
+      .where(eq(adminAssessmentLinks.token, token));
   }
 
   // ─── OTP for shareable link email verification ────────────────────────────

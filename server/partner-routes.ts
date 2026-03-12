@@ -6604,13 +6604,6 @@ export function registerShareableLinkRoutes(app: Express) {
   app.get("/api/public/join/:token", async (req: Request, res: Response) => {
     try {
       const { token } = req.params;
-      const link = await storage.getPartnerAssessmentLinkByToken(token);
-      if (!link) return res.status(404).json({ error: "Link not found" });
-      if (!link.isActive) return res.status(410).json({ error: "This link has been deactivated" });
-
-      const partner = await storage.getPartnerAccount(link.partnerId);
-      if (!partner) return res.status(404).json({ error: "Partner not found" });
-
       const displayNames: Record<string, string> = {
         fit: 'FIT Assessment',
         ai_readiness: 'AI Readiness Assessment',
@@ -6618,6 +6611,26 @@ export function registerShareableLinkRoutes(app: Express) {
         aiq: 'AIQ Assessment',
       };
 
+      // Admin link (token starts with adm_)
+      if (token.startsWith('adm_')) {
+        const adminLink = await storage.getAdminAssessmentLinkByToken(token);
+        if (!adminLink) return res.status(404).json({ error: "Link not found" });
+        if (!adminLink.isActive) return res.status(410).json({ error: "This link has been deactivated" });
+        return res.json({
+          assessmentType: adminLink.assessmentType,
+          assessmentDisplayName: displayNames[adminLink.assessmentType] || adminLink.assessmentType,
+          partnerName: 'HumanMetrix',
+          linkId: adminLink.id,
+          isAdminLink: true,
+        });
+      }
+
+      // Partner link
+      const link = await storage.getPartnerAssessmentLinkByToken(token);
+      if (!link) return res.status(404).json({ error: "Link not found" });
+      if (!link.isActive) return res.status(410).json({ error: "This link has been deactivated" });
+      const partner = await storage.getPartnerAccount(link.partnerId);
+      if (!partner) return res.status(404).json({ error: "Partner not found" });
       res.json({
         assessmentType: link.assessmentType,
         assessmentDisplayName: displayNames[link.assessmentType] || link.assessmentType,
@@ -6640,21 +6653,31 @@ export function registerShareableLinkRoutes(app: Express) {
       const emailLower = email.toLowerCase().trim();
       const nameTrimmed = name.trim();
 
-      const link = await storage.getPartnerAssessmentLinkByToken(token);
-      if (!link) return res.status(404).json({ error: "Link not found" });
-      if (!link.isActive) return res.status(410).json({ error: "This link has been deactivated" });
-
-      // Increment click count on first OTP send
-      await storage.incrementAssessmentLinkClick(token);
+      // Resolve link (admin or partner)
+      let assessmentType: string;
+      let partnerName: string;
+      if (token.startsWith('adm_')) {
+        const adminLink = await storage.getAdminAssessmentLinkByToken(token);
+        if (!adminLink) return res.status(404).json({ error: "Link not found" });
+        if (!adminLink.isActive) return res.status(410).json({ error: "This link has been deactivated" });
+        assessmentType = adminLink.assessmentType;
+        partnerName = 'HumanMetrix';
+        await storage.incrementAdminAssessmentLinkClick(token);
+      } else {
+        const link = await storage.getPartnerAssessmentLinkByToken(token);
+        if (!link) return res.status(404).json({ error: "Link not found" });
+        if (!link.isActive) return res.status(410).json({ error: "This link has been deactivated" });
+        assessmentType = link.assessmentType;
+        const partner = await storage.getPartnerAccount(link.partnerId);
+        partnerName = partner?.companyName || 'HumanMetrix';
+        await storage.incrementAssessmentLinkClick(token);
+      }
 
       // Generate 6-digit OTP
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
       await storage.createAssessmentLinkOtp({ linkToken: token, email: emailLower, name: nameTrimmed, otp, expiresAt });
-
-      const partner = await storage.getPartnerAccount(link.partnerId);
-      const partnerName = partner?.companyName || 'HumanMetrix';
 
       const { sendEmail } = await import("./email");
       await sendEmail({
@@ -6664,7 +6687,7 @@ export function registerShareableLinkRoutes(app: Express) {
           <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
             <h2 style="color: #1e293b;">Verify your email</h2>
             <p>Hi ${nameTrimmed},</p>
-            <p>You're about to take the <strong>${link.assessmentType.replace(/_/g, ' ').toUpperCase()}</strong> assessment for <strong>${partnerName}</strong>.</p>
+            <p>You're about to take the <strong>${assessmentType.replace(/_/g, ' ').toUpperCase()}</strong> assessment for <strong>${partnerName}</strong>.</p>
             <p>Your verification code is:</p>
             <div style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #0ea5e9; padding: 16px; background: #f0f9ff; border-radius: 8px; text-align: center; margin: 16px 0;">
               ${otp}
@@ -6691,9 +6714,27 @@ export function registerShareableLinkRoutes(app: Express) {
       if (!email || !otp) return res.status(400).json({ error: "Email and code are required" });
       const emailLower = email.toLowerCase().trim();
 
-      const link = await storage.getPartnerAssessmentLinkByToken(token);
-      if (!link) return res.status(404).json({ error: "Link not found" });
-      if (!link.isActive) return res.status(410).json({ error: "This link has been deactivated" });
+      // Resolve link (admin or partner)
+      let resolvedPartnerId: string | null = null;
+      let resolvedAssessmentType: string;
+      let resolvedLinkId: string;
+      let isAdminLink = false;
+
+      if (token.startsWith('adm_')) {
+        const adminLink = await storage.getAdminAssessmentLinkByToken(token);
+        if (!adminLink) return res.status(404).json({ error: "Link not found" });
+        if (!adminLink.isActive) return res.status(410).json({ error: "This link has been deactivated" });
+        resolvedAssessmentType = adminLink.assessmentType;
+        resolvedLinkId = adminLink.id;
+        isAdminLink = true;
+      } else {
+        const link = await storage.getPartnerAssessmentLinkByToken(token);
+        if (!link) return res.status(404).json({ error: "Link not found" });
+        if (!link.isActive) return res.status(410).json({ error: "This link has been deactivated" });
+        resolvedPartnerId = link.partnerId;
+        resolvedAssessmentType = link.assessmentType;
+        resolvedLinkId = link.id;
+      }
 
       const otpRecord = await storage.getLatestAssessmentLinkOtp(token, emailLower);
       if (!otpRecord) return res.status(400).json({ error: "No verification code found. Please request a new one." });
@@ -6703,37 +6744,38 @@ export function registerShareableLinkRoutes(app: Express) {
 
       await storage.markAssessmentLinkOtpVerified(otpRecord.id);
 
-      // Check if this email already has an invitation from this link (allow resume)
+      // Check if this email already has a matching invitation (allow resume)
       const existingInvitations = await storage.getPartnerCandidateInvitationsByEmail(emailLower);
       const existing = existingInvitations.find(
-        inv => inv.partnerId === link.partnerId &&
-               inv.assessmentTypes?.includes(link.assessmentType) &&
+        inv => inv.partnerId === resolvedPartnerId &&
+               inv.assessmentTypes?.includes(resolvedAssessmentType) &&
                inv.status !== 'completed'
       );
-
-      if (existing) {
-        return res.json({ inviteToken: existing.inviteToken, resumed: true });
-      }
+      if (existing) return res.json({ inviteToken: existing.inviteToken, resumed: true });
 
       // Create a new invitation on the fly
       const inviteToken = crypto.randomBytes(32).toString('hex');
       const baseUrl = getBaseUrl(req);
       const inviteUrl = `${baseUrl}/guest/invite/${inviteToken}`;
-      const externalUserId = `link_${link.id}_${Date.now()}`;
+      const externalUserId = `link_${resolvedLinkId}_${Date.now()}`;
 
       const [invitation] = await storage.createPartnerCandidateInvitationsBulk([{
-        partnerId: link.partnerId,
+        partnerId: resolvedPartnerId,
         externalUserId,
         email: emailLower,
         name: otpRecord.name || name?.trim() || emailLower,
-        assessmentTypes: [link.assessmentType],
+        assessmentTypes: [resolvedAssessmentType],
         inviteToken,
         inviteUrl,
         status: 'opened',
         openedAt: new Date(),
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         tokensUsed: 0,
+        isAdminInvite: isAdminLink ? true : undefined,
       }]);
+
+      // Increment completion-ready counter on admin links
+      if (isAdminLink) await storage.incrementAdminAssessmentLinkClick(token);
 
       res.json({ inviteToken: invitation.inviteToken, resumed: false });
     } catch (error) {

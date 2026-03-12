@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { isValidEmail, isValidName } from "@/lib/validation";
-import { Loader2, Send, Mail, Calendar, CheckCircle2, Clock, XCircle, UserPlus, Link2, Copy, Check, Search, Building2 } from "lucide-react";
+import { Loader2, Send, Mail, Calendar, CheckCircle2, Clock, XCircle, UserPlus, Link2, Copy, Check } from "lucide-react";
 import { format } from "date-fns";
 
 const ASSESSMENT_TYPES = [
@@ -37,8 +37,6 @@ const ASSESSMENT_NAMES: Record<string, string> = {
 
 interface AssessmentLink {
   id: string;
-  partnerId: string;
-  partnerName: string;
   assessmentType: string;
   token: string;
   isActive: boolean;
@@ -53,7 +51,6 @@ export default function InvitationsTab() {
   const [candidateName, setCandidateName] = useState("");
   const [message, setMessage] = useState("");
   const [selectedAssessments, setSelectedAssessments] = useState<string[]>([]);
-  const [linkSearch, setLinkSearch] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const { data: invitations, isLoading } = useQuery<any[]>({
@@ -66,7 +63,7 @@ export default function InvitationsTab() {
 
   const toggleLinkMutation = useMutation({
     mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) =>
-      apiRequest("PATCH", `/api/partner/me/assessment-links/${id}/toggle`, { isActive }),
+      apiRequest("PATCH", `/api/admin/assessment-links/${id}/toggle`, { isActive }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['/api/admin/assessment-links'] }),
   });
 
@@ -125,20 +122,6 @@ export default function InvitationsTab() {
     }
   };
 
-  // Group links by partner, filtered by search
-  const partnerGroups = (() => {
-    if (!allLinks) return [];
-    const q = linkSearch.toLowerCase();
-    const filtered = allLinks.filter(l =>
-      !q || l.partnerName.toLowerCase().includes(q) || l.assessmentType.includes(q)
-    );
-    const map = new Map<string, { partnerName: string; links: AssessmentLink[] }>();
-    for (const link of filtered) {
-      if (!map.has(link.partnerId)) map.set(link.partnerId, { partnerName: link.partnerName, links: [] });
-      map.get(link.partnerId)!.links.push(link);
-    }
-    return Array.from(map.values());
-  })();
 
   if (isLoading) {
     return (
@@ -278,92 +261,68 @@ export default function InvitationsTab() {
         </Card>
       </div>
 
-      {/* Partner Shareable Links */}
+      {/* Admin's Own Shareable Links */}
       <Card>
         <CardHeader>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Link2 className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
-                Partner Shareable Assessment Links
-              </CardTitle>
-              <CardDescription>
-                Copy and share direct assessment links for any partner — candidates verify their email via OTP and start immediately.
-              </CardDescription>
-            </div>
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                placeholder="Search partner..."
-                value={linkSearch}
-                onChange={(e) => setLinkSearch(e.target.value)}
-                className="pl-8 h-8 w-48 text-sm"
-                data-testid="input-search-partner-links"
-              />
-            </div>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <Link2 className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+            Shareable Assessment Links
+          </CardTitle>
+          <CardDescription>
+            Your platform-level direct links — candidates verify their email via OTP and start immediately. No partner account required.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {linksLoading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-          ) : partnerGroups.length === 0 ? (
+          ) : !allLinks || allLinks.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Link2 className="h-10 w-10 mx-auto mb-2 opacity-40" />
-              <p className="text-sm">{linkSearch ? "No partners match your search" : "No partner links available"}</p>
+              <p className="text-sm">No links available yet — they will be generated on first load.</p>
             </div>
           ) : (
-            <div className="space-y-5">
-              {partnerGroups.map(({ partnerName, links }) => (
-                <div key={partnerName} className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                    <Building2 className="h-3.5 w-3.5" />
-                    {partnerName}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {allLinks.map((link) => {
+                const isCopied = copiedId === link.id;
+                return (
+                  <div
+                    key={link.id}
+                    data-testid={`card-admin-link-${link.assessmentType}`}
+                    className={`rounded-md border p-3 flex flex-col gap-2 transition-opacity ${link.isActive ? "" : "opacity-50"}`}
+                  >
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded border ${ASSESSMENT_COLORS[link.assessmentType] || "bg-muted text-muted-foreground"}`}>
+                        {ASSESSMENT_NAMES[link.assessmentType] || link.assessmentType}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground text-xs">{link.clickCount} visits · {link.completionCount} done</span>
+                        <Switch
+                          data-testid={`toggle-admin-link-${link.id}`}
+                          checked={link.isActive}
+                          onCheckedChange={(checked) => toggleLinkMutation.mutate({ id: link.id, isActive: checked })}
+                          className="scale-75"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 text-xs text-muted-foreground bg-muted rounded px-2 py-1.5 truncate font-mono">
+                        {link.url}
+                      </code>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        data-testid={`button-copy-admin-link-${link.id}`}
+                        onClick={() => copyLink(link.url, link.id)}
+                        disabled={!link.isActive}
+                      >
+                        {isCopied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pl-5">
-                    {links.map((link) => {
-                      const isCopied = copiedId === link.id;
-                      return (
-                        <div
-                          key={link.id}
-                          data-testid={`card-admin-link-${link.assessmentType}`}
-                          className={`rounded-md border p-3 flex flex-col gap-2 transition-opacity ${link.isActive ? "" : "opacity-50"}`}
-                        >
-                          <div className="flex items-center justify-between gap-2 flex-wrap">
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded border ${ASSESSMENT_COLORS[link.assessmentType] || "bg-muted text-muted-foreground"}`}>
-                              {ASSESSMENT_NAMES[link.assessmentType] || link.assessmentType}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground text-xs">{link.clickCount} visits · {link.completionCount} done</span>
-                              <Switch
-                                data-testid={`toggle-admin-link-${link.id}`}
-                                checked={link.isActive}
-                                onCheckedChange={(checked) => toggleLinkMutation.mutate({ id: link.id, isActive: checked })}
-                                className="scale-75"
-                              />
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <code className="flex-1 text-xs text-muted-foreground bg-muted rounded px-2 py-1.5 truncate font-mono">
-                              {link.url}
-                            </code>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              data-testid={`button-copy-admin-link-${link.id}`}
-                              onClick={() => copyLink(link.url, link.id)}
-                              disabled={!link.isActive}
-                            >
-                              {isCopied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>

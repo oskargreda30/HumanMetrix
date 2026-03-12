@@ -2663,6 +2663,21 @@ export type PartnerAssessmentLink = typeof partnerAssessmentLinks.$inferSelect;
 
 // ─── OTP records for shareable link email verification ───────────────────────
 
+// Admin-level shareable links (no partner FK constraint)
+export const adminAssessmentLinks = pgTable("admin_assessment_links", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  assessmentType: varchar("assessment_type").notNull(),
+  token: varchar("token").notNull().unique(),
+  isActive: boolean("is_active").notNull().default(true),
+  clickCount: integer("click_count").notNull().default(0),
+  completionCount: integer("completion_count").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_admin_links_token").on(table.token),
+]);
+export type AdminAssessmentLink = typeof adminAssessmentLinks.$inferSelect;
+
 export const assessmentLinkOtps = pgTable("assessment_link_otps", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   linkToken: varchar("link_token").notNull(),
