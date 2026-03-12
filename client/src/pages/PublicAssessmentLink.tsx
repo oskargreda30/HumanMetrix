@@ -22,7 +22,7 @@ type Step = "details" | "otp" | "redirecting";
 function OtpBoxes({ value, onChange, onComplete, disabled }: {
   value: string;
   onChange: (v: string) => void;
-  onComplete: () => void;
+  onComplete: (completed: string) => void;
   disabled: boolean;
 }) {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -61,7 +61,7 @@ function OtpBoxes({ value, onChange, onComplete, disabled }: {
       onChange(pasted);
       const nextIndex = Math.min(pasted.length, 5);
       inputRefs.current[nextIndex]?.focus();
-      if (pasted.length === 6) onComplete();
+      if (pasted.length === 6) onComplete(pasted);
       return;
     }
 
@@ -74,7 +74,7 @@ function OtpBoxes({ value, onChange, onComplete, disabled }: {
       inputRefs.current[index + 1]?.focus();
     }
     if (newDigits.filter(Boolean).length === 6) {
-      onComplete();
+      onComplete(newDigits.join(""));
     }
   };
 
@@ -85,7 +85,7 @@ function OtpBoxes({ value, onChange, onComplete, disabled }: {
     onChange(pasted);
     const nextIndex = Math.min(pasted.length, 5);
     inputRefs.current[nextIndex]?.focus();
-    if (pasted.length === 6) onComplete();
+    if (pasted.length === 6) onComplete(pasted);
   };
 
   return (
@@ -194,9 +194,10 @@ export default function PublicAssessmentLink() {
     sendOtpMutation.mutate();
   };
 
-  const handleVerifyOtp = () => {
-    if (otp.length !== 6) return;
-    verifyOtpMutation.mutate(otp);
+  const handleVerifyOtp = (otpValue?: string) => {
+    const value = otpValue ?? otp;
+    if (value.length !== 6) return;
+    verifyOtpMutation.mutate(value);
   };
 
   const isOtpComplete = otp.length === 6;
@@ -345,7 +346,7 @@ export default function PublicAssessmentLink() {
                   <OtpBoxes
                     value={otp}
                     onChange={setOtp}
-                    onComplete={handleVerifyOtp}
+                    onComplete={(completed) => handleVerifyOtp(completed)}
                     disabled={verifyOtpMutation.isPending}
                   />
                 </div>
@@ -361,7 +362,7 @@ export default function PublicAssessmentLink() {
                   {verifyOtpMutation.isPending ? (
                     <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Verifying...</>
                   ) : (
-                    <><CheckCircle2 className="mr-2 h-5 w-5" /> Verify & start</>
+                    <><CheckCircle2 className="mr-2 h-5 w-5" /> Start</>
                   )}
                 </Button>
                 <Button
