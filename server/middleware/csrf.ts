@@ -39,34 +39,44 @@ export function csrfProtection() {
       "/api/reset-password",
       "/api/auth/auto-login",
       
-      // Public contact/enquiry forms
+      // Public contact/enquiry/marketing forms
       "/api/contact",
       "/api/general-enquiry",
       "/api/enterprise-enquiry",
+      "/api/marketing-optin",
+      "/api/send-cv",
       
       // Invitation flows (public/guest)
       "/api/invite/",
       "/api/guest/invite/",
       "/api/public/join/",
       "/api/create-free-invitation",
+      "/api/partner/team/accept/",
       
       // Payment/checkout flows (public)
       "/api/validate-discount",
       "/api/check-email-exists",
       "/api/process-payment-success",
       "/api/process-results-payment",
+      "/api/create-checkout-session-guest",
+      "/api/checkout-free",
       "/api/unlock-results/checkout",
       "/api/unlock-results/process-payment",
       "/api/b2b/results/",
       "/api/b2b/results-bundle/checkout",
       "/api/b2b/results-bundle/process-payment",
       "/api/b2b/process-payment",
+      "/api/b2b/create-account",
       
       // Webhooks and callbacks (external services)
-      "/api/stripe/webhook",
+      "/api/webhooks/stripe",
       "/api/webhooks/airwallex",
+      "/api/webhooks/sendgrid",
       "/api/partner/package/callback",
       "/api/partner/package/airwallex-callback",
+      
+      // Internal scheduler endpoints
+      "/api/internal/process-overage-billing",
       
       // Partner API sessions (uses API key auth)
       "/api/partner/sessions",
@@ -77,13 +87,9 @@ export function csrfProtection() {
       
       // File uploads (uses session auth)
       "/api/uploads/request-url",
-      
-      // Public CV submission form
-      "/api/send-cv",
     ];
     
     // Special handling for assessment abandon - uses sendBeacon which can't set headers
-    // Check for /api/assessments/:id/abandon pattern specifically
     const isAbandonEndpoint = req.method === 'POST' && /^\/api\/assessments\/[^/]+\/abandon$/.test(req.path);
     
     const isExempt = exemptPaths.some(path => {
