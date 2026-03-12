@@ -1599,7 +1599,7 @@ export type PartnerCandidateImport = typeof partnerCandidateImports.$inferSelect
 // Partner candidate invitations - individual invitations within a batch
 export const partnerCandidateInvitations = pgTable("partner_candidate_invitations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  partnerId: varchar("partner_id").notNull().references(() => partnerAccounts.id, { onDelete: "cascade" }),
+  partnerId: varchar("partner_id").references(() => partnerAccounts.id, { onDelete: "cascade" }),
   importId: varchar("import_id").references(() => partnerCandidateImports.id, { onDelete: "set null" }),
   externalUserId: varchar("external_user_id").notNull(), // Required - partner's internal candidate ID
   email: varchar("email"), // Optional - some candidates may not have email initially
@@ -1620,6 +1620,7 @@ export const partnerCandidateInvitations = pgTable("partner_candidate_invitation
   bouncedAt: timestamp("bounced_at"),
   emailDelivered: boolean("email_delivered").default(false),
   deliveredAt: timestamp("delivered_at"),
+  isAdminInvite: boolean("is_admin_invite").default(false), // True for invitations created via admin shareable links
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_candidate_invitations_partner").on(table.partnerId),
