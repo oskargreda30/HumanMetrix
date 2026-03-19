@@ -101,7 +101,6 @@ export default function SampleB2BIndividualReport() {
           config={{
             candidatesEndpoint: '',
             reportEndpoint: '',
-            profileInsightsEndpoint: '',
             contextType: 'partner',
           }}
           staticData={{

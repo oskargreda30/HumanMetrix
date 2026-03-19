@@ -3,7 +3,6 @@ import { SharedIndividualReport, SharedIndividualReportConfig } from "@/componen
 const adminConfig: SharedIndividualReportConfig = {
   candidatesEndpoint: '/api/admin/candidates',
   reportEndpoint: '/api/admin/compare',
-  profileInsightsEndpoint: '/api/admin/profile-insights',
   contextType: 'admin',
 };
 

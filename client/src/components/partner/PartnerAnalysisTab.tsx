@@ -8,7 +8,6 @@ import PartnerRoleFitTab from "@/components/partner/PartnerRoleFitTab";
 const partnerIndividualReportConfig: SharedIndividualReportConfig = {
   candidatesEndpoint: '/api/partner/me/candidates',
   reportEndpoint: '/api/partner/me/compare',
-  profileInsightsEndpoint: (candidateId: string) => `/api/partner/me/candidates/${candidateId}/profile-insights`,
   contextType: 'partner',
 };
 

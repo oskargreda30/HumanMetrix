@@ -388,7 +388,6 @@ export default function PartnerReportView() {
               config={{
                 reportEndpoint: '',
                 candidatesEndpoint: '',
-                profileInsightsEndpoint: '',
                 contextType: 'partner',
               }}
               staticData={{

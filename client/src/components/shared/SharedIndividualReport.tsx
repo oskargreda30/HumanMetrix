@@ -33,7 +33,6 @@ const CHART_COLOR = "#5B8DB8";
 export interface SharedIndividualReportConfig {
   candidatesEndpoint: string;
   reportEndpoint: string;
-  profileInsightsEndpoint: string | ((candidateId: string) => string);
   contextType: 'admin' | 'partner';
 }
 
