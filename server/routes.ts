@@ -94,7 +94,7 @@ function clearEvaluationProgress(resultId: string) {
 }
 
 const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY,
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
   ...(process.env.AI_INTEGRATIONS_OPENAI_BASE_URL && { baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL }),
   timeout: 45000, // 45 seconds per request
 });
@@ -7764,7 +7764,7 @@ ${truncatedText}`;
       // Use OpenAI to generate required skill scores
       const OpenAI = await import('openai');
       const openai = new OpenAI.default({
-        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY,
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
         ...(process.env.AI_INTEGRATIONS_OPENAI_BASE_URL && { baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL }),
       });
 
@@ -8129,7 +8129,7 @@ Provide a final summary assessment with a clear hiring recommendation. Be direct
 Keep each section to 2-3 sentences. Be specific and reference actual assessment data.`;
 
       const openai = new (await import('openai')).default({
-        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY,
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
         ...(process.env.AI_INTEGRATIONS_OPENAI_BASE_URL && { baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL }),
       });
       
@@ -8540,7 +8540,7 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
       // Use OpenAI to generate strengths, gaps, and recommendations
       const OpenAI = await import('openai');
       const openai = new OpenAI.default({
-        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY,
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
         ...(process.env.AI_INTEGRATIONS_OPENAI_BASE_URL && { baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL }),
       });
 
@@ -20939,13 +20939,13 @@ Be thorough, professional, and reference specific data points from the assessmen
       const openaiStart = Date.now();
       try {
         // Just check if openai client is available without making a request
-        const hasOpenAIKey = !!(process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY);
+        const hasOpenAIKey = !!process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
         if (hasOpenAIKey) {
           checks.push({
             name: 'OpenAI API',
             status: 'healthy',
             severity: 'info',
-            message: process.env.AI_INTEGRATIONS_OPENAI_API_KEY ? 'Replit-managed AI integration configured' : 'API key configured',
+            message: 'Replit-managed AI integration configured',
             latencyMs: Date.now() - openaiStart,
             lastChecked: new Date()
           });
@@ -21169,14 +21169,14 @@ Be thorough, professional, and reference specific data points from the assessmen
         // AI Integrations
         measureLatency('OpenAI API (models list)', 'AI Integration', 
           async () => {
-            if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY && !process.env.OPENAI_API_KEY) throw new Error('No API key');
+            if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) throw new Error('No API key');
             await openai.models.list();
           },
           { info: 500, warning: 1500, error: 5000 }
         ),
         measureLatency('OpenAI API (embeddings)', 'AI Integration', 
           async () => {
-            if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY && !process.env.OPENAI_API_KEY) throw new Error('No API key');
+            if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) throw new Error('No API key');
             await openai.embeddings.create({
               model: 'text-embedding-3-small',
               input: 'test',

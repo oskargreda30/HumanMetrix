@@ -9,7 +9,7 @@ import OpenAI from "openai";
 import { objectStorageClient } from "./replit_integrations/object_storage/objectStorage";
 import { sendBugReportNotificationEmail } from "./email";
 
-const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY, ...(process.env.AI_INTEGRATIONS_OPENAI_BASE_URL && { baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL }) });
+const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, ...(process.env.AI_INTEGRATIONS_OPENAI_BASE_URL && { baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL }) });
 
 const screenshotUpload = multer({
   storage: multer.memoryStorage(),

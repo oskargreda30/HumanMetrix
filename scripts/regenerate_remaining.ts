@@ -3,7 +3,7 @@ import { jobRoles } from '../shared/schema';
 import OpenAI from 'openai';
 import { eq } from 'drizzle-orm';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, ...(process.env.AI_INTEGRATIONS_OPENAI_BASE_URL && { baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL }) });
 
 async function regenerateRemainingRoles() {
   console.log('Starting batch role regeneration (remaining roles only)...');
