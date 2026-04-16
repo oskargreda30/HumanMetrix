@@ -239,7 +239,7 @@ export function SharedIndividualReport({ config, staticData }: SharedIndividualR
   };
 
   const handleExportPDF = async () => {
-    if (!effectiveCandidateData || !effectiveCandidateReport || !effectiveCandidateReport?.aiInsights) return;
+    if (!effectiveCandidateData || !effectiveCandidateReport) return;
     
     setIsExporting(true);
     try {
@@ -1112,7 +1112,7 @@ export function SharedIndividualReport({ config, staticData }: SharedIndividualR
           <div className="flex justify-end gap-2 rounded-lg bg-card border border-border p-3">
             <Button 
               onClick={handleExportPDF}
-              disabled={isExporting || !effectiveCandidateReport?.aiInsights || false /* no secondary loading */}
+              disabled={isExporting || isLoadingReport || (!effectiveCandidateReport?.fitAssessments?.[0] && !effectiveCandidateReport?.aiReadinessAssessments?.[0] && !effectiveCandidateReport?.promptArchitectureAssessments?.[0] && !effectiveCandidateReport?.aiqAssessments?.[0])}
               data-testid="button-export-individual-report"
             >
               {isExporting ? (
@@ -1132,8 +1132,8 @@ export function SharedIndividualReport({ config, staticData }: SharedIndividualR
                 </>
               ) : !effectiveCandidateReport?.aiInsights ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Analyzing...
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  AI Unavailable — Export PDF
                 </>
               ) : (
                 <>

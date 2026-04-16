@@ -3,7 +3,7 @@ import { db } from "../../db";
 import { jobRoles } from "../../../shared/schema";
 import { eq } from "drizzle-orm";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY, ...(process.env.AI_INTEGRATIONS_OPENAI_BASE_URL && { baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL }) });
 
 const FIT_SKILLS = [
   "Resilience",
