@@ -1710,18 +1710,21 @@ export function registerEcosystemRoutes(app: Express): void {
       let missionAnalysis = project.missionAnalysis as EcosystemMissionAnalysis | null;
       if (!missionAnalysis && project.missionStatement) {
         console.log("[Ecosystem] Running deferred mission analysis for project:", req.params.id);
-        missionAnalysis = await analyzeMissionWithAI(project.missionStatement, project.companyEthos || "", {
-          industry: project.industry || undefined,
-          teamFunction: project.teamFunction || undefined,
-          teamStage: project.teamStage || undefined,
-          teamSize: project.teamSize || undefined,
-          workMode: project.workMode || undefined,
-          hiringPlans: project.hiringPlans || undefined,
-          currentChallenges: project.currentChallenges || undefined,
-        });
-        await storage.updateEcosystemProject(req.params.id, {
-          missionAnalysis,
-        });
+        try {
+          missionAnalysis = await analyzeMissionWithAI(project.missionStatement, project.companyEthos || "", {
+            industry: project.industry || undefined,
+            teamFunction: project.teamFunction || undefined,
+            teamStage: project.teamStage || undefined,
+            teamSize: project.teamSize || undefined,
+            workMode: project.workMode || undefined,
+            hiringPlans: project.hiringPlans || undefined,
+            currentChallenges: project.currentChallenges || undefined,
+          });
+          await storage.updateEcosystemProject(req.params.id, { missionAnalysis });
+        } catch (missionErr: any) {
+          console.error("[Ecosystem] Deferred mission analysis failed, continuing without it:", missionErr.message);
+          missionAnalysis = null;
+        }
       }
 
       const teamAnalysis = await generateTeamAnalysis(
