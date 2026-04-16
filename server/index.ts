@@ -12,6 +12,7 @@ import { staticCacheHeaders, setSecurityHeaders } from "./middleware/staticCache
 import { configureKeepAlive, keepAliveHeaders } from "./middleware/keepAlive";
 import { csrfProtection } from "./middleware/csrf";
 import { preloadModules } from "./lazyModules";
+import { rerunMissingInsights } from "./rerun-insights";
 
 const app = express();
 
@@ -251,6 +252,15 @@ app.use((req, res, next) => {
     
     // Preload heavy modules in production
     preloadModules();
+
+    // Auto-rerun AI insights for any reports that were saved without them
+    // (e.g. reports generated during the OpenAI outage in early April 2026)
+    // Runs 10s after startup to avoid blocking the server
+    setTimeout(() => {
+      rerunMissingInsights().catch(err => {
+        console.error('[RerunInsights] Unhandled error:', err);
+      });
+    }, 10000);
   });
 
   // Graceful shutdown handling
