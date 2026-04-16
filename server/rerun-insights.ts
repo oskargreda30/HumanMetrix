@@ -149,16 +149,28 @@ Use the candidates' actual names. Be specific and actionable.`;
 }
 
 async function generateMultiRoleFitInsights(resultData: any): Promise<string | null> {
-  const allCandidateEntries: any[] = resultData.candidates || resultData.allCandidateEntries || [];
+  const allCandidateEntries: any[] =
+    resultData.candidateEntries ||
+    resultData.allCandidateEntries ||
+    resultData.candidates ||
+    [];
   if (allCandidateEntries.length === 0) return null;
 
   const summaryInsights = resultData.summaryInsights || {};
-  const role = resultData.role || {};
+  const role = resultData.role || resultData.roleSnapshot || {};
 
   const candidateSummaries = allCandidateEntries.map((entry: any) => {
-    const strengths = entry.strengths?.slice(0, 3).join(', ') || 'N/A';
-    const gaps = entry.gaps?.slice(0, 3).join(', ') || 'N/A';
-    const riskFlags = entry.riskFlags?.length > 0 ? entry.riskFlags.join(', ') : 'None';
+    const strengthList = (entry.strengths || []).slice(0, 3).map((s: any) =>
+      typeof s === 'string' ? s : (s.skill || s.name || JSON.stringify(s))
+    );
+    const gapList = (entry.gaps || []).slice(0, 3).map((g: any) =>
+      typeof g === 'string' ? g : (g.skill || g.name || JSON.stringify(g))
+    );
+    const strengths = strengthList.join(', ') || 'N/A';
+    const gaps = gapList.join(', ') || 'N/A';
+    const riskFlags = entry.riskFlags?.length > 0 ? entry.riskFlags.map((r: any) =>
+      typeof r === 'string' ? r : (r.flag || JSON.stringify(r))
+    ).join(', ') : 'None';
     return `
 - ${entry.userName} (${entry.email}):
   Overall Fit: ${entry.overallFit !== null ? entry.overallFit + '%' : 'Insufficient data'}
