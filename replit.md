@@ -71,6 +71,16 @@ Technical documentation for due diligence and onboarding is maintained in the `d
 - **LinkedIn API**: Social media posting for automated content publishing.
 - **Instagram Graph API (via Meta)**: Social media posting for automated content publishing.
 
+## License Compliance
+
+The project ships three compliance documents created for M&A due-diligence and open-source license obligations:
+
+- **[`LICENSE`](./LICENSE)** — MIT license for the HumanMetrix platform, copyright PT Human Metrix Assessments 2026.
+- **[`NOTICE`](./NOTICE)** — Required attribution notices for all Apache-2.0 direct dependencies (openai, puppeteer, google-auth-library, drizzle-orm, typescript, etc.) and a listing of all other direct dependency licenses. MPL-2.0 packages (artillery) are identified with their file-level disclosure obligations.
+- **[`docs/LICENSES.md`](./docs/LICENSES.md)** — Human-readable license inventory grouped by license type, per-group obligation summaries, and a specific callout of the transitive WTFPL dependency (`yaml-js@0.2.3`) for legal counsel review.
+
+Regenerate this inventory after any major dependency update by re-running the license extraction script or using a dedicated SBOM tool (`license-checker`, `cyclonedx-npm`).
+
 ## Recent Changes
 - **2026-02-24**: Added automated Social Poster tool to Super Admin dashboard (Sales > Social Poster subtab). AI generates daily content for LinkedIn and Instagram, admin reviews/edits/approves, then publishes via platform APIs. Schema: `socialPosts` table. Routes: `server/social-poster-routes.ts`. UI: `client/src/components/admin/SocialPosterTab.tsx`.
 - **2026-03-01**: Added Airwallex Payment Consents for subscription auto-billing. Partners requesting subscription billing now store their card via Airwallex Payment Consent (merchant-initiated transactions). Auto-billing scheduler tries Airwallex first, falls back to Stripe if no consent on file. Schema: `airwallexConsentId` added to `partnerAccounts`. New routes: `POST /api/partner/me/airwallex-consent/create` and `POST /api/partner/me/airwallex-consent/confirm`. Storage: `updatePartnerAirwallexConsent()`. Server: `createPaymentConsent()` and `createPaymentIntentWithConsent()` in `server/airwallex.ts`. Old Stripe card-element in billing change dialog is kept commented out as fallback.
