@@ -243,24 +243,24 @@ export function CookieBanner() {
           </div>
 
           {/* Panel action buttons */}
-          <div className="px-6 pb-6 flex flex-col gap-2">
+          <div className="px-6 pb-6 flex flex-col gap-2.5">
             <button
               onClick={handleAccept}
-              className="w-full py-2.5 text-xs font-semibold tracking-widest uppercase border border-white/25 text-white/80 hover:bg-white/10 transition-colors"
+              className="w-full py-3 text-xs font-semibold tracking-widest uppercase rounded border border-white/35 text-white/75 hover:bg-white/10 transition-colors"
               data-testid="button-cookie-manage-enable-all"
             >
               Enable All
             </button>
             <button
               onClick={handleReject}
-              className="w-full py-2.5 text-xs font-semibold tracking-widest uppercase border border-white/25 text-white/80 hover:bg-white/10 transition-colors"
+              className="w-full py-3 text-xs font-semibold tracking-widest uppercase rounded border border-white/35 text-white/75 hover:bg-white/10 transition-colors"
               data-testid="button-cookie-manage-reject-all"
             >
               Reject All
             </button>
             <button
               onClick={handleSaveChanges}
-              className="w-full py-2.5 text-xs font-semibold tracking-widest uppercase border border-white/25 text-white/80 hover:bg-white/10 transition-colors"
+              className="w-full py-3 text-xs font-semibold tracking-widest uppercase rounded border border-white/35 text-white/75 hover:bg-white/10 transition-colors"
               data-testid="button-cookie-manage-save"
             >
               Save Changes
@@ -297,14 +297,14 @@ export function CookieBanner() {
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={handleAccept}
-              className="px-4 py-2 text-xs font-semibold tracking-widest uppercase border border-white/30 text-white/80 hover:bg-white/10 transition-colors whitespace-nowrap"
+              className="px-5 py-2.5 text-xs font-semibold tracking-widest uppercase rounded border border-white/35 text-white/75 hover:bg-white/10 transition-colors whitespace-nowrap"
               data-testid="button-cookie-accept"
             >
               Accept All
             </button>
             <button
               onClick={handleReject}
-              className="px-4 py-2 text-xs font-semibold tracking-widest uppercase border border-white/30 text-white/80 hover:bg-white/10 transition-colors whitespace-nowrap"
+              className="px-5 py-2.5 text-xs font-semibold tracking-widest uppercase rounded border border-white/35 text-white/75 hover:bg-white/10 transition-colors whitespace-nowrap"
               data-testid="button-cookie-reject"
             >
               Reject
@@ -314,7 +314,7 @@ export function CookieBanner() {
                 setPrefs(getStoredPrefs());
                 setManageOpen(true);
               }}
-              className="px-4 py-2 text-xs font-semibold tracking-widest uppercase border border-white/30 text-white/80 hover:bg-white/10 transition-colors whitespace-nowrap"
+              className="px-5 py-2.5 text-xs font-semibold tracking-widest uppercase rounded border border-white/35 text-white/75 hover:bg-white/10 transition-colors whitespace-nowrap"
               data-testid="button-cookie-manage"
             >
               Manage
