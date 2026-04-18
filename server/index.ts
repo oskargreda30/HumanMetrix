@@ -171,7 +171,17 @@ app.use((req, res, next) => {
 (async () => {
   // Register object storage routes for file uploads
   registerObjectStorageRoutes(app);
-  
+
+  // Register extracted route modules (payment & assessment lifecycle)
+  const { registerPaymentRoutes } = await import("./payment-routes");
+  registerPaymentRoutes(app);
+
+  const { registerAssessmentRoutes } = await import("./assessment-routes");
+  registerAssessmentRoutes(app);
+
+  const { registerWebhookRoutes } = await import("./webhook-routes");
+  registerWebhookRoutes(app);
+
   const server = await registerRoutes(app);
 
   // Global error handler - catches all unhandled errors and notifies super admins
