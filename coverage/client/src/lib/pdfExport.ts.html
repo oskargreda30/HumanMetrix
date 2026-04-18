@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/6644</span>
+                <span class='fraction'>0/6627</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/6644</span>
+                <span class='fraction'>0/6627</span>
             </div>
         
             
@@ -6690,41 +6690,7 @@
 <a name='L6625'></a><a href='#L6625'>6625</a>
 <a name='L6626'></a><a href='#L6626'>6626</a>
 <a name='L6627'></a><a href='#L6627'>6627</a>
-<a name='L6628'></a><a href='#L6628'>6628</a>
-<a name='L6629'></a><a href='#L6629'>6629</a>
-<a name='L6630'></a><a href='#L6630'>6630</a>
-<a name='L6631'></a><a href='#L6631'>6631</a>
-<a name='L6632'></a><a href='#L6632'>6632</a>
-<a name='L6633'></a><a href='#L6633'>6633</a>
-<a name='L6634'></a><a href='#L6634'>6634</a>
-<a name='L6635'></a><a href='#L6635'>6635</a>
-<a name='L6636'></a><a href='#L6636'>6636</a>
-<a name='L6637'></a><a href='#L6637'>6637</a>
-<a name='L6638'></a><a href='#L6638'>6638</a>
-<a name='L6639'></a><a href='#L6639'>6639</a>
-<a name='L6640'></a><a href='#L6640'>6640</a>
-<a name='L6641'></a><a href='#L6641'>6641</a>
-<a name='L6642'></a><a href='#L6642'>6642</a>
-<a name='L6643'></a><a href='#L6643'>6643</a>
-<a name='L6644'></a><a href='#L6644'>6644</a>
-<a name='L6645'></a><a href='#L6645'>6645</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L6628'></a><a href='#L6628'>6628</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -13859,7 +13825,7 @@
 <span class="cstat-no" title="statement not covered" >    pdf.addPage();</span>
 <span class="cstat-no" title="statement not covered" >    addBackgroundPattern(pdf, pageWidth, pageHeight);</span>
 <span class="cstat-no" title="statement not covered" >    addHeader(pdf, pageWidth);</span>
-<span class="cstat-no" title="statement not covered" >    return 32; // Start content closer to header to reduce whitespace</span>
+<span class="cstat-no" title="statement not covered" >    return 34; // Start content just below the page header</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 <span class="cstat-no" title="statement not covered" >  return yPos;</span>
 <span class="cstat-no" title="statement not covered" >}</span>
@@ -15264,15 +15230,7 @@
 <span class="cstat-no" title="statement not covered" >  </span>
 <span class="cstat-no" title="statement not covered" >  yPos += 10;</span>
 <span class="cstat-no" title="statement not covered" >  </span>
-<span class="cstat-no" title="statement not covered" >  // ADDITIONAL SERVICES ON REQUEST section (same page)</span>
-<span class="cstat-no" title="statement not covered" >  yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);</span>
-<span class="cstat-no" title="statement not covered" >  yPos += 3;</span>
-<span class="cstat-no" title="statement not covered" >  </span>
-<span class="cstat-no" title="statement not covered" >  pdf.setFontSize(10);</span>
-<span class="cstat-no" title="statement not covered" >  pdf.setTextColor(107, 114, 128);</span>
-<span class="cstat-no" title="statement not covered" >  pdf.text('HumanMetrix offers additional analysis services to support your hiring decision:', 20, yPos);</span>
-<span class="cstat-no" title="statement not covered" >  yPos += 10;</span>
-<span class="cstat-no" title="statement not covered" >  </span>
+<span class="cstat-no" title="statement not covered" >  // ADDITIONAL SERVICES ON REQUEST section - keep all 5 items + contact box together on one page</span>
 <span class="cstat-no" title="statement not covered" >  const comparisonAdditionalServices = [</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
 <span class="cstat-no" title="statement not covered" >      name: 'Suggested Interview Questions',</span>
@@ -15296,13 +15254,25 @@
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  ];</span>
 <span class="cstat-no" title="statement not covered" >  </span>
-<span class="cstat-no" title="statement not covered" >  const isLastService = (i: number) =&gt; i === comparisonAdditionalServices.length - 1;</span>
+<span class="cstat-no" title="statement not covered" >  pdf.setFontSize(10);</span>
+<span class="cstat-no" title="statement not covered" >  pdf.setFont('helvetica', 'normal');</span>
+<span class="cstat-no" title="statement not covered" >  let compServicesTotal = 16 + 3 + 10 + 4;</span>
+<span class="cstat-no" title="statement not covered" >  comparisonAdditionalServices.forEach(service =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    const lines = pdf.splitTextToSize(service.description, pageWidth - 55);</span>
+<span class="cstat-no" title="statement not covered" >    compServicesTotal += 8 + (lines.length * 5) + 4;</span>
+<span class="cstat-no" title="statement not covered" >  });</span>
+<span class="cstat-no" title="statement not covered" >  compServicesTotal += 6 + 22;</span>
+<span class="cstat-no" title="statement not covered" >  yPos = ensurePageSpace(pdf, yPos, compServicesTotal, pageHeight, pageWidth);</span>
+<span class="cstat-no" title="statement not covered" >  </span>
+<span class="cstat-no" title="statement not covered" >  yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);</span>
+<span class="cstat-no" title="statement not covered" >  yPos += 3;</span>
+<span class="cstat-no" title="statement not covered" >  </span>
+<span class="cstat-no" title="statement not covered" >  pdf.setFontSize(10);</span>
+<span class="cstat-no" title="statement not covered" >  pdf.setTextColor(107, 114, 128);</span>
+<span class="cstat-no" title="statement not covered" >  pdf.text('HumanMetrix offers additional analysis services to support your hiring decision:', 20, yPos);</span>
+<span class="cstat-no" title="statement not covered" >  yPos += 10;</span>
+<span class="cstat-no" title="statement not covered" >  </span>
 <span class="cstat-no" title="statement not covered" >  comparisonAdditionalServices.forEach((service, index) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    // For the last item, request enough space for itself + contact box (28mm) to keep them together</span>
-<span class="cstat-no" title="statement not covered" >    const spaceNeeded = isLastService(index) ? 46 : 18;</span>
-<span class="cstat-no" title="statement not covered" >    yPos = ensurePageSpace(pdf, yPos, spaceNeeded, pageHeight, pageWidth);</span>
-<span class="cstat-no" title="statement not covered" >    </span>
-<span class="cstat-no" title="statement not covered" >    // Service number badge</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setFillColor(59, 130, 246);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.roundedRect(20, yPos - 2, 6, 6, 1, 1, 'F');</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setFontSize(8);</span>
@@ -15310,13 +15280,11 @@
 <span class="cstat-no" title="statement not covered" >    pdf.setFont('helvetica', 'bold');</span>
 <span class="cstat-no" title="statement not covered" >    pdf.text(`${index + 1}`, 23, yPos + 2, { align: 'center' });</span>
 <span class="cstat-no" title="statement not covered" >    </span>
-<span class="cstat-no" title="statement not covered" >    // Service name</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setFontSize(10);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setFont('helvetica', 'bold');</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setTextColor(17, 24, 39);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.text(service.name, 30, yPos + 2);</span>
 <span class="cstat-no" title="statement not covered" >    </span>
-<span class="cstat-no" title="statement not covered" >    // Service description</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setFontSize(10);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setFont('helvetica', 'normal');</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setTextColor(107, 114, 128);</span>
@@ -15329,9 +15297,6 @@
 <span class="cstat-no" title="statement not covered" >  });</span>
 <span class="cstat-no" title="statement not covered" >  </span>
 <span class="cstat-no" title="statement not covered" >  yPos += 6;</span>
-<span class="cstat-no" title="statement not covered" >  </span>
-<span class="cstat-no" title="statement not covered" >  // Contact info box - ensure it stays on same page as extra offerings</span>
-<span class="cstat-no" title="statement not covered" >  yPos = ensurePageSpace(pdf, yPos, 22, pageHeight, pageWidth);</span>
 <span class="cstat-no" title="statement not covered" >  pdf.setFillColor(239, 246, 255);</span>
 <span class="cstat-no" title="statement not covered" >  pdf.setDrawColor(59, 130, 246);</span>
 <span class="cstat-no" title="statement not covered" >  pdf.roundedRect(20, yPos, pageWidth - 40, 16, 2, 2, 'FD');</span>
@@ -15515,20 +15480,7 @@
 <span class="cstat-no" title="statement not covered" >  pdf.setTextColor(0, 0, 0);</span>
 <span class="cstat-no" title="statement not covered" >  yPos = 85 + finalCardHeight + 8;</span>
 <span class="cstat-no" title="statement not covered" >  </span>
-<span class="cstat-no" title="statement not covered" >  // Calculate how much space the strengths and gaps sections need</span>
-<span class="cstat-no" title="statement not covered" >  const estimatedStrengthsHeight = Math.ceil(data.alignment.strengths.length / 2) * 16 + 12;</span>
-<span class="cstat-no" title="statement not covered" >  const estimatedGapsHeight = Math.ceil(data.alignment.gaps.length / 2) * 16 + 12;</span>
-<span class="cstat-no" title="statement not covered" >  const totalNeededHeight = estimatedStrengthsHeight + estimatedGapsHeight + 20;</span>
-<span class="cstat-no" title="statement not covered" >  </span>
-<span class="cstat-no" title="statement not covered" >  // Check if both sections will fit on current page, if not start new page</span>
-<span class="cstat-no" title="statement not covered" >  if (yPos + totalNeededHeight &gt; pageHeight - 20) {</span>
-<span class="cstat-no" title="statement not covered" >    pdf.addPage();</span>
-<span class="cstat-no" title="statement not covered" >    addBackgroundPattern(pdf, pageWidth, pageHeight);</span>
-<span class="cstat-no" title="statement not covered" >    addHeader(pdf, pageWidth);</span>
-<span class="cstat-no" title="statement not covered" >    yPos = 35;</span>
-<span class="cstat-no" title="statement not covered" >  } else {</span>
-<span class="cstat-no" title="statement not covered" >    yPos += 5;</span>
-<span class="cstat-no" title="statement not covered" >  }</span>
+<span class="cstat-no" title="statement not covered" >  yPos += 5;</span>
 <span class="cstat-no" title="statement not covered" >  </span>
 <span class="cstat-no" title="statement not covered" >  // ========== KEY STRENGTHS (text descriptions) ==========</span>
 <span class="cstat-no" title="statement not covered" >  yPos = addSectionHeader(pdf, 'KEY STRENGTHS', yPos, pageWidth);</span>
@@ -16187,37 +16139,38 @@
 <span class="cstat-no" title="statement not covered" >  </span>
 <span class="cstat-no" title="statement not covered" >  // ========== PROMPT ENGINEERING ROLE FIT ANALYSIS ==========</span>
 <span class="cstat-no" title="statement not covered" >  if (data.alignment.promptRoleFitAnalysis) {</span>
-<span class="cstat-no" title="statement not covered" >    yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);</span>
+<span class="cstat-no" title="statement not covered" >    const rfPromptDescText = 'AI-generated insights on candidate\'s prompt engineering capabilities for the target role';</span>
+<span class="cstat-no" title="statement not covered" >    applySmallText(pdf);</span>
+<span class="cstat-no" title="statement not covered" >    const rfPromptDescLines = pdf.splitTextToSize(rfPromptDescText, pageWidth - 48);</span>
+<span class="cstat-no" title="statement not covered" >    const rfPromptDescBoxH = Math.max(10, rfPromptDescLines.length * 4 + 4);</span>
+<span class="cstat-no" title="statement not covered" >    const promptAnalysisParagraphs = data.alignment.promptRoleFitAnalysis.split(/\n\n+/).filter((p: string) =&gt; p.trim());</span>
+<span class="cstat-no" title="statement not covered" >    pdf.setFontSize(9);</span>
+<span class="cstat-no" title="statement not covered" >    const promptParaLinesList = promptAnalysisParagraphs.map((p: string) =&gt; pdf.splitTextToSize(p.trim(), pageWidth - 50));</span>
+<span class="cstat-no" title="statement not covered" >    const promptParasH = promptParaLinesList.reduce((sum: number, lines: string[]) =&gt; sum + lines.length * 4 + 4, 0);</span>
+<span class="cstat-no" title="statement not covered" >    const promptTotalH = PDF_SPACING.large + 16 + 2 + rfPromptDescBoxH + 3 + promptParasH + PDF_SPACING.medium;</span>
+<span class="cstat-no" title="statement not covered" >    yPos = ensurePageSpace(pdf, yPos, promptTotalH, pageHeight, pageWidth);</span>
 <span class="cstat-no" title="statement not covered" >    yPos += PDF_SPACING.large;</span>
 <span class="cstat-no" title="statement not covered" >    </span>
 <span class="cstat-no" title="statement not covered" >    yPos = addSectionHeader(pdf, 'PROMPT ENGINEERING ROLE FIT ANALYSIS', yPos, pageWidth);</span>
 <span class="cstat-no" title="statement not covered" >    yPos += 2;</span>
 <span class="cstat-no" title="statement not covered" >    </span>
-<span class="cstat-no" title="statement not covered" >    const rfPromptDescText = 'AI-generated insights on candidate\'s prompt engineering capabilities for the target role';</span>
-<span class="cstat-no" title="statement not covered" >    applySmallText(pdf);</span>
-<span class="cstat-no" title="statement not covered" >    const rfPromptDescLines = pdf.splitTextToSize(rfPromptDescText, pageWidth - 48);</span>
-<span class="cstat-no" title="statement not covered" >    const rfPromptDescBoxH = Math.max(10, rfPromptDescLines.length * 4 + 4);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setFillColor(240, 249, 255);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setDrawColor(240, 249, 255);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.roundedRect(20, yPos - 2, pageWidth - 40, rfPromptDescBoxH, 2, 2, 'F');</span>
+<span class="cstat-no" title="statement not covered" >    applySmallText(pdf);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setTextColor(71, 85, 105);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.text(rfPromptDescLines, 24, yPos + 4);</span>
 <span class="cstat-no" title="statement not covered" >    yPos += rfPromptDescBoxH + 3;</span>
 <span class="cstat-no" title="statement not covered" >    </span>
-<span class="cstat-no" title="statement not covered" >    // Split analysis into paragraphs</span>
-<span class="cstat-no" title="statement not covered" >    const promptAnalysisParagraphs = data.alignment.promptRoleFitAnalysis.split(/\n\n+/).filter(p =&gt; p.trim());</span>
-<span class="cstat-no" title="statement not covered" >    </span>
-<span class="cstat-no" title="statement not covered" >    promptAnalysisParagraphs.forEach((paragraph) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    promptParaLinesList.forEach((paragraphLines: string[]) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      pdf.setFontSize(9);</span>
 <span class="cstat-no" title="statement not covered" >      pdf.setFont('helvetica', 'normal');</span>
 <span class="cstat-no" title="statement not covered" >      pdf.setTextColor(55, 65, 81);</span>
-<span class="cstat-no" title="statement not covered" >      </span>
-<span class="cstat-no" title="statement not covered" >      const paragraphLines = pdf.splitTextToSize(paragraph.trim(), pageWidth - 50);</span>
-<span class="cstat-no" title="statement not covered" >      paragraphLines.forEach((line: string, idx: number) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >        yPos = ensurePageSpace(pdf, yPos, 10, pageHeight, pageWidth);</span>
-<span class="cstat-no" title="statement not covered" >        pdf.text(line, 25, yPos + (idx * 4));</span>
+<span class="cstat-no" title="statement not covered" >      paragraphLines.forEach((line: string) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >        pdf.text(line, 25, yPos);</span>
+<span class="cstat-no" title="statement not covered" >        yPos += 4;</span>
 <span class="cstat-no" title="statement not covered" >      });</span>
-<span class="cstat-no" title="statement not covered" >      yPos += (paragraphLines.length * 4) + 4;</span>
+<span class="cstat-no" title="statement not covered" >      yPos += 4;</span>
 <span class="cstat-no" title="statement not covered" >    });</span>
 <span class="cstat-no" title="statement not covered" >    </span>
 <span class="cstat-no" title="statement not covered" >    yPos += PDF_SPACING.medium;</span>
@@ -16225,37 +16178,38 @@
 <span class="cstat-no" title="statement not covered" >  </span>
 <span class="cstat-no" title="statement not covered" >  // ========== AIQ (ETHICAL AI) ROLE FIT ANALYSIS ==========</span>
 <span class="cstat-no" title="statement not covered" >  if (data.alignment.aiqRoleFitAnalysis) {</span>
-<span class="cstat-no" title="statement not covered" >    yPos = ensurePageSpace(pdf, yPos, 50, pageHeight, pageWidth);</span>
+<span class="cstat-no" title="statement not covered" >    const rfAiqDescText = 'AI-generated insights on candidate\'s ethical AI judgment for the target role';</span>
+<span class="cstat-no" title="statement not covered" >    applySmallText(pdf);</span>
+<span class="cstat-no" title="statement not covered" >    const rfAiqDescLines = pdf.splitTextToSize(rfAiqDescText, pageWidth - 48);</span>
+<span class="cstat-no" title="statement not covered" >    const rfAiqDescBoxH = Math.max(10, rfAiqDescLines.length * 4 + 4);</span>
+<span class="cstat-no" title="statement not covered" >    const aiqAnalysisParagraphs = data.alignment.aiqRoleFitAnalysis.split(/\n\n+/).filter((p: string) =&gt; p.trim());</span>
+<span class="cstat-no" title="statement not covered" >    pdf.setFontSize(9);</span>
+<span class="cstat-no" title="statement not covered" >    const aiqParaLinesList = aiqAnalysisParagraphs.map((p: string) =&gt; pdf.splitTextToSize(p.trim(), pageWidth - 50));</span>
+<span class="cstat-no" title="statement not covered" >    const aiqParasH = aiqParaLinesList.reduce((sum: number, lines: string[]) =&gt; sum + lines.length * 4 + 4, 0);</span>
+<span class="cstat-no" title="statement not covered" >    const aiqTotalH = PDF_SPACING.large + 16 + 2 + rfAiqDescBoxH + 3 + aiqParasH + PDF_SPACING.medium;</span>
+<span class="cstat-no" title="statement not covered" >    yPos = ensurePageSpace(pdf, yPos, aiqTotalH, pageHeight, pageWidth);</span>
 <span class="cstat-no" title="statement not covered" >    yPos += PDF_SPACING.large;</span>
 <span class="cstat-no" title="statement not covered" >    </span>
 <span class="cstat-no" title="statement not covered" >    yPos = addSectionHeader(pdf, 'AIQ (ETHICAL AI) ROLE FIT ANALYSIS', yPos, pageWidth);</span>
 <span class="cstat-no" title="statement not covered" >    yPos += 2;</span>
 <span class="cstat-no" title="statement not covered" >    </span>
-<span class="cstat-no" title="statement not covered" >    const rfAiqDescText = 'AI-generated insights on candidate\'s ethical AI judgment for the target role';</span>
-<span class="cstat-no" title="statement not covered" >    applySmallText(pdf);</span>
-<span class="cstat-no" title="statement not covered" >    const rfAiqDescLines = pdf.splitTextToSize(rfAiqDescText, pageWidth - 48);</span>
-<span class="cstat-no" title="statement not covered" >    const rfAiqDescBoxH = Math.max(10, rfAiqDescLines.length * 4 + 4);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setFillColor(240, 249, 255);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setDrawColor(240, 249, 255);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.roundedRect(20, yPos - 2, pageWidth - 40, rfAiqDescBoxH, 2, 2, 'F');</span>
+<span class="cstat-no" title="statement not covered" >    applySmallText(pdf);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setTextColor(71, 85, 105);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.text(rfAiqDescLines, 24, yPos + 4);</span>
 <span class="cstat-no" title="statement not covered" >    yPos += rfAiqDescBoxH + 3;</span>
 <span class="cstat-no" title="statement not covered" >    </span>
-<span class="cstat-no" title="statement not covered" >    // Split analysis into paragraphs</span>
-<span class="cstat-no" title="statement not covered" >    const aiqAnalysisParagraphs = data.alignment.aiqRoleFitAnalysis.split(/\n\n+/).filter(p =&gt; p.trim());</span>
-<span class="cstat-no" title="statement not covered" >    </span>
-<span class="cstat-no" title="statement not covered" >    aiqAnalysisParagraphs.forEach((paragraph) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    aiqParaLinesList.forEach((paragraphLines: string[]) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      pdf.setFontSize(9);</span>
 <span class="cstat-no" title="statement not covered" >      pdf.setFont('helvetica', 'normal');</span>
 <span class="cstat-no" title="statement not covered" >      pdf.setTextColor(55, 65, 81);</span>
-<span class="cstat-no" title="statement not covered" >      </span>
-<span class="cstat-no" title="statement not covered" >      const paragraphLines = pdf.splitTextToSize(paragraph.trim(), pageWidth - 50);</span>
-<span class="cstat-no" title="statement not covered" >      paragraphLines.forEach((line: string, idx: number) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >        yPos = ensurePageSpace(pdf, yPos, 10, pageHeight, pageWidth);</span>
-<span class="cstat-no" title="statement not covered" >        pdf.text(line, 25, yPos + (idx * 4));</span>
+<span class="cstat-no" title="statement not covered" >      paragraphLines.forEach((line: string) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >        pdf.text(line, 25, yPos);</span>
+<span class="cstat-no" title="statement not covered" >        yPos += 4;</span>
 <span class="cstat-no" title="statement not covered" >      });</span>
-<span class="cstat-no" title="statement not covered" >      yPos += (paragraphLines.length * 4) + 4;</span>
+<span class="cstat-no" title="statement not covered" >      yPos += 4;</span>
 <span class="cstat-no" title="statement not covered" >    });</span>
 <span class="cstat-no" title="statement not covered" >    </span>
 <span class="cstat-no" title="statement not covered" >    yPos += PDF_SPACING.medium;</span>
@@ -16353,15 +16307,7 @@
 <span class="cstat-no" title="statement not covered" >  </span>
 <span class="cstat-no" title="statement not covered" >  yPos += PDF_SPACING.large;</span>
 <span class="cstat-no" title="statement not covered" >  </span>
-<span class="cstat-no" title="statement not covered" >  // Additional Services section on same page</span>
-<span class="cstat-no" title="statement not covered" >  yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);</span>
-<span class="cstat-no" title="statement not covered" >  yPos += 2;</span>
-<span class="cstat-no" title="statement not covered" >  </span>
-<span class="cstat-no" title="statement not covered" >  applySmallText(pdf);</span>
-<span class="cstat-no" title="statement not covered" >  pdf.setTextColor(107, 114, 128);</span>
-<span class="cstat-no" title="statement not covered" >  pdf.text('HumanMetrix offers additional analysis services to support your hiring decision:', 20, yPos);</span>
-<span class="cstat-no" title="statement not covered" >  yPos += 8;</span>
-<span class="cstat-no" title="statement not covered" >  </span>
+<span class="cstat-no" title="statement not covered" >  // Additional Services section - keep all 5 items + contact box together on one page</span>
 <span class="cstat-no" title="statement not covered" >  const additionalServices = [</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
 <span class="cstat-no" title="statement not covered" >      name: 'Suggested Interview Questions',</span>
@@ -16385,13 +16331,25 @@
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  ];</span>
 <span class="cstat-no" title="statement not covered" >  </span>
+<span class="cstat-no" title="statement not covered" >  applySmallText(pdf);</span>
+<span class="cstat-no" title="statement not covered" >  pdf.setFont('helvetica', 'normal');</span>
+<span class="cstat-no" title="statement not covered" >  let roleFitServicesTotal = 16 + 2 + 8 + 4;</span>
+<span class="cstat-no" title="statement not covered" >  additionalServices.forEach(service =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    const lines = pdf.splitTextToSize(service.description, pageWidth - 55);</span>
+<span class="cstat-no" title="statement not covered" >    roleFitServicesTotal += 5 + (lines.length * 3) + 3;</span>
+<span class="cstat-no" title="statement not covered" >  });</span>
+<span class="cstat-no" title="statement not covered" >  roleFitServicesTotal += 5 + 18;</span>
+<span class="cstat-no" title="statement not covered" >  yPos = ensurePageSpace(pdf, yPos, roleFitServicesTotal, pageHeight, pageWidth);</span>
+<span class="cstat-no" title="statement not covered" >  </span>
+<span class="cstat-no" title="statement not covered" >  yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);</span>
+<span class="cstat-no" title="statement not covered" >  yPos += 2;</span>
+<span class="cstat-no" title="statement not covered" >  </span>
+<span class="cstat-no" title="statement not covered" >  applySmallText(pdf);</span>
+<span class="cstat-no" title="statement not covered" >  pdf.setTextColor(107, 114, 128);</span>
+<span class="cstat-no" title="statement not covered" >  pdf.text('HumanMetrix offers additional analysis services to support your hiring decision:', 20, yPos);</span>
+<span class="cstat-no" title="statement not covered" >  yPos += 8;</span>
+<span class="cstat-no" title="statement not covered" >  </span>
 <span class="cstat-no" title="statement not covered" >  additionalServices.forEach((service, index) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    // For the last item, request enough space for itself + contact box to keep them together</span>
-<span class="cstat-no" title="statement not covered" >    const isLast = index === additionalServices.length - 1;</span>
-<span class="cstat-no" title="statement not covered" >    const spaceNeeded = isLast ? 36 : 10;</span>
-<span class="cstat-no" title="statement not covered" >    yPos = ensurePageSpace(pdf, yPos, spaceNeeded, pageHeight, pageWidth);</span>
-<span class="cstat-no" title="statement not covered" >    </span>
-<span class="cstat-no" title="statement not covered" >    // Service number badge</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setFillColor(59, 130, 246);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.roundedRect(20, yPos - 2, 5, 5, 1, 1, 'F');</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setFontSize(7);</span>
@@ -16399,13 +16357,11 @@
 <span class="cstat-no" title="statement not covered" >    pdf.setFont('helvetica', 'bold');</span>
 <span class="cstat-no" title="statement not covered" >    pdf.text(`${index + 1}`, 22.5, yPos + 1.5, { align: 'center' });</span>
 <span class="cstat-no" title="statement not covered" >    </span>
-<span class="cstat-no" title="statement not covered" >    // Service name</span>
 <span class="cstat-no" title="statement not covered" >    applyBodyText(pdf);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setFont('helvetica', 'bold');</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setTextColor(17, 24, 39);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.text(service.name, 28, yPos + 1);</span>
 <span class="cstat-no" title="statement not covered" >    </span>
-<span class="cstat-no" title="statement not covered" >    // Service description</span>
 <span class="cstat-no" title="statement not covered" >    applySmallText(pdf);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setFont('helvetica', 'normal');</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setTextColor(107, 114, 128);</span>
@@ -16418,9 +16374,6 @@
 <span class="cstat-no" title="statement not covered" >  });</span>
 <span class="cstat-no" title="statement not covered" >  </span>
 <span class="cstat-no" title="statement not covered" >  yPos += 5;</span>
-<span class="cstat-no" title="statement not covered" >  </span>
-<span class="cstat-no" title="statement not covered" >  // Contact info box - ensure it stays on same page as extra offerings</span>
-<span class="cstat-no" title="statement not covered" >  yPos = ensurePageSpace(pdf, yPos, 18, pageHeight, pageWidth);</span>
 <span class="cstat-no" title="statement not covered" >  pdf.setFillColor(239, 246, 255); // Light blue</span>
 <span class="cstat-no" title="statement not covered" >  pdf.setDrawColor(59, 130, 246);</span>
 <span class="cstat-no" title="statement not covered" >  pdf.roundedRect(20, yPos, pageWidth - 40, 12, 2, 2, 'FD');</span>
@@ -17092,46 +17045,34 @@
 <span class="cstat-no" title="statement not covered" >  yPos = addSectionHeader(pdf, 'RECOMMENDED NEXT STEPS', yPos, pageWidth);</span>
 <span class="cstat-no" title="statement not covered" >  yPos += 3;</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  const completedScores: number[] = [];</span>
-<span class="cstat-no" title="statement not covered" >  if (data.fitAssessment) {</span>
-<span class="cstat-no" title="statement not covered" >    const fitVals = Object.values(data.fitAssessment.scores);</span>
-<span class="cstat-no" title="statement not covered" >    if (fitVals.length &gt; 0) completedScores.push(fitVals.reduce((a, b) =&gt; a + b, 0) / fitVals.length);</span>
-<span class="cstat-no" title="statement not covered" >  }</span>
-<span class="cstat-no" title="statement not covered" >  if (data.aiReadinessAssessment) {</span>
-<span class="cstat-no" title="statement not covered" >    const aiVals = Object.values(data.aiReadinessAssessment.scores);</span>
-<span class="cstat-no" title="statement not covered" >    if (aiVals.length &gt; 0) completedScores.push(aiVals.reduce((a, b) =&gt; a + b, 0) / aiVals.length);</span>
-<span class="cstat-no" title="statement not covered" >  }</span>
-<span class="cstat-no" title="statement not covered" >  if (data.promptArchitectureAssessment) {</span>
-<span class="cstat-no" title="statement not covered" >    completedScores.push(data.promptArchitectureAssessment.totalScore);</span>
-<span class="cstat-no" title="statement not covered" >  }</span>
-<span class="cstat-no" title="statement not covered" >  if (data.aiqAssessment) {</span>
-<span class="cstat-no" title="statement not covered" >    completedScores.push(data.aiqAssessment.totalScore);</span>
-<span class="cstat-no" title="statement not covered" >  }</span>
-<span class="cstat-no" title="statement not covered" >  const avgScore = completedScores.length &gt; 0</span>
-<span class="cstat-no" title="statement not covered" >    ? Math.round(completedScores.reduce((a, b) =&gt; a + b, 0) / completedScores.length)</span>
+<span class="cstat-no" title="statement not covered" >  const allIndividualScores: number[] = [</span>
+<span class="cstat-no" title="statement not covered" >    ...(data.fitAssessment ? Object.values(data.fitAssessment.scores) : []),</span>
+<span class="cstat-no" title="statement not covered" >    ...(data.aiReadinessAssessment ? Object.values(data.aiReadinessAssessment.scores) : []),</span>
+<span class="cstat-no" title="statement not covered" >    ...(data.promptArchitectureAssessment ? [data.promptArchitectureAssessment.totalScore] : []),</span>
+<span class="cstat-no" title="statement not covered" >    ...(data.aiqAssessment ? [data.aiqAssessment.totalScore] : []),</span>
+<span class="cstat-no" title="statement not covered" >  ];</span>
+<span class="cstat-no" title="statement not covered" >  const avgScore = allIndividualScores.length &gt; 0</span>
+<span class="cstat-no" title="statement not covered" >    ? Math.round(allIndividualScores.reduce((a, b) =&gt; a + b, 0) / allIndividualScores.length)</span>
 <span class="cstat-no" title="statement not covered" >    : 0;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  let nextSteps: string[];</span>
 <span class="cstat-no" title="statement not covered" >  if (avgScore &gt;= 80) {</span>
 <span class="cstat-no" title="statement not covered" >    nextSteps = [</span>
-<span class="cstat-no" title="statement not covered" >      'Consider for advanced or leadership-track positions that leverage their exceptional assessment profile.',</span>
-<span class="cstat-no" title="statement not covered" >      'Explore opportunities for the candidate to mentor or lead AI adoption initiatives within your organisation.',</span>
-<span class="cstat-no" title="statement not covered" >      'Proceed to final-stage interviews focusing on cultural fit and strategic alignment.',</span>
-<span class="cstat-no" title="statement not covered" >      'Discuss compensation and role expectations aligned with their high-calibre assessment results.',</span>
+<span class="cstat-no" title="statement not covered" >      'Proceed to final-stage interviews focusing on cultural fit and strategic alignment. Their exceptional assessment profile suggests strong readiness for advanced or leadership-track positions.',</span>
+<span class="cstat-no" title="statement not covered" >      'Explore opportunities for the candidate to mentor or lead AI adoption initiatives within your organisation. High performers can accelerate team capability when given cross-functional project ownership.',</span>
+<span class="cstat-no" title="statement not covered" >      'Consider for accelerated onboarding or leadership development programs. Discuss compensation and role expectations aligned with their high-calibre assessment results.',</span>
 <span class="cstat-no" title="statement not covered" >    ];</span>
 <span class="cstat-no" title="statement not covered" >  } else if (avgScore &gt;= 60) {</span>
 <span class="cstat-no" title="statement not covered" >    nextSteps = [</span>
-<span class="cstat-no" title="statement not covered" >      'Schedule a competency-based interview to explore areas of moderate performance in more depth.',</span>
-<span class="cstat-no" title="statement not covered" >      'Consider targeted upskilling programmes to bridge identified skill gaps before onboarding.',</span>
-<span class="cstat-no" title="statement not covered" >      'Evaluate the candidate for roles that align with their strongest assessed competencies.',</span>
-<span class="cstat-no" title="statement not covered" >      'Request references that can validate the skills demonstrated in the assessment.',</span>
+<span class="cstat-no" title="statement not covered" >      'Schedule a competency-based interview to explore areas of moderate performance in more depth. This will help validate whether identified gaps reflect skill limitations or situational factors.',</span>
+<span class="cstat-no" title="statement not covered" >      'Consider targeted upskilling programmes to bridge identified skill gaps before or during onboarding. Pairing with experienced team members can accelerate knowledge transfer and integration.',</span>
+<span class="cstat-no" title="statement not covered" >      'Evaluate the candidate for roles that align with their strongest assessed competencies. Request references that can validate the skills demonstrated in the assessment.',</span>
 <span class="cstat-no" title="statement not covered" >    ];</span>
 <span class="cstat-no" title="statement not covered" >  } else {</span>
 <span class="cstat-no" title="statement not covered" >    nextSteps = [</span>
-<span class="cstat-no" title="statement not covered" >      'Recommend structured development programmes to address foundational skill gaps identified in the assessment.',</span>
-<span class="cstat-no" title="statement not covered" >      'Consider the candidate for entry-level or developmental roles with clear progression pathways.',</span>
-<span class="cstat-no" title="statement not covered" >      'Provide feedback on assessment results and discuss potential for growth with the candidate.',</span>
-<span class="cstat-no" title="statement not covered" >      'Re-assess after a defined development period to measure improvement.',</span>
+<span class="cstat-no" title="statement not covered" >      'Recommend structured development programmes to address foundational skill gaps identified in the assessment. A clear learning pathway with milestones will help track progress effectively.',</span>
+<span class="cstat-no" title="statement not covered" >      'Consider the candidate for entry-level or developmental roles with clear progression pathways. Providing regular feedback on performance will support their growth trajectory.',</span>
+<span class="cstat-no" title="statement not covered" >      'Re-assess after a defined development period to measure improvement. This ensures investment in upskilling delivers measurable returns and the candidate is progressing as expected.',</span>
 <span class="cstat-no" title="statement not covered" >    ];</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 <span class="cstat-no" title="statement not covered" ></span>
@@ -17157,17 +17098,8 @@
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  yPos += 10;</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  // ADDITIONAL SERVICES ON REQUEST</span>
-<span class="cstat-no" title="statement not covered" >  yPos = ensurePageSpace(pdf, yPos, 90, pageHeight, pageWidth);</span>
-<span class="cstat-no" title="statement not covered" >  yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);</span>
-<span class="cstat-no" title="statement not covered" >  yPos += 3;</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  pdf.setFontSize(10);</span>
-<span class="cstat-no" title="statement not covered" >  pdf.setTextColor(107, 114, 128);</span>
-<span class="cstat-no" title="statement not covered" >  pdf.text('HumanMetrix offers additional analysis services to support your hiring decision:', 20, yPos);</span>
-<span class="cstat-no" title="statement not covered" >  yPos += 10;</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  const additionalServices = [</span>
+<span class="cstat-no" title="statement not covered" >  // ADDITIONAL SERVICES ON REQUEST - keep all 5 items + contact box together on one page</span>
+<span class="cstat-no" title="statement not covered" >  const b2cAdditionalServices = [</span>
 <span class="cstat-no" title="statement not covered" >    {</span>
 <span class="cstat-no" title="statement not covered" >      name: 'Suggested Interview Questions',</span>
 <span class="cstat-no" title="statement not covered" >      description: 'Customized interview questions based on assessment results and identified skill gaps'</span>
@@ -17190,12 +17122,25 @@
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" >  ];</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  additionalServices.forEach((service, index) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    // For the last item, request enough space for itself + contact box to keep them together</span>
-<span class="cstat-no" title="statement not covered" >    const isLast = index === additionalServices.length - 1;</span>
-<span class="cstat-no" title="statement not covered" >    const spaceNeeded = isLast ? 46 : 18;</span>
-<span class="cstat-no" title="statement not covered" >    yPos = ensurePageSpace(pdf, yPos, spaceNeeded, pageHeight, pageWidth);</span>
+<span class="cstat-no" title="statement not covered" >  pdf.setFontSize(10);</span>
+<span class="cstat-no" title="statement not covered" >  pdf.setFont('helvetica', 'normal');</span>
+<span class="cstat-no" title="statement not covered" >  let b2cServicesTotal = 16 + 3 + 10 + 4;</span>
+<span class="cstat-no" title="statement not covered" >  b2cAdditionalServices.forEach(service =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    const lines = pdf.splitTextToSize(service.description, pageWidth - 55);</span>
+<span class="cstat-no" title="statement not covered" >    b2cServicesTotal += 8 + (lines.length * 5) + 4;</span>
+<span class="cstat-no" title="statement not covered" >  });</span>
+<span class="cstat-no" title="statement not covered" >  b2cServicesTotal += 6 + 22;</span>
+<span class="cstat-no" title="statement not covered" >  yPos = ensurePageSpace(pdf, yPos, b2cServicesTotal, pageHeight, pageWidth);</span>
 <span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  yPos = addSectionHeader(pdf, 'ADDITIONAL SERVICES ON REQUEST', yPos, pageWidth);</span>
+<span class="cstat-no" title="statement not covered" >  yPos += 3;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  pdf.setFontSize(10);</span>
+<span class="cstat-no" title="statement not covered" >  pdf.setTextColor(107, 114, 128);</span>
+<span class="cstat-no" title="statement not covered" >  pdf.text('HumanMetrix offers additional analysis services to support your hiring decision:', 20, yPos);</span>
+<span class="cstat-no" title="statement not covered" >  yPos += 10;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  b2cAdditionalServices.forEach((service, index) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setFillColor(59, 130, 246);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.roundedRect(20, yPos - 2, 6, 6, 1, 1, 'F');</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setFontSize(8);</span>
@@ -17220,9 +17165,6 @@
 <span class="cstat-no" title="statement not covered" >  });</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  yPos += 6;</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  // Contact info box - ensure it stays on same page as extra offerings</span>
-<span class="cstat-no" title="statement not covered" >  yPos = ensurePageSpace(pdf, yPos, 40, pageHeight, pageWidth);</span>
 <span class="cstat-no" title="statement not covered" >  pdf.setFillColor(239, 246, 255);</span>
 <span class="cstat-no" title="statement not covered" >  pdf.setDrawColor(59, 130, 246);</span>
 <span class="cstat-no" title="statement not covered" >  pdf.roundedRect(20, yPos, pageWidth - 40, 16, 2, 2, 'FD');</span>
@@ -17448,6 +17390,7 @@
 <span class="cstat-no" title="statement not covered" >    reasons: string[];</span>
 <span class="cstat-no" title="statement not covered" >    criticalSkillAdvantages: string[];</span>
 <span class="cstat-no" title="statement not covered" >  } | null;</span>
+<span class="cstat-no" title="statement not covered" >  nextSteps?: Array&lt;{ title: string; detail: string }&gt;;</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComparisonData) {</span>
@@ -19064,18 +19007,21 @@
 <span class="cstat-no" title="statement not covered" >  pdf.setFont('helvetica', 'normal');</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  const recommendedName = data.recommendation?.recommendedCandidate || data.summaryInsights.topPerformer?.userName || 'the top candidate';</span>
-<span class="cstat-no" title="statement not covered" >  const multiNextSteps = [</span>
-<span class="cstat-no" title="statement not covered" >    `Conduct final-round interviews with ${recommendedName} focusing on team dynamics and cultural alignment`,</span>
-<span class="cstat-no" title="statement not covered" >    'Perform reference checks emphasizing leadership and collaboration competencies',</span>
-<span class="cstat-no" title="statement not covered" >    'Prepare competitive offer package based on candidate expectations',</span>
-<span class="cstat-no" title="statement not covered" >    'Design 90-day onboarding plan targeting identified development areas',</span>
-<span class="cstat-no" title="statement not covered" >  ];</span>
+<span class="cstat-no" title="statement not covered" >  const multiNextSteps: Array&lt;{ title: string; detail: string }&gt; = data.nextSteps &amp;&amp; data.nextSteps.length &gt; 0</span>
+<span class="cstat-no" title="statement not covered" >    ? data.nextSteps</span>
+<span class="cstat-no" title="statement not covered" >    : [</span>
+<span class="cstat-no" title="statement not covered" >        { title: `Conduct Final-Round Interviews with ${recommendedName}`, detail: 'Focus on team dynamics and cultural alignment to validate assessment findings.' },</span>
+<span class="cstat-no" title="statement not covered" >        { title: 'Perform Reference Checks', detail: 'Emphasize leadership and collaboration competencies with previous managers and colleagues.' },</span>
+<span class="cstat-no" title="statement not covered" >        { title: 'Prepare Competitive Offer Package', detail: 'Based on candidate expectations and market benchmarks for the role.' },</span>
+<span class="cstat-no" title="statement not covered" >        { title: 'Design 90-Day Onboarding Plan', detail: 'Target identified development areas with clear milestones and mentor assignments.' },</span>
+<span class="cstat-no" title="statement not covered" >      ];</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  multiNextSteps.forEach((step, index) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setFontSize(9);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setFont('helvetica', 'normal');</span>
-<span class="cstat-no" title="statement not covered" >    const stepLines = pdf.splitTextToSize(step, pageWidth - 60);</span>
-<span class="cstat-no" title="statement not covered" >    const stepHeight = (stepLines.length * 4) + 5;</span>
+<span class="cstat-no" title="statement not covered" >    const titleLines = pdf.splitTextToSize(step.title, pageWidth - 60);</span>
+<span class="cstat-no" title="statement not covered" >    const detailLines = pdf.splitTextToSize(step.detail, pageWidth - 60);</span>
+<span class="cstat-no" title="statement not covered" >    const stepHeight = (titleLines.length * 4) + (detailLines.length * 4) + 5;</span>
 <span class="cstat-no" title="statement not covered" >    yPos = ensurePageSpace(pdf, yPos, stepHeight, pageHeight, pageWidth);</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >    pdf.setFillColor(219, 234, 254);</span>
@@ -19088,15 +19034,40 @@
 <span class="cstat-no" title="statement not covered" >    pdf.setFontSize(9);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setFont('helvetica', 'normal');</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setTextColor(55, 65, 81);</span>
-<span class="cstat-no" title="statement not covered" >    stepLines.forEach((line: string, idx: number) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    titleLines.forEach((line: string, idx: number) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >      pdf.text(line, 32, yPos + (idx * 4));</span>
 <span class="cstat-no" title="statement not covered" >    });</span>
-<span class="cstat-no" title="statement not covered" >    yPos += stepHeight;</span>
+<span class="cstat-no" title="statement not covered" >    yPos += titleLines.length * 4;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >    pdf.setFontSize(9);</span>
+<span class="cstat-no" title="statement not covered" >    pdf.setFont('helvetica', 'normal');</span>
+<span class="cstat-no" title="statement not covered" >    pdf.setTextColor(55, 65, 81);</span>
+<span class="cstat-no" title="statement not covered" >    detailLines.forEach((line: string, idx: number) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >      pdf.text(line, 32, yPos + (idx * 4));</span>
+<span class="cstat-no" title="statement not covered" >    });</span>
+<span class="cstat-no" title="statement not covered" >    yPos += (detailLines.length * 4) + 5;</span>
 <span class="cstat-no" title="statement not covered" >  });</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  yPos += 8;</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  yPos = ensurePageSpace(pdf, yPos, 80, pageHeight, pageWidth);</span>
+<span class="cstat-no" title="statement not covered" >  // ADDITIONAL SERVICES ON REQUEST - keep all 5 items + contact box together on one page</span>
+<span class="cstat-no" title="statement not covered" >  const multiAdditionalServices = [</span>
+<span class="cstat-no" title="statement not covered" >    { name: 'Suggested Interview Questions', description: 'AI-generated questions based on candidates\' assessment results and identified skill gaps' },</span>
+<span class="cstat-no" title="statement not covered" >    { name: 'Team Composition Fit', description: 'Analysis of how candidates would complement your existing team dynamics' },</span>
+<span class="cstat-no" title="statement not covered" >    { name: 'Time to Productivity Estimate', description: 'Projected onboarding timeline based on skill readiness and learning agility' },</span>
+<span class="cstat-no" title="statement not covered" >    { name: 'Hiring Risk Analysis', description: 'Comprehensive risk assessment highlighting potential challenges and mitigations' },</span>
+<span class="cstat-no" title="statement not covered" >    { name: 'Development Investment Cost', description: 'Estimated training and development investment to close identified skill gaps' },</span>
+<span class="cstat-no" title="statement not covered" >  ];</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  pdf.setFontSize(8);</span>
+<span class="cstat-no" title="statement not covered" >  pdf.setFont('helvetica', 'normal');</span>
+<span class="cstat-no" title="statement not covered" >  let multiServicesTotal = 16 + 3 + 8 + 4;</span>
+<span class="cstat-no" title="statement not covered" >  multiAdditionalServices.forEach(service =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    const lines = pdf.splitTextToSize(service.description, pageWidth - 58);</span>
+<span class="cstat-no" title="statement not covered" >    multiServicesTotal += 7 + (lines.length * 4) + 4;</span>
+<span class="cstat-no" title="statement not covered" >  });</span>
+<span class="cstat-no" title="statement not covered" >  multiServicesTotal += 6 + 20;</span>
+<span class="cstat-no" title="statement not covered" >  yPos = ensurePageSpace(pdf, yPos, multiServicesTotal, pageHeight, pageWidth);</span>
 <span class="cstat-no" title="statement not covered" >  if (yPos &lt; 40) {</span>
 <span class="cstat-no" title="statement not covered" >    yPos = 32;</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
@@ -19108,23 +19079,11 @@
 <span class="cstat-no" title="statement not covered" >  pdf.text('Contact our team to unlock these premium insights for your hiring decisions:', 22, yPos);</span>
 <span class="cstat-no" title="statement not covered" >  yPos += 8;</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  const additionalServices = [</span>
-<span class="cstat-no" title="statement not covered" >    { name: 'Suggested Interview Questions', description: 'AI-generated questions based on candidates\' assessment results and identified skill gaps' },</span>
-<span class="cstat-no" title="statement not covered" >    { name: 'Team Composition Fit', description: 'Analysis of how candidates would complement your existing team dynamics' },</span>
-<span class="cstat-no" title="statement not covered" >    { name: 'Time to Productivity Estimate', description: 'Projected onboarding timeline based on skill readiness and learning agility' },</span>
-<span class="cstat-no" title="statement not covered" >    { name: 'Hiring Risk Analysis', description: 'Comprehensive risk assessment highlighting potential challenges and mitigations' },</span>
-<span class="cstat-no" title="statement not covered" >    { name: 'Development Investment Cost', description: 'Estimated training and development investment to close identified skill gaps' },</span>
-<span class="cstat-no" title="statement not covered" >  ];</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  additionalServices.forEach((service, index) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  multiAdditionalServices.forEach((service, index) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setFontSize(8);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.setFont('helvetica', 'normal');</span>
 <span class="cstat-no" title="statement not covered" >    const descLines = pdf.splitTextToSize(service.description, pageWidth - 58);</span>
 <span class="cstat-no" title="statement not covered" >    const serviceHeight = 7 + (descLines.length * 4) + 4;</span>
-<span class="cstat-no" title="statement not covered" >    // For the last item, request enough space for itself + contact box to keep them together</span>
-<span class="cstat-no" title="statement not covered" >    const isLast = index === additionalServices.length - 1;</span>
-<span class="cstat-no" title="statement not covered" >    const spaceNeeded = isLast ? serviceHeight + 26 : serviceHeight;</span>
-<span class="cstat-no" title="statement not covered" >    yPos = ensurePageSpace(pdf, yPos, spaceNeeded, pageHeight, pageWidth);</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >    pdf.setFillColor(59, 130, 246);</span>
 <span class="cstat-no" title="statement not covered" >    pdf.roundedRect(22, yPos - 2, 6, 6, 1, 1, 'F');</span>
@@ -19150,8 +19109,6 @@
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  yPos += 6;</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  // Contact info box - ensure it stays on same page as extra offerings</span>
-<span class="cstat-no" title="statement not covered" >  yPos = ensurePageSpace(pdf, yPos, 20, pageHeight, pageWidth);</span>
 <span class="cstat-no" title="statement not covered" >  pdf.setFillColor(239, 246, 255);</span>
 <span class="cstat-no" title="statement not covered" >  pdf.setDrawColor(59, 130, 246);</span>
 <span class="cstat-no" title="statement not covered" >  pdf.roundedRect(20, yPos, pageWidth - 40, 14, 2, 2, 'FD');</span>
@@ -19858,25 +19815,17 @@
 <span class="cstat-no" title="statement not covered" >  const nextSteps: string[] = [];</span>
 <span class="cstat-no" title="statement not covered" >  </span>
 <span class="cstat-no" title="statement not covered" >  if (avgScore &gt;= 80) {</span>
-<span class="cstat-no" title="statement not covered" >    nextSteps.push('Schedule a final interview to validate exceptional assessment results with practical scenarios.');</span>
-<span class="cstat-no" title="statement not covered" >    nextSteps.push('Consider for accelerated onboarding or leadership development programs.');</span>
-<span class="cstat-no" title="statement not covered" >    nextSteps.push('Evaluate for cross-functional project opportunities that leverage diverse strengths.');</span>
+<span class="cstat-no" title="statement not covered" >    nextSteps.push('Proceed to final-stage interviews focusing on cultural fit and strategic alignment. Their exceptional assessment profile suggests strong readiness for advanced or leadership-track positions.');</span>
+<span class="cstat-no" title="statement not covered" >    nextSteps.push('Explore opportunities for the candidate to mentor or lead AI adoption initiatives within your organisation. High performers can accelerate team capability when given cross-functional project ownership.');</span>
+<span class="cstat-no" title="statement not covered" >    nextSteps.push('Consider for accelerated onboarding or leadership development programs. Discuss compensation and role expectations aligned with their high-calibre assessment results.');</span>
 <span class="cstat-no" title="statement not covered" >  } else if (avgScore &gt;= 60) {</span>
-<span class="cstat-no" title="statement not covered" >    nextSteps.push('Conduct a structured interview focusing on identified development areas.');</span>
-<span class="cstat-no" title="statement not covered" >    nextSteps.push('Discuss tailored training and mentorship opportunities during onboarding.');</span>
-<span class="cstat-no" title="statement not covered" >    nextSteps.push('Consider pairing with experienced team members for knowledge transfer.');</span>
+<span class="cstat-no" title="statement not covered" >    nextSteps.push('Schedule a competency-based interview to explore areas of moderate performance in more depth. This will help validate whether identified gaps reflect skill limitations or situational factors.');</span>
+<span class="cstat-no" title="statement not covered" >    nextSteps.push('Consider targeted upskilling programmes to bridge identified skill gaps before or during onboarding. Pairing with experienced team members can accelerate knowledge transfer and integration.');</span>
+<span class="cstat-no" title="statement not covered" >    nextSteps.push('Evaluate the candidate for roles that align with their strongest assessed competencies. Request references that can validate the skills demonstrated in the assessment.');</span>
 <span class="cstat-no" title="statement not covered" >  } else {</span>
-<span class="cstat-no" title="statement not covered" >    nextSteps.push('Assess alignment with entry-level or developmental role requirements.');</span>
-<span class="cstat-no" title="statement not covered" >    nextSteps.push('Explore structured upskilling programs to address skill gaps.');</span>
-<span class="cstat-no" title="statement not covered" >    nextSteps.push('Consider role modifications that play to existing strengths while building capabilities.');</span>
-<span class="cstat-no" title="statement not covered" >  }</span>
-<span class="cstat-no" title="statement not covered" >  </span>
-<span class="cstat-no" title="statement not covered" >  // Add assessment-specific next steps</span>
-<span class="cstat-no" title="statement not covered" >  if (data.promptData &amp;&amp; data.promptData.totalScore &gt;= 75) {</span>
-<span class="cstat-no" title="statement not covered" >    nextSteps.push('Leverage strong prompt engineering skills for AI integration initiatives.');</span>
-<span class="cstat-no" title="statement not covered" >  }</span>
-<span class="cstat-no" title="statement not covered" >  if (data.aiqData &amp;&amp; data.aiqData.totalScore &gt;= 80) {</span>
-<span class="cstat-no" title="statement not covered" >    nextSteps.push('Consider for roles involving AI governance or ethical AI implementation.');</span>
+<span class="cstat-no" title="statement not covered" >    nextSteps.push('Recommend structured development programmes to address foundational skill gaps identified in the assessment. A clear learning pathway with milestones will help track progress effectively.');</span>
+<span class="cstat-no" title="statement not covered" >    nextSteps.push('Consider the candidate for entry-level or developmental roles with clear progression pathways. Providing regular feedback on performance will support their growth trajectory.');</span>
+<span class="cstat-no" title="statement not covered" >    nextSteps.push('Re-assess after a defined development period to measure improvement. This ensures investment in upskilling delivers measurable returns and the candidate is progressing as expected.');</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 <span class="cstat-no" title="statement not covered" >  </span>
 <span class="cstat-no" title="statement not covered" >  nextSteps.forEach(step =&gt; {</span>
@@ -20002,7 +19951,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-02-16T11:09:26.507Z
+                at 2026-04-18T08:46:08.372Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

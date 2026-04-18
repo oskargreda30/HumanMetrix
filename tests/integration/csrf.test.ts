@@ -1,18 +1,6 @@
-/**
- * Integration Tests for CSRF Middleware
- * 
- * Tests the double-submit cookie pattern implementation:
- * - Token generation and cookie setting
- * - Token validation on state-changing methods
- * - Exempt paths (login, signup, webhooks, partner API)
- * - API key bypass
- */
-
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Request, Response, NextFunction } from 'express';
 import { csrfProtection, getCsrfToken } from '../../server/middleware/csrf';
-
-// Mock Express request, response, and next function
 function createMockRequest(overrides: Partial<Request> = {}): Partial<Request> {
   return {
     method: 'GET',
@@ -273,10 +261,10 @@ describe('CSRF Middleware', () => {
       expect(next).toHaveBeenCalled();
     });
 
-    it('should allow POST to /api/stripe/webhook without CSRF token', async () => {
+    it('should allow POST to /api/webhooks/stripe without CSRF token', async () => {
       const req = createMockRequest({ 
         method: 'POST',
-        path: '/api/stripe/webhook',
+        path: '/api/webhooks/stripe',
       });
       const res = createMockResponse();
       const next = vi.fn();
@@ -358,11 +346,26 @@ describe('CSRF Middleware', () => {
   });
 
   describe('Cookie Settings', () => {
-    it('should set correct cookie options in development', async () => {
+    it('should set correct cookie options for standard routes (sameSite lax)', async () => {
       process.env.NODE_ENV = 'development';
       const freshMiddleware = csrfProtection();
       
       const req = createMockRequest();
+      const res = createMockResponse();
+      const next = vi.fn();
+
+      freshMiddleware(req as Request, res as Response, next as NextFunction);
+
+      expect(res.cookieData[0].options.httpOnly).toBe(false);
+      expect(res.cookieData[0].options.secure).toBe(true);
+      // Non-embed routes use 'lax' to block cross-site POST by default
+      expect(res.cookieData[0].options.sameSite).toBe('lax');
+    });
+
+    it('should set sameSite=none for embed routes (cross-site iframe contexts)', async () => {
+      const freshMiddleware = csrfProtection();
+      
+      const req = createMockRequest({ path: '/api/embed/session/abc123' });
       const res = createMockResponse();
       const next = vi.fn();
 

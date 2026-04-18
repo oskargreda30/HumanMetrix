@@ -1,442 +1,367 @@
-/**
- * Integration Tests for Partner API
- * 
- * Tests cover:
- * - API key authentication
- * - Session creation and management
- * - Quota/credit system
- * - Rate limiting
- * - Permission-based access control
- */
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import bcrypt from 'bcryptjs';
+const mockStorage = vi.hoisted(() => ({
+  getPartnerApiKeyByPrefix: vi.fn(),
+  getPartnerAccount: vi.fn(),
+  updatePartnerApiKeyLastUsed: vi.fn(),
+  createUsageEvent: vi.fn(),
+}));
 
-// Mock partner data
-interface MockPartner {
-  id: string;
-  name: string;
-  email: string;
-  isActive: boolean;
-  monthlyQuota: number;
-  pricePerAssessment: number;
-  billingModel: 'prepaid' | 'auto_bill' | 'invoice';
+vi.mock('../../server/storage', () => ({ storage: mockStorage }));
+vi.mock('../../server/partner-notifications', () => ({
+  trackApiAuthFailure: vi.fn(),
+  trackNewIpAccess: vi.fn(),
+}));
+vi.mock('../../server/security-monitor', () => ({
+  trackApiCall: vi.fn(),
+}));
+
+import { generateApiKey, validateApiKey, partnerAuth } from '../../server/partner-auth';
+
+
+function makeActivePartner(overrides: Record<string, any> = {}) {
+  return {
+    id: 'partner-1',
+    companyName: 'Acme Corp',
+    isActive: true,
+    apiAccessSuspendedAt: null,
+    ...overrides,
+  };
 }
 
-interface MockApiKey {
-  id: string;
-  partnerId: string;
-  keyPrefix: string;
-  keyHash: string;
-  permissions: string[];
-  isActive: boolean;
-  rateLimit: number;
-  rateLimitWindow: number;
+function makeApiKeyRecord(fullKey: string, overrides: Record<string, any> = {}) {
+  const keyHash = bcrypt.hashSync(fullKey, 10);
+  return {
+    id: 'key-1',
+    partnerId: 'partner-1',
+    keyPrefix: fullKey.slice(0, 8),
+    keyHash,
+    isActive: true,
+    expiresAt: null,
+    rateLimit: 100,
+    permissions: ['read', 'write'],
+    ...overrides,
+  };
 }
 
-// Mock rate limiter state
-const rateLimiterState = new Map<string, { count: number; resetTime: number }>();
 
-describe('Partner API Key Authentication', () => {
-  beforeEach(() => {
-    rateLimiterState.clear();
+describe('generateApiKey() (real server/partner-auth.ts)', () => {
+  it('generates a live key with hm_live_ prefix', () => {
+    const { fullKey, prefix } = generateApiKey('live');
+    expect(fullKey.startsWith('hm_live_')).toBe(true);
+    expect(prefix).toBe('hm_live_');
+    expect(fullKey.length).toBeGreaterThan(8);
   });
 
-  describe('API Key Format Validation', () => {
-    it('should accept valid API key format with prefix', () => {
-      const apiKey = 'hm_live_abc123def456';
-      const prefix = apiKey.substring(0, 7);
-      expect(prefix).toBe('hm_live');
-    });
-
-    it('should extract key prefix correctly', () => {
-      const apiKey = 'hm_test_xyz789abc123def456';
-      const parts = apiKey.split('_');
-      const prefix = `${parts[0]}_${parts[1]}`;
-      expect(prefix).toBe('hm_test');
-    });
-
-    it('should reject keys without valid prefix', () => {
-      const apiKey = 'invalidkey123';
-      const hasValidPrefix = apiKey.startsWith('hm_live_') || apiKey.startsWith('hm_test_');
-      expect(hasValidPrefix).toBe(false);
-    });
-
-    it('should differentiate between live and test keys', () => {
-      const liveKey = 'hm_live_abc123';
-      const testKey = 'hm_test_xyz789';
-      
-      expect(liveKey.includes('live')).toBe(true);
-      expect(testKey.includes('test')).toBe(true);
-    });
+  it('generates a test key with hm_test_ prefix by default', () => {
+    const { fullKey, prefix } = generateApiKey('test');
+    expect(fullKey.startsWith('hm_test_')).toBe(true);
+    expect(prefix).toBe('hm_test_');
   });
 
-  describe('API Key Permissions', () => {
-    const createMockApiKey = (permissions: string[]): MockApiKey => ({
-      id: 'key-1',
-      partnerId: 'partner-1',
-      keyPrefix: 'hm_test',
-      keyHash: 'hashed-value',
-      permissions,
-      isActive: true,
-      rateLimit: 100,
-      rateLimitWindow: 3600,
-    });
-
-    it('should allow access with matching permission', () => {
-      const apiKey = createMockApiKey(['assessments:write', 'assessments:read']);
-      const requiredPermission = 'assessments:write';
-      
-      const hasPermission = apiKey.permissions.includes(requiredPermission);
-      expect(hasPermission).toBe(true);
-    });
-
-    it('should deny access without required permission', () => {
-      const apiKey = createMockApiKey(['assessments:read']);
-      const requiredPermission = 'assessments:write';
-      
-      const hasPermission = apiKey.permissions.includes(requiredPermission);
-      expect(hasPermission).toBe(false);
-    });
-
-    it('should allow access with wildcard permission', () => {
-      const apiKey = createMockApiKey(['*']);
-      const requiredPermission = 'assessments:write';
-      
-      const hasPermission = apiKey.permissions.includes('*') || 
-                           apiKey.permissions.includes(requiredPermission);
-      expect(hasPermission).toBe(true);
-    });
-
-    it('should handle multiple permissions correctly', () => {
-      const apiKey = createMockApiKey(['assessments:read', 'usage:read', 'sessions:write']);
-      
-      expect(apiKey.permissions.includes('assessments:read')).toBe(true);
-      expect(apiKey.permissions.includes('usage:read')).toBe(true);
-      expect(apiKey.permissions.includes('sessions:write')).toBe(true);
-      expect(apiKey.permissions.includes('admin:write')).toBe(false);
-    });
+  it('generates a hash that matches the full key (bcrypt roundtrip)', () => {
+    const { fullKey, hash } = generateApiKey();
+    expect(bcrypt.compareSync(fullKey, hash)).toBe(true);
   });
 
-  describe('Rate Limiting', () => {
-    function checkRateLimit(keyId: string, limit: number, windowMs: number): { allowed: boolean; remaining: number } {
-      const now = Date.now();
-      const existing = rateLimiterState.get(keyId);
-      
-      if (!existing || now > existing.resetTime) {
-        rateLimiterState.set(keyId, { count: 1, resetTime: now + windowMs });
-        return { allowed: true, remaining: limit - 1 };
-      }
-      
-      if (existing.count >= limit) {
-        return { allowed: false, remaining: 0 };
-      }
-      
-      existing.count++;
-      return { allowed: true, remaining: limit - existing.count };
-    }
+  it('generates a 4-character hint from the end of the key', () => {
+    const { fullKey, hint } = generateApiKey();
+    expect(hint).toBe(fullKey.slice(-4));
+    expect(hint).toHaveLength(4);
+  });
 
-    it('should allow requests within rate limit', () => {
-      const result = checkRateLimit('key-1', 100, 3600000);
-      expect(result.allowed).toBe(true);
-      expect(result.remaining).toBe(99);
-    });
-
-    it('should track request count correctly', () => {
-      for (let i = 0; i < 5; i++) {
-        checkRateLimit('key-2', 100, 3600000);
-      }
-      const result = checkRateLimit('key-2', 100, 3600000);
-      expect(result.remaining).toBe(94);
-    });
-
-    it('should block requests exceeding rate limit', () => {
-      for (let i = 0; i < 100; i++) {
-        checkRateLimit('key-3', 100, 3600000);
-      }
-      const result = checkRateLimit('key-3', 100, 3600000);
-      expect(result.allowed).toBe(false);
-      expect(result.remaining).toBe(0);
-    });
-
-    it('should reset count after window expires', () => {
-      const keyId = 'key-4';
-      
-      // Set up expired state
-      rateLimiterState.set(keyId, { count: 100, resetTime: Date.now() - 1000 });
-      
-      const result = checkRateLimit(keyId, 100, 3600000);
-      expect(result.allowed).toBe(true);
-      expect(result.remaining).toBe(99);
-    });
+  it('generates unique keys on each call', () => {
+    const key1 = generateApiKey().fullKey;
+    const key2 = generateApiKey().fullKey;
+    expect(key1).not.toBe(key2);
   });
 });
 
-describe('Partner Session Management', () => {
-  describe('Session Creation Validation', () => {
-    const validAssessmentTypes = ['fit', 'ai_readiness', 'prompt_architecture', 'aiq'];
 
-    it('should accept valid assessment types', () => {
-      validAssessmentTypes.forEach(type => {
-        expect(validAssessmentTypes.includes(type)).toBe(true);
-      });
-    });
-
-    it('should reject invalid assessment types', () => {
-      const invalidTypes = ['invalid', 'test', 'random'];
-      invalidTypes.forEach(type => {
-        expect(validAssessmentTypes.includes(type)).toBe(false);
-      });
-    });
-
-    it('should validate expiration time within bounds', () => {
-      const minExpiry = 30; // 30 minutes
-      const maxExpiry = 10080; // 7 days in minutes
-      
-      expect(60 >= minExpiry && 60 <= maxExpiry).toBe(true); // 1 hour
-      expect(1440 >= minExpiry && 1440 <= maxExpiry).toBe(true); // 1 day
-      expect(20 >= minExpiry).toBe(false); // 20 minutes - too short
-      expect(20000 <= maxExpiry).toBe(false); // ~14 days - too long
-    });
-
-    it('should validate email format if provided', () => {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      
-      expect(emailRegex.test('valid@example.com')).toBe(true);
-      expect(emailRegex.test('also.valid@sub.domain.com')).toBe(true);
-      expect(emailRegex.test('invalid-email')).toBe(false);
-      expect(emailRegex.test('@missing-local.com')).toBe(false);
-    });
+describe('validateApiKey() (real server/partner-auth.ts)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  describe('Session Status Transitions', () => {
-    const validTransitions: Record<string, string[]> = {
-      'created': ['started', 'expired'],
-      'started': ['completed', 'expired'],
-      'completed': [],
-      'expired': [],
+  it('rejects when apiKey is empty string', async () => {
+    const result = await validateApiKey('');
+    expect(result.valid).toBe(false);
+    expect(result.error).toMatch(/required/i);
+  });
+
+  it('rejects when no key record found in storage', async () => {
+    mockStorage.getPartnerApiKeyByPrefix.mockResolvedValue(null);
+    const result = await validateApiKey('hm_test_unknownkey123456');
+    expect(result.valid).toBe(false);
+    expect(result.error).toMatch(/invalid api key/i);
+  });
+
+  it('rejects a revoked key (isActive: false)', async () => {
+    const { fullKey } = generateApiKey();
+    const keyRecord = makeApiKeyRecord(fullKey, { isActive: false });
+    mockStorage.getPartnerApiKeyByPrefix.mockResolvedValue(keyRecord);
+
+    const result = await validateApiKey(fullKey);
+    expect(result.valid).toBe(false);
+    expect(result.error).toMatch(/revoked/i);
+  });
+
+  it('rejects an expired key (expiresAt in the past)', async () => {
+    const { fullKey } = generateApiKey();
+    const pastDate = new Date(Date.now() - 1000);
+    const keyRecord = makeApiKeyRecord(fullKey, { expiresAt: pastDate });
+    mockStorage.getPartnerApiKeyByPrefix.mockResolvedValue(keyRecord);
+
+    const result = await validateApiKey(fullKey);
+    expect(result.valid).toBe(false);
+    expect(result.error).toMatch(/expired/i);
+  });
+
+  it('rejects when bcrypt hash does not match (wrong key value)', async () => {
+    const { fullKey } = generateApiKey();
+    // Store a hash for a different key but same prefix lookup
+    const wrongKey = 'hm_test_' + 'z'.repeat(32);
+    const keyRecord = makeApiKeyRecord(wrongKey);
+    keyRecord.keyPrefix = fullKey.slice(0, 8); // prefix matches, hash won't
+    mockStorage.getPartnerApiKeyByPrefix.mockResolvedValue(keyRecord);
+
+    const result = await validateApiKey(fullKey);
+    expect(result.valid).toBe(false);
+    expect(result.error).toMatch(/invalid api key/i);
+  });
+
+  it('rejects when partner account not found', async () => {
+    const { fullKey } = generateApiKey();
+    const keyRecord = makeApiKeyRecord(fullKey);
+    mockStorage.getPartnerApiKeyByPrefix.mockResolvedValue(keyRecord);
+    mockStorage.getPartnerAccount.mockResolvedValue(null);
+
+    const result = await validateApiKey(fullKey);
+    expect(result.valid).toBe(false);
+    expect(result.error).toMatch(/partner account not found/i);
+  });
+
+  it('rejects when partner account is inactive', async () => {
+    const { fullKey } = generateApiKey();
+    const keyRecord = makeApiKeyRecord(fullKey);
+    mockStorage.getPartnerApiKeyByPrefix.mockResolvedValue(keyRecord);
+    mockStorage.getPartnerAccount.mockResolvedValue(makeActivePartner({ isActive: false }));
+
+    const result = await validateApiKey(fullKey);
+    expect(result.valid).toBe(false);
+    expect(result.error).toMatch(/inactive/i);
+  });
+
+  it('rejects when partner API access is suspended', async () => {
+    const { fullKey } = generateApiKey();
+    const keyRecord = makeApiKeyRecord(fullKey);
+    mockStorage.getPartnerApiKeyByPrefix.mockResolvedValue(keyRecord);
+    mockStorage.getPartnerAccount.mockResolvedValue(
+      makeActivePartner({ apiAccessSuspendedAt: new Date() })
+    );
+
+    const result = await validateApiKey(fullKey);
+    expect(result.valid).toBe(false);
+    expect(result.error).toMatch(/suspended/i);
+  });
+
+  it('returns valid=true with partner and keyRecord for a fully valid key', async () => {
+    const { fullKey } = generateApiKey();
+    const keyRecord = makeApiKeyRecord(fullKey);
+    const partner = makeActivePartner();
+    mockStorage.getPartnerApiKeyByPrefix.mockResolvedValue(keyRecord);
+    mockStorage.getPartnerAccount.mockResolvedValue(partner);
+    mockStorage.updatePartnerApiKeyLastUsed.mockResolvedValue(undefined);
+
+    const result = await validateApiKey(fullKey);
+
+    expect(result.valid).toBe(true);
+    expect(result.partner).toEqual(partner);
+    expect(result.keyRecord).toEqual(keyRecord);
+    expect(mockStorage.updatePartnerApiKeyLastUsed).toHaveBeenCalledWith(keyRecord.id);
+  });
+
+  it('accepts a key with a future expiry date', async () => {
+    const { fullKey } = generateApiKey();
+    const futureDate = new Date(Date.now() + 86400000);
+    const keyRecord = makeApiKeyRecord(fullKey, { expiresAt: futureDate });
+    const partner = makeActivePartner();
+    mockStorage.getPartnerApiKeyByPrefix.mockResolvedValue(keyRecord);
+    mockStorage.getPartnerAccount.mockResolvedValue(partner);
+    mockStorage.updatePartnerApiKeyLastUsed.mockResolvedValue(undefined);
+
+    const result = await validateApiKey(fullKey);
+    expect(result.valid).toBe(true);
+  });
+});
+
+
+describe('partnerAuth() middleware (real server/partner-auth.ts)', () => {
+  function makeReq(overrides: Record<string, any> = {}): any {
+    return {
+      headers: {},
+      path: '/api/partner/sessions',
+      socket: { remoteAddress: '127.0.0.1' },
+      ...overrides,
+    };
+  }
+
+  function makeRes(): any {
+    const res: any = {
+      statusCode: 200,
+      _json: null,
+      status: vi.fn(function (code: number) { res.statusCode = code; return res; }),
+      json: vi.fn(function (data: any) { res._json = data; return res; }),
+    };
+    return res;
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns 401 when Authorization header is missing', async () => {
+    const middleware = partnerAuth();
+    const req = makeReq({ headers: {} });
+    const res = makeRes();
+    const next = vi.fn();
+
+    await middleware(req, res, next);
+
+    expect(res.statusCode).toBe(401);
+    expect(res._json?.error).toBe('Unauthorized');
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('returns 401 when Authorization header does not start with "Bearer "', async () => {
+    const middleware = partnerAuth();
+    const req = makeReq({ headers: { authorization: 'Basic abc123' } });
+    const res = makeRes();
+    const next = vi.fn();
+
+    await middleware(req, res, next);
+
+    expect(res.statusCode).toBe(401);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('returns 401 when API key lookup returns no record', async () => {
+    mockStorage.getPartnerApiKeyByPrefix.mockResolvedValue(null);
+    const middleware = partnerAuth();
+    const req = makeReq({ headers: { authorization: 'Bearer hm_test_badkey123456789' } });
+    const res = makeRes();
+    const next = vi.fn();
+
+    await middleware(req, res, next);
+
+    expect(res.statusCode).toBe(401);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('returns 403 when key lacks a required permission', async () => {
+    const { fullKey } = generateApiKey();
+    const keyRecord = makeApiKeyRecord(fullKey, { permissions: ['read'] });
+    const partner = makeActivePartner();
+    mockStorage.getPartnerApiKeyByPrefix.mockResolvedValue(keyRecord);
+    mockStorage.getPartnerAccount.mockResolvedValue(partner);
+    mockStorage.updatePartnerApiKeyLastUsed.mockResolvedValue(undefined);
+
+    const middleware = partnerAuth(['admin']); // key only has 'read'
+    const req = makeReq({ headers: { authorization: `Bearer ${fullKey}` } });
+    const res = makeRes();
+    const next = vi.fn();
+
+    await middleware(req, res, next);
+
+    expect(res.statusCode).toBe(403);
+    expect(res._json?.error).toBe('Forbidden');
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('calls next() and attaches partner/apiKey for a valid request', async () => {
+    const { fullKey } = generateApiKey();
+    const keyRecord = makeApiKeyRecord(fullKey, { permissions: ['read', 'write'] });
+    const partner = makeActivePartner();
+    mockStorage.getPartnerApiKeyByPrefix.mockResolvedValue(keyRecord);
+    mockStorage.getPartnerAccount.mockResolvedValue(partner);
+    mockStorage.updatePartnerApiKeyLastUsed.mockResolvedValue(undefined);
+
+    const middleware = partnerAuth(['read']);
+    const req = makeReq({ headers: { authorization: `Bearer ${fullKey}` } });
+    const res = makeRes();
+    const next = vi.fn();
+
+    await middleware(req, res, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(req.partner).toEqual(partner);
+    expect(req.apiKey).toEqual(keyRecord);
+  });
+
+  it('calls next() with no required permissions (open partner route)', async () => {
+    const { fullKey } = generateApiKey();
+    const keyRecord = makeApiKeyRecord(fullKey, { permissions: [] });
+    const partner = makeActivePartner();
+    mockStorage.getPartnerApiKeyByPrefix.mockResolvedValue(keyRecord);
+    mockStorage.getPartnerAccount.mockResolvedValue(partner);
+    mockStorage.updatePartnerApiKeyLastUsed.mockResolvedValue(undefined);
+
+    const middleware = partnerAuth();
+    const req = makeReq({ headers: { authorization: `Bearer ${fullKey}` } });
+    const res = makeRes();
+    const next = vi.fn();
+
+    await middleware(req, res, next);
+
+    expect(next).toHaveBeenCalledOnce();
+  });
+});
+
+
+describe('Partner API rate limiting', () => {
+  it('returns 429 after exceeding per-key request limit', async () => {
+    const { fullKey } = generateApiKey();
+    // Use a unique ID per test run to avoid cross-test counter pollution from
+    // the module-level rateLimitMap singleton in server/partner-auth.ts
+    const uniqueKeyId = `rate-limit-test-${Date.now()}-${Math.random()}`;
+    const keyRecord = makeApiKeyRecord(fullKey, {
+      id: uniqueKeyId,
+      rateLimit: 2,
+      permissions: [],
+    });
+    const partner = makeActivePartner();
+    mockStorage.getPartnerApiKeyByPrefix.mockResolvedValue(keyRecord);
+    mockStorage.getPartnerAccount.mockResolvedValue(partner);
+    mockStorage.updatePartnerApiKeyLastUsed.mockResolvedValue(undefined);
+
+    const middleware = partnerAuth();
+    const makeR = () => ({
+      headers: { authorization: `Bearer ${fullKey}` },
+      path: '/api/partner/sessions',
+      socket: { remoteAddress: '127.0.0.1' },
+    });
+    const makeResHelper = () => {
+      const r: any = {
+        statusCode: 200, _json: null,
+        status: vi.fn(function (c: number) { r.statusCode = c; return r; }),
+        json: vi.fn(function (d: any) { r._json = d; return r; }),
+      };
+      return r;
     };
 
-    it('should allow transition from created to started', () => {
-      const fromStatus = 'created';
-      const toStatus = 'started';
-      expect(validTransitions[fromStatus].includes(toStatus)).toBe(true);
-    });
+    // First two calls should succeed (within the limit of 2)
+    const res1 = makeResHelper(); const next1 = vi.fn();
+    await middleware(makeR(), res1, next1);
+    expect(next1).toHaveBeenCalled();
 
-    it('should allow transition from started to completed', () => {
-      const fromStatus = 'started';
-      const toStatus = 'completed';
-      expect(validTransitions[fromStatus].includes(toStatus)).toBe(true);
-    });
+    const res2 = makeResHelper(); const next2 = vi.fn();
+    await middleware(makeR(), res2, next2);
+    expect(next2).toHaveBeenCalled();
 
-    it('should not allow transition from completed to any status', () => {
-      const fromStatus = 'completed';
-      expect(validTransitions[fromStatus].length).toBe(0);
-    });
-
-    it('should allow any status to transition to expired', () => {
-      expect(validTransitions['created'].includes('expired')).toBe(true);
-      expect(validTransitions['started'].includes('expired')).toBe(true);
-    });
-  });
-
-  describe('Session Expiration', () => {
-    it('should calculate expiry time correctly', () => {
-      const now = new Date();
-      const expiresInMinutes = 1440; // 24 hours
-      
-      const expiresAt = new Date(now);
-      expiresAt.setMinutes(expiresAt.getMinutes() + expiresInMinutes);
-      
-      const expectedExpiry = now.getTime() + (1440 * 60 * 1000);
-      expect(expiresAt.getTime()).toBeCloseTo(expectedExpiry, -3);
-    });
-
-    it('should identify expired sessions', () => {
-      const expiredSession = {
-        expiresAt: new Date(Date.now() - 3600000), // 1 hour ago
-      };
-      
-      const isExpired = new Date() > expiredSession.expiresAt;
-      expect(isExpired).toBe(true);
-    });
-
-    it('should identify valid sessions', () => {
-      const validSession = {
-        expiresAt: new Date(Date.now() + 3600000), // 1 hour from now
-      };
-      
-      const isExpired = new Date() > validSession.expiresAt;
-      expect(isExpired).toBe(false);
-    });
-  });
-});
-
-describe('Partner Quota System', () => {
-  describe('Quota Balance Calculation', () => {
-    interface QuotaBalance {
-      testsPurchased: number;
-      testsConsumed: number;
-      remaining: number;
-    }
-
-    function calculateBalance(purchased: number, consumed: number): QuotaBalance {
-      return {
-        testsPurchased: purchased,
-        testsConsumed: consumed,
-        remaining: purchased - consumed,
-      };
-    }
-
-    it('should calculate remaining quota correctly', () => {
-      const balance = calculateBalance(100, 45);
-      expect(balance.remaining).toBe(55);
-    });
-
-    it('should handle zero purchased credits', () => {
-      const balance = calculateBalance(0, 0);
-      expect(balance.remaining).toBe(0);
-    });
-
-    it('should handle fully consumed quota', () => {
-      const balance = calculateBalance(100, 100);
-      expect(balance.remaining).toBe(0);
-    });
-
-    it('should detect negative remaining (over-consumption)', () => {
-      const balance = calculateBalance(100, 110);
-      expect(balance.remaining).toBe(-10);
-      expect(balance.remaining < 0).toBe(true);
-    });
-  });
-
-  describe('Quota Consumption', () => {
-    it('should block session creation when quota exhausted', () => {
-      const quotaBalance = { testsPurchased: 100, testsConsumed: 100, remaining: 0 };
-      const canCreateSession = quotaBalance.remaining > 0;
-      expect(canCreateSession).toBe(false);
-    });
-
-    it('should allow session creation when quota available', () => {
-      const quotaBalance = { testsPurchased: 100, testsConsumed: 50, remaining: 50 };
-      const canCreateSession = quotaBalance.remaining > 0;
-      expect(canCreateSession).toBe(true);
-    });
-
-    it('should block session creation when no credits purchased', () => {
-      const quotaBalance = { testsPurchased: 0, testsConsumed: 0, remaining: 0 };
-      const hasCredits = quotaBalance.testsPurchased > 0;
-      expect(hasCredits).toBe(false);
-    });
-  });
-
-  describe('Quota Warning Thresholds', () => {
-    function getWarningLevel(remaining: number, total: number): string | null {
-      const usagePercent = ((total - remaining) / total) * 100;
-      
-      if (remaining === 0) return 'exhausted';
-      if (usagePercent >= 90) return 'critical';
-      if (usagePercent >= 70) return 'warning';
-      return null;
-    }
-
-    it('should trigger warning at 70% usage', () => {
-      const warning = getWarningLevel(30, 100); // 70% used
-      expect(warning).toBe('warning');
-    });
-
-    it('should trigger critical at 90% usage', () => {
-      const warning = getWarningLevel(10, 100); // 90% used
-      expect(warning).toBe('critical');
-    });
-
-    it('should trigger exhausted at 100% usage', () => {
-      const warning = getWarningLevel(0, 100); // 100% used
-      expect(warning).toBe('exhausted');
-    });
-
-    it('should not trigger warning below 70% usage', () => {
-      const warning = getWarningLevel(50, 100); // 50% used
-      expect(warning).toBeNull();
-    });
-  });
-});
-
-describe('Partner Access Control', () => {
-  describe('Partner Account Status', () => {
-    it('should block inactive partner', () => {
-      const partner: MockPartner = {
-        id: 'partner-1',
-        name: 'Test Partner',
-        email: 'partner@example.com',
-        isActive: false,
-        monthlyQuota: 100,
-        pricePerAssessment: 500,
-        billingModel: 'prepaid',
-      };
-      
-      expect(partner.isActive).toBe(false);
-    });
-
-    it('should allow active partner', () => {
-      const partner: MockPartner = {
-        id: 'partner-1',
-        name: 'Test Partner',
-        email: 'partner@example.com',
-        isActive: true,
-        monthlyQuota: 100,
-        pricePerAssessment: 500,
-        billingModel: 'prepaid',
-      };
-      
-      expect(partner.isActive).toBe(true);
-    });
-  });
-
-  describe('API Key Status', () => {
-    it('should reject revoked API key', () => {
-      const apiKey: MockApiKey = {
-        id: 'key-1',
-        partnerId: 'partner-1',
-        keyPrefix: 'hm_test',
-        keyHash: 'hash',
-        permissions: ['*'],
-        isActive: false,
-        rateLimit: 100,
-        rateLimitWindow: 3600,
-      };
-      
-      expect(apiKey.isActive).toBe(false);
-    });
-
-    it('should accept active API key', () => {
-      const apiKey: MockApiKey = {
-        id: 'key-1',
-        partnerId: 'partner-1',
-        keyPrefix: 'hm_test',
-        keyHash: 'hash',
-        permissions: ['*'],
-        isActive: true,
-        rateLimit: 100,
-        rateLimitWindow: 3600,
-      };
-      
-      expect(apiKey.isActive).toBe(true);
-    });
-  });
-
-  describe('Session Ownership Validation', () => {
-    it('should allow access to own sessions', () => {
-      const session = { id: 'session-1', partnerId: 'partner-1' };
-      const requestingPartnerId = 'partner-1';
-      
-      expect(session.partnerId === requestingPartnerId).toBe(true);
-    });
-
-    it('should deny access to other partner sessions', () => {
-      const session = { id: 'session-1', partnerId: 'partner-1' };
-      const requestingPartnerId = 'partner-2';
-      
-      expect(session.partnerId === requestingPartnerId).toBe(false);
-    });
+    // Third call should be rate-limited (429)
+    const res3 = makeResHelper(); const next3 = vi.fn();
+    await middleware(makeR(), res3, next3);
+    expect(res3.statusCode).toBe(429);
+    expect(next3).not.toHaveBeenCalled();
   });
 });

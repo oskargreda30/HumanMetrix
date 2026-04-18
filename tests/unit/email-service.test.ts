@@ -233,7 +233,7 @@ describe('Email Service - Comprehensive Tests', () => {
 
     it('should format assessment types in email', async () => {
       await emailModule.sendInvitationEmail(mockInvitation, 'Jane Admin');
-      expect(mockSgSend).toHaveBeenCalled();
+      expect(mockSendMail).toHaveBeenCalled();
     });
   });
 
@@ -246,7 +246,7 @@ describe('Email Service - Comprehensive Tests', () => {
 
     it('should include reset URL in email', async () => {
       await emailModule.sendPasswordResetEmail('user@test.com', 'John', 'reset-token-abc');
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('reset-token-abc');
     });
 
@@ -274,7 +274,7 @@ describe('Email Service - Comprehensive Tests', () => {
       await emailModule.sendWelcomeEmailWithPassword(
         'user@test.com', 'John', 'TempPass123', undefined, 'post_payment',
       );
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.subject).toContain('Credentials');
     });
 
@@ -282,7 +282,7 @@ describe('Email Service - Comprehensive Tests', () => {
       await emailModule.sendWelcomeEmailWithPassword(
         'user@test.com', 'John', 'TempPass123', undefined, 'invitation', 'auto-token',
       );
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('auto-token');
     });
 
@@ -290,7 +290,7 @@ describe('Email Service - Comprehensive Tests', () => {
       await emailModule.sendWelcomeEmailWithPassword(
         'user@test.com', 'John', 'TempPass123', 'Custom note here',
       );
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('Custom note here');
     });
 
@@ -312,19 +312,19 @@ describe('Email Service - Comprehensive Tests', () => {
 
     it('should send sales inquiry email', async () => {
       await emailModule.sendContactFormEmail('Jane', 'jane@test.com', 'Corp', 'Inquiry', 'sales');
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.subject).toContain('Sales Inquiry');
     });
 
     it('should set reply-to as sender email', async () => {
       await emailModule.sendContactFormEmail('John', 'john@test.com', 'ACME', 'Msg', 'demo');
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.replyTo).toBe('john@test.com');
     });
 
     it('should send to hello@humanmetrix.co.uk', async () => {
       await emailModule.sendContactFormEmail('John', 'john@test.com', 'ACME', 'Msg', 'demo');
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.to).toBe('hello@humanmetrix.co.uk');
     });
   });
@@ -351,7 +351,7 @@ describe('Email Service - Comprehensive Tests', () => {
         requestedBillingType: 'invoice',
         reason: 'Need monthly billing',
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('Need monthly billing');
     });
   });
@@ -369,7 +369,7 @@ describe('Email Service - Comprehensive Tests', () => {
       await emailModule.sendPaymentReceiptEmail(
         'user@test.com', 'John', ['fit'], 1500, 'sess_123', 'gbp',
       );
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('£');
     });
 
@@ -377,7 +377,7 @@ describe('Email Service - Comprehensive Tests', () => {
       await emailModule.sendPaymentReceiptEmail(
         'user@test.com', 'John', ['fit'], 1500, 'sess_123', 'usd',
       );
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('$');
     });
 
@@ -385,7 +385,7 @@ describe('Email Service - Comprehensive Tests', () => {
       await emailModule.sendPaymentReceiptEmail(
         'user@test.com', 'John', ['fit'], 1500, 'sess_123',
       );
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('£');
     });
 
@@ -393,7 +393,7 @@ describe('Email Service - Comprehensive Tests', () => {
       await emailModule.sendPaymentReceiptEmail(
         'user@test.com', 'John', ['fit'], 1500, 'sess_ABCDEFGHIJKL',
       );
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('ABCDEFGHIJKL');
     });
   });
@@ -417,9 +417,9 @@ describe('Email Service - Comprehensive Tests', () => {
 
     it('should include PDF attachment in email', async () => {
       await emailModule.sendPaymentReceiptWithPdf(pdfDetails);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.attachments).toHaveLength(1);
-      expect(callArgs?.attachments[0]?.type).toBe('application/pdf');
+      expect(callArgs?.attachments[0]?.contentType).toBe('application/pdf');
     });
 
     it('should handle PDF generation failure', async () => {
@@ -459,13 +459,13 @@ describe('Email Service - Comprehensive Tests', () => {
 
     it('should include usage percentage', async () => {
       await emailModule.sendPartnerQuotaWarning70('p@test.com', 'ACME', 70, 100, 30);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('70%');
     });
 
     it('should include company name in subject', async () => {
       await emailModule.sendPartnerQuotaWarning70('p@test.com', 'TestCo', 70, 100, 30);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.subject).toContain('TestCo');
     });
   });
@@ -481,7 +481,7 @@ describe('Email Service - Comprehensive Tests', () => {
 
     it('should include urgency in subject', async () => {
       await emailModule.sendPartnerQuotaWarning90('p@test.com', 'ACME', 90, 100, 10);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.subject).toContain('URGENT');
     });
   });
@@ -497,7 +497,7 @@ describe('Email Service - Comprehensive Tests', () => {
 
     it('should include company name in email', async () => {
       await emailModule.sendPartnerAccessSuspendedEmail('p@test.com', 'ACME', 100, 100, 0);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('ACME');
     });
   });
@@ -513,7 +513,7 @@ describe('Email Service - Comprehensive Tests', () => {
 
     it('should include alert type in email', async () => {
       await emailModule.sendPartnerSecurityAlert('p@test.com', 'ACME', 'api_key_leaked', 'Key exposed');
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('api_key_leaked');
     });
   });
@@ -529,7 +529,7 @@ describe('Email Service - Comprehensive Tests', () => {
 
     it('should include month period in email', async () => {
       await emailModule.sendPartnerMonthlySummary('p@test.com', 'ACME', 'Feb 2026', 50, 100, 50);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('Feb 2026');
     });
   });
@@ -545,13 +545,13 @@ describe('Email Service - Comprehensive Tests', () => {
 
     it('should include package name', async () => {
       await emailModule.sendPartnerAutoTopUpConfirmation('p@test.com', 'ACME', 'Starter', 25, 49.99);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('Starter');
     });
 
     it('should include amount charged', async () => {
       await emailModule.sendPartnerAutoTopUpConfirmation('p@test.com', 'ACME', 'Pkg', 25, 49.99);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('49.99');
     });
   });
@@ -581,7 +581,7 @@ describe('Email Service - Comprehensive Tests', () => {
 
     it('should include invoice number', async () => {
       await emailModule.sendPartnerInvoiceEmail(invoiceDetails);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('INV-2026-001');
     });
 
@@ -590,7 +590,7 @@ describe('Email Service - Comprehensive Tests', () => {
         ...invoiceDetails,
         billingAddress: { line1: '123 Main St', city: 'London', postcode: 'SW1A 1AA', country: 'UK' },
       });
-      expect(mockSgSend).toHaveBeenCalled();
+      expect(mockSendMail).toHaveBeenCalled();
     });
 
     it('should handle different currencies', async () => {
@@ -598,7 +598,7 @@ describe('Email Service - Comprehensive Tests', () => {
         ...invoiceDetails,
         currency: 'usd',
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('$');
     });
 
@@ -607,7 +607,7 @@ describe('Email Service - Comprehensive Tests', () => {
         ...invoiceDetails,
         invoiceNotes: 'Payment by bank transfer please',
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('Payment by bank transfer please');
     });
   });
@@ -628,13 +628,13 @@ describe('Email Service - Comprehensive Tests', () => {
 
     it('should include temporary password', async () => {
       await emailModule.sendPartnerWelcomeEmail(welcomeDetails);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('TempPass123!');
     });
 
     it('should include billing type description', async () => {
       await emailModule.sendPartnerWelcomeEmail(welcomeDetails);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('Prepaid');
     });
 
@@ -644,7 +644,7 @@ describe('Email Service - Comprehensive Tests', () => {
         autoLoginToken: 'auto-login-xyz',
       });
       expect(result.success).toBe(true);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('auto-login-xyz');
     });
 
@@ -653,7 +653,7 @@ describe('Email Service - Comprehensive Tests', () => {
         ...welcomeDetails,
         freeTestsAllocated: 10,
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('10');
     });
 
@@ -662,7 +662,7 @@ describe('Email Service - Comprehensive Tests', () => {
         ...welcomeDetails,
         billingType: 'invoice',
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('Invoice');
     });
   });
@@ -686,7 +686,7 @@ describe('Email Service - Comprehensive Tests', () => {
         subject: 'Question',
         message: 'Hello',
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.to).toBe('hello@humanmetrix.co.uk');
     });
 
@@ -697,7 +697,7 @@ describe('Email Service - Comprehensive Tests', () => {
         subject: 'Q',
         message: 'Msg',
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.replyTo).toBe('john@test.com');
     });
   });
@@ -738,7 +738,7 @@ describe('Email Service - Comprehensive Tests', () => {
         ...bulkDetails,
         customMessage: 'Please complete by Friday',
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('Please complete by Friday');
     });
 
@@ -747,7 +747,7 @@ describe('Email Service - Comprehensive Tests', () => {
         ...bulkDetails,
         temporaryPassword: 'TempPass!',
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('TempPass!');
     });
 
@@ -756,7 +756,7 @@ describe('Email Service - Comprehensive Tests', () => {
         ...bulkDetails,
         isResume: true,
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.subject).toContain('Continue');
     });
 
@@ -765,7 +765,7 @@ describe('Email Service - Comprehensive Tests', () => {
         ...bulkDetails,
         expiresAt: new Date('2026-12-31'),
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('31 December 2026');
     });
 
@@ -799,7 +799,7 @@ describe('Email Service - Comprehensive Tests', () => {
         ...congratsDetails,
         originalPaymentAmount: '£20.00',
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('25% off');
     });
 
@@ -813,7 +813,7 @@ describe('Email Service - Comprehensive Tests', () => {
 
     it('should format free unlock date', async () => {
       await emailModule.sendB2BCongratulatoryEmail(congratsDetails);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('1 June 2026');
     });
   });
@@ -840,7 +840,7 @@ describe('Email Service - Comprehensive Tests', () => {
 
     it('should show bundle discount', async () => {
       await emailModule.sendB2BAllCompleteEmail(allCompleteDetails);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.subject).toContain('25%');
     });
 
@@ -872,7 +872,7 @@ describe('Email Service - Comprehensive Tests', () => {
         dashboardUrl: 'https://test.com/dashboard',
         autoLoginToken: 'auto-xyz',
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('auto-xyz');
     });
 
@@ -907,7 +907,7 @@ describe('Email Service - Comprehensive Tests', () => {
         pdfBuffer: Buffer.from('pdf'),
         pdfFilename: 'Results.pdf',
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.attachments).toHaveLength(1);
     });
 
@@ -919,7 +919,7 @@ describe('Email Service - Comprehensive Tests', () => {
         pdfBuffer: Buffer.from('pdf'),
         pdfFilename: 'Results.pdf',
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.subject).toContain('AI Readiness Assessment');
     });
   });
@@ -944,7 +944,7 @@ describe('Email Service - Comprehensive Tests', () => {
         downloadUrl: 'https://storage.test.com/download/xyz',
         expiryDays: 7,
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('https://storage.test.com/download/xyz');
     });
 
@@ -956,7 +956,7 @@ describe('Email Service - Comprehensive Tests', () => {
         downloadUrl: 'https://test.com/dl',
         expiryDays: 14,
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('14 days');
     });
   });
@@ -988,7 +988,7 @@ describe('Email Service - Comprehensive Tests', () => {
           { filename: 'C.pdf', content: Buffer.from('c') },
         ],
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.attachments).toHaveLength(3);
     });
 
@@ -1006,7 +1006,7 @@ describe('Email Service - Comprehensive Tests', () => {
           purchaseDate: new Date('2026-01-15'),
         },
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('Payment Receipt');
     });
   });
@@ -1032,7 +1032,7 @@ describe('Email Service - Comprehensive Tests', () => {
           { filename: 'FIT_Report.pdf', buffer: Buffer.from('fit'), assessmentType: 'fit' },
         ],
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('FIT_Report.pdf');
     });
   });
@@ -1054,7 +1054,7 @@ describe('Email Service - Comprehensive Tests', () => {
 
     it('should display admin role', async () => {
       await emailModule.sendPartnerTeamInvitationEmail(teamInviteDetails);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('Administrator');
     });
 
@@ -1063,7 +1063,7 @@ describe('Email Service - Comprehensive Tests', () => {
         ...teamInviteDetails,
         role: 'member',
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('Team Member');
     });
 
@@ -1072,7 +1072,7 @@ describe('Email Service - Comprehensive Tests', () => {
         ...teamInviteDetails,
         role: 'viewer',
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('Viewer');
     });
 
@@ -1086,7 +1086,7 @@ describe('Email Service - Comprehensive Tests', () => {
 
     it('should include invite accept URL', async () => {
       await emailModule.sendPartnerTeamInvitationEmail(teamInviteDetails);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('team-token-abc');
     });
   });
@@ -1107,7 +1107,7 @@ describe('Email Service - Comprehensive Tests', () => {
 
     it('should include temporary password', async () => {
       await emailModule.sendPartnerTeamCredentialsEmail(credDetails);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('Temp123!');
     });
 
@@ -1116,7 +1116,7 @@ describe('Email Service - Comprehensive Tests', () => {
         ...credDetails,
         autoLoginToken: 'auto-abc',
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('auto-abc');
     });
 
@@ -1148,7 +1148,7 @@ describe('Email Service - Comprehensive Tests', () => {
           purchaseDate: new Date('2026-01-15'),
         },
       );
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('Payment Receipt');
     });
 
@@ -1187,7 +1187,7 @@ describe('Email Service - Comprehensive Tests', () => {
         ...resultsDetails,
         autoLoginToken: 'auto-abc',
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('auto-abc');
     });
 
@@ -1196,7 +1196,7 @@ describe('Email Service - Comprehensive Tests', () => {
         ...resultsDetails,
         partnerInvitationId: 'inv-123',
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('inv-123');
     });
 
@@ -1205,7 +1205,7 @@ describe('Email Service - Comprehensive Tests', () => {
         ...resultsDetails,
         purchaseId: 'pur-456',
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('pur-456');
     });
 
@@ -1214,7 +1214,7 @@ describe('Email Service - Comprehensive Tests', () => {
         ...resultsDetails,
         hasExistingAccount: false,
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('Create Account');
     });
   });
@@ -1224,24 +1224,24 @@ describe('Email Service - Comprehensive Tests', () => {
       const result = await emailModule.sendEmailVerificationCode(
         'user@test.com', '123456',
       );
-      expect(result).toEqual({ success: true, messageId: 'sg-msg-id' });
+      expect(result).toEqual({ success: true, messageId: 'gmail-msg-id' });
     });
 
     it('should include verification code in email', async () => {
       await emailModule.sendEmailVerificationCode('user@test.com', '654321');
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('654321');
     });
 
     it('should include code in subject', async () => {
       await emailModule.sendEmailVerificationCode('user@test.com', '111222');
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.subject).toContain('111222');
     });
 
     it('should include partner name when provided', async () => {
       await emailModule.sendEmailVerificationCode('user@test.com', '123456', 'ACME Corp');
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('ACME Corp');
     });
 
@@ -1269,7 +1269,7 @@ describe('Email Service - Comprehensive Tests', () => {
 
     it('should show warning for first attempt', async () => {
       await emailModule.sendBillingFailureNotification(billingFailure);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.subject).toContain('Payment Failed');
     });
 
@@ -1278,7 +1278,7 @@ describe('Email Service - Comprehensive Tests', () => {
         ...billingFailure,
         failedAttempts: 3,
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.subject).toContain('URGENT');
     });
 
@@ -1287,7 +1287,7 @@ describe('Email Service - Comprehensive Tests', () => {
         ...billingFailure,
         nextRetryDate: new Date('2026-03-01'),
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('1 March 2026');
     });
 
@@ -1296,7 +1296,7 @@ describe('Email Service - Comprehensive Tests', () => {
         ...billingFailure,
         failureReason: 'insufficient_funds',
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('Insufficient funds');
     });
   });
@@ -1323,13 +1323,13 @@ describe('Email Service - Comprehensive Tests', () => {
         ...expiryDetails,
         daysUntilExpiry: 1,
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('expires tomorrow');
     });
 
     it('should show days for 7 day warning', async () => {
       await emailModule.sendCardExpiryWarning(expiryDetails);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('7 days');
     });
   });
@@ -1400,7 +1400,7 @@ describe('Email Service - Comprehensive Tests', () => {
         currency: 'gbp',
         billingType: 'auto_bill',
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.subject).toContain('Suspended');
     });
   });
@@ -1522,7 +1522,7 @@ describe('Email Service - Comprehensive Tests', () => {
 
     it('should include invoice number for invoice-based suspension', async () => {
       await emailModule.notifyInvoiceSuspension(suspensionDetails);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('INV-2026-001');
     });
 
@@ -1533,13 +1533,13 @@ describe('Email Service - Comprehensive Tests', () => {
         customReason: 'Suspended for investigation',
       });
       expect(result.success).toBe(true);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.subject).toBe('URGENT: API Access Suspended');
     });
 
     it('should include payment URL', async () => {
       await emailModule.notifyInvoiceSuspension(suspensionDetails);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('https://test.com/pay');
     });
   });
@@ -1562,7 +1562,7 @@ describe('Email Service - Comprehensive Tests', () => {
         partnerEmail: 'p@acme.com',
         dashboardUrl: 'https://test.com/dashboard',
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('ACME Corp');
     });
 
@@ -1573,7 +1573,7 @@ describe('Email Service - Comprehensive Tests', () => {
         partnerEmail: 'p@acme.com',
         dashboardUrl: 'https://test.com/my-dashboard',
       });
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('https://test.com/my-dashboard');
     });
   });
@@ -1683,13 +1683,13 @@ describe('Email Service - Comprehensive Tests', () => {
 
     it('should include title in subject', async () => {
       await emailModule.sendBroadcastEmail('user@test.com', 'Big News', 'Content here');
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.subject).toBe('Big News');
     });
 
     it('should convert newlines to <br> in HTML', async () => {
       await emailModule.sendBroadcastEmail('user@test.com', 'Title', 'Line 1\nLine 2');
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('<br>');
     });
 
@@ -1716,19 +1716,19 @@ describe('Email Service - Comprehensive Tests', () => {
 
     it('should include severity in subject', async () => {
       await emailModule.sendBugReportNotificationEmail(bugReport);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.subject).toContain('HIGH');
     });
 
     it('should send to critical error recipients', async () => {
       await emailModule.sendBugReportNotificationEmail(bugReport);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.to).toContain('daena@humanmetrix.co.uk');
     });
 
     it('should include bug ID', async () => {
       await emailModule.sendBugReportNotificationEmail(bugReport);
-      const callArgs = mockSgSend.mock.calls[0]?.[0];
+      const callArgs = mockSendMail.mock.calls[0]?.[0];
       expect(callArgs?.html).toContain('bug-123');
     });
 
@@ -1742,7 +1742,7 @@ describe('Email Service - Comprehensive Tests', () => {
           }),
         });
         await emailModule.sendBugReportNotificationEmail({ ...bugReport, severity });
-        const callArgs = mockSgSend.mock.calls[0]?.[0];
+        const callArgs = mockSendMail.mock.calls[0]?.[0];
         expect(callArgs?.subject).toContain(severity.toUpperCase());
       }
     });

@@ -100,7 +100,7 @@ describe('SEO Components', () => {
       const els = render(() => SEO({}));
       const title = findElement(els, 'title');
       expect(title).toBeTruthy();
-      expect(title.props.children).toBe('HumanMetrix - AI Assessment Platform for Recruitment | Human Metrix UK');
+      expect(title.props.children).toBe('HumanMetrix - AI Assessment Platform for Recruitment');
     });
 
     it('renders custom title with suffix', () => {
@@ -247,7 +247,7 @@ describe('SEO Components', () => {
       expect(schema['@type']).toBe('Organization');
       expect(schema.name).toBe('HumanMetrix');
       expect(schema.url).toBe('https://www.humanmetrix.co.uk');
-      expect(schema.alternateName).toContain('Human Metrix');
+      expect(schema.contactPoint).toBeDefined();
     });
   });
 

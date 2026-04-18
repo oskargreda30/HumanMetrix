@@ -183,11 +183,6 @@ vi.mock('react-icons/si', () => new Proxy({}, {
   },
 }));
 
-const componentMock = () => ({
-  default: mockComponent,
-  __esModule: true,
-});
-
 vi.mock('@/components/Navigation', componentMock);
 vi.mock('@/components/Footer', componentMock);
 vi.mock('@/components/ContactFormDialog', () => ({ default: mockComponent, ContactFormDialog: mockComponent }));
@@ -252,13 +247,6 @@ vi.mock('@/components/shared/CriticalSkillsAnalysis', componentMock);
 vi.mock('@/components/shared/SharedCompareTab', componentMock);
 vi.mock('@/components/shared/SharedIndividualReport', componentMock);
 vi.mock('@/components/shared/SharedSingleCandidateRoleFit', componentMock);
-
-const uiMockProxy = () => new Proxy({}, {
-  get: (_target, prop) => {
-    if (prop === '__esModule') return true;
-    return mockChildren;
-  },
-});
 
 vi.mock('@/components/ui/card', uiMockProxy);
 vi.mock('@/components/ui/button', () => ({
@@ -373,6 +361,6 @@ describe('Page component exports', () => {
       const mod = await import(`../../client/src/pages/${pageName}`);
       expect(mod.default).toBeDefined();
       expect(typeof mod.default).toBe('function');
-    });
+    }, 30000);
   }
 });

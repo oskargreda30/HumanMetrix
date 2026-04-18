@@ -300,6 +300,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup simple auth
   await setupAuth(app);
 
+  // Register payment routes (Stripe checkout, exchange rates, etc.)
+  const { registerPaymentRoutes } = await import("./payment-routes");
+  registerPaymentRoutes(app);
+
+  // Register assessment lifecycle routes (heartbeat, pause, resume, abandon, status)
+  const { registerAssessmentRoutes } = await import("./assessment-routes");
+  registerAssessmentRoutes(app);
+
+  // Register webhook routes (Stripe, Airwallex events)
+  const { registerWebhookRoutes } = await import("./webhook-routes");
+  registerWebhookRoutes(app);
+
   // Register partner API routes (for B2B integrations)
   const { registerPartnerRoutes, registerGuestAssessmentRoutes, registerShareableLinkRoutes } = await import("./partner-routes");
   registerPartnerRoutes(app);

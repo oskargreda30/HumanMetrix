@@ -184,7 +184,7 @@ describe('Email Service - Comprehensive Tests', () => {
     it('should include assessment names in the email', async () => {
       const { sendInvitationEmail } = await getModule();
       await sendInvitationEmail(mockInvitation, 'Jane Manager');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('FIT Assessment');
       expect(sendCall.html).toContain('AI Readiness Assessment');
     });
@@ -192,28 +192,28 @@ describe('Email Service - Comprehensive Tests', () => {
     it('should include invitation link with correct token', async () => {
       const { sendInvitationEmail } = await getModule();
       await sendInvitationEmail(mockInvitation, 'Jane Manager');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('/invite/inv-token-123');
     });
 
     it('should include the inviter name in subject', async () => {
       const { sendInvitationEmail } = await getModule();
       await sendInvitationEmail(mockInvitation, 'Jane Manager');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.subject).toContain('Jane Manager');
     });
 
     it('should include candidate name in email body', async () => {
       const { sendInvitationEmail } = await getModule();
       await sendInvitationEmail(mockInvitation, 'Jane Manager');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('John Doe');
     });
 
     it('should include custom message if provided', async () => {
       const { sendInvitationEmail } = await getModule();
       await sendInvitationEmail(mockInvitation, 'Jane Manager');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('Please complete these assessments');
     });
 
@@ -244,14 +244,14 @@ describe('Email Service - Comprehensive Tests', () => {
     it('should send to the correct recipient email', async () => {
       const { sendInvitationEmail } = await getModule();
       await sendInvitationEmail(mockInvitation, 'Jane Manager');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.to).toBe('candidate@test.com');
     });
 
     it('should include expiry date', async () => {
       const { sendInvitationEmail } = await getModule();
       await sendInvitationEmail(mockInvitation, 'Jane Manager');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('2026');
     });
   });
@@ -260,27 +260,27 @@ describe('Email Service - Comprehensive Tests', () => {
     it('should send password reset email successfully', async () => {
       const { sendPasswordResetEmail } = await getModule();
       await sendPasswordResetEmail('user@test.com', 'John', 'reset-token-123');
-      expect(mockSgSend).toHaveBeenCalled();
+      expect(mockSendMail).toHaveBeenCalled();
     });
 
     it('should include reset link with token', async () => {
       const { sendPasswordResetEmail } = await getModule();
       await sendPasswordResetEmail('user@test.com', 'John', 'reset-token-123');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('/reset-password/reset-token-123');
     });
 
     it('should include recipient name', async () => {
       const { sendPasswordResetEmail } = await getModule();
       await sendPasswordResetEmail('user@test.com', 'John', 'reset-token-123');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('John');
     });
 
     it('should set correct subject line', async () => {
       const { sendPasswordResetEmail } = await getModule();
       await sendPasswordResetEmail('user@test.com', 'John', 'reset-token-123');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.subject).toContain('Reset');
     });
 
@@ -296,43 +296,43 @@ describe('Email Service - Comprehensive Tests', () => {
     it('should send welcome email with credentials', async () => {
       const { sendWelcomeEmailWithPassword } = await getModule();
       await sendWelcomeEmailWithPassword('user@test.com', 'John', 'TempPass123!');
-      expect(mockSgSend).toHaveBeenCalled();
-      const sendCall = mockSgSend.mock.calls[0][0];
+      expect(mockSendMail).toHaveBeenCalled();
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('TempPass123!');
     });
 
     it('should include user name in email', async () => {
       const { sendWelcomeEmailWithPassword } = await getModule();
       await sendWelcomeEmailWithPassword('user@test.com', 'John', 'TempPass123!');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('John');
     });
 
     it('should include note when provided', async () => {
       const { sendWelcomeEmailWithPassword } = await getModule();
       await sendWelcomeEmailWithPassword('user@test.com', 'John', 'TempPass123!', 'Welcome to our team');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('Welcome to our team');
     });
 
     it('should use correct subject for post_payment context', async () => {
       const { sendWelcomeEmailWithPassword } = await getModule();
       await sendWelcomeEmailWithPassword('user@test.com', 'John', 'TempPass123!', undefined, 'post_payment');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.subject).toContain('Account Credentials');
     });
 
     it('should use correct subject for invitation context', async () => {
       const { sendWelcomeEmailWithPassword } = await getModule();
       await sendWelcomeEmailWithPassword('user@test.com', 'John', 'TempPass123!', undefined, 'invitation');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.subject).toContain('Assessment Invitation');
     });
 
     it('should include auto-login link when token provided', async () => {
       const { sendWelcomeEmailWithPassword } = await getModule();
       await sendWelcomeEmailWithPassword('user@test.com', 'John', 'TempPass123!', undefined, 'invitation', 'auto-token-xyz');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('/auto-login/auto-token-xyz');
     });
 
@@ -348,35 +348,35 @@ describe('Email Service - Comprehensive Tests', () => {
     it('should send contact form email to sales address', async () => {
       const { sendContactFormEmail } = await getModule();
       await sendContactFormEmail('John', 'john@test.com', 'Acme Corp', 'Interested in demo', 'demo');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.to).toBe('hello@humanmetrix.co.uk');
     });
 
     it('should set reply-to as sender email', async () => {
       const { sendContactFormEmail } = await getModule();
       await sendContactFormEmail('John', 'john@test.com', 'Acme Corp', 'Interested', 'demo');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.replyTo).toBe('john@test.com');
     });
 
     it('should use Demo Request label for demo intent', async () => {
       const { sendContactFormEmail } = await getModule();
       await sendContactFormEmail('John', 'john@test.com', 'Acme Corp', 'Want demo', 'demo');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.subject).toContain('Demo Request');
     });
 
     it('should use Sales Inquiry label for sales intent', async () => {
       const { sendContactFormEmail } = await getModule();
       await sendContactFormEmail('John', 'john@test.com', 'Acme Corp', 'Pricing info', 'sales');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.subject).toContain('Sales Inquiry');
     });
 
     it('should include company name in subject', async () => {
       const { sendContactFormEmail } = await getModule();
       await sendContactFormEmail('John', 'john@test.com', 'Acme Corp', 'Message', 'demo');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.subject).toContain('Acme Corp');
     });
   });
@@ -391,7 +391,7 @@ describe('Email Service - Comprehensive Tests', () => {
         currentBillingType: 'payg',
         requestedBillingType: 'subscription',
       });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.to).toBe('hello@humanmetrix.co.uk');
     });
 
@@ -404,7 +404,7 @@ describe('Email Service - Comprehensive Tests', () => {
         currentBillingType: 'payg',
         requestedBillingType: 'subscription',
       });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.subject).toContain('Pay-As-You-Go');
       expect(sendCall.subject).toContain('Subscription');
     });
@@ -419,7 +419,7 @@ describe('Email Service - Comprehensive Tests', () => {
         requestedBillingType: 'enterprise',
         reason: 'We need more features',
       });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('We need more features');
     });
   });
@@ -428,20 +428,20 @@ describe('Email Service - Comprehensive Tests', () => {
     it('should send payment receipt email successfully', async () => {
       const { sendPaymentReceiptEmail } = await getModule();
       await sendPaymentReceiptEmail('user@test.com', 'John', ['fit', 'ai_readiness'], 2500, 'sess_123', 'gbp');
-      expect(mockSgSend).toHaveBeenCalled();
+      expect(mockSendMail).toHaveBeenCalled();
     });
 
     it('should include formatted amount with currency symbol', async () => {
       const { sendPaymentReceiptEmail } = await getModule();
       await sendPaymentReceiptEmail('user@test.com', 'John', ['fit'], 2500, 'sess_123', 'gbp');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('25.00');
     });
 
     it('should include assessment names', async () => {
       const { sendPaymentReceiptEmail } = await getModule();
       await sendPaymentReceiptEmail('user@test.com', 'John', ['fit', 'ai_readiness'], 2500, 'sess_123');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('FIT Assessment');
       expect(sendCall.html).toContain('AI Readiness Assessment');
     });
@@ -449,14 +449,14 @@ describe('Email Service - Comprehensive Tests', () => {
     it('should include session reference', async () => {
       const { sendPaymentReceiptEmail } = await getModule();
       await sendPaymentReceiptEmail('user@test.com', 'John', ['fit'], 2500, 'sess_abcdef123456', 'gbp');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('BCDEF123456');
     });
 
     it('should set correct subject', async () => {
       const { sendPaymentReceiptEmail } = await getModule();
       await sendPaymentReceiptEmail('user@test.com', 'John', ['fit'], 2500, 'sess_123');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.subject).toBe('Payment Receipt - HumanMetrix');
     });
   });
@@ -489,7 +489,7 @@ describe('Email Service - Comprehensive Tests', () => {
         transactionId: 'txn_12345678',
       });
       expect(result.success).toBe(true);
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.attachments).toBeDefined();
     });
 
@@ -519,7 +519,7 @@ describe('Email Service - Comprehensive Tests', () => {
         currency: 'usd',
         transactionId: 'txn_45678901',
       });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('$');
     });
   });
@@ -528,34 +528,34 @@ describe('Email Service - Comprehensive Tests', () => {
     it('should send 70% quota warning email', async () => {
       const { sendPartnerQuotaWarning70 } = await getModule();
       await sendPartnerQuotaWarning70('partner@test.com', 'Acme Corp', 70, 100, 30);
-      expect(mockSgSend).toHaveBeenCalled();
+      expect(mockSendMail).toHaveBeenCalled();
     });
 
     it('should include usage percentage', async () => {
       const { sendPartnerQuotaWarning70 } = await getModule();
       await sendPartnerQuotaWarning70('partner@test.com', 'Acme Corp', 70, 100, 30);
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('70%');
     });
 
     it('should include remaining credits', async () => {
       const { sendPartnerQuotaWarning70 } = await getModule();
       await sendPartnerQuotaWarning70('partner@test.com', 'Acme Corp', 70, 100, 30);
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('30');
     });
 
     it('should include company name', async () => {
       const { sendPartnerQuotaWarning70 } = await getModule();
       await sendPartnerQuotaWarning70('partner@test.com', 'Acme Corp', 70, 100, 30);
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('Acme Corp');
     });
 
     it('should include top-up link', async () => {
       const { sendPartnerQuotaWarning70 } = await getModule();
       await sendPartnerQuotaWarning70('partner@test.com', 'Acme Corp', 70, 100, 30);
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('partner-dashboard?tab=billing');
     });
   });
@@ -564,13 +564,13 @@ describe('Email Service - Comprehensive Tests', () => {
     it('should send 90% quota warning email', async () => {
       const { sendPartnerQuotaWarning90 } = await getModule();
       await sendPartnerQuotaWarning90('partner@test.com', 'Acme Corp', 90, 100, 10);
-      expect(mockSgSend).toHaveBeenCalled();
+      expect(mockSendMail).toHaveBeenCalled();
     });
 
     it('should include usage stats', async () => {
       const { sendPartnerQuotaWarning90 } = await getModule();
       await sendPartnerQuotaWarning90('partner@test.com', 'Acme Corp', 90, 100, 10);
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('90');
     });
   });
@@ -594,42 +594,42 @@ describe('Email Service - Comprehensive Tests', () => {
     it('should include temporary password', async () => {
       const { sendPartnerWelcomeEmail } = await getModule();
       await sendPartnerWelcomeEmail(welcomeDetails);
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('TempPass!123');
     });
 
     it('should include company name', async () => {
       const { sendPartnerWelcomeEmail } = await getModule();
       await sendPartnerWelcomeEmail(welcomeDetails);
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('Acme Corp');
     });
 
     it('should include billing type description', async () => {
       const { sendPartnerWelcomeEmail } = await getModule();
       await sendPartnerWelcomeEmail(welcomeDetails);
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('Prepaid');
     });
 
     it('should include free tests allocation', async () => {
       const { sendPartnerWelcomeEmail } = await getModule();
       await sendPartnerWelcomeEmail(welcomeDetails);
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('10');
     });
 
     it('should include auto-login URL when token provided', async () => {
       const { sendPartnerWelcomeEmail } = await getModule();
       await sendPartnerWelcomeEmail({ ...welcomeDetails, autoLoginToken: 'auto-xyz' });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('/auto-login/auto-xyz');
     });
 
     it('should set correct subject', async () => {
       const { sendPartnerWelcomeEmail } = await getModule();
       await sendPartnerWelcomeEmail(welcomeDetails);
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.subject).toContain('Welcome to HumanMetrix Partner Programme');
     });
   });
@@ -644,7 +644,7 @@ describe('Email Service - Comprehensive Tests', () => {
         message: 'How much does it cost?',
       });
       expect(result.success).toBe(true);
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.to).toBe('hello@humanmetrix.co.uk');
     });
 
@@ -656,7 +656,7 @@ describe('Email Service - Comprehensive Tests', () => {
         subject: 'Question',
         message: 'My question',
       });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('Jane');
       expect(sendCall.html).toContain('jane@test.com');
     });
@@ -669,7 +669,7 @@ describe('Email Service - Comprehensive Tests', () => {
         subject: 'Question',
         message: 'My question',
       });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.replyTo).toBe('jane@test.com');
     });
   });
@@ -686,20 +686,20 @@ describe('Email Service - Comprehensive Tests', () => {
     it('should send bulk invitation email successfully', async () => {
       const { sendPartnerBulkInvitationEmail } = await getModule();
       await sendPartnerBulkInvitationEmail(bulkDetails);
-      expect(mockSgSend).toHaveBeenCalled();
+      expect(mockSendMail).toHaveBeenCalled();
     });
 
     it('should include partner company name', async () => {
       const { sendPartnerBulkInvitationEmail } = await getModule();
       await sendPartnerBulkInvitationEmail(bulkDetails);
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('Acme Corp');
     });
 
     it('should include assessment link with token', async () => {
       const { sendPartnerBulkInvitationEmail } = await getModule();
       await sendPartnerBulkInvitationEmail(bulkDetails);
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('token=bulk-token-123');
     });
 
@@ -731,21 +731,21 @@ describe('Email Service - Comprehensive Tests', () => {
     it('should include assessment name', async () => {
       const { sendB2BCongratulatoryEmail } = await getModule();
       await sendB2BCongratulatoryEmail(congratsDetails);
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('FIT Assessment');
     });
 
     it('should include payment URL', async () => {
       const { sendB2BCongratulatoryEmail } = await getModule();
       await sendB2BCongratulatoryEmail(congratsDetails);
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('https://test.com/pay');
     });
 
     it('should include free unlock date', async () => {
       const { sendB2BCongratulatoryEmail } = await getModule();
       await sendB2BCongratulatoryEmail(congratsDetails);
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('April');
       expect(sendCall.html).toContain('2026');
     });
@@ -756,7 +756,7 @@ describe('Email Service - Comprehensive Tests', () => {
         ...congratsDetails,
         originalPaymentAmount: '12.99',
       });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('25% off');
     });
   });
@@ -801,7 +801,7 @@ describe('Email Service - Comprehensive Tests', () => {
         partnerName: 'Acme Corp',
         dashboardUrl: 'https://test.com/dashboard',
       });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('Acme Corp');
     });
 
@@ -814,7 +814,7 @@ describe('Email Service - Comprehensive Tests', () => {
         dashboardUrl: 'https://test.com/dashboard',
         autoLoginToken: 'auto-abc',
       });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('auto-login/auto-abc');
     });
   });
@@ -831,7 +831,7 @@ describe('Email Service - Comprehensive Tests', () => {
         pdfFilename: 'FIT_Assessment_Results.pdf',
       });
       expect(result.success).toBe(true);
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.attachments).toHaveLength(1);
       expect(sendCall.attachments[0].filename).toBe('FIT_Assessment_Results.pdf');
     });
@@ -845,7 +845,7 @@ describe('Email Service - Comprehensive Tests', () => {
         pdfBuffer: Buffer.from('fake-pdf'),
         pdfFilename: 'results.pdf',
       });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.subject).toContain('FIT Assessment');
     });
   });
@@ -861,7 +861,7 @@ describe('Email Service - Comprehensive Tests', () => {
         downloadUrl: 'https://test.com/download/results.pdf',
         expiryDays: 7,
       });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('https://test.com/download/results.pdf');
     });
   });
@@ -880,7 +880,7 @@ describe('Email Service - Comprehensive Tests', () => {
           { filename: 'air.pdf', content: Buffer.from('pdf2') },
         ],
       });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.attachments).toHaveLength(2);
     });
   });
@@ -896,7 +896,7 @@ describe('Email Service - Comprehensive Tests', () => {
           { filename: 'air_results.pdf', buffer: Buffer.from('pdf2'), assessmentType: 'ai_readiness' },
         ],
       });
-      expect(mockSgSend).toHaveBeenCalled();
+      expect(mockSendMail).toHaveBeenCalled();
     });
   });
 
@@ -919,28 +919,28 @@ describe('Email Service - Comprehensive Tests', () => {
     it('should include invite acceptance URL', async () => {
       const { sendPartnerTeamInvitationEmail } = await getModule();
       await sendPartnerTeamInvitationEmail(teamInviteDetails);
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('/partner/accept-invite/team-invite-token');
     });
 
     it('should display admin role correctly', async () => {
       const { sendPartnerTeamInvitationEmail } = await getModule();
       await sendPartnerTeamInvitationEmail(teamInviteDetails);
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('Administrator');
     });
 
     it('should display member role correctly', async () => {
       const { sendPartnerTeamInvitationEmail } = await getModule();
       await sendPartnerTeamInvitationEmail({ ...teamInviteDetails, role: 'member' });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('Team Member');
     });
 
     it('should include inviter name', async () => {
       const { sendPartnerTeamInvitationEmail } = await getModule();
       await sendPartnerTeamInvitationEmail(teamInviteDetails);
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('John Manager');
     });
   });
@@ -967,7 +967,7 @@ describe('Email Service - Comprehensive Tests', () => {
         role: 'member',
         temporaryPassword: 'TempPass!456',
       });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('TempPass!456');
     });
   });
@@ -986,7 +986,7 @@ describe('Email Service - Comprehensive Tests', () => {
       await sendB2BResultsUnlockedEmail(
         'user@test.com', 'fit', 'Acme Corp', 'https://test.com/results'
       );
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('https://test.com/results');
     });
 
@@ -996,7 +996,7 @@ describe('Email Service - Comprehensive Tests', () => {
         'user@test.com', 'fit', 'Acme Corp', 'https://test.com/results',
         { amount: 999, currency: 'GBP', assessmentTypes: ['fit'], purchaseDate: new Date() }
       );
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('Payment Receipt');
     });
   });
@@ -1011,7 +1011,7 @@ describe('Email Service - Comprehensive Tests', () => {
         partnerCompanyName: 'Acme Corp',
         hasExistingAccount: true,
       });
-      expect(mockSgSend).toHaveBeenCalled();
+      expect(mockSendMail).toHaveBeenCalled();
     });
   });
 
@@ -1025,28 +1025,28 @@ describe('Email Service - Comprehensive Tests', () => {
     it('should include the verification code', async () => {
       const { sendEmailVerificationCode } = await getModule();
       await sendEmailVerificationCode('user@test.com', '987654');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('987654');
     });
 
     it('should include code in subject line', async () => {
       const { sendEmailVerificationCode } = await getModule();
       await sendEmailVerificationCode('user@test.com', '123456');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.subject).toContain('123456');
     });
 
     it('should include partner name when provided', async () => {
       const { sendEmailVerificationCode } = await getModule();
       await sendEmailVerificationCode('user@test.com', '123456', 'Acme Corp');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('Acme Corp');
     });
 
     it('should mention 10 minute expiry', async () => {
       const { sendEmailVerificationCode } = await getModule();
       await sendEmailVerificationCode('user@test.com', '123456');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('10 minutes');
     });
   });
@@ -1112,7 +1112,7 @@ describe('Email Service - Comprehensive Tests', () => {
         currency: 'gbp',
         billingType: 'subscription',
       });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.subject).toContain('Suspended');
     });
   });
@@ -1201,7 +1201,7 @@ describe('Email Service - Comprehensive Tests', () => {
         paymentUrl: 'https://test.com/billing',
         customReason: 'Suspended for review',
       });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.subject).toBe('URGENT: API Access Suspended');
     });
 
@@ -1218,7 +1218,7 @@ describe('Email Service - Comprehensive Tests', () => {
         daysOverdue: 45,
         paymentUrl: 'https://test.com/pay',
       });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('INV-002');
     });
   });
@@ -1243,7 +1243,7 @@ describe('Email Service - Comprehensive Tests', () => {
         partnerEmail: 'partner@test.com',
         dashboardUrl: 'https://test.com/dashboard',
       });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('https://test.com/dashboard');
     });
 
@@ -1255,7 +1255,7 @@ describe('Email Service - Comprehensive Tests', () => {
         partnerEmail: 'partner@test.com',
         dashboardUrl: 'https://test.com/dashboard',
       });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.subject).toBe('API Access Restored - HumanMetrix');
     });
   });
@@ -1320,14 +1320,14 @@ describe('Email Service - Comprehensive Tests', () => {
     it('should use title as subject', async () => {
       const { sendBroadcastEmail } = await getModule();
       await sendBroadcastEmail('user@test.com', 'System Update', 'Content here');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.subject).toBe('System Update');
     });
 
     it('should include content in email body', async () => {
       const { sendBroadcastEmail } = await getModule();
       await sendBroadcastEmail('user@test.com', 'Title', 'Important broadcast content');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('Important broadcast content');
     });
 
@@ -1364,7 +1364,7 @@ describe('Email Service - Comprehensive Tests', () => {
         reporterName: 'John',
         reporterEmail: 'john@test.com',
       });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.subject).toContain('HIGH');
     });
 
@@ -1378,7 +1378,7 @@ describe('Email Service - Comprehensive Tests', () => {
         reporterName: 'Jane',
         reporterEmail: 'jane@test.com',
       });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.to).toContain('daena@humanmetrix.co.uk');
       expect(sendCall.to).toContain('oskar@humanmetrix.co.uk');
     });
@@ -1393,7 +1393,7 @@ describe('Email Service - Comprehensive Tests', () => {
         reporterName: 'John',
         reporterEmail: 'john@test.com',
       });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('BUG-003');
     });
 
@@ -1476,7 +1476,7 @@ describe('Email Service - Comprehensive Tests', () => {
         html: '<p>Test</p>',
         text: 'Plain text version',
       });
-      expect(mockSgSend).toHaveBeenCalled();
+      expect(mockSendMail).toHaveBeenCalled();
     });
 
     it('should accept log context parameter', async () => {
@@ -1554,7 +1554,7 @@ describe('Email Service - Comprehensive Tests', () => {
         currentAttempts: 0,
       };
       await sendInvitationEmail(mockInv, 'Manager');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('https://custom.domain.com');
     });
 
@@ -1562,7 +1562,7 @@ describe('Email Service - Comprehensive Tests', () => {
       process.env.PRODUCTION_URL = 'https://custom.domain.com/';
       const { sendPasswordResetEmail } = await getModule();
       await sendPasswordResetEmail('user@test.com', 'John', 'token');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).not.toContain('custom.domain.com//');
     });
 
@@ -1571,7 +1571,7 @@ describe('Email Service - Comprehensive Tests', () => {
       process.env.REPLIT_DOMAINS = 'myapp.replit.app,other.replit.app';
       const { sendPasswordResetEmail } = await getModule();
       await sendPasswordResetEmail('user@test.com', 'John', 'token');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('https://myapp.replit.app');
     });
   });
@@ -1665,13 +1665,13 @@ describe('Email Service - Comprehensive Tests', () => {
       await sendPartnerAccessSuspendedEmail(
         'partner@test.com', 'Acme Corp'
       );
-      expect(mockSgSend).toHaveBeenCalled();
+      expect(mockSendMail).toHaveBeenCalled();
     });
 
     it('should include company name', async () => {
       const { sendPartnerAccessSuspendedEmail } = await getModule();
       await sendPartnerAccessSuspendedEmail('partner@test.com', 'Acme Corp');
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('Acme Corp');
     });
   });
@@ -1682,7 +1682,7 @@ describe('Email Service - Comprehensive Tests', () => {
       await sendPartnerSecurityAlert(
         'partner@test.com', 'Acme Corp', 'Suspicious API Activity', 'Unusual login activity detected'
       );
-      expect(mockSgSend).toHaveBeenCalled();
+      expect(mockSendMail).toHaveBeenCalled();
     });
 
     it('should include alert type in subject', async () => {
@@ -1690,7 +1690,7 @@ describe('Email Service - Comprehensive Tests', () => {
       await sendPartnerSecurityAlert(
         'partner@test.com', 'Acme Corp', 'API Key Compromise', 'Your key may be compromised'
       );
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.subject).toContain('API Key Compromise');
     });
   });
@@ -1701,7 +1701,7 @@ describe('Email Service - Comprehensive Tests', () => {
       await sendPartnerMonthlySummary(
         'partner@test.com', 'Acme Corp', 'January 2026', 85, 15
       );
-      expect(mockSgSend).toHaveBeenCalled();
+      expect(mockSendMail).toHaveBeenCalled();
     });
 
     it('should include month name in subject', async () => {
@@ -1709,7 +1709,7 @@ describe('Email Service - Comprehensive Tests', () => {
       await sendPartnerMonthlySummary(
         'partner@test.com', 'Acme Corp', 'February 2026', 50, 50
       );
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.subject).toContain('February 2026');
     });
   });
@@ -1720,7 +1720,7 @@ describe('Email Service - Comprehensive Tests', () => {
       await sendPartnerAutoTopUpConfirmation(
         'partner@test.com', 'Acme Corp', 50, 99.99, 'Standard Package'
       );
-      expect(mockSgSend).toHaveBeenCalled();
+      expect(mockSendMail).toHaveBeenCalled();
     });
 
     it('should include package name', async () => {
@@ -1728,7 +1728,7 @@ describe('Email Service - Comprehensive Tests', () => {
       await sendPartnerAutoTopUpConfirmation(
         'partner@test.com', 'Acme Corp', 50, 99.99, 'Premium Package'
       );
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.html).toContain('Premium Package');
     });
   });
@@ -1752,7 +1752,7 @@ describe('Email Service - Comprehensive Tests', () => {
         dueDate: new Date('2026-03-01'),
         paymentTermsDays: 30,
       });
-      expect(mockSgSend).toHaveBeenCalled();
+      expect(mockSendMail).toHaveBeenCalled();
     });
 
     it('should include invoice number in subject', async () => {
@@ -1773,7 +1773,7 @@ describe('Email Service - Comprehensive Tests', () => {
         dueDate: new Date('2026-03-01'),
         paymentTermsDays: 30,
       });
-      const sendCall = mockSgSend.mock.calls[0][0];
+      const sendCall = mockSendMail.mock.calls[0][0];
       expect(sendCall.subject).toContain('INV-2026-002');
     });
   });

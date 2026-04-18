@@ -221,7 +221,7 @@ describe('Auth Module', () => {
           cookie: expect.objectContaining({
             httpOnly: true,
             secure: true,
-            sameSite: 'none',
+            sameSite: 'lax',
           }),
         })
       );

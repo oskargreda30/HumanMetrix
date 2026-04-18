@@ -281,6 +281,7 @@ vi.mock('module', () => ({
 vi.mock('../../server/partner-routes', () => ({
   registerPartnerRoutes: vi.fn(),
   registerGuestAssessmentRoutes: vi.fn(),
+  registerShareableLinkRoutes: vi.fn(),
 }));
 
 vi.mock('../../server/ecosystem-routes', () => ({
@@ -289,6 +290,22 @@ vi.mock('../../server/ecosystem-routes', () => ({
 
 vi.mock('../../server/bug-report-routes', () => ({
   registerBugReportRoutes: vi.fn(),
+}));
+
+vi.mock('../../server/sales-funnel-routes', () => ({
+  registerSalesFunnelRoutes: vi.fn(),
+}));
+
+vi.mock('../../server/cv-routes', () => ({
+  registerCVRoutes: vi.fn(),
+}));
+
+vi.mock('../../server/leads-generation-routes', () => ({
+  registerLeadsGenerationRoutes: vi.fn(),
+}));
+
+vi.mock('../../server/social-poster-routes', () => ({
+  registerSocialPosterRoutes: vi.fn(),
 }));
 
 import { storage } from '../../server/storage';

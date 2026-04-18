@@ -54,7 +54,7 @@ describe('csrf middleware', () => {
         expect.objectContaining({
           httpOnly: false,
           secure: true,
-          sameSite: 'none',
+          sameSite: 'lax',
           path: '/',
         })
       );
@@ -166,9 +166,9 @@ describe('csrf middleware', () => {
       expect(next).toHaveBeenCalled();
     });
 
-    it('exempts /api/stripe/webhook path', () => {
+    it('exempts /api/webhooks/stripe path', () => {
       const middleware = csrfProtection();
-      const req = createMockReq({ method: 'POST', path: '/api/stripe/webhook', cookies: {} });
+      const req = createMockReq({ method: 'POST', path: '/api/webhooks/stripe', cookies: {} });
       const res = createMockRes();
       const next = vi.fn();
 
