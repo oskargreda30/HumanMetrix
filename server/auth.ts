@@ -6,6 +6,13 @@ import { storage } from "./storage";
 import { pool } from "./db";
 import { isValidEmail, isValidName, normalizeEmail } from "@shared/validation";
 
+// ARCHITECTURE NOTE — In-Memory Auth Rate Limiting
+// =================================================
+// authAttempts uses a process-local Map to track failed login attempts.
+// State resets on server restart and is NOT shared across multiple processes/replicas.
+// This is an accepted limitation for the current single-process deployment.
+// Migrate to a Redis-backed store (e.g. rate-limiter-flexible + ioredis) before
+// horizontal scaling. See server/middleware/rateLimit.ts for the full upgrade plan.
 const authAttempts = new Map<string, { count: number; resetTime: number }>();
 const AUTH_WINDOW_MS = 15 * 60 * 1000;
 const AUTH_MAX_ATTEMPTS = 15;
@@ -55,6 +62,10 @@ export function getSession() {
     console.log("⚠️  Without proper proxy configuration, session cookies will be silently dropped!");
   }
   
+  // Security note: sameSite defaults to 'lax' for standard browser sessions.
+  // It is overridden to 'none' only for embed routes (assessed in iframes on partner
+  // domains) via the setSameSiteNone() helper exported below. 'lax' blocks
+  // cross-site POST requests which is the correct default for a first-party app.
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
@@ -63,10 +74,21 @@ export function getSession() {
     cookie: {
       httpOnly: true,
       secure: true,
-      sameSite: 'none',
+      sameSite: 'lax',
       maxAge: sessionTtl,
     },
   });
+}
+
+// Helper for embed routes: override the session cookie sameSite to 'none' so that
+// cookies are sent in cross-site iframe contexts (partner-hosted embed players).
+// Call this at the top of any route handler or router that serves embedded content.
+// Usage: app.use('/embed', setSameSiteNone, yourEmbedRouter);
+export function setSameSiteNone(req: any, res: any, next: any) {
+  if (req.session?.cookie) {
+    req.session.cookie.sameSite = 'none';
+  }
+  next();
 }
 
 export async function setupAuth(app: Express) {
@@ -125,7 +147,22 @@ export async function setupAuth(app: Express) {
       const { clearFailedLoginAttempts } = await import('./security-monitor');
       clearFailedLoginAttempts(email);
 
-      // Set userId on current session (skip regenerate to avoid cookie issues)
+      // Regenerate session to prevent session fixation attacks.
+      // An attacker who pre-sets a session cookie before the victim logs in would
+      // otherwise inherit an authenticated session (OWASP Session Fixation).
+      // After regenerate(), the old session ID is invalidated and a fresh ID is issued
+      // before we write any user data into it.
+      await new Promise<void>((resolve, reject) => {
+        req.session.regenerate((err: any) => {
+          if (err) {
+            console.error("Session regenerate error during login:", err);
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
+
       (req.session as any).userId = user.id;
       
       // Explicitly save session to PostgreSQL before responding
@@ -173,6 +210,18 @@ export async function setupAuth(app: Express) {
       }
 
       await storage.clearAutoLoginToken(user.id);
+
+      // Regenerate session to prevent session fixation attacks (same reasoning as /api/login).
+      await new Promise<void>((resolve, reject) => {
+        req.session.regenerate((err: any) => {
+          if (err) {
+            console.error("Session regenerate error during auto-login:", err);
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
 
       (req.session as any).userId = user.id;
       

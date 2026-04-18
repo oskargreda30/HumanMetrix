@@ -8,6 +8,13 @@ export interface PartnerRequest extends Request {
   apiKey?: PartnerApiKey;
 }
 
+// ARCHITECTURE NOTE — In-Memory Partner API Rate Limiting
+// ========================================================
+// rateLimitMap tracks per-API-key request counts in process memory.
+// State resets on server restart and is NOT shared across multiple processes/replicas.
+// This is an accepted limitation for the current single-process deployment.
+// Migrate to a Redis-backed store (e.g. rate-limiter-flexible + ioredis) before
+// horizontal scaling. See server/middleware/rateLimit.ts for the full upgrade plan.
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
 export function generateApiKey(environment: "test" | "live" = "test"): {

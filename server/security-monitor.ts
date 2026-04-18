@@ -7,6 +7,13 @@ interface LoginAttempt {
   notifiedAt?: number;
 }
 
+// ARCHITECTURE NOTE — In-Memory Security Tracking
+// ================================================
+// failedLoginAttempts and apiCallTracker use process-local Maps.
+// State resets on server restart and is NOT shared across multiple processes/replicas.
+// This is an accepted limitation for the current single-process deployment.
+// Migrate to a Redis-backed store before horizontal scaling.
+// See server/middleware/rateLimit.ts for the full upgrade plan.
 const failedLoginAttempts = new Map<string, LoginAttempt>();
 const apiCallTracker = new Map<string, { count: number; windowStart: number; notifiedAt?: number }>();
 

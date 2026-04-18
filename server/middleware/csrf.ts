@@ -17,10 +17,14 @@ export function csrfProtection() {
     
     if (!csrfToken) {
       csrfToken = generateToken();
+      // Use 'lax' for standard browser sessions. Embed routes (served in cross-site
+      // iframes) must use 'none'; those routes should call setSameSiteNoneOnCookies()
+      // from server/auth.ts after the session and CSRF middleware run.
+      const isEmbedRoute = req.path.startsWith('/api/embed/') || req.path.startsWith('/embed/');
       res.cookie(CSRF_COOKIE_NAME, csrfToken, {
         httpOnly: false,
         secure: true,
-        sameSite: "none",
+        sameSite: isEmbedRoute ? "none" : "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: "/",
       });

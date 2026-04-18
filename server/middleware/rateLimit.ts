@@ -1,3 +1,30 @@
+// ARCHITECTURE NOTE — In-Memory Rate Limiting
+// ============================================
+// All rate limiters in this file (and the authAttempts Map in server/auth.ts and
+// the rateLimitMap in server/partner-auth.ts) use plain JavaScript Map objects stored
+// in process memory.
+//
+// Known limitations:
+//   1. State is lost on every server restart — counters reset to zero.
+//   2. State is NOT shared across processes or instances — a multi-process deployment
+//      (cluster mode, multiple Replit Deployments replicas, etc.) means each process
+//      maintains its own independent counter, effectively multiplying the allowed
+//      request rate by the number of running instances.
+//
+// This is acceptable for the current single-process deployment but must be addressed
+// before horizontal scaling.
+//
+// Recommended upgrade path (Redis-backed rate limiting):
+//   • Replace this Map with a Redis client (e.g. ioredis) using atomic INCR + EXPIRE.
+//   • A drop-in wrapper like `rate-limiter-flexible` (npm) supports Redis out of the
+//     box with the same interface shape used here.
+//   • The Redis connection string should be stored in the REDIS_URL environment secret.
+//   • All three rate-limit stores (rateLimit.ts, auth.ts authAttempts,
+//     partner-auth.ts rateLimitMap) must be migrated together for consistency.
+//
+// Until the Redis migration is complete, the in-memory stores are a known and
+// documented architectural limitation, not a silent bug.
+
 type RateLimitEntry = {
   count: number;
   resetTime: number;
