@@ -10,6 +10,7 @@ import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import ScrollToTop from "@/components/ScrollToTop";
 import { OrganizationSchema } from "@/lib/seo";
+import { CookieBanner } from "@/components/CookieBanner";
 
 // Critical path pages - load immediately for fast first paint
 import Home from "@/pages/Home";
@@ -302,6 +303,7 @@ function App() {
               <OrganizationSchema />
               <ScrollToTop />
               <Toaster />
+              <CookieBanner />
               <Router />
             </BasketProvider>
           </CurrencyProvider>

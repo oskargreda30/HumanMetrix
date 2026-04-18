@@ -2048,6 +2048,489 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       res.status(500).json({ message: "Failed to submit deletion request" });
     }
   });
+
+  // GDPR Article 15 - Subject Access Request: export all personal data for the authenticated user
+  app.get('/api/user/my-data-export', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+
+      // Fetch user profile
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Fetch assessment results
+      const results = await storage.getResultsByUser(userId);
+
+      // Fetch purchases
+      const userPurchases = await storage.getPurchasesByUser(userId);
+
+      // Fetch consent records from users table
+      const consentRecord = {
+        resultsRetentionConsent: user.resultsRetentionConsent,
+        resultsRetentionConsentDate: user.resultsRetentionConsentDate,
+      };
+
+      // Fetch audit log entries for this user
+      const userAuditLogs = await db
+        .select()
+        .from(auditLogs)
+        .where(eq(auditLogs.userId, userId))
+        .orderBy(desc(auditLogs.createdAt))
+        .limit(500);
+
+      const exportData = {
+        exportedAt: new Date().toISOString(),
+        exportVersion: "1.0",
+        subject: "GDPR Article 15 Subject Access Request",
+        profile: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        },
+        consentRecords: consentRecord,
+        assessmentResults: results.map(r => ({
+          id: r.id,
+          assessmentType: r.assessmentType,
+          status: r.status,
+          totalScore: r.totalScore,
+          percentile: r.percentile,
+          scores: r.scores,
+          startedAt: r.startedAt,
+          completedAt: r.completedAt,
+        })),
+        purchases: userPurchases.map(p => ({
+          id: p.id,
+          totalAmount: p.totalAmount,
+          currency: p.currency,
+          status: p.status,
+          createdAt: p.createdAt,
+          completedAt: p.completedAt,
+        })),
+        auditLog: userAuditLogs.map(log => ({
+          id: log.id,
+          action: log.action,
+          resourceType: log.resourceType,
+          resourceId: log.resourceId,
+          severity: log.severity,
+          createdAt: log.createdAt,
+        })),
+      };
+
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="humanmetrix-data-export-${userId.slice(0, 8)}-${new Date().toISOString().slice(0, 10)}.json"`
+      );
+      res.json(exportData);
+    } catch (error) {
+      console.error("Error generating data export:", error);
+      res.status(500).json({ message: "Failed to generate data export" });
+    }
+  });
+
+  // Stripe checkout session for guest (before signup)
+  app.post("/api/create-checkout-session-guest", async (req, res) => {
+    try {
+      const { assessmentIds, customerEmail, customerName, firstName, lastName, countryCode } = req.body;
+      
+      if (!assessmentIds || !Array.isArray(assessmentIds) || assessmentIds.length === 0) {
+        return res.status(400).json({ message: "Invalid assessment selection" });
+      }
+
+      if (!customerEmail || !customerName || !firstName || !lastName) {
+        return res.status(400).json({ message: "Customer details required" });
+      }
+
+      // Check if user already exists - they should log in instead
+      const existingUser = await storage.getUserByEmail(customerEmail);
+      if (existingUser) {
+        return res.status(400).json({ 
+          message: "An account with this email already exists. Please log in instead." 
+        });
+      }
+
+      // Get pricing tier and apply PPP/SEA launch adjustment
+      const userCountry = countryCode || 'GB';
+      const pricingTier = getPricingTier(userCountry);
+      
+      // Use canonical pricing function for ALL candidate pricing
+      const stripeCurrency = getStripeCurrencyCode(userCountry);
+      const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
+      
+      // Validate assessment IDs first
+      for (const assessmentId of assessmentIds) {
+        const normalizedId = normalizeAssessmentId(assessmentId);
+        if (!ASSESSMENT_PRICES[normalizedId]) {
+          return res.status(400).json({ message: `Invalid assessment: ${assessmentId}` });
+        }
+      }
+      
+      // Use canonical calculateCandidatePricing for consistent pricing (no bundle discount for B2C)
+      const guestItems = assessmentIds.map((id: string) => {
+        const normalizedId = normalizeAssessmentId(id);
+        return { type: normalizedId, priceInPence: ASSESSMENT_PRICES[normalizedId] || 0 };
+      });
+      const guestPricing = calculateCandidatePricing(userCountry, guestItems, BASE_FEE, {});
+      
+      // Create a single line item for Stripe using the canonical total
+      const assessmentNamesList = assessmentIds.map((id: string) => {
+        const names: Record<string, string> = {
+          "fit": "FIT", "ai_readiness": "AI Readiness",
+          "prompt_architecture": "Prompt Architecture", "aiq": "AIQ",
+        };
+        return names[normalizeAssessmentId(id)] || normalizeAssessmentId(id);
+      }).join(", ");
+      
+      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [{
+        price_data: {
+          currency: stripeCurrency,
+          product_data: {
+            name: `HumanMetrix Assessment: ${assessmentNamesList}`,
+            description: `Base computation fee + ${assessmentIds.length} assessment${assessmentIds.length > 1 ? 's' : ''}`,
+          },
+          unit_amount: guestPricing.stripeAmount,
+        },
+        quantity: 1,
+      }];
+
+      const baseUrl = getRoutesBaseUrl(req);
+      
+      const guestMeta = {
+        customerEmail,
+        customerName,
+        firstName,
+        lastName,
+        assessmentIds: JSON.stringify(assessmentIds),
+        isGuestCheckout: "true",
+        countryCode: userCountry,
+        pricingTier,
+        localCurrency: localCurrencyCode,
+      };
+      
+      const { primary: guestPrimary, fallback: guestFallback } = getPaymentProviders('airwallex');
+      
+      const airwallexGuestFn = async (): Promise<PaymentCheckoutResult> => {
+        const airwallexAmount = formatAmountForAirwallex(guestPricing.stripeAmount, stripeCurrency.toUpperCase());
+        const merchantOrderId = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+        const intent = await createPaymentIntent({
+          amount: airwallexAmount,
+          currency: stripeCurrency.toUpperCase(),
+          merchantOrderId,
+          returnUrl: `${baseUrl}/purchase/success`,
+          customerEmail,
+          description: `HumanMetrix Assessment Purchase (${assessmentIds.length} assessment${assessmentIds.length > 1 ? 's' : ''})`,
+          metadata: guestMeta,
+        });
+        return {
+          provider: 'airwallex',
+          intentId: intent.id,
+          clientSecret: intent.clientSecret,
+          amount: airwallexAmount,
+          currency: stripeCurrency.toUpperCase(),
+          returnUrl: `${baseUrl}/purchase/success`,
+        };
+      };
+      
+      const stripeGuestFn = async (): Promise<PaymentCheckoutResult> => {
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
+          adaptive_pricing: { enabled: false },
+          customer_email: customerEmail,
+          line_items: lineItems,
+          mode: "payment",
+          allow_promotion_codes: true,
+          success_url: `${baseUrl}/purchase/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${baseUrl}/dashboard?payment=cancelled`,
+          metadata: guestMeta,
+        });
+        return { provider: 'stripe', url: session.url || undefined, sessionId: session.id };
+      };
+      
+      const guestResult = await createCheckoutWithFallback(guestPrimary, guestFallback, airwallexGuestFn, stripeGuestFn);
+      
+      if (guestResult.provider === 'airwallex') {
+        res.json({
+          provider: 'airwallex',
+          airwallexEnv,
+          intentId: guestResult.intentId,
+          clientSecret: guestResult.clientSecret,
+          currency: guestResult.currency,
+          countryCode: userCountry,
+          amount: guestResult.amount,
+          returnUrl: guestResult.returnUrl,
+        });
+      } else {
+        res.json({ provider: 'stripe', url: guestResult.url });
+      }
+    } catch (error: any) {
+      console.error("Error creating guest checkout session:", error);
+      res.status(500).json({ message: "Failed to create checkout session: " + error.message });
+    }
+  });
+
+  // Free checkout for testing (using discount code "FREE")
+  app.post("/api/checkout-free", async (req, res) => {
+    try {
+      const { assessmentIds, customerEmail, customerName, firstName, lastName } = req.body;
+      
+      if (!assessmentIds || !Array.isArray(assessmentIds) || assessmentIds.length === 0) {
+        return res.status(400).json({ message: "Invalid assessment selection" });
+      }
+
+      if (!customerEmail || !customerName || !firstName || !lastName) {
+        return res.status(400).json({ message: "Customer details required" });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(customerEmail);
+      if (existingUser) {
+        return res.status(400).json({ 
+          message: "An account with this email already exists. Please log in instead." 
+        });
+      }
+
+      // Generate temporary password
+      const temporaryPassword = generateTemporaryPassword();
+      const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+
+      // Create user account
+      const newUser = await storage.createUser({
+        email: customerEmail,
+        passwordHash: hashedPassword,
+        firstName,
+        lastName,
+        role: 'candidate',
+      });
+
+      // Create purchase record with status "completed" (free checkout)
+      const purchase = await storage.createPurchase({
+        userId: newUser.id,
+        stripeSessionId: `free_${Date.now()}`, // Unique identifier for free checkout
+        totalAmount: 0, // Free
+        baseFee: 0,
+        status: "completed",
+      });
+
+      // Create purchase items with status "ready"
+      for (const assessmentId of assessmentIds) {
+        await storage.createPurchaseItem({
+          purchaseId: purchase.id,
+          assessmentType: assessmentId,
+          price: 0, // Free
+          status: "ready",
+        });
+      }
+
+      // Generate auto-login token for one-click login from email
+      const crypto = await import("crypto");
+      const autoLoginToken = crypto.randomUUID();
+      const autoLoginExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      await storage.setAutoLoginToken(newUser.id, autoLoginToken, autoLoginExpiry);
+
+      // Send welcome email with login credentials
+      try {
+        await sendWelcomeEmailWithPassword(customerEmail, `${firstName} ${lastName}`, temporaryPassword, undefined, 'post_payment', autoLoginToken);
+      } catch (emailError) {
+        console.error("✗ Failed to send welcome email:", emailError);
+      }
+
+      res.json({ 
+        success: true,
+        message: "Account created successfully! Check your email for login credentials."
+      });
+    } catch (error: any) {
+      console.error("Error processing free checkout:", error);
+      res.status(500).json({ 
+        message: "Failed to process free checkout: " + error.message 
+      });
+    }
+  });
+
+  // Create free purchase for logged-in users (payment-deferred model)
+  app.post("/api/create-free-purchase", isAuthenticated, async (req: any, res) => {
+    try {
+      const { assessmentIds } = req.body;
+      
+      if (!assessmentIds || !Array.isArray(assessmentIds) || assessmentIds.length === 0) {
+        return res.status(400).json({ message: "Invalid assessment selection" });
+      }
+
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Create purchase record with resultsAccessPaid: false (payment-deferred)
+      const purchase = await storage.createPurchase({
+        userId: userId,
+        stripeSessionId: `free_${Date.now()}_${userId}`,
+        totalAmount: 0,
+        baseFee: 0,
+        status: "completed",
+        resultsAccessPaid: false, // User can take assessments, pay later for results
+        completedAt: new Date(),
+      });
+
+      // Create purchase items with status "ready"
+      for (const assessmentId of assessmentIds) {
+        const normalizedId = normalizeAssessmentId(assessmentId);
+        
+        await storage.createPurchaseItem({
+          purchaseId: purchase.id,
+          assessmentType: normalizedId,
+          price: 0, // Free to take
+          status: "ready",
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: "Assessments added to your account! You can now take them for free.",
+        purchaseId: purchase.id,
+      });
+    } catch (error: any) {
+      console.error("Error creating free purchase:", error);
+      res.status(500).json({ message: "Failed to create free purchase: " + error.message });
+    }
+  });
+
+  // Stripe checkout session
+  app.post("/api/create-checkout-session", isAuthenticated, async (req: any, res) => {
+    try {
+      const { assessmentIds, countryCode } = req.body;
+      
+      if (!assessmentIds || !Array.isArray(assessmentIds) || assessmentIds.length === 0) {
+        return res.status(400).json({ message: "Invalid assessment selection" });
+      }
+
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Get pricing tier and apply PPP/SEA launch adjustment
+      const userCountry = countryCode || 'GB';
+      const pricingTier = getPricingTier(userCountry);
+      
+      // Use canonical pricing function for ALL candidate pricing
+      const stripeCurrency = getStripeCurrencyCode(userCountry);
+      const localCurrencyCode = COUNTRY_CURRENCY_MAP[userCountry.toUpperCase()] || 'GBP';
+      
+      // Validate assessment IDs first
+      for (const assessmentId of assessmentIds) {
+        const normalizedId = normalizeAssessmentId(assessmentId);
+        if (!ASSESSMENT_PRICES[normalizedId]) {
+          return res.status(400).json({ message: `Invalid assessment: ${assessmentId}` });
+        }
+      }
+      
+      // Use canonical calculateCandidatePricing for consistent pricing (no bundle discount for B2C)
+      const checkoutItems = assessmentIds.map((id: string) => {
+        const normalizedId = normalizeAssessmentId(id);
+        return { type: normalizedId, priceInPence: ASSESSMENT_PRICES[normalizedId] || 0 };
+      });
+      const checkoutPricingResult = calculateCandidatePricing(userCountry, checkoutItems, BASE_FEE, {});
+      
+      // Create a single line item for Stripe using the canonical total
+      const checkoutAssessmentNames = assessmentIds.map((id: string) => {
+        const names: Record<string, string> = {
+          "fit": "FIT", "ai_readiness": "AI Readiness",
+          "prompt_architecture": "Prompt Architecture", "aiq": "AIQ",
+        };
+        return names[normalizeAssessmentId(id)] || normalizeAssessmentId(id);
+      }).join(", ");
+      
+      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [{
+        price_data: {
+          currency: stripeCurrency,
+          product_data: {
+            name: `HumanMetrix Assessment: ${checkoutAssessmentNames}`,
+            description: `Base computation fee + ${assessmentIds.length} assessment${assessmentIds.length > 1 ? 's' : ''}`,
+          },
+          unit_amount: checkoutPricingResult.stripeAmount,
+        },
+        quantity: 1,
+      }];
+
+      const baseUrl = getRoutesBaseUrl(req);
+      const checkoutMeta = {
+        userId: userId.toString(),
+        assessmentIds: JSON.stringify(assessmentIds),
+        countryCode: userCountry,
+        pricingTier,
+        localCurrency: localCurrencyCode,
+      };
+      
+      const { primary, fallback } = getPaymentProviders('airwallex');
+      
+      const airwallexCheckoutFn = async (): Promise<PaymentCheckoutResult> => {
+        const airwallexAmount = formatAmountForAirwallex(checkoutPricingResult.stripeAmount, stripeCurrency.toUpperCase());
+        const merchantOrderId = `checkout_${userId}_${Date.now()}`;
+        const intent = await createPaymentIntent({
+          amount: airwallexAmount,
+          currency: stripeCurrency.toUpperCase(),
+          merchantOrderId,
+          returnUrl: `${baseUrl}/purchase/success`,
+          customerEmail: user.email,
+          description: `HumanMetrix Assessment Purchase (${assessmentIds.length} assessment${assessmentIds.length > 1 ? 's' : ''})`,
+          metadata: checkoutMeta,
+        });
+        return {
+          provider: 'airwallex',
+          intentId: intent.id,
+          clientSecret: intent.clientSecret,
+          amount: airwallexAmount,
+          currency: stripeCurrency.toUpperCase(),
+          returnUrl: `${baseUrl}/purchase/success`,
+        };
+      };
+      
+      const stripeCheckoutFn = async (): Promise<PaymentCheckoutResult> => {
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
+          adaptive_pricing: { enabled: false },
+          customer_email: user.email,
+          line_items: lineItems,
+          mode: "payment",
+          allow_promotion_codes: true,
+          success_url: `${baseUrl}/purchase/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${baseUrl}/dashboard?payment=cancelled`,
+          metadata: checkoutMeta,
+        });
+        return { provider: 'stripe', url: session.url || undefined, sessionId: session.id };
+      };
+      
+      const checkoutResult = await createCheckoutWithFallback(primary, fallback, airwallexCheckoutFn, stripeCheckoutFn);
+      
+      if (checkoutResult.provider === 'airwallex') {
+        res.json({
+          provider: 'airwallex',
+          airwallexEnv,
+          intentId: checkoutResult.intentId,
+          clientSecret: checkoutResult.clientSecret,
+          amount: checkoutResult.amount,
+          currency: checkoutResult.currency,
+          returnUrl: checkoutResult.returnUrl,
+        });
+      } else {
+        res.json({ provider: 'stripe', url: checkoutResult.url });
+      }
+    } catch (error: any) {
+      console.error("Error creating checkout session:", error);
+      res.status(500).json({ message: "Failed to create checkout session: " + error.message });
+    }
+  });
+
   // Create checkout session for partner result purchases (B2C candidates purchasing access to their partner assessment results)
   app.post("/api/create-partner-results-checkout", isAuthenticated, async (req: any, res) => {
     try {

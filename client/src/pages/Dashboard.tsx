@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, CheckCircle2, Clock, FileText, Brain, Sparkles, Code, Scale, Timer, Key, X, Eye, EyeOff, Plus, Lock, Unlock, CreditCard, PlayCircle, Bell, Trash2, Mail, Settings, LayoutDashboard, Shield, Building2 } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, FileText, Brain, Sparkles, Code, Scale, Timer, Key, X, Eye, EyeOff, Plus, Lock, Unlock, CreditCard, PlayCircle, Bell, Trash2, Mail, Settings, LayoutDashboard, Shield, Building2, Download } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -804,6 +804,21 @@ export default function Dashboard() {
                   >
                     <Bell className="h-4 w-4 mr-2" />
                     Notifications
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={(e) => e.preventDefault()}
+                    onClick={() => {
+                      const link = document.createElement("a");
+                      link.href = "/api/user/my-data-export";
+                      link.download = "";
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
+                    data-testid="menu-download-my-data"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download My Data
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onSelect={(e) => e.preventDefault()}

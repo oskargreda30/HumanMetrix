@@ -162,7 +162,7 @@ export default function Privacy() {
                   Under UK GDPR, you have the following rights:
                 </p>
                 <ul className="list-disc pl-4 md:pl-6 text-muted-foreground space-y-1 md:space-y-2 mb-3 md:mb-4">
-                  <li><strong>Right of access:</strong> Request a copy of your personal data</li>
+                  <li><strong>Right of access (Subject Access Request):</strong> Request a machine-readable copy of all personal data we hold about you. Logged-in users can exercise this right instantly by going to their <Link href="/dashboard" className="underline text-foreground hover:text-foreground/80">Dashboard</Link>, opening the Settings menu, and clicking "Download My Data". The export includes your profile, assessment results, consent records, and audit log entries in JSON format.</li>
                   <li><strong>Right to rectification:</strong> Request correction of inaccurate data</li>
                   <li><strong>Right to erasure:</strong> Request deletion of your personal data</li>
                   <li><strong>Right to restrict processing:</strong> Request limitation of data processing</li>
@@ -171,7 +171,7 @@ export default function Privacy() {
                   <li><strong>Right to withdraw consent:</strong> Withdraw consent at any time</li>
                 </ul>
                 <p className="text-muted-foreground mb-3 md:mb-4">
-                  To exercise any of these rights, please contact us at hello@humanmetrix.co.uk. We will respond within 30 days.
+                  To exercise any of these rights (or if you need assistance), please contact us at hello@humanmetrix.co.uk. We will respond within 30 days.
                 </p>
               </section>
 
@@ -184,11 +184,14 @@ export default function Privacy() {
                 </p>
                 <ul className="list-disc pl-4 md:pl-6 text-muted-foreground space-y-1 md:space-y-2 mb-3 md:mb-4">
                   <li><strong>Essential cookies:</strong> Required for the platform to function (authentication, session management)</li>
-                  <li><strong>Analytics cookies:</strong> To understand how users interact with our platform (Google Analytics)</li>
+                  <li><strong>Analytics cookies:</strong> To understand how users interact with our platform (Google Analytics, Microsoft Clarity)</li>
                   <li><strong>Marketing cookies:</strong> To measure advertising effectiveness (LinkedIn Insight Tag)</li>
                 </ul>
                 <p className="text-muted-foreground mb-3 md:mb-4">
-                  You can manage cookie preferences through your browser settings. Note that disabling essential cookies may affect platform functionality.
+                  <strong>Cookie Consent:</strong> When you first visit our platform, a cookie consent banner is displayed giving you genuine choice before any non-essential scripts are loaded. Selecting "Accept All" enables Google Analytics and LinkedIn Insight Tag tracking. Selecting "Reject Non-Essential" means those scripts are not loaded. Your choice is saved in your browser's local storage and can be changed at any time by clearing your browser data or local storage. Essential platform cookies (for authentication and session management) are always active and are not affected by your cookie preference.
+                </p>
+                <p className="text-muted-foreground mb-3 md:mb-4">
+                  You can also manage cookie preferences through your browser settings. Note that disabling essential cookies may affect platform functionality.
                 </p>
               </section>
 
