@@ -52,6 +52,14 @@ This ensures saved reports render identically to freshly generated ones, using t
 ### System Design Choices
 The architecture emphasizes modularity with clear separation of frontend and backend. It employs a scalable database schema, secure session-based authentication with CSRF protection, and a comprehensive API-driven approach. Content-aware PDF rendering ensures readability. Scalability is achieved through database optimizations, API rate limiting, request deduplication, lazy module loading, static asset caching, and HTTP Keep-Alive. Route-based code splitting using `React.lazy()` optimizes initial load times. Logging sanitizes sensitive data and input validation is centralized. Custom accessible dropdowns enhance usability. Comprehensive SEO is implemented with a centralized component, rich meta tags, structured data, sitemap, and `robots.txt`.
 
+## Documentation
+
+Technical documentation for due diligence and onboarding is maintained in the `docs/` directory:
+
+- **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** — System overview, tech stack, module map, data flow diagrams (ASCII), key design decisions, and third-party integrations summary.
+- **[docs/API.md](./docs/API.md)** — Every public-facing API endpoint: method, path, auth requirement, request body, and response shape. Grouped by resource type.
+- **[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)** — Environment variables, local dev setup, production build, Replit deployment process, database migration steps, new-developer onboarding checklist, and rollback procedure.
+
 ## External Dependencies
 - **PostgreSQL (Neon)**: Database hosting.
 - **Stripe**: Payment gateway for processing transactions.
