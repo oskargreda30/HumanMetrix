@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, Check } from "lucide-react";
 import { Link } from "wouter";
-import { Switch } from "@/components/ui/switch";
 
 const COOKIE_CONSENT_KEY = "hm_cookie_consent";
 const COOKIE_PREFS_KEY = "hm_cookie_prefs";
@@ -57,6 +56,45 @@ function loadAnalytics(prefs: CookiePreferences) {
     `;
     document.head.appendChild(liScript);
   }
+}
+
+function CookieToggle({
+  checked,
+  onChange,
+  disabled = false,
+  testId,
+}: {
+  checked: boolean;
+  onChange?: (v: boolean) => void;
+  disabled?: boolean;
+  testId?: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={() => onChange?.(!checked)}
+      data-testid={testId}
+      className={`relative inline-flex items-center h-7 w-14 rounded-full transition-colors duration-200 focus:outline-none ${
+        disabled ? "cursor-default" : "cursor-pointer"
+      } ${checked ? "bg-emerald-500" : "bg-rose-500/80"}`}
+    >
+      {/* Thumb */}
+      <span
+        className={`absolute flex items-center justify-center h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
+          checked ? "translate-x-8" : "translate-x-1"
+        }`}
+      >
+        {checked ? (
+          <Check className="h-3 w-3 text-emerald-500" strokeWidth={3} />
+        ) : (
+          <X className="h-3 w-3 text-rose-500" strokeWidth={3} />
+        )}
+      </span>
+    </button>
+  );
 }
 
 export function getStoredCookieConsent(): ConsentValue {
@@ -189,8 +227,8 @@ export function CookieBanner() {
                 sensitive information. The information they store is not sent to any
                 third parties.
               </p>
-              <div className="flex items-center gap-2">
-                <Switch checked={true} disabled className="opacity-80" />
+              <div className="flex items-center gap-2.5">
+                <CookieToggle checked={true} disabled />
                 <span className="text-xs font-medium tracking-widest uppercase text-white/70">
                   Always Enabled
                 </span>
@@ -207,11 +245,11 @@ export function CookieBanner() {
                 number of visitors and the most popular pages. Keeping this cookie
                 enabled helps us improve our platform.
               </p>
-              <div className="flex items-center gap-2">
-                <Switch
+              <div className="flex items-center gap-2.5">
+                <CookieToggle
                   checked={prefs.analytics}
-                  onCheckedChange={(v) => setPrefs((p) => ({ ...p, analytics: v }))}
-                  data-testid="toggle-cookie-analytics"
+                  onChange={(v) => setPrefs((p) => ({ ...p, analytics: v }))}
+                  testId="toggle-cookie-analytics"
                 />
                 <span className="text-xs font-medium tracking-widest uppercase text-white/70">
                   {prefs.analytics ? "Enabled" : "Disabled"}
@@ -229,11 +267,11 @@ export function CookieBanner() {
                 effectiveness of our campaigns and show relevant content. No
                 personal data is stored beyond what LinkedIn's platform collects.
               </p>
-              <div className="flex items-center gap-2">
-                <Switch
+              <div className="flex items-center gap-2.5">
+                <CookieToggle
                   checked={prefs.marketing}
-                  onCheckedChange={(v) => setPrefs((p) => ({ ...p, marketing: v }))}
-                  data-testid="toggle-cookie-marketing"
+                  onChange={(v) => setPrefs((p) => ({ ...p, marketing: v }))}
+                  testId="toggle-cookie-marketing"
                 />
                 <span className="text-xs font-medium tracking-widest uppercase text-white/70">
                   {prefs.marketing ? "Enabled" : "Disabled"}
