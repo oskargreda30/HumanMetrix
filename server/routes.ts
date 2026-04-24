@@ -17172,17 +17172,13 @@ Be thorough, professional, and reference specific data points from the assessmen
         return res.status(400).json({ message: "A partner with this email already exists" });
       }
       
-      // Check if user with this email already exists - reject to prevent silent failures
-      const existingUser = await storage.getUserByEmail(email);
-      if (existingUser) {
-        return res.status(400).json({ 
-          message: "A user with this email already exists. Please use a different email address, or contact the user to update their account." 
-        });
-      }
+      // Check if user with this email already exists
+      const existingUserForPartner = await storage.getUserByEmail(email);
       
       let finalOrganizationId = organizationId;
       let partnerUser: any = null;
       let temporaryPassword: string | null = null;
+      let isExistingUser = false;
       
       // If organizationId provided, verify it exists
       if (organizationId) {
@@ -17215,28 +17211,35 @@ Be thorough, professional, and reference specific data points from the assessmen
       const validBillingTypes = ['payg', 'subscription', 'enterprise'];
       const selectedBillingType = billingType && validBillingTypes.includes(billingType) ? billingType : 'payg';
       
-      // Generate temporary password for the partner admin user
-      temporaryPassword = generateTemporaryPassword();
-      const passwordHash = await bcrypt.hash(temporaryPassword, 10);
-      
-      // Split the name into first and last name
-      const nameParts = name.trim().split(' ');
-      const firstName = nameParts[0] || name;
-      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
-      
-      // Create partner_admin user for the partner's organisation
-      partnerUser = await storage.createUser({
-        email,
-        passwordHash,
-        firstName,
-        lastName,
-        role: 'partner_admin',
-        organizationId: finalOrganizationId,
-        profileImageUrl: null,
-      });
-      
-      createdUserId = partnerUser.id; // Track for cleanup
-      console.log(`Created admin user ${partnerUser.id} for partner organisation`);
+      if (existingUserForPartner) {
+        // Existing user (e.g. completed assessments as a candidate) — upgrade to partner_admin
+        isExistingUser = true;
+        partnerUser = existingUserForPartner;
+        await storage.updateUserRole(existingUserForPartner.id, 'partner_admin');
+        await storage.updateUserOrganization(existingUserForPartner.id, finalOrganizationId);
+        console.log(`Upgraded existing user ${partnerUser.id} (${email}) to partner_admin`);
+      } else {
+        // New user — create a fresh partner_admin account
+        temporaryPassword = generateTemporaryPassword();
+        const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+        
+        const nameParts = name.trim().split(' ');
+        const firstName = nameParts[0] || name;
+        const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
+        
+        partnerUser = await storage.createUser({
+          email,
+          passwordHash,
+          firstName,
+          lastName,
+          role: 'partner_admin',
+          organizationId: finalOrganizationId,
+          profileImageUrl: null,
+        });
+        
+        createdUserId = partnerUser.id; // Track for cleanup
+        console.log(`Created admin user ${partnerUser.id} for partner organisation`);
+      }
       
       // Calculate 7-day expiry for free tests if allocated
       const freeTestsExpiryDate = freeTestsAllocated && freeTestsAllocated > 0 
@@ -17337,10 +17340,11 @@ Be thorough, professional, and reference specific data points from the assessmen
           partnerName: name,
           companyName: companyName || name,
           email,
-          temporaryPassword: temporaryPassword!,
+          temporaryPassword,
           billingType: selectedBillingType as 'payg' | 'subscription' | 'enterprise',
           freeTestsAllocated: freeTestsAllocated || 0,
           autoLoginToken,
+          isExistingUser,
         });
         console.log(`Sent welcome email to partner ${email}`);
       } catch (emailError) {

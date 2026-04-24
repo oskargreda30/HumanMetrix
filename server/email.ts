@@ -2215,10 +2215,11 @@ export interface PartnerWelcomeDetails {
   partnerName: string;
   companyName: string;
   email: string;
-  temporaryPassword: string;
+  temporaryPassword: string | null;
   billingType: 'prepaid' | 'auto_bill' | 'invoice';
   freeTestsAllocated?: number;
   autoLoginToken?: string;
+  isExistingUser?: boolean;
 }
 
 export async function sendPartnerWelcomeEmail(details: PartnerWelcomeDetails): Promise<{ success: boolean; messageId?: string }> {
@@ -2277,15 +2278,17 @@ export async function sendPartnerWelcomeEmail(details: PartnerWelcomeDetails): P
                   <span class="credential-label">Email:</span>
                   <span class="credential-value">${details.email}</span>
                 </div>
+                ${details.temporaryPassword ? `
                 <div class="credential-row">
                   <span class="credential-label">Temporary Password:</span>
                   <span class="credential-value">${details.temporaryPassword}</span>
-                </div>
+                </div>` : ''}
               </div>
               
-              <div class="notice">
-                <strong>Important:</strong> Please change your password after your first login for security purposes.
-              </div>
+              ${details.temporaryPassword
+                ? `<div class="notice"><strong>Important:</strong> Please change your password after your first login for security purposes.</div>`
+                : `<div class="notice"><strong>Note:</strong> You already have a HumanMetrix account — use your existing password to log in. Your account has been upgraded to Partner Admin.</div>`
+              }
               
               <div style="text-align: center;">
                 <a href="${loginUrl}" class="button" style="color: white !important;">Log In to Your Account</a>
