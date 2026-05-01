@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "p9Syg8DjLDxBJgZnxaa84"
+uri = "file://attached_assets/image_1767042160343.png"
+type = "image"
+title = "Oskar Greda"
