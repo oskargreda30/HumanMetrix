@@ -57,7 +57,6 @@ const WidgetTest = lazy(() => import("@/pages/WidgetTest"));
 const PartnerPackageSuccess = lazy(() => import("@/pages/PartnerPackageSuccess"));
 const PartnerDashboard = lazy(() => import("@/pages/PartnerDashboard"));
 const AcceptPartnerInvite = lazy(() => import("@/pages/AcceptPartnerInvite"));
-const Team = lazy(() => import("@/pages/Team"));
 const B2BResults = lazy(() => import("@/pages/B2BResults"));
 const B2BResultsBundle = lazy(() => import("@/pages/B2BResultsBundle"));
 const B2BPaymentCallback = lazy(() => import("@/pages/B2BPaymentCallback"));
@@ -164,7 +163,6 @@ function Router() {
         <Route path="/terms" component={Terms} />
         <Route path="/privacy" component={Privacy} />
         <Route path="/eula" component={EULA} />
-        <Route path="/team" component={Team} />
         <Route path="/news" component={Subscribe} />
         <Route path="/developers" component={Developers} />
         <Route path="/embed/assessment" component={EmbedAssessment} />
