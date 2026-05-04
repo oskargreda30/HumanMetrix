@@ -12,7 +12,7 @@ interface CustomRole {
 
 const CUSTOM_ROLES: CustomRole[] = [
   {
-    name: "Business Development & Client Account Manager (Graduate)",
+    name: "Business Development & Client Account Manager",
     domain: "sales",
     description: `A fast-growing international logistics powerhouse is looking for high-potential Graduates to join their Cape Town hub. This is a high-octane entry point into global trade. In 30 months, they mentor graduates from foundational operators into Senior Commercial Leaders.
 
