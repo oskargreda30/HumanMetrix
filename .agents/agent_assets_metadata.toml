@@ -6,3 +6,9 @@ id = "p9Syg8DjLDxBJgZnxaa84"
 uri = "file://attached_assets/image_1767042160343.png"
 type = "image"
 title = "Oskar Greda"
+
+[[outputs]]
+id = "Bc_uSL3wLoVTS54fL-Gok"
+uri = "file://README.md"
+type = "text"
+title = "README.md"
