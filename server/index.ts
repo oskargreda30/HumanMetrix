@@ -13,6 +13,7 @@ import { configureKeepAlive, keepAliveHeaders } from "./middleware/keepAlive";
 import { csrfProtection } from "./middleware/csrf";
 import { preloadModules } from "./lazyModules";
 import { rerunMissingInsights } from "./rerun-insights";
+import { seedCustomRoles } from "./seed-custom-roles";
 
 const app = express();
 
@@ -252,6 +253,11 @@ app.use((req, res, next) => {
     
     // Preload heavy modules in production
     preloadModules();
+
+    // Seed custom job roles (JD-sourced roles) into any environment that doesn't have them yet
+    seedCustomRoles().catch(err => {
+      console.error('[CustomRoles] Unhandled error:', err.message);
+    });
 
     // Auto-rerun AI insights for any reports that were saved without them
     // (e.g. reports generated during the OpenAI outage in early April 2026)
