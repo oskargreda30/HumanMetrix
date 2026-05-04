@@ -1,34 +1,39 @@
-# HumanMetrix — AI Assessment Platform
+<p align="center">
+  <img src="client/public/assets/humanmetrix-logo.png" alt="HumanMetrix Logo" width="180" />
+</p>
 
-**Enterprise-grade psychometric assessments for an AI-driven workforce.**
+<h1 align="center">HumanMetrix</h1>
 
-HumanMetrix objectively measures behavioural skills and AI literacy to help organisations identify candidates who can thrive alongside artificial intelligence. The platform serves both B2C candidates seeking personal insight and B2B partners running assessments at scale.
+<p align="center">
+  <strong>AI-Powered Psychometric Assessments for the Modern Workforce</strong><br/>
+  Enterprise-grade assessments that objectively measure behavioural skills and AI literacy — helping organisations hire with confidence in an AI-driven world.
+</p>
 
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Assessment Types](#assessment-types)
-- [Key Features](#key-features)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-- [Environment Variables](#environment-variables)
-- [Documentation](#documentation)
-- [License](#license)
+<p align="center">
+  <a href="#overview">Overview</a>&nbsp;&bull;
+  <a href="#assessment-types">Assessments</a>&nbsp;&bull;
+  <a href="#features">Features</a>&nbsp;&bull;
+  <a href="#tech-stack">Tech Stack</a>&nbsp;&bull;
+  <a href="#architecture">Architecture</a>&nbsp;&bull;
+  <a href="#getting-started">Getting Started</a>&nbsp;&bull;
+  <a href="#environment-variables">Environment Variables</a>&nbsp;&bull;
+  <a href="#documentation">Documentation</a>&nbsp;&bull;
+  <a href="#license">License</a>
+</p>
 
 ---
 
 ## Overview
 
-Traditional psychometric tools were not designed for the AI era. HumanMetrix bridges that gap by evaluating both timeless behavioural competencies and emerging AI literacy in a single, unified platform.
+Traditional psychometric tools were not built for the AI era. HumanMetrix bridges that gap by evaluating both timeless behavioural competencies and emerging AI literacy in a single, unified platform.
 
-**Candidate journey** — take an assessment, receive a scored report, optionally share results with employers.
+**Candidate journey** — take an assessment, receive a detailed scored report, and optionally share results with employers.
 
-**Partner journey** — embed assessments in hiring pipelines, invite candidates, compare results, run AI-powered role-fit analysis, and manage billing through a self-serve dashboard.
+**Partner journey** — embed assessments into hiring pipelines, invite candidates in bulk, compare results side-by-side, run AI-powered role-fit analysis, and manage billing through a self-serve dashboard.
 
-**Admin journey** — monitor platform health, manage partners, audit billing, configure golden-set benchmarks, and publish social content.
+**Admin journey** — monitor platform health, manage partners, configure golden-set benchmarks, audit billing, and publish social content.
+
+All platform fees and base currency default to **GBP (£)** with full multi-currency and Purchasing Power Parity (PPP) support.
 
 ---
 
@@ -36,24 +41,56 @@ Traditional psychometric tools were not designed for the AI era. HumanMetrix bri
 
 | Assessment | Measures |
 |---|---|
-| **FIT** | Behavioural traits: Resilience, High Agency, Growth Mindset, Empathy & Ethics, Interpersonal Agility, Intellectual Curiosity |
-| **AI Readiness** | Nine dimensions of workplace AI literacy including Data Fluency, Critical Thinking, and Responsible AI awareness |
-| **Prompt Architecture** | Practical prompt-engineering ability across seven complexity levels |
+| **FIT** | Six behavioural traits: Resilience, High Agency, Growth Mindset, Empathy & Ethics, Interpersonal Agility, Intellectual Curiosity |
+| **AI Readiness** | Nine dimensions of workplace AI literacy — Data Fluency, Critical Thinking, Domain Expertise, Responsible AI, and more |
+| **Prompt Architecture** | Practical prompt-engineering ability scored across seven complexity levels |
 | **AIQ** | Algorithmic Integrity Quotient — ethical AI decision-making and bias awareness |
 
 ---
 
-## Key Features
+## Features
 
-- **B2C & B2B flows** — self-serve candidate assessments and embeddable partner widgets
-- **Role Fit Analysis** — AI-powered candidate-to-role alignment with gap analysis and interview questions
-- **Ecosystem Index** — team capability diagnostics with mission-statement analysis and ideal candidate profiling
-- **PDF Reports** — server-side Puppeteer rendering for pixel-perfect B2B and B2C exports; large files delivered via email
-- **Timer persistence** — assessment timers pause on tab close and resume on return, with server-side validation
-- **Multi-currency billing** — Stripe + Airwallex, PPP pricing, discount codes, PAYG / subscription / enterprise tiers
-- **Dual email** — Gmail primary with SendGrid failover; bounce tracking via SendGrid webhooks
-- **Sales funnel** — Kanban board for partner pipeline management (Lead → Closed Won/Lost)
-- **Super Admin dashboards** — revenue analytics, profit vs. AI cost, audit logs, active session management, social poster
+### B2C — Individual Candidates
+- Self-serve assessment flow with real-time progress and timer persistence
+- Comprehensive PDF report with skill radar, competency breakdowns, and development insights
+- Consent-gated result sharing with partner organisations
+- Pay-deferred model with discount codes and PPP pricing
+
+### B2B — Partner Organisations
+- Embeddable assessment widget (JavaScript SDK) with API key authentication
+- Bulk candidate invitations and hiring pipeline management
+- Side-by-side multi-candidate comparison
+- AI-powered role-fit analysis with gap scoring and tailored interview questions
+- Candidate archiving with show/hide toggle (no data deletion)
+- Webhook notifications for assessment lifecycle events
+- Three billing tiers: PAYG, Subscription, and Enterprise (invoice)
+
+### Ecosystem Index — Team Diagnostics
+- AI-powered team capability assessment with mission-statement analysis
+- FIT score aggregation across team members
+- Contextual gap analysis and ideal candidate profile generation
+- Credit-based billing (20 credits per analysis)
+
+### Platform & Admin
+- Golden-set benchmark system for GPT-5 scoring consistency
+- Super admin dashboards: revenue, AI cost analytics, SLA monitoring, audit logs
+- Sales funnel Kanban board (Lead → Contacted → Demo → Trial → Closed)
+- Automated social poster (LinkedIn & Instagram) with AI-generated content
+- Active session management with force-logout capability
+- Real-time app log streaming (CloudWatch-style) with level/source filtering
+
+### Payments & Billing
+- Stripe and Airwallex payment processing
+- Stripe webhook idempotency via event deduplication table
+- 3DS/SCA retry flow with 24-hour delay and email notification
+- Auto top-up with exponential backoff (max 3 retries)
+- Xero integration for expense tracking and revenue synchronisation
+
+### Email & Notifications
+- Gmail primary / SendGrid fallback with automatic failover
+- SendGrid webhook bounce tracking (bounced, dropped, blocked, deferred)
+- Escalating invoice payment notifications
+- Security event monitoring and critical error alerts
 
 ---
 
@@ -61,46 +98,52 @@ Traditional psychometric tools were not designed for the AI era. HumanMetrix bri
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18, TypeScript, Vite, Tailwind CSS, Shadcn UI, Wouter, TanStack Query |
-| Backend | Node.js, Express, TypeScript |
-| Database | PostgreSQL (Neon), Drizzle ORM |
-| AI | OpenAI GPT-5 |
-| Payments | Stripe, Airwallex |
-| Email | Gmail (Nodemailer), SendGrid |
-| PDF | Puppeteer (server-side headless rendering) |
-| Storage | Replit Object Storage |
-| Auth | Session-based (bcryptjs), CSRF protection |
+| **Frontend** | React 18, TypeScript, Vite, Tailwind CSS, Shadcn UI, Wouter, TanStack Query |
+| **Backend** | Node.js, Express, TypeScript |
+| **Database** | PostgreSQL (Neon), Drizzle ORM |
+| **AI** | OpenAI GPT-5 |
+| **Payments** | Stripe, Airwallex |
+| **PDF Generation** | Puppeteer (server-side headless rendering) |
+| **Storage** | Replit Object Storage |
+| **Email** | Gmail via Nodemailer (primary), SendGrid (fallback) |
+| **Auth** | Session-based (bcryptjs), CSRF protection, session fixation hardening |
+| **Accounting** | Xero (xero-node) |
 
 ---
 
-## Project Structure
+## Architecture
 
 ```
-├── client/                  # React frontend (Vite)
-│   └── src/
-│       ├── components/      # Shared UI components
-│       │   ├── admin/       # Super admin dashboard tabs
-│       │   └── partner/     # Partner dashboard tabs
-│       ├── pages/           # Route-level page components
-│       ├── contexts/        # React context providers
-│       └── lib/             # Utilities, query client, PDF helpers
-├── server/                  # Express backend
-│   ├── routes.ts            # Core API routes
-│   ├── payment-routes.ts    # Stripe / Airwallex payment endpoints
-│   ├── assessment-routes.ts # Assessment lifecycle endpoints
-│   ├── webhook-routes.ts    # Stripe & SendGrid webhook handlers
-│   ├── partner-routes.ts    # Partner-specific endpoints
-│   ├── storage.ts           # Database access layer (Drizzle)
-│   ├── email.ts             # Gmail transactional email
-│   ├── email-sendgrid.ts    # SendGrid transactional email
-│   └── middleware/          # Auth, CSRF, rate limiting
-├── shared/
-│   └── schema.ts            # Drizzle schema + Zod types (shared source of truth)
-└── docs/                    # Technical documentation
-    ├── ARCHITECTURE.md
-    ├── API.md
-    └── DEPLOYMENT.md
+client/                       React SPA (Vite)
+  src/
+    pages/                    Route-level page components
+    components/
+      admin/                  Super admin dashboard tabs
+      partner/                Partner dashboard tabs
+    contexts/                 React context providers (currency, basket)
+    lib/                      Utilities, query client, PDF helpers, SEO
+
+server/                       Express API server
+  routes.ts                   Core API routes
+  payment-routes.ts           Stripe / Airwallex payment endpoints
+  assessment-routes.ts        Assessment lifecycle endpoints
+  webhook-routes.ts           Stripe & SendGrid webhook handlers
+  partner-routes.ts           Partner-specific endpoints
+  storage.ts                  Data access layer (Drizzle + PostgreSQL)
+  email.ts                    Gmail transactional email
+  email-sendgrid.ts           SendGrid transactional email
+  middleware/                 Auth, CSRF, rate limiting, request deduplication
+
+shared/
+  schema.ts                   Drizzle schema + Zod types (single source of truth)
+
+docs/
+  ARCHITECTURE.md             System overview and design decisions
+  API.md                      Full API endpoint reference
+  DEPLOYMENT.md               Environment setup and onboarding checklist
 ```
+
+The application runs as a **single process** — Express serves the API and the Vite-built frontend from the same port (5000). Background schedulers (golden-set evaluation, billing checks, database size monitoring) run as in-process timers.
 
 ---
 
@@ -109,31 +152,29 @@ Traditional psychometric tools were not designed for the AI era. HumanMetrix bri
 ### Prerequisites
 
 - Node.js 20+
-- PostgreSQL database (connection string in `DATABASE_URL`)
+- PostgreSQL 15+
 - OpenAI API key
 - Stripe account (test and live keys)
 
 ### Installation
 
 ```bash
+# Install dependencies
 npm install
-```
 
-### Development
+# Push database schema
+npm run db:push
 
-```bash
+# Start development server (frontend + backend on port 5000)
 npm run dev
 ```
 
-This starts both the Express server and the Vite dev server on **port 5000**.
-
-### Database migrations
+### Production Build
 
 ```bash
-npm run db:push
+npm run build
+npm start
 ```
-
-Pushes the Drizzle schema to the connected database without generating migration files.
 
 ---
 
@@ -148,9 +189,9 @@ Pushes the Drizzle schema to the connected database without generating migration
 | `VITE_STRIPE_PUBLIC_KEY` | Stripe live publishable key |
 | `GMAIL_USER` | Gmail address for transactional email |
 | `GMAIL_APP_PASSWORD` | Gmail app password |
-| `SENDGRID_WEBHOOK_VERIFICATION_KEY` | SendGrid webhook signature key |
+| `SENDGRID_WEBHOOK_VERIFICATION_KEY` | SendGrid webhook signature verification key |
 
-See [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) for the full list and setup instructions.
+See [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) for the full variable list and setup instructions.
 
 ---
 
@@ -158,10 +199,10 @@ See [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) for the full list and setup ins
 
 | Document | Contents |
 |---|---|
-| [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | System overview, module map, data flow, design decisions |
+| [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | System overview, module map, data flow diagrams, design decisions |
 | [`docs/API.md`](./docs/API.md) | Every public API endpoint with request/response shapes |
 | [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) | Environment setup, production build, migration steps, onboarding checklist |
-| [`docs/LICENSES.md`](./docs/LICENSES.md) | Full open-source license inventory |
+| [`docs/LICENSES.md`](./docs/LICENSES.md) | Full open-source license inventory grouped by license type |
 
 ---
 

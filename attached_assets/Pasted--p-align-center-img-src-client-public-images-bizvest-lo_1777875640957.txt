@@ -1,0 +1,160 @@
+<p align="center">
+  <img src="client/public/images/bizvest-logo-full.png" alt="BizVest Logo" width="220" />
+</p>
+<h1 align="center">BizVest</h1>
+<p align="center">
+  <strong>Democratising Business Ownership</strong><br/>
+  A full-stack marketplace for buying, selling, and investing in businesses — powered by AI and blockchain.
+</p>
+<p align="center">
+  <a href="#features">Features</a>&nbsp;&bull;
+  <a href="#tech-stack">Tech Stack</a>&nbsp;&bull;
+  <a href="#architecture">Architecture</a>&nbsp;&bull;
+  <a href="#getting-started">Getting Started</a>&nbsp;&bull;
+  <a href="#environment-variables">Environment Variables</a>&nbsp;&bull;
+  <a href="#project-structure">Project Structure</a>&nbsp;&bull;
+  <a href="#licence">Licence</a>
+</p>
+---
+## Overview
+BizVest is a professional marketplace that connects business buyers, sellers, franchisors, and advisors on a single platform. It provides end-to-end tools for listing a business, performing due diligence, negotiating deals, and closing transactions — with AI-driven insights and Algorand blockchain tokenisation for fractional ownership.
+All platform fees and base currency are in **GBP (£)**.
+---
+## Features
+### Marketplace & Listings
+- AI-assisted business listing wizard with financial parsing and document extraction
+- Advanced search, filtering, and category-based browsing
+- Featured listings, watchlists, and personalised recommendations
+- Franchise opportunities directory with territory-based browsing
+- Real estate listings alongside business listings
+### Deal Management
+- **Deal Rooms** — private M&A workspaces with interactive milestone trackers, document sharing, and messaging
+- **Progressive Identity Disclosure** — seller identity remains confidential until NDA signing
+- **Circumvention Monitoring** — background detection of off-platform communication
+### AI & Automation
+- AI-powered due diligence reports with risk scoring and consensus engine
+- Universal document extraction (PDF, Excel, Word, images)
+- AI chat support and buyer-seller matching
+- Marketing collateral generation
+- **Deal Copilot** — white-label AI workspace with document RAG (pgvector), Stripe seat billing, and custom subdomain support
+- **AI Robo Advisor** — subscription-based portfolio management and investor risk profiling
+- **Legal AI** — multi-tenant (firm-level) matter management with event-driven agent, partner escalation, and RAG over legal documents
+### Blockchain & Tokenisation (Algorand)
+- Fractional business ownership via Algorand Standard Assets (ASA)
+- On-platform custody wallets with USDC deposit support
+- Secondary marketplace with order book trading
+- Dividend distribution with DRIP (Dividend Reinvestment Plan)
+- Governance voting and payout management
+- Token alerts (price, yield, volume) with configurable cooldowns
+### Identity & Financial Verification
+- **Veriff** KYC integration for identity verification
+- Proof of Funds (POF) system with AI-powered document scanning and admin review
+- Expiry notifications and dashboard warnings
+### Payments & Monetization
+- **Stripe** for card payments, subscriptions, and commissions
+- Tiered commission structure with promotional overrides (e.g. First 100 Sellers flat-fee promo)
+- Referral programme and featured listing upgrades
+- Blog CMS for content marketing
+### Communication
+- Real-time messaging with WebSocket notifications
+- Multi-language auto-translation in deal rooms
+- PII filtering on messages
+- Email notifications via Nodemailer (transactional + marketing outreach)
+### Administration
+- Role-based dashboards (buyer, seller, super admin, franchisor)
+- Admin analytics with revenue dashboard
+- Email outreach campaigns with merge tags, throttling, and live progress
+- Legal AI firm management (create firms, assign members by role)
+---
+## Tech Stack
+| Layer | Technology |
+|---|---|
+| **Frontend** | React, TypeScript, Vite, Tailwind CSS, Shadcn UI |
+| **Backend** | Node.js, Express, TypeScript |
+| **Database** | PostgreSQL with Drizzle ORM |
+| **Vector Search** | pgvector (embeddings for Deal Copilot & Legal AI RAG) |
+| **AI** | OpenAI (GPT-4o, GPT-4o-mini), Anthropic (Claude Sonnet) |
+| **Blockchain** | Algorand SDK (ASA tokenisation, USDC transfers) |
+| **Payments** | Stripe |
+| **Identity** | Veriff (KYC) |
+| **Storage** | Replit Object Storage |
+| **Email** | Nodemailer (SMTP) |
+| **Auth** | Session-based + JWT, TOTP 2FA |
+---
+## Architecture
+
+client/ React SPA (Vite)
+src/
+pages/ Page components (auth, browse, dashboard, deal-room, etc.)
+components/ Shared UI components (admin panels, charts, forms)
+hooks/ Custom React hooks (auth, toast, WebSocket)
+lib/ Utilities (API client, query config)
+
+server/ Express API server
+routes.ts RESTful API routes
+storage.ts Data access layer (IStorage interface + PostgreSQL impl)
+db.ts Database connection (Drizzle + pg pool)
+seed-admin.ts Schema sync & seed data on startup
+services/ Background services & schedulers
+dividend-scheduler.ts
+token-alert-checker.ts
+circumvention-monitor.ts
+buyer-matching.ts
+marketplace-emails.ts
+...
+deal-copilot/ Deal Copilot AI workspace (RAG, embeddings)
+legal-ai/ Legal AI agent (events, handlers, memory, deliverables)
+
+shared/
+schema.ts Drizzle schema + Zod validators (single source of truth)
+
+The application runs as a **single process** — Express serves the API and the Vite-built SPA from the same port. Background schedulers (dividends, token alerts, buyer matching, circumvention monitoring) run as in-process timers.
+---
+## Getting Started
+### Prerequisites
+- Node.js 20+
+- PostgreSQL 15+
+- Algorand node access (for blockchain features)
+- Stripe account (for payments)
+- Veriff account (for KYC)
+- OpenAI API key (for AI features)
+### Installation
+```bash
+# Install dependencies
+npm install
+# Push database schema
+npm run db:push
+# Start development server (frontend + backend)
+npm run dev
+
+The app will be available at http://localhost:5000.
+
+Production Build
+npm run build
+npm start
+
+Environment Variables
+Variable	Description
+DATABASE_URL	PostgreSQL connection string
+SESSION_SECRET	Express session encryption key
+STRIPE_SECRET_KEY	Stripe API secret key
+STRIPE_PUBLISHABLE_KEY	Stripe publishable key
+VERIFF_API_KEY	Veriff API key for KYC
+VERIFF_SHARED_SECRET	Veriff webhook shared secret
+OPENAI_API_KEY	OpenAI API key
+ANTHROPIC_API_KEY	Anthropic API key
+Project Structure
+Directory	Purpose
+client/src/pages/	Route-level page components
+client/src/components/	Reusable UI components and admin panels
+client/src/hooks/	Custom hooks (auth, toast, WebSocket)
+server/routes.ts	All API endpoints
+server/storage.ts	Data access interface and implementation
+server/services/	Background jobs and email services
+server/deal-copilot/	AI workspace with RAG embeddings
+server/legal-ai/	Legal matter agent system
+shared/schema.ts	Database schema (Drizzle) and Zod validation types
+Licence
+MIT
+
+That's the full contents of the README.md file. You can copy it directly.
