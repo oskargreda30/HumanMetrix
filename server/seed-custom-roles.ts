@@ -195,6 +195,86 @@ Source: RecruitMyMom (ZR_16548_JOB), Stellenbosch, Western Cape, South Africa. R
       generatedBy: "JD-analysis",
     },
   },
+  {
+    name: "Junior Auditor",
+    domain: "finance",
+    description: `An established auditing firm is seeking a meticulous and analytical Junior Auditor to join their professional services team. This role is focused on the end-to-end execution of audit assignments for a diverse portfolio of clients across multiple industries. The successful candidate will play a key role in ensuring financial transparency and compliance, working within a structured methodology to deliver high-quality reporting.
+
+Key Responsibilities:
+- Execute and manage audit engagements from planning through to completion in accordance with professional standards.
+- Perform comprehensive risk assessments and test the effectiveness of internal control systems.
+- Review financial statements to verify accuracy, transparency, and adherence to regulatory frameworks.
+- Document audit findings and prepare detailed working papers and reports to support audit opinions.
+- Identify financial misstatements or procedural risks and draft practical recommendations for client improvement.
+- Facilitate clear communication with clients to gather financial data and resolve complex queries.
+- Conduct specialised statutory audits for Public Schools, PPRA, and LPC Trust Accounts, ensuring strict legal compliance.
+- Provide mentorship and technical guidance to entry-level staff during field engagements.
+- Contribute to high-level projects including due diligence reviews and general commercial advisory services.
+
+Requirements:
+- Bachelor's degree in Accounting, Auditing, Finance, or a closely related field.
+- Minimum of 2 years of professional audit experience, ideally within an external audit firm environment.
+- Strong foundational knowledge of IFRS and ISA.
+- Proven ability to work independently while managing multiple deadlines in a high-pressure environment.
+- Exceptional analytical skills with a high degree of accuracy and attention to detail.
+
+Preferred Qualifications:
+- Experience with statutory audits (LPC Trust Accounts, PPRA, Public Schools).
+- Completion of, or progress toward, AGA(SA) or similar professional designation.
+- Microsoft Excel (Advanced), CaseWare or similar audit software.`,
+    competencies: [
+      { skillName: "Analytical Rigour & Attention to Detail", importance: 5, minimumScore: 80 },
+      { skillName: "IFRS & ISA Knowledge", importance: 5, minimumScore: 75 },
+      { skillName: "Integrity & Ethics", importance: 5, minimumScore: 80 },
+      { skillName: "Independent Working & Deadline Management", importance: 4, minimumScore: 70 },
+      { skillName: "Client Communication", importance: 4, minimumScore: 65 },
+      { skillName: "Statutory Audit Expertise", importance: 3, minimumScore: 60 },
+      { skillName: "Report Writing & Documentation", importance: 4, minimumScore: 65 },
+      { skillName: "Mentorship & Team Guidance", importance: 3, minimumScore: 55 },
+    ],
+    requiredSkillScores: {
+      fitSkills: {
+        Resilience: 68,
+        "High Agency": 66,
+        "Growth Mindset": 63,
+        "Empathy & Ethics": 74,
+        "Interpersonal Agility": 65,
+        "Intellectual Curiosity": 64,
+      },
+      aiReadinessSkills: {
+        "AI Literacy & Prompt Engineering": 59,
+        "Collaboration & Communication": 65,
+        "Data Fluency": 71,
+        "Responsible AI & Ethical Awareness": 70,
+        "Domain Expertise": 70,
+        "Adaptability & Continuous Learning": 64,
+        "Critical Thinking & Problem-Solving": 72,
+        "Technical Fundamentals": 60,
+        "Creativity & Innovation": 56,
+      },
+      skillCriticality: {
+        Resilience: "standard",
+        "High Agency": "standard",
+        "Growth Mindset": "standard",
+        "Empathy & Ethics": "critical",
+        "Interpersonal Agility": "standard",
+        "Intellectual Curiosity": "standard",
+        "AI Literacy & Prompt Engineering": "standard",
+        "Collaboration & Communication": "standard",
+        "Data Fluency": "critical",
+        "Responsible AI & Ethical Awareness": "critical",
+        "Domain Expertise": "critical",
+        "Adaptability & Continuous Learning": "standard",
+        "Critical Thinking & Problem-Solving": "critical",
+        "Technical Fundamentals": "standard",
+        "Creativity & Innovation": "standard",
+      },
+      promptArchitectureScore: 58,
+      aiqScore: 63,
+      generatedAt: "2026-05-08T09:05:45.000Z",
+      generatedBy: "JD-analysis",
+    },
+  },
 ];
 
 export async function seedCustomRoles(): Promise<void> {
