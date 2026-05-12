@@ -4475,13 +4475,29 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Check if there's an invitation record for this email
-      const invitations = await storage.getAllInvitations();
-      const wasInvited = invitations.some((inv: any) => 
-        inv.candidateEmail.toLowerCase() === user.email.toLowerCase()
+      const emailLower = user.email.toLowerCase();
+
+      // Check admin-sent invitations table
+      const allInvitations = await storage.getAllInvitations();
+      const wasInvited = allInvitations.some((inv: any) => 
+        inv.candidateEmail.toLowerCase() === emailLower
       );
+
+      // Check partner-sent invitations to get partner company name
+      let partnerName: string | null = null;
+      const partnerInvite = await db
+        .select({ companyName: partnerAccounts.companyName })
+        .from(partnerCandidateInvitations)
+        .innerJoin(partnerAccounts, eq(partnerCandidateInvitations.partnerId, partnerAccounts.id))
+        .where(eq(partnerCandidateInvitations.email, user.email))
+        .orderBy(desc(partnerCandidateInvitations.createdAt))
+        .limit(1);
+
+      if (partnerInvite.length > 0) {
+        partnerName = partnerInvite[0].companyName;
+      }
       
-      res.json({ wasInvited });
+      res.json({ wasInvited: wasInvited || partnerName !== null, partnerName });
     } catch (error) {
       console.error("Error checking invitation status:", error);
       res.status(500).json({ message: "Failed to check invitation status" });

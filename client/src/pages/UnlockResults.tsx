@@ -289,14 +289,36 @@ export default function UnlockResults() {
         <Card>
           <CardHeader className="text-center pb-4">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <Lock className="h-5 w-5 text-amber-500" />
-              <CardTitle className="text-xl">Unlock Results</CardTitle>
+              <CheckCircle className="h-5 w-5 text-green-500" />
+              <CardTitle className="text-xl">Thank You for Completing Your Assessments</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">
-              Your assessment results from <span className="font-medium">{data.partnerName}</span> are currently locked.
+              Your results have been received by{" "}
+              <span className="font-semibold text-foreground">{data.partnerName}</span>, and they will be in touch with you in due course.
             </p>
           </CardHeader>
           <CardContent>
+            {/* Partner invite context notice */}
+            <div className="bg-muted/40 rounded-lg p-4 mb-6 space-y-2 text-sm">
+              <p className="text-muted-foreground">
+                You were invited to complete these assessments by{" "}
+                <span className="font-semibold text-foreground">{data.partnerName}</span> as part of their
+                recruitment process. Please note that{" "}
+                <strong className="text-foreground">you are under no obligation to purchase</strong> — your
+                results have already been shared with {data.partnerName} directly. You are welcome to request
+                your report from them at any time.
+              </p>
+              <p className="text-muted-foreground">
+                However, HumanMetrix is required under applicable international data privacy regulations to
+                make your assessment results available to you personally. We fulfil this obligation by
+                generating a comprehensive individual report covering the full analysis of every assessment
+                you completed.
+              </p>
+              <p className="font-medium text-foreground">
+                This personalised report is available for download below at a nominal fee.
+              </p>
+            </div>
+
             {/* Completed assessments list */}
             <div className="space-y-2 mb-6">
               <h3 className="font-medium text-xs text-muted-foreground uppercase tracking-wide">Completed Assessments</h3>
@@ -507,9 +529,9 @@ export default function UnlockResults() {
           </CardContent>
         </Card>
 
-        <div className="text-center text-sm text-muted-foreground mt-6">
-          <p>Need help? Contact us at hello@humanmetrix.co.uk</p>
-        </div>
+        <p className="text-center text-sm text-muted-foreground mt-6">
+          Need help? Contact us at hello@humanmetrix.co.uk
+        </p>
       </div>
     </div>
   );

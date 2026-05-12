@@ -76,6 +76,7 @@ export function ResultsPaymentGate() {
 
   // Check if user was invited
   const wasInvited = invitationData?.wasInvited === true;
+  const invitingPartnerName: string | null = invitationData?.partnerName ?? null;
 
   const handleApplyPromo = async () => {
     const code = promoInput.trim();
@@ -178,18 +179,46 @@ export function ResultsPaymentGate() {
             <Lock className="h-8 w-8 text-primary" />
           </div>
           
-          <h1 className="text-3xl font-bold">Congratulations! All of your assessments are complete!</h1>
-          
-          <p className="text-muted-foreground text-lg">
-            You can now purchase your results below.
-          </p>
-          
-          {wasInvited && (
-            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mt-4">
-              <p className="text-sm text-blue-800 dark:text-blue-200">
-                <strong>For Invited Candidates:</strong> If you have been invited to complete our assessments as part of a hiring process, your results have been sent to your employer. If you wish to purchase your own copy of your results please do so below.
+          <h1 className="text-3xl font-bold">
+            {wasInvited
+              ? "Thank you for completing your assessments."
+              : "Congratulations! All of your assessments are complete!"}
+          </h1>
+
+          {wasInvited ? (
+            <div className="text-left space-y-3 bg-muted/40 rounded-lg p-4 mt-2">
+              <p className="text-sm text-muted-foreground">
+                Your results have been received by{" "}
+                <span className="font-semibold text-foreground">
+                  {invitingPartnerName ?? "the recruiting organisation"}
+                </span>
+                , and they will be in touch with you in due course.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                You were invited to complete these assessments by{" "}
+                <span className="font-semibold text-foreground">
+                  {invitingPartnerName ?? "the recruiting organisation"}
+                </span>{" "}
+                as part of their recruitment process. Please note that{" "}
+                <strong className="text-foreground">you are under no obligation to purchase</strong> — your results
+                have already been shared with{" "}
+                {invitingPartnerName ?? "the recruiting organisation"} directly. You are welcome to request
+                your report from them at any time.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                However, HumanMetrix is required under applicable international data privacy regulations
+                to make your assessment results available to you personally. We fulfil this obligation by
+                generating a comprehensive individual report covering the full analysis of every assessment
+                you completed.
+              </p>
+              <p className="text-sm font-medium text-foreground">
+                This personalised report is available for download below at a nominal fee.
               </p>
             </div>
+          ) : (
+            <p className="text-muted-foreground text-lg">
+              You can now purchase your results below.
+            </p>
           )}
         </div>
 
