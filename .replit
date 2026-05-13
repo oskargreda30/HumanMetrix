@@ -9,7 +9,7 @@ packages = ["imagemagick", "pandoc", "chromium", "glib", "nss", "nspr", "at-spi2
 [deployment]
 deploymentTarget = "autoscale"
 build = ["sh", "-c", "./scripts/run-tests-before-deploy.sh && npm run build"]
-run = ["npm", "run", "start"]
+run = ["sh", "scripts/migrate-and-start.sh"]
 
 [[ports]]
 localPort = 5000
