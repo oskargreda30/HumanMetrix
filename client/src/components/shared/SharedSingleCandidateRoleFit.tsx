@@ -191,22 +191,45 @@ export function SharedSingleCandidateRoleFit({ config, staticData }: SharedSingl
         forceRefreshRef.current = false;
       }
       const response = await fetch(url, { credentials: 'include' });
-      if (!response.ok) throw new Error('Failed to fetch role alignment');
+      if (!response.ok) {
+        let message = 'Failed to fetch role alignment';
+        try {
+          const body = await response.json();
+          if (body?.message) message = body.message;
+        } catch {}
+        const err: any = new Error(message);
+        err.status = response.status;
+        throw err;
+      }
       return response.json();
     },
     enabled: !isStaticMode && !!selectedCandidate && !!selectedRole && analysisTriggered,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
+    retry: false,
   });
 
   useEffect(() => {
-    if (alignmentError && isRerunning) {
+    if (alignmentError) {
+      const err = alignmentError as any;
+      const isCreditsError = err?.status === 402;
       setIsRerunning(false);
       setLoadingTransitionComplete(true);
-      toast({ title: "Re-run failed", description: "Failed to regenerate analysis. Please try again.", variant: "destructive" });
+      setAnalysisTriggered(false);
+      if (isCreditsError) {
+        toast({
+          title: "Insufficient credits",
+          description: err.message || "You don't have enough credits to run this analysis. Please purchase more credits.",
+          variant: "destructive",
+        });
+      } else if (isRerunning) {
+        toast({ title: "Re-run failed", description: err.message || "Failed to regenerate analysis. Please try again.", variant: "destructive" });
+      } else {
+        toast({ title: "Analysis failed", description: err.message || "Failed to run role alignment analysis. Please try again.", variant: "destructive" });
+      }
     }
-  }, [alignmentError, isRerunning]);
+  }, [alignmentError]);
 
   useEffect(() => {
     if (alignment && (alignment as any).cached === false) {
