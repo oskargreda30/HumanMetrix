@@ -130,13 +130,14 @@ const formatReportDate = (dateStr: string) => {
   return `${datePart} at ${timePart}`;
 };
 
-export function SharedSingleCandidateRoleFit({ config, staticData }: SharedSingleCandidateRoleFitProps) {
+export function SharedSingleCandidateRoleFit({ config, onNavigateToBilling, staticData }: SharedSingleCandidateRoleFitProps) {
   const isStaticMode = !!staticData;
   const [selectedCandidate, setSelectedCandidate] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
   const [analysisTriggered, setAnalysisTriggered] = useState(false);
   const [loadingTransitionComplete, setLoadingTransitionComplete] = useState(false);
   const [isRerunning, setIsRerunning] = useState(false);
+  const [creditsError, setCreditsError] = useState<string | null>(null);
   const forceRefreshRef = useRef(false);
   const { toast } = useToast();
 
@@ -220,15 +221,14 @@ export function SharedSingleCandidateRoleFit({ config, staticData }: SharedSingl
       setLoadingTransitionComplete(true);
       setAnalysisTriggered(false);
       if (isCreditsError) {
-        toast({
-          title: "Insufficient credits",
-          description: err.message || "You don't have enough credits to run this analysis. Please purchase more credits.",
-          variant: "destructive",
-        });
-      } else if (isRerunning) {
-        toast({ title: "Re-run failed", description: err.message || "Failed to regenerate analysis. Please try again.", variant: "destructive" });
+        setCreditsError(err.message || "You don't have enough credits to run this analysis. Please top up your account to continue.");
       } else {
-        toast({ title: "Analysis failed", description: err.message || "Failed to run role alignment analysis. Please try again.", variant: "destructive" });
+        setCreditsError(null);
+        if (isRerunning) {
+          toast({ title: "Re-run failed", description: err.message || "Failed to regenerate analysis. Please try again.", variant: "destructive" });
+        } else {
+          toast({ title: "Analysis failed", description: err.message || "Failed to run role alignment analysis. Please try again.", variant: "destructive" });
+        }
       }
     }
   }, [alignmentError]);
@@ -244,12 +244,14 @@ export function SharedSingleCandidateRoleFit({ config, staticData }: SharedSingl
     setSelectedCandidate(value);
     setAnalysisTriggered(false);
     setLoadingTransitionComplete(false);
+    setCreditsError(null);
   };
 
   const handleRoleChange = (value: string) => {
     setSelectedRole(value);
     setAnalysisTriggered(false);
     setLoadingTransitionComplete(false);
+    setCreditsError(null);
   };
 
   const handleAnalyzeRoleFit = () => {
@@ -487,6 +489,10 @@ export function SharedSingleCandidateRoleFit({ config, staticData }: SharedSingl
           )}
         </CardContent>
       </Card>
+      )}
+
+      {creditsError && (
+        <InsufficientCreditsPrompt message={creditsError} onNavigateToBilling={onNavigateToBilling} />
       )}
 
       {!isStaticMode && analysisTriggered && (!loadingTransitionComplete || isRerunning) && (

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { AnalysisLoadingScreen } from "@/components/shared/AnalysisLoadingScreen";
+import { InsufficientCreditsPrompt } from "@/components/shared/InsufficientCreditsPrompt";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -252,9 +253,10 @@ interface PartnerMultiCandidateRoleFitTabProps {
   staticData?: {
     comparison: MultiCandidateComparison;
   };
+  onNavigateToBilling?: () => void;
 }
 
-export default function PartnerMultiCandidateRoleFitTab({ staticData }: PartnerMultiCandidateRoleFitTabProps = {}) {
+export default function PartnerMultiCandidateRoleFitTab({ staticData, onNavigateToBilling }: PartnerMultiCandidateRoleFitTabProps = {}) {
   const isStaticMode = !!staticData;
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
   const [selectedRole, setSelectedRole] = useState("");
@@ -401,8 +403,10 @@ export default function PartnerMultiCandidateRoleFitTab({ staticData }: PartnerM
         const errorData = await res.json().catch(() => ({ message: "Failed to generate comparison" }));
         // If the error contains insufficient data candidates, throw with that data
         const error = new Error(errorData.message || "Failed to generate comparison") as Error & { 
+          status?: number;
           insufficientDataCandidates?: InsufficientDataError['insufficientDataCandidates'] 
         };
+        (error as any).status = res.status;
         if (errorData.insufficientDataCandidates) {
           (error as any).insufficientDataCandidates = errorData.insufficientDataCandidates;
         }
@@ -422,18 +426,19 @@ export default function PartnerMultiCandidateRoleFitTab({ staticData }: PartnerM
         toast({ title: "Comparison generated successfully" });
       }
     },
-    onError: (error: Error & { insufficientDataCandidates?: InsufficientDataError['insufficientDataCandidates'] }) => {
+    onError: (error: Error & { status?: number; insufficientDataCandidates?: InsufficientDataError['insufficientDataCandidates'] }) => {
       forceRefreshRef.current = false;
       setIsRerunning(false);
-      // Check if this is an insufficient data error that should show a dialog
-      if (error.insufficientDataCandidates && error.insufficientDataCandidates.length > 0) {
+      // Credits error — show inline prompt instead of getting stuck
+      if ((error as any).status === 402) {
+        setCreditsError(error.message || "You don't have enough credits to run this comparison. Please top up your account to continue.");
+      } else if (error.insufficientDataCandidates && error.insufficientDataCandidates.length > 0) {
         setInsufficientDataError({
           message: error.message,
           insufficientDataCandidates: error.insufficientDataCandidates,
         });
         setInsufficientDataDialogOpen(true);
       } else {
-        // Regular error - show toast
         toast({
           title: "Unable to compare",
           description: error.message || "Failed to generate comparison. Please try again.",
@@ -648,6 +653,7 @@ export default function PartnerMultiCandidateRoleFitTab({ staticData }: PartnerM
               <label className="text-sm font-medium">Job Role</label>
               <Select value={selectedRole} onValueChange={(value) => {
                 setSelectedRole(value);
+                setCreditsError(null);
                 compareMutation.reset();
               }}>
                 <SelectTrigger data-testid="select-multi-role">
@@ -750,6 +756,10 @@ export default function PartnerMultiCandidateRoleFitTab({ staticData }: PartnerM
           </div>
         </CardContent>
       </Card>
+      )}
+
+      {creditsError && (
+        <InsufficientCreditsPrompt message={creditsError} onNavigateToBilling={onNavigateToBilling} />
       )}
 
       {!isStaticMode && compareMutation.isPending && (

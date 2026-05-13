@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { InsufficientCreditsPrompt } from "@/components/shared/InsufficientCreditsPrompt";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -154,6 +155,7 @@ export function EcosystemWorkflow({
   // Payment state
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const ECOSYSTEM_BASE_PRICE_PENCE = 1500; // £15 base price
+  const [creditsError, setCreditsError] = useState<string | null>(null);
 
   // Form states
   const [missionStatement, setMissionStatement] = useState("");
@@ -734,11 +736,8 @@ export function EcosystemWorkflow({
           await refetchProject();
         } catch (error: any) {
           const errorData = await error?.json?.().catch(() => null);
-          toast({
-            title: "Insufficient credits",
-            description: errorData?.error || error.message || "Could not consume credits. Please ensure you have enough credits.",
-            variant: "destructive",
-          });
+          const msg = errorData?.error || error.message || "Could not consume credits. Please ensure you have enough credits.";
+          setCreditsError(msg);
           return;
         } finally {
           setIsProcessingPayment(false);
@@ -782,13 +781,15 @@ export function EcosystemWorkflow({
         setIsRegenerating(false);
         const msg = error?.message || "Could not regenerate analysis.";
         const isCreditsError = msg.toLowerCase().includes("insufficient credits");
-        toast({
-          title: isCreditsError ? "Insufficient credits" : "Regeneration failed",
-          description: isCreditsError 
-            ? msg 
-            : "The AI analysis could not be completed. No credits were charged. Please try again.",
-          variant: "destructive",
-        });
+        if (isCreditsError) {
+          setCreditsError(msg);
+        } else {
+          toast({
+            title: "Regeneration failed",
+            description: "The AI analysis could not be completed. No credits were charged. Please try again.",
+            variant: "destructive",
+          });
+        }
       }
     } finally {
       setIsGenerating(false);
@@ -1036,6 +1037,10 @@ export function EcosystemWorkflow({
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {creditsError && (
+        <InsufficientCreditsPrompt message={creditsError} onNavigateToBilling={onNavigateToBilling} />
       )}
 
       {/* RESULTS VIEW: If analysis is complete and not editing, show results */}

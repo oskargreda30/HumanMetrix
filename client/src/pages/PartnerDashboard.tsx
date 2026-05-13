@@ -5226,6 +5226,13 @@ export default function PartnerDashboard() {
               <PartnerAnalysisTab 
                 creditsRemaining={partner.remaining} 
                 onNavigateToEcosystem={() => { setActiveTab('ecosystem'); scrollToContent(); }}
+                onNavigateToBilling={() => {
+                  setActiveTab('billing');
+                  setBillingExpandedSection('purchase');
+                  setTimeout(() => {
+                    document.querySelector('[data-testid="text-buy-credits-title"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }, 200);
+                }}
                 initialSubTab={analysisSubTab}
                 onSubTabChange={setAnalysisSubTab}
               />

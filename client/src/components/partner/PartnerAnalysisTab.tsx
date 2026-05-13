@@ -99,7 +99,7 @@ export default function PartnerAnalysisTab({ creditsRemaining, onNavigateToEcosy
 
       {subTab === 'role-fit' && (
         <div className="space-y-6">
-          <PartnerRoleFitTab />
+          <PartnerRoleFitTab onNavigateToBilling={onNavigateToBilling} />
         </div>
       )}
     </div>
