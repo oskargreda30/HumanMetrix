@@ -262,6 +262,7 @@ export default function PartnerMultiCandidateRoleFitTab({ staticData }: PartnerM
   const [insufficientDataDialogOpen, setInsufficientDataDialogOpen] = useState(false);
   const [insufficientDataError, setInsufficientDataError] = useState<InsufficientDataError | null>(null);
   const [isRerunning, setIsRerunning] = useState(false);
+  const [creditsError, setCreditsError] = useState<string | null>(null);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [incompleteCandidates, setIncompleteCandidates] = useState<Array<{
     id: string;

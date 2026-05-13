@@ -16,7 +16,11 @@ const partnerConfig: SharedRoleFitConfig = {
   contextType: 'partner',
 };
 
-export default function PartnerRoleFitTab() {
+interface PartnerRoleFitTabProps {
+  onNavigateToBilling?: () => void;
+}
+
+export default function PartnerRoleFitTab({ onNavigateToBilling }: PartnerRoleFitTabProps) {
   return (
     <Tabs defaultValue="single" className="w-full">
       <div className="flex justify-center mb-6">
@@ -40,10 +44,10 @@ export default function PartnerRoleFitTab() {
         </TabsList>
       </div>
       <TabsContent value="single" className="mt-6 data-[state=inactive]:hidden" forceMount>
-        <SharedSingleCandidateRoleFit config={partnerConfig} />
+        <SharedSingleCandidateRoleFit config={partnerConfig} onNavigateToBilling={onNavigateToBilling} />
       </TabsContent>
       <TabsContent value="multi" className="mt-6 data-[state=inactive]:hidden" forceMount>
-        <PartnerMultiCandidateRoleFitTab />
+        <PartnerMultiCandidateRoleFitTab onNavigateToBilling={onNavigateToBilling} />
       </TabsContent>
     </Tabs>
   );

@@ -14,11 +14,12 @@ const partnerIndividualReportConfig: SharedIndividualReportConfig = {
 interface PartnerAnalysisTabProps {
   creditsRemaining?: number;
   onNavigateToEcosystem?: () => void;
+  onNavigateToBilling?: () => void;
   initialSubTab?: string | null;
   onSubTabChange?: (subtab: string | null) => void;
 }
 
-export default function PartnerAnalysisTab({ creditsRemaining, onNavigateToEcosystem, initialSubTab = null, onSubTabChange }: PartnerAnalysisTabProps) {
+export default function PartnerAnalysisTab({ creditsRemaining, onNavigateToEcosystem, onNavigateToBilling, initialSubTab = null, onSubTabChange }: PartnerAnalysisTabProps) {
   const [subTab, setSubTabRaw] = useState<string | null>(initialSubTab);
 
   const setSubTab = (value: string | null) => {

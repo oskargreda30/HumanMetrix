@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Target, CheckCircle2, AlertCircle, AlertTriangle, TrendingUp, TrendingDown, Download, Award, Brain, Sparkles, Clock, ShieldAlert, User, ChevronUp, RefreshCw } from "lucide-react";
 import { AnalysisLoadingScreen } from "./AnalysisLoadingScreen";
+import { InsufficientCreditsPrompt } from "./InsufficientCreditsPrompt";
 import { Badge } from "@/components/ui/badge";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -109,6 +110,7 @@ type RoleAlignment = {
 
 interface SharedSingleCandidateRoleFitProps {
   config: SharedRoleFitConfig;
+  onNavigateToBilling?: () => void;
   staticData?: {
     alignment: RoleAlignment;
     candidateData: { user: { id: string; email: string; firstName?: string; lastName?: string }; results?: any[] };
