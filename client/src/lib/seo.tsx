@@ -40,7 +40,12 @@ export function SEO({
     ? `${title} | HumanMetrix` 
     : defaultSEO.title;
   
-  const canonicalUrl = canonical ? `${BASE_URL}${canonical}` : undefined;
+  // Always compute a canonical — use explicit prop or derive from current path.
+  // This ensures only one canonical tag exists per page (react-helmet-async manages it).
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
+  const canonicalUrl = canonical
+    ? `${BASE_URL}${canonical}`
+    : `${BASE_URL}${currentPath}`;
 
   return (
     <Helmet>
@@ -49,7 +54,7 @@ export function SEO({
       <meta name="keywords" content={keywords} />
       <meta name="author" content={author} />
       
-      {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+      <link rel="canonical" href={canonicalUrl} />
       {noindex && <meta name="robots" content="noindex, nofollow" />}
       {!noindex && <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />}
       
@@ -60,7 +65,7 @@ export function SEO({
       <meta property="og:type" content={ogType} />
       <meta property="og:site_name" content="HumanMetrix" />
       <meta property="og:locale" content="en_GB" />
-      {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
+      <meta property="og:url" content={canonicalUrl} />
       {publishedTime && <meta property="article:published_time" content={publishedTime} />}
       {modifiedTime && <meta property="article:modified_time" content={modifiedTime} />}
       {section && <meta property="article:section" content={section} />}

@@ -1,6 +1,6 @@
 # HumanMetrix Robots.txt
-# https://humanmetrix.co.uk
-# Last updated: 2026-01-15
+# https://www.humanmetrix.co.uk
+# Last updated: 2026-05-08
 
 User-agent: *
 Allow: /
@@ -59,7 +59,7 @@ Disallow: /*?*
 Crawl-delay: 1
 
 # Sitemap location
-Sitemap: https://humanmetrix.co.uk/sitemap.xml
+Sitemap: https://www.humanmetrix.co.uk/sitemap.xml
 
 # Googlebot - no crawl delay for better indexing
 User-agent: Googlebot

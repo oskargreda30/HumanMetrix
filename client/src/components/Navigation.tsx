@@ -246,6 +246,9 @@ export default function Navigation({ assessmentMode = false }: NavigationProps) 
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="text-cyan-300 hover:text-white hover:bg-cyan-500/20"
                 data-testid="button-mobile-menu"
+                aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+                aria-expanded={mobileMenuOpen}
+                aria-controls="mobile-nav-menu"
               >
                 {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </Button>
