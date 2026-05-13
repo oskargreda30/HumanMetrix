@@ -17494,8 +17494,8 @@ Be thorough, professional, and reference specific data points from the assessmen
       
       const { 
         name, companyName, email, monthlyQuota, pricePerAssessment, isActive, stripeCustomerId, organizationId,
-        billingType, paymentProvider, freeTestsAllocated, paymentTermsDays, invoiceNotes, invoiceContact,
-        billingCycleAnchor, prepaidBalance, stripePaymentMethodId,
+        billingType, paymentProvider, freeTestsAllocated, freeTestsExpiresAt, paymentTermsDays, invoiceNotes, invoiceContact,
+        billingCycleAnchor, prepaidBalance, prepaidCreditsExpiresAt, stripePaymentMethodId,
         country, phone, currency, notifyPartner
       } = req.body;
       
@@ -17543,8 +17543,10 @@ Be thorough, professional, and reference specific data points from the assessmen
         billingType: selectedBillingType,
         paymentProvider: selectedPaymentProvider,
         freeTestsAllocated: freeTestsAllocated !== undefined ? freeTestsAllocated : partner.freeTestsAllocated,
+        freeTestsExpiresAt: freeTestsExpiresAt !== undefined ? (freeTestsExpiresAt ? new Date(freeTestsExpiresAt) : null) : partner.freeTestsExpiresAt,
         // Prepaid fields
         prepaidBalance: prepaidBalance !== undefined ? prepaidBalance : partner.prepaidBalance,
+        prepaidCreditsExpiresAt: prepaidCreditsExpiresAt !== undefined ? (prepaidCreditsExpiresAt ? new Date(prepaidCreditsExpiresAt) : null) : partner.prepaidCreditsExpiresAt,
         // Auto-bill fields
         stripePaymentMethodId: stripePaymentMethodId !== undefined ? stripePaymentMethodId : partner.stripePaymentMethodId,
         billingCycleAnchor: billingCycleAnchor !== undefined ? billingCycleAnchor : partner.billingCycleAnchor,

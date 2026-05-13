@@ -262,6 +262,7 @@ export default function PartnersTab() {
   const [editPricePerAssessment, setEditPricePerAssessment] = useState(500);
   const [editAdditionalFreeTests, setEditAdditionalFreeTests] = useState(0);
   const [editCurrentFreeTests, setEditCurrentFreeTests] = useState(0);
+  const [editFreeTestsExpiresAt, setEditFreeTestsExpiresAt] = useState("");
   const [editBillingType, setEditBillingType] = useState<"payg" | "subscription" | "enterprise">("payg");
   const [editBillingCycleAnchor, setEditBillingCycleAnchor] = useState(1);
   const [editPaymentTerms, setEditPaymentTerms] = useState(30);
@@ -311,6 +312,11 @@ export default function PartnersTab() {
     setEditPricePerAssessment(partner.pricePerAssessment || 500);
     setEditCurrentFreeTests(partner.freeTestsAllocated || 0);
     setEditAdditionalFreeTests(0); // Start with 0 additional credits
+    setEditFreeTestsExpiresAt(
+      partner.freeTestsExpiresAt
+        ? new Date(partner.freeTestsExpiresAt).toISOString().split('T')[0]
+        : ""
+    );
     setEditBillingType((partner.billingType as "payg" | "subscription" | "enterprise") || "payg");
     setEditBillingCycleAnchor(partner.billingCycleAnchor || 1);
     setEditPaymentTerms(partner.paymentTermsDays || 30);
@@ -438,6 +444,7 @@ export default function PartnersTab() {
       currency: editCurrency,
       pricePerAssessment: editPricePerAssessment,
       freeTestsAllocated: newFreeTestsAllocated,
+      freeTestsExpiresAt: editFreeTestsExpiresAt || null,
       billingType: editBillingType,
       billingCycleAnchor: editBillingCycleAnchor,
       paymentTermsDays: editPaymentTerms,
@@ -2561,6 +2568,20 @@ export default function PartnersTab() {
                       New total: {editCurrentFreeTests + editAdditionalFreeTests} free credits
                     </p>
                   )}
+                  <div className="mt-2">
+                    <Label htmlFor="edit-free-tests-expires" className="text-xs text-slate-400">Credits Expiry Date</Label>
+                    <Input
+                      id="edit-free-tests-expires"
+                      type="date"
+                      value={editFreeTestsExpiresAt}
+                      onChange={(e) => setEditFreeTestsExpiresAt(e.target.value)}
+                      className="bg-slate-800 border-slate-600 mt-1"
+                      data-testid="input-edit-free-tests-expires"
+                    />
+                    {editFreeTestsExpiresAt && new Date(editFreeTestsExpiresAt) < new Date() && (
+                      <p className="text-xs text-red-400 mt-1">This date is in the past — credits are currently expired.</p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2 mt-4">
