@@ -6319,5 +6319,58 @@
     "createdBy": null,
     "createdAt": "2026-02-06T18:08:38.905Z",
     "updatedAt": "2026-02-06T18:08:38.905Z"
+  },
+  {
+    "id": "db54caba-b5b7-4755-b927-d0a5d07888ad",
+    "name": "Virtual Property Rentals Assistant",
+    "description": "A remote professional who supports property managers and real estate companies with end-to-end rental operations. Key responsibilities include managing tenant inquiries and applications, processing rental references and credit checks, coordinating maintenance and vendor scheduling, collecting and posting rental payments, assessing late fees, preparing financial reports and month-end accounting, maintaining property listings across platforms such as Airbnb and Property24, scheduling and documenting move-out inspections, and providing comprehensive diary and email management for property owners. Works independently in a fully remote setup requiring strong communication, organisational skills, and familiarity with property management software such as PayProp, TPN, or Buildium.",
+    "domain": "operations",
+    "competencies": [],
+    "requiredSkillScores": {
+      "aiqScore": 58,
+      "fitSkills": {
+        "Resilience": 65,
+        "High Agency": 63,
+        "Growth Mindset": 60,
+        "Empathy & Ethics": 68,
+        "Interpersonal Agility": 70,
+        "Intellectual Curiosity": 55
+      },
+      "generatedAt": "2026-05-14T07:58:43.668Z",
+      "generatedBy": "manual",
+      "skillCriticality": {
+        "Resilience": "standard",
+        "High Agency": "standard",
+        "Data Fluency": "standard",
+        "Growth Mindset": "standard",
+        "Domain Expertise": "critical",
+        "Empathy & Ethics": "standard",
+        "Interpersonal Agility": "critical",
+        "Intellectual Curiosity": "standard",
+        "Technical Fundamentals": "standard",
+        "Creativity & Innovation": "standard",
+        "Collaboration & Communication": "critical",
+        "AI Literacy & Prompt Engineering": "standard",
+        "Adaptability & Continuous Learning": "standard",
+        "Responsible AI & Ethical Awareness": "standard",
+        "Critical Thinking & Problem-Solving": "standard"
+      },
+      "aiReadinessSkills": {
+        "Data Fluency": 62,
+        "Domain Expertise": 72,
+        "Technical Fundamentals": 58,
+        "Creativity & Innovation": 50,
+        "Collaboration & Communication": 74,
+        "AI Literacy & Prompt Engineering": 52,
+        "Adaptability & Continuous Learning": 65,
+        "Responsible AI & Ethical Awareness": 55,
+        "Critical Thinking & Problem-Solving": 62
+      },
+      "promptArchitectureScore": 55
+    },
+    "isCustom": false,
+    "createdBy": null,
+    "createdAt": "2026-05-14T07:58:43.668Z",
+    "updatedAt": "2026-05-14T07:58:43.668Z"
   }
 ]
