@@ -10,6 +10,12 @@ echo "Migrations complete."
 echo ""
 
 echo "=========================================="
+echo "Seeding job roles..."
+echo "=========================================="
+npx tsx scripts/seed-roles.ts
+echo ""
+
+echo "=========================================="
 echo "Starting production server..."
 echo "=========================================="
 npm run start
