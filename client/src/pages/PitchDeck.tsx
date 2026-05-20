@@ -258,7 +258,7 @@ function Slide4() {
     "B2B partner model — embeddable widget + REST API",
     "PDF report generation (server-side, Puppeteer)",
     "Multi-currency + PPP pricing (Stripe & Airwallex)",
-    "SEA-localised content, 100+ predefined roles",
+    "UK/South Africa localised content, 100+ predefined roles",
   ];
 
   return (
