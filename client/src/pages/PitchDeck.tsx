@@ -760,7 +760,7 @@ function Slide9() {
                 <img
                   src={m.photo}
                   alt={m.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover object-top"
                 />
               </div>
               <div>
@@ -777,8 +777,8 @@ function Slide9() {
           <div className="rounded-xl border border-white/10 bg-white/4 px-5 py-4">
             <div className="text-white/40 text-xs font-semibold tracking-widest uppercase mb-3">Psychometrics Advisor</div>
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full overflow-hidden border border-white/15 flex-shrink-0">
-                <img src={marianaPhotoUrl} alt="Dr Mariana Costa e Silva-Pickett" className="w-full h-full object-cover object-top" />
+              <div className="w-14 h-14 rounded-full overflow-hidden border border-white/15 flex-shrink-0">
+                <img src={marianaPhotoUrl} alt="Dr Mariana Costa e Silva-Pickett" className="w-full h-full object-cover" style={{ objectPosition: "50% 15%" }} />
               </div>
               <div>
                 <div className="text-white text-sm font-bold">Dr Mariana Costa e Silva-Pickett</div>
