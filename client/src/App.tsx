@@ -75,6 +75,7 @@ const PublicAssessmentLink = lazy(() => import("@/pages/PublicAssessmentLink"));
 const B2COnboarding = lazy(() => import("@/pages/B2COnboarding"));
 const UnlockResults = lazy(() => import("@/pages/UnlockResults"));
 const SendCV = lazy(() => import("@/pages/SendCV"));
+const PitchDeck = lazy(() => import("@/pages/PitchDeck"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 function PageLoader() {
@@ -220,6 +221,7 @@ function Router() {
           )}
         </Route>
         <Route path="/partner/accept-invite/:token" component={AcceptPartnerInvite} />
+        <Route path="/pitch" component={PitchDeck} />
         <Route path="/invite/:token" component={GuestInvite} />
         <Route path="/join/:token" component={PublicAssessmentLink} />
         <Route path="/unlock-results" component={UnlockResults} />
