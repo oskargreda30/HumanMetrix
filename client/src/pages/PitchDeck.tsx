@@ -2,6 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, ArrowRight, Check, Circle, Download } from "lucide-react";
 import { generateAndDownloadPitchPptx } from "@/lib/generatePitchPptx";
 
+import oskarPhotoUrl from "@assets/image_1767042160343.png";
+import quinPhotoUrl from "@assets/image_1767042222400.png";
+import daenaPhotoUrl from "@assets/image_1767042182791.png";
+import reynalynPhotoUrl from "@assets/image_1767042236125.png";
+import marianaPhotoUrl from "@assets/ChatGPT_Image_Feb_4,_2026,_04_05_01_AM_1770177910667.png";
+
 const TOTAL_SLIDES = 10;
 
 function SlideCounter({ current, total }: { current: number; total: number }) {
@@ -297,7 +303,7 @@ function Slide4() {
                   { val: "4", label: "Live assessments" },
                   { val: "100+", label: "Predefined roles" },
                   { val: "3-tier", label: "B2B billing model" },
-                  { val: "SEA", label: "Launch market" },
+                  { val: "UK/SA", label: "Launch market" },
                 ].map((s) => (
                   <div key={s.label}>
                     <div className="text-2xl font-black text-cyan-400">{s.val}</div>
@@ -415,7 +421,7 @@ function Slide6() {
         "Core 4 assessments (FIT, AI Readiness, Prompt Architecture, AIQ)",
         "B2B partner model, embeddable widget + API",
         "Ecosystem Index — team diagnostics",
-        "SEA launch market",
+        "UK & South Africa launch markets",
       ],
     },
     {
@@ -454,7 +460,7 @@ function Slide6() {
         "Unified profile: hiring baseline + appraisal trajectory + health index",
         "Anonymised industry benchmarking database",
         "Enterprise white-label offering",
-        "UK & US market expansion",
+        "Aus & US market expansion",
       ],
     },
   ];
@@ -507,12 +513,12 @@ function Slide6() {
 // ── Slide 7: Market Opportunity ──────────────────────────────────────────────
 function Slide7() {
   return (
-    <div className="relative flex flex-col h-full px-8 md:px-20 py-16 overflow-hidden">
+    <div className="relative flex flex-col h-full px-8 md:px-20 py-14 overflow-hidden">
       <div className="absolute inset-0 bg-[#0f172a]" />
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-blue-600/5 blur-3xl" />
+        <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-blue-600/5 blur-3xl" />
       </div>
-      <div className="relative z-10 flex flex-col h-full gap-8">
+      <div className="relative z-10 flex flex-col h-full gap-6">
         <div>
           <p className="text-cyan-400 text-sm font-semibold tracking-widest uppercase mb-2">Market Opportunity</p>
           <h2 className="text-4xl md:text-5xl font-black text-white">
@@ -520,40 +526,70 @@ function Slide7() {
             <span className="text-white/50">With almost no credible AI-native player.</span>
           </h2>
         </div>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="relative flex items-center justify-center">
-            {/* TAM */}
-            <div className="absolute w-80 h-80 md:w-96 md:h-96 rounded-full border-2 border-white/10 bg-white/2 flex items-end justify-center pb-4">
-              <div className="text-center">
-                <div className="text-white/25 text-xs font-semibold tracking-widest uppercase">TAM</div>
-                <div className="text-white font-black text-xl">$28B</div>
-                <div className="text-white/35 text-xs">Global HR Tech</div>
-              </div>
-            </div>
-            {/* SAM */}
-            <div className="absolute w-56 h-56 md:w-64 md:h-64 rounded-full border-2 border-blue-500/30 bg-blue-600/8 flex items-end justify-center pb-4">
-              <div className="text-center">
-                <div className="text-blue-400/60 text-xs font-semibold tracking-widest uppercase">SAM</div>
-                <div className="text-blue-300 font-black text-xl">$3B</div>
-                <div className="text-white/35 text-xs">AI Assessment</div>
-                <div className="text-blue-400/60 text-xs">14% CAGR</div>
-              </div>
-            </div>
-            {/* SOM */}
-            <div className="w-28 h-28 md:w-36 md:h-36 rounded-full border-2 border-cyan-400/50 bg-cyan-500/15 flex items-center justify-center">
-              <div className="text-center px-2">
-                <div className="text-cyan-400/70 text-xs font-semibold tracking-widest uppercase">SOM</div>
-                <div className="text-cyan-300 font-black text-lg">SEA</div>
-                <div className="text-white/45 text-xs leading-snug">+ ANZ<br />Year 1–2</div>
-              </div>
+
+        {/* Middle: circles left + labels right */}
+        <div className="flex-1 flex items-center gap-10 md:gap-16">
+          {/* Circle visual — pure decoration, no text inside */}
+          <div className="flex-shrink-0 flex items-center justify-center" style={{ width: 240, height: 240 }}>
+            <div className="relative flex items-center justify-center" style={{ width: 240, height: 240 }}>
+              {/* TAM outer */}
+              <div className="absolute rounded-full border-2 border-white/15 bg-white/2" style={{ width: 240, height: 240 }} />
+              {/* SAM middle */}
+              <div className="absolute rounded-full border-2 border-blue-500/40 bg-blue-600/10" style={{ width: 168, height: 168 }} />
+              {/* SOM inner */}
+              <div className="absolute rounded-full border-2 border-cyan-400/60 bg-cyan-500/20" style={{ width: 90, height: 90 }} />
             </div>
           </div>
+
+          {/* Label stack */}
+          <div className="flex flex-col gap-5 flex-1">
+            {[
+              {
+                ring: "TAM",
+                val: "£28B",
+                label: "Total Addressable Market",
+                sub: "Global HR tech & talent assessment",
+                dot: "bg-white/30",
+                valColor: "text-white",
+              },
+              {
+                ring: "SAM",
+                val: "£3B",
+                label: "Serviceable Addressable Market",
+                sub: "AI-readiness & psychometric assessment · 14% CAGR",
+                dot: "bg-blue-400",
+                valColor: "text-blue-300",
+              },
+              {
+                ring: "SOM",
+                val: "UK / South Africa",
+                label: "Initial Target Market",
+                sub: "UK & South Africa Year 1–2 · Aus/US expansion Year 3",
+                dot: "bg-cyan-400",
+                valColor: "text-cyan-300",
+              },
+            ].map((m) => (
+              <div key={m.ring} className="flex items-start gap-4">
+                <div className={`mt-1.5 w-2.5 h-2.5 rounded-full flex-shrink-0 ${m.dot}`} />
+                <div>
+                  <div className="flex items-baseline gap-3 flex-wrap">
+                    <span className={`text-2xl md:text-3xl font-black ${m.valColor}`}>{m.val}</span>
+                    <span className="text-white/40 text-xs font-bold tracking-widest uppercase">{m.ring}</span>
+                  </div>
+                  <div className="text-white text-sm font-semibold mt-0.5">{m.label}</div>
+                  <div className="text-white/40 text-xs mt-0.5">{m.sub}</div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
+
+        {/* Bottom stat cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
-            { val: "$28B", label: "Total Addressable Market", sub: "Global HR tech & talent assessment", color: "text-white/70" },
-            { val: "$3B", label: "Serviceable Addressable Market", sub: "AI-readiness & psychometric assessment, 14% CAGR", color: "text-blue-400" },
-            { val: "SEA+", label: "Initial Target Market", sub: "SEA & ANZ early mover, UK/US expansion Year 3", color: "text-cyan-400" },
+            { val: "£28B", label: "Total Addressable Market", sub: "Global HR tech & talent assessment", color: "text-white/70" },
+            { val: "£3B", label: "Serviceable Addressable Market", sub: "AI-readiness & psychometric assessment, 14% CAGR", color: "text-blue-400" },
+            { val: "UK/SA", label: "Initial Target Market", sub: "UK & South Africa early mover, Aus/US expansion Year 3", color: "text-cyan-400" },
           ].map((m) => (
             <div key={m.label} className="bg-white/4 border border-white/8 rounded-xl px-5 py-4">
               <div className={`text-2xl font-black ${m.color}`}>{m.val}</div>
@@ -677,17 +713,37 @@ function Slide8() {
 
 // ── Slide 9: Team ────────────────────────────────────────────────────────────
 function Slide9() {
-  const placeholders = [
-    { role: "Co-Founder & CEO", focus: "AI strategy, psychometrics, product vision", initials: "YN" },
-    { role: "Co-Founder & CTO", focus: "Platform architecture, ML systems, scalability", initials: "YN" },
-    { role: "Head of Science", focus: "Assessment design, validity research, normative data", initials: "YN" },
-    { role: "Head of Growth", focus: "B2B sales, partner acquisition, SEA market", initials: "YN" },
+  const mainTeam = [
+    {
+      name: "Oskar Greda",
+      role: "Founder & CEO",
+      focus: "HR strategy, organisational growth, psychometrics",
+      photo: oskarPhotoUrl,
+    },
+    {
+      name: "Quin van Kerken",
+      role: "Co-Founder & Head of BD",
+      focus: "Enterprise sales, business scaling, UK/SA markets",
+      photo: quinPhotoUrl,
+    },
+    {
+      name: "Daena McClintock",
+      role: "Co-Founder & Head of Technology",
+      focus: "Full-stack, AI/ML, blockchain, financial systems",
+      photo: daenaPhotoUrl,
+    },
+    {
+      name: "Reynalyn Rodriguez",
+      role: "Content & Socials Manager",
+      focus: "Brand communications, content strategy, social media",
+      photo: reynalynPhotoUrl,
+    },
   ];
 
   return (
-    <div className="relative flex flex-col h-full px-8 md:px-20 py-16 overflow-hidden">
+    <div className="relative flex flex-col h-full px-8 md:px-20 py-14 overflow-hidden">
       <div className="absolute inset-0 bg-[#0f172a]" />
-      <div className="relative z-10 flex flex-col h-full gap-8">
+      <div className="relative z-10 flex flex-col h-full gap-6">
         <div>
           <p className="text-cyan-400 text-sm font-semibold tracking-widest uppercase mb-2">Team</p>
           <h2 className="text-4xl md:text-5xl font-black text-white">
@@ -695,34 +751,48 @@ function Slide9() {
             <span className="text-white/50">both AI and human behaviour.</span>
           </h2>
         </div>
+
+        {/* Main team row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-5 flex-1 items-start">
-          {placeholders.map((p) => (
-            <div key={p.role} className="flex flex-col items-center text-center gap-3">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/30 to-blue-600/30 border border-white/10 flex items-center justify-center">
-                <span className="text-xl font-black text-white/30 tracking-tighter">?</span>
+          {mainTeam.map((m) => (
+            <div key={m.name} className="flex flex-col items-center text-center gap-3">
+              <div className="w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-white/15 flex-shrink-0">
+                <img
+                  src={m.photo}
+                  alt={m.name}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div>
-                <div className="text-white/30 text-xs font-semibold tracking-widest uppercase leading-snug">[Your Name]</div>
-                <div className="text-cyan-400 text-xs font-bold mt-1">{p.role}</div>
-                <div className="text-white/35 text-xs mt-1 leading-snug">{p.focus}</div>
+                <div className="text-white font-bold text-sm leading-snug">{m.name}</div>
+                <div className="text-cyan-400 text-xs font-semibold mt-0.5 leading-snug">{m.role}</div>
+                <div className="text-white/40 text-xs mt-1 leading-snug">{m.focus}</div>
               </div>
             </div>
           ))}
         </div>
+
+        {/* Advisor + Domain row */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="rounded-xl border border-white/10 bg-white/4 px-5 py-4">
-            <div className="text-white/40 text-xs font-semibold tracking-widest uppercase mb-2">Domain Expertise</div>
-            <div className="flex flex-wrap gap-2">
-              {["Psychometrics", "AI / LLMs", "HR Technology", "Behavioural Science", "SaaS Scaling", "SEA Markets"].map((tag) => (
-                <span key={tag} className="px-2.5 py-0.5 rounded-full bg-white/8 text-white/55 text-xs border border-white/10">{tag}</span>
-              ))}
+            <div className="text-white/40 text-xs font-semibold tracking-widest uppercase mb-3">Psychometrics Advisor</div>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full overflow-hidden border border-white/15 flex-shrink-0">
+                <img src={marianaPhotoUrl} alt="Dr Mariana Costa e Silva-Pickett" className="w-full h-full object-cover object-top" />
+              </div>
+              <div>
+                <div className="text-white text-sm font-bold">Dr Mariana Costa e Silva-Pickett</div>
+                <div className="text-white/45 text-xs mt-0.5 leading-snug">
+                  Assessment design, construct validation & behavioural science · City, St George's, University of London
+                </div>
+              </div>
             </div>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/4 px-5 py-4">
-            <div className="text-white/40 text-xs font-semibold tracking-widest uppercase mb-2">Advisors</div>
-            <div className="space-y-1.5">
-              {["[Advisor — Industry / Academia]", "[Advisor — Enterprise HR]", "[Advisor — AI Research]"].map((a) => (
-                <div key={a} className="text-white/30 text-xs">{a}</div>
+            <div className="text-white/40 text-xs font-semibold tracking-widest uppercase mb-2">Domain Expertise</div>
+            <div className="flex flex-wrap gap-2">
+              {["Psychometrics", "AI / LLMs", "HR Technology", "Behavioural Science", "SaaS Scaling", "UK & SA Markets"].map((tag) => (
+                <span key={tag} className="px-2.5 py-0.5 rounded-full bg-white/8 text-white/55 text-xs border border-white/10">{tag}</span>
               ))}
             </div>
           </div>
@@ -735,16 +805,15 @@ function Slide9() {
 // ── Slide 10: The Ask ────────────────────────────────────────────────────────
 function Slide10() {
   const useOfFunds = [
-    { label: "Product & Engineering", pct: 40, color: "bg-cyan-400" },
-    { label: "Sales & Go-to-Market", pct: 40, color: "bg-blue-500" },
-    { label: "Team & Operations", pct: 20, color: "bg-indigo-500" },
+    { label: "Sales & Go-to-Market", pct: 65, color: "bg-cyan-400" },
+    { label: "Team & Operations", pct: 35, color: "bg-indigo-500" },
   ];
 
   const milestones = [
-    "X enterprise partners signed",
-    "£Y ARR achieved",
-    "Z assessments completed",
-    "UK / ANZ market entered",
+    "10 enterprise partners signed",
+    "£10,000 ARR achieved",
+    "1,000+ assessments completed",
+    "Aus & US markets entered",
   ];
 
   return (
@@ -767,8 +836,8 @@ function Slide10() {
           <div className="space-y-5">
             <div className="rounded-2xl border border-cyan-500/40 bg-cyan-500/8 p-6 text-center">
               <div className="text-white/40 text-xs font-semibold tracking-widest uppercase mb-2">Raising</div>
-              <div className="text-5xl font-black text-cyan-300">[AMOUNT]</div>
-              <div className="text-white/40 text-sm mt-1">Seed / Pre-Series A</div>
+              <div className="text-5xl font-black text-cyan-300">£450K</div>
+              <div className="text-white/40 text-sm mt-1">Seed Round</div>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/4 p-5 space-y-4">
               <div className="text-white/40 text-xs font-semibold tracking-widest uppercase">Use of Funds</div>
@@ -842,7 +911,15 @@ export default function PitchDeck() {
   const handleDownload = useCallback(async () => {
     setDownloading(true);
     try {
-      await generateAndDownloadPitchPptx();
+      await generateAndDownloadPitchPptx({
+        teamPhotos: {
+          oskar: oskarPhotoUrl,
+          quin: quinPhotoUrl,
+          daena: daenaPhotoUrl,
+          reynalyn: reynalynPhotoUrl,
+          mariana: marianaPhotoUrl,
+        },
+      });
     } finally {
       setDownloading(false);
     }
