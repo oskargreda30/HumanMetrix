@@ -499,7 +499,7 @@ function buildSlide10(prs: pptxgen) {
   slide.addText("THIS ROUND GETS US TO", { x: 7.38, y: 2.4, w: 5.2, h: 0.25, fontSize: 7.5, bold: true, color: GRAY, charSpacing: 2 });
   bullet(slide, [
     "10 enterprise partners signed",
-    "£10,000 ARR achieved",
+    "£50–70K ARR achieved",
     "1,000+ assessments completed",
     "Aus & US markets entered",
   ], 7.38, 2.78, 5.2, LIGHT, 10);

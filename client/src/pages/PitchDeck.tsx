@@ -778,7 +778,12 @@ function Slide9() {
             <div className="text-white/40 text-xs font-semibold tracking-widest uppercase mb-3">Psychometrics Advisor</div>
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-full overflow-hidden border border-white/15 flex-shrink-0">
-                <img src={marianaPhotoUrl} alt="Dr Mariana Costa e Silva-Pickett" className="w-full h-full object-cover" style={{ objectPosition: "50% 15%" }} />
+                <img
+                  src={marianaPhotoUrl}
+                  alt="Dr Mariana Costa e Silva-Pickett"
+                  className="w-full h-full object-cover"
+                  style={{ transform: "scale(1.85)", transformOrigin: "50% 38%" }}
+                />
               </div>
               <div>
                 <div className="text-white text-sm font-bold">Dr Mariana Costa e Silva-Pickett</div>
@@ -811,7 +816,7 @@ function Slide10() {
 
   const milestones = [
     "10 enterprise partners signed",
-    "£10,000 ARR achieved",
+    "£50–70K ARR achieved",
     "1,000+ assessments completed",
     "Aus & US markets entered",
   ];
