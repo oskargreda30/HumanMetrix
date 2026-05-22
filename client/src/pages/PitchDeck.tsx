@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { ChevronLeft, ChevronRight, ArrowRight, Check, Circle, Download } from "lucide-react";
-import { generateAndDownloadPitchPptx } from "@/lib/generatePitchPptx";
+import { ChevronLeft, ChevronRight, ArrowRight, Check, Circle } from "lucide-react";
 
 import oskarPhotoUrl from "@assets/image_1767042160343.png";
 import quinPhotoUrl from "@assets/image_1767042222400.png";
@@ -894,7 +893,6 @@ const slides = [Slide1, Slide2, Slide3, Slide4, Slide5, Slide6, Slide7, Slide8, 
 
 export default function PitchDeck() {
   const [current, setCurrent] = useState(1);
-  const [downloading, setDownloading] = useState(false);
 
   const goNext = useCallback(() => setCurrent((c) => Math.min(c + 1, TOTAL_SLIDES)), []);
   const goPrev = useCallback(() => setCurrent((c) => Math.max(c - 1, 1)), []);
@@ -913,23 +911,6 @@ export default function PitchDeck() {
     return () => window.removeEventListener("keydown", handler);
   }, [goNext, goPrev]);
 
-  const handleDownload = useCallback(async () => {
-    setDownloading(true);
-    try {
-      await generateAndDownloadPitchPptx({
-        teamPhotos: {
-          oskar: oskarPhotoUrl,
-          quin: quinPhotoUrl,
-          daena: daenaPhotoUrl,
-          reynalyn: reynalynPhotoUrl,
-          mariana: marianaPhotoUrl,
-        },
-      });
-    } finally {
-      setDownloading(false);
-    }
-  }, []);
-
   const CurrentSlide = slides[current - 1];
 
   return (
@@ -939,17 +920,6 @@ export default function PitchDeck() {
       </div>
       <SlideCounter current={current} total={TOTAL_SLIDES} />
       <NavButtons current={current} total={TOTAL_SLIDES} onPrev={goPrev} onNext={goNext} />
-
-      {/* Download PPTX button — fixed bottom-left */}
-      <button
-        onClick={handleDownload}
-        disabled={downloading}
-        data-testid="button-download-pptx"
-        className="fixed bottom-8 left-8 z-50 flex items-center gap-2 px-4 py-2 rounded-xl border border-white/20 bg-white/5 backdrop-blur-sm text-white/70 text-sm font-medium hover:bg-white/10 hover:text-white hover:border-white/35 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-      >
-        <Download className="w-3.5 h-3.5" />
-        {downloading ? "Generating…" : "Download PPTX"}
-      </button>
     </div>
   );
 }
