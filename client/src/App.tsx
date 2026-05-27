@@ -18,6 +18,7 @@ import Login from "@/pages/Login";
 
 // Lazy load all other pages for faster initial bundle
 const About = lazy(() => import("@/pages/About"));
+const Team = lazy(() => import("@/pages/Team"));
 const Assessments = lazy(() => import("@/pages/Assessments"));
 const ForCandidates = lazy(() => import("@/pages/ForCandidates"));
 const Pricing = lazy(() => import("@/pages/Pricing"));
@@ -100,6 +101,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/about" component={About} />
+        <Route path="/team" component={Team} />
         <Route path="/assessments" component={Assessments} />
         <Route path="/for-employers">
           {() => <Redirect to="/" />}
