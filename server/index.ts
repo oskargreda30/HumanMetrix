@@ -212,6 +212,12 @@ app.use((req, res, next) => {
     console.error('[Global Error Handler]', err);
   });
 
+  // SEO prerender middleware for bots / AI crawlers - serves rich static
+  // HTML to user-agents like GPTBot, ChatGPT-User, ClaudeBot, PerplexityBot,
+  // Googlebot, etc. so they can read site content despite the SPA.
+  const { registerSeoPrerender } = await import("./seo-prerender");
+  registerSeoPrerender(app);
+
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
