@@ -271,10 +271,138 @@ const ROUTE_CONTENT: Record<string, RouteContent> = {
     ],
   },
 
+  "/methodology": {
+    title: "Assessment Methodology - How HumanMetrix Scoring Works",
+    description:
+      "How HumanMetrix measures behavioural fit and AI literacy: attribution-based scoring with GPT-5 against a benchmarked golden set, situational-judgement design for predictive validity, role customisation and regional relevance.",
+    h1: "How HumanMetrix Measures What Matters",
+    intro:
+      "HumanMetrix combines validated psychometric design with AI-powered scoring to measure behavioural fit and practical AI literacy. This page explains how our assessments are built, scored and kept consistent, fair and relevant to the role and region you are hiring for.",
+    keywords:
+      "assessment methodology, psychometric scoring, situational judgement test, predictive validity, golden set benchmark, AI scoring, role customisation, regional benchmarking",
+    sections: [
+      {
+        heading: "The scoring model",
+        body: "Each response is evaluated using an attribution-based model that maps what a candidate says and does to the underlying competency it demonstrates. Scoring is performed by GPT-5 against a benchmarked golden set of reference answers, so an equivalent answer receives an equivalent score every time, removing the drift and rater subjectivity that affect manual scoring.",
+      },
+      {
+        heading: "Short by design, built for prediction",
+        body: "Rather than long inventories of repetitive items, HumanMetrix uses a situational-judgement framework that concentrates measurement on the behaviours and reasoning most predictive of on-the-job performance. The result is a far shorter experience for the candidate that still produces a rich, defensible signal for the hiring team.",
+      },
+      {
+        heading: "The four assessments",
+        body: "FIT measures core behavioural competencies such as agency, curiosity, resilience and growth mindset. AI Readiness measures practical AI fluency. Prompt Architecture measures advanced prompt-engineering and structured reasoning. The Algorithmic Integrity Quotient (AIQ) measures ethical AI understanding, bias awareness and responsible deployment.",
+      },
+      {
+        heading: "Built for every role, not just tech",
+        body: "The same methodology extends to non-technical and safety-critical fields including engineering, construction, healthcare, operations and frontline services. Competencies and thresholds are calibrated to the demands of the role rather than a one-size-fits-all template.",
+      },
+      {
+        heading: "Tailored to your roles",
+        body: "A role is defined by its competencies, each with an importance weighting and a minimum score, together with a job description. Our AI uses that definition to generate the required skill-score profile and to drive role-fit matching, so assessments can be tailored to specialist positions and to roles not yet in the standard library, informed directly by the job description you provide.",
+      },
+      {
+        heading: "Regional relevance and fairness",
+        body: "HumanMetrix supports regionally localised assessment content, and benchmarking, currency and Purchasing Power Parity pricing adapt by country, so candidates are compared against relevant peer cohorts. Scoring against a fixed golden set means every candidate is held to the same standard, and results are reproducible rather than dependent on who is marking.",
+      },
+    ],
+  },
+
+  "/security": {
+    title: "Trust Center - Security, Privacy & Compliance | HumanMetrix",
+    description:
+      "HumanMetrix Trust Center: data protection aligned with GDPR and POPIA, encryption in transit and at rest, access controls, data residency and responsible AI. How we keep candidate and partner data secure.",
+    h1: "Security, Privacy & Compliance",
+    intro:
+      "Assessment data is sensitive. HumanMetrix is built to protect candidate and partner information at every stage, with encryption, strong access controls, data-protection-by-design and a responsible approach to AI.",
+    keywords:
+      "security, data protection, GDPR, POPIA, encryption, data residency, privacy, compliance, trust center, responsible AI",
+    sections: [
+      {
+        heading: "Data protection and privacy",
+        body: "HumanMetrix is built to support GDPR compliance and is designed to align with POPIA for South African operations. We practise data minimisation, collecting only what is needed to deliver and score assessments, and candidate results are gated behind explicit consent before they can be shared.",
+      },
+      {
+        heading: "Encryption",
+        body: "All traffic is encrypted in transit using TLS/HTTPS, and data is stored on managed cloud infrastructure that encrypts data at rest. Sensitive fields are never exposed in client code, and application logging is sanitised to keep credentials and personal data out of logs.",
+      },
+      {
+        heading: "Access and authentication",
+        body: "Accounts are protected with session-based authentication and CSRF protection, with role-based access separating candidate, partner and administrator capabilities. Partner API access is authenticated with scoped API keys that can be managed and revoked from the partner dashboard.",
+      },
+      {
+        heading: "Infrastructure and data residency",
+        body: "HumanMetrix runs on managed, elastic cloud infrastructure with a managed PostgreSQL database and object storage for report assets. For enterprise customers with specific data-residency or regional-hosting requirements, we can discuss appropriate arrangements during onboarding.",
+      },
+      {
+        heading: "Responsible AI",
+        body: "AI scoring is anchored to a benchmarked golden set for consistency, and our Algorithmic Integrity Quotient keeps bias awareness, fairness and responsible deployment central to the product. We treat the same standards we assess candidates against as standards for how we build.",
+      },
+    ],
+  },
+
+  "/partnerships": {
+    title: "Partnerships & White-Label - Channel Partner Programme | HumanMetrix",
+    description:
+      "Partner with HumanMetrix: white-label assessments, revenue-share and reseller arrangements, tiered partner billing and full API access for recruitment agencies, consultancies and HR-tech platforms.",
+    h1: "Partner With HumanMetrix",
+    intro:
+      "Build AI-powered assessment into your own offering. Whether you are a recruitment agency, a consultancy or an HR-tech platform, our partner programme lets you deliver HumanMetrix assessments under your brand, on your terms.",
+    keywords:
+      "partnerships, white-label assessments, channel partner, revenue share, reseller, recruitment agency, HR tech integration, partner API",
+    sections: [
+      {
+        heading: "White-label delivery",
+        body: "Offer assessments under your own brand and embed them into your existing candidate experience, so the flow feels native to your product or service.",
+      },
+      {
+        heading: "Revenue share and reselling",
+        body: "Our channel programme supports revenue-share and reseller arrangements with tiered partner billing, so you can build assessment into your own commercial model.",
+      },
+      {
+        heading: "API and widget integration",
+        body: "Partners can embed assessments with the JavaScript widget and SDK, automate flows through the REST API with scoped API-key authentication, and receive webhook notifications when candidates complete assessments.",
+      },
+      {
+        heading: "Fits your tech stack",
+        body: "HumanMetrix is designed to slot into the tools agencies already use. The REST API and webhooks let you bridge sourcing and assessment data into your wider hiring workflow, so candidate results flow to where your team already works.",
+      },
+    ],
+  },
+
+  "/enterprise": {
+    title: "Enterprise & High-Volume Assessment | HumanMetrix",
+    description:
+      "Enterprise assessment from HumanMetrix: flat-rate subscriptions, high-volume candidate handling, elastic-scale infrastructure, API automation and dedicated onboarding for large employers and BPOs.",
+    h1: "Assessment at Enterprise Scale",
+    intro:
+      "For organisations hiring at volume, HumanMetrix offers predictable enterprise pricing, infrastructure that scales with demand and the automation to assess thousands of candidates without adding manual overhead.",
+    keywords:
+      "enterprise assessment, high volume hiring, flat rate subscription, bulk candidate testing, scalable assessment, BPO recruitment, enterprise pricing, SLA",
+    sections: [
+      {
+        heading: "Flat-rate subscriptions",
+        body: "Move from per-assessment pricing to a flat-rate enterprise subscription, so budgeting stays predictable however many candidates you assess.",
+      },
+      {
+        heading: "High-volume handling",
+        body: "Assess large candidate pools, ideal for high-growth employers and BPOs running continuous, large-scale hiring campaigns.",
+      },
+      {
+        heading: "Elastic infrastructure",
+        body: "Built on elastic cloud infrastructure that scales with demand, with API rate limiting, caching and performance optimisations that keep the experience fast under load.",
+      },
+      {
+        heading: "Dedicated onboarding and support",
+        body: "Enterprise customers receive hands-on onboarding and a direct line to our team, with service-level expectations agreed up front, while keeping the same consistent scoring, regionally normalised benchmarking and data-protection posture as every other customer.",
+      },
+    ],
+  },
+
   "/developers": {
     title: "Developers - API, Widget & Webhooks | HumanMetrix",
     description:
-      "HumanMetrix developer resources. Embed assessments with our JavaScript widget, integrate via REST API, authenticate with API keys and receive webhook notifications.",
+      "HumanMetrix developer resources. Embed assessments with our JavaScript widget, integrate via REST API, authenticate with API keys and receive webhook notifications. Connect HumanMetrix to your ATS and HR tech stack.",
     h1: "Developer Resources",
     intro:
       "Integrate HumanMetrix assessments into your own product or hiring flow. Our developer tools make embedding, automating and extending assessments straightforward.",
@@ -282,6 +410,10 @@ const ROUTE_CONTENT: Record<string, RouteContent> = {
       {
         heading: "Integration options",
         body: "Embed assessments with the JavaScript widget and SDK, call the REST API with API-key authentication, and receive real-time webhook notifications when candidates complete assessments. Full documentation and code examples are provided.",
+      },
+      {
+        heading: "Integrations and ATS",
+        body: "Use webhooks and the REST API to connect HumanMetrix to your applicant tracking system and wider HR tech stack. Trigger assessments when a candidate reaches a stage, sync completion and results back into your pipeline, and download an OpenAPI specification to generate client SDKs or import into tools such as Postman.",
       },
     ],
   },
@@ -626,6 +758,10 @@ function renderHtml(path: string, content: RouteContent): string {
       <a href="${SITE_URL}/assessments">Assessments</a>
       <a href="${SITE_URL}/for-candidates">For Candidates</a>
       <a href="${SITE_URL}/pricing">Pricing</a>
+      <a href="${SITE_URL}/methodology">Methodology</a>
+      <a href="${SITE_URL}/enterprise">Enterprise</a>
+      <a href="${SITE_URL}/partnerships">Partnerships</a>
+      <a href="${SITE_URL}/security">Trust Center</a>
       <a href="${SITE_URL}/ecosystem-index">Ecosystem Index</a>
       <a href="${SITE_URL}/articles">Articles</a>
     </nav>

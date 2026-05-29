@@ -55,6 +55,35 @@
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
   </url>
+
+  <!-- Credibility & Trust Pages -->
+  <url>
+    <loc>https://www.humanmetrix.co.uk/methodology</loc>
+    <lastmod>2026-05-29</lastmod>
+    <priority>0.85</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+
+  <url>
+    <loc>https://www.humanmetrix.co.uk/enterprise</loc>
+    <lastmod>2026-05-29</lastmod>
+    <priority>0.85</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+
+  <url>
+    <loc>https://www.humanmetrix.co.uk/partnerships</loc>
+    <lastmod>2026-05-29</lastmod>
+    <priority>0.8</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+
+  <url>
+    <loc>https://www.humanmetrix.co.uk/security</loc>
+    <lastmod>2026-05-29</lastmod>
+    <priority>0.75</priority>
+    <changefreq>monthly</changefreq>
+  </url>
   
   <!-- Company Pages -->
   <url>

@@ -53,6 +53,8 @@ export default function Navigation({ assessmentMode = false }: NavigationProps) 
     { href: "/about", label: "About Us" },
     { href: "/assessments", label: "Assessments" },
     { href: "/pricing", label: "Pricing" },
+    { href: "/methodology", label: "Methodology" },
+    { href: "/enterprise", label: "Enterprise" },
     { href: "/for-candidates", label: "For Candidates" },
     { href: "/developers", label: "Developers" },
     { href: "/articles", label: "Articles" },

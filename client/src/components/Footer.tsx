@@ -55,6 +55,10 @@ export default function Footer() {
     resources: [
       { label: "For Candidates", href: "/for-candidates" },
       { label: "Pricing", href: "/pricing" },
+      { label: "Methodology", href: "/methodology" },
+      { label: "Enterprise", href: "/enterprise" },
+      { label: "Partnerships", href: "/partnerships" },
+      { label: "Trust Center", href: "/security" },
     ],
   };
 

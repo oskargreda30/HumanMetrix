@@ -677,6 +677,46 @@ X-API-Key: hm_live_xxxxxxxxxxxx
   }
 }`} />
                   </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                      <Puzzle className="w-5 h-5 text-cyan-400" />
+                      Integrations &amp; ATS
+                    </h3>
+                    <p className="text-slate-300">
+                      Connect HumanMetrix to your applicant tracking system and wider HR tech stack using the REST
+                      API and webhooks. A typical integration triggers an assessment when a candidate reaches a
+                      stage in your pipeline, then syncs completion and results back into your ATS automatically.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="border border-slate-700 rounded-lg p-4 bg-slate-800/50">
+                        <h4 className="text-white font-medium mb-1">1. Trigger</h4>
+                        <p className="text-slate-300 text-sm">
+                          Create an assessment session via the API when a candidate is added or advanced, passing
+                          your own candidate identifier for reconciliation.
+                        </p>
+                      </div>
+                      <div className="border border-slate-700 rounded-lg p-4 bg-slate-800/50">
+                        <h4 className="text-white font-medium mb-1">2. Assess</h4>
+                        <p className="text-slate-300 text-sm">
+                          Invite candidates by link or embed the assessment directly in your own application flow
+                          with the JavaScript widget.
+                        </p>
+                      </div>
+                      <div className="border border-slate-700 rounded-lg p-4 bg-slate-800/50">
+                        <h4 className="text-white font-medium mb-1">3. Sync</h4>
+                        <p className="text-slate-300 text-sm">
+                          Receive a webhook on completion and write scores and role-fit data back into your ATS, so
+                          results live alongside the rest of the candidate record.
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-slate-300 text-sm">
+                      Because integration is built on a standard REST API, webhooks and a downloadable OpenAPI
+                      specification, HumanMetrix can connect to most modern ATS and HR platforms — and our team can
+                      advise on the right approach for yours.
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

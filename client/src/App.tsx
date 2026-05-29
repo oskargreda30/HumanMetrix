@@ -24,6 +24,10 @@ const ForCandidates = lazy(() => import("@/pages/ForCandidates"));
 const Pricing = lazy(() => import("@/pages/Pricing"));
 const EcosystemIndex = lazy(() => import("@/pages/EcosystemIndex"));
 const CohortBenchmarking = lazy(() => import("@/pages/CohortBenchmarking"));
+const Methodology = lazy(() => import("@/pages/Methodology"));
+const Security = lazy(() => import("@/pages/Security"));
+const Partnerships = lazy(() => import("@/pages/Partnerships"));
+const Enterprise = lazy(() => import("@/pages/Enterprise"));
 const Articles = lazy(() => import("@/pages/Articles"));
 const ArticlePsychometricTests = lazy(() => import("@/pages/ArticlePsychometricTests"));
 const ArticleRecruitmentTesting = lazy(() => import("@/pages/ArticleRecruitmentTesting"));
@@ -110,6 +114,10 @@ function Router() {
         <Route path="/pricing" component={Pricing} />
         <Route path="/ecosystem-index" component={EcosystemIndex} />
         <Route path="/cohort-benchmarking" component={CohortBenchmarking} />
+        <Route path="/methodology" component={Methodology} />
+        <Route path="/security" component={Security} />
+        <Route path="/partnerships" component={Partnerships} />
+        <Route path="/enterprise" component={Enterprise} />
         <Route path="/ecosystem/sample-report" component={EcosystemSampleReport} />
         <Route path="/ecosystem/start" component={EcosystemStart} />
         <Route path="/sample-report/individual" component={SampleIndividualReport} />
