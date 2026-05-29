@@ -1,0 +1,1 @@
+- [SEO prerender, sitemap & canonical coupling](seo-prerender-canonical.md) — keep sitemap ⊆ prerender ROUTE_CONTENT (minus redirected routes) or "Duplicate without user-selected canonical" returns.

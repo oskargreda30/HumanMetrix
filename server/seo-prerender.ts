@@ -240,6 +240,310 @@ const ROUTE_CONTENT: Record<string, RouteContent> = {
       },
     ],
   },
+
+  "/purchase": {
+    title: "Buy Assessments - Individual & Bundle Pricing | HumanMetrix",
+    description:
+      "Purchase HumanMetrix assessments securely. Choose individual tests or bundles with multi-currency pricing and Purchasing Power Parity discounts. Pay only for what you need.",
+    h1: "Purchase Assessments",
+    intro:
+      "Buy the assessments that matter to you. Secure Stripe checkout, multi-currency support and Purchasing Power Parity discounts make HumanMetrix accessible wherever you are.",
+    sections: [
+      {
+        heading: "What you can buy",
+        body: "Purchase any of our four assessments - FIT, AI Readiness, Prompt Architecture and AIQ - individually or as a discounted bundle. Each purchase includes a comprehensive PDF report delivered automatically on completion.",
+      },
+    ],
+  },
+
+  "/cohort-benchmarking": {
+    title: "Cohort Benchmarking - Compare Talent Pools | HumanMetrix",
+    description:
+      "Benchmark cohorts and talent pools with HumanMetrix. Compare groups of candidates against each other and against role requirements to make data-driven hiring and development decisions.",
+    h1: "Cohort Benchmarking",
+    intro:
+      "Understand how a whole group measures up. Cohort Benchmarking lets you compare candidates, teams or graduate intakes against each other and against role requirements.",
+    sections: [
+      {
+        heading: "What it does",
+        body: "Aggregate assessment results across a cohort to surface strengths, gaps and outliers. Ideal for graduate programmes, bulk hiring rounds and workforce development planning.",
+      },
+    ],
+  },
+
+  "/developers": {
+    title: "Developers - API, Widget & Webhooks | HumanMetrix",
+    description:
+      "HumanMetrix developer resources. Embed assessments with our JavaScript widget, integrate via REST API, authenticate with API keys and receive webhook notifications.",
+    h1: "Developer Resources",
+    intro:
+      "Integrate HumanMetrix assessments into your own product or hiring flow. Our developer tools make embedding, automating and extending assessments straightforward.",
+    sections: [
+      {
+        heading: "Integration options",
+        body: "Embed assessments with the JavaScript widget and SDK, call the REST API with API-key authentication, and receive real-time webhook notifications when candidates complete assessments. Full documentation and code examples are provided.",
+      },
+    ],
+  },
+
+  "/news": {
+    title: "News & Updates - Subscribe | HumanMetrix",
+    description:
+      "Stay up to date with HumanMetrix. Subscribe for product updates, new assessment releases, research insights and news on AI in recruitment.",
+    h1: "News & Updates",
+    intro:
+      "Keep up with the latest from HumanMetrix - new assessment releases, product updates and research on AI literacy and recruitment.",
+    sections: [
+      {
+        heading: "Subscribe",
+        body: "Join our mailing list to receive product announcements, roadmap updates and insights on the future of AI-powered assessment.",
+      },
+    ],
+  },
+
+  "/login": {
+    title: "Log In | HumanMetrix",
+    description:
+      "Log in to your HumanMetrix account to access your assessments, results and dashboard.",
+    h1: "Log In to HumanMetrix",
+    intro:
+      "Access your HumanMetrix account to take assessments, view your results and manage your dashboard.",
+    sections: [
+      {
+        heading: "Account access",
+        body: "Candidates and partners can sign in to view results, manage assessments and access dashboards. New here? Create an account to get started.",
+      },
+    ],
+  },
+
+  "/articles/how-to-pass-psychometric-tests-job-interviews": {
+    title: "How to Pass Psychometric Tests in Job Interviews | HumanMetrix",
+    description:
+      "A practical guide to psychometric tests in job interviews - what they measure, the main test types and how to prepare and perform at your best.",
+    h1: "How to Pass Psychometric Tests in Job Interviews",
+    intro:
+      "Psychometric tests are now a standard part of many hiring processes. This guide explains what they measure and how to approach them with confidence.",
+    sections: [
+      {
+        heading: "What psychometric tests measure",
+        body: "Psychometric assessments evaluate behavioural traits, aptitude and - increasingly - AI literacy. Understanding what each test is looking for helps you prepare effectively and present an authentic picture of your strengths.",
+      },
+      {
+        heading: "How to prepare",
+        body: "Practise sample questions, read instructions carefully, manage your time and answer honestly. For modern AI-readiness assessments, demonstrate how you think and work alongside AI tools rather than memorising answers.",
+      },
+    ],
+  },
+
+  "/articles/role-of-psychometric-testing-in-recruitment": {
+    title: "The Role of Psychometric Testing in Modern Recruitment | HumanMetrix",
+    description:
+      "How psychometric testing improves modern recruitment - reducing bias, predicting performance and supporting fairer, faster hiring decisions.",
+    h1: "The Role of Psychometric Testing in Modern Recruitment",
+    intro:
+      "Psychometric testing has become central to evidence-based hiring. This article explores how it improves recruitment outcomes.",
+    sections: [
+      {
+        heading: "Why it matters",
+        body: "Well-designed psychometric assessments reduce unconscious bias, add objective data to hiring decisions and help predict on-the-job performance and cultural fit - making recruitment fairer and more reliable.",
+      },
+    ],
+  },
+
+  "/articles/humanmetrix-ai-assessment-suite": {
+    title: "The HumanMetrix AI Assessment Suite Explained | HumanMetrix",
+    description:
+      "An overview of the HumanMetrix assessment suite - FIT, AI Readiness, Prompt Architecture and AIQ - and what each one measures.",
+    h1: "The HumanMetrix AI Assessment Suite Explained",
+    intro:
+      "HumanMetrix offers four complementary assessments. This article explains what each measures and when to use it.",
+    sections: [
+      {
+        heading: "The four assessments",
+        body: "FIT measures behavioural competencies; AI Readiness measures practical AI fluency; Prompt Architecture measures advanced prompting and structured reasoning; and AIQ measures ethical, responsible AI use. Together they give a complete picture of how someone works in an AI-driven world.",
+      },
+    ],
+  },
+
+  "/articles/future-of-ai-assessments-2026-roadmap": {
+    title: "The Future of AI Assessments: Our 2026 Roadmap | HumanMetrix",
+    description:
+      "Where AI assessment is heading and what HumanMetrix is building next - our 2026 roadmap for AI-powered talent measurement.",
+    h1: "The Future of AI Assessments: Our 2026 Roadmap",
+    intro:
+      "AI is reshaping how we measure talent. This article shares our view of the future and the HumanMetrix 2026 roadmap.",
+    sections: [
+      {
+        heading: "What's ahead",
+        body: "We explore emerging assessment types, deeper team diagnostics and tighter integration with hiring workflows as AI literacy becomes a core workplace requirement.",
+      },
+    ],
+  },
+
+  "/articles/why-ai-literacy-matters-recruitment": {
+    title: "Why AI Literacy Matters in Recruitment | HumanMetrix",
+    description:
+      "Why AI literacy is now a critical hiring criterion and how to assess it - helping recruiters identify candidates ready for AI-augmented roles.",
+    h1: "Why AI Literacy Matters in Recruitment",
+    intro:
+      "AI literacy is fast becoming as important as traditional skills. This article explains why it belongs in your hiring criteria.",
+    sections: [
+      {
+        heading: "The new essential skill",
+        body: "As AI tools become embedded in everyday work, the ability to use them effectively and responsibly is a key differentiator. Assessing AI literacy helps recruiters identify candidates who will thrive in AI-augmented roles.",
+      },
+    ],
+  },
+
+  "/articles/prompt-engineering-skills-workplace": {
+    title: "Prompt Engineering Skills for the Workplace | HumanMetrix",
+    description:
+      "Why prompt engineering is a core workplace skill and how to develop and assess it for AI-augmented roles.",
+    h1: "Prompt Engineering Skills for the Workplace",
+    intro:
+      "Prompt engineering is becoming a core professional skill. This article explains what it involves and how to build it.",
+    sections: [
+      {
+        heading: "A core AI skill",
+        body: "Effective prompting - framing tasks, iterating and structuring reasoning - determines how much value people get from AI tools. We explore how to develop these skills and how HumanMetrix measures them through the Prompt Architecture assessment.",
+      },
+    ],
+  },
+
+  "/articles/white-paper-fit-test": {
+    title: "White Paper: The FIT Assessment | HumanMetrix",
+    description:
+      "A white paper on the HumanMetrix FIT assessment - the science, construct validity and methodology behind our behavioural competency measure.",
+    h1: "White Paper: The FIT Assessment",
+    intro:
+      "An in-depth look at the science behind the HumanMetrix FIT assessment and how it measures behavioural competencies for the modern workplace.",
+    sections: [
+      {
+        heading: "Methodology",
+        body: "The FIT white paper describes the constructs measured - including agency, curiosity, resilience, empathy and growth mindset - and the psychometric approach to reliability, validity and fair scoring with GPT-5 against a benchmarked golden set.",
+      },
+    ],
+  },
+
+  "/articles/white-paper-ai-readiness-test": {
+    title: "White Paper: The AI Readiness Assessment | HumanMetrix",
+    description:
+      "A white paper on the HumanMetrix AI Readiness assessment - how we measure practical AI fluency from foundational prompting to complex reasoning.",
+    h1: "White Paper: The AI Readiness Assessment",
+    intro:
+      "An in-depth look at how the HumanMetrix AI Readiness assessment measures practical AI fluency and why it matters for modern roles.",
+    sections: [
+      {
+        heading: "Methodology",
+        body: "The AI Readiness white paper explains the capability levels assessed - from foundational prompting to multi-step reasoning - and the scoring methodology used to evaluate how effectively a person works with AI tools.",
+      },
+    ],
+  },
+
+  "/ecosystem/sample-report": {
+    title: "Sample Ecosystem Index Report | HumanMetrix",
+    description:
+      "See an example HumanMetrix Ecosystem Index report - team capability diagnostics, mission alignment, capability gaps and ideal-candidate profiles.",
+    h1: "Sample Ecosystem Index Report",
+    intro:
+      "Preview the HumanMetrix Ecosystem Index - an AI-powered team capability diagnostic that analyses your team against your mission.",
+    sections: [
+      {
+        heading: "What's inside",
+        body: "The Ecosystem Index report aggregates team FIT scores, runs mission-alignment analysis, surfaces capability gaps and generates ideal-candidate profiles for your next hire.",
+      },
+    ],
+  },
+
+  "/sample-report/individual": {
+    title: "Sample Individual Report | HumanMetrix",
+    description:
+      "See an example HumanMetrix individual assessment report - skill-level scores, personalised feedback and development recommendations.",
+    h1: "Sample Individual Report",
+    intro:
+      "Preview what a HumanMetrix individual report looks like, including skill scores, narrative feedback and next-step recommendations.",
+    sections: [
+      {
+        heading: "What's inside",
+        body: "Each individual report includes scored competencies, personalised insight into strengths and development areas, and practical recommendations - the same format candidates receive after completing an assessment.",
+      },
+    ],
+  },
+
+  "/sample-report/comparison": {
+    title: "Sample Comparison Report | HumanMetrix",
+    description:
+      "See an example HumanMetrix multi-candidate comparison report for shortlisting and side-by-side candidate evaluation.",
+    h1: "Sample Comparison Report",
+    intro:
+      "Preview how HumanMetrix compares multiple candidates side by side to support objective shortlisting decisions.",
+    sections: [
+      {
+        heading: "What's inside",
+        body: "The comparison report ranks and contrasts candidates across the same competencies, making it easy to see relative strengths and identify the best fit for a role.",
+      },
+    ],
+  },
+
+  "/sample-report/role-fit": {
+    title: "Sample Role-Fit Report | HumanMetrix",
+    description:
+      "See an example HumanMetrix role-fit report - how a candidate's profile maps against the requirements of a specific role.",
+    h1: "Sample Role-Fit Report",
+    intro:
+      "Preview how HumanMetrix maps a candidate's assessment profile against the requirements of a specific role.",
+    sections: [
+      {
+        heading: "What's inside",
+        body: "The role-fit report scores how well a candidate matches a defined role profile, highlighting alignment, gaps and data-driven next steps for hiring decisions.",
+      },
+    ],
+  },
+
+  "/terms": {
+    title: "Terms of Service | HumanMetrix",
+    description:
+      "The terms of service governing use of the HumanMetrix AI assessment platform.",
+    h1: "Terms of Service",
+    intro:
+      "These terms govern your use of the HumanMetrix platform and assessments. Please read them carefully before using our services.",
+    sections: [
+      {
+        heading: "Using HumanMetrix",
+        body: "By accessing HumanMetrix you agree to our terms covering account use, assessment purchases, acceptable use, intellectual property and liability. Contact us if you have questions about these terms.",
+      },
+    ],
+  },
+
+  "/privacy": {
+    title: "Privacy Policy | HumanMetrix",
+    description:
+      "How HumanMetrix collects, uses and protects your personal data, in line with UK GDPR and data-protection law.",
+    h1: "Privacy Policy",
+    intro:
+      "Your privacy matters. This policy explains what data HumanMetrix collects, how we use it and the rights you have over your information.",
+    sections: [
+      {
+        heading: "Data we handle",
+        body: "We process account details, assessment responses and results to deliver our services, in line with UK GDPR. We never sell your data. You can request access, correction or deletion of your personal information at any time.",
+      },
+    ],
+  },
+
+  "/eula": {
+    title: "End User Licence Agreement | HumanMetrix",
+    description:
+      "The end user licence agreement for the HumanMetrix assessment platform and its software.",
+    h1: "End User Licence Agreement",
+    intro:
+      "This End User Licence Agreement sets out the terms under which you may use the HumanMetrix software and platform.",
+    sections: [
+      {
+        heading: "Licence terms",
+        body: "HumanMetrix grants you a limited, non-exclusive licence to use the platform for its intended assessment purposes, subject to the restrictions and obligations described in this agreement.",
+      },
+    ],
+  },
 };
 
 function escapeHtml(s: string): string {
