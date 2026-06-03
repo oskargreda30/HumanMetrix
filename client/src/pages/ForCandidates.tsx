@@ -66,22 +66,22 @@ const assessments = [
   {
     name: "FIT Assessment",
     description: "Measure your behavioral competencies across key workplace dimensions",
-    duration: "20 min",
+    duration: "25 min",
   },
   {
     name: "AI Readiness",
     description: "Evaluate your preparedness for AI-integrated work environments",
-    duration: "20 min",
+    duration: "25 min",
   },
   {
     name: "Prompt Architecture",
     description: "Test your ability to effectively communicate with AI systems",
-    duration: "21 min",
+    duration: "35 min",
   },
   {
     name: "Algorithmic Integrity (AIQ)",
     description: "Assess your understanding of AI ethics and responsible AI use",
-    duration: "20 min",
+    duration: "25 min",
   },
 ];
 
@@ -115,7 +115,7 @@ const howItWorks = [
 const faqs = [
   {
     question: "How long do the assessments take to complete?",
-    answer: "Each of our four assessments takes between 14-20 minutes to complete. You can complete them in any order and at your own pace, with results available immediately upon completion.",
+    answer: "Each of our four assessments takes between 14-35 minutes to complete. You can complete them in any order and at your own pace, with results available immediately upon completion.",
   },
   {
     question: "Are the assessments free to take?",

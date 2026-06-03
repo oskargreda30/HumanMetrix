@@ -50,7 +50,7 @@ export default function Assessment() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [resultId, setResultId] = useState<string | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState(1200); // 20 minutes in seconds (5 minutes per question for Prompt Architecture)
+  const [timeRemaining, setTimeRemaining] = useState(1500); // 25 minutes in seconds (5 minutes per question for Prompt Architecture)
   const [showTimeWarning, setShowTimeWarning] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true); // Show instructions before starting
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
@@ -72,7 +72,7 @@ export default function Assessment() {
   const progressAnimationRef = useRef<NodeJS.Timeout | null>(null); // For smooth progress animation
   const answersRef = useRef<Record<string, string>>({}); // Stable ref for timer expiry access
   const currentQuestionRef = useRef<number>(0); // Stable ref for timer expiry access
-  const timeRemainingRef = useRef<number>(1200); // Stable ref for timer value during sendBeacon
+  const timeRemainingRef = useRef<number>(1500); // Stable ref for timer value during sendBeacon
   const navBarRef = useRef<HTMLDivElement>(null);
 
   const { data: availableAssessments, isLoading: loadingAssessments } = useQuery({
@@ -863,7 +863,7 @@ export default function Assessment() {
             "Choose the option that best represents how you typically behave or think",
             "There are no right or wrong answers - be honest and authentic",
             "Don't overthink each question - go with your first instinct",
-            "You have 20 minutes to complete all 15 questions",
+            "You have 25 minutes to complete all 15 questions",
           ]
         };
       case "ai_readiness":
@@ -874,7 +874,7 @@ export default function Assessment() {
             "Select the response that most closely reflects your current capabilities",
             "There are no right or wrong answers - be truthful about your experience",
             "Consider your real-world experience with AI tools and technologies",
-            "You have 20 minutes to complete all 21 questions",
+            "You have 25 minutes to complete all 21 questions",
           ]
         };
       case "prompt_architecture":
@@ -896,7 +896,7 @@ export default function Assessment() {
             "Read each scenario carefully and consider all ethical implications",
             "Choose the option that best balances ethics with practical considerations",
             "Answers are graded on a scale - some are optimal, others are acceptable",
-            "You have 20 minutes to complete all 8 questions",
+            "You have 25 minutes to complete all 8 questions",
           ]
         };
       default:

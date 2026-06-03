@@ -34,25 +34,25 @@ const assessments = [
     id: "fit",
     name: "FIT Assessment",
     description: "15 questions • 6 behavioral skills",
-    duration: "20 min",
+    duration: "25 min",
   },
   {
     id: "ai_readiness",
     name: "AI Readiness Assessment",
     description: "21 questions • 9 AI skills",
-    duration: "20 min",
+    duration: "25 min",
   },
   {
     id: "prompt_architecture",
     name: "Prompt Architecture Assessment",
     description: "7 progressive levels",
-    duration: "21 min",
+    duration: "35 min",
   },
   {
     id: "aiq",
     name: "Algorithmic Integrity Quotient (AIQ)",
     description: "8 questions + rationales",
-    duration: "20 min",
+    duration: "25 min",
   },
 ];
 

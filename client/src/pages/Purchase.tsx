@@ -28,7 +28,7 @@ const assessments: Assessment[] = [
     id: "fit",
     name: "FIT Assessment",
     description: "Measures 6 core behavioral skills including High Agency, Resilience, and Empathy & Ethics",
-    duration: "20 min",
+    duration: "25 min",
     questions: 15,
     skills: 6
   },
@@ -36,7 +36,7 @@ const assessments: Assessment[] = [
     id: "ai_readiness",
     name: "AI Readiness Assessment",
     description: "Evaluates 9 AI skills from AI Literacy to Cross-functional Collaboration",
-    duration: "20 min",
+    duration: "25 min",
     questions: 21,
     skills: 9
   },
@@ -44,14 +44,14 @@ const assessments: Assessment[] = [
     id: "prompt_architecture",
     name: "Prompt Architecture Assessment",
     description: "7 progressive levels testing prompt design skills, evaluated by an AI model",
-    duration: "21 min",
+    duration: "35 min",
     questions: 7
   },
   {
     id: "aiq",
     name: "Algorithmic Integrity Quotient (AIQ)",
     description: "Tests understanding of AI ethics, bias, fairness, transparency, and responsible deployment",
-    duration: "20 min",
+    duration: "25 min",
     questions: 8
   }
 ];

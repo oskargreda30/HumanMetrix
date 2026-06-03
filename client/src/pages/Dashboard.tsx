@@ -50,49 +50,49 @@ const getAssessmentMetadata = (type: string) => {
       icon: Brain,
       description: 'Measures 6 core behavioral and workplace competencies',
       questions: 15,
-      minutes: 20,
+      minutes: 25,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'ai_readiness': {
       icon: Sparkles,
       description: 'Evaluates candidates\' readiness to work with AI systems',
       questions: 21,
-      minutes: 20,
+      minutes: 25,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'ai-readiness': {
       icon: Sparkles,
       description: 'Evaluates candidates\' readiness to work with AI systems',
       questions: 21,
-      minutes: 20,
+      minutes: 25,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'prompt_architecture': {
       icon: Code,
       description: 'Measures prompt engineering and AI communication skills',
       questions: 7,
-      minutes: 21,
+      minutes: 35,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'prompt-architecture': {
       icon: Code,
       description: 'Measures prompt engineering and AI communication skills',
       questions: 7,
-      minutes: 21,
+      minutes: 35,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'prompt': {
       icon: Code,
       description: 'Measures prompt engineering and AI communication skills',
       questions: 7,
-      minutes: 21,
+      minutes: 35,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     },
     'aiq': {
       icon: Scale,
       description: 'Measures candidates\' ethical AI reasoning and judgment',
       questions: 8,
-      minutes: 20,
+      minutes: 25,
       iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500'
     }
   };

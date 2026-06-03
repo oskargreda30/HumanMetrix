@@ -164,7 +164,7 @@ const comparisonData = [
 const faqs = [
   {
     question: "How long do the assessments take to complete?",
-    answer: "Each of our four assessments takes approximately 14-20 minutes to complete. Candidates can complete them in any order and at their own pace, with results available immediately upon completion.",
+    answer: "Each of our four assessments takes approximately 14-35 minutes to complete. Candidates can complete them in any order and at their own pace, with results available immediately upon completion.",
   },
   {
     question: "Can I customise the assessments for my organisation?",
@@ -718,7 +718,7 @@ export default function ForEmployers() {
                 <div className="grid md:grid-cols-3 gap-8 mb-8">
                   <div className="text-center">
                     <Clock className="h-8 w-8 text-primary mx-auto mb-3" />
-                    <div className="text-2xl font-bold text-primary mb-2">14-20 min</div>
+                    <div className="text-2xl font-bold text-primary mb-2">14-35 min</div>
                     <div className="text-sm text-muted-foreground">Per assessment</div>
                   </div>
                   <div className="text-center">

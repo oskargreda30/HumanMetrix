@@ -248,8 +248,8 @@ function getAssessmentTimeLimit(assessmentType: string): number {
   if (assessmentType === 'prompt_architecture') {
     return 2100; // 35 minutes in seconds
   }
-  // All other assessments: 20 minutes
-  return 1200;
+  // All other assessments: 25 minutes
+  return 1500;
 }
 
 // VPN/Proxy detection by organization name
