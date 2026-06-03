@@ -1,2 +1,3 @@
 - [SEO prerender, sitemap & canonical coupling](seo-prerender-canonical.md) — keep sitemap ⊆ prerender ROUTE_CONTENT (minus redirected routes) or "Duplicate without user-selected canonical" returns.
+- [robots.txt per-bot group override](robots-per-bot-group-override.md) — a crawler obeys only its most-specific User-agent group; bot-specific groups must repeat the wildcard Disallow rules or they bypass them.
 - [Port 5000 EADDRINUSE hardening](port-5000-eaddrinuse.md) — server/index.ts must retry listen() on EADDRINUSE + force-exit fast on shutdown so a stale process never holds the port.

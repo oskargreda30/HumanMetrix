@@ -61,6 +61,8 @@ Crawl-delay: 1
 # Sitemap location
 Sitemap: https://www.humanmetrix.co.uk/sitemap.xml
 
+# LLM-friendly site summary: https://www.humanmetrix.co.uk/llms.txt
+
 # Googlebot - no crawl delay for better indexing
 User-agent: Googlebot
 Allow: /
@@ -71,21 +73,48 @@ User-agent: Bingbot
 Allow: /
 Crawl-delay: 1
 
-# AI crawlers - allow for visibility
+# AI crawlers - allow public pages for visibility, but mirror the same
+# private-path restrictions as the wildcard group (a crawler obeys only its
+# most-specific matching group, so the disallows must be repeated here).
 User-agent: GPTBot
-Allow: /
-
 User-agent: ChatGPT-User
-Allow: /
-
+User-agent: OAI-SearchBot
 User-agent: Google-Extended
-Allow: /
-
 User-agent: anthropic-ai
-Allow: /
-
 User-agent: Claude-Web
-Allow: /
-
+User-agent: ClaudeBot
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Applebot-Extended
+User-agent: Amazonbot
+User-agent: Meta-ExternalAgent
+User-agent: cohere-ai
+User-agent: DuckAssistBot
 User-agent: CCBot
 Allow: /
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /admin/
+Disallow: /partner/
+Disallow: /results
+Disallow: /my-results
+Disallow: /assessment/
+Disallow: /start-assessment
+Disallow: /checkout
+Disallow: /checkout-success
+Disallow: /purchase-success
+Disallow: /payment-callback
+Disallow: /payment-cancel-callback
+Disallow: /b2b-payment-callback
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /accept-partner-invite
+Disallow: /embed/
+Disallow: /widget-test
+Disallow: /b2b-results
+Disallow: /generate-sample-pdfs
+Disallow: /partner-package-success
+Disallow: /partner-result
+Disallow: /api/
+Disallow: /api/*
+Disallow: /*?*

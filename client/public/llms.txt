@@ -1,0 +1,45 @@
+# HumanMetrix
+
+> HumanMetrix is an enterprise-grade AI assessment platform for recruitment and career development. It objectively measures behavioural skills and AI literacy so organisations can identify the right candidates for AI-driven roles — quickly, fairly and at scale. Operated by PT Human Metrix Assessments. Canonical site: https://www.humanmetrix.co.uk
+
+## About
+
+HumanMetrix provides four core assessment types: FIT (behavioural competency), AI Readiness (how effectively a person works with AI tools), Prompt Architecture, and the Algorithmic Integrity Quotient (AIQ). Scoring uses a fixed golden-set benchmark for reproducibility, with regionally localised content and Purchasing Power Parity pricing. The platform serves recruitment agencies, in-house talent teams, enterprise partners, and individuals certifying their AI literacy.
+
+## Core pages
+
+- [Home](https://www.humanmetrix.co.uk/): Platform overview and primary entry point.
+- [Assessments](https://www.humanmetrix.co.uk/assessments): The FIT, AI Readiness, Prompt Architecture and AIQ assessments and what each measures.
+- [Pricing](https://www.humanmetrix.co.uk/pricing): Transparent pricing for individuals and enterprise partners, with multi-currency and PPP support.
+- [Ecosystem Index](https://www.humanmetrix.co.uk/ecosystem-index): AI-powered team capability diagnostic — mission analysis, team FIT aggregation and gap analysis.
+- [Cohort Benchmarking](https://www.humanmetrix.co.uk/cohort-benchmarking): Compare groups of candidates against each other and against role requirements.
+
+## Credibility and trust
+
+- [Methodology](https://www.humanmetrix.co.uk/methodology): The psychometric scoring, situational judgement design, golden-set benchmark and role-customisation approach behind the assessments.
+- [Enterprise](https://www.humanmetrix.co.uk/enterprise): Flat-rate enterprise subscriptions and infrastructure for high-volume hiring.
+- [Partnerships](https://www.humanmetrix.co.uk/partnerships): White-label and channel partnership options for recruitment and HR-tech businesses.
+- [Trust Center](https://www.humanmetrix.co.uk/security): Security, data handling and infrastructure overview.
+
+## For developers
+
+- [Developer Integration Guide](https://www.humanmetrix.co.uk/developers): Embed assessments via the JavaScript widget, SDK, REST API and webhooks, including ATS and HR-tech integration.
+
+## Company
+
+- [About](https://www.humanmetrix.co.uk/about): Company mission and approach.
+- [Team](https://www.humanmetrix.co.uk/team): The people behind HumanMetrix.
+
+## Articles
+
+- [Articles Hub](https://www.humanmetrix.co.uk/articles): Guides and analysis on psychometric testing, AI literacy and the future of AI assessments.
+- [How to Pass Psychometric Tests in Job Interviews](https://www.humanmetrix.co.uk/articles/how-to-pass-psychometric-tests-job-interviews)
+- [The Role of Psychometric Testing in Recruitment](https://www.humanmetrix.co.uk/articles/role-of-psychometric-testing-in-recruitment)
+- [Why AI Literacy Matters in Recruitment](https://www.humanmetrix.co.uk/articles/why-ai-literacy-matters-recruitment)
+- [Prompt Engineering Skills in the Workplace](https://www.humanmetrix.co.uk/articles/prompt-engineering-skills-workplace)
+
+## Legal
+
+- [Terms of Service](https://www.humanmetrix.co.uk/terms)
+- [Privacy Policy](https://www.humanmetrix.co.uk/privacy)
+- [EULA](https://www.humanmetrix.co.uk/eula)

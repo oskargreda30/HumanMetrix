@@ -510,7 +510,7 @@ export default function Home() {
                   </div>
                   
                   <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
-                    <Link href="/ecosystem-index">
+                    <Link href="/ecosystem-index" aria-label="Learn more about the Ecosystem Index team diagnostic">
                       <Button size="default" className="text-xs md:text-sm w-full sm:w-auto" data-testid="button-ecosystem-index">
                         <span className="hidden sm:inline">Learn More About The Ecosystem Index</span>
                         <span className="sm:hidden">Learn More</span>
@@ -597,7 +597,7 @@ export default function Home() {
                   </div>
                   
                   <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
-                    <Link href="/cohort-benchmarking">
+                    <Link href="/cohort-benchmarking" aria-label="Learn more about cohort benchmarking">
                       <Button size="default" variant="outline" className="text-xs md:text-sm w-full sm:w-auto border-amber-500/40 text-amber-700" data-testid="button-cohort-benchmarking">
                         Learn More
                         <ChevronDown className="ml-1 md:ml-2 h-3 w-3 md:h-4 md:w-4 rotate-[-90deg]" />
