@@ -50,7 +50,7 @@ export default function Assessment() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [resultId, setResultId] = useState<string | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState(1200); // 20 minutes in seconds (3 minutes per question for Prompt Architecture)
+  const [timeRemaining, setTimeRemaining] = useState(1200); // 20 minutes in seconds (5 minutes per question for Prompt Architecture)
   const [showTimeWarning, setShowTimeWarning] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true); // Show instructions before starting
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
@@ -177,13 +177,49 @@ export default function Assessment() {
     onSuccess: (data: any) => {
       setResultId(data.id);
       setShowInstructions(false);
-      
+
       const isPromptArch = assessment?.assessmentType === 'prompt_architecture';
+
+      // Refresh recovery: restore the exact local progress (answers, current
+      // question, and remaining time) that was saved to sessionStorage before the
+      // page reloaded. This survives a page refresh in the same tab and takes
+      // precedence over the server-side timer-only resume, so the candidate
+      // continues exactly where they left off instead of being thrown back to the
+      // first question with a reset timer.
+      try {
+        const raw = sessionStorage.getItem(`assessment_state_${data.id}`);
+        if (raw) {
+          const saved = JSON.parse(raw);
+          if (saved && typeof saved.timeRemaining === 'number' && saved.timeRemaining > 0) {
+            if (saved.answers && typeof saved.answers === 'object') {
+              setAnswers(saved.answers);
+              answersRef.current = saved.answers;
+            }
+            if (typeof saved.currentQuestion === 'number' && saved.currentQuestion >= 0) {
+              const boundedQuestion = Math.min(saved.currentQuestion, Math.max(0, questions.length - 1));
+              setCurrentQuestion(boundedQuestion);
+              currentQuestionRef.current = boundedQuestion;
+            }
+            // Never let the locally-restored time exceed the server's authoritative
+            // paused value (guards against a stale local timer when the pause beacon
+            // recorded a smaller remaining time).
+            const restoredTime = typeof data.timeRemaining === 'number' && data.timeRemaining > 0
+              ? Math.min(saved.timeRemaining, data.timeRemaining)
+              : saved.timeRemaining;
+            setTimeRemaining(restoredTime);
+            timeRemainingRef.current = restoredTime;
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('[Assessment] Failed to restore saved progress:', err);
+      }
+
       if (isPromptArch) {
-        if (data.resumed && data.timeRemaining != null && data.timeRemaining > 0 && data.timeRemaining <= 180) {
+        if (data.resumed && data.timeRemaining != null && data.timeRemaining > 0 && data.timeRemaining <= 300) {
           setTimeRemaining(data.timeRemaining);
         } else {
-          setTimeRemaining(180);
+          setTimeRemaining(300);
         }
       } else if (data.timeRemaining !== undefined) {
         setTimeRemaining(data.timeRemaining);
@@ -315,6 +351,9 @@ export default function Assessment() {
     },
     onSuccess: async () => {
       setIsSubmitting(false);
+      try {
+        if (resultId) sessionStorage.removeItem(`assessment_state_${resultId}`);
+      } catch {}
       await queryClient.invalidateQueries({ queryKey: ["/api/results"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/available-assessments"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/purchases-with-results"] });
@@ -607,6 +646,25 @@ export default function Assessment() {
     };
   }, [resultId, submitMutation.isSuccess, isSubmitting]);
 
+  // Persist in-progress state locally so a same-tab page refresh restores the
+  // candidate's answers, current question, and exact remaining time. Keyed by the
+  // stable assessment result id, this is the primary recovery path for refreshes
+  // (the server-side pause only tracks the timer, not answers or position).
+  useEffect(() => {
+    if (!resultId || submitMutation.isSuccess || isSubmitting || hasSubmittedRef.current) {
+      return;
+    }
+    try {
+      sessionStorage.setItem(
+        `assessment_state_${resultId}`,
+        JSON.stringify({ answers, currentQuestion, timeRemaining })
+      );
+    } catch {
+      // sessionStorage may be unavailable (private mode / quota); refresh recovery
+      // then falls back to the server-side timer resume.
+    }
+  }, [resultId, answers, currentQuestion, timeRemaining, submitMutation.isSuccess, isSubmitting]);
+
   // Save timer state and pause assessment when user closes tab/browser
   useEffect(() => {
     if (!resultId || submitMutation.isSuccess || isSubmitting || hasSubmittedRef.current) {
@@ -652,18 +710,27 @@ export default function Assessment() {
   }, [resultId, submitMutation.isSuccess, isSubmitting]);
 
 
-  // Handle PA last question timer expiry - submit the full assessment
+  // Handle PA last question timer expiry - always finalize the assessment so the
+  // candidate is never left stuck on the final screen. If any answers exist we
+  // submit them; otherwise we abandon and return to the dashboard (mirroring the
+  // non-PA expiry path) rather than silently doing nothing.
   const handlePALastQuestionExpiry = useCallback(() => {
     setShowTimesUp(true);
     setIsSubmitting(true);
     setTimeout(() => {
       setShowTimesUp(false);
-      if (Object.keys(answersRef.current).length > 0 && !hasSubmittedRef.current) {
-        hasSubmittedRef.current = true;
+      if (hasSubmittedRef.current) return;
+      hasSubmittedRef.current = true;
+      if (Object.keys(answersRef.current).length > 0) {
         submitMutation.mutate();
+      } else {
+        apiRequest("POST", `/api/assessments/${resultId}/abandon`).finally(() => {
+          const scrollParam = assessment?.partnerInvitationId ? `&scrollToSeries=${assessment.partnerInvitationId}` : '';
+          setLocation(`/dashboard?view=candidate&refresh=${Date.now()}${scrollParam}`);
+        });
       }
     }, 2000);
-  }, [submitMutation]);
+  }, [submitMutation, resultId, assessment, setLocation]);
 
   // Timer effect - pauses when tab is hidden, resumes when visible
   useEffect(() => {
@@ -705,7 +772,7 @@ export default function Assessment() {
                   setShowTimesUp(false);
                   paQuestionAdvancingRef.current = false;
                   setCurrentQuestion(curQ + 1);
-                  setTimeRemaining(180);
+                  setTimeRemaining(300);
                   setShowTimeWarning(false);
                   timerResetKeyRef.current += 1;
                   setTimerResetKey(timerResetKeyRef.current);
@@ -818,7 +885,7 @@ export default function Assessment() {
             "Write clear, specific prompts that address the given scenario",
             "Include relevant context and constraints in your prompts",
             "Think about structure and how to guide the AI effectively",
-            "You have 3 minutes per level (21 minutes total for all 7 levels)",
+            "You have 5 minutes per level (35 minutes total for all 7 levels)",
           ]
         };
       case "aiq":
@@ -906,7 +973,7 @@ export default function Assessment() {
       setCurrentQuestion(currentQuestion + 1);
       
       if (isPromptArchitecture) {
-        setTimeRemaining(180);
+        setTimeRemaining(300);
         setShowTimeWarning(false);
         timerResetKeyRef.current += 1;
         setTimerResetKey(timerResetKeyRef.current);
