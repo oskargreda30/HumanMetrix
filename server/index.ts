@@ -278,6 +278,8 @@ app.use((req, res, next) => {
   const MAX_LISTEN_RETRIES = 20;
   const LISTEN_RETRY_DELAY_MS = 1000;
   let listenRetries = 0;
+  let retryTimer: NodeJS.Timeout | null = null;
+  let shuttingDown = false;
 
   const startListening = () => {
     server.listen({
@@ -290,6 +292,7 @@ app.use((req, res, next) => {
   server.once('listening', onListening);
 
   server.on('error', (err: NodeJS.ErrnoException) => {
+    if (shuttingDown) return; // don't fight for the port while we're exiting
     if (err.code === 'EADDRINUSE') {
       if (listenRetries < MAX_LISTEN_RETRIES) {
         listenRetries++;
@@ -297,7 +300,7 @@ app.use((req, res, next) => {
           `Port ${port} is in use (EADDRINUSE). A previous process may still be shutting down. ` +
           `Retrying ${listenRetries}/${MAX_LISTEN_RETRIES} in ${LISTEN_RETRY_DELAY_MS}ms...`
         );
-        setTimeout(startListening, LISTEN_RETRY_DELAY_MS);
+        retryTimer = setTimeout(startListening, LISTEN_RETRY_DELAY_MS);
       } else {
         console.error(`Port ${port} still in use after ${MAX_LISTEN_RETRIES} retries. Exiting.`);
         process.exit(1);
@@ -314,11 +317,13 @@ app.use((req, res, next) => {
   // the next start never hits EADDRINUSE. A lingering process holding the port is
   // the root cause of that failure, so we drop idle keep-alive connections
   // immediately and keep a short hard-timeout that always exits the process.
-  let shuttingDown = false;
   const gracefulShutdown = async (signal: string) => {
     if (shuttingDown) return; // ignore repeated signals
     shuttingDown = true;
     console.log(`\n${signal} received. Starting graceful shutdown...`);
+
+    // Stop any pending listen retry so it can't re-bind the port mid-shutdown.
+    if (retryTimer) clearTimeout(retryTimer);
 
     // Hard safety net: always exit (and free the port) even if close/queues hang.
     // unref() so this timer never keeps the process alive on its own.
@@ -341,11 +346,12 @@ app.use((req, res, next) => {
       }
     });
 
-    // Immediately terminate idle keep-alive connections (65s timeout) so
-    // server.close() can complete promptly instead of waiting them out.
-    const closeAllConnections = (server as unknown as { closeAllConnections?: () => void }).closeAllConnections;
-    if (typeof closeAllConnections === 'function') {
-      closeAllConnections.call(server);
+    // Drop idle keep-alive connections (65s timeout) immediately so server.close()
+    // resolves promptly. In-flight requests are left to finish and are backstopped
+    // by the 8s force-exit above, so we never block port release indefinitely.
+    const closeIdleConnections = (server as unknown as { closeIdleConnections?: () => void }).closeIdleConnections;
+    if (typeof closeIdleConnections === 'function') {
+      closeIdleConnections.call(server);
     }
   };
 

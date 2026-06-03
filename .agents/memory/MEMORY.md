@@ -1,1 +1,2 @@
 - [SEO prerender, sitemap & canonical coupling](seo-prerender-canonical.md) — keep sitemap ⊆ prerender ROUTE_CONTENT (minus redirected routes) or "Duplicate without user-selected canonical" returns.
+- [Port 5000 EADDRINUSE hardening](port-5000-eaddrinuse.md) — server/index.ts must retry listen() on EADDRINUSE + force-exit fast on shutdown so a stale process never holds the port.
