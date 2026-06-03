@@ -275,6 +275,91 @@ Preferred Qualifications:
       generatedBy: "JD-analysis",
     },
   },
+  {
+    name: "AI Assistant",
+    domain: "technology",
+    description: `A technology team is seeking an AI Assistant to help design and build software tools using AI. This is a hands-on technical builder role: the person works alongside engineers and product teams to turn ideas into working tools, using AI coding assistants, large language models, and automation to accelerate development. They write and debug code, integrate APIs, craft and refine prompts, and continuously adopt new AI capabilities as they emerge.
+
+KEY RESPONSIBILITIES
+
+Building & Engineering
+- Design, write, and debug code to build internal and customer-facing tools
+- Integrate third-party APIs, SDKs, and AI models into working applications
+- Use AI coding assistants and LLMs to accelerate prototyping and delivery
+- Translate loosely defined requirements into functional, reliable software
+
+AI & Prompt Engineering
+- Craft, test, and iterate on prompts to get reliable, high-quality model outputs
+- Evaluate AI outputs critically, catching errors, hallucinations, and edge cases
+- Apply LLMs and automation to remove repetitive engineering and ops work
+
+Collaboration & Continuous Learning
+- Work closely with engineers, designers, and product owners to ship tools
+- Document how tools work so others can use and extend them
+- Rapidly learn and adopt new AI tools, frameworks, and techniques
+
+REQUIREMENTS
+- Strong technical and coding ability across one or more modern languages
+- Comfort with technical tools, systems, APIs, and developer workflows
+- Hands-on experience using AI/LLM tools to build or automate things
+- Excellent problem-solving and critical-thinking skills
+- High curiosity and a fast, self-directed learning style
+- Creative, pragmatic, and able to work independently in a fast-moving environment
+
+This is a mid-to-senior technical role combining software engineering ability with strong AI literacy and prompt-engineering skill.`,
+    competencies: [
+      { skillName: "Coding & Software Engineering", importance: 5, minimumScore: 78 },
+      { skillName: "AI Literacy & Prompt Engineering", importance: 5, minimumScore: 82 },
+      { skillName: "Technical Fundamentals", importance: 5, minimumScore: 78 },
+      { skillName: "Critical Thinking & Problem-Solving", importance: 5, minimumScore: 76 },
+      { skillName: "Adaptability & Continuous Learning", importance: 5, minimumScore: 74 },
+      { skillName: "Creativity & Innovation", importance: 4, minimumScore: 68 },
+      { skillName: "Data Fluency", importance: 4, minimumScore: 66 },
+      { skillName: "Collaboration & Communication", importance: 3, minimumScore: 62 },
+    ],
+    requiredSkillScores: {
+      fitSkills: {
+        Resilience: 64,
+        "High Agency": 73,
+        "Growth Mindset": 76,
+        "Empathy & Ethics": 56,
+        "Interpersonal Agility": 58,
+        "Intellectual Curiosity": 79,
+      },
+      aiReadinessSkills: {
+        "AI Literacy & Prompt Engineering": 84,
+        "Collaboration & Communication": 63,
+        "Data Fluency": 71,
+        "Responsible AI & Ethical Awareness": 62,
+        "Domain Expertise": 72,
+        "Adaptability & Continuous Learning": 78,
+        "Critical Thinking & Problem-Solving": 81,
+        "Technical Fundamentals": 83,
+        "Creativity & Innovation": 74,
+      },
+      skillCriticality: {
+        Resilience: "standard",
+        "High Agency": "critical",
+        "Growth Mindset": "critical",
+        "Empathy & Ethics": "standard",
+        "Interpersonal Agility": "standard",
+        "Intellectual Curiosity": "critical",
+        "AI Literacy & Prompt Engineering": "critical",
+        "Collaboration & Communication": "standard",
+        "Data Fluency": "standard",
+        "Responsible AI & Ethical Awareness": "standard",
+        "Domain Expertise": "critical",
+        "Adaptability & Continuous Learning": "critical",
+        "Critical Thinking & Problem-Solving": "critical",
+        "Technical Fundamentals": "critical",
+        "Creativity & Innovation": "standard",
+      },
+      promptArchitectureScore: 82,
+      aiqScore: 79,
+      generatedAt: "2026-06-03T11:00:00.000Z",
+      generatedBy: "JD-analysis",
+    },
+  },
 ];
 
 export async function seedCustomRoles(): Promise<void> {
