@@ -234,11 +234,7 @@ app.use((req, res, next) => {
   const port = parseInt(process.env.PORT || '5000', 10);
   configureKeepAlive(server);
   
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
+  const onListening = () => {
     log(`serving on port ${port}`);
     
     // Initialize job queues for background processing
@@ -273,30 +269,84 @@ app.use((req, res, next) => {
         console.error('[RerunInsights] Unhandled error:', err);
       });
     }, 10000);
+  };
+
+  // Resilient startup. During a restart the previous process may still be
+  // releasing port 5000 for a brief moment. Instead of letting the unhandled
+  // 'error' event crash the workflow (the EADDRINUSE failure), we retry binding
+  // for a short window so the server reliably comes up once the old process exits.
+  const MAX_LISTEN_RETRIES = 20;
+  const LISTEN_RETRY_DELAY_MS = 1000;
+  let listenRetries = 0;
+
+  const startListening = () => {
+    server.listen({
+      port,
+      host: "0.0.0.0",
+      reusePort: true,
+    });
+  };
+
+  server.once('listening', onListening);
+
+  server.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EADDRINUSE') {
+      if (listenRetries < MAX_LISTEN_RETRIES) {
+        listenRetries++;
+        console.warn(
+          `Port ${port} is in use (EADDRINUSE). A previous process may still be shutting down. ` +
+          `Retrying ${listenRetries}/${MAX_LISTEN_RETRIES} in ${LISTEN_RETRY_DELAY_MS}ms...`
+        );
+        setTimeout(startListening, LISTEN_RETRY_DELAY_MS);
+      } else {
+        console.error(`Port ${port} still in use after ${MAX_LISTEN_RETRIES} retries. Exiting.`);
+        process.exit(1);
+      }
+    } else {
+      console.error('Fatal server error:', err);
+      process.exit(1);
+    }
   });
 
-  // Graceful shutdown handling
+  startListening();
+
+  // Graceful shutdown handling. The priority is to release port 5000 quickly so
+  // the next start never hits EADDRINUSE. A lingering process holding the port is
+  // the root cause of that failure, so we drop idle keep-alive connections
+  // immediately and keep a short hard-timeout that always exits the process.
+  let shuttingDown = false;
   const gracefulShutdown = async (signal: string) => {
+    if (shuttingDown) return; // ignore repeated signals
+    shuttingDown = true;
     console.log(`\n${signal} received. Starting graceful shutdown...`);
-    
+
+    // Hard safety net: always exit (and free the port) even if close/queues hang.
+    // unref() so this timer never keeps the process alive on its own.
+    const forceExit = setTimeout(() => {
+      console.error('Graceful shutdown timed out. Forcing exit to release the port.');
+      process.exit(0);
+    }, 8000);
+    forceExit.unref();
+
     server.close(async () => {
       console.log('HTTP server closed');
-      
       try {
         await shutdownJobQueues();
         console.log('All queues shut down');
-        process.exit(0);
       } catch (error) {
         console.error('Error during shutdown:', error);
-        process.exit(1);
+      } finally {
+        clearTimeout(forceExit);
+        process.exit(0);
       }
     });
 
-    // Force exit after 30 seconds
-    setTimeout(() => {
-      console.error('Forceful shutdown after timeout');
-      process.exit(1);
-    }, 30000);
+    // Immediately terminate idle keep-alive connections (65s timeout) so
+    // server.close() can complete promptly instead of waiting them out.
+    const closeAllConnections = (server as unknown as { closeAllConnections?: () => void }).closeAllConnections;
+    if (typeof closeAllConnections === 'function') {
+      closeAllConnections.call(server);
+    }
   };
 
   process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
