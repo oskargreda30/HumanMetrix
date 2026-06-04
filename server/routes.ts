@@ -5,7 +5,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, populateUser } from "./auth";
 import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
-import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, normalizeAssessmentId, insertInvitationSchema, B2B_VOLUME_TIERS, CREDIT_EXPIRATION_MONTHS, getTrialQuotaForTier } from "@shared/schema";
+import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, B2B_CANDIDATE_BASE_FEE, normalizeAssessmentId, insertInvitationSchema, B2B_VOLUME_TIERS, CREDIT_EXPIRATION_MONTHS, getTrialQuotaForTier } from "@shared/schema";
 import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES, roundPriceUp, formatPrice, getCurrencyForCountry, calculateCandidatePricing, calculateBundlePricing } from "@shared/currencies";
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, broadcastMessages, SYSTEM_SETTING_KEYS, auditLogs, errorLogs, partnerInvoices, invitations, partnerCandidateInvitations, candidateNotes, emailLogs, sessions, appLogs, partnerAccounts, partnerTeamMembers, jobRoles, type PartnerAccount, type AssessmentSession } from "@shared/schema";
@@ -1423,8 +1423,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: normalizeAssessmentId(type),
         priceInPence: ASSESSMENT_PRICES[normalizeAssessmentId(type)] || 0,
       }));
+      // Resolve the linked invitation for fee determination even when the purchase also carries items
+      // (the branch above only loads it when there are no purchase items).
+      if (!linkedInvitation && unpaidPurchase.invitationId) {
+        linkedInvitation = await storage.getInvitation(unpaidPurchase.invitationId);
+      }
+      // Partner-invited candidates pay only the per-test price (no platform fee); B2C self-service keeps the base fee
+      const effectiveBaseFee = linkedInvitation?.partnerId ? B2B_CANDIDATE_BASE_FEE : BASE_FEE;
       const b2cBasePricing = calculateCandidatePricing(
-        currencyCountry, b2cItems, BASE_FEE,
+        currencyCountry, b2cItems, effectiveBaseFee,
         { isVPN }
       );
       const priceInPence = b2cBasePricing.subtotalLocal;
@@ -1482,7 +1489,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const liveExchangeRate = exchangeRatesData.rates?.[currencyCode] ?? undefined;
       
       const b2cCheckoutPricing = calculateCandidatePricing(
-        currencyCountry, b2cItems, BASE_FEE,
+        currencyCountry, b2cItems, effectiveBaseFee,
         { exchangeRate: liveExchangeRate, isVPN }
       );
       
@@ -2681,7 +2688,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       
       // Use calculateBundlePricing: each assessment priced individually with its own BASE_FEE
       const checkoutBundlePricing = calculateBundlePricing(
-        userCountry, checkoutItems, BASE_FEE,
+        userCountry, checkoutItems, B2B_CANDIDATE_BASE_FEE,
         { exchangeRate: effectiveExchangeRate, bundleDiscount: checkoutBundleDiscount }
       );
       
@@ -3097,7 +3104,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       const bulkDiscountRate = hasBulkDiscount ? 25 : 0;
       
       const bundlePricing = calculateBundlePricing(
-        userCountry, purchasableItems, BASE_FEE,
+        userCountry, purchasableItems, B2B_CANDIDATE_BASE_FEE,
         { exchangeRate: lockedExchangeRate, bundleDiscount: bulkDiscountRate }
       );
       
@@ -3114,7 +3121,7 @@ To delete this account, a super admin should go to the Admin Dashboard > Users s
       const originalStripeAmount = calculateStripeAmountFromRoundedTotal(bundlePricing.originalTotal, localCurrencyCode);
 
       res.json({
-        baseFee: BASE_FEE,
+        baseFee: B2B_CANDIDATE_BASE_FEE,
         baseFeeDisplay,
         baseFeeAlreadyPaid: false,
         assessments: assessmentPrices,

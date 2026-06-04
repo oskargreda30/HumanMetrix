@@ -604,6 +604,11 @@ export const ASSESSMENT_PRICES = {
 
 export const BASE_FEE = 1500; // £15.00 in pence
 
+// Platform/base fee for B2B partner-invited candidates unlocking their own results.
+// Set to 0 so invited candidates pay ONLY the per-test price shown on the public site cards;
+// the £15 platform fee (BASE_FEE) applies to B2C self-service purchases only.
+export const B2B_CANDIDATE_BASE_FEE = 0; // no platform fee for partner-invited candidates
+
 // B2C Retail Price - the public price test-takers pay to access their results
 // Used for B2B test-taker emails (individual 25% discount, bundle 40% discount)
 export const B2C_RETAIL_PRICE_PER_ASSESSMENT = 2000; // £20.00 in pence
