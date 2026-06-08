@@ -761,7 +761,7 @@ function renderHtml(path: string, content: RouteContent): string {
     "@type": "Organization",
     name: SITE_NAME,
     url: SITE_URL,
-    logo: `${SITE_URL}/logo.png`,
+    logo: `${SITE_URL}/favicon.png`,
     description: HOME.description,
     sameAs: [
       "https://www.linkedin.com/company/humanmetrix",
