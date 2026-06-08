@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { ArrowLeft, Calendar, Clock, Sparkles, Users, Zap, TrendingUp, Brain, Target } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { SEO } from "@/lib/seo";
+import { SEO, ArticleSchema, BreadcrumbSchema } from "@/lib/seo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,6 +14,26 @@ export default function ArticleFutureRoadmap() {
         title="Future of AI Talent Assessment 2026-2027 | HumanMetrix Roadmap"
         description="Explore HumanMetrix's upcoming assessments: Human-AI Collaboration Style, Adaptability Quotient, and more. See our 2026-2027 product roadmap."
         canonical="/articles/future-of-ai-assessments-2026-roadmap"
+        ogType="article"
+        publishedTime="2026-01-01T00:00:00Z"
+        modifiedTime="2026-01-01T00:00:00Z"
+        section="Product Roadmap"
+        author="HumanMetrix"
+      />
+      <ArticleSchema
+        title="The Future of AI Talent Assessment: Our 2026-2027 Product Roadmap"
+        description="Explore HumanMetrix's upcoming assessments: Human-AI Collaboration Style, Adaptability Quotient, and more. See our 2026-2027 product roadmap."
+        url="/articles/future-of-ai-assessments-2026-roadmap"
+        publishedDate="2026-01-01T00:00:00Z"
+        modifiedDate="2026-01-01T00:00:00Z"
+        authorName="HumanMetrix"
+      />
+      <BreadcrumbSchema
+        items={[
+          { name: "Home", url: "/" },
+          { name: "Articles", url: "/articles" },
+          { name: "The Future of AI Assessments: 2026 Roadmap", url: "/articles/future-of-ai-assessments-2026-roadmap" },
+        ]}
       />
       <Navigation />
       

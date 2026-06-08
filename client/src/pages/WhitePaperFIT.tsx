@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { ArrowLeft, FileText } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { SEO } from "@/lib/seo";
+import { SEO, ArticleSchema, BreadcrumbSchema } from "@/lib/seo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,6 +14,26 @@ export default function WhitePaperFIT() {
         title="FIT Test White Paper - Behavioural Assessment Design | HumanMetrix"
         description="HumanMetrix FIT psychometric test white paper: scientific rationale behind our behavioural assessment measuring six skills."
         canonical="/articles/white-paper-fit-test"
+        ogType="article"
+        publishedTime="2025-12-01T00:00:00Z"
+        modifiedTime="2025-12-01T00:00:00Z"
+        section="White Paper"
+        author="HumanMetrix"
+      />
+      <ArticleSchema
+        title="FIT Test Design – White Paper"
+        description="HumanMetrix FIT psychometric test white paper: scientific rationale behind our behavioural assessment measuring six skills."
+        url="/articles/white-paper-fit-test"
+        publishedDate="2025-12-01T00:00:00Z"
+        modifiedDate="2025-12-01T00:00:00Z"
+        authorName="HumanMetrix"
+      />
+      <BreadcrumbSchema
+        items={[
+          { name: "Home", url: "/" },
+          { name: "Articles", url: "/articles" },
+          { name: "White Paper: The FIT Assessment", url: "/articles/white-paper-fit-test" },
+        ]}
       />
       <Navigation />
       

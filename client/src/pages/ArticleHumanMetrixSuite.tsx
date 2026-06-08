@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { ArrowLeft, Calendar, Clock, Brain, Target, Lightbulb, Shield } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { SEO } from "@/lib/seo";
+import { SEO, ArticleSchema, BreadcrumbSchema } from "@/lib/seo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,6 +14,26 @@ export default function ArticleHumanMetrixSuite() {
         title="HumanMetrix AI Assessment Suite | Complete Platform Overview"
         description="Discover HumanMetrix's four core assessments—FIT, AI Readiness, Prompt Architecture, and AIQ—providing comprehensive insights into AI-era workplace readiness."
         canonical="/articles/humanmetrix-ai-assessment-suite"
+        ogType="article"
+        publishedTime="2025-12-01T00:00:00Z"
+        modifiedTime="2025-12-01T00:00:00Z"
+        section="Product"
+        author="HumanMetrix"
+      />
+      <ArticleSchema
+        title="Introducing HumanMetrix: The Complete AI-Era Assessment Platform"
+        description="Discover HumanMetrix's four core assessments—FIT, AI Readiness, Prompt Architecture, and AIQ—providing comprehensive insights into AI-era workplace readiness."
+        url="/articles/humanmetrix-ai-assessment-suite"
+        publishedDate="2025-12-01T00:00:00Z"
+        modifiedDate="2025-12-01T00:00:00Z"
+        authorName="HumanMetrix"
+      />
+      <BreadcrumbSchema
+        items={[
+          { name: "Home", url: "/" },
+          { name: "Articles", url: "/articles" },
+          { name: "The HumanMetrix AI Assessment Suite", url: "/articles/humanmetrix-ai-assessment-suite" },
+        ]}
       />
       <Navigation />
       

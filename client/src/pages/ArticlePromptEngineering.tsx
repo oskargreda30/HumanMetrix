@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { ArrowLeft, Calendar, Clock, MessageSquare, CheckCircle2, XCircle, Lightbulb } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { SEO } from "@/lib/seo";
+import { SEO, ArticleSchema, BreadcrumbSchema } from "@/lib/seo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,6 +14,26 @@ export default function ArticlePromptEngineering() {
         title="Prompt Engineering Skills for the Workplace | HumanMetrix"
         description="Explore why prompt engineering has become a critical workplace skill and what makes an effective AI communicator in today's professional environment."
         canonical="/articles/prompt-engineering-skills-workplace"
+        ogType="article"
+        publishedTime="2025-12-01T00:00:00Z"
+        modifiedTime="2025-12-01T00:00:00Z"
+        section="Skills"
+        author="HumanMetrix"
+      />
+      <ArticleSchema
+        title="Prompt Engineering: The Skill That Separates AI-Ready Workers from the Rest"
+        description="Explore why prompt engineering has become a critical workplace skill and what makes an effective AI communicator in today's professional environment."
+        url="/articles/prompt-engineering-skills-workplace"
+        publishedDate="2025-12-01T00:00:00Z"
+        modifiedDate="2025-12-01T00:00:00Z"
+        authorName="HumanMetrix"
+      />
+      <BreadcrumbSchema
+        items={[
+          { name: "Home", url: "/" },
+          { name: "Articles", url: "/articles" },
+          { name: "Prompt Engineering Skills for the Workplace", url: "/articles/prompt-engineering-skills-workplace" },
+        ]}
       />
       <Navigation />
       

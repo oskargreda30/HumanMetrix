@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { ArrowLeft, FileText } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { SEO } from "@/lib/seo";
+import { SEO, ArticleSchema, BreadcrumbSchema } from "@/lib/seo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,6 +14,26 @@ export default function WhitePaperAIReadiness() {
         title="AI Readiness Test White Paper - Skills Assessment Design | HumanMetrix"
         description="HumanMetrix AI Readiness test white paper: measuring nine critical AI skills for workforce success. Scientific methodology."
         canonical="/articles/white-paper-ai-readiness-test"
+        ogType="article"
+        publishedTime="2025-12-01T00:00:00Z"
+        modifiedTime="2025-12-01T00:00:00Z"
+        section="White Paper"
+        author="HumanMetrix"
+      />
+      <ArticleSchema
+        title="AI Readiness Test Design – White Paper"
+        description="HumanMetrix AI Readiness test white paper: measuring nine critical AI skills for workforce success. Scientific methodology."
+        url="/articles/white-paper-ai-readiness-test"
+        publishedDate="2025-12-01T00:00:00Z"
+        modifiedDate="2025-12-01T00:00:00Z"
+        authorName="HumanMetrix"
+      />
+      <BreadcrumbSchema
+        items={[
+          { name: "Home", url: "/" },
+          { name: "Articles", url: "/articles" },
+          { name: "White Paper: The AI Readiness Assessment", url: "/articles/white-paper-ai-readiness-test" },
+        ]}
       />
       <Navigation />
       

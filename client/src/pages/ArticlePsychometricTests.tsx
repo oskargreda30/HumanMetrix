@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { ArrowLeft, Calendar, Clock, ExternalLink } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { SEO } from "@/lib/seo";
+import { SEO, ArticleSchema, BreadcrumbSchema } from "@/lib/seo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,6 +14,26 @@ export default function ArticlePsychometricTests() {
         title="How to Pass Psychometric Tests for Job Interviews | HumanMetrix Guide"
         description="HumanMetrix guide: how to prepare for psychometric tests, what to expect & strategies to pass pre-employment assessments."
         canonical="/articles/how-to-pass-psychometric-tests-job-interviews"
+        ogType="article"
+        publishedTime="2025-11-28T00:00:00Z"
+        modifiedTime="2025-11-28T00:00:00Z"
+        section="Career Advice"
+        author="HumanMetrix"
+      />
+      <ArticleSchema
+        title="How to Approach Psychometric Tests for Job Interviews: Your Ultimate Guide"
+        description="HumanMetrix guide: how to prepare for psychometric tests, what to expect & strategies to pass pre-employment assessments."
+        url="/articles/how-to-pass-psychometric-tests-job-interviews"
+        publishedDate="2025-11-28T00:00:00Z"
+        modifiedDate="2025-11-28T00:00:00Z"
+        authorName="HumanMetrix"
+      />
+      <BreadcrumbSchema
+        items={[
+          { name: "Home", url: "/" },
+          { name: "Articles", url: "/articles" },
+          { name: "How to Pass Psychometric Tests", url: "/articles/how-to-pass-psychometric-tests-job-interviews" },
+        ]}
       />
       <Navigation />
       

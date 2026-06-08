@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { ArrowLeft, Calendar, Clock, ExternalLink } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { SEO } from "@/lib/seo";
+import { SEO, ArticleSchema, BreadcrumbSchema } from "@/lib/seo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,6 +22,26 @@ export default function ArticleRecruitmentTesting() {
         title="Role of Psychometric Testing in Recruitment | HumanMetrix Insights"
         description="Why employers use psychometric testing in recruitment. Learn about pre-employment assessment types & data-driven hiring."
         canonical="/articles/role-of-psychometric-testing-in-recruitment"
+        ogType="article"
+        publishedTime="2025-11-28T00:00:00Z"
+        modifiedTime="2025-11-28T00:00:00Z"
+        section="Industry Insights"
+        author="HumanMetrix"
+      />
+      <ArticleSchema
+        title="The Essential Role of Psychometric Testing in Recruitment"
+        description="Why employers use psychometric testing in recruitment. Learn about pre-employment assessment types & data-driven hiring."
+        url="/articles/role-of-psychometric-testing-in-recruitment"
+        publishedDate="2025-11-28T00:00:00Z"
+        modifiedDate="2025-11-28T00:00:00Z"
+        authorName="HumanMetrix"
+      />
+      <BreadcrumbSchema
+        items={[
+          { name: "Home", url: "/" },
+          { name: "Articles", url: "/articles" },
+          { name: "The Role of Psychometric Testing in Recruitment", url: "/articles/role-of-psychometric-testing-in-recruitment" },
+        ]}
       />
       <Navigation />
       

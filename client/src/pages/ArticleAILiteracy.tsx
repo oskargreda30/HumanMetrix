@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { ArrowLeft, Calendar, Clock, Brain, Briefcase, GraduationCap, TrendingUp } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { SEO } from "@/lib/seo";
+import { SEO, ArticleSchema, BreadcrumbSchema } from "@/lib/seo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,6 +14,26 @@ export default function ArticleAILiteracy() {
         title="Why AI Literacy Matters in Recruitment | Essential Skills 2026"
         description="Learn why AI literacy has become essential for every role. Discover how AI literacy assessments are transforming modern hiring practices."
         canonical="/articles/why-ai-literacy-matters-recruitment"
+        ogType="article"
+        publishedTime="2026-01-01T00:00:00Z"
+        modifiedTime="2026-01-01T00:00:00Z"
+        section="Industry Insights"
+        author="HumanMetrix"
+      />
+      <ArticleSchema
+        title="Why AI Literacy Is the New Must-Have Skill for Every Role"
+        description="Learn why AI literacy has become essential for every role. Discover how AI literacy assessments are transforming modern hiring practices."
+        url="/articles/why-ai-literacy-matters-recruitment"
+        publishedDate="2026-01-01T00:00:00Z"
+        modifiedDate="2026-01-01T00:00:00Z"
+        authorName="HumanMetrix"
+      />
+      <BreadcrumbSchema
+        items={[
+          { name: "Home", url: "/" },
+          { name: "Articles", url: "/articles" },
+          { name: "Why AI Literacy Matters in Recruitment", url: "/articles/why-ai-literacy-matters-recruitment" },
+        ]}
       />
       <Navigation />
       
