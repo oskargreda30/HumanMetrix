@@ -188,6 +188,35 @@ const ROUTE_CONTENT: Record<string, RouteContent> = {
     ],
   },
 
+  "/for-employers": {
+    title: "For Employers - AI-Powered Candidate Assessment | HumanMetrix",
+    description:
+      "HumanMetrix helps employers and recruiters objectively assess candidates using AI-powered psychometric tests. Measure behavioural fit, AI readiness and integrity at scale with embeddable assessments, detailed reports and pipeline analytics.",
+    h1: "For Employers",
+    intro:
+      "HumanMetrix gives recruitment teams and hiring managers the objective data they need to make faster, fairer hiring decisions in an AI-driven talent market.",
+    sections: [
+      {
+        heading: "Objective candidate screening",
+        body: "Replace subjective CV filtering with validated assessments that measure behavioural competencies, AI literacy, prompt engineering skill and ethical AI understanding. Every result is scored by GPT-5 against a calibrated golden set for consistency and fairness.",
+      },
+      {
+        heading: "Embeddable and API-ready",
+        body: "Integrate HumanMetrix directly into your existing hiring workflow via a JavaScript widget, REST API or webhook notifications. Invite candidates by link, receive results automatically and view them in your partner dashboard.",
+      },
+      {
+        heading: "Compare and shortlist",
+        body: "Multi-candidate comparison reports, role-fit analysis and AI-generated next-step recommendations help you shortlist faster. Archive completed candidates into your pipeline without losing their data.",
+      },
+      {
+        heading: "Partner billing tiers",
+        body: "Flexible credit-based billing with three partner tiers to suit agencies and in-house teams of any size. Includes auto top-up, subscription billing and full billing oversight from the partner dashboard.",
+      },
+    ],
+    keywords:
+      "pre-employment testing, candidate assessment, recruitment testing, AI hiring tools, psychometric testing employers, HR assessment platform, talent acquisition, hiring analytics",
+  },
+
   "/pricing": {
     title: "Pricing - Individual and Partner Plans | HumanMetrix",
     description:
@@ -628,6 +657,36 @@ const ROUTE_CONTENT: Record<string, RouteContent> = {
       {
         heading: "What's inside",
         body: "The role-fit report scores how well a candidate matches a defined role profile, highlighting alignment, gaps and data-driven next steps for hiring decisions.",
+      },
+    ],
+  },
+
+  "/sample-report/b2b-individual": {
+    title: "Sample B2B Individual Assessment Report | HumanMetrix",
+    description:
+      "Preview a HumanMetrix B2B individual assessment report - the single-candidate report delivered to employers after a candidate completes a partner-administered assessment. Includes skill scores, AI-generated feedback and role-fit indicators.",
+    h1: "Sample B2B Individual Assessment Report",
+    intro:
+      "See exactly what employers and recruiters receive after a candidate completes a HumanMetrix assessment through a partner integration.",
+    sections: [
+      {
+        heading: "What's inside",
+        body: "The B2B individual report shows scored competencies, AI-generated strengths and development areas, and practical hiring recommendations. It is automatically generated and emailed after each assessment completion, giving hiring teams an instant, objective view of the candidate.",
+      },
+    ],
+  },
+
+  "/sample-report/multi-role-fit": {
+    title: "Sample Multi-Candidate Role-Fit Report | HumanMetrix",
+    description:
+      "Preview a HumanMetrix multi-candidate role-fit report - an AI-powered analysis that compares several candidates against a specific role profile, highlighting fit scores, capability gaps and data-driven hiring recommendations.",
+    h1: "Sample Multi-Candidate Role-Fit Report",
+    intro:
+      "See how HumanMetrix compares multiple candidates against a defined role to give hiring teams a clear, ranked view of fit.",
+    sections: [
+      {
+        heading: "What's inside",
+        body: "The multi-candidate role-fit report aggregates assessment scores across candidates, maps each profile against the target role requirements, surfaces individual strengths and gaps, and generates AI-powered next-step recommendations to guide hiring decisions.",
       },
     ],
   },

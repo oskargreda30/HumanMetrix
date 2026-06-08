@@ -200,7 +200,7 @@ export default function ArticleFutureRoadmap() {
                 <p className="text-slate-600 mb-4">
                   Join our mailing list to be notified when new assessments launch.
                 </p>
-                <Link href="/subscribe">
+                <Link href="/news">
                   <Button className="bg-cyan-500 hover:bg-cyan-600">
                     Subscribe for Updates
                   </Button>

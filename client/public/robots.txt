@@ -21,7 +21,6 @@ Allow: /terms
 Allow: /privacy
 Allow: /eula
 Allow: /login
-Allow: /subscribe
 
 # Block private/authenticated pages
 Disallow: /dashboard

@@ -72,6 +72,7 @@ const SampleIndividualReport = lazy(() => import("@/pages/SampleIndividualReport
 const SampleComparisonReport = lazy(() => import("@/pages/SampleComparisonReport"));
 const SampleRoleFitReport = lazy(() => import("@/pages/SampleRoleFitReport"));
 const SampleMultiCandidateRoleFitReport = lazy(() => import("@/pages/SampleMultiCandidateRoleFitReport"));
+const ForEmployers = lazy(() => import("@/pages/ForEmployers"));
 const SampleB2BIndividualReport = lazy(() => import("@/pages/SampleB2BIndividualReport"));
 const EcosystemSampleReport = lazy(() => import("@/pages/EcosystemSampleReport"));
 const EcosystemStart = lazy(() => import("@/pages/EcosystemStart"));
@@ -107,9 +108,7 @@ function Router() {
         <Route path="/about" component={About} />
         <Route path="/team" component={Team} />
         <Route path="/assessments" component={Assessments} />
-        <Route path="/for-employers">
-          {() => <Redirect to="/" />}
-        </Route>
+        <Route path="/for-employers" component={ForEmployers} />
         <Route path="/for-candidates" component={ForCandidates} />
         <Route path="/pricing" component={Pricing} />
         <Route path="/ecosystem-index" component={EcosystemIndex} />
@@ -257,7 +256,7 @@ function Router() {
           {() => <Redirect to="/articles" />}
         </Route>
         <Route path="/subscribe">
-          {() => <Redirect to="/purchase" />}
+          {() => <Redirect to="/news" />}
         </Route>
         
         <Route component={NotFound} />
