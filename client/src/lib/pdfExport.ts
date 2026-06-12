@@ -6884,7 +6884,15 @@ export async function exportCohortBenchmarkPDF(data: CohortBenchmarkPDFData) {
 
   for (const { title, section } of skillSections) {
     if (!section.hasData) continue;
-    yPos = ensurePageSpace(pdf, yPos, 30, pageHeight, pageWidth);
+    if (title === 'AI READINESS') {
+      // Always start AI Readiness on a fresh page
+      pdf.addPage();
+      addBackgroundPattern(pdf, pageWidth, pageHeight);
+      addHeader(pdf, pageWidth);
+      yPos = 35;
+    } else {
+      yPos = ensurePageSpace(pdf, yPos, 30, pageHeight, pageWidth);
+    }
     yPos = addSectionHeader(pdf, title, yPos, pageWidth);
     // Legend
     pdf.setFontSize(7);
@@ -6925,7 +6933,11 @@ export async function exportCohortBenchmarkPDF(data: CohortBenchmarkPDFData) {
 
   // ========== AI NARRATIVE ==========
   if (data.aiInsights) {
-    yPos = ensurePageSpace(pdf, yPos, 40, pageHeight, pageWidth);
+    // Always start the AI Hiring Analysis on its own page
+    pdf.addPage();
+    addBackgroundPattern(pdf, pageWidth, pageHeight);
+    addHeader(pdf, pageWidth);
+    yPos = 35;
     yPos = addSectionHeader(pdf, 'AI HIRING ANALYSIS', yPos, pageWidth);
     const insightLines = data.aiInsights.split('\n');
     for (const rawLine of insightLines) {
