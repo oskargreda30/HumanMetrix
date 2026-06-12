@@ -1,3 +1,5 @@
 - [SEO prerender, sitemap & canonical coupling](seo-prerender-canonical.md) — keep sitemap ⊆ prerender ROUTE_CONTENT (minus redirected routes) or "Duplicate without user-selected canonical" returns.
 - [robots.txt per-bot group override](robots-per-bot-group-override.md) — a crawler obeys only its most-specific User-agent group; bot-specific groups must repeat the wildcard Disallow rules or they bypass them.
 - [Port 5000 EADDRINUSE hardening](port-5000-eaddrinuse.md) — server/index.ts must retry listen() on EADDRINUSE + force-exit fast on shutdown so a stale process never holds the port.
+- [Loading job specs/roles into dev+prod](loading-job-roles-dev-prod.md) — add to CUSTOM_ROLES in seed-custom-roles.ts; idempotent startup seeder; prod gets it only on next publish (prod DB read-only to tooling).
+- [B2B candidate unlock pricing](b2b-candidate-unlock-pricing.md) — invited candidates pay per-test only (no £15 fee); shared /api/unlock-results must resolve the invitation independently of purchase items to set the fee.

@@ -360,6 +360,100 @@ This is a mid-to-senior technical role combining software engineering ability wi
       generatedBy: "JD-analysis",
     },
   },
+  {
+    name: "Senior Talent Consultant",
+    domain: "sales",
+    description: `RecruitMyMom is seeking an experienced, high-performing Senior Talent Consultant to join their growing team. This remote role suits a confident, results-driven recruiter with a strong agency background and a proven commission-earning track record. The successful candidate will own a busy 360-degree desk, leveraging modern AI and recruitment technology to connect premier talent with market-leading local and international organisations.
+
+KEY RESPONSIBILITIES
+
+End-to-End Talent Acquisition
+- Manage the full 360-degree recruitment lifecycle across permanent, contract, and independent contractor placements in diverse industries
+- Identify, engage, and place high-calibre candidates up to C-suite level using advanced sourcing methodology and AI-driven tools
+
+Client Relationship Management
+- Partner with senior leadership, offshore clients, and owner-founder SMEs as a trusted talent advisor, ensuring deep alignment on hiring requirements
+- Deliver a consultative, premium service experience to local and international organisations
+
+Business Development
+- Actively identify and secure new business opportunities locally and internationally to grow desk revenue and market share
+- Maintain a healthy pipeline and consistently hit performance targets in a commission-driven environment
+
+Technology Optimisation
+- Utilise advanced ATS, CRM, and cutting-edge generative AI tools to streamline workflows, enhance candidate matching, and minimise time-to-hire
+- Work alongside dedicated administrative and marketing support teams to deliver a seamless candidate and client experience
+
+REQUIREMENTS
+- Minimum 5 years' recent, active experience as a 360 Recruitment Consultant within an agency environment
+- Proven history managing a high-volume desk, hitting targets, and consistently earning commissions
+- Demonstrated experience placing executive and C-suite talent and partnering with owner-founder SMEs
+- Highly tech-savvy with hands-on experience incorporating AI tools into sourcing, plus deep ATS and CRM familiarity
+- South African citizenship or a valid, unrestricted work permit
+
+PREFERRED QUALIFICATIONS
+- Prior experience navigating international recruitment markets and managing offshore client relationships
+- A relevant tertiary qualification
+
+REQUIRED SOFTWARE SKILLS
+- Applicant Tracking Systems (e.g. Zoho Recruit, Bullhorn, or equivalent)
+- Generative AI sourcing and productivity tools
+- LinkedIn and related professional networking platforms
+- Collaboration tools (Google Workspace, Slack, or MS Teams)
+
+Source: RecruitMyMom (ZR_16980_JOB), Remote, South Africa. Market-related + commission. Permanent.`,
+    competencies: [
+      { skillName: "360 Recruitment & Talent Acquisition", importance: 5, minimumScore: 80 },
+      { skillName: "Business Development & New Business Sales", importance: 5, minimumScore: 78 },
+      { skillName: "Client Relationship Management", importance: 5, minimumScore: 75 },
+      { skillName: "Executive & C-Suite Sourcing", importance: 4, minimumScore: 72 },
+      { skillName: "Resilience & Target-Driven Performance", importance: 5, minimumScore: 75 },
+      { skillName: "AI & Recruitment Tech Literacy (ATS/CRM)", importance: 4, minimumScore: 65 },
+      { skillName: "Communication & Stakeholder Influence", importance: 4, minimumScore: 72 },
+      { skillName: "Commercial Acumen", importance: 3, minimumScore: 60 },
+    ],
+    requiredSkillScores: {
+      fitSkills: {
+        Resilience: 76,
+        "High Agency": 78,
+        "Growth Mindset": 66,
+        "Empathy & Ethics": 68,
+        "Interpersonal Agility": 80,
+        "Intellectual Curiosity": 63,
+      },
+      aiReadinessSkills: {
+        "AI Literacy & Prompt Engineering": 68,
+        "Collaboration & Communication": 78,
+        "Data Fluency": 62,
+        "Responsible AI & Ethical Awareness": 60,
+        "Domain Expertise": 80,
+        "Adaptability & Continuous Learning": 70,
+        "Critical Thinking & Problem-Solving": 70,
+        "Technical Fundamentals": 58,
+        "Creativity & Innovation": 62,
+      },
+      skillCriticality: {
+        Resilience: "critical",
+        "High Agency": "critical",
+        "Growth Mindset": "standard",
+        "Empathy & Ethics": "standard",
+        "Interpersonal Agility": "critical",
+        "Intellectual Curiosity": "standard",
+        "AI Literacy & Prompt Engineering": "standard",
+        "Collaboration & Communication": "critical",
+        "Data Fluency": "standard",
+        "Responsible AI & Ethical Awareness": "standard",
+        "Domain Expertise": "critical",
+        "Adaptability & Continuous Learning": "standard",
+        "Critical Thinking & Problem-Solving": "critical",
+        "Technical Fundamentals": "standard",
+        "Creativity & Innovation": "standard",
+      },
+      promptArchitectureScore: 60,
+      aiqScore: 64,
+      generatedAt: "2026-06-12T00:00:00.000Z",
+      generatedBy: "JD-analysis",
+    },
+  },
 ];
 
 export async function seedCustomRoles(): Promise<void> {
