@@ -40,11 +40,16 @@ interface CandidateData {
   results: CandidateResult[];
 }
 
+export type Outlier = 'above' | 'below' | null;
+
 export interface SkillRow {
   skillName: string;
   teamAverage: number | null;
   candidateScore: number | null;
   delta: number | null;
+  teamMin?: number | null;
+  teamMax?: number | null;
+  outlier?: Outlier;
 }
 
 export interface SkillSection {
@@ -53,6 +58,7 @@ export interface SkillSection {
   teamAverage: number | null;
   candidateScore: number | null;
   delta: number | null;
+  neutral?: boolean;
   teamMembersWithData: number;
 }
 
@@ -61,7 +67,23 @@ export interface OverallSection {
   teamAverage: number | null;
   candidateScore: number | null;
   delta: number | null;
+  teamMin?: number | null;
+  teamMax?: number | null;
+  outlier?: Outlier;
+  neutral?: boolean;
   teamMembersWithData: number;
+}
+
+export interface DeviationItem {
+  label: string;
+  category: string;
+  delta: number;
+  neutral: boolean;
+}
+
+export interface DeviationSummary {
+  aboveTeam: DeviationItem[];
+  belowTeam: DeviationItem[];
 }
 
 export interface CohortBenchmarkData {
@@ -72,6 +94,7 @@ export interface CohortBenchmarkData {
   aiReadiness: SkillSection;
   promptArchitecture: OverallSection;
   aiq: OverallSection;
+  deviationSummary?: DeviationSummary;
   overall: { teamAverage: number | null; candidateScore: number | null; delta: number | null };
   aiInsights: string | null;
   generatedAt?: string;
@@ -132,29 +155,91 @@ const candidateCompletedCount = (c: CandidateData): number =>
 // Presentational sub-components
 // ============================================================================
 
-function DeltaBadge({ delta, size = "sm" }: { delta: number | null; size?: "sm" | "lg" }) {
+// Renders a candidate-vs-team deviation. `neutral` constructs (behavioral FIT)
+// show direction only — no green/red — because higher is not inherently better.
+function DeltaBadge({
+  delta,
+  size = "sm",
+  neutral = false,
+  suffix = "",
+}: {
+  delta: number | null;
+  size?: "sm" | "lg";
+  neutral?: boolean;
+  suffix?: string;
+}) {
   const cls = size === "lg" ? "text-xs md:text-sm" : "text-[10px] md:text-xs";
+  const suf = suffix ? ` ${suffix}` : "";
   if (delta === null) {
     return <Badge variant="secondary" className={cls} data-testid="badge-delta-nodata">No data</Badge>;
   }
-  if (delta > 0) {
+  if (delta === 0) {
     return (
-      <Badge className={`bg-green-600 text-white border-0 gap-1 ${cls}`} data-testid="badge-delta-positive">
-        <TrendingUp className="h-3 w-3" />+{delta}
+      <Badge variant="secondary" className={`gap-1 ${cls}`} data-testid="badge-delta-neutral">
+        <Minus className="h-3 w-3" />in line{suf}
       </Badge>
     );
   }
-  if (delta < 0) {
+  const Icon = delta > 0 ? TrendingUp : TrendingDown;
+  const value = `${delta > 0 ? "+" : ""}${delta}${suf}`;
+  if (neutral) {
+    // Direction-only: differs from the team, but not "better"/"worse".
     return (
-      <Badge className={`bg-red-600 text-white border-0 gap-1 ${cls}`} data-testid="badge-delta-negative">
-        <TrendingDown className="h-3 w-3" />{delta}
+      <Badge
+        variant="secondary"
+        className={`gap-1 ${cls}`}
+        data-testid={delta > 0 ? "badge-delta-positive" : "badge-delta-negative"}
+      >
+        <Icon className="h-3 w-3" />{value}
       </Badge>
     );
   }
+  const color = delta > 0 ? "bg-green-600" : "bg-red-600";
   return (
-    <Badge variant="secondary" className={`gap-1 ${cls}`} data-testid="badge-delta-neutral">
-      <Minus className="h-3 w-3" />0
+    <Badge
+      className={`${color} text-white border-0 gap-1 ${cls}`}
+      data-testid={delta > 0 ? "badge-delta-positive" : "badge-delta-negative"}
+    >
+      <Icon className="h-3 w-3" />{value}
     </Badge>
+  );
+}
+
+// Small inline note showing whether the candidate sits inside or outside the
+// team's observed range (a quick "is this a true outlier?" signal).
+function OutlierNote({
+  outlier,
+  neutral,
+  hasRange = true,
+}: {
+  outlier?: Outlier;
+  neutral?: boolean;
+  hasRange?: boolean;
+}) {
+  if (!outlier) {
+    if (!hasRange) {
+      return (
+        <span className="text-[10px] md:text-xs text-muted-foreground" data-testid="text-outlier-unavailable">
+          Range unavailable
+        </span>
+      );
+    }
+    return (
+      <span className="text-[10px] md:text-xs text-muted-foreground" data-testid="text-outlier-within">
+        Within team range
+      </span>
+    );
+  }
+  const label = outlier === "above" ? "Above team range" : "Below team range";
+  const colorCls = neutral
+    ? "text-muted-foreground"
+    : outlier === "above"
+      ? "text-green-600 dark:text-green-400"
+      : "text-red-600 dark:text-red-400";
+  return (
+    <span className={`text-[10px] md:text-xs font-medium ${colorCls}`} data-testid={`text-outlier-${outlier}`}>
+      {label}
+    </span>
   );
 }
 
@@ -163,6 +248,10 @@ function ComparisonBar({
   teamAverage,
   candidateScore,
   delta,
+  teamMin,
+  teamMax,
+  outlier,
+  neutral = false,
   targetLabel,
   testId,
 }: {
@@ -170,14 +259,19 @@ function ComparisonBar({
   teamAverage: number | null;
   candidateScore: number | null;
   delta: number | null;
+  teamMin?: number | null;
+  teamMax?: number | null;
+  outlier?: Outlier;
+  neutral?: boolean;
   targetLabel: string;
   testId: string;
 }) {
+  const hasRange = typeof teamMin === "number" && typeof teamMax === "number";
   return (
     <div className="space-y-1.5" data-testid={testId}>
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <span className="text-xs md:text-sm font-medium" data-testid={`text-skill-name-${testId}`}>{label}</span>
-        <DeltaBadge delta={delta} />
+        <DeltaBadge delta={delta} neutral={neutral} suffix="vs team" />
       </div>
       <div className="space-y-1">
         <div className="flex items-center gap-2">
@@ -198,6 +292,16 @@ function ComparisonBar({
           />
           <span className="text-[10px] md:text-xs font-semibold w-7 md:w-9 text-right">{candidateScore ?? "—"}</span>
         </div>
+      </div>
+      <div className="flex items-center justify-between gap-2 flex-wrap pt-0.5">
+        {hasRange ? (
+          <span className="text-[10px] md:text-xs text-muted-foreground" data-testid={`text-team-range-${testId}`}>
+            Team range {teamMin}–{teamMax}
+          </span>
+        ) : (
+          <span />
+        )}
+        <OutlierNote outlier={outlier} neutral={neutral} hasRange={hasRange} />
       </div>
     </div>
   );
@@ -300,6 +404,87 @@ function AiNarrative({ text }: { text: string | null }) {
     <div className="space-y-3" data-testid="text-ai-insights">
       {elements}
     </div>
+  );
+}
+
+// Highlights the dimensions where the candidate deviates most from the team —
+// the headline takeaway that replaces the old single "overall score".
+function DeviationColumn({
+  title,
+  items,
+  emptyText,
+  testId,
+}: {
+  title: string;
+  items: DeviationItem[];
+  emptyText: string;
+  testId: string;
+}) {
+  return (
+    <div data-testid={testId}>
+      <h4 className="text-xs md:text-sm font-semibold text-foreground mb-2">{title}</h4>
+      {items.length ? (
+        <div className="space-y-1.5">
+          {items.map((d, i) => (
+            <div
+              key={`${d.category}-${d.label}-${i}`}
+              className="flex items-center justify-between gap-2 rounded-md bg-muted/50 px-2.5 py-1.5"
+              data-testid={`deviation-item-${testId}-${i}`}
+            >
+              <div className="min-w-0">
+                <div className="text-xs md:text-sm font-medium truncate">{d.label}</div>
+                <div className="text-[10px] md:text-xs text-muted-foreground truncate">{d.category}</div>
+              </div>
+              <DeltaBadge delta={d.delta} neutral={d.neutral} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-[11px] md:text-xs text-muted-foreground py-2">{emptyText}</p>
+      )}
+    </div>
+  );
+}
+
+function DeviationSummaryCard({
+  summary,
+  targetLabel,
+}: {
+  summary?: DeviationSummary;
+  targetLabel: string;
+}) {
+  const above = summary?.aboveTeam ?? [];
+  const below = summary?.belowTeam ?? [];
+  if (!above.length && !below.length) return null;
+  return (
+    <Card data-testid="card-deviation-summary">
+      <CardHeader className="p-3 md:p-6">
+        <CardTitle className="text-sm md:text-lg flex items-center gap-2">
+          <TrendingUp className="h-4 w-4 text-blue-600" />
+          Where {targetLabel} Differs Most From the Team
+        </CardTitle>
+        <CardDescription className="text-xs md:text-sm">
+          The dimensions with the largest gaps from the team's profile. For behavioral FIT, a difference signals
+          working-style complementarity rather than a higher or lower "score".
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-3 md:p-6 pt-0 md:pt-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <DeviationColumn
+            title="Higher than the team"
+            items={above}
+            emptyText="No dimensions notably above the team."
+            testId="list-deviation-above"
+          />
+          <DeviationColumn
+            title="Lower than the team"
+            items={below}
+            emptyText="No dimensions notably below the team."
+            testId="list-deviation-below"
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -629,26 +814,19 @@ export function SharedCohortBenchmark({ config, staticData }: SharedCohortBenchm
             </div>
           </CardHeader>
           <CardContent className="p-3 md:p-6 pt-0 md:pt-0">
-            <div className="grid grid-cols-3 gap-2 md:gap-4">
-              <div className="text-center rounded-md bg-blue-50 dark:bg-blue-950/40 p-3 md:p-4" data-testid="stat-candidate-overall">
-                <div className="text-[10px] md:text-xs text-muted-foreground truncate">{targetLabel}</div>
-                <div className="text-xl md:text-3xl font-bold text-blue-600 dark:text-blue-400">
-                  {data.overall.candidateScore ?? "—"}{data.overall.candidateScore !== null ? "%" : ""}
-                </div>
-              </div>
-              <div className="text-center rounded-md bg-muted p-3 md:p-4" data-testid="stat-team-overall">
-                <div className="text-[10px] md:text-xs text-muted-foreground">Team Average</div>
-                <div className="text-xl md:text-3xl font-bold">
-                  {data.overall.teamAverage ?? "—"}{data.overall.teamAverage !== null ? "%" : ""}
-                </div>
-              </div>
-              <div className="text-center rounded-md bg-muted p-3 md:p-4 flex flex-col items-center justify-center gap-1" data-testid="stat-overall-delta">
-                <div className="text-[10px] md:text-xs text-muted-foreground">Difference</div>
-                <DeltaBadge delta={data.overall.delta} size="lg" />
-              </div>
+            <div className="rounded-md bg-blue-50 dark:bg-blue-950/40 p-3 md:p-4">
+              <p className="text-[11px] md:text-sm text-muted-foreground leading-relaxed" data-testid="text-benchmark-explainer">
+                This benchmark shows how <span className="font-medium text-foreground">{targetLabel}</span> deviates from the team
+                on each dimension, rather than a single overall score. Behavioral <span className="font-medium">FIT</span> differences
+                reflect working-style complementarity (not better or worse); ability measures (AI Readiness, Prompt Architecture, AIQ)
+                read higher-is-stronger.
+              </p>
             </div>
           </CardContent>
         </Card>
+
+        {/* Deviation summary */}
+        <DeviationSummaryCard summary={data.deviationSummary} targetLabel={targetLabel} />
 
         {/* Skill-based sections */}
         {skillSections.map(({ title, section }) => (
@@ -659,7 +837,11 @@ export function SharedCohortBenchmark({ config, staticData }: SharedCohortBenchm
                   <BarChart3 className="h-4 w-4 text-blue-600" />
                   {title}
                 </CardTitle>
-                <DeltaBadge delta={section.delta} />
+                {section.neutral && (
+                  <Badge variant="secondary" className="text-[10px] md:text-xs" data-testid={`badge-neutral-${title}`}>
+                    Complementarity
+                  </Badge>
+                )}
               </div>
             </CardHeader>
             <CardContent className="p-3 md:p-6 pt-0 md:pt-0 space-y-3 md:space-y-4">
@@ -671,6 +853,10 @@ export function SharedCohortBenchmark({ config, staticData }: SharedCohortBenchm
                     teamAverage={row.teamAverage}
                     candidateScore={row.candidateScore}
                     delta={row.delta}
+                    teamMin={row.teamMin}
+                    teamMax={row.teamMax}
+                    outlier={row.outlier}
+                    neutral={section.neutral}
                     targetLabel={targetLabel}
                     testId={`bar-${title}-${row.skillName}`}
                   />
@@ -702,6 +888,10 @@ export function SharedCohortBenchmark({ config, staticData }: SharedCohortBenchm
                     teamAverage={section.teamAverage}
                     candidateScore={section.candidateScore}
                     delta={section.delta}
+                    teamMin={section.teamMin}
+                    teamMax={section.teamMax}
+                    outlier={section.outlier}
+                    neutral={section.neutral}
                     targetLabel={targetLabel}
                     testId={`bar-overall-${title}`}
                   />

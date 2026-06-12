@@ -16512,8 +16512,21 @@ Be thorough, professional, and reference specific data points from the assessmen
         if (existingReport) {
           const cachedData = existingReport.resultData as any;
           if (cachedData?.targetCandidate) {
-            return res.json({
+            // Normalize legacy reports saved before the deviation redesign so
+            // they render with the correct neutral (behavioral FIT) framing and
+            // never crash on the new deviationSummary field.
+            const withNeutral = (section: any, neutral: boolean) =>
+              section ? { ...section, neutral: section.neutral ?? neutral } : section;
+            const normalized = {
               ...cachedData,
+              fit: withNeutral(cachedData.fit, true),
+              aiReadiness: withNeutral(cachedData.aiReadiness, false),
+              promptArchitecture: withNeutral(cachedData.promptArchitecture, false),
+              aiq: withNeutral(cachedData.aiq, false),
+              deviationSummary: cachedData.deviationSummary ?? { aboveTeam: [], belowTeam: [] },
+            };
+            return res.json({
+              ...normalized,
               cached: true,
               cachedAt: existingReport.createdAt,
               generatedAt: existingReport.createdAt,
@@ -16608,20 +16621,45 @@ Be thorough, professional, and reference specific data points from the assessmen
       const avg = (vals: number[]): number | null =>
         vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
 
-      // Build a skill-based category section (FIT / AI Readiness)
+      // Team spread: the observed range across team members for a skill. For the
+      // small teams this tool targets (2-3 members) this is indicative, not
+      // rigorous statistics — it lets a recruiter tell a true outlier from
+      // normal team variation without z-score jargon.
+      const spread = (vals: number[]): { teamMin: number | null; teamMax: number | null } => {
+        if (!vals.length) return { teamMin: null, teamMax: null };
+        return { teamMin: Math.round(Math.min(...vals)), teamMax: Math.round(Math.max(...vals)) };
+      };
+      // Whether the candidate sits outside the team's observed range.
+      const outlierOf = (
+        candidateScore: number | null,
+        teamMin: number | null,
+        teamMax: number | null,
+      ): 'above' | 'below' | null => {
+        if (candidateScore === null || teamMin === null || teamMax === null) return null;
+        if (candidateScore > teamMax) return 'above';
+        if (candidateScore < teamMin) return 'below';
+        return null;
+      };
+
+      // Build a skill-based category section (FIT / AI Readiness).
+      // `neutral` flags constructs where "higher" is not inherently "better"
+      // (behavioral FIT traits) so the UI can show direction without good/bad colour.
       const buildSkillSection = (
         skillNames: readonly string[],
         getScores: (d: CandidateScores) => Record<string, number> | null,
+        neutral: boolean,
       ) => {
         const skills = skillNames.map(name => {
           const teamVals = teamData
             .map(d => getScores(d)?.[name])
             .filter((v): v is number => typeof v === 'number');
           const teamAverage = avg(teamVals);
+          const { teamMin, teamMax } = spread(teamVals);
           const raw = getScores(targetData)?.[name];
           const candidateScore = typeof raw === 'number' ? Math.round(raw) : null;
           const delta = (teamAverage !== null && candidateScore !== null) ? candidateScore - teamAverage : null;
-          return { skillName: name, teamAverage, candidateScore, delta };
+          const outlier = outlierOf(candidateScore, teamMin, teamMax);
+          return { skillName: name, teamAverage, candidateScore, delta, teamMin, teamMax, outlier };
         });
         // Per-member category average, then average across members
         const memberAverages = teamData
@@ -16643,34 +16681,68 @@ Be thorough, professional, and reference specific data points from the assessmen
           teamAverage,
           candidateScore,
           delta,
+          neutral,
           teamMembersWithData: memberAverages.length,
         };
       };
 
       // Build an overall-only category section (Prompt Architecture / AIQ)
-      const buildOverallSection = (getVal: (d: CandidateScores) => number | null) => {
+      const buildOverallSection = (getVal: (d: CandidateScores) => number | null, neutral: boolean) => {
         const teamVals = teamData
           .map(getVal)
           .filter((v): v is number => typeof v === 'number');
         const teamAverage = avg(teamVals);
+        const { teamMin, teamMax } = spread(teamVals);
         const raw = getVal(targetData);
         const candidateScore = typeof raw === 'number' ? Math.round(raw) : null;
         const delta = (teamAverage !== null && candidateScore !== null) ? candidateScore - teamAverage : null;
+        const outlier = outlierOf(candidateScore, teamMin, teamMax);
         return {
           hasData: candidateScore !== null || teamAverage !== null,
           teamAverage,
           candidateScore,
           delta,
+          teamMin,
+          teamMax,
+          outlier,
+          neutral,
           teamMembersWithData: teamVals.length,
         };
       };
 
-      const fit = buildSkillSection(FIT_SKILLS_ARRAY, d => d.fit);
-      const aiReadiness = buildSkillSection(AI_READINESS_SKILLS_ARRAY, d => d.ai);
-      const promptArchitecture = buildOverallSection(d => d.prompt);
-      const aiq = buildOverallSection(d => d.aiq);
+      // FIT measures behavioral traits where "higher" is not inherently "better" —
+      // it is about complementarity with the team, so it is flagged neutral.
+      const fit = buildSkillSection(FIT_SKILLS_ARRAY, d => d.fit, true);
+      const aiReadiness = buildSkillSection(AI_READINESS_SKILLS_ARRAY, d => d.ai, false);
+      const promptArchitecture = buildOverallSection(d => d.prompt, false);
+      const aiq = buildOverallSection(d => d.aiq, false);
 
-      // Overall = average of available category scores
+      // Deviation summary: rather than a single misleading aggregate score, we
+      // surface where the candidate most diverges from the team, split by
+      // direction. Each item keeps its `neutral` flag so behavioral FIT
+      // differences are framed as complementarity, not good/bad.
+      type DeviationItem = { label: string; category: string; delta: number; neutral: boolean };
+      const deviationItems: DeviationItem[] = [];
+      fit.skills.forEach(s => {
+        if (s.delta !== null) deviationItems.push({ label: s.skillName, category: 'FIT', delta: s.delta, neutral: true });
+      });
+      aiReadiness.skills.forEach(s => {
+        if (s.delta !== null) deviationItems.push({ label: s.skillName, category: 'AI Readiness', delta: s.delta, neutral: false });
+      });
+      if (promptArchitecture.delta !== null) {
+        deviationItems.push({ label: 'Prompt Architecture', category: 'Prompt Architecture', delta: promptArchitecture.delta, neutral: false });
+      }
+      if (aiq.delta !== null) {
+        deviationItems.push({ label: 'AIQ', category: 'AIQ', delta: aiq.delta, neutral: false });
+      }
+      const aboveTeam = deviationItems.filter(d => d.delta > 0).sort((a, b) => b.delta - a.delta).slice(0, 5);
+      const belowTeam = deviationItems.filter(d => d.delta < 0).sort((a, b) => a.delta - b.delta).slice(0, 5);
+      const deviationSummary = { aboveTeam, belowTeam };
+
+      // Overall = average of available category scores. RETAINED for backward
+      // compatibility with previously cached reports, but no longer surfaced in
+      // the UI/PDF: a single percentage that averages behavioral FIT with
+      // ability scores is misleading, so the redesign leads with deviations.
       const overallTeam = avg([fit.teamAverage, aiReadiness.teamAverage, promptArchitecture.teamAverage, aiq.teamAverage].filter((v): v is number => v !== null));
       const overallCandidate = avg([fit.candidateScore, aiReadiness.candidateScore, promptArchitecture.candidateScore, aiq.candidateScore].filter((v): v is number => v !== null));
       const overallDelta = (overallTeam !== null && overallCandidate !== null) ? overallCandidate - overallTeam : null;
@@ -16681,24 +16753,37 @@ Be thorough, professional, and reference specific data points from the assessmen
       // Generate AI narrative (the credit-consuming part)
       const fmt = (n: number | null) => (n === null ? 'N/A' : `${n}%`);
       const fmtDelta = (n: number | null) => (n === null ? 'N/A' : (n > 0 ? `+${n}` : `${n}`));
+      const fmtRange = (min: number | null, max: number | null) => (min === null || max === null ? 'N/A' : `${min}-${max}`);
+      const fmtOutlier = (o: 'above' | 'below' | null) => (o === 'above' ? ' [OUTLIER: above team range]' : o === 'below' ? ' [OUTLIER: below team range]' : '');
       let aiInsights: string | null = null;
       try {
-        const aiPrompt = `You are an expert talent strategist advising a hiring manager. Analyze how a TARGET CANDIDATE compares against the AVERAGE of an existing TEAM, to inform a hiring decision.
+        const aiPrompt = `You are an expert talent strategist advising a hiring manager. Analyze how a TARGET CANDIDATE DIFFERS from an existing TEAM, to inform a hiring decision.
+
+CRITICAL FRAMING RULES:
+- Do NOT reduce the candidate to a single overall score or rank them as simply "better" or "worse" than the team. There is no aggregate pass/fail number.
+- Reason in terms of DEVIATION from the team: where the candidate diverges most from the team's typical profile, and what that means for team composition.
+- FIT is BEHAVIORAL. For FIT traits, higher is NOT inherently better. Frame FIT differences as COMPLEMENTARITY or CULTURAL/WORKING-STYLE divergence, never as the candidate being "stronger" or "weaker".
+- AI Readiness, Prompt Architecture and AIQ are ABILITY/competency measures where higher generally is better — you may frame these as strengths or gaps.
+- "Team range" is the spread (min-max) of team members on that dimension. A candidate flagged as an OUTLIER sits OUTSIDE that range — call out true outliers explicitly, and distinguish them from candidates who merely sit at one end of normal team variation.
 
 TARGET CANDIDATE: ${targetName}
 TEAM: ${resolvedTeamName} (${teamData.length} members)
 
-OVERALL: Candidate ${fmt(overallCandidate)} vs Team Average ${fmt(overallTeam)} (delta ${fmtDelta(overallDelta)})
-FIT (Behavioral): Candidate ${fmt(fit.candidateScore)} vs Team ${fmt(fit.teamAverage)} (delta ${fmtDelta(fit.delta)})
-AI Readiness: Candidate ${fmt(aiReadiness.candidateScore)} vs Team ${fmt(aiReadiness.teamAverage)} (delta ${fmtDelta(aiReadiness.delta)})
-Prompt Architecture: Candidate ${fmt(promptArchitecture.candidateScore)} vs Team ${fmt(promptArchitecture.teamAverage)} (delta ${fmtDelta(promptArchitecture.delta)})
-AIQ: Candidate ${fmt(aiq.candidateScore)} vs Team ${fmt(aiq.teamAverage)} (delta ${fmtDelta(aiq.delta)})
+BIGGEST POSITIVE DEVIATIONS (candidate above team average):
+${aboveTeam.length ? aboveTeam.map(d => `- ${d.label} (${d.category}): ${fmtDelta(d.delta)}${d.neutral ? ' [behavioral — complementarity, not better]' : ''}`).join('\n') : '- None'}
 
-FIT SKILL DELTAS (candidate minus team average):
-${fit.skills.map(s => `- ${s.skillName}: ${fmtDelta(s.delta)} (candidate ${fmt(s.candidateScore)} / team ${fmt(s.teamAverage)})`).join('\n')}
+BIGGEST NEGATIVE DEVIATIONS (candidate below team average):
+${belowTeam.length ? belowTeam.map(d => `- ${d.label} (${d.category}): ${fmtDelta(d.delta)}${d.neutral ? ' [behavioral — complementarity, not weaker]' : ''}`).join('\n') : '- None'}
 
-AI READINESS SKILL DELTAS (candidate minus team average):
-${aiReadiness.skills.map(s => `- ${s.skillName}: ${fmtDelta(s.delta)} (candidate ${fmt(s.candidateScore)} / team ${fmt(s.teamAverage)})`).join('\n')}
+FIT SKILL DETAIL (behavioral — direction only, not better/worse) [candidate vs team avg, team range, deviation]:
+${fit.skills.map(s => `- ${s.skillName}: candidate ${fmt(s.candidateScore)} vs team avg ${fmt(s.teamAverage)} (range ${fmtRange(s.teamMin, s.teamMax)}, deviation ${fmtDelta(s.delta)})${fmtOutlier(s.outlier)}`).join('\n')}
+
+AI READINESS SKILL DETAIL (ability — higher is better) [candidate vs team avg, team range, deviation]:
+${aiReadiness.skills.map(s => `- ${s.skillName}: candidate ${fmt(s.candidateScore)} vs team avg ${fmt(s.teamAverage)} (range ${fmtRange(s.teamMin, s.teamMax)}, deviation ${fmtDelta(s.delta)})${fmtOutlier(s.outlier)}`).join('\n')}
+
+TECHNICAL ASSESSMENTS (ability — higher is better):
+- Prompt Architecture: candidate ${fmt(promptArchitecture.candidateScore)} vs team avg ${fmt(promptArchitecture.teamAverage)} (range ${fmtRange(promptArchitecture.teamMin, promptArchitecture.teamMax)}, deviation ${fmtDelta(promptArchitecture.delta)})${fmtOutlier(promptArchitecture.outlier)}
+- AIQ: candidate ${fmt(aiq.candidateScore)} vs team avg ${fmt(aiq.teamAverage)} (range ${fmtRange(aiq.teamMin, aiq.teamMax)}, deviation ${fmtDelta(aiq.delta)})${fmtOutlier(aiq.outlier)}
 
 Provide a concise, professional analysis using EXACTLY these markdown section headers:
 **TEAM FIT SUMMARY**
@@ -16706,12 +16791,12 @@ Provide a concise, professional analysis using EXACTLY these markdown section he
 **POTENTIAL GAPS VS THE TEAM**
 **HIRING RECOMMENDATION**
 
-Be specific, reference the skill deltas, and keep each section to 2-4 sentences.`;
+Be specific, reference the actual deviations and any outliers, respect the behavioral-vs-ability framing rules above, and keep each section to 2-4 sentences.`;
 
         const completion = await openai.chat.completions.create({
           model: "gpt-4o",
           messages: [
-            { role: "system", content: "You are an expert talent strategist specializing in team composition and hiring decisions. Provide structured, actionable insights using the exact section headers requested." },
+            { role: "system", content: "You are an expert talent strategist specializing in team composition and hiring decisions. You analyze how a candidate DEVIATES from a team rather than ranking them with a single score. You never treat behavioral FIT traits as 'better/worse' — only as complementarity. Provide structured, actionable insights using the exact section headers requested." },
             { role: "user", content: aiPrompt },
           ],
           max_tokens: 800,
@@ -16739,6 +16824,7 @@ Be specific, reference the skill deltas, and keep each section to 2-4 sentences.
         aiReadiness,
         promptArchitecture,
         aiq,
+        deviationSummary,
         overall: { teamAverage: overallTeam, candidateScore: overallCandidate, delta: overallDelta },
         aiInsights,
         overallFit: overallCandidate ?? undefined,

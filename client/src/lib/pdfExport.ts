@@ -6630,11 +6630,15 @@ export async function generateIndividualReportPDF(data: LegacyIndividualReportDa
 // Team Cohort Benchmark PDF Export
 // ============================================================================
 
+type CohortOutlier = 'above' | 'below' | null;
 interface CohortSkillRow {
   skillName: string;
   teamAverage: number | null;
   candidateScore: number | null;
   delta: number | null;
+  teamMin?: number | null;
+  teamMax?: number | null;
+  outlier?: CohortOutlier;
 }
 interface CohortSkillSection {
   hasData: boolean;
@@ -6642,12 +6646,27 @@ interface CohortSkillSection {
   teamAverage: number | null;
   candidateScore: number | null;
   delta: number | null;
+  neutral?: boolean;
 }
 interface CohortOverallSection {
   hasData: boolean;
   teamAverage: number | null;
   candidateScore: number | null;
   delta: number | null;
+  teamMin?: number | null;
+  teamMax?: number | null;
+  outlier?: CohortOutlier;
+  neutral?: boolean;
+}
+interface CohortDeviationItem {
+  label: string;
+  category: string;
+  delta: number;
+  neutral: boolean;
+}
+interface CohortDeviationSummary {
+  aboveTeam: CohortDeviationItem[];
+  belowTeam: CohortDeviationItem[];
 }
 export interface CohortBenchmarkPDFData {
   targetCandidate: { id: string; name: string; email: string };
@@ -6657,6 +6676,7 @@ export interface CohortBenchmarkPDFData {
   aiReadiness: CohortSkillSection;
   promptArchitecture: CohortOverallSection;
   aiq: CohortOverallSection;
+  deviationSummary?: CohortDeviationSummary;
   overall: { teamAverage: number | null; candidateScore: number | null; delta: number | null };
   aiInsights: string | null;
   generatedAt?: string;
@@ -6664,11 +6684,14 @@ export interface CohortBenchmarkPDFData {
 
 const fmtScore = (n: number | null): string => (n === null ? 'N/A' : `${n}%`);
 const fmtDeltaStr = (n: number | null): string => (n === null ? 'N/A' : n > 0 ? `+${n}` : `${n}`);
-const deltaColor = (n: number | null): [number, number, number] =>
-  n === null ? [107, 114, 128] : n > 0 ? [22, 163, 74] : n < 0 ? [220, 38, 38] : [107, 114, 128];
+// Neutral (behavioral FIT) deltas render in slate grey — direction without
+// a better/worse value judgement. Ability deltas keep green/red.
+const deltaColor = (n: number | null, neutral = false): [number, number, number] =>
+  n === null || neutral ? [107, 114, 128] : n > 0 ? [22, 163, 74] : n < 0 ? [220, 38, 38] : [107, 114, 128];
 
 // Draws a single labelled comparison row: skill name, two horizontal bars
-// (team average + candidate) and the delta. Returns the new yPos.
+// (team average + candidate), the delta, and the team range / outlier note.
+// Returns the new yPos.
 function drawCohortBar(
   pdf: jsPDF,
   label: string,
@@ -6677,7 +6700,9 @@ function drawCohortBar(
   delta: number | null,
   yPos: number,
   pageWidth: number,
+  opts: { teamMin?: number | null; teamMax?: number | null; outlier?: CohortOutlier; neutral?: boolean } = {},
 ): number {
+  const { teamMin, teamMax, outlier, neutral = false } = opts;
   const leftX = 20;
   const labelWidth = 55;
   const barX = leftX + labelWidth;
@@ -6715,14 +6740,32 @@ function drawCohortBar(
   pdf.setFont('helvetica', 'bold');
   pdf.text(fmtScore(candidateScore), rightX, yPos2 + 2.5, { align: 'right' });
 
-  // Delta
-  const dc = deltaColor(delta);
+  // Delta (vs team)
+  const dc = deltaColor(delta, neutral);
   pdf.setTextColor(dc[0], dc[1], dc[2]);
   pdf.setFontSize(7);
-  pdf.text(`(${fmtDeltaStr(delta)})`, barX, yPos2 + 6);
+  pdf.setFont('helvetica', 'bold');
+  const deltaSuffix = delta === null ? '' : ' vs team';
+  pdf.text(`(${fmtDeltaStr(delta)}${deltaSuffix})`, barX, yPos2 + 6);
+
+  // Team range + outlier note
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(6.5);
+  const rangeParts: string[] = [];
+  const hasRange = typeof teamMin === 'number' && typeof teamMax === 'number';
+  if (hasRange) {
+    rangeParts.push(`Team range ${teamMin}-${teamMax}`);
+  }
+  if (outlier) {
+    rangeParts.push(outlier === 'above' ? 'Above team range' : 'Below team range');
+  } else {
+    rangeParts.push(hasRange ? 'Within team range' : 'Range unavailable');
+  }
+  pdf.setTextColor(120, 120, 120);
+  pdf.text(rangeParts.join('    |    '), rightX, yPos2 + 6, { align: 'right' });
 
   pdf.setTextColor(0, 0, 0);
-  return yPos2 + 9;
+  return yPos2 + 10;
 }
 
 export async function exportCohortBenchmarkPDF(data: CohortBenchmarkPDFData) {
@@ -6779,22 +6822,62 @@ export async function exportCohortBenchmarkPDF(data: CohortBenchmarkPDFData) {
   pdf.text(memberLines.slice(0, 1), 25, yPos + 24);
   yPos += 34;
 
-  // Overall composite comparison
-  yPos = addSectionHeader(pdf, 'OVERALL COMPARISON', yPos, pageWidth);
-  drawTableRow(pdf, 20, yPos, [70, 50, 50], ['', 'Score', ''], 8, {
-    isBold: true, fontSize: 8, fillColor: [59, 130, 246], textColor: [255, 255, 255],
-  });
-  // header row labels
-  drawTableRow(pdf, 20, yPos, [70, 50, 50], ['Metric', `${targetName}`.slice(0, 24), 'Team Avg / Δ'], 8, {
-    isBold: true, fontSize: 8, fillColor: [59, 130, 246], textColor: [255, 255, 255],
-  });
-  yPos += 8;
-  drawTableRow(pdf, 20, yPos, [70, 50, 50], [
-    'Overall Composite',
-    fmtScore(data.overall.candidateScore),
-    `${fmtScore(data.overall.teamAverage)}  (${fmtDeltaStr(data.overall.delta)})`,
-  ], 8, { fontSize: 8 });
-  yPos += 14;
+  // Deviation summary — the headline takeaway (replaces the misleading
+  // single "overall composite" score).
+  const dev = data.deviationSummary;
+  const aboveItems = dev?.aboveTeam ?? [];
+  const belowItems = dev?.belowTeam ?? [];
+  if (aboveItems.length || belowItems.length) {
+    yPos = addSectionHeader(pdf, 'WHERE THEY DIFFER FROM THE TEAM', yPos, pageWidth);
+    pdf.setFontSize(7.5);
+    pdf.setFont('helvetica', 'italic');
+    pdf.setTextColor(107, 114, 128);
+    const introLines = pdf.splitTextToSize(
+      'Largest gaps vs the team profile. Behavioral FIT differences indicate working-style complementarity, not better or worse.',
+      pageWidth - 40,
+    );
+    pdf.text(introLines, 20, yPos);
+    yPos += introLines.length * 4 + 3;
+
+    const colWidth = (pageWidth - 40) / 2;
+    const drawDevColumn = (heading: string, items: CohortDeviationItem[], colX: number) => {
+      let colY = yPos;
+      pdf.setFontSize(8.5);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(31, 41, 55);
+      pdf.text(heading, colX, colY);
+      colY += 5;
+      pdf.setFontSize(7.5);
+      if (!items.length) {
+        pdf.setFont('helvetica', 'italic');
+        pdf.setTextColor(140, 140, 140);
+        pdf.text('None notable.', colX, colY);
+        colY += 5;
+        return colY;
+      }
+      for (const it of items) {
+        const dc = deltaColor(it.delta, it.neutral);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(31, 41, 55);
+        const nameLines = pdf.splitTextToSize(it.label, colWidth - 18);
+        pdf.text(nameLines.slice(0, 1), colX, colY);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(dc[0], dc[1], dc[2]);
+        pdf.text(fmtDeltaStr(it.delta), colX + colWidth - 6, colY, { align: 'right' });
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(140, 140, 140);
+        pdf.setFontSize(6.5);
+        pdf.text(it.category, colX, colY + 3.5);
+        pdf.setFontSize(7.5);
+        colY += 8;
+      }
+      return colY;
+    };
+    const leftEnd = drawDevColumn('Higher than team', aboveItems, 20);
+    const rightEnd = drawDevColumn('Lower than team', belowItems, 20 + colWidth);
+    yPos = Math.max(leftEnd, rightEnd) + 6;
+    pdf.setTextColor(0, 0, 0);
+  }
 
   // ========== SKILL SECTIONS ==========
   const skillSections: { title: string; section: CohortSkillSection }[] = [
@@ -6817,7 +6900,9 @@ export async function exportCohortBenchmarkPDF(data: CohortBenchmarkPDFData) {
     yPos += 5;
     for (const row of section.skills) {
       yPos = ensurePageSpace(pdf, yPos, 16, pageHeight, pageWidth);
-      yPos = drawCohortBar(pdf, row.skillName, row.teamAverage, row.candidateScore, row.delta, yPos, pageWidth);
+      yPos = drawCohortBar(pdf, row.skillName, row.teamAverage, row.candidateScore, row.delta, yPos, pageWidth, {
+        teamMin: row.teamMin, teamMax: row.teamMax, outlier: row.outlier, neutral: section.neutral,
+      });
     }
     yPos += 4;
   }
@@ -6834,7 +6919,9 @@ export async function exportCohortBenchmarkPDF(data: CohortBenchmarkPDFData) {
     for (const { title, section } of overallSections) {
       if (!section.hasData) continue;
       yPos = ensurePageSpace(pdf, yPos, 16, pageHeight, pageWidth);
-      yPos = drawCohortBar(pdf, title, section.teamAverage, section.candidateScore, section.delta, yPos, pageWidth);
+      yPos = drawCohortBar(pdf, title, section.teamAverage, section.candidateScore, section.delta, yPos, pageWidth, {
+        teamMin: section.teamMin, teamMax: section.teamMax, outlier: section.outlier, neutral: section.neutral,
+      });
     }
     yPos += 4;
   }
