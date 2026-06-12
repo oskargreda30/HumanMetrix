@@ -541,17 +541,17 @@ export default function PartnerReportView() {
                   teamMembers: reportData.teamMembers || [],
                   teamName: reportData.teamName || 'Selected Team',
                   fit: reportData.fit
-                    ? { ...reportData.fit, neutral: reportData.fit.neutral ?? true }
-                    : { hasData: false, skills: [], teamAverage: null, candidateScore: null, delta: null, neutral: true, teamMembersWithData: 0 },
+                    ? { ...reportData.fit }
+                    : { hasData: false, skills: [], teamAverage: null, candidateScore: null, delta: null, teamMembersWithData: 0 },
                   aiReadiness: reportData.aiReadiness
-                    ? { ...reportData.aiReadiness, neutral: reportData.aiReadiness.neutral ?? false }
-                    : { hasData: false, skills: [], teamAverage: null, candidateScore: null, delta: null, neutral: false, teamMembersWithData: 0 },
+                    ? { ...reportData.aiReadiness }
+                    : { hasData: false, skills: [], teamAverage: null, candidateScore: null, delta: null, teamMembersWithData: 0 },
                   promptArchitecture: reportData.promptArchitecture
-                    ? { ...reportData.promptArchitecture, neutral: reportData.promptArchitecture.neutral ?? false }
-                    : { hasData: false, teamAverage: null, candidateScore: null, delta: null, neutral: false, teamMembersWithData: 0 },
+                    ? { ...reportData.promptArchitecture }
+                    : { hasData: false, teamAverage: null, candidateScore: null, delta: null, teamMembersWithData: 0 },
                   aiq: reportData.aiq
-                    ? { ...reportData.aiq, neutral: reportData.aiq.neutral ?? false }
-                    : { hasData: false, teamAverage: null, candidateScore: null, delta: null, neutral: false, teamMembersWithData: 0 },
+                    ? { ...reportData.aiq }
+                    : { hasData: false, teamAverage: null, candidateScore: null, delta: null, teamMembersWithData: 0 },
                   deviationSummary: reportData.deviationSummary || { aboveTeam: [], belowTeam: [] },
                   overall: reportData.overall || { teamAverage: null, candidateScore: null, delta: null },
                   aiInsights: reportData.aiInsights || null,

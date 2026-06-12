@@ -6646,7 +6646,6 @@ interface CohortSkillSection {
   teamAverage: number | null;
   candidateScore: number | null;
   delta: number | null;
-  neutral?: boolean;
 }
 interface CohortOverallSection {
   hasData: boolean;
@@ -6656,13 +6655,11 @@ interface CohortOverallSection {
   teamMin?: number | null;
   teamMax?: number | null;
   outlier?: CohortOutlier;
-  neutral?: boolean;
 }
 interface CohortDeviationItem {
   label: string;
   category: string;
   delta: number;
-  neutral: boolean;
 }
 interface CohortDeviationSummary {
   aboveTeam: CohortDeviationItem[];
@@ -6684,10 +6681,10 @@ export interface CohortBenchmarkPDFData {
 
 const fmtScore = (n: number | null): string => (n === null ? 'N/A' : `${n}%`);
 const fmtDeltaStr = (n: number | null): string => (n === null ? 'N/A' : n > 0 ? `+${n}` : `${n}`);
-// Neutral (behavioral FIT) deltas render in slate grey — direction without
-// a better/worse value judgement. Ability deltas keep green/red.
-const deltaColor = (n: number | null, neutral = false): [number, number, number] =>
-  n === null || neutral ? [107, 114, 128] : n > 0 ? [22, 163, 74] : n < 0 ? [220, 38, 38] : [107, 114, 128];
+// Deltas render green when above the team average and red when below —
+// consistent across every assessment, including FIT.
+const deltaColor = (n: number | null): [number, number, number] =>
+  n === null ? [107, 114, 128] : n > 0 ? [22, 163, 74] : n < 0 ? [220, 38, 38] : [107, 114, 128];
 
 // Draws a single labelled comparison row: skill name, two horizontal bars
 // (team average + candidate), the delta, and the team range / outlier note.
@@ -6700,9 +6697,9 @@ function drawCohortBar(
   delta: number | null,
   yPos: number,
   pageWidth: number,
-  opts: { teamMin?: number | null; teamMax?: number | null; outlier?: CohortOutlier; neutral?: boolean } = {},
+  opts: { teamMin?: number | null; teamMax?: number | null; outlier?: CohortOutlier } = {},
 ): number {
-  const { teamMin, teamMax, outlier, neutral = false } = opts;
+  const { teamMin, teamMax, outlier } = opts;
   const leftX = 20;
   const labelWidth = 55;
   const barX = leftX + labelWidth;
@@ -6741,7 +6738,7 @@ function drawCohortBar(
   pdf.text(fmtScore(candidateScore), rightX, yPos2 + 2.5, { align: 'right' });
 
   // Delta (vs team)
-  const dc = deltaColor(delta, neutral);
+  const dc = deltaColor(delta);
   pdf.setTextColor(dc[0], dc[1], dc[2]);
   pdf.setFontSize(7);
   pdf.setFont('helvetica', 'bold');
@@ -6833,7 +6830,7 @@ export async function exportCohortBenchmarkPDF(data: CohortBenchmarkPDFData) {
     pdf.setFont('helvetica', 'italic');
     pdf.setTextColor(107, 114, 128);
     const introLines = pdf.splitTextToSize(
-      'Largest gaps vs the team profile. Behavioral FIT differences indicate working-style complementarity, not better or worse.',
+      'The dimensions with the largest gaps from the team profile. Across every assessment, green means above the team average and red means below.',
       pageWidth - 40,
     );
     pdf.text(introLines, 20, yPos);
@@ -6856,7 +6853,7 @@ export async function exportCohortBenchmarkPDF(data: CohortBenchmarkPDFData) {
         return colY;
       }
       for (const it of items) {
-        const dc = deltaColor(it.delta, it.neutral);
+        const dc = deltaColor(it.delta);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(31, 41, 55);
         const nameLines = pdf.splitTextToSize(it.label, colWidth - 18);
@@ -6901,7 +6898,7 @@ export async function exportCohortBenchmarkPDF(data: CohortBenchmarkPDFData) {
     for (const row of section.skills) {
       yPos = ensurePageSpace(pdf, yPos, 16, pageHeight, pageWidth);
       yPos = drawCohortBar(pdf, row.skillName, row.teamAverage, row.candidateScore, row.delta, yPos, pageWidth, {
-        teamMin: row.teamMin, teamMax: row.teamMax, outlier: row.outlier, neutral: section.neutral,
+        teamMin: row.teamMin, teamMax: row.teamMax, outlier: row.outlier,
       });
     }
     yPos += 4;
@@ -6920,7 +6917,7 @@ export async function exportCohortBenchmarkPDF(data: CohortBenchmarkPDFData) {
       if (!section.hasData) continue;
       yPos = ensurePageSpace(pdf, yPos, 16, pageHeight, pageWidth);
       yPos = drawCohortBar(pdf, title, section.teamAverage, section.candidateScore, section.delta, yPos, pageWidth, {
-        teamMin: section.teamMin, teamMax: section.teamMax, outlier: section.outlier, neutral: section.neutral,
+        teamMin: section.teamMin, teamMax: section.teamMax, outlier: section.outlier,
       });
     }
     yPos += 4;

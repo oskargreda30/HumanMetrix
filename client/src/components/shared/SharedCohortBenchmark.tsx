@@ -58,7 +58,6 @@ export interface SkillSection {
   teamAverage: number | null;
   candidateScore: number | null;
   delta: number | null;
-  neutral?: boolean;
   teamMembersWithData: number;
 }
 
@@ -70,7 +69,6 @@ export interface OverallSection {
   teamMin?: number | null;
   teamMax?: number | null;
   outlier?: Outlier;
-  neutral?: boolean;
   teamMembersWithData: number;
 }
 
@@ -78,7 +76,6 @@ export interface DeviationItem {
   label: string;
   category: string;
   delta: number;
-  neutral: boolean;
 }
 
 export interface DeviationSummary {
@@ -155,17 +152,15 @@ const candidateCompletedCount = (c: CandidateData): number =>
 // Presentational sub-components
 // ============================================================================
 
-// Renders a candidate-vs-team deviation. `neutral` constructs (behavioral FIT)
-// show direction only — no green/red — because higher is not inherently better.
+// Renders a candidate-vs-team deviation. Green = above the team average, red =
+// below — applied consistently across every assessment, including FIT.
 function DeltaBadge({
   delta,
   size = "sm",
-  neutral = false,
   suffix = "",
 }: {
   delta: number | null;
   size?: "sm" | "lg";
-  neutral?: boolean;
   suffix?: string;
 }) {
   const cls = size === "lg" ? "text-xs md:text-sm" : "text-[10px] md:text-xs";
@@ -182,18 +177,6 @@ function DeltaBadge({
   }
   const Icon = delta > 0 ? TrendingUp : TrendingDown;
   const value = `${delta > 0 ? "+" : ""}${delta}${suf}`;
-  if (neutral) {
-    // Direction-only: differs from the team, but not "better"/"worse".
-    return (
-      <Badge
-        variant="secondary"
-        className={`gap-1 ${cls}`}
-        data-testid={delta > 0 ? "badge-delta-positive" : "badge-delta-negative"}
-      >
-        <Icon className="h-3 w-3" />{value}
-      </Badge>
-    );
-  }
   const color = delta > 0 ? "bg-green-600" : "bg-red-600";
   return (
     <Badge
@@ -209,11 +192,9 @@ function DeltaBadge({
 // team's observed range (a quick "is this a true outlier?" signal).
 function OutlierNote({
   outlier,
-  neutral,
   hasRange = true,
 }: {
   outlier?: Outlier;
-  neutral?: boolean;
   hasRange?: boolean;
 }) {
   if (!outlier) {
@@ -231,11 +212,9 @@ function OutlierNote({
     );
   }
   const label = outlier === "above" ? "Above team range" : "Below team range";
-  const colorCls = neutral
-    ? "text-muted-foreground"
-    : outlier === "above"
-      ? "text-green-600 dark:text-green-400"
-      : "text-red-600 dark:text-red-400";
+  const colorCls = outlier === "above"
+    ? "text-green-600 dark:text-green-400"
+    : "text-red-600 dark:text-red-400";
   return (
     <span className={`text-[10px] md:text-xs font-medium ${colorCls}`} data-testid={`text-outlier-${outlier}`}>
       {label}
@@ -251,7 +230,6 @@ function ComparisonBar({
   teamMin,
   teamMax,
   outlier,
-  neutral = false,
   targetLabel,
   testId,
 }: {
@@ -262,7 +240,6 @@ function ComparisonBar({
   teamMin?: number | null;
   teamMax?: number | null;
   outlier?: Outlier;
-  neutral?: boolean;
   targetLabel: string;
   testId: string;
 }) {
@@ -271,7 +248,7 @@ function ComparisonBar({
     <div className="space-y-1.5" data-testid={testId}>
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <span className="text-xs md:text-sm font-medium" data-testid={`text-skill-name-${testId}`}>{label}</span>
-        <DeltaBadge delta={delta} neutral={neutral} suffix="vs team" />
+        <DeltaBadge delta={delta} suffix="vs team" />
       </div>
       <div className="space-y-1">
         <div className="flex items-center gap-2">
@@ -301,7 +278,7 @@ function ComparisonBar({
         ) : (
           <span />
         )}
-        <OutlierNote outlier={outlier} neutral={neutral} hasRange={hasRange} />
+        <OutlierNote outlier={outlier} hasRange={hasRange} />
       </div>
     </div>
   );
@@ -435,7 +412,7 @@ function DeviationColumn({
                 <div className="text-xs md:text-sm font-medium truncate">{d.label}</div>
                 <div className="text-[10px] md:text-xs text-muted-foreground truncate">{d.category}</div>
               </div>
-              <DeltaBadge delta={d.delta} neutral={d.neutral} />
+              <DeltaBadge delta={d.delta} />
             </div>
           ))}
         </div>
@@ -464,8 +441,8 @@ function DeviationSummaryCard({
           Where {targetLabel} Differs Most From the Team
         </CardTitle>
         <CardDescription className="text-xs md:text-sm">
-          The dimensions with the largest gaps from the team's profile. For behavioral FIT, a difference signals
-          working-style complementarity rather than a higher or lower "score".
+          The dimensions with the largest gaps from the team's profile — where this candidate stands out most
+          relative to the team.
         </CardDescription>
       </CardHeader>
       <CardContent className="p-3 md:p-6 pt-0 md:pt-0">
@@ -735,7 +712,7 @@ export function SharedCohortBenchmark({ config, staticData }: SharedCohortBenchm
               ) : (
                 <>
                   <BarChart3 className="h-4 w-4 mr-2" />
-                  Run Team Benchmark (1 credit)
+                  Run Team Benchmark (3 credits)
                 </>
               )}
             </Button>
@@ -794,7 +771,7 @@ export function SharedCohortBenchmark({ config, staticData }: SharedCohortBenchm
                     ) : (
                       <RefreshCw className="h-4 w-4 mr-2" />
                     )}
-                    Re-run (1 credit)
+                    Re-run (3 credits)
                   </Button>
                 )}
                 <Button size="sm" onClick={handleExport} disabled={isExporting} data-testid="button-export-pdf">
@@ -817,9 +794,8 @@ export function SharedCohortBenchmark({ config, staticData }: SharedCohortBenchm
             <div className="rounded-md bg-blue-50 dark:bg-blue-950/40 p-3 md:p-4">
               <p className="text-[11px] md:text-sm text-muted-foreground leading-relaxed" data-testid="text-benchmark-explainer">
                 This benchmark shows how <span className="font-medium text-foreground">{targetLabel}</span> deviates from the team
-                on each dimension, rather than a single overall score. Behavioral <span className="font-medium">FIT</span> differences
-                reflect working-style complementarity (not better or worse); ability measures (AI Readiness, Prompt Architecture, AIQ)
-                read higher-is-stronger.
+                on each dimension, rather than a single overall score. Across every assessment, green means above the team
+                average and red means below.
               </p>
             </div>
           </CardContent>
@@ -837,11 +813,6 @@ export function SharedCohortBenchmark({ config, staticData }: SharedCohortBenchm
                   <BarChart3 className="h-4 w-4 text-blue-600" />
                   {title}
                 </CardTitle>
-                {section.neutral && (
-                  <Badge variant="secondary" className="text-[10px] md:text-xs" data-testid={`badge-neutral-${title}`}>
-                    Complementarity
-                  </Badge>
-                )}
               </div>
             </CardHeader>
             <CardContent className="p-3 md:p-6 pt-0 md:pt-0 space-y-3 md:space-y-4">
@@ -856,7 +827,6 @@ export function SharedCohortBenchmark({ config, staticData }: SharedCohortBenchm
                     teamMin={row.teamMin}
                     teamMax={row.teamMax}
                     outlier={row.outlier}
-                    neutral={section.neutral}
                     targetLabel={targetLabel}
                     testId={`bar-${title}-${row.skillName}`}
                   />
@@ -891,7 +861,6 @@ export function SharedCohortBenchmark({ config, staticData }: SharedCohortBenchm
                     teamMin={section.teamMin}
                     teamMax={section.teamMax}
                     outlier={section.outlier}
-                    neutral={section.neutral}
                     targetLabel={targetLabel}
                     testId={`bar-overall-${title}`}
                   />
