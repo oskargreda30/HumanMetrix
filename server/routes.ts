@@ -6,6 +6,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, populateUser } from "./auth";
 import { calculateFITScores, calculateAIReadinessScores } from "./scoring";
 import { ASSESSMENT_TYPES, ASSESSMENT_PRICES, BASE_FEE, B2B_CANDIDATE_BASE_FEE, normalizeAssessmentId, insertInvitationSchema, B2B_VOLUME_TIERS, CREDIT_EXPIRATION_MONTHS, getTrialQuotaForTier } from "@shared/schema";
+import { FIT_SKILLS_ARRAY, AI_READINESS_SKILLS_ARRAY } from "@shared/skillNames";
 import { getPPPAdjustedPriceInPence, getPricingTier, getStripeCurrencyCode, convertPenceToRoundedLocalCurrency, calculateStripeAmountFromRoundedTotal, COUNTRY_CURRENCY_MAP, hasSEALaunchPricing, getSEALaunchPricing, CURRENCIES, ZERO_DECIMAL_CURRENCIES, roundPriceUp, formatPrice, getCurrencyForCountry, calculateCandidatePricing, calculateBundlePricing } from "@shared/currencies";
 import { db } from "./db";
 import { purchaseItems, assessmentResults, purchases, promptArchitectureEvaluations, goldenSetResults, goldenSetPrompts, assessmentSessions, partnerMonthlyUsage, users, broadcastMessages, SYSTEM_SETTING_KEYS, auditLogs, errorLogs, partnerInvoices, invitations, partnerCandidateInvitations, candidateNotes, emailLogs, sessions, appLogs, partnerAccounts, partnerTeamMembers, jobRoles, type PartnerAccount, type AssessmentSession } from "@shared/schema";
@@ -16437,6 +16438,346 @@ Be thorough, professional, and reference specific data points from the assessmen
     } catch (error) {
       console.error("Error fetching cohort benchmark:", error);
       res.status(500).json({ message: "Failed to fetch cohort benchmark" });
+    }
+  });
+
+  // Partner: Team Cohort Benchmark — compare ONE target candidate against the
+  // average scores of a partner-selected "team" of their own candidates.
+  app.post("/api/partner/me/cohort-benchmark", isAuthenticated, async (req: any, res) => {
+    try {
+      const partnerData = await getPartnerForUser(req.user.id);
+      const partner = partnerData?.partner;
+      if (!partner) {
+        return res.status(404).json({ message: "No partner account found" });
+      }
+
+      const { targetCandidateId, teamCandidateIds, teamName, forceRefresh } = req.body as {
+        targetCandidateId?: string;
+        teamCandidateIds?: string[];
+        teamName?: string;
+        forceRefresh?: boolean;
+      };
+
+      if (!targetCandidateId || !Array.isArray(teamCandidateIds) || teamCandidateIds.length < 2) {
+        return res.status(400).json({ message: "A target candidate and at least 2 team members are required" });
+      }
+      if (teamCandidateIds.length > 20) {
+        return res.status(400).json({ message: "A team can have at most 20 members" });
+      }
+      // De-duplicate the team list and make sure the target is not also a team member
+      const uniqueTeamIds = Array.from(new Set(teamCandidateIds));
+      if (uniqueTeamIds.includes(targetCandidateId)) {
+        return res.status(400).json({ message: "The target candidate cannot also be a team member" });
+      }
+
+      // Verify ALL candidates belong to this partner BEFORE consuming credits
+      // SOURCE 1: B2B Widget/API sessions
+      const allSessions = await storage.getSessionsByPartner(partner.id, 10000);
+      const partnerCandidateIds = new Set<string>();
+      allSessions.forEach(s => {
+        if (s.externalEmail) partnerCandidateIds.add(s.externalEmail);
+        if (s.externalUserId) partnerCandidateIds.add(s.externalUserId);
+        if (s.id) partnerCandidateIds.add(s.id);
+      });
+      // SOURCE 2: Partner invitation candidates
+      const partnerInvitations = await db.select()
+        .from(partnerCandidateInvitations)
+        .where(eq(partnerCandidateInvitations.partnerId, partner.id));
+      partnerInvitations.forEach(inv => {
+        if (inv.email) partnerCandidateIds.add(inv.email);
+        if (inv.externalUserId) partnerCandidateIds.add(inv.externalUserId);
+      });
+
+      const requestedIds = [targetCandidateId, ...uniqueTeamIds];
+      const unauthorizedCandidates = requestedIds.filter(id => !partnerCandidateIds.has(id));
+      if (unauthorizedCandidates.length > 0) {
+        return res.status(403).json({
+          message: "Some candidates do not belong to your organization",
+          unauthorizedCandidates,
+        });
+      }
+
+      // candidateIds stored with a target marker so swapping target/team member
+      // does not collide with a previously cached report for the same people.
+      const reportCandidateIds = [`target:${targetCandidateId}`, ...uniqueTeamIds];
+
+      // Check for an existing cached report (unless forceRefresh)
+      let existingReportId: string | undefined;
+      if (!forceRefresh) {
+        const existingReport = await storage.findExistingPartnerReport(
+          partner.id,
+          'cohort_benchmark',
+          reportCandidateIds,
+        );
+        if (existingReport) {
+          const cachedData = existingReport.resultData as any;
+          if (cachedData?.targetCandidate) {
+            return res.json({
+              ...cachedData,
+              cached: true,
+              cachedAt: existingReport.createdAt,
+              generatedAt: existingReport.createdAt,
+              reportId: existingReport.id,
+            });
+          }
+          existingReportId = existingReport.id;
+        }
+      }
+
+      // Build a per-candidate score map (latest completed result per assessment type)
+      const completedSessions = allSessions.filter(
+        s => s.status === 'completed' && !s.isTestSession && !s.archivedAt,
+      );
+      type CandidateScores = {
+        id: string;
+        email: string;
+        firstName: string | null;
+        lastName: string | null;
+        fit: Record<string, number> | null; fitAt: number;
+        ai: Record<string, number> | null; aiAt: number;
+        prompt: number | null; promptAt: number;
+        aiq: number | null; aiqAt: number;
+      };
+      const dataMap = new Map<string, CandidateScores>();
+      for (const s of completedSessions) {
+        const key = s.externalEmail || s.externalUserId || s.id;
+        if (!key) continue;
+        if (!dataMap.has(key)) {
+          dataMap.set(key, {
+            id: key,
+            email: s.externalEmail || '',
+            firstName: s.externalEmail ? s.externalEmail.split('@')[0] : null,
+            lastName: null,
+            fit: null, fitAt: 0,
+            ai: null, aiAt: 0,
+            prompt: null, promptAt: 0,
+            aiq: null, aiqAt: 0,
+          });
+        }
+        const d = dataMap.get(key)!;
+        const t = s.completedAt ? new Date(s.completedAt).getTime() : 0;
+        const scores = (s.scores || {}) as Record<string, number>;
+        if (s.assessmentType === 'fit' && t >= d.fitAt) { d.fit = scores; d.fitAt = t; }
+        else if (s.assessmentType === 'ai_readiness' && t >= d.aiAt) { d.ai = scores; d.aiAt = t; }
+        else if (s.assessmentType === 'prompt_architecture' && t >= d.promptAt) { d.prompt = s.totalScore ?? null; d.promptAt = t; }
+        else if (s.assessmentType === 'aiq' && t >= d.aiqAt) { d.aiq = s.totalScore ?? null; d.aiqAt = t; }
+      }
+      // Enrich names from invitations (invitation names take priority)
+      for (const inv of partnerInvitations) {
+        if (!inv.email) continue;
+        const d = dataMap.get(inv.email);
+        if (d && inv.name) {
+          const parts = inv.name.split(' ');
+          d.firstName = parts[0] || d.firstName;
+          d.lastName = parts.slice(1).join(' ') || d.lastName;
+        }
+      }
+
+      const nameOf = (d: CandidateScores): string =>
+        [d.firstName, d.lastName].filter(Boolean).join(' ').trim() || d.email || d.id;
+
+      const targetData = dataMap.get(targetCandidateId);
+      if (!targetData) {
+        return res.status(404).json({ message: "The target candidate has no completed assessments" });
+      }
+      const teamData = uniqueTeamIds
+        .map(id => dataMap.get(id))
+        .filter((d): d is CandidateScores => !!d);
+      if (teamData.length < 2) {
+        return res.status(400).json({ message: "At least 2 team members must have completed assessments" });
+      }
+
+      // Consume 1 credit (only the AI narrative costs) — charged ONLY after all
+      // deterministic validation passes and the target/team actually have data,
+      // so partners are never billed for a request that ends in a 4xx.
+      if (!existingReportId) {
+        const quotaBalance = await storage.getPartnerQuotaBalance(partner.id);
+        if (quotaBalance.remaining < 1) {
+          const partnerAccount = await storage.getPartnerAccount(partner.id);
+          if (!partnerAccount?.stripeCustomerId) {
+            return res.status(402).json({
+              message: `Insufficient credits. You need 1 credit to run a team cohort benchmark, but only have ${quotaBalance.remaining} available.`,
+              creditsRequired: 1,
+              creditsRemaining: quotaBalance.remaining,
+            });
+          }
+        }
+        await storage.consumePartnerTest(partner.id, null, 'Team cohort benchmark analysis');
+      }
+
+      const avg = (vals: number[]): number | null =>
+        vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+
+      // Build a skill-based category section (FIT / AI Readiness)
+      const buildSkillSection = (
+        skillNames: readonly string[],
+        getScores: (d: CandidateScores) => Record<string, number> | null,
+      ) => {
+        const skills = skillNames.map(name => {
+          const teamVals = teamData
+            .map(d => getScores(d)?.[name])
+            .filter((v): v is number => typeof v === 'number');
+          const teamAverage = avg(teamVals);
+          const raw = getScores(targetData)?.[name];
+          const candidateScore = typeof raw === 'number' ? Math.round(raw) : null;
+          const delta = (teamAverage !== null && candidateScore !== null) ? candidateScore - teamAverage : null;
+          return { skillName: name, teamAverage, candidateScore, delta };
+        });
+        // Per-member category average, then average across members
+        const memberAverages = teamData
+          .map(d => {
+            const sc = getScores(d);
+            if (!sc) return null;
+            const vals = skillNames.map(n => sc[n]).filter((v): v is number => typeof v === 'number');
+            return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+          })
+          .filter((v): v is number => v !== null);
+        const teamAverage = avg(memberAverages);
+        const ts = getScores(targetData);
+        const candVals = ts ? skillNames.map(n => ts[n]).filter((v): v is number => typeof v === 'number') : [];
+        const candidateScore = avg(candVals);
+        const delta = (teamAverage !== null && candidateScore !== null) ? candidateScore - teamAverage : null;
+        return {
+          hasData: candidateScore !== null || teamAverage !== null,
+          skills,
+          teamAverage,
+          candidateScore,
+          delta,
+          teamMembersWithData: memberAverages.length,
+        };
+      };
+
+      // Build an overall-only category section (Prompt Architecture / AIQ)
+      const buildOverallSection = (getVal: (d: CandidateScores) => number | null) => {
+        const teamVals = teamData
+          .map(getVal)
+          .filter((v): v is number => typeof v === 'number');
+        const teamAverage = avg(teamVals);
+        const raw = getVal(targetData);
+        const candidateScore = typeof raw === 'number' ? Math.round(raw) : null;
+        const delta = (teamAverage !== null && candidateScore !== null) ? candidateScore - teamAverage : null;
+        return {
+          hasData: candidateScore !== null || teamAverage !== null,
+          teamAverage,
+          candidateScore,
+          delta,
+          teamMembersWithData: teamVals.length,
+        };
+      };
+
+      const fit = buildSkillSection(FIT_SKILLS_ARRAY, d => d.fit);
+      const aiReadiness = buildSkillSection(AI_READINESS_SKILLS_ARRAY, d => d.ai);
+      const promptArchitecture = buildOverallSection(d => d.prompt);
+      const aiq = buildOverallSection(d => d.aiq);
+
+      // Overall = average of available category scores
+      const overallTeam = avg([fit.teamAverage, aiReadiness.teamAverage, promptArchitecture.teamAverage, aiq.teamAverage].filter((v): v is number => v !== null));
+      const overallCandidate = avg([fit.candidateScore, aiReadiness.candidateScore, promptArchitecture.candidateScore, aiq.candidateScore].filter((v): v is number => v !== null));
+      const overallDelta = (overallTeam !== null && overallCandidate !== null) ? overallCandidate - overallTeam : null;
+
+      const targetName = nameOf(targetData);
+      const resolvedTeamName = (teamName && teamName.trim()) || 'Selected Team';
+
+      // Generate AI narrative (the credit-consuming part)
+      const fmt = (n: number | null) => (n === null ? 'N/A' : `${n}%`);
+      const fmtDelta = (n: number | null) => (n === null ? 'N/A' : (n > 0 ? `+${n}` : `${n}`));
+      let aiInsights: string | null = null;
+      try {
+        const aiPrompt = `You are an expert talent strategist advising a hiring manager. Analyze how a TARGET CANDIDATE compares against the AVERAGE of an existing TEAM, to inform a hiring decision.
+
+TARGET CANDIDATE: ${targetName}
+TEAM: ${resolvedTeamName} (${teamData.length} members)
+
+OVERALL: Candidate ${fmt(overallCandidate)} vs Team Average ${fmt(overallTeam)} (delta ${fmtDelta(overallDelta)})
+FIT (Behavioral): Candidate ${fmt(fit.candidateScore)} vs Team ${fmt(fit.teamAverage)} (delta ${fmtDelta(fit.delta)})
+AI Readiness: Candidate ${fmt(aiReadiness.candidateScore)} vs Team ${fmt(aiReadiness.teamAverage)} (delta ${fmtDelta(aiReadiness.delta)})
+Prompt Architecture: Candidate ${fmt(promptArchitecture.candidateScore)} vs Team ${fmt(promptArchitecture.teamAverage)} (delta ${fmtDelta(promptArchitecture.delta)})
+AIQ: Candidate ${fmt(aiq.candidateScore)} vs Team ${fmt(aiq.teamAverage)} (delta ${fmtDelta(aiq.delta)})
+
+FIT SKILL DELTAS (candidate minus team average):
+${fit.skills.map(s => `- ${s.skillName}: ${fmtDelta(s.delta)} (candidate ${fmt(s.candidateScore)} / team ${fmt(s.teamAverage)})`).join('\n')}
+
+AI READINESS SKILL DELTAS (candidate minus team average):
+${aiReadiness.skills.map(s => `- ${s.skillName}: ${fmtDelta(s.delta)} (candidate ${fmt(s.candidateScore)} / team ${fmt(s.teamAverage)})`).join('\n')}
+
+Provide a concise, professional analysis using EXACTLY these markdown section headers:
+**TEAM FIT SUMMARY**
+**WHERE THEY STRENGTHEN THE TEAM**
+**POTENTIAL GAPS VS THE TEAM**
+**HIRING RECOMMENDATION**
+
+Be specific, reference the skill deltas, and keep each section to 2-4 sentences.`;
+
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            { role: "system", content: "You are an expert talent strategist specializing in team composition and hiring decisions. Provide structured, actionable insights using the exact section headers requested." },
+            { role: "user", content: aiPrompt },
+          ],
+          max_tokens: 800,
+          temperature: 0.7,
+        });
+        aiInsights = completion.choices[0]?.message?.content || null;
+
+        logAiCost({
+          operationType: AI_USAGE_OPERATION_TYPES.COHORT_BENCHMARK,
+          model: "gpt-4o",
+          usage: extractUsage(completion),
+          userId: req.user.id,
+          partnerId: partner.id,
+        }).catch(console.error);
+      } catch (aiError) {
+        console.error("[Cohort Benchmark] AI narrative generation failed:", aiError);
+        aiInsights = null;
+      }
+
+      const reportData = {
+        targetCandidate: { id: targetCandidateId, name: targetName, email: targetData.email },
+        teamMembers: teamData.map(d => ({ id: d.id, name: nameOf(d), email: d.email })),
+        teamName: resolvedTeamName,
+        fit,
+        aiReadiness,
+        promptArchitecture,
+        aiq,
+        overall: { teamAverage: overallTeam, candidateScore: overallCandidate, delta: overallDelta },
+        aiInsights,
+        overallFit: overallCandidate ?? undefined,
+        hasSkillData: true,
+        generatedAt: new Date().toISOString(),
+        version: 1,
+      };
+
+      let savedReportId: string | undefined;
+      const reportPayload = {
+        partnerId: partner.id,
+        reportType: 'cohort_benchmark',
+        version: 1,
+        candidateIds: reportCandidateIds,
+        title: `Team Cohort Benchmark: ${targetName} vs ${resolvedTeamName} (${teamData.length} members)`,
+        resultData: reportData as any,
+        creditsUsed: 1,
+        generatedByUserId: req.user.id,
+      };
+      try {
+        if (existingReportId) {
+          const updated = await storage.updatePartnerAnalysisReport(existingReportId, reportPayload);
+          savedReportId = updated?.id;
+        } else {
+          const savedReport = await storage.createPartnerAnalysisReport(reportPayload);
+          savedReportId = savedReport?.id;
+        }
+      } catch (saveError) {
+        console.error("[Report Cache] Failed to save cohort_benchmark report:", saveError);
+      }
+
+      res.json({
+        ...reportData,
+        cached: false,
+        reportId: savedReportId,
+      });
+    } catch (error) {
+      console.error("Error creating team cohort benchmark:", error);
+      res.status(500).json({ message: "Failed to create cohort benchmark" });
     }
   });
 

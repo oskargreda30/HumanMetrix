@@ -13,6 +13,7 @@ import hmLogoPath from "@assets/Gemini_Generated_Image_misel3misel3mise-removebg
 import { SharedIndividualReport } from "@/components/shared/SharedIndividualReport";
 import { SharedCompareTab } from "@/components/shared/SharedCompareTab";
 import { SharedSingleCandidateRoleFit } from "@/components/shared/SharedSingleCandidateRoleFit";
+import { SharedCohortBenchmark } from "@/components/shared/SharedCohortBenchmark";
 import PartnerMultiCandidateRoleFitTab from "@/components/partner/PartnerMultiCandidateRoleFitTab";
 
 const SECTION_ICONS: Record<string, { color: string; icon: any }> = {
@@ -164,6 +165,7 @@ function ReportHeader({ title, createdAt, reportType, cached }: { title: string;
     role_fit_multi: 'Multi-Candidate Role Fit',
     profile_insights: 'Profile Insights Report',
     compare_insights: 'Comparison Insights Report',
+    cohort_benchmark: 'Team Cohort Benchmark',
     assessment: 'Assessment Report',
   };
 
@@ -369,6 +371,7 @@ export default function PartnerReportView() {
   const isRoleFit = reportType === 'role_fit_single' || reportType === 'role_fit_multi';
   const isProfileInsights = reportType === 'profile_insights';
   const isCompareInsights = reportType === 'compare_insights';
+  const isCohortBenchmark = reportType === 'cohort_benchmark';
 
   const cleanTitle = (reportData.title || 'Report Details').replace(/for\s+undefined/gi, '').replace(/\s{2,}/g, ' ').trim();
 
@@ -526,7 +529,31 @@ export default function PartnerReportView() {
 
           {isProfileInsights && <ProfileInsightsContent reportData={reportData} />}
           {isCompareInsights && <CompareInsightsContent reportData={reportData} />}
-          {!isIndividual && !isComparison && !isRoleFit && !isProfileInsights && !isCompareInsights && (
+          {isCohortBenchmark && (
+            <SharedCohortBenchmark
+              config={{
+                candidatesEndpoint: '/api/partner/me/candidates',
+                benchmarkEndpoint: '/api/partner/me/cohort-benchmark',
+              }}
+              staticData={{
+                benchmark: {
+                  targetCandidate: reportData.targetCandidate || { id: '', name: 'Candidate', email: '' },
+                  teamMembers: reportData.teamMembers || [],
+                  teamName: reportData.teamName || 'Selected Team',
+                  fit: reportData.fit || { hasData: false, skills: [], teamAverage: null, candidateScore: null, delta: null, teamMembersWithData: 0 },
+                  aiReadiness: reportData.aiReadiness || { hasData: false, skills: [], teamAverage: null, candidateScore: null, delta: null, teamMembersWithData: 0 },
+                  promptArchitecture: reportData.promptArchitecture || { hasData: false, teamAverage: null, candidateScore: null, delta: null, teamMembersWithData: 0 },
+                  aiq: reportData.aiq || { hasData: false, teamAverage: null, candidateScore: null, delta: null, teamMembersWithData: 0 },
+                  overall: reportData.overall || { teamAverage: null, candidateScore: null, delta: null },
+                  aiInsights: reportData.aiInsights || null,
+                  generatedAt: reportData.createdAt,
+                  reportId: reportData.id,
+                  cached: reportData.cached,
+                },
+              }}
+            />
+          )}
+          {!isIndividual && !isComparison && !isRoleFit && !isProfileInsights && !isCompareInsights && !isCohortBenchmark && (
             <GenericReportContent reportData={reportData} />
           )}
         </div>

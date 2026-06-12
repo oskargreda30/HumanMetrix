@@ -128,6 +128,7 @@ export default function PartnerResultsTab() {
                       case 'role_fit_multi': return <Users className="h-3 w-3" />;
                       case 'comparison': return <BarChart3 className="h-3 w-3" />;
                       case 'profile_insights': return <FileText className="h-3 w-3" />;
+                      case 'cohort_benchmark': return <Users className="h-3 w-3" />;
                       case 'assessment': return <ClipboardList className="h-3 w-3" />;
                       default: return <FileText className="h-3 w-3" />;
                     }
@@ -145,6 +146,8 @@ export default function PartnerResultsTab() {
                         return <Badge variant="outline" className="text-[9px] md:text-[10px] bg-green-500/10 text-green-600 border-green-500/30">Compare</Badge>;
                       case 'profile_insights': 
                         return <Badge variant="outline" className="text-[9px] md:text-[10px] bg-cyan-500/10 text-cyan-600 border-cyan-500/30">Insights</Badge>;
+                      case 'cohort_benchmark': 
+                        return <Badge variant="outline" className="text-[9px] md:text-[10px] bg-blue-500/10 text-blue-600 border-blue-500/30">Cohort</Badge>;
                       case 'assessment': 
                         return <Badge variant="outline" className="text-[9px] md:text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/30">Assessment</Badge>;
                       default: 

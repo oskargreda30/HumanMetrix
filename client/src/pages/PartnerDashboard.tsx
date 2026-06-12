@@ -35,6 +35,7 @@ import { useToast } from "@/hooks/use-toast";
 import { BulkInvitationsTab } from "@/components/partner/BulkInvitationsTab";
 import PartnerAnalysisTab from "@/components/partner/PartnerAnalysisTab";
 import PartnerResultsTab from "@/components/partner/PartnerResultsTab";
+import { SharedCohortBenchmark } from "@/components/shared/SharedCohortBenchmark";
 import { PdfImportModal } from "@/components/PdfImportModal";
 import { HiringPipelineTab } from "@/components/HiringPipelineTab";
 import PartnerTermsAcceptanceDialog from "@/components/PartnerTermsAcceptanceDialog";
@@ -5277,28 +5278,12 @@ export default function PartnerDashboard() {
 
             {/* Cohort Benchmarking Tab */}
             <TabsContent value="cohort-benchmarking" className="space-y-6" data-testid="panel-cohort-benchmarking">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    Cohort Benchmarking
-                    <Badge variant="secondary" className="bg-amber-500 text-white border-0">Coming Soon</Badge>
-                  </CardTitle>
-                  <CardDescription>Compare candidate performance against industry benchmarks</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <div className="h-16 w-16 rounded-full bg-cyan-500/10 flex items-center justify-center mb-6">
-                      <BarChart3 className="h-8 w-8 text-cyan-500" />
-                    </div>
-                    <h3 className="text-xl font-semibold mb-2">Coming Soon</h3>
-                    <p className="text-muted-foreground max-w-md">
-                      We're working very hard on this feature and it will be available very soon. 
-                      Cohort Benchmarking will allow you to compare candidate performance with percentile 
-                      rankings and peer group analysis.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <SharedCohortBenchmark
+                config={{
+                  candidatesEndpoint: '/api/partner/me/candidates',
+                  benchmarkEndpoint: '/api/partner/me/cohort-benchmark',
+                }}
+              />
             </TabsContent>
 
             {/* Notifications Tab */}

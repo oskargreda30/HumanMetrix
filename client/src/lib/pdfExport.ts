@@ -6625,3 +6625,273 @@ export async function generateIndividualReportPDF(data: LegacyIndividualReportDa
   const safeName = data.candidateName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
   savePdfMobile(pdf, `individual-report-${safeName}-${timestamp}.pdf`);
 }
+
+// ============================================================================
+// Team Cohort Benchmark PDF Export
+// ============================================================================
+
+interface CohortSkillRow {
+  skillName: string;
+  teamAverage: number | null;
+  candidateScore: number | null;
+  delta: number | null;
+}
+interface CohortSkillSection {
+  hasData: boolean;
+  skills: CohortSkillRow[];
+  teamAverage: number | null;
+  candidateScore: number | null;
+  delta: number | null;
+}
+interface CohortOverallSection {
+  hasData: boolean;
+  teamAverage: number | null;
+  candidateScore: number | null;
+  delta: number | null;
+}
+export interface CohortBenchmarkPDFData {
+  targetCandidate: { id: string; name: string; email: string };
+  teamMembers: { id: string; name: string; email: string }[];
+  teamName: string;
+  fit: CohortSkillSection;
+  aiReadiness: CohortSkillSection;
+  promptArchitecture: CohortOverallSection;
+  aiq: CohortOverallSection;
+  overall: { teamAverage: number | null; candidateScore: number | null; delta: number | null };
+  aiInsights: string | null;
+  generatedAt?: string;
+}
+
+const fmtScore = (n: number | null): string => (n === null ? 'N/A' : `${n}%`);
+const fmtDeltaStr = (n: number | null): string => (n === null ? 'N/A' : n > 0 ? `+${n}` : `${n}`);
+const deltaColor = (n: number | null): [number, number, number] =>
+  n === null ? [107, 114, 128] : n > 0 ? [22, 163, 74] : n < 0 ? [220, 38, 38] : [107, 114, 128];
+
+// Draws a single labelled comparison row: skill name, two horizontal bars
+// (team average + candidate) and the delta. Returns the new yPos.
+function drawCohortBar(
+  pdf: jsPDF,
+  label: string,
+  teamAverage: number | null,
+  candidateScore: number | null,
+  delta: number | null,
+  yPos: number,
+  pageWidth: number,
+): number {
+  const leftX = 20;
+  const labelWidth = 55;
+  const barX = leftX + labelWidth;
+  const barMaxWidth = pageWidth - barX - 35;
+  const rightX = pageWidth - 20;
+
+  // Skill label
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(31, 41, 55);
+  const labelLines = pdf.splitTextToSize(label, labelWidth - 2);
+  pdf.text(labelLines.slice(0, 2), leftX, yPos + 3);
+
+  // Team average bar (lighter blue)
+  pdf.setFillColor(226, 232, 240);
+  pdf.roundedRect(barX, yPos, barMaxWidth, 3, 1, 1, 'F');
+  if (teamAverage !== null) {
+    pdf.setFillColor(147, 197, 253); // blue-300
+    pdf.roundedRect(barX, yPos, Math.max(1, (barMaxWidth * teamAverage) / 100), 3, 1, 1, 'F');
+  }
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(71, 85, 105);
+  pdf.text(fmtScore(teamAverage), rightX, yPos + 2.5, { align: 'right' });
+
+  // Candidate bar (strong blue 59,130,246)
+  const yPos2 = yPos + 5;
+  pdf.setFillColor(226, 232, 240);
+  pdf.roundedRect(barX, yPos2, barMaxWidth, 3, 1, 1, 'F');
+  if (candidateScore !== null) {
+    pdf.setFillColor(59, 130, 246); // blue-500
+    pdf.roundedRect(barX, yPos2, Math.max(1, (barMaxWidth * candidateScore) / 100), 3, 1, 1, 'F');
+  }
+  pdf.setTextColor(37, 99, 235);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text(fmtScore(candidateScore), rightX, yPos2 + 2.5, { align: 'right' });
+
+  // Delta
+  const dc = deltaColor(delta);
+  pdf.setTextColor(dc[0], dc[1], dc[2]);
+  pdf.setFontSize(7);
+  pdf.text(`(${fmtDeltaStr(delta)})`, barX, yPos2 + 6);
+
+  pdf.setTextColor(0, 0, 0);
+  return yPos2 + 9;
+}
+
+export async function exportCohortBenchmarkPDF(data: CohortBenchmarkPDFData) {
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+
+  const targetName = data.targetCandidate.name;
+  const teamName = data.teamName || 'Selected Team';
+
+  // ========== PAGE 1: COVER ==========
+  addBackgroundPattern(pdf, pageWidth, pageHeight);
+  addHeader(pdf, pageWidth);
+
+  let yPos = 32;
+  pdf.setFillColor(59, 130, 246);
+  pdf.rect(0, yPos, pageWidth, 35, 'F');
+
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(20);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('TEAM COHORT BENCHMARK', pageWidth / 2, yPos + 13, { align: 'center' });
+
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(`${targetName} vs ${teamName}`, pageWidth / 2, yPos + 22, { align: 'center' });
+  pdf.setFontSize(8);
+  pdf.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth / 2, yPos + 29, { align: 'center' });
+
+  pdf.setTextColor(0, 0, 0);
+  yPos = 78;
+
+  // Candidate & team details
+  yPos = addSectionHeader(pdf, 'BENCHMARK DETAILS', yPos, pageWidth);
+  pdf.setFillColor(248, 250, 252);
+  pdf.setDrawColor(59, 130, 246);
+  pdf.setLineWidth(0.5);
+  pdf.roundedRect(20, yPos, pageWidth - 40, 28, 2, 2, 'FD');
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(59, 130, 246);
+  pdf.text(`Target Candidate: ${targetName}`, 25, yPos + 7);
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(107, 114, 128);
+  pdf.text(data.targetCandidate.email || '', 25, yPos + 12);
+  pdf.setFontSize(8);
+  pdf.setTextColor(31, 41, 55);
+  pdf.text(`Team: ${teamName} (${data.teamMembers.length} members)`, 25, yPos + 19);
+  const memberNames = data.teamMembers.map(m => m.name).join(', ');
+  const memberLines = pdf.splitTextToSize(memberNames, pageWidth - 50);
+  pdf.setFontSize(7);
+  pdf.setTextColor(107, 114, 128);
+  pdf.text(memberLines.slice(0, 1), 25, yPos + 24);
+  yPos += 34;
+
+  // Overall composite comparison
+  yPos = addSectionHeader(pdf, 'OVERALL COMPARISON', yPos, pageWidth);
+  drawTableRow(pdf, 20, yPos, [70, 50, 50], ['', 'Score', ''], 8, {
+    isBold: true, fontSize: 8, fillColor: [59, 130, 246], textColor: [255, 255, 255],
+  });
+  // header row labels
+  drawTableRow(pdf, 20, yPos, [70, 50, 50], ['Metric', `${targetName}`.slice(0, 24), 'Team Avg / Δ'], 8, {
+    isBold: true, fontSize: 8, fillColor: [59, 130, 246], textColor: [255, 255, 255],
+  });
+  yPos += 8;
+  drawTableRow(pdf, 20, yPos, [70, 50, 50], [
+    'Overall Composite',
+    fmtScore(data.overall.candidateScore),
+    `${fmtScore(data.overall.teamAverage)}  (${fmtDeltaStr(data.overall.delta)})`,
+  ], 8, { fontSize: 8 });
+  yPos += 14;
+
+  // ========== SKILL SECTIONS ==========
+  const skillSections: { title: string; section: CohortSkillSection }[] = [
+    { title: 'FIT ASSESSMENT (BEHAVIORAL)', section: data.fit },
+    { title: 'AI READINESS', section: data.aiReadiness },
+  ];
+
+  for (const { title, section } of skillSections) {
+    if (!section.hasData) continue;
+    yPos = ensurePageSpace(pdf, yPos, 30, pageHeight, pageWidth);
+    yPos = addSectionHeader(pdf, title, yPos, pageWidth);
+    // Legend
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(147, 197, 253);
+    pdf.text('Light bar = Team Average', 20, yPos);
+    pdf.setTextColor(59, 130, 246);
+    pdf.text('Dark bar = Candidate', 90, yPos);
+    pdf.setTextColor(0, 0, 0);
+    yPos += 5;
+    for (const row of section.skills) {
+      yPos = ensurePageSpace(pdf, yPos, 16, pageHeight, pageWidth);
+      yPos = drawCohortBar(pdf, row.skillName, row.teamAverage, row.candidateScore, row.delta, yPos, pageWidth);
+    }
+    yPos += 4;
+  }
+
+  // ========== OVERALL-ONLY SECTIONS ==========
+  const overallSections: { title: string; section: CohortOverallSection }[] = [
+    { title: 'Prompt Architecture', section: data.promptArchitecture },
+    { title: 'AIQ (Ethical AI)', section: data.aiq },
+  ];
+  if (overallSections.some(s => s.section.hasData)) {
+    yPos = ensurePageSpace(pdf, yPos, 30, pageHeight, pageWidth);
+    yPos = addSectionHeader(pdf, 'TECHNICAL ASSESSMENTS', yPos, pageWidth);
+    yPos += 2;
+    for (const { title, section } of overallSections) {
+      if (!section.hasData) continue;
+      yPos = ensurePageSpace(pdf, yPos, 16, pageHeight, pageWidth);
+      yPos = drawCohortBar(pdf, title, section.teamAverage, section.candidateScore, section.delta, yPos, pageWidth);
+    }
+    yPos += 4;
+  }
+
+  // ========== AI NARRATIVE ==========
+  if (data.aiInsights) {
+    yPos = ensurePageSpace(pdf, yPos, 40, pageHeight, pageWidth);
+    yPos = addSectionHeader(pdf, 'AI HIRING ANALYSIS', yPos, pageWidth);
+    const insightLines = data.aiInsights.split('\n');
+    for (const rawLine of insightLines) {
+      const line = rawLine.trim();
+      if (!line) { yPos += 2; continue; }
+      yPos = ensurePageSpace(pdf, yPos, 12, pageHeight, pageWidth);
+
+      const boldHeading = line.match(/^\*\*(.+?)\*\*\s*$/) || line.match(/^#{1,3}\s+(.+)/);
+      if (boldHeading) {
+        const heading = boldHeading[1].replace(/[^\x00-\x7F]/g, '').trim();
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(59, 130, 246);
+        pdf.text(heading, 20, yPos + 2);
+        yPos += 7;
+        continue;
+      }
+
+      const bullet = line.match(/^[-*]\s+(.+)/) || line.match(/^\d+\.\s+(.+)/);
+      const content = (bullet ? bullet[1] : line)
+        .replace(/\*\*(.+?)\*\*/g, '$1')
+        .replace(/[^\x00-\x7F]/g, '')
+        .trim();
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(55, 65, 81);
+      const prefix = bullet ? '•  ' : '';
+      const wrapped = pdf.splitTextToSize(prefix + content, pageWidth - (bullet ? 48 : 44));
+      wrapped.forEach((w: string) => {
+        yPos = ensurePageSpace(pdf, yPos, 6, pageHeight, pageWidth);
+        pdf.text(w, bullet ? 26 : 22, yPos + 2);
+        yPos += 4.5;
+      });
+      yPos += 1;
+    }
+  }
+
+  pdf.setTextColor(0, 0, 0);
+
+  // ========== SKILLS LEGEND PAGE ==========
+  addSkillsLegendPage(pdf, pageWidth, pageHeight);
+
+  // Footers
+  const totalPages = pdf.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    pdf.setPage(i);
+    addFooter(pdf, i, totalPages, pageWidth, pageHeight);
+  }
+
+  const timestamp = new Date().toISOString().split('T')[0];
+  const safeName = targetName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+  savePdfMobile(pdf, `cohort-benchmark-${safeName}-${timestamp}.pdf`);
+}

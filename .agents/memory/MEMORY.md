@@ -3,3 +3,4 @@
 - [Port 5000 EADDRINUSE hardening](port-5000-eaddrinuse.md) — server/index.ts must retry listen() on EADDRINUSE + force-exit fast on shutdown so a stale process never holds the port.
 - [Loading job specs/roles into dev+prod](loading-job-roles-dev-prod.md) — add to CUSTOM_ROLES in seed-custom-roles.ts; idempotent startup seeder; prod gets it only on next publish (prod DB read-only to tooling).
 - [B2B candidate unlock pricing](b2b-candidate-unlock-pricing.md) — invited candidates pay per-test only (no £15 fee); shared /api/unlock-results must resolve the invitation independently of purchase items to set the fee.
+- [Partner credit & AI-render safety](partner-credit-and-ai-render-safety.md) — consume credits only after data-availability validation (not just ownership); never render AI narratives via dangerouslySetInnerHTML.

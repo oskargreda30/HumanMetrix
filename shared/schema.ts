@@ -2210,6 +2210,7 @@ export const AI_USAGE_OPERATION_TYPES = {
   MULTI_PROMPT_ANALYSIS: "multi_prompt_analysis",
   MULTI_AIQ_ANALYSIS: "multi_aiq_analysis",
   BATCH_ROLE_SKILLS: "batch_role_skills",
+  COHORT_BENCHMARK: "cohort_benchmark",
 } as const;
 
 export type AiUsageOperationType = typeof AI_USAGE_OPERATION_TYPES[keyof typeof AI_USAGE_OPERATION_TYPES];
