@@ -613,14 +613,11 @@ export function SharedCohortBenchmark({ config, staticData }: SharedCohortBenchm
                   <SelectValue placeholder="Select a candidate to evaluate" />
                 </SelectTrigger>
                 <SelectContent>
-                  {eligible.map(c => {
-                    const ov = candidateOverall(c);
-                    return (
-                      <SelectItem key={c.user.id} value={c.user.id} data-testid={`option-target-${c.user.id}`}>
-                        {candidateName(c)} {ov !== null ? `· ${ov}% overall` : ""}
-                      </SelectItem>
-                    );
-                  })}
+                  {eligible.map(c => (
+                    <SelectItem key={c.user.id} value={c.user.id} data-testid={`option-target-${c.user.id}`}>
+                      {candidateName(c)}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -671,7 +668,6 @@ export function SharedCohortBenchmark({ config, staticData }: SharedCohortBenchm
                   <div className="p-4 text-center text-xs text-muted-foreground">No candidates match your search.</div>
                 ) : (
                   teamList.map(c => {
-                    const ov = candidateOverall(c);
                     const checked = teamIds.has(c.user.id);
                     return (
                       <label
@@ -688,9 +684,6 @@ export function SharedCohortBenchmark({ config, staticData }: SharedCohortBenchm
                           <div className="text-xs md:text-sm font-medium truncate">{candidateName(c)}</div>
                           <div className="text-[10px] md:text-xs text-muted-foreground truncate">{c.user.email}</div>
                         </div>
-                        <Badge variant="secondary" className="text-[10px] md:text-xs flex-shrink-0">
-                          {ov !== null ? `${ov}%` : "N/A"}
-                        </Badge>
                       </label>
                     );
                   })
