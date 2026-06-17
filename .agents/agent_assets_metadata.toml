@@ -12,3 +12,15 @@ id = "Bc_uSL3wLoVTS54fL-Gok"
 uri = "file://README.md"
 type = "text"
 title = "README.md"
+
+[[outputs]]
+id = "qxxfqncljBhyJ4b50JIFr"
+uri = "file://exports/HumanMetrix_Scientific_Validation_Report.pdf"
+type = "pdf"
+title = "Scientific Validation & Evidence Report"
+
+[[outputs]]
+id = "EukvLMUtFOKgGdIAPeGnq"
+uri = "file://exports/HumanMetrix_UK_GDPR_Compliance_Pack.pdf"
+type = "pdf"
+title = "UK GDPR & Data Protection Compliance Pack"
