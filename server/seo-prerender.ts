@@ -1118,6 +1118,7 @@ function renderHtml(path: string, content: RouteContent): string {
         "@type": "Product",
         name: product.name,
         description: product.description,
+        image: ogImage,
         brand: { "@type": "Brand", name: SITE_NAME },
         offers: {
           "@type": "Offer",
