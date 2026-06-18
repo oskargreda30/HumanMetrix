@@ -2,8 +2,8 @@ import puppeteer from 'puppeteer';
 import { statSync, mkdirSync, writeFileSync } from 'fs';
 import { execSync } from 'child_process';
 
-const DOC_DATE = '17 June 2026';
-const DOC_VERSION = '1.0';
+const DOC_DATE = '18 June 2026';
+const DOC_VERSION = '1.1';
 const ENTITY = 'HUMAN METRIX CONSULTING LTD';
 
 function findChromiumPath() {
@@ -312,16 +312,12 @@ ${cover(
 <table class="compact">
   <tr><th>Field</th><th>Detail</th></tr>
   <tr><td><strong>Data controller</strong></td><td>${ENTITY}</td></tr>
+  <tr><td><strong>Company number</strong></td><td>17016654</td></tr>
   <tr><td><strong>Trading name</strong></td><td>HumanMetrix (humanmetrix.co.uk)</td></tr>
-  <tr><td><strong>Data-protection contact</strong></td><td>Oskar Greda, Chief Executive Officer</td></tr>
+  <tr><td><strong>Registered address</strong></td><td>8 Yarningale Close, Redditch, England, B98 7XQ</td></tr>
+  <tr><td><strong>Data Protection Officer</strong></td><td>Oskar Greda, Chief Executive Officer</td></tr>
   <tr><td><strong>Contact email</strong></td><td>assessments@humanmetrix.co.uk</td></tr>
-  <tr><td><strong>Registered address</strong></td><td><span class="pill">To be completed</span> [Registered company address — to be inserted by ${ENTITY}]</td></tr>
-  <tr><td><strong>ICO registration</strong></td><td>[ICO registration reference — to be inserted, if applicable]</td></tr>
 </table>
-<div class="callout warn">
-  <div class="t">Placeholders for your completion</div>
-  <p style="margin:0;">The registered address and ICO registration reference are marked for ${ENTITY} / its legal adviser to complete before this pack is shared externally.</p>
-</div>
 
 <h1 class="section"><span class="num">2.</span> Data-protection principles &amp; lawful bases</h1>
 <div class="sec-rule"></div>
@@ -407,22 +403,18 @@ ${cover(
 
 <h1 class="section"><span class="num">9.</span> Sub-processors &amp; international transfers</h1>
 <div class="sec-rule"></div>
-<p>HumanMetrix relies on the sub-processors below. Several are based in, or process data in, the United States; for such transfers HumanMetrix relies on appropriate safeguards (the UK International Data Transfer Agreement / Addendum to the EU SCCs, and providers' own transfer frameworks).</p>
+<p>HumanMetrix relies on the sub-processors below. Several are based in, or process data in, the United States or other countries outside the UK; for such transfers HumanMetrix relies on appropriate safeguards (the UK International Data Transfer Agreement / Addendum to the EU SCCs, and providers' own transfer frameworks).</p>
 <table class="compact">
   <tr><th>Sub-processor</th><th>Purpose</th><th>Transfer note</th></tr>
-  <tr><td>Neon</td><td>Managed PostgreSQL database hosting</td><td>Confirm region; safeguards where data leaves the UK</td></tr>
+  <tr><td>Replit</td><td>Application hosting, deployment &amp; managed PostgreSQL database</td><td>US transfer — IDTA/SCCs</td></tr>
   <tr><td>OpenAI</td><td>AI scoring of open-ended responses &amp; narrative</td><td>US transfer — IDTA/SCCs</td></tr>
   <tr><td>Stripe</td><td>Payment processing</td><td>US transfer — IDTA/SCCs</td></tr>
-  <tr><td>Airwallex</td><td>Subscription / merchant-initiated billing</td><td>Confirm region; safeguards as required</td></tr>
+  <tr><td>Airwallex</td><td>Subscription / merchant-initiated billing</td><td>Global infrastructure — UK IDTA / SCCs</td></tr>
   <tr><td>SendGrid (Twilio)</td><td>Transactional email (secondary)</td><td>US transfer — IDTA/SCCs</td></tr>
   <tr><td>Google / Gmail</td><td>Transactional email (primary)</td><td>US transfer — IDTA/SCCs</td></tr>
-  <tr><td>Replit</td><td>Application hosting / deployment</td><td>US transfer — IDTA/SCCs</td></tr>
-  <tr><td>Xero</td><td>Accounting / revenue records</td><td>Confirm region; safeguards as required</td></tr>
+  <tr><td>Xero</td><td>Accounting / revenue records</td><td>US (AWS) &amp; New Zealand (adequacy) — SCCs</td></tr>
 </table>
-<div class="callout warn">
-  <div class="t">For completion by ${ENTITY}</div>
-  <p style="margin:0;">Confirm the current processing region for each provider and ensure a signed IDTA/SCC (or equivalent) is on file for each restricted transfer. A current sub-processor list should be maintained and made available to clients.</p>
-</div>
+<p>For each restricted transfer above, HumanMetrix relies on the relevant provider's standard Data Processing Agreement, which incorporates the UK International Data Transfer Agreement (IDTA) and/or the EU Standard Contractual Clauses (SCCs), together with the providers' own technical and organisational safeguards. A current sub-processor list is maintained and is available to clients on request.</p>
 
 <h1 class="section"><span class="num">10.</span> Data-subject rights</h1>
 <div class="sec-rule"></div>
@@ -432,15 +424,12 @@ ${cover(
 <h1 class="section"><span class="num">11.</span> Data retention &amp; deletion</h1>
 <div class="sec-rule"></div>
 <ul>
-  <li><strong>Storage limitation:</strong> personal data is kept only as long as needed for the purpose it was collected for, or as required by law (e.g. financial records).</li>
-  <li><strong>Consent-based results retention:</strong> the platform records each candidate's results-retention consent and the date it was given, governing how long results are kept on their behalf.</li>
+  <li><strong>Storage limitation:</strong> personal data is retained in line with the UK GDPR storage-limitation principle — kept only as long as needed for the purpose it was collected for, or as required by law.</li>
+  <li><strong>Consent-based results retention:</strong> assessment results are retained in line with the candidate's recorded results-retention consent and the date it was given, which governs how long results are kept on their behalf; consent can be withdrawn at any time.</li>
+  <li><strong>Financial records:</strong> billing and accounting records are retained for the period required by UK law for tax and accounting purposes.</li>
   <li><strong>Unpaid/incomplete sessions:</strong> the platform applies time-bounded handling to unpaid assessment sessions (a 30-day window governs free-unlock eligibility), after which associated processing is wound down.</li>
   <li><strong>Erasure on request:</strong> candidates may request deletion of their personal data (§10), subject to legal-retention exceptions.</li>
 </ul>
-<div class="callout warn">
-  <div class="t">For completion</div>
-  <p style="margin:0;">Confirm and document concrete retention periods per data category in a retention schedule (e.g. assessment results, account data, billing records, logs).</p>
-</div>
 
 <h1 class="section"><span class="num">12.</span> Personal-data-breach procedure</h1>
 <div class="sec-rule"></div>
@@ -455,7 +444,7 @@ ${cover(
 <p>Where HumanMetrix acts as a processor on behalf of an employer/partner controller (for example, processing candidate data the employer has invited), HumanMetrix can enter into a <strong>Data Processing Agreement</strong> setting out the subject-matter, duration, nature and purpose of processing, the types of personal data and categories of data subjects, the parties' obligations, the sub-processor list, international-transfer safeguards, and security measures. A DPA is available to enterprise clients on request to <a href="mailto:assessments@humanmetrix.co.uk">assessments@humanmetrix.co.uk</a>.</p>
 <div class="callout">
   <div class="t">Document control</div>
-  <p style="margin:0;">${ENTITY} — UK GDPR &amp; Data Protection Compliance Pack, version ${DOC_VERSION}, ${DOC_DATE}. This pack is provided for due-diligence information and does not itself constitute legal advice or a signed DPA. Items marked "to be completed" require input from ${ENTITY} or its legal adviser.</p>
+  <p style="margin:0;">${ENTITY} — UK GDPR &amp; Data Protection Compliance Pack, version ${DOC_VERSION}, ${DOC_DATE}. This pack is provided for due-diligence information and does not itself constitute legal advice or a signed DPA.</p>
 </div>
 `);
 
