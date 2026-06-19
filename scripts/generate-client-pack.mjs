@@ -314,10 +314,11 @@ ${cover(
   <tr><td><strong>Data controller</strong></td><td>${ENTITY}</td></tr>
   <tr><td><strong>Company number</strong></td><td>17016654</td></tr>
   <tr><td><strong>Trading name</strong></td><td>HumanMetrix (humanmetrix.co.uk)</td></tr>
-  <tr><td><strong>Registered address</strong></td><td>8 Yarningale Close, Redditch, England, B98 7XQ</td></tr>
-  <tr><td><strong>Data Protection Officer</strong></td><td>Oskar Greda, Chief Executive Officer</td></tr>
+  <tr><td><strong>Registered address</strong></td><td><span style="background:#fff7ed; border:1px solid #fed7aa; border-radius:4px; padding:1px 6px; color:#9a3412; font-weight:700;">[PLACEHOLDER — insert registered company address before issue]</span></td></tr>
+  <tr><td><strong>Data-protection contact</strong></td><td>Oskar Greda, Chief Executive Officer</td></tr>
   <tr><td><strong>Contact email</strong></td><td>assessments@humanmetrix.co.uk</td></tr>
 </table>
+<p class="muted" style="font-size:9pt;">Note: HUMAN METRIX CONSULTING LTD has not appointed a statutory Data Protection Officer under UK GDPR Article 37 (not mandated for an organisation of this size and processing profile). Oskar Greda (CEO) is the named contact point for all data-protection matters and data-subject requests.</p>
 
 <h1 class="section"><span class="num">2.</span> Data-protection principles &amp; lawful bases</h1>
 <div class="sec-rule"></div>
@@ -406,7 +407,8 @@ ${cover(
 <p>HumanMetrix relies on the sub-processors below. Several are based in, or process data in, the United States or other countries outside the UK; for such transfers HumanMetrix relies on appropriate safeguards (the UK International Data Transfer Agreement / Addendum to the EU SCCs, and providers' own transfer frameworks).</p>
 <table class="compact">
   <tr><th>Sub-processor</th><th>Purpose</th><th>Transfer note</th></tr>
-  <tr><td>Replit</td><td>Application hosting, deployment &amp; managed PostgreSQL database</td><td>US transfer — IDTA/SCCs</td></tr>
+  <tr><td>Replit</td><td>Application hosting &amp; deployment infrastructure</td><td>US transfer — IDTA/SCCs</td></tr>
+  <tr><td>Neon</td><td>Managed PostgreSQL database (candidate, assessment &amp; account data)</td><td>US transfer — IDTA/SCCs</td></tr>
   <tr><td>OpenAI</td><td>AI scoring of open-ended responses &amp; narrative</td><td>US transfer — IDTA/SCCs</td></tr>
   <tr><td>Stripe</td><td>Payment processing</td><td>US transfer — IDTA/SCCs</td></tr>
   <tr><td>Airwallex</td><td>Subscription / merchant-initiated billing</td><td>Global infrastructure — UK IDTA / SCCs</td></tr>
