@@ -527,14 +527,22 @@ export default function PartnerMultiCandidateRoleFitTab({ staticData, onNavigate
     if (!effectiveComparison) return [];
     const validEntries = effectiveComparison.candidateEntries
       .filter((entry) => entry.overallFit != null && entry.fitTier !== 'insufficient-data')
-      .sort((a, b) => (b.overallFit || 0) - (a.overallFit || 0));
+      // Use the authoritative server-assigned rank (hiring-band order: critical
+      // skills weighted above overall fit), falling back to fit % only when rank
+      // is missing. This keeps every ranked surface consistent with the PDF/server.
+      .sort((a, b) => {
+        if (a.rank == null && b.rank == null) return (b.overallFit || 0) - (a.overallFit || 0);
+        if (a.rank == null) return 1;
+        if (b.rank == null) return -1;
+        return a.rank - b.rank;
+      });
     
     return validEntries.map((entry, index) => ({
       name: entry.userName.length > 15 ? entry.userName.slice(0, 15) + '...' : entry.userName,
       fullName: entry.userName,
       'Overall Fit': entry.overallFit as number,
       tier: entry.fitTier,
-      rank: index + 1,
+      rank: entry.rank ?? index + 1,
     }));
   };
 
@@ -1187,7 +1195,14 @@ export default function PartnerMultiCandidateRoleFitTab({ staticData, onNavigate
 
             const sortedCandidates = [...effectiveComparison!.candidateEntries]
               .filter((c: CandidateEntry) => c.overallFit != null)
-              .sort((a: CandidateEntry, b: CandidateEntry) => (b.overallFit ?? 0) - (a.overallFit ?? 0));
+              // Authoritative server hiring-band rank (critical skills weighted
+              // above overall fit); fit % only as a fallback when rank is missing.
+              .sort((a: CandidateEntry, b: CandidateEntry) => {
+                if (a.rank == null && b.rank == null) return (b.overallFit ?? 0) - (a.overallFit ?? 0);
+                if (a.rank == null) return 1;
+                if (b.rank == null) return -1;
+                return a.rank - b.rank;
+              });
 
             return (
               <Card data-testid="card-skill-gap-heatmap" data-report-section="skill-gap-heatmap">

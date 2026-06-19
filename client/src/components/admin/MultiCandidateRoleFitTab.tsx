@@ -471,14 +471,22 @@ export default function MultiCandidateRoleFitTab() {
     // Only include candidates with valid data in the chart
     const validEntries = comparison.candidateEntries
       .filter((entry) => entry.overallFit != null && entry.fitTier !== 'insufficient-data')
-      .sort((a, b) => (b.overallFit || 0) - (a.overallFit || 0));
+      // Use the authoritative server-assigned rank (hiring-band order: critical
+      // skills weighted above overall fit), falling back to fit % only when rank
+      // is missing. This keeps every ranked surface consistent with the PDF/server.
+      .sort((a, b) => {
+        if (a.rank == null && b.rank == null) return (b.overallFit || 0) - (a.overallFit || 0);
+        if (a.rank == null) return 1;
+        if (b.rank == null) return -1;
+        return a.rank - b.rank;
+      });
     
     return validEntries.map((entry, index) => ({
       name: entry.userName.length > 15 ? entry.userName.slice(0, 15) + '...' : entry.userName,
       fullName: entry.userName,
       'Overall Fit': entry.overallFit as number,
       tier: entry.fitTier,
-      rank: index + 1,
+      rank: entry.rank ?? index + 1,
     }));
   };
 
@@ -1414,16 +1422,19 @@ export default function MultiCandidateRoleFitTab() {
                         ...entry,
                         hasData: entry.overallFit != null && entry.fitTier !== 'insufficient-data',
                       }))
+                      // Authoritative server hiring-band rank (critical skills
+                      // weighted above overall fit); fit % only as a fallback.
                       .sort((a, b) => {
                         if (a.hasData && !b.hasData) return -1;
                         if (!a.hasData && b.hasData) return 1;
-                        return (b.overallFit || 0) - (a.overallFit || 0);
+                        if (a.rank == null && b.rank == null) return (b.overallFit || 0) - (a.overallFit || 0);
+                        if (a.rank == null) return 1;
+                        if (b.rank == null) return -1;
+                        return a.rank - b.rank;
                       });
                     
-                    let rankCounter = 0;
                     return allCandidates.map((entry) => {
-                      if (entry.hasData) rankCounter++;
-                      const rank = entry.hasData ? rankCounter : null;
+                      const rank = entry.hasData ? entry.rank : null;
                       const rankBadge = rank ? getRankBadge(rank) : null;
                       
                       return (

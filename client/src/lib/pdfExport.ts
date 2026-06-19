@@ -321,7 +321,7 @@ function addReportGuidePage(pdf: jsPDF, pageWidth: number, pageHeight: number, r
       'AI-powered assessment of Prompt Architecture and AIQ skills across candidates (when applicable), with insights on relative strengths and areas for development.', yPos);
     
     yPos = addGuideItem(4, 'Candidate Rankings Table', 
-      'Sortable table with rank, fit percentage, fit tier, and key notes. Top 3 candidates are highlighted with gold, silver, and bronze indicators.', yPos);
+      'Candidates are ranked by hiring suitability — must-have critical skills are weighted above the overall fit score — shown alongside fit percentage, fit tier, and key notes. Top 3 candidates are highlighted with gold, silver, and bronze indicators.', yPos);
     
     yPos = addGuideItem(5, 'Critical Skills Dashboard', 
       'Table showing performance on must-have skills for this role. Each critical skill displays candidate scores with color coding and pass/fail indicators.', yPos);
@@ -4454,7 +4454,7 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
 
   yPos = addSectionHeader(pdf, 'CANDIDATE RANKINGS', yPos, pageWidth);
   yPos += 2;
-  const rankDesc = 'Candidates ranked by overall role fit score with key performance indicators and tier classification.';
+  const rankDesc = 'Candidates ranked by hiring suitability: must-have critical skills are weighted above the overall fit score, so a candidate who meets more critical thresholds can rank higher even with a slightly lower fit percentage.';
   pdf.setFontSize(7);
   pdf.setFont('helvetica', 'normal');
   const rankDescLines = pdf.splitTextToSize(rankDesc, contentWidth - 8);
@@ -5413,7 +5413,12 @@ export async function exportMultiCandidateComparisonPDF(data: MultiCandidateComp
       pdf.text(heatDescLines, MARGIN + 4, yPos + 4);
       yPos += heatDescH + 5;
 
-      const sortedHeatCandidates = [...data.candidateEntries].sort((a, b) => (b.overallFit ?? 0) - (a.overallFit ?? 0));
+      const sortedHeatCandidates = [...data.candidateEntries].sort((a, b) => {
+        if (a.rank == null && b.rank == null) return (b.overallFit ?? 0) - (a.overallFit ?? 0);
+        if (a.rank == null) return 1;
+        if (b.rank == null) return -1;
+        return a.rank - b.rank;
+      });
       const maxHeatCandidates = Math.min(sortedHeatCandidates.length, 6);
       const heatCandidates = sortedHeatCandidates.slice(0, maxHeatCandidates);
 
