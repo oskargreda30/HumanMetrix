@@ -18,7 +18,7 @@ import {
   CheckCircle,
   Video,
 } from "lucide-react";
-import explainerVideoOne from "@assets/VIDEO-2026-06-25-20-57-58_1782396782413.mp4";
+import explainerVideoOne from "../assets/methodology-explainer-long.mp4";
 import explainerVideoTwo from "@assets/VIDEO-2026-06-25-20-58-26_1782396789055.mp4";
 
 const faqs = [
