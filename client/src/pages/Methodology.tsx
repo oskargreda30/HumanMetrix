@@ -16,7 +16,10 @@ import {
   Briefcase,
   Scale,
   CheckCircle,
+  Video,
 } from "lucide-react";
+import explainerVideoOne from "@assets/VIDEO-2026-06-25-20-57-58_1782396782413.mp4";
+import explainerVideoTwo from "@assets/VIDEO-2026-06-25-20-58-26_1782396789055.mp4";
 
 const faqs = [
   {
@@ -86,6 +89,39 @@ export default function Methodology() {
           </div>
 
           <div className="space-y-6 md:space-y-8">
+            <Card className="p-5 md:p-8">
+              <h2 className="text-lg md:text-2xl font-semibold mb-4 md:mb-6 flex items-center gap-2">
+                <Video className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+                Watch the explainers
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <div>
+                  <video
+                    controls
+                    preload="metadata"
+                    aria-label="HumanMetrix methodology explainer video 1"
+                    className="w-full rounded-md border bg-black"
+                    data-testid="video-explainer-one"
+                  >
+                    <source src={explainerVideoOne} type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+                <div>
+                  <video
+                    controls
+                    preload="metadata"
+                    aria-label="HumanMetrix methodology explainer video 2"
+                    className="w-full rounded-md border bg-black"
+                    data-testid="video-explainer-two"
+                  >
+                    <source src={explainerVideoTwo} type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              </div>
+            </Card>
+
             <Card className="p-5 md:p-8">
               <div className="flex items-start gap-3 md:gap-4 mb-3 md:mb-4">
                 <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
