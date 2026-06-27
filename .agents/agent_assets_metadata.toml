@@ -30,3 +30,9 @@ id = "_PG6qeER44VxPxRgaZYs0"
 uri = "file://docs/PRICING_TIERS.md"
 type = "text"
 title = "Pricing Tiers Explainer"
+
+[[outputs]]
+id = "FoPJHEIR3vywvjQs_SYO_"
+uri = "file://docs/PRICING_TIERS.pdf"
+type = "pdf"
+title = "Pricing Tiers Explainer (PDF)"
