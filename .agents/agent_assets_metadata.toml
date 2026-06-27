@@ -24,3 +24,9 @@ id = "EukvLMUtFOKgGdIAPeGnq"
 uri = "file://exports/HumanMetrix_UK_GDPR_Compliance_Pack.pdf"
 type = "pdf"
 title = "UK GDPR & Data Protection Compliance Pack (v1.1 — final)"
+
+[[outputs]]
+id = "_PG6qeER44VxPxRgaZYs0"
+uri = "file://docs/PRICING_TIERS.md"
+type = "text"
+title = "Pricing Tiers Explainer"
