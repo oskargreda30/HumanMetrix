@@ -42,3 +42,9 @@ id = "jvuBq3DnTBVJozcLPKkOp"
 uri = "file://docs/RECRUIT_MY_MUM_AGREEMENT.pdf"
 type = "pdf"
 title = "Recruit My Mum — Credit Purchase Agreement"
+
+[[outputs]]
+id = "XYrdSpT5umjeGovZ2uu-X"
+uri = "file://docs/RECRUIT_MY_MOM_AGREEMENT.pdf"
+type = "pdf"
+title = "Recruit My Mom — Credit Purchase Agreement"
