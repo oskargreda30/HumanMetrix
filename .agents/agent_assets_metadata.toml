@@ -36,3 +36,9 @@ id = "FoPJHEIR3vywvjQs_SYO_"
 uri = "file://docs/PRICING_TIERS.pdf"
 type = "pdf"
 title = "Pricing Tiers Explainer (PDF)"
+
+[[outputs]]
+id = "jvuBq3DnTBVJozcLPKkOp"
+uri = "file://docs/RECRUIT_MY_MUM_AGREEMENT.pdf"
+type = "pdf"
+title = "Recruit My Mum — Credit Purchase Agreement (draft)"
