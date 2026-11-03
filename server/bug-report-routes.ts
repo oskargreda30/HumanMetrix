@@ -5,7 +5,7 @@ import { bugReports } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql } from "drizzle-orm";
 import multer from "multer";
-import OpenAI from "openai";
+import OpenAI from "./ai-disabled";
 import { objectStorageClient } from "./replit_integrations/object_storage/objectStorage";
 import { sendBugReportNotificationEmail } from "./email";
 

@@ -18,7 +18,7 @@ import { getQueueStats } from "./queues";
 import { getPoolStats } from "./db";
 import { getExchangeRates, initExchangeRates } from "./exchange-rates";
 import bcrypt from "bcryptjs";
-import OpenAI from "openai";
+import OpenAI from "./ai-disabled";
 import Stripe from "stripe";
 import { z } from "zod";
 import { EMAIL_REGEX, isValidEmail, isValidName } from "@shared/validation";
@@ -6701,7 +6701,7 @@ ${truncatedText}`;
       }
 
       // Use OpenAI to generate required skill scores
-      const OpenAI = await import('openai');
+      const OpenAI = await import('./ai-disabled');
       const openai = new OpenAI.default({
         apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
         ...(process.env.AI_INTEGRATIONS_OPENAI_BASE_URL && { baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL }),
@@ -7067,7 +7067,7 @@ Provide a final summary assessment with a clear hiring recommendation. Be direct
 
 Keep each section to 2-3 sentences. Be specific and reference actual assessment data.`;
 
-      const openai = new (await import('openai')).default({
+      const openai = new (await import('./ai-disabled')).default({
         apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
         ...(process.env.AI_INTEGRATIONS_OPENAI_BASE_URL && { baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL }),
       });
@@ -7477,7 +7477,7 @@ Keep each section to 2-3 sentences. Be specific and reference actual assessment 
       overallFit = Math.round(overallFit);
 
       // Use OpenAI to generate strengths, gaps, and recommendations
-      const OpenAI = await import('openai');
+      const OpenAI = await import('./ai-disabled');
       const openai = new OpenAI.default({
         apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
         ...(process.env.AI_INTEGRATIONS_OPENAI_BASE_URL && { baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL }),
@@ -24433,35 +24433,8 @@ async function runGoldenSetEvaluation(isCalibrating = false): Promise<{
   return { results, overallPassed, testedAt };
 }
 
-// Daily scheduler for golden set evaluation (runs at midnight UTC)
-let goldenSetSchedulerStarted = false;
-
 export function startGoldenSetScheduler() {
-  if (goldenSetSchedulerStarted) {
-    console.log('[Golden Set Scheduler] Already started, skipping');
-    return;
-  }
-  
-  goldenSetSchedulerStarted = true;
-  
-  // Calculate time until next midnight UTC
-  const now = new Date();
-  const tomorrow = new Date(now);
-  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-  tomorrow.setUTCHours(0, 0, 0, 0);
-  const timeUntilMidnight = tomorrow.getTime() - now.getTime();
-  
-  console.log(`[Golden Set Scheduler] Will run first evaluation in ${Math.round(timeUntilMidnight / 1000 / 60)} minutes at ${tomorrow.toISOString()}`);
-  
-  // Run at next midnight, then every 24 hours
-  setTimeout(() => {
-    runScheduledGoldenSetEvaluation();
-    
-    // Then run every 24 hours
-    setInterval(() => {
-      runScheduledGoldenSetEvaluation();
-    }, 24 * 60 * 60 * 1000);
-  }, timeUntilMidnight);
+  console.log('[Golden Set Scheduler] Disabled: AI spending is shut off.');
 }
 
 async function runScheduledGoldenSetEvaluation() {

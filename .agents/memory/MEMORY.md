@@ -5,3 +5,4 @@
 - [B2B candidate unlock pricing](b2b-candidate-unlock-pricing.md) — invited candidates pay per-test only (no £15 fee); shared /api/unlock-results must resolve the invitation independently of purchase items to set the fee.
 - [Partner credit & AI-render safety](partner-credit-and-ai-render-safety.md) — consume credits only after data-availability validation (not just ownership); never render AI narratives via dangerouslySetInnerHTML.
 - [Multi-candidate role-fit ranking](role-fit-ranking.md) — rank by server hiring-band `candidate.rank` (critical skills > fit%), never raw overallFit; fit ≥75 implies zero critical gaps (overallFit caps at 74 with any gap).
+- [AI spending shutdown](ai-spending-shutdown.md) — owner requested complete cutoff; do not restore paid AI calls or unattended AI jobs without explicit approval.

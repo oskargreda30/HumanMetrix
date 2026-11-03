@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import OpenAI from './ai-disabled';
 import { pool } from './db';
 
 const openai = new OpenAI({

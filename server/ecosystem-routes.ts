@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 import { isAuthenticated } from "./auth";
-import OpenAI from "openai";
+import OpenAI from "./ai-disabled";
 import Stripe from "stripe";
 import { z } from "zod";
 import multer from "multer";

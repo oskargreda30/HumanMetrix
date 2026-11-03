@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import OpenAI from "../../ai-disabled";
 import { db } from "../../db";
 import { jobRoles } from "../../../shared/schema";
 import { eq } from "drizzle-orm";

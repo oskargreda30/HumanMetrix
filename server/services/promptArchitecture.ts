@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import OpenAI from "../ai-disabled";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,

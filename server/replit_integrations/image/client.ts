@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import OpenAI, { toFile } from "openai";
+import OpenAI, { toFile } from "../../ai-disabled";
 import { Buffer } from "node:buffer";
 
 export const openai = new OpenAI({

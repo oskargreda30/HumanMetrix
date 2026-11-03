@@ -14,7 +14,7 @@ export async function getOpenAI() {
     console.log('📦 Lazy loading OpenAI module...');
     const startTime = Date.now();
     
-    const { default: OpenAI } = await import('openai');
+    const { default: OpenAI } = await import('./ai-disabled');
     openaiInstance = new OpenAI({
       apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
       ...(process.env.AI_INTEGRATIONS_OPENAI_BASE_URL && { baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL }),

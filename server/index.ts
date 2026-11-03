@@ -1,7 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import compression from "compression";
 import cookieParser from "cookie-parser";
-import { registerRoutes, startGoldenSetScheduler, startBillingScheduler, startDatabaseSizeScheduler } from "./routes";
+import { registerRoutes, startBillingScheduler, startDatabaseSizeScheduler } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeEmailSystem } from "./email";
 import { initializeJobQueues, shutdownJobQueues } from "./queues";
@@ -12,7 +12,6 @@ import { staticCacheHeaders, setSecurityHeaders } from "./middleware/staticCache
 import { configureKeepAlive, keepAliveHeaders } from "./middleware/keepAlive";
 import { csrfProtection } from "./middleware/csrf";
 import { preloadModules } from "./lazyModules";
-import { rerunMissingInsights } from "./rerun-insights";
 import { seedCustomRoles } from "./seed-custom-roles";
 
 const app = express();
@@ -243,8 +242,8 @@ app.use((req, res, next) => {
     // Initialize email system after server starts
     initializeEmailSystem();
     
-    // Start Golden Set scheduler for daily GPT-4o scoring consistency checks
-    startGoldenSetScheduler();
+    // AI spending is shut off: no automated scoring checks or insight backfills.
+    console.log('[AI] All provider calls and automatic AI jobs are disabled.');
     
     // Start billing scheduler for auto-bill partner charges
     startBillingScheduler();
@@ -261,14 +260,6 @@ app.use((req, res, next) => {
       console.error('[CustomRoles] Unhandled error:', err.message);
     });
 
-    // Auto-rerun AI insights for any reports that were saved without them
-    // (e.g. reports generated during the OpenAI outage in early April 2026)
-    // Runs 10s after startup to avoid blocking the server
-    setTimeout(() => {
-      rerunMissingInsights().catch(err => {
-        console.error('[RerunInsights] Unhandled error:', err);
-      });
-    }, 10000);
   };
 
   // Resilient startup. During a restart the previous process may still be

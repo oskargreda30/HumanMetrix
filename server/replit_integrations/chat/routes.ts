@@ -1,5 +1,5 @@
 import type { Express, Request, Response } from "express";
-import OpenAI from "openai";
+import OpenAI from "../../ai-disabled";
 import { chatStorage } from "./storage";
 
 const openai = new OpenAI({

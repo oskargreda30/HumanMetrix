@@ -3,7 +3,7 @@ import { isAuthenticated } from "./auth";
 import { socialPosts, SOCIAL_PLATFORMS, SOCIAL_POST_STATUSES } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
-import OpenAI from "openai";
+import OpenAI from "./ai-disabled";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
